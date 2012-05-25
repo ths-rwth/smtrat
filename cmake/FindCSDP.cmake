@@ -1,6 +1,8 @@
 # - Try to find CSDP
 # Originally from Martin Velis
-#
+# DEPRECATED!
+
+
 
 SET (CSDP_FOUND FALSE)
 

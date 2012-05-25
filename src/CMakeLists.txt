@@ -185,13 +185,15 @@ if(${STATICLIB_SWITCH} STREQUAL "ON")
 endif()
 add_library(lib_${PROJECT_NAME} ${STATICLIB} ${lib_${PROJECT_NAME}_SRCS} )
 
+add_library(csdp UNKNOWN IMPORTED)
+set_target_properties(csdp PROPERTIES IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/external/csdp/lib/libsdp.a")
 
 #Csdp should be automatically compiled whenever we compile smtrat
-add_dependencies(lib_${PROJECT_NAME} csdp_lib)
-
+add_dependencies(csdp csdp_lib)
 
 # Other libraries that are used by the project library should go here.
-target_link_libraries( lib_${PROJECT_NAME} ${cln_LIBRARIES} ${GINAC_LIBRARY} ${GINACRA_LIBRARY} ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES} ${CSDP_LIBRARY} )
+target_link_libraries( lib_${PROJECT_NAME} ${cln_LIBRARIES} ${GINAC_LIBRARY} ${GINACRA_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}  csdp )
+
 
 set_target_properties( lib_${PROJECT_NAME} PROPERTIES
 #		# create *nix style library versions + symbolic links
