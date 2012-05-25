@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<!--
+/* SMT RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
+ * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
+ *
+ * This file is part of SMT RAT.
+ *
+ * SMT RAT is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SMT RAT is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with SMT RAT.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+-->
+<project name="@JAR_NAME@" basedir="." default="all">
+	<description>
+		Ant file for building the graphical user interface of SMT Real Algebra Toolkit.
+		(See http://ant.apache.org/manual/using.html.)
+		Author: Ulrich Loup
+	</description>
+	
+	<property name="srcdir" value="@CMAKE_CURRENT_SOURCE_DIR@"/>
+	<property name="builddir" value="@CMAKE_CURRENT_BINARY_DIR@"/>
+	<property name="testdir" value="@CMAKE_CURRENT_BINARY_DIR@/test"/>
+	<property name="jardir" value="@CMAKE_CURRENT_BINARY_DIR@"/>
+	<property name="mainClass" value="GUI"/>
+
+	<target name="init">
+		<tstamp/>
+		<mkdir dir="@DOLLAR@{builddir}"/>
+  	</target>
+
+	<target name="compile" depends="init" description="Compile all sources">
+		<javac srcdir="@DOLLAR@{srcdir}" destdir="@DOLLAR@{builddir}" classpath="@DOLLAR@{builddir}" listfiles="Yes" encoding="UTF8" deprecation="Yes">
+		</javac>
+	</target>
+
+	<target name="pack" depends="compile" description="Create @JAR_NAME@.jar">
+		<jar destfile="@DOLLAR@{jardir}/@JAR_NAME@.jar" basedir="@DOLLAR@{builddir}" includes="**/*.class,**/*.html">
+			<manifest>
+				<attribute name="Built-By" value="@DOLLAR@{user.name}"/>
+				<attribute name="Implementation-Version" value="@DOLLAR@{version} @DOLLAR@{TODAY}"/>
+				<attribute name="Main-Class" value="@DOLLAR@{mainClass}"/>
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="clean" description="Remove all class files" >
+		<delete includeemptydirs="true">
+			<fileset dir="@DOLLAR@{builddir}" includes="**/*"/>
+  		</delete>
+  	</target>
+  
+	<target name="all" depends="compile,pack" description="Compile and pack in one go">
+	</target>
+	
+</project>

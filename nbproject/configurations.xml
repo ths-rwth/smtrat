@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="80">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <df name="smtrat" root=".">
+      <df name="cmake">
+      </df>
+      <df name="doxygen-conf">
+      </df>
+      <df name="examples">
+      </df>
+      <df name="external">
+        <df name="csdp">
+          <df name="doc">
+            <in>example.c</in>
+          </df>
+          <df name="example">
+            <in>example.c</in>
+          </df>
+          <df name="include">
+            <in>blockmat.h</in>
+            <in>declarations.h</in>
+            <in>index.h</in>
+            <in>parameters.h</in>
+          </df>
+          <df name="lib">
+            <in>Fnorm.c</in>
+            <in>add_mat.c</in>
+            <in>addscaledmat.c</in>
+            <in>allocmat.c</in>
+            <in>calc_dobj.c</in>
+            <in>calc_pobj.c</in>
+            <in>chol.c</in>
+            <in>copy_mat.c</in>
+            <in>easysdp.c</in>
+            <in>freeprob.c</in>
+            <in>initparams.c</in>
+            <in>initsoln.c</in>
+            <in>linesearch.c</in>
+            <in>make_i.c</in>
+            <in>makefill.c</in>
+            <in>mat_mult.c</in>
+            <in>mat_multsp.c</in>
+            <in>matvec.c</in>
+            <in>norms.c</in>
+            <in>op_a.c</in>
+            <in>op_at.c</in>
+            <in>op_o.c</in>
+            <in>packed.c</in>
+            <in>psd_feas.c</in>
+            <in>qreig.c</in>
+            <in>readprob.c</in>
+            <in>readsol.c</in>
+            <in>sdp.c</in>
+            <in>solvesys.c</in>
+            <in>sortentries.c</in>
+            <in>sym_mat.c</in>
+            <in>trace_prod.c</in>
+            <in>tweakgap.c</in>
+            <in>user_exit.c</in>
+            <in>writeprob.c</in>
+            <in>writesol.c</in>
+            <in>zero_mat.c</in>
+          </df>
+          <df name="matlab">
+            <in>convertf.m</in>
+            <in>csdp.m</in>
+            <in>readsdpa.m</in>
+            <in>readsol.m</in>
+            <in>writesdpa.m</in>
+            <in>writesol.m</in>
+          </df>
+          <df name="solver">
+            <in>csdp.c</in>
+          </df>
+          <df name="test">
+          </df>
+          <df name="theta">
+            <in>complement.c</in>
+            <in>graphtoprob.c</in>
+            <in>rand_graph.c</in>
+            <in>theta.c</in>
+          </df>
+          <in>csdp.h</in>
+        </df>
+      </df>
+      <df name="htdocs">
+        <df name="images">
+        </df>
+      </df>
+      <df name="manual">
+        <df name="figures">
+        </df>
+        <df name="graphics">
+        </df>
+      </df>
+      <df name="patches">
+      </df>
+      <df name="src">
+        <df name="gui">
+        </df>
+        <df name="modules">
+          <df name="LRAModule">
+            <in>Delta.cpp</in>
+            <in>Delta.h</in>
+            <in>LAArray.cpp</in>
+            <in>LAArray.h</in>
+            <in>LAColumn.cpp</in>
+            <in>LAColumn.h</in>
+            <in>LARow.cpp</in>
+            <in>LARow.h</in>
+            <in>LAVar.cpp</in>
+            <in>LAVar.h</in>
+            <in>LRASolverA.cpp</in>
+            <in>LRASolverA.h</in>
+          </df>
+          <df name="NSSModule">
+            <in>ConstraintMatrixFactory.cpp</in>
+            <in>ConstraintMatrixFactory.h</in>
+            <in>GroebnerToSDP.h</in>
+            <in>MonomialIterator.cpp</in>
+            <in>MonomialIterator.h</in>
+            <in>definitions.h</in>
+          </df>
+          <df name="SATModule">
+            <in>Alg.h</in>
+            <in>Alloc.h</in>
+            <in>Dimacs.h</in>
+            <in>Heap.h</in>
+            <in>IntTypes.h</in>
+            <in>Map.h</in>
+            <in>Options.cpp</in>
+            <in>Options.h</in>
+            <in>ParseUtils.h</in>
+            <in>Queue.h</in>
+            <in>SolverTypes.h</in>
+            <in>Sort.h</in>
+            <in>System.cpp</in>
+            <in>System.h</in>
+            <in>Vec.h</in>
+            <in>XAlloc.h</in>
+          </df>
+          <df name="VSModule">
+            <in>Condition.cpp</in>
+            <in>Condition.h</in>
+            <in>SqrtEx.cpp</in>
+            <in>SqrtEx.h</in>
+            <in>State.cpp</in>
+            <in>State.h</in>
+            <in>Substitute.cpp</in>
+            <in>Substitute.h</in>
+            <in>Substitution.cpp</in>
+            <in>Substitution.h</in>
+            <in>Tools.h</in>
+          </df>
+          <in>CADModule.cpp</in>
+          <in>CADModule.h</in>
+          <in>CNFerModule.cpp</in>
+          <in>CNFerModule.h</in>
+          <in>GroebnerModule.cpp</in>
+          <in>GroebnerModule.h</in>
+          <in>LRAModule.cpp</in>
+          <in>LRAModule.h</in>
+          <in>Modules.h</in>
+          <in>PreProCNFModule.cpp</in>
+          <in>PreProCNFModule.h</in>
+          <in>PreProModule.cpp</in>
+          <in>PreProModule.h</in>
+          <in>SATModule.cpp</in>
+          <in>SATModule.h</in>
+          <in>SimplifierModule.cpp</in>
+          <in>SimplifierModule.h</in>
+          <in>StandardModuleFactory.h</in>
+          <in>UnivariateCADModule.cpp</in>
+          <in>UnivariateCADModule.h</in>
+          <in>VSModule.cpp</in>
+          <in>VSModule.h</in>
+        </df>
+        <df name="parser">
+          <in>Driver.cc</in>
+          <in>Driver.h</in>
+          <in>Scanner.h</in>
+          <in>exprtest.cc</in>
+        </df>
+        <df name="test">
+          <in>CSDP_unittest.cpp</in>
+          <in>CSDP_unittest.h</in>
+          <in>ConstraintMatrixFactory_unittest.cpp</in>
+          <in>ConstraintMatrixFactory_unittest.h</in>
+          <in>DenseMatrix_unittest.cpp</in>
+          <in>DenseMatrix_unittest.h</in>
+          <in>GroebnerToSDP_unittest.cpp</in>
+          <in>GroebnerToSDP_unittest.h</in>
+          <in>test.cpp</in>
+        </df>
+        <df name="utilities">
+          <df name="debug">
+            <in>debug.h</in>
+          </df>
+          <df name="LinAlg">
+            <in>Cholesky.h</in>
+            <in>DenseMatrix.h</in>
+            <in>FindExactSolution.h</in>
+          </df>
+          <df name="SDP">
+            <in>CSDPFacade.cpp</in>
+            <in>CSDPFacade.h</in>
+            <in>SDPFacade.h</in>
+            <in>SparseMatrix.cpp</in>
+            <in>SparseMatrix.h</in>
+          </df>
+        </df>
+        <in>Answer.h</in>
+        <in>Constraint.cpp</in>
+        <in>Constraint.h</in>
+        <in>Formula.cpp</in>
+        <in>Formula.h</in>
+        <in>Manager.cpp</in>
+        <in>Manager.h</in>
+        <in>Module.cpp</in>
+        <in>Module.h</in>
+        <in>ModuleFactory.h</in>
+        <in>ModuleType.h</in>
+        <in>NRATSolver.cpp</in>
+        <in>NRATSolver.h</in>
+        <in>NRATSolver_CADonly.cpp</in>
+        <in>NRATSolver_CADonly.h</in>
+        <in>Strategy.cpp</in>
+        <in>Strategy.h</in>
+        <in>smtrat.h</in>
+        <in>smtratSolver.cpp</in>
+      </df>
+    </df>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>CMakeLists.txt</itemPath>
+      <itemPath>build/Makefile</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <sourceFolderFilter>^(nbproject)$</sourceFolderFilter>
+  <sourceRootList>
+    <Elem>.</Elem>
+  </sourceRootList>
+  <projectmakefile>build/Makefile</projectmakefile>
+  <confs>
+    <conf name="Default" type="0">
+      <toolsSet>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
+        <compilerSet>default</compilerSet>
+      </toolsSet>
+      <makefileType>
+        <makeTool>
+          <buildCommandWorkingDir>build</buildCommandWorkingDir>
+          <buildCommand>${MAKE} -f Makefile</buildCommand>
+          <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
+          <executablePath></executablePath>
+        </makeTool>
+      </makefileType>
+    </conf>
+  </confs>
+</configurationDescriptor>

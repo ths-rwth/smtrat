@@ -1,0 +1,141 @@
+\chapter{Composing a theory solver}
+\label{chapter:composingats}
+First of all, \smtrat contributes an SMT compliant theory solver for full real arithmetic.
+That means it is incremental, supports backtracking and provides reasons for inconsistency.
+In addition, it allows a user to compose a theory solver with the given modules in \smtrat
+and any further implemented modules (see Chapter~\ref{chapter:implementingamodule}).
+This chapter shows how to create a theory solver implementing a user defined strategy.
+
+\section{Creating a theory solver}
+Creating a theory solver is very easy. Basically, it is a subclass of the class \texttt{Manager} and
+does not need to implement any function. Everything, except the definition of the strategy, is provided by
+the class \texttt{Manager}, that is all the interfaces required by an exterior SMT solver and all
+the managment which links the input formula, the module instances and the given strategy.
+Figure~\ref{fig:tsconstructor} shows an example of how to implement a theory solver, which does
+not use any module and hence returns \texttt{unknown} to all input instances.
+
+\begin{figure}[htb]
+\caption{The implementation of a theory solver without defining the strategy.}
+\label{fig:tsconstructor}
+\begin{verbatim}
+#include "Manager.h"
+
+class YourTheorySolver: public Manager
+{
+    public:
+    
+    YourTheorySolver()
+    {
+    	// Here you define later the strategy.
+    };
+    
+    ~YourTheorySolver() {};
+};
+\end{verbatim}
+\end{figure}
+
+\section{Implementing a strategy in a theory solver}
+This section gives the definition of a strategy and shows how it can be implemented
+in a theory solver. But before we come to these two points, we analyse the requirements
+to the strategy.
+
+We want modules to be able to use another module as backend. The module calls its backend 
+on a formula, which it cannot check for consistency by itself. Depending on this formula the strategy
+specifies the backend the module has to call. So, basically the strategy has to specify
+which is the module we run (as backend) on a given formula. Note, that we are going to consider
+calling more than one backend in parallel in the next release of \smtrat.
+ 
+\subsection{The strategy}
+Knowing the requirements to the strategy, we can now define its grammar. 
+Let $M$ be the set of all module types. Note, that we can use
+more than one instance of a module type in the resulting theory solver. Let
+$\B=\{\true,\ \false\}$ and $\prop$ be a set of propositions about real
+arithmetic formulas. Let $\formula$ be a set of pairs of a conjunction of real
+arithmetic constraints and a set of propositions $P\subseteq \prop$. 
+Then, a strategy is defined by the abstract grammar
+\begin{center}
+\begin{tabular}{cclcl}
+	strategy & ::= & c ? m : ( strategy ) & $\sep$ & m
+\end{tabular}
+\end{center}
+where $c$ is a Boolean combination of propositions in $\prop$ and $m\in M$. 
+
+Let \strategy be the set of all possible strategies. Then, the function 
+$$\alpha:\ \strategy\times \formula \ \rightarrow\ M$$ mapping a strategy
+and a formula to a module (representing the demanded backend) is
+defined as follows:
+$$\begin{array}{lcl}
+	\alpha(m,\ (\varphi,\ P)) & = & m \\[2ex]
+	\alpha(c\ ?\ m : (s),\ (\varphi,\ P)) & = & \left\{\begin{array}{ll} m &,\text{ if}\quad c\ \land\ \bigwedge\limits_{p\in P}p\\[1ex] \alpha(s,\ (\varphi,\ P))& ,\ \text{otherwise} \end{array}\right.
+\end{array}$$
+where $c$ is a Boolean combination of propositions in $\prop$, $m\in M$, $s\in Strat$ and
+$(\varphi,\ P)\in \formula$.
+
+In general \prop contains propositions stating if some properties hold or not. Let 
+us collect some ideas, which properties could be relevant.
+\begin{itemize}
+	\item Propositions about the Boolean structure of the formula. In our case it is
+		always a conjunction of positive literals. If we generalize the definition of
+		the formula, we could ask whether it is such a conjunction or not. We could
+		also be interested in whether the formula is in conjunctive normal form or not.
+		We are going to consider these properties in future releases of \smtrat.
+	\item Propositions about the constraints in the formula. Does the formula (not) contain
+		(only) equations/(strict inequalities)? 
+	\item Propositions about the polynomials compared by the constraint. Are they linear?
+		Are they univariate? Do they contain more than $n$ variables? Is their degree smaller 
+		than $n$?
+\end{itemize}
+There is another group of propositions, which are not that obvious but even essential for being 
+able to use strategies to specify the backend of a module. They describe if a module is capable
+of solving the formula. Considering the definition of the strategy, we cannot guarantee termination
+without these propositions. A module, which we run on the formula which it cannot solve, would return
+\texttt{unknown} and be called on the same formula again and again, if we do not have these propositions.
+However, it is not easy to decide whether a module can solve a formula or
+not, before we just tried. Indeed, this is exact the way how we achieve it. We run a module
+on a formula and if it cannot be solved by the module, it marks the formula by a flag indicating this. 
+By reason of efficiency we have also flags for all the other propositions.
+So, once the formula is generated all flags are set and we do not have to check, e.g. the 
+degree of all the polynomials in it several times.
+
+\subsection{Specifying a strategy in the theory solver}
+
+The class \texttt{Manager} contains a strategy, which provides three methods to modify it.
+\begin{itemize}
+	\item \begin{verbatim}bool addModuleType( const Condition, ModuleType )\end{verbatim}
+		Adds a module type for the backend being returned if the given condition holds and
+		no previously added condition holds. It returns \true if the strategy has been changed.
+	\item \begin{verbatim}bool removeCase( const Condition )\end{verbatim}
+		Removes the case from the strategy, where the given condtion holds. It returns \true if 
+		the strategy has been changed.
+\end{itemize}
+Note, that the strategy depends on the order of calling \texttt{addModuleType}. Thus, calling
+\texttt{addModuleType(c$_1$, m$_1$)} and then \texttt{addModuleType(c$_2$, m$_2$)} specifies the
+strategy $$c_1\ ?\ m_1\ :\ (m_2)$$ and vice versa the strategy
+$$c_2\ ?\ m_2\ :\ (m_1).$$ We provide the following self-explanatory
+propositions.
+\begin{itemize}
+	\item PROP\_TRUE
+	\item PROP\_IS\_PURE\_CONJUNCTION
+	\item PROP\_IS\_IN\_CNF
+	\item PROP\_IS\_IN\_NNF
+	\item PROP\_CONTAINS\_EQUATION
+	\item PROP\_CONTAINS\_INEQUALITY
+	\item PROP\_CONTAINS\_STRICT\_INEQUALITY
+	\item PROP\_CONTAINS\_LINEAR\_POLYNOMIAL
+	\item PROP\_CONTAINS\_NONLINEAR\_POLYNOMIAL
+	\item PROP\_CONTAINS\_MULTIVARIATE\_POLYNOMIAL
+	\item PROP\_VARIABLE\_DEGREE\_LESS\_THAN\_THREE
+	\item PROP\_VARIABLE\_DEGREE\_LESS\_THAN\_FOUR
+	\item PROP\_VARIABLE\_DEGREE\_LESS\_THAN\_FIVE
+	\item PROP\_CANNOT\_BE\_SOLVED\_BY\_SIMPLIFIER\_MODULE
+	\item PROP\_CANNOT\_BE\_SOLVED\_BY\_GROEBNER\_MODULE
+	\item PROP\_CANNOT\_BE\_SOLVED\_BY\_VS\_MODULE
+	\item PROP\_CANNOT\_BE\_SOLVED\_BY\_UNIVARIATECAD\_MODULE
+	\item PROP\_CANNOT\_BE\_SOLVED\_BY\_CAD\_MODULE
+\end{itemize}
+If, e.g., the backend of type $m$ has to be used, if none of the propositions specified in a
+strategy hold, you have to extend the strategy by an always fulfilled case returning
+m, i.e., call \texttt{addModuleType(PROP\_TRUE, m)} as the last modification of this strategy.
+
+
+

@@ -1,0 +1,11 @@
+To access the project website:
+
+* Via sftp
+
+sftp username@web.sourceforge.net:/home/project-web/smtrat/htdocs
+
+* Via ssh, e.g.
+
+scp -r doc username@web.sourceforge.net:/home/project-web/smtrat/htdocs
+
+* FireFTP

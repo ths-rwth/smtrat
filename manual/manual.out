@@ -1,0 +1,27 @@
+\BOOKMARK [0][-]{chapter.1}{Introduction}{}% 1
+\BOOKMARK [0][-]{chapter.2}{Installation}{}% 2
+\BOOKMARK [1][-]{section.2.1}{Requirements}{chapter.2}% 3
+\BOOKMARK [1][-]{section.2.2}{Building, installing and uninstalling SMT-RAT}{chapter.2}% 4
+\BOOKMARK [0][-]{chapter.3}{General framework of SMT-RAT}{}% 5
+\BOOKMARK [1][-]{section.3.1}{The Formula class}{chapter.3}% 6
+\BOOKMARK [1][-]{section.3.2}{The Module class}{chapter.3}% 7
+\BOOKMARK [1][-]{section.3.3}{The Strategy class}{chapter.3}% 8
+\BOOKMARK [1][-]{section.3.4}{The Manager class}{chapter.3}% 9
+\BOOKMARK [0][-]{chapter.4}{Embedding of a theory solver into an SMT solver}{}% 10
+\BOOKMARK [1][-]{section.4.1}{Interfaces of a theory solver composed with SMT-RAT}{chapter.4}% 11
+\BOOKMARK [1][-]{section.4.2}{Example: Embedding a SMT-RAT composition into OpenSMT}{chapter.4}% 12
+\BOOKMARK [0][-]{chapter.5}{Implementing further modules}{}% 13
+\BOOKMARK [1][-]{section.5.1}{Quickstart}{chapter.5}% 14
+\BOOKMARK [1][-]{section.5.2}{Members of a modul}{chapter.5}% 15
+\BOOKMARK [1][-]{section.5.3}{Virtual interfaces}{chapter.5}% 16
+\BOOKMARK [2][-]{subsection.5.3.1}{Informing about a constraint}{section.5.3}% 17
+\BOOKMARK [2][-]{subsection.5.3.2}{Adding a constraint}{section.5.3}% 18
+\BOOKMARK [2][-]{subsection.5.3.3}{Checking for consistency}{section.5.3}% 19
+\BOOKMARK [2][-]{subsection.5.3.4}{Pushing a backtrack point}{section.5.3}% 20
+\BOOKMARK [2][-]{subsection.5.3.5}{Popping a backtrack point}{section.5.3}% 21
+\BOOKMARK [1][-]{section.5.4}{Running the backend module}{chapter.5}% 22
+\BOOKMARK [0][-]{chapter.6}{Composing a theory solver}{}% 23
+\BOOKMARK [1][-]{section.6.1}{Creating a theory solver}{chapter.6}% 24
+\BOOKMARK [1][-]{section.6.2}{Implementing a strategy in a theory solver}{chapter.6}% 25
+\BOOKMARK [2][-]{subsection.6.2.1}{The strategy}{section.6.2}% 26
+\BOOKMARK [2][-]{subsection.6.2.2}{Specifying a strategy in the theory solver}{section.6.2}% 27

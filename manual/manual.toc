@@ -1,0 +1,27 @@
+\contentsline {chapter}{\numberline {1}Introduction}{3}{chapter.1}
+\contentsline {chapter}{\numberline {2}Installation}{5}{chapter.2}
+\contentsline {section}{\numberline {2.1}Requirements}{5}{section.2.1}
+\contentsline {section}{\numberline {2.2}Building, installing and uninstalling \texttt {SMT-RAT}\xspace }{5}{section.2.2}
+\contentsline {chapter}{\numberline {3}General framework of \texttt {SMT-RAT}\xspace }{7}{chapter.3}
+\contentsline {section}{\numberline {3.1}The \texttt {Formula}\xspace class}{7}{section.3.1}
+\contentsline {section}{\numberline {3.2}The \texttt {Module}\xspace class}{7}{section.3.2}
+\contentsline {section}{\numberline {3.3}The \texttt {Strategy}\xspace class}{8}{section.3.3}
+\contentsline {section}{\numberline {3.4}The \texttt {Manager}\xspace class}{8}{section.3.4}
+\contentsline {chapter}{\numberline {4}Embedding of a theory solver into an SMT solver}{9}{chapter.4}
+\contentsline {section}{\numberline {4.1}Interfaces of a theory solver composed with \texttt {SMT-RAT}\xspace }{9}{section.4.1}
+\contentsline {section}{\numberline {4.2}Example: Embedding a \texttt {SMT-RAT}\xspace composition into \texttt {OpenSMT}\xspace }{10}{section.4.2}
+\contentsline {chapter}{\numberline {5}Implementing further modules}{17}{chapter.5}
+\contentsline {section}{\numberline {5.1}Quickstart}{17}{section.5.1}
+\contentsline {section}{\numberline {5.2}Members of a modul}{18}{section.5.2}
+\contentsline {section}{\numberline {5.3}Virtual interfaces}{20}{section.5.3}
+\contentsline {subsection}{\numberline {5.3.1}Informing about a constraint}{20}{subsection.5.3.1}
+\contentsline {subsection}{\numberline {5.3.2}Adding a constraint}{20}{subsection.5.3.2}
+\contentsline {subsection}{\numberline {5.3.3}Checking for consistency}{20}{subsection.5.3.3}
+\contentsline {subsection}{\numberline {5.3.4}Pushing a backtrack point}{21}{subsection.5.3.4}
+\contentsline {subsection}{\numberline {5.3.5}Popping a backtrack point}{21}{subsection.5.3.5}
+\contentsline {section}{\numberline {5.4}Running the backend module}{22}{section.5.4}
+\contentsline {chapter}{\numberline {6}Composing a theory solver}{25}{chapter.6}
+\contentsline {section}{\numberline {6.1}Creating a theory solver}{25}{section.6.1}
+\contentsline {section}{\numberline {6.2}Implementing a strategy in a theory solver}{26}{section.6.2}
+\contentsline {subsection}{\numberline {6.2.1}The strategy}{26}{subsection.6.2.1}
+\contentsline {subsection}{\numberline {6.2.2}Specifying a strategy in the theory solver}{27}{subsection.6.2.2}

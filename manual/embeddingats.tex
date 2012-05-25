@@ -1,0 +1,313 @@
+\chapter{Embedding of a theory solver into an SMT solver}
+\label{chapter:embeddingats}
+In the following we assume, that either a composed theory solver according
+to Chapter~\ref{chapter:composingats} or the composition we provide, i.e.
+the \texttt{NRATSolver}, is used. They only differ in the strategy they implement
+and provide the same interfaces. We give a short description of these
+interfaces and give an example by embedding it into \Opensmt.
+
+\section{Interfaces of a theory solver composed with \smtrat}
+An SMT solver can use the following interfaces:
+\begin{itemize}
+	\item \begin{verbatim}bool inform( const string& _constraint, bool _infix )\end{verbatim}
+		Informs the theory solver about the existence of the given constraint in form of
+		a string. The second argument is a flag, which indicates whether the given constraint
+		is written in infix or prefix notation.
+	\item \begin{verbatim}
+		bool addConstraint
+		(
+		    const string& _constraint,
+		    const bool _infix,
+		    const bool _polarity
+		)
+		\end{verbatim}
+		Adds the given constraint in form of a string to the theory solver. The second argument 
+		is a flag, which indicates whether the given constraint is written in infix or prefix 
+		notation. The last argument is again a flag which is \true if the constraint
+		has to hold in the given form and \false if its inversion has to hold. The inversion 
+		operator for a constraint simply changes its relation symbol in the following way:
+		$$\begin{array}{ccc}
+			= & \mapsto & \neq \\
+			\neq & \mapsto & = \\
+			\leq & \mapsto & > \\
+			\geq & \mapsto & < \\
+			< & \mapsto & \geq \\
+			> & \mapsto & \leq \\
+		\end{array}$$\\[2ex]
+		
+    \item \begin{verbatim}Answer isConsistent( )\end{verbatim}
+    	Checks the so far received constraints for consistency. The answer can either be
+    	\true, if the set of the so far received constraints is consistent, or 
+    	\false, if it is inconsistent, and \texttt{unknown}, if the theory 
+    	solver cannot reason about it.
+    \item \begin{verbatim}void pushBacktrackPoint( )\end{verbatim}
+    	Pushes a backtrack point to the stack of backtrack points.
+    \item \begin{verbatim}void popBacktrackPoint( )\end{verbatim}
+    	Pops a backtrack point from the stack of backtrack points and undoes everything
+		which has been done after adding that backtrack point.
+    \item \begin{verbatim}vector< vector< unsigned > > getReasons( )\end{verbatim}
+    	Returns one or more reasons for the inconsistency of the constraints. A reason
+    	is an infeasible subset of the so far received constraints. An element of a reason
+    	is a number $i$ and means that the $i$th received constraint is an element of
+    	this infeasible subset.
+\end{itemize}
+
+\section{Example: Embedding a \smtrat composition into \opensmt}
+\opensmt is an open source SMT solver and supports the embedding of additional
+theory solver. A detailed instruction of how to extend \opensmt by a theory solver
+can be found on \opensmtURL. Unfortunately, \opensmt does not yet support
+quantifier free nonlinear real arithmetic (QF\_NRA). For the following we assume 
+that it supports QF\_NRA and create a theory solver using the interfaces
+\opensmt provides.
+
+\begin{figure}[htb] 
+\begin{verbatim}
+class TSolver 
+{
+    void   inform        ( Enode * ); 
+    bool   assertLit     ( Enode * ); 
+    bool   check         ( bool ); 
+
+    void   pushBktPoint  ( ); 
+    void   popBktPoint   ( ); 
+    bool   belongsToT    ( Enode * ); 
+    void   computeModel  ( ); 
+
+    vector <  Enode *  >  & explanation; 
+    vector <  Enode *  >  & deductions; 
+    vector <  Enode *  >  & suggestions; 
+}
+\end{verbatim}
+\end{figure}
+\newpage
+\noindent\opensmt gives the following explanation:
+
+\begin{quote}
+	"\texttt{inform} is used to communicate the existence of a new T-atom to the T-solver. 
+	\texttt{assertLit} asserts a (previously informed) T-atom in the T-solver with the right 
+	polarity; it may also perform some cheap form of consistency check. 
+	\texttt{check} determines the T-satisfiability of the current set of asserted T-atoms. 
+	\texttt{pushBktPoint} and \texttt{popBktPoint} are used respectively to save and to restore 
+	the state of the T-solver, in order to cope with backtracking within the 
+	SAT-Solver. \texttt{belongsToT} is used to determine if a given T-atom belongs to 
+	the theory solved by the T-solver. Finally \texttt{computeModel} forces T-solver to 
+	save the model (if any) inside Enode's field.
+
+	Three vectors, \texttt{explanation}, \texttt{deductions}, \texttt{suggestions}, are 
+	shared among the T-solvers, and they are used to simplify the communication of conflicts, 
+	T-atoms to be deduced and "suggested" T-atoms. Suggestions are atoms 
+	consistent with the current state of the T-solver, but that they cannot be 
+	directly deduced. Suggestions are used to perform decisions in the 
+	SAT-Solver."~\footnote{http://verify.inf.usi.ch/opensmt/build-your-solver}
+\end{quote}
+\noindent We derive a theory solver and extend it by the three additional members
+\begin{itemize}
+	\item \texttt{mpManager}, being a pointer to the theory solver object, 
+	\item \texttt{mReceivedEnodes}, needed to reconstruct which enode corresponds
+		to which constraint,
+	\item \texttt{mBackendsBacktrackpoints}, to store the backtrack points.
+\end{itemize}
+Figure~\ref{fig:headernrasolver} shows the resulting code for the header of the theory 
+solver within \opensmt. The constructor of the embedded	theory solver is shown in 
+Figure~\ref{fig:constructornrasolver}. Note, that instead of \texttt{NRATSolver} any other 
+\smtrat-composition can be used. Figure~\ref{fig:informnrasolver}
+shows the method which informs the theory solver about the existence of a constraint.
+Here, we first get the string representation of the constraint, which is in prefix notation,
+and pass it to the \texttt{NRATSolver}. Note, that, for a reason
+we are not aware of, the return value has to be \texttt{lbool} and not, as mentioned on 
+the webpage, \texttt{void}. The method \texttt{assertLit}, 
+given by Figure~\ref{fig:assertLitnrasolver}, takes again the string representation of the given
+literal/constraint and adds it to the \texttt{NRATSolver}. The return value is \false
+if the constraint is inconsistent and \true otherwise. Note, that the polarity indicates
+whether the literal is positive or negative. A negativ fulfilled literal implies that
+the aforementioned inversion of the constraint has to hold. The implementation of the 
+method \texttt{pushBacktrackPoint} shown by Figure~\ref{fig:pushBacktrackPointnrasolver}
+is straightforward. 
+
+Figure~\ref{fig:popBacktrackPointnrasolver} shows the implementation
+of the method \texttt{popBacktrackPoint}. It first empties the explanation vector and then
+removes all stored enodes, which have been added after the backtrack point to remove.
+Finally, it pops the backtrack point within the theory solver used by \opensmt and
+calls \texttt{popBacktrackPoint} of the \texttt{NRATSolver}. The check procedure
+given in Figure~\ref{fig:checknrasolver} calls \texttt{isConsistent} of
+the \texttt{NRATSolver}. The easiest case is if the return value is \true.
+Then we know that the set of the so far added constraints is consistent and return
+\true. If it determines inconsistency, that is \texttt{isConsistent} returns
+\false, we extract one reason for the inconsistency and store the 
+corresponding literals in the explanation vector. This is why we need to store
+the so far received literals. Finally, we return \false. Note, that we might obtain 
+more than one reason. However, \opensmt does not support more than one reason and 
+we discard the other reasons. The case of getting the answer \texttt{unknown} is 
+unfortunately not supported by \opensmt.
+
+
+\begin{figure}[htb]
+\caption{The header implementation of a theory solver used by \opensmt.}
+\label{fig:headernrasolver}
+\begin{verbatim}
+#include "TSolver.h"
+#include <smt-rat/smt-rat.h>
+
+class NRASolver : public OrdinaryTSolver
+{
+public:
+    NRASolver( const int           
+          	, const char *        
+      	    , SMTConfig &         
+      	    , Egraph &            
+      	    , SStore &
+      	    , vector< Enode * > & 
+      	    , vector< Enode * > & 
+          	, vector< Enode * > & );
+
+  	~NRASolver ( );
+
+  	lbool   inform              ( Enode * );               
+  	bool    assertLit           ( Enode *, bool = false ); 
+  	void    pushBacktrackPoint  ( );                       
+  	void    popBacktrackPoint   ( );                       
+  	bool    check               ( bool );                  
+  	bool    belongsToT          ( Enode * );               
+  	void    computeModel        ( );                       
+#ifdef PRODUCE_PROOF
+  	Enode * getInterpolants     ( );
+#endif
+
+private:
+    Manager*         mpManager     ;
+    vector< Enode* >   mReceivedEnodes ;
+    vector< unsigned > mBacktrackPoints;
+};
+\end{verbatim}
+\end{figure}
+
+\begin{figure}[htb]
+\caption{The constructor of a theory solver used by \opensmt.}
+\label{fig:constructornrasolver}
+\begin{verbatim}
+NRASolver::NRASolver( const int           i
+                    , const char *        n
+                    , SMTConfig &         c
+                    , Egraph &            e
+                    , SStore &            t
+                    , vector< Enode * > & x
+                    , vector< Enode * > & d
+                    , vector< Enode * > & s )
+             : OrdinaryTSolver ( i, n, c, e, t, x, d, s )
+{
+    mpManager      = new NRATSolver()    ; \\ This could also be
+                                           \\ your theory solver
+                                           \\ composition.
+    mReceivedEnodes	 = vector< Enode* >()  ;
+    mBacktrackPoints = vector< unsigned >();
+}
+\end{verbatim}
+\end{figure}
+
+
+\begin{figure}[htb]
+\caption{The method to inform the theory solver used by \opensmt about a constraint.}
+\label{fig:informnrasolver}
+\begin{verbatim}
+lbool NRASolver::inform(Enode *e)
+{
+    (void)e;
+    assert(e);
+    assert(belongsToT(e));
+
+    ostringstream stream;
+    stream << e;
+
+    mpManager->inform( stream.str(), false );
+
+    return l_Undef;
+}
+\end{verbatim}
+\end{figure}
+
+\begin{figure}[htb]
+\caption{The method to assert a literal in a theory solver used by \opensmt.}
+\label{fig:assertLitnrasolver}
+\begin{verbatim}
+bool NRASolver::assertLit( Enode *e, bool reason )
+{
+    (void)e;
+    (void)reason;
+    assert(e);
+    assert(belongsToT(e));
+
+    mReceivedEnodes.push_back( e );
+
+    ostringstream stream;
+    stream << e;
+
+    return mpManager->addConstraint( stream.str()            , 
+                                     false                   , 
+                                     e->getPolarity()==l_True );
+}
+\end{verbatim}
+\end{figure}
+
+\begin{figure}[htb]
+\caption{The method to push a backtrack point in a theory solver used by \opensmt.}
+\label{fig:pushBacktrackPointnrasolver}
+\begin{verbatim}
+void NRASolver::pushBacktrackPoint()
+{
+    mBacktrackPoints.push_back( mReceivedEnodes.size() );
+    mpManager->pushBacktrackPoint();
+}
+\end{verbatim}
+\end{figure}
+
+\begin{figure}[htb]
+\caption{The method to pop a backtrack point in a theory solver used by \opensmt.}
+\label{fig:popBacktrackPointnrasolver}
+\begin{verbatim}
+void NRASolver::popBacktrackPoint( )
+{
+    explanation.clear();
+
+    while( mBacktrackPoints.back()<mReceivedEnodes.size() )
+    {
+        mReceivedEnodes.pop_back();
+    }
+
+    mBacktrackPoints.pop_back();
+
+    mpManager->popBacktrackPoint();
+}
+\end{verbatim}
+\end{figure}
+
+\begin{figure}[htb]
+\caption{The method to check for consistency in a theory solver used by \opensmt.}
+\label{fig:checknrasolver}
+\begin{verbatim}
+bool NRASolver::check( bool _complete )
+{
+    (void)_complete;
+
+    switch( mpManager->isConsistent() )
+    {
+        case TS_True: return true;
+        case TS_False:
+        {
+            vector< vector< unsigned > > reasons
+                = mpManager->getReasons();
+            vector< unsigned >::const_iterator pos
+                = reasons.back().begin();
+            while( pos!=reasons.back().end() )
+            {
+                explanation.push_back( mReceivedEnodes.at( *pos ) );
+                ++pos;
+            }
+      	    return false;
+        }
+        case TS_Unknown: assert( false );
+        default: assert( false );
+    }
+}
+\end{verbatim}
+\end{figure}
+

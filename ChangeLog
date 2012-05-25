@@ -1,0 +1,51 @@
+ChangeLog file.
+
+Project name: SMT-RAT
+Contact: Florian Corzilius <corzilius@cs.rwth-aachen.de>, Ulrich Loup <loup@cs.rwth-aachen.de>
+Project sourceforge page: http://smtrat.sourceforge.net/
+Development status: beta
+
+2012-01-19: Ulrich Loup <loup@cs.rwth-aachen.de>
+  * All: Setup of directory structure + main files + cmake build system.
+
+2012-02-04: Ulrich Loup <loup@cs.rwth-aachen.de>
+  * All: Renamed project to smt-rat.
+  * modules/CADModule.*: Added with basic function.
+  * modules/ModuleFactory.h: Added. Provides templted version of module factory.
+  * README: Some notes on the inclusion of new modules.
+  * src/modules/{SimpleModule,VSModule,UnivariateCADModule,LRAModule}Factory.*: Removed.
+  * src/modules/Modules.h: Changes according to removings.
+  * src/CMakeLists.txt: Changes according to CADModule and removed factories.
+
+2012-02-11: Ulrich Loup <loup@cs.rwth-aachen.de>
+  * ModuleType.h, Answer.h: Added files for ModuleType and Answer.
+  * GUI extended for reading modules and solvers.
+
+2012-02-12: Sebastian Junges <sebastian.junges@rwth-aachen.de>
+  * Added the benchmarktool for preliminary benchmarks.
+
+2012-03-08: Ulrich Loup <loup@cs.rwth-aachen.de>
+  * Released: 0.1.2.
+
+2012-03-11: Ulrich Loup <loup@cs.rwth-aachen.de>
+  * GUI.java: - Fixed context menu to react platform-independently.
+    - Added functions: reload modules/solvers; add solvers; remove solvers.
+    - Some robustness fixes in update methods.
+  * IOTools.java: Some fixes in CMakeLists solver writing.
+
+2012-03-12: Ulrich Loup <loup@cs.rwth-aachen.de>
+  * GUI.java: - Fixed selection model for the modules list.
+    - Switched available-module color to green.
+  * help.hmtl.in: - Fixed use case.
+    - Added window structure.
+    - Added module management description.
+  * Released: 0.2.0.
+
+2012-03-20: Ulrich Loup <loup@cs.rwth-aachen.de>
+  * {UnivariateCAD,CAD,Groebner}Module.cpp: Switched to ginacra-0.6 interface.
+
+2012-04-03: Sebastian Junges <sebastian.junges@rwth-aachen.de>
+  * Added the CPPUnit test library. "make check" executes the test suite.
+
+2012-04-09: Ulrich Loup <loup@cs.rwth-aachen.de>
+  * [Univariate]CADModule.cpp: Adapted to ginacra-0.6 interface.

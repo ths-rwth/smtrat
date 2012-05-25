@@ -1,0 +1,37 @@
+\documentclass[a4paper,10pt,titlepage]{scrbook}
+
+% project information
+\newcommand{\TITLE}{@PROJECT_FULLNAME@}
+\newcommand{\VERSION}{@PROJECT_VERSION@}
+
+\input{packages.tex}
+
+% Listings setting
+%\lstset{language=C++,frame=single,morekeywords={RationalUnivariatePolynomial,ex,symbol,pow,list,IntervalRepresentation,invalid_argument}}
+
+% Search path for pictures
+
+\input{commands}
+
+
+
+\begin{document}
+
+\input{title}
+
+\input{tableofcontents}
+
+\input{introduction}
+
+\input{installation}
+
+\input{generalframework}
+
+\input{embeddingats}
+
+\input{implementingamodul}
+
+\input{composingats}
+
+
+\end{document}

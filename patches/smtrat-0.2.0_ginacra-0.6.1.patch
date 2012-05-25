@@ -1,0 +1,89 @@
+diff -rupN src_old//CMakeLists.txt src_new//CMakeLists.txt
+--- src_old//CMakeLists.txt	2012-04-17 19:27:51.857031571 +0200
++++ src_new//CMakeLists.txt	2012-04-17 19:26:21.649117442 +0200
+@@ -105,5 +105,6 @@ install( TARGETS lib_${PROJECT_NAME} DES
+     WORLD_READ WORLD_EXECUTE )
+ 
+ install( FILES ${lib_core_headers} ${lib_coresolver_headers} DESTINATION include/${PROJECT_NAME} )
+-install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/modules)
+-install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/modules/VSModule)
++install( FILES ${lib_nratsolver_headers} DESTINATION include/${PROJECT_NAME} )
++install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/modules )
++install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/modules/VSModule )
+diff -rupN src_old//modules/CADModule.cpp src_new//modules/CADModule.cpp
+--- src_old//modules/CADModule.cpp	2012-04-17 19:27:51.777031596 +0200
++++ src_new//modules/CADModule.cpp	2012-04-17 19:26:21.561104524 +0200
+@@ -65,9 +65,12 @@ namespace smtrat
+     {
+         Module::addConstraint( c );
+         addReceivedConstraintToPassedConstraints( receivedConstraintsSize() - 1 );
+-
+         // add the polynomial to the cad
+-        mCAD.addPolynomial( UnivariatePolynomial( c->lhs(), mVariables.front(), false, false ));    // false, false: disable input checks
++	vector<symbol> variables = vector<symbol>( c->variables().size() );
++        register unsigned count = 0;
++	for( register std::map<const std::basic_string<char>, GiNaC::ex*, smtrat::strCmp>::const_iterator i = c->variables().begin(); i != c->variables().end(); ++i )
++            variables[count++] = ex_to<symbol>( *i->second );
++        mCAD.addPolynomial( UnivariatePolynomial( c->lhs(), variables.front(), false ), variables );    // false: disable input checks
+         // enable the flag indicating that the cad needs to be checked for consistency
+         mReCheck = true;
+         // find the constraint bucket appropriate to the constraint's variable and add the constraint
+diff -rupN src_old//modules/GroebnerModule.cpp src_new//modules/GroebnerModule.cpp
+--- src_old//modules/GroebnerModule.cpp	2012-04-17 19:27:51.781031537 +0200
++++ src_new//modules/GroebnerModule.cpp	2012-04-17 19:26:21.545121478 +0200
+@@ -50,7 +50,7 @@ namespace smtrat
+     {
+         mOrder      = GiNaCRA::MonomMRCompare( &GiNaCRA::MultivariateMonomialMR::GrRevLexCompare );
+         mModuleType = MT_GroebnerModule;
+-        GiNaCRA::Settings::InitializeGiNaCRAMultivariateMR();
++        GiNaCRA::MultivariatePolynomialSettings::InitializeGiNaCRAMultivariateMR();
+     }
+ 
+     GroebnerModule::~GroebnerModule(){}
+diff -rupN src_old//modules/UnivariateCADModule.cpp src_new//modules/UnivariateCADModule.cpp
+--- src_old//modules/UnivariateCADModule.cpp	2012-04-17 19:27:51.773031558 +0200
++++ src_new//modules/UnivariateCADModule.cpp	2012-04-17 19:26:21.541034466 +0200
+@@ -25,7 +25,7 @@
+  *
+  * @author Ulrich Loup
+  * @since 2012-01-19
+- * @since 2012-02-10
++ * @since 2012-04-17
+  */
+ 
+ #include "../Manager.h"
+@@ -53,6 +53,7 @@ namespace smtrat
+         mIsUnknown( false )
+     {
+         mModuleType = MT_UnivariateCADModule;
++	/*
+         for( register TS_Variables::const_iterator sym = mpTSManager->allVariables().begin(); sym != mpTSManager->allVariables().end(); ++sym )
+         {
+             symbol variable = ex_to<symbol>( *sym->second );
+@@ -62,6 +63,7 @@ namespace smtrat
+             mConstraintsBuckets[variable]   = vector<GiNaCRA::Constraint>();
+             mTSConstraintsBuckets[variable] = Formula();
+         }
++	*/
+     }
+ 
+     UnivariateCADModule::~UnivariateCADModule(){}
+@@ -76,11 +78,15 @@ namespace smtrat
+             mIsUnknown = true;    // set to false again if the unresolvable constraint(s) are removed again due to popBacktrackPoint
+             return true;
+         }
+-        symbol variable = ex_to<symbol>( *c->variables().begin()->second );
++	vector<symbol> variables = vector<symbol>(c->variables().size());
++        register unsigned count = 0;
++        for( register std::map<const std::basic_string<char>, GiNaC::ex*, smtrat::strCmp>::const_iterator i = c->variables().begin(); i != c->variables().end(); ++i )
++            variables[count++] = ex_to<symbol>( *i->second );
++        symbol variable = variables.front();
+         // find the cad appropriate to the constraint's variable and add the polynomial
+-        mCADs.find( variable )->second.addPolynomial( UnivariatePolynomial( c->lhs(), variable, false, false ));
++        mCADs[ variable ].addPolynomial( UnivariatePolynomial( c->lhs(), variable, false ), variables );
+         // enable the flag indicating that this cad needs to be checked for consistency
+-        mCADsToCheck[variable] = true;
++        mCADsToCheck[ variable ] = true;
+         // find the constraint bucket appropriate to the constraint's variable and add the constraint
+         mConstraintsBuckets[variable].push_back( convertConstraint( *c ));
+         mTSConstraintsBuckets[variable].push_back( c );
