@@ -46,7 +46,7 @@ namespace smtrat
         Module( _tsManager, _formula ),
 
         mBasis(),
-        mStateHistory(  )
+        mStateHistory()
 
     {
         //mOrder      = GiNaCRA::MonomMRCompare( &GiNaCRA::MultivariateMonomialMR::GrRevLexCompare );
@@ -54,16 +54,15 @@ namespace smtrat
         GiNaCRA::MultivariatePolynomialSettings::InitializeGiNaCRAMultivariateMR();
     }
 
-    GroebnerModule::~GroebnerModule(){ 
-	}
+    GroebnerModule::~GroebnerModule(){}
 
     bool GroebnerModule::assertSubFormula( const Formula* const _formula )
     {
-    	assert( _formula->getType() == REALCONSTRAINT );
+        assert( _formula->getType() == REALCONSTRAINT );
         Module::assertSubFormula( _formula );
         for( GiNaC::symtab::const_iterator it = _formula->constraint().variables().begin(); it != _formula->constraint().variables().end(); ++it )
         {
-            VariableListPool::addVariable( ex_to<symbol>( it->second ) );
+            VariableListPool::addVariable( ex_to<symbol>( it->second ));
             mListOfVariables.insert( *it );
         }
 
@@ -72,16 +71,13 @@ namespace smtrat
         {
             mBasis.addPolynomial( MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic>( _formula->constraint().lhs() ));
         }
-		else
-		{
-		}
 
         return true;
     }
 
     Answer GroebnerModule::isConsistent()
     {
-		std::cout << "Groebner: Is Consistent?!" << std::endl;
+        std::cout << "Groebner: Is Consistent?!" << std::endl;
         Answer answer = specialCaseConsistencyCheck();
         if( answer != Unknown )
         {
@@ -92,27 +88,29 @@ namespace smtrat
         //If no equalities are added, we do not know anything
         if( mBasis.nrOriginalConstraints() > 0 )
         {
-			mBasis.reduceInput();
+            //first, we interreduce the input!
+            mBasis.reduceInput();
+            //now, we calculate the groebner basis
             mBasis.calculate();
-			std::cout << "GB calculated" << std::endl;
-			
-			MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic> witness;
-			if( !mBasis.isConstant() ) 
-			{
-			// Lets search for a witness
-				unsigned vars = GiNaCRA::VariableListPool::getNrVariables();
-				std::cout << vars << std::endl;
-				if(vars < 6)
-				{
-					GroebnerToSDP<GiNaCRA::GradedLexicgraphic> sdp(mBasis.getGbIdeal(), MonomialIterator(vars) );
-					witness = sdp.findWitness();
-				}
-			}
-			
-			
-            if( mBasis.isConstant() || !witness.isZero() )
+
+            MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic> witness;
+            if( !mBasis.isConstant() )
             {
-            	mInfeasibleSubsets.push_back( set< const Formula* >() );
+                // Lets search for a witness. We only have to do this if the gb is non-constant.
+                // Better, we change this to the variables in the gb.
+                unsigned vars = GiNaCRA::VariableListPool::getNrVariables();
+                // We currently only try with a low nr of variables.
+                if( vars < 6 )
+                {
+                    GroebnerToSDP<GiNaCRA::GradedLexicgraphic> sdp( mBasis.getGbIdeal(), MonomialIterator( vars ));
+                    witness = sdp.findWitness();
+                }
+            }
+
+            // We have found an infeasible subset. Generate it.
+            if( mBasis.isConstant() ||!witness.isZero() )
+            {
+                mInfeasibleSubsets.push_back( set<const Formula*>() );
                 // The equalities we used for the basis-computation are the infeasible subset
                 for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
                 {
@@ -124,60 +122,56 @@ namespace smtrat
                 return False;
             }
 
-			
             saveState();
+
             // We do not know, but we want to present our simplified constraints to other modules.
             // We therefore add the equalities
             originals.push_back( set<const Formula*>() );
-			//std::cout << "A"<<std::endl;
-			//printPassedFormula();
-			
-			
-			
+            // find original constraints which made the gb.
             for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
             {
                 if( (*it)->constraint().relation() == CR_EQ )
                 {
                     originals.front().insert( *it );
-				}
-			}
-			unsigned lastBTP = mBackTrackPoints.back();
-			
-            for(unsigned  j = lastBTP; j < receivedFormulaSize(); ++j )
-            {
-                if( receivedFormulaAt(j)->constraint().relation() != CR_EQ ) 
-				{
-					addReceivedSubformulaToPassedFormula( j );
-				}
+                }
             }
-			
-			std::cout << "B"<<std::endl;
-			printPassedFormula();
-			for ( unsigned i = 0; i < passedFormulaSize(); ++i )
-			{
-				passedFormulaAt(i)->print();
-				if( passedFormulaAt(i)->constraint().relation() == CR_EQ )
-				{
-					std::cout << "removed"  << std::endl;
-					removeSubformulaFromPassedFormula(i);
-				}
-			}
-			printPassedFormula();
 
-            //  std::cout << "Groebner prepare simplify" << std::endl;
+            unsigned lastBTP = mBackTrackPoints.back();
+            // Add new inequalities to passed formula
+            for( unsigned j = lastBTP; j < receivedFormulaSize(); ++j )
+            {
+                if( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
+                {
+                    addReceivedSubformulaToPassedFormula( j );
+                }
+            }
+
+            //remove equalities from subformulas
+            for( unsigned i = 0; i < passedFormulaSize(); )
+            {
+                if( passedFormulaAt( i )->constraint().relation() == CR_EQ )
+                {
+                    removeSubformulaFromPassedFormula( i );
+                }
+                else
+                {
+                    ++i;
+                }
+            }
+
+            // The gb should be passed
             std::list<Polynomial> simplified = mBasis.getGb();
-
             for( std::list<Polynomial>::const_iterator simplIt = simplified.begin(); simplIt != simplified.end(); ++simplIt )
             {
-                addSubformulaToPassedFormula( new Formula( new Constraint( simplIt->toEx(), CR_EQ, mListOfVariables ) ), originals );
+                addSubformulaToPassedFormula( new Formula( new Constraint( simplIt->toEx(), CR_EQ, mListOfVariables )), originals );
             }
-			//printPassedFormula();
+            //printPassedFormula();
 
         }
         print( std::cout );
         Answer ans = runBackends();
-		std::cout << "Backend result:" << ans << std::endl;
-		return ans;
+        std::cout << "Backend result:" << ans << std::endl;
+        return ans;
     }
 
     /**
@@ -186,9 +180,9 @@ namespace smtrat
     void GroebnerModule::pushBacktrackPoint()
     {
         super::pushBacktrackPoint();
-		//std::cout << "We add a new state" << std::endl;
-		mStateHistory.push_back(GroebnerModuleState( mBasis ));
-        
+        //std::cout << "We add a new state" << std::endl;
+        mStateHistory.push_back( GroebnerModuleState( mBasis ));
+
     }
 
     /**
@@ -196,22 +190,23 @@ namespace smtrat
      */
     void GroebnerModule::popBacktrackPoint()
     {
-		//std::cout << "Restore the old state" << std::endl;
-		mStateHistory.pop_back();
+        //std::cout << "Restore the old state" << std::endl;
+        mStateHistory.pop_back();
         // Load the state to be restored;
-		if ( mStateHistory.empty() ) {
-		//	std::cout << "Restore the base state" << std::endl;
-			mBasis = GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic>();
-		}
-		else
-		{
-		//	std::cout << "Restore from history" << std::endl;
-			mBasis = mStateHistory.back().getBasis();
-		//	std::cout << "Restored successfully" << std::endl;
-		}
-		
+        if( mStateHistory.empty() )
+        {
+            //  std::cout << "Restore the base state" << std::endl;
+            mBasis = GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic>();
+        }
+        else
+        {
+            //  std::cout << "Restore from history" << std::endl;
+            mBasis = mStateHistory.back().getBasis();
+            //  std::cout << "Restored successfully" << std::endl;
+        }
+
         super::popBacktrackPoint();
-		
+
     }
 
     /**
@@ -220,11 +215,12 @@ namespace smtrat
      */
     bool GroebnerModule::saveState()
     {
-        if( mBackTrackPoints.back() == receivedFormulaSize() - 1)
+		//If nothing new was added, we just update our state!
+        if( mBackTrackPoints.back() == receivedFormulaSize() - 1 )
         {
-		//	std::cout << "We update our state!" << std::endl;
+            //  std::cout << "We update our state!" << std::endl;
             mStateHistory.pop_back();
-			mStateHistory.push_back(GroebnerModuleState(mBasis));
+            mStateHistory.push_back( GroebnerModuleState( mBasis ));
             return true;
         }
         return false;

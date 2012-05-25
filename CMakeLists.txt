@@ -80,7 +80,6 @@ add_custom_target(
 )
 find_package(LAPACK)
 find_package(BLAS)
-find_package(CSDP)
 
 # GUI settings
 # # # # # # # #
