@@ -47,9 +47,9 @@ namespace vs
 
     SqrtEx::SqrtEx( const GiNaC::ex& _ex )
     {
-        mpConstantPart = new ex( _ex.numer().expand().normal() );
+        mpConstantPart = new ex( _ex.numer() );
         mpFactor       = new ex( 0 );
-        mpDenominator  = new ex( _ex.denom().expand().normal() );
+        mpDenominator  = new ex( _ex.denom() );
         mpRadicand     = new ex( 0 );
     }
 
@@ -57,23 +57,23 @@ namespace vs
     {
         assert( _denominator != 0 );
         assert( !_radicand.info( info_flags::rational ) || _radicand.info( info_flags::nonnegative ));
-        mpConstantPart = new ex( _constantPart.expand().normal() );
+        mpConstantPart = new ex( _constantPart );
         if( _radicand == 0 )
         {
             mpFactor = new ex( 0 );
         }
         else
         {
-            mpFactor = new ex( _factor.expand().normal() );
+            mpFactor = new ex( _factor );
         }
-        mpDenominator = new ex( _denominator.expand().normal() );
+        mpDenominator = new ex( _denominator );
         if( _factor == 0 )
         {
             mpRadicand = new ex( 0 );
         }
         else
         {
-            mpRadicand = new ex( _radicand.expand().normal() );
+            mpRadicand = new ex( _radicand );
         }
     }
 
@@ -152,7 +152,7 @@ namespace vs
     bool SqrtEx::operator ==( const SqrtEx& _sqrtEx ) const
     {
         ex difference = expression() - _sqrtEx.expression();
-        difference    = difference.expand().normal();
+        difference    = difference;
         if( difference == 0 )
         {
             return true;
