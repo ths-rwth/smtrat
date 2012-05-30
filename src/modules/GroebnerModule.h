@@ -36,6 +36,7 @@
 #include <ginacra/ginacra.h>
 
 //#include <ginacra/mr/MultivariateIdeal.h>
+
 #include <ginacra/mr/Buchberger.h>
 #include "../Module.h"
 
@@ -47,15 +48,12 @@ namespace smtrat
      */
     class GroebnerModuleState
     {
-
         public:
             GroebnerModuleState(){}
-            GroebnerModuleState( const GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic>& basis )
-			:mBasis(basis)
-            {
-            }
+            GroebnerModuleState( const GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic>& basis ):
+                mBasis( basis )
+            {}
             ~GroebnerModuleState(){}
-
 
             const GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic>& getBasis() const
             {
@@ -74,11 +72,11 @@ namespace smtrat
     class GroebnerModule:
         public Module
     {
-
         public:
-			typedef GiNaCRA::GradedLexicgraphic Order;
-			typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
-            GroebnerModule( Manager* const, const Formula* const );
+            typedef GiNaCRA::GradedLexicgraphic              Order;
+            typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+
+            GroebnerModule( Manager* const , const Formula* const );
             virtual ~GroebnerModule();
 
             virtual bool assertSubFormula( const Formula* const );
@@ -88,14 +86,11 @@ namespace smtrat
 
         protected:
             /// The current Groebner basis
-			GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic> mBasis;
-			/// A list of variables to help define the simplified constraints
+            GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic> mBasis;
+            /// A list of variables to help define the simplified constraints
             GiNaC::symtab mListOfVariables;
             /// Saves the relevant history to support backtracking
-            std::list<GroebnerModuleState > mStateHistory;
-			
-			
-
+            std::list<GroebnerModuleState> mStateHistory;
 
             bool saveState();
 

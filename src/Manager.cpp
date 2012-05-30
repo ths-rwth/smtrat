@@ -47,7 +47,7 @@ namespace smtrat
         mAllVariables( GiNaC::symtab() ),
         mAllConstraints( map<const string, Constraint*>() ),
         mpPassedFormula( _inputFormula ),
-        mGeneratedModules( vector<Module*>( 1, new Module( this, mpPassedFormula ))),
+        mGeneratedModules( vector<Module*>( 1, new Module( this, mpPassedFormula ) ) ),
         mBackendsOfModules( map<const Module* const , vector<Module*> >() ),
         mpPrimaryBackend( mGeneratedModules.back() ),
         mBackTrackPoints( vector<unsigned>() )
@@ -118,33 +118,33 @@ namespace smtrat
     {
         if( mAllConstraints.find( _constraint + "1" ) == mAllConstraints.end() )
         {
-            Constraint* constraint = new Constraint( stringToConstraint( _constraint, _infix, true ));
-            mAllConstraints.insert( pair<const std::string, Constraint*>( _constraint + "1", constraint ));
+            Constraint* constraint = new Constraint( stringToConstraint( _constraint, _infix, true ) );
+            mAllConstraints.insert( pair<const std::string, Constraint*>( _constraint + "1", constraint ) );
         }
 
         if( mAllConstraints.find( _constraint + "0" ) == mAllConstraints.end() )
         {
-            Constraint* constraint = new Constraint( stringToConstraint( _constraint, _infix, false ));
-            mAllConstraints.insert( pair<const std::string, Constraint*>( _constraint + "0", constraint ));
+            Constraint* constraint = new Constraint( stringToConstraint( _constraint, _infix, false ) );
+            mAllConstraints.insert( pair<const std::string, Constraint*>( _constraint + "0", constraint ) );
         }
 
         return (!mAllConstraints[_constraint + "1"]->isConsistent() == -1);
     }
 
-	/**
+    /**
      * Pops a backtrack point from the stack of backtrackpoints. Furthermore, it provokes popBacktrackPoint
      * in all so far created modules.
      */
-	void Manager::popBacktrackPoint()
-	{
+    void Manager::popBacktrackPoint()
+    {
         assert( !mBackTrackPoints.empty() );
-		mpPrimaryBackend->popBacktrackPoint();
+        mpPrimaryBackend->popBacktrackPoint();
         while( mpPassedFormula->size() > mBackTrackPoints.back() )
         {
             mpPassedFormula->pop_back();
         }
         mBackTrackPoints.pop_back();
-	}
+    }
 
     /**
      * Adds a constraint to the module of this manager. The constraint is in form of a string
@@ -168,14 +168,14 @@ namespace smtrat
         map<const std::string, Constraint*>::const_iterator iter = mAllConstraints.find( _constraint + (_polarity ? "1" : "0") );
         if( iter != mAllConstraints.end() )
         {
-        	mpPassedFormula->addSubformula( new Formula( new Constraint( *iter->second ) ) );
+            mpPassedFormula->addSubformula( new Formula( new Constraint( *iter->second ) ) );
             return mpPrimaryBackend->assertSubFormula( mpPassedFormula->back() );
         }
         else
         {
-        	Constraint* constraint = new Constraint( stringToConstraint( _constraint, _infix, _polarity ));
+            Constraint* constraint = new Constraint( stringToConstraint( _constraint, _infix, _polarity ) );
             mAllConstraints[_constraint + (_polarity ? "1" : "0")] = constraint;
-        	mpPassedFormula->addSubformula( constraint );
+            mpPassedFormula->addSubformula( constraint );
             return mpPrimaryBackend->assertSubFormula( new Formula( new Constraint( *constraint ) ) );
         }
     }
@@ -195,7 +195,7 @@ namespace smtrat
         {
             assert( !infSubSet->empty() );
             infeasibleSubsets.push_back( vector<unsigned>() );
-            for( set< const Formula* >::const_iterator infSubFormula = infSubSet->begin(); infSubFormula != infSubSet->end(); ++infSubFormula )
+            for( set<const Formula*>::const_iterator infSubFormula = infSubSet->begin(); infSubFormula != infSubSet->end(); ++infSubFormula )
             {
                 unsigned infSubFormulaPos = 0;
                 for( Formula::const_iterator subFormula = mpPrimaryBackend->rReceivedFormula().begin();
@@ -551,7 +551,7 @@ namespace smtrat
     const GiNaC::ex Manager::toRationalExpression( const GiNaC::ex& p, const vector<GiNaC::symbol>& symbolLst )
     {
         GiNaC::ex pExpanded = p.expand();
-        if( GiNaC::is_exactly_a<GiNaC::add>( pExpanded ))
+        if( GiNaC::is_exactly_a<GiNaC::add>( pExpanded ) )
         {
             GiNaC::ex pRational;
             for( GiNaC::const_iterator i = p.begin(); i != p.end(); ++i )    // iterate through the summands
@@ -561,25 +561,28 @@ namespace smtrat
         GiNaC::ex coefficient = ex( 1 );
         GiNaC::ex monomial    = ex( 1 );
         isolateByVariables( p, symbolLst, coefficient, monomial );
-        assert( GiNaC::is_exactly_a<GiNaC::numeric>( coefficient ));
+        assert( GiNaC::is_exactly_a<GiNaC::numeric>( coefficient ) );
         GiNaC::numeric coefficientNum = GiNaC::ex_to<numeric>( coefficient );
         if( !coefficientNum.is_rational() )
             return numeric( cln::rationalize( coefficientNum.to_double() ) ) * monomial;
         return coefficientNum * monomial;
     }
 
-    void Manager::isolateByVariables( const GiNaC::ex& polynomial, const vector<GiNaC::symbol>& symbolLst, GiNaC::ex& coefficient, GiNaC::ex& monomial )
+    void Manager::isolateByVariables( const GiNaC::ex& polynomial,
+                                      const vector<GiNaC::symbol>& symbolLst,
+                                      GiNaC::ex& coefficient,
+                                      GiNaC::ex& monomial )
     {
         coefficient = GiNaC::ex( 1 );
         monomial    = GiNaC::ex( 1 );
 
         // isolate monomial and coefficient in case polynomial has only one term
 
-        if( is_constant( polynomial, symbolLst ))
+        if( is_constant( polynomial, symbolLst ) )
         {    // polynomial is constant in the current list of variables, so is a coefficient with the 1 monomial
             coefficient = polynomial;
         }
-        else if( GiNaC::is_exactly_a<GiNaC::mul>( polynomial ))    // GiNaC::mul because of overriding the name "mul" by the current function
+        else if( GiNaC::is_exactly_a<GiNaC::mul>( polynomial ) )    // GiNaC::mul because of overriding the name "mul" by the current function
         {    // polynomial is just a product
             for( GiNaC::const_iterator j = polynomial.begin(); j != polynomial.end(); ++j )    // iterate through the possible powers
             {
@@ -596,7 +599,7 @@ namespace smtrat
                     coefficient = coefficient * *j;
             }
         }
-        else if( GiNaC::is_exactly_a<GiNaC::power>( polynomial ) || GiNaC::is_exactly_a<GiNaC::symbol>( polynomial ))
+        else if( GiNaC::is_exactly_a<GiNaC::power>( polynomial ) || GiNaC::is_exactly_a<GiNaC::symbol>( polynomial ) )
         {
             vector<symbol>::const_iterator s = symbolLst.begin();
             for( ; s != symbolLst.end(); ++s )    // only take symbols given in the list (all other things are coefficient)
@@ -609,7 +612,7 @@ namespace smtrat
             }
             coefficient = polynomial;
         }
-        else if( GiNaC::is_exactly_a<numeric>( polynomial ))
+        else if( GiNaC::is_exactly_a<numeric>( polynomial ) )
             coefficient = polynomial;
         else if( polynomial.is_zero() )
             coefficient = ex( 0 );

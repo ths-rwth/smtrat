@@ -35,35 +35,35 @@
 /**
  *
  */
-int main( int argc, char *argv[] )
+int main( int argc, char* argv[] )
 {
-	smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
-    smtrat::Driver driver( form );
+    smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
+    smtrat::Driver   driver( form );
 
     for( int ai = 1; ai < argc; ++ai )
     {
-		if( argv[ai] == std::string( "-p" ) )
-		{
-			driver.trace_parsing = true;
-		}
-		else if( argv[ai] == std::string ("-s") )
-		{
-			driver.trace_scanning = true;
-		}
-		else
-		{
-			// read a file with expressions
+        if( argv[ai] == std::string( "-p" ) )
+        {
+            driver.trace_parsing = true;
+        }
+        else if( argv[ai] == std::string( "-s" ) )
+        {
+            driver.trace_scanning = true;
+        }
+        else
+        {
+            // read a file with expressions
 
-			std::fstream infile( argv[ai] );
-			if( !infile.good() )
-			{
-				std::cerr << "Could not open file: " << argv[ai] << std::endl;
-				return 0;
-			}
+            std::fstream infile( argv[ai] );
+            if( !infile.good() )
+            {
+                std::cerr << "Could not open file: " << argv[ai] << std::endl;
+                return 0;
+            }
 
-			bool result = driver.parse_stream( infile, argv[ai] );
-			if( result )
-			{
+            bool result = driver.parse_stream( infile, argv[ai] );
+            if( result )
+            {
                 smtrat::NRATSolver* nratSolver = new smtrat::NRATSolver( form );
                 switch( nratSolver->isConsistent() )
                 {
@@ -89,9 +89,8 @@ int main( int argc, char *argv[] )
                 }
                 delete nratSolver;
                 delete form;
-			}
-		}
+            }
+        }
     }
-	return (EXIT_SUCCESS);
+    return (EXIT_SUCCESS);
 }
-

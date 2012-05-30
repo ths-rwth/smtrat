@@ -19,6 +19,7 @@
  *
  */
 
+
 /**
  * @file   MonomialIterator.cpp
  * @author Sebastian Junges
@@ -31,70 +32,75 @@
 
 using GiNaCRA::VariableListPool;
 
-namespace smtrat {
+namespace smtrat
+{
+    MonomialIterator::MonomialIterator( unsigned nrVars, unsigned maxDeg ):
+        mNrVars( nrVars ),
+        mMaxDeg( maxDeg ),
+        mCurDeg( 0 )
+    {
+        for( unsigned i = 0; i < nrVars; ++i )
+        {
+            mExps.push_back( 0 );
+        }
+    }
 
-	MonomialIterator::MonomialIterator(unsigned nrVars, unsigned maxDeg) :
-	mNrVars(nrVars), mMaxDeg(maxDeg), mCurDeg(0)
-	{
-		for(unsigned i = 0; i<nrVars; ++i) {
-			mExps.push_back(0);
-		}
-	}
+    MonomialIterator::~MonomialIterator(){}
 
-	MonomialIterator::~MonomialIterator() {
+    void MonomialIterator::fillExps( unsigned firstVar, unsigned degsLeft )
+    {
+        if( firstVar + 1 >= mNrVars )
+        {
+            mExps[firstVar] = degsLeft;
+            mTerms.push_back( mExps );
+            return;
+        }
+        for( unsigned i = 0; i <= degsLeft; ++i )
+        {
+            mExps[firstVar] = degsLeft - i;
+            fillExps( firstVar + 1, i );
+        }
+    }
 
-	}
-	
-	void MonomialIterator::fillExps(unsigned firstVar, unsigned degsLeft) {
-		if(firstVar+1 >= mNrVars) {
-			mExps[firstVar] = degsLeft;
-			mTerms.push_back(mExps);
-			return;
-		}
-		for(unsigned i = 0; i <= degsLeft; ++i) {
-			mExps[firstVar] = degsLeft - i;
-			fillExps(firstVar+1, i);
-		}
-	}
-	
-	void MonomialIterator::test(unsigned deg) {
-		
-		std::ostream_iterator<unsigned> out_it (std::cout,", ");
-		fillExps(0,deg);
-		//for(std::list<std::vector<unsigned> >::const_iterator it = mTerms.begin(); it != mTerms.end(); ++it) {
-		//	std::copy(it->begin(), it->end(), out_it);
-		//	std::cout << std::endl;
-		//}
-	}
-	
-	Term MonomialIterator::next() {
-		if(mTerms.empty() && mCurDeg < mMaxDeg) {
-			mCurDeg++;
-			fillExps(0, mCurDeg);
-		}
-		
-		Term t(mTerms.front());
-		mTerms.pop_front();
-		//std::cout << t << std::endl;
-		return t;
-		
-		
-//		symbol a                = VariableListPool::getVariableSymbol( 0 );
-//		symbol b                = VariableListPool::getVariableSymbol( 1 );
-//		symbol c                = VariableListPool::getVariableSymbol( 2 );
-//		symbol x				= VariableListPool::getVariableSymbol( 3 );
-//		symbol y                = VariableListPool::getVariableSymbol( 4 );
-//		symbol z				= VariableListPool::getVariableSymbol( 5 );
-//		Term t1 (Rational(1));
-//		Term t2 = Term::FromExpression(a*a);
-//		Term t3 = Term::FromExpression(a*b*c);
-//		
-//		std::vector<Term> ret;
-//		
-//		ret.push_back(t1);
-//		ret.push_back(t2);
-//		ret.push_back(t3);
-//		
-//		return ret;
-	}
+    void MonomialIterator::test( unsigned deg )
+    {
+        std::ostream_iterator<unsigned> out_it( std::cout, ", " );
+        fillExps( 0, deg );
+        //for(std::list<std::vector<unsigned> >::const_iterator it = mTerms.begin(); it != mTerms.end(); ++it) {
+        //  std::copy(it->begin(), it->end(), out_it);
+        //  std::cout << std::endl;
+        //}
+    }
+
+    Term MonomialIterator::next()
+    {
+        if( mTerms.empty() && mCurDeg < mMaxDeg )
+        {
+            mCurDeg++;
+            fillExps( 0, mCurDeg );
+        }
+
+        Term t( mTerms.front() );
+        mTerms.pop_front();
+        //std::cout << t << std::endl;
+        return t;
+
+        //      symbol a                = VariableListPool::getVariableSymbol( 0 );
+        //      symbol b                = VariableListPool::getVariableSymbol( 1 );
+        //      symbol c                = VariableListPool::getVariableSymbol( 2 );
+        //      symbol x                = VariableListPool::getVariableSymbol( 3 );
+        //      symbol y                = VariableListPool::getVariableSymbol( 4 );
+        //      symbol z                = VariableListPool::getVariableSymbol( 5 );
+        //      Term t1 (Rational(1));
+        //      Term t2 = Term::FromExpression(a*a);
+        //      Term t3 = Term::FromExpression(a*b*c);
+        //      
+        //      std::vector<Term> ret;
+        //      
+        //      ret.push_back(t1);
+        //      ret.push_back(t2);
+        //      ret.push_back(t3);
+        //      
+        //      return ret;
+    }
 }

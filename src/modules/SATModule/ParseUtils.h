@@ -103,7 +103,7 @@ namespace Minisat
     {
         for( ; ; )
         {
-            if( isEof( in ))
+            if( isEof( in ) )
                 return;
             if( *in == '\n' )
             {

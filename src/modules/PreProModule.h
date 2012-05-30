@@ -19,7 +19,8 @@
  *
  */
 
-/* 
+
+/*
  * File:   PreProModule.h
  * Author: Dennis Scully
  *
@@ -37,17 +38,17 @@ namespace smtrat
         public Module
     {
         public:
-            
+
             /**
              * Constructors:
              */
             PreProModule( Manager* const _tsManager, const Formula* const _formula );
-           
+
             /**
              * Destructor:
              */
             virtual ~PreProModule();
-            
+
             /**
              * Methods:
              */
@@ -59,13 +60,13 @@ namespace smtrat
             void pushBacktrackPoint();
 
         private:
-            
-            bool                        mFreshConstraintReceived;
-            unsigned                    mNumberOfComparedConstraints;
-            unsigned                    mNumberOfAddedSubformulas;
-            std::vector<const Constraint*>   mReceivedConstraints;
-            std::vector<const Formula*>      mConstraintOrigins;
-            std::vector<unsigned>            mConstraintBacktrackPoints;
+
+            bool                           mFreshConstraintReceived;
+            unsigned                       mNumberOfComparedConstraints;
+            unsigned                       mNumberOfAddedSubformulas;
+            std::vector<const Constraint*> mReceivedConstraints;
+            std::vector<const Formula*>    mConstraintOrigins;
+            std::vector<unsigned>          mConstraintBacktrackPoints;
     };
 
 }    // namespace smtrat

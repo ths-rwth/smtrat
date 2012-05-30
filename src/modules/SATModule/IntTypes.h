@@ -21,6 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define Minisat_IntTypes_h
 
 #define __STDC_LIMIT_MACROS
+
 #include <stdint.h>
 #include <inttypes.h>
 #include <limits.h>
@@ -28,4 +29,5 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 //=================================================================================================
 
 #endif
+
 

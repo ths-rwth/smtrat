@@ -153,7 +153,7 @@ namespace Minisat
                           const char* n,
                           const char* d,
                           double def = double(),
-                          DoubleRange r = DoubleRange( -HUGE_VAL, false, HUGE_VAL, false )):
+                          DoubleRange r = DoubleRange( -HUGE_VAL, false, HUGE_VAL, false ) ):
                 Option( n,
                         d,
                         c,
@@ -184,7 +184,7 @@ namespace Minisat
             {
                 const char* span = str;
 
-                if( !match( span, "-" ) ||!match( span, name ) ||!match( span, "=" ))
+                if( !match( span, "-" ) ||!match( span, name ) ||!match( span, "=" ) )
                     return false;
 
                 char*  end;
@@ -239,7 +239,7 @@ namespace Minisat
             int32_t  value;
 
         public:
-            IntOption( const char* c, const char* n, const char* d, int32_t def = int32_t(), IntRange r = IntRange( INT_MIN, INT_MAX )):
+            IntOption( const char* c, const char* n, const char* d, int32_t def = int32_t(), IntRange r = IntRange( INT_MIN, INT_MAX ) ):
                 Option( n, d, c, "<int32>" ),
                 range( r ),
                 value( def )
@@ -265,7 +265,7 @@ namespace Minisat
             {
                 const char* span = str;
 
-                if( !match( span, "-" ) ||!match( span, name ) ||!match( span, "=" ))
+                if( !match( span, "-" ) ||!match( span, name ) ||!match( span, "=" ) )
                     return false;
 
                 char* end;
@@ -346,7 +346,7 @@ namespace Minisat
             {
                 const char* span = str;
 
-                if( !match( span, "-" ) ||!match( span, name ) ||!match( span, "=" ))
+                if( !match( span, "-" ) ||!match( span, name ) ||!match( span, "=" ) )
                     return false;
 
                 value = span;
@@ -398,7 +398,7 @@ namespace Minisat
             {
                 const char* span = str;
 
-                if( match( span, "-" ))
+                if( match( span, "-" ) )
                 {
                     bool b = !match( span, "no-" );
 

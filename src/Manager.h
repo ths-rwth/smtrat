@@ -61,7 +61,7 @@ namespace smtrat
             /// all generated instances of modules
             std::vector<Module*> mGeneratedModules;
             /// a mapping of each module to its backends
-            std::map<const Module* const, std::vector<Module*> > mBackendsOfModules;
+            std::map<const Module* const , std::vector<Module*> > mBackendsOfModules;
             /// the primary backends
             Module* mpPrimaryBackend;
             /// the backtrack points
@@ -88,7 +88,6 @@ namespace smtrat
                 mpPrimaryBackend->pushBacktrackPoint();
             }
 
-
             inline const GiNaC::symtab allVariables() const
             {
                 return mAllVariables;
@@ -101,7 +100,7 @@ namespace smtrat
 
             inline void addModuleType( const ModuleType _moduleType, ModuleFactory* _factory )
             {
-                mpModulFactories->insert( std::pair<const ModuleType, ModuleFactory*>( _moduleType, _factory ));
+                mpModulFactories->insert( std::pair<const ModuleType, ModuleFactory*>( _moduleType, _factory ) );
             }
 
             inline Strategy& strategy()
@@ -111,13 +110,13 @@ namespace smtrat
 
             inline std::vector<Module*> getAllBackends( Module* _module )
             {
-            	return mBackendsOfModules[_module];
+                return mBackendsOfModules[_module];
             }
 
             inline unsigned uniqueModuleNumber( const Module* const _module )
             {
-                unsigned result = 0;
-                std::vector< Module* >::const_iterator moduleIter = mGeneratedModules.begin();
+                unsigned                             result     = 0;
+                std::vector<Module*>::const_iterator moduleIter = mGeneratedModules.begin();
                 while( moduleIter != mGeneratedModules.end() )
                 {
                     if( *moduleIter == _module )
@@ -145,13 +144,15 @@ namespace smtrat
             Constraint stringToConstraint( const std::string&, const bool, const bool );
             static std::string prefixToInfix( const std::string& );
             static const GiNaC::ex toRationalExpression( const GiNaC::ex& p, const vector<GiNaC::symbol>& symbolLst );
+
             static const GiNaC::ex toRationalExpression( const GiNaC::ex& p, GiNaC::symtab v )
             {
                 std::vector<GiNaC::symbol> symbolLst;
                 for( register GiNaC::symtab::const_iterator i = v.begin(); i != v.end(); ++i )
-                    symbolLst.push_back( GiNaC::ex_to<GiNaC::symbol>( i->second ));
+                    symbolLst.push_back( GiNaC::ex_to<GiNaC::symbol>( i->second ) );
                 return toRationalExpression( p, symbolLst );
             }
+
             static void isolateByVariables( const GiNaC::ex& polynomial,
                                             const vector<GiNaC::symbol>& symbolLst,
                                             GiNaC::ex& coefficient,

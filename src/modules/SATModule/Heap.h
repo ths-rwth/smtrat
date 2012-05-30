@@ -56,7 +56,7 @@ namespace Minisat
             int x = heap[i];
             int p = parent( i );
 
-            while( i != 0 && lt( x, heap[p] ))
+            while( i != 0 && lt( x, heap[p] ) )
             {
                 heap[i]          = heap[p];
                 indices[heap[p]] = i;
@@ -73,7 +73,7 @@ namespace Minisat
             while( left( i ) < heap.size() )
             {
                 int child = right( i ) < heap.size() && lt( heap[right( i )], heap[left( i )] ) ? right( i ) : left( i );
-                if( !lt( heap[child], x ))
+                if( !lt( heap[child], x ) )
                     break;
                 heap[i]          = heap[child];
                 indices[heap[i]] = i;
@@ -111,20 +111,20 @@ namespace Minisat
 
             void decrease( int n )
             {
-                assert( inHeap( n ));
+                assert( inHeap( n ) );
                 percolateUp( indices[n] );
             }
 
             void increase( int n )
             {
-                assert( inHeap( n ));
+                assert( inHeap( n ) );
                 percolateDown( indices[n] );
             }
 
             // Safe variant of insert/decrease/increase:
             void update( int n )
             {
-                if( !inHeap( n ))
+                if( !inHeap( n ) )
                     insert( n );
                 else
                 {
@@ -136,7 +136,7 @@ namespace Minisat
             void insert( int n )
             {
                 indices.growTo( n + 1, -1 );
-                assert( !inHeap( n ));
+                assert( !inHeap( n ) );
 
                 indices[n] = heap.size();
                 heap.push( n );

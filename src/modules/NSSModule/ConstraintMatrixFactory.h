@@ -19,6 +19,7 @@
  *
  */
 
+
 /**
  * @file   ConstraintMatrixFactory.cpp
  * @author Sebastian Junges
@@ -27,52 +28,54 @@
  */
 
 #ifndef CONSTRAINTMATRIXFACTORY_H
-#define	CONSTRAINTMATRIXFACTORY_H
+#define CONSTRAINTMATRIXFACTORY_H
 
 #include "definitions.h"
 #include "../../utilities/SDP/SparseMatrix.h"
 #include "../../utilities/LinAlg/DenseMatrix.h"
 #include <map>
 
-using std::pair; 
+using std::pair;
 using std::map;
 using std::vector;
 
 using GiNaCRA::MultivariatePolynomialMR;
 
-namespace smtrat {
-	class ConstraintMatrixFactory {
-		
-	public:
-		ConstraintMatrixFactory(int problemSize);
-		virtual ~ConstraintMatrixFactory();
+namespace smtrat
+{
+    class ConstraintMatrixFactory
+    {
+        public:
+            ConstraintMatrixFactory( int problemSize );
+            virtual ~ConstraintMatrixFactory();
 
-		void addReducedTerm(MatrixIndex index, Rational coefficient, Term t);
-		template<class Order>
-		void addReducedTerm(MatrixIndex index, const MultivariatePolynomialMR<Order>& terms) {
-	//		std::cout << terms << std::endl;
-			const vector<Term> termvector = terms.getTerms();
-			for(vector<Term>::const_iterator it = termvector.begin(); it != termvector.end(); ++it) {
-				addReducedTerm(index, it->getCoeff(), (*it));
-			}
-		}
-		
-		std::vector<SparseMatrix> exportMatrices() const;
-		DenseMatrix exportLinEqSys() const;
-		
-		
-		unsigned getProblemSize() {
-			return mProblemSize;
-		}
-		
-	private:
-		unsigned mProblemSize;
-		map<Term, SparseMatrix, GiNaCRA::GradedLexicgraphic> constraints;
-		
+            void addReducedTerm( MatrixIndex index, Rational coefficient, Term t );
 
-	};
+            template<class Order>
+            void addReducedTerm( MatrixIndex index, const MultivariatePolynomialMR<Order>& terms )
+            {
+                //      std::cout << terms << std::endl;
+                const vector<Term> termvector = terms.getTerms();
+                for( vector<Term>::const_iterator it = termvector.begin(); it != termvector.end(); ++it )
+                {
+                    addReducedTerm( index, it->getCoeff(), (*it) );
+                }
+            }
+
+            std::vector<SparseMatrix> exportMatrices() const;
+            DenseMatrix exportLinEqSys() const;
+
+            unsigned getProblemSize()
+            {
+                return mProblemSize;
+            }
+
+        private:
+            unsigned                                             mProblemSize;
+            map<Term, SparseMatrix, GiNaCRA::GradedLexicgraphic> constraints;
+
+    };
 
 }
 
-#endif	/* CONSTRAINTMATRIXFACTORY_H */
-
+#endif   /* CONSTRAINTMATRIXFACTORY_H */

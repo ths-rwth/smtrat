@@ -65,7 +65,7 @@ namespace smtrat
                 for( unsigned i = 0; i < mWidth; ++i )
                 {
                     tmp = get( rowNr1, i );
-                    set( rowNr1, i, get( rowNr2, i ));
+                    set( rowNr1, i, get( rowNr2, i ) );
                     set( rowNr2, i, tmp );
                 }
             }
@@ -124,7 +124,7 @@ namespace smtrat
             {
                 assert( rowNr < mHeight );
                 assert( colNr < mWidth );
-                return cln::zerop( get( rowNr, colNr ));
+                return cln::zerop( get( rowNr, colNr ) );
             }
 
             void rowEchelon()
@@ -136,7 +136,7 @@ namespace smtrat
                 {
                     // we look for the first nonzero entry in the current col
                     unsigned i = row;
-                    while( i < mHeight && entryIsZero( i, col ))
+                    while( i < mHeight && entryIsZero( i, col ) )
                     {
                         ++i;
                     }
@@ -153,18 +153,18 @@ namespace smtrat
                         swapRow( i, row );
                     }
 
-                    Rational pvt( get( row, col ));
+                    Rational pvt( get( row, col ) );
                     // We do not have to update the first i rows, since their entries are 0.
                     i++;
                     while( i < mHeight )
                     {
-                        if( !entryIsZero( i, col ))
+                        if( !entryIsZero( i, col ) )
                         {
                             Rational factor( get( i, col ) / pvt );
                             //set(i,col, Rational(0));
                             for( unsigned j = col; j < mWidth; ++j )
                             {
-                                set( i, j, get( i, j ) - factor * get( row, j ));
+                                set( i, j, get( i, j ) - factor * get( row, j ) );
                             }
                         }
                         ++i;
@@ -178,7 +178,7 @@ namespace smtrat
             std::vector<Rational> SolveExactSolution( const std::vector<Rational>& approxSol ) const
             {
                 assert( approxSol.size() == mWidth - 1 );
-                std::vector<Rational> solution( mWidth - 1, Rational( 0 ));
+                std::vector<Rational> solution( mWidth - 1, Rational( 0 ) );
 
                 unsigned              row     = mHeight - 1;
                 unsigned              col     = mWidth - 2;
@@ -187,7 +187,7 @@ namespace smtrat
                 while( row < mHeight && col <= mWidth - 2 )
                 {
                     unsigned i = 0;
-                    while( i < mWidth && entryIsZero( row, i ))
+                    while( i < mWidth && entryIsZero( row, i ) )
                     {
                         ++i;
                     }
@@ -212,13 +212,13 @@ namespace smtrat
                     }
                     assert( i == col );
 
-                    Rational value( get( row, lastCol ));
+                    Rational value( get( row, lastCol ) );
                     for( unsigned j = col; j < lastCol; ++j )
                     {
                         value -= solution[j] * get( row, j );
                     }
 
-                    assert( get( row, col ) != Rational( 0 ));
+                    assert( get( row, col ) != Rational( 0 ) );
                     value         /= get( row, col );
 
                     solution[col] = value;

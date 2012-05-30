@@ -1,6 +1,6 @@
-///*********************************************************************
+// /*********************************************************************
 // Author: Aliaksei Tsitovich <aliaksei.tsitovich@usi.ch>,
-//         Roberto Bruttomesso <roberto.bruttomesso@unisi.ch>
+// Roberto Bruttomesso <roberto.bruttomesso@unisi.ch>
 //
 // OpenSMT -- Copyright (C) 2009, Roberto Bruttomesso
 //
@@ -18,5 +18,7 @@
 // along with OpenSMT. If not, see <http://www.gnu.org/licenses/>.
 // *********************************************************************/
 //
+
+
 #include "LAArray.h"
 

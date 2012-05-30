@@ -39,10 +39,11 @@ namespace smtrat
     class LRAModule:
         public Module
     {
-    	private:
-    		typedef std::pair< const Constraint*, bool > cons_bool_pair;
-    		typedef std::vector< cons_bool_pair > cons_bool_pair_vec;
-    		typedef std::map< const Constraint* const, cons_bool_pair_vec > cons_to_cons_bool_pair_vec_map;
+        private:
+            typedef std::pair<const Constraint*, bool>                     cons_bool_pair;
+            typedef std::vector<cons_bool_pair>                            cons_bool_pair_vec;
+            typedef std::map<const Constraint* const , cons_bool_pair_vec> cons_to_cons_bool_pair_vec_map;
+
         public:
 
             /**
@@ -67,13 +68,14 @@ namespace smtrat
             void pushBacktrackPoint();
 
         private:
-			lra::LRASolverA* 				mpLRASolver;
-			cons_to_cons_bool_pair_vec_map 	mLRASolverConstraints;
-			unsigned 						mNumAddedNonlinearConstraints;
+            lra::LRASolverA*               mpLRASolver;
+            cons_to_cons_bool_pair_vec_map mLRASolverConstraints;
+            unsigned                       mNumAddedNonlinearConstraints;
+
             /**
              * Methods:
              */
-			cons_to_cons_bool_pair_vec_map::const_iterator addConstraintToLRASolverConstraints( const Constraint* const );
+            cons_to_cons_bool_pair_vec_map::const_iterator addConstraintToLRASolverConstraints( const Constraint* const );
     };
 
 }    // namespace smtrat

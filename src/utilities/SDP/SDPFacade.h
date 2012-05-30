@@ -19,6 +19,7 @@
  *
  */
 
+
 /**
  * @file   SDPFacade.h
  * @author Sebastian Junges
@@ -26,22 +27,21 @@
  * @version 2012-03-20
  */
 
-
 #ifndef SDPFACADE_H
-#define	SDPFACADE_H
+#define SDPFACADE_H
 
-namespace smtrat {
-	class SDPFacade {
-	public:
-		SDPFacade() {
-			
-		}
-		virtual ~SDPFacade() { }
-	private:
+namespace smtrat
+{
+    class SDPFacade
+    {
+        public:
+            SDPFacade(){}
+            virtual ~SDPFacade(){}
 
-};
+        private:
+
+    };
 
 }
 
-#endif	/* SDPFACADE_H */
-
+#endif   /* SDPFACADE_H */

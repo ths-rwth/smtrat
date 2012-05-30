@@ -23,7 +23,6 @@
 /**
  * @file Parser.yy
  *
- * @author Safoura Rezapour Lakani
  * @author Florian Corzilius
  * @since 2012-03-19
  * @version 2012-03-19

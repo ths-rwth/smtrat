@@ -286,7 +286,7 @@ namespace smtrat
     std::unique_ptr<std::vector<double> > CSDPFacade::createSparseMatrix( const blockmatrix& in ) const
     {
         //unique_ptr<SparseMatrix> result(new SparseMatrix(mProblemSize, mProblemSize));
-        std::unique_ptr<std::vector<double> > result( new std::vector<double>( mProblemSize * mProblemSize, 0.0 ));
+        std::unique_ptr<std::vector<double> > result( new std::vector<double>( mProblemSize * mProblemSize, 0.0 ) );
         unsigned                              offset = 0;
         for( int blockNum = 1; blockNum <= in.nblocks; ++blockNum )
         {

@@ -59,7 +59,7 @@ namespace smtrat
 
         if( value == 0 )
         {
-            setZero( pair<int, int>( row, col ));
+            setZero( pair<int, int>( row, col ) );
         }
         else
         {
@@ -91,7 +91,7 @@ namespace smtrat
     {
         assert( row < mNrRows );
         assert( col < mNrCols );
-        map<pair<int, int>, Rational>::const_iterator it = mNonZeroEntries.find( pair<int, int>( row, col ));
+        map<pair<int, int>, Rational>::const_iterator it = mNonZeroEntries.find( pair<int, int>( row, col ) );
         if( it == mNonZeroEntries.end() )
         {
             return Rational( 0 );
@@ -132,7 +132,7 @@ namespace smtrat
 
     void SparseMatrix::setNonZero( std::pair<int, int> cell, Rational value )
     {
-        assert( !cln::zerop( value ));
+        assert( !cln::zerop( value ) );
         mNonZeroEntries[cell] = value;
     }
 

@@ -19,6 +19,7 @@
  *
  */
 
+
 /**
  * @file   MonomialIterator.h
  * @author Sebastian Junges
@@ -27,30 +28,36 @@
  */
 
 #ifndef MONOMIALITERATOR_H
-#define	MONOMIALITERATOR_H
+#define MONOMIALITERATOR_H
 
 #include "definitions.h"
 
-namespace smtrat {
-	class MonomialIterator {
-	public:
-		MonomialIterator(unsigned nrVars, unsigned maxDeg = 5);
-		virtual ~MonomialIterator();
-		Term next();
-		bool hasNext() { return !mTerms.empty() || mCurDeg < mMaxDeg; }
-		
-		void test(unsigned deg);
-	private:
-		void fillExps(unsigned firstVar, unsigned degLeft);
-		
-		std::vector<unsigned> mExps;
-		std::list<std::vector<unsigned> > mTerms;
-		unsigned mNrVars;
-		unsigned mMaxDeg;
-		unsigned mCurDeg;
-	
-	};
+namespace smtrat
+{
+    class MonomialIterator
+    {
+        public:
+            MonomialIterator( unsigned nrVars, unsigned maxDeg = 5 );
+            virtual ~MonomialIterator();
+            Term next();
+
+            bool hasNext()
+            {
+                return !mTerms.empty() || mCurDeg < mMaxDeg;
+            }
+
+            void test( unsigned deg );
+
+        private:
+            void fillExps( unsigned firstVar, unsigned degLeft );
+
+            std::vector<unsigned>             mExps;
+            std::list<std::vector<unsigned> > mTerms;
+            unsigned                          mNrVars;
+            unsigned                          mMaxDeg;
+            unsigned                          mCurDeg;
+
+    };
 }
 
-#endif	/* MONOMIALITERATOR_H */
-
+#endif   /* MONOMIALITERATOR_H */

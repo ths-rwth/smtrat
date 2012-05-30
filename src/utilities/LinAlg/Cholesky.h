@@ -38,9 +38,9 @@ namespace smtrat
                 //Algorithm according to the idea in "Numerik fuer Naturwissenschaftler by Dahmen/Reusken" 
                 for( unsigned k = 0; k < mSize; ++k )
                 {
-                    if( mM.get( k, k ) < Rational( 0 ))
+                    if( mM.get( k, k ) < Rational( 0 ) )
                         return false;
-                    Rational diag( mM.get( k, k ));
+                    Rational diag( mM.get( k, k ) );
                     for( unsigned j = 0; j < k; ++j )
                     {
                         diag -= mM.get( k, j ) * mM.get( k, j ) * mM.get( j, j );
@@ -55,7 +55,7 @@ namespace smtrat
                     {
                         for( unsigned i = k + 1; i < mSize; ++i )
                         {
-                            if( !mM.entryIsZero( i, k ))
+                            if( !mM.entryIsZero( i, k ) )
                             {
                                 std::cout << "Diag entry zero, not all others equal zero" << std::endl;
                                 return false;
@@ -67,7 +67,7 @@ namespace smtrat
                     {
                         for( unsigned i = k + 1; i < mSize; ++i )
                         {
-                            Rational elem( mM.get( i, k ));
+                            Rational elem( mM.get( i, k ) );
                             for( unsigned j = 0; j < k; ++j )
                             {
                                 elem -= mM.get( i, j ) * mM.get( j, j ) * mM.get( k, j );

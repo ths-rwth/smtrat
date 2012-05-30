@@ -48,7 +48,7 @@ namespace Minisat
             best_i = i;
             for( j = i + 1; j < size; j++ )
             {
-                if( lt( array[j], array[best_i] ))
+                if( lt( array[j], array[best_i] ) )
                     best_i = j;
             }
             tmp           = array[i];
@@ -80,10 +80,10 @@ namespace Minisat
             {
                 do
                     i++;
-                while( lt( array[i], pivot ));
+                while( lt( array[i], pivot ) );
                 do
                     j--;
-                while( lt( pivot, array[j] ));
+                while( lt( pivot, array[j] ) );
 
                 if( i >= j )
                     break;

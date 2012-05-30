@@ -45,7 +45,7 @@ namespace smtrat
         map<Term, SparseMatrix>::iterator it = constraints.find( t );
         if( it == constraints.end() )
         {
-            it = constraints.insert( std::pair<Term, SparseMatrix>( t, SparseMatrix( mProblemSize ))).first;
+            it = constraints.insert( std::pair<Term, SparseMatrix>( t, SparseMatrix( mProblemSize ) ) ).first;
         }
         it->second.set( index, coefficient );
     }
@@ -67,7 +67,7 @@ namespace smtrat
         unsigned row = 0;
         for( map<Term, SparseMatrix, GiNaCRA::GradedLexicgraphic>::const_iterator it = constraints.begin(); it != constraints.end(); ++it )
         {
-            it->second.writeEntriesToArray( m.getPointerToRow( row ));
+            it->second.writeEntriesToArray( m.getPointerToRow( row ) );
             row++;
         }
         // Because the constant term should be equal -1 in order to find an counterexample
@@ -77,8 +77,8 @@ namespace smtrat
         {
             for( unsigned j = 0; j < i; ++j )
             {
-                m.set( row, j * mProblemSize + i, Rational( 1 ));
-                m.set( row, i * mProblemSize + j, Rational( -1 ));
+                m.set( row, j * mProblemSize + i, Rational( 1 ) );
+                m.set( row, i * mProblemSize + j, Rational( -1 ) );
                 ++row;
             }
         }

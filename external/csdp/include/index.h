@@ -11,7 +11,7 @@
 
 #define ijtok(iiii,jjjj,lda) ((jjjj-1)*lda+iiii-1)
 
-/* 
+/*
    Packed indexing.
  */
 
@@ -32,7 +32,7 @@
 
 #define ijtok(iiii,jjjj,lda) ((jjjj-1L)*lda+iiii-1L)
 
-/* 
+/*
    Packed indexing.
  */
 
@@ -47,4 +47,5 @@
 
 
 #endif
+
 

@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   ConstraintMatrixFactory_unittest.h
  * Author: square
  *
@@ -6,27 +6,30 @@
  */
 
 #ifndef CONSTRAINTMATRIXFACTORY_UNITTEST_H
-#define	CONSTRAINTMATRIXFACTORY_UNITTEST_H
+#define CONSTRAINTMATRIXFACTORY_UNITTEST_H
 
 #include <cppunit/extensions/HelperMacros.h>
 
-class ConstraintMatrixFactory_unittest : public CPPUNIT_NS::TestFixture {
-	CPPUNIT_TEST_SUITE(ConstraintMatrixFactory_unittest);
-	CPPUNIT_TEST(testMethod);
-	
-	CPPUNIT_TEST_SUITE_END();
+class ConstraintMatrixFactory_unittest:
+    public CPPUNIT_NS:: TestFixture
+{
+    CPPUNIT_TEST_SUITE( ConstraintMatrixFactory_unittest );
+    CPPUNIT_TEST( testMethod );
 
-public:
-	ConstraintMatrixFactory_unittest();
-	virtual ~ConstraintMatrixFactory_unittest();
-	void setUp();
-	void tearDown();
+ CPPUNIT_TEST_SUITE_END()
 
-private:
-	
-	void testMethod();
-	
+ ;
+
+ public:
+     ConstraintMatrixFactory_unittest();
+     virtual ~ConstraintMatrixFactory_unittest();
+     void setUp();
+     void tearDown();
+
+ private:
+
+     void testMethod();
+
 };
 
-#endif	/* CONSTRAINTMATRIXFACTORY_UNITTEST_H */
-
+#endif   /* CONSTRAINTMATRIXFACTORY_UNITTEST_H */

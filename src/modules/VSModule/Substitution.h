@@ -45,9 +45,9 @@ namespace vs
     enum Substitution_Type
     {
         ST_NORMAL, ST_PLUS_EPSILON, ST_MINUS_INFINITY
-#ifdef VS_CUBIC_CASE
+        #ifdef VS_CUBIC_CASE
                 , ST_SINGLE_CUBIC_ROOT, ST_TRIPLE_CUBIC_ROOT, ST_SINGLE_CUBIC_ROOT_PLUS_EPS, ST_TRIPLE_CUBIC_ROOT_PLUS_EPS
-#endif
+        #endif
             };
 
     class Substitution
@@ -60,7 +60,7 @@ namespace vs
             Substitution();
             Substitution( const std::string&, const Substitution_Type&, const ConditionSet& );
             Substitution( const std::string&, const SqrtEx&, const Substitution_Type&, const GiNaC::symtab&, const ConditionSet& );
-#ifdef VS_CUBIC_CASE
+            #ifdef VS_CUBIC_CASE
             Substitution( const std::string&,
                           const GiNaC::ex&,
                           const SqrtEx&,
@@ -68,7 +68,7 @@ namespace vs
                           const Substitution_Type&,
                           const GiNaC::symtab&,
                           const ConditionSet& );
-#endif
+            #endif
             Substitution( const Substitution& );
 
             /**
@@ -89,7 +89,7 @@ namespace vs
                 return *mpTerm;
             }
 
-#ifdef VS_CUBIC_CASE
+            #ifdef VS_CUBIC_CASE
             const GiNaC::ex& multiRootLessOcond() const
             {
                 return *mpMultiRootLessOcond;
@@ -104,7 +104,7 @@ namespace vs
             {
                 return *mpSecondZeroOfDerivOfOCond;
             }
-#endif
+            #endif
 
             const GiNaC::symtab& termVariables() const
             {
@@ -148,16 +148,16 @@ namespace vs
             /**
              * Attributes:
              */
-            std::string*          mpVariable;
-            SqrtEx*               mpTerm;
-#ifdef VS_CUBIC_CASE
-            GiNaC::ex*            mpMultiRootLessOcond;
-            SqrtEx*               mpFirstZeroOfDerivOfOCond;
-            SqrtEx*               mpSecondZeroOfDerivOfOCond;
-#endif
-            GiNaC::symtab 		  mTermVariables;
-            Substitution_Type     mType;
-            ConditionSet*         mpOriginalConditions;
+            std::string*      mpVariable;
+            SqrtEx*           mpTerm;
+            #ifdef VS_CUBIC_CASE
+            GiNaC::ex*        mpMultiRootLessOcond;
+            SqrtEx*           mpFirstZeroOfDerivOfOCond;
+            SqrtEx*           mpSecondZeroOfDerivOfOCond;
+            #endif
+            GiNaC::symtab     mTermVariables;
+            Substitution_Type mType;
+            ConditionSet*     mpOriginalConditions;
     };
 
 }    // end namspace vs

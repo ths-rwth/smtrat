@@ -29,34 +29,38 @@
 
 namespace smtrat
 {
-    NRATSolver::NRATSolver( Formula* _inputFormula ) : Manager( _inputFormula )
+    NRATSolver::NRATSolver( Formula* _inputFormula ):
+        Manager( _inputFormula )
     {
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE, MT_VSModule );
-//        strategy().addModuleType( PROP_TRUE, MT_SimplifierModule );
+        /*
+                strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE, MT_VSModule );
+                strategy().addModuleType( PROP_TRUE, MT_SimplifierModule );
+        */
 
-//        strategy().addModuleType( PROP_TRUE, MT_SATModule );
-//
+        //        strategy().addModuleType( PROP_TRUE, MT_SATModule );
+        //
 
-/*
-        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE, MT_VSModule );
-        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SATMODULE, MT_SimplifierModule );
-*/
+        /*
+                strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE, MT_VSModule );
+                strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SATMODULE, MT_SimplifierModule );
+        */
         strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SATMODULE, MT_VSModule );
         strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE, MT_SATModule );
         strategy().addModuleType( PROP_TRUE, MT_CNFerModule );
 
         //        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE, MT_CADModule );
 
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE, MT_CADModule );
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_VSMODULE, MT_UnivariateCADModule );
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_VSMODULE, MT_CADModule );
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE, MT_VSModule );
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE, MT_VSModule );
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE, MT_GroebnerModule );
-//        strategy().addModuleType( PROP_TRUE, MT_SimplifierModule );
-//        strategy().addModuleType( PROP_TRUE, MT_CADModule );
+        //        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE, MT_CADModule );
+        //        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_VSMODULE, MT_UnivariateCADModule );
+        //        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_VSMODULE, MT_CADModule );
+        //        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE, MT_VSModule );
+        //        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE, MT_VSModule );
+        //        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE, MT_GroebnerModule );
+        //        strategy().addModuleType( PROP_TRUE, MT_SimplifierModule );
+        //        strategy().addModuleType( PROP_TRUE, MT_CADModule );
     }
 
-    NRATSolver::~NRATSolver() {}
+    NRATSolver::~NRATSolver(){}
 
 }    // namespace smtrat
+

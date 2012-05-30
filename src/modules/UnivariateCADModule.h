@@ -57,7 +57,7 @@ namespace smtrat
         /// for each variable (as ex), the flag as to whether we need to check the satisfiability here
         std::map<GiNaC::ex, bool, GiNaC::ex_is_less> mCADsToCheck;
         /// for each variable (as ex), the TS constraints carrying this variable
-        std::map<GiNaC::ex, std::set< const Formula* > > mSubformulaBuckets;
+        std::map<GiNaC::ex, std::set<const Formula*> > mSubformulaBuckets;
         /// for each variable (as ex), the GiNaCRA constraints carrying this variable
         std::map<GiNaC::ex, vector<GiNaCRA::Constraint>, GiNaC::ex_is_less> mConstraintsBuckets;
         /// stores the status of not knowing the satisfiability result of the constraints

@@ -18,25 +18,27 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-/****************************************************************************************[Solver.h]
-Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
-Copyright (c) 2007-2010, Niklas Sorensson
+/*
+ * ***************************************************************************************[Solver.h]
+ * Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
+ * Copyright (c) 2007-2010, Niklas Sorensson
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+ * OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute,
-sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or
-substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
-OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-**************************************************************************************************/
 
 /**
  * @file SATModule.h
@@ -62,6 +64,7 @@ namespace smtrat
         public Module
     {
         private:
+
             /*
              * Type definitions:
              */
@@ -80,17 +83,17 @@ namespace smtrat
                     return false;
                 }
             };
-            typedef std::map< const Constraint, Minisat::Lit, constraintCompare > ConstraintLiteralMap;
-            typedef std::map< const std::string, Minisat::Var > BooleanVarMap;
-            typedef std::map< const Minisat::Lit, std::pair< Formula*, const Formula* > > LitConstraintMap;
+            typedef std::map<const Constraint, Minisat::Lit, constraintCompare>        ConstraintLiteralMap;
+            typedef std::map<const std::string, Minisat::Var>                          BooleanVarMap;
+            typedef std::map<const Minisat::Lit, std::pair<Formula*, const Formula*> > LitConstraintMap;
 
             /**
              * Members:
              */
-            ConstraintLiteralMap mConstraintLiteralMap;
-            BooleanVarMap mBooleanVarMap;
-            LitConstraintMap mLitConstraintMap;
-            std::vector< unsigned > mBacktrackpointInSatSolver;
+            ConstraintLiteralMap  mConstraintLiteralMap;
+            BooleanVarMap         mBooleanVarMap;
+            LitConstraintMap      mLitConstraintMap;
+            std::vector<unsigned> mBacktrackpointInSatSolver;
 
         public:
 
@@ -122,6 +125,7 @@ namespace smtrat
             void printClause( std::ostream&, Minisat::Clause& );
             void printClauses( std::ostream&, Minisat::Clause&, Minisat::vec<Minisat::Var>&, Minisat::Var& );
             void printClauses( std::ostream& = std::cout, const std::string = "***" );
+            void printDecisions( ostream& = std::cout, string = "***" ) const;
 
         protected:
             // Problem specification:
@@ -218,7 +222,7 @@ namespace smtrat
             struct VarData
             {
                 Minisat::CRef reason;
-                int  level;
+                int           level;
             };
             static inline VarData mkVarData( Minisat::CRef cr, int l )
             {
@@ -275,40 +279,40 @@ namespace smtrat
 
             // Solver state:
             //
-            bool                                        ok;    // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
-            Minisat::vec<Minisat::CRef>                                   clauses;    // List of problem clauses.
-            Minisat::vec<Minisat::CRef>                                   learnts;    // List of learnt clauses.
-            double                                      cla_inc;    // Amount to bump next clause with.
-            Minisat::vec<double>                                 activity;    // A heuristic measurement of the activity of a variable.
-            double                                      var_inc;    // Amount to bump next variable with.
+            bool                                                                   ok;    // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
+            Minisat::vec<Minisat::CRef>                                            clauses;    // List of problem clauses.
+            Minisat::vec<Minisat::CRef>                                            learnts;    // List of learnt clauses.
+            double                                                                 cla_inc;    // Amount to bump next clause with.
+            Minisat::vec<double>                                                   activity;    // A heuristic measurement of the activity of a variable.
+            double                                                                 var_inc;    // Amount to bump next variable with.
             Minisat::OccLists<Minisat::Lit, Minisat::vec<Watcher>, WatcherDeleted> watches;    // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-            Minisat::vec<Minisat::lbool>       assigns;    // The current assignments.
-            Minisat::vec<char>        polarity;    // The preferred polarity of each variable.
-            Minisat::vec<char>        decision;    // Declares if a variable is eligible for selection in the decision heuristic.
-            Minisat::vec<Minisat::Lit>         trail;    // Assignment stack; stores all assigments made in the order they were made.
-            Minisat::vec<int>         trail_lim;    // Separator indices for different decision levels in 'trail'.
-            Minisat::vec<VarData>     vardata;    // Stores reason and level for each variable.
-            int              qhead;    // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
-            int              simpDB_assigns;    // Number of top-level assignments since last execution of 'simplify()'.
-            int64_t          simpDB_props;    // Remaining number of propagations that must be made before next execution of 'simplify()'.
-            Minisat::vec<Minisat::Lit>         assumptions;    // Current set of assumptions provided to solve by the user.
-            Minisat::Heap<VarOrderLt> order_heap;    // A priority queue of variables ordered with respect to the variable activity.
-            double           progress_estimate;    // Set by 'search()'.
-            bool             remove_satisfied;    // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
+            Minisat::vec<Minisat::lbool> assigns;    // The current assignments.
+            Minisat::vec<char>           polarity;    // The preferred polarity of each variable.
+            Minisat::vec<char>           decision;    // Declares if a variable is eligible for selection in the decision heuristic.
+            Minisat::vec<Minisat::Lit>   trail;    // Assignment stack; stores all assigments made in the order they were made.
+            Minisat::vec<int>            trail_lim;    // Separator indices for different decision levels in 'trail'.
+            Minisat::vec<VarData>        vardata;    // Stores reason and level for each variable.
+            int                          qhead;    // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
+            int                          simpDB_assigns;    // Number of top-level assignments since last execution of 'simplify()'.
+            int64_t                      simpDB_props;    // Remaining number of propagations that must be made before next execution of 'simplify()'.
+            Minisat::vec<Minisat::Lit>   assumptions;    // Current set of assumptions provided to solve by the user.
+            Minisat::Heap<VarOrderLt>    order_heap;    // A priority queue of variables ordered with respect to the variable activity.
+            double                       progress_estimate;    // Set by 'search()'.
+            bool                         remove_satisfied;    // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 
-            Minisat::ClauseAllocator  ca;
+            Minisat::ClauseAllocator     ca;
 
             // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
             // used, exept 'seen' wich is used in several places.
             //
-            Minisat::vec<char> seen;
-            Minisat::vec<Minisat::Lit>  analyze_stack;
-            Minisat::vec<Minisat::Lit>  analyze_toclear;
-            Minisat::vec<Minisat::Lit>  add_tmp;
+            Minisat::vec<char>         seen;
+            Minisat::vec<Minisat::Lit> analyze_stack;
+            Minisat::vec<Minisat::Lit> analyze_toclear;
+            Minisat::vec<Minisat::Lit> add_tmp;
 
-            double    max_learnts;
-            double    learntsize_adjust_confl;
-            int       learntsize_adjust_cnt;
+            double                     max_learnts;
+            double                     learntsize_adjust_confl;
+            int                        learntsize_adjust_cnt;
 
             // Resource contraints:
             //
@@ -425,7 +429,7 @@ namespace smtrat
         }
 
         // Update order_heap with respect to new activity:
-        if( order_heap.inHeap( v ))
+        if( order_heap.inHeap( v ) )
             order_heap.decrease( v );
     }
 
@@ -500,7 +504,7 @@ namespace smtrat
 
     inline bool SATModule::locked( const Minisat::Clause& c ) const
     {
-        return value( c[0] ) == l_True && reason( Minisat::var( c[0] )) != Minisat::CRef_Undef && ca.lea( reason( Minisat::var( c[0] ))) == &c;
+        return value( c[0] ) == l_True && reason( Minisat::var( c[0] ) ) != Minisat::CRef_Undef && ca.lea( reason( Minisat::var( c[0] ) ) ) == &c;
     }
 
     inline void SATModule::newDecisionLevel()

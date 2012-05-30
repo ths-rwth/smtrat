@@ -31,12 +31,14 @@
 
 namespace smtrat
 {
-    NRATSolver_CADonly::NRATSolver_CADonly( Formula* _inputFormula ) : Manager( _inputFormula )
+    NRATSolver_CADonly::NRATSolver_CADonly( Formula* _inputFormula ):
+        Manager( _inputFormula )
     {
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE, MT_CADModule );
+        //        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE, MT_CADModule );
         strategy().addModuleType( PROP_TRUE, MT_CADModule );
     }
 
-    NRATSolver_CADonly::~NRATSolver_CADonly() {}
+    NRATSolver_CADonly::~NRATSolver_CADonly(){}
 
 }    // namespace smtrat
+

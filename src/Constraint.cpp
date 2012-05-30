@@ -57,14 +57,14 @@ namespace smtrat
         mVariables        = symtab();
         for( symtab::const_iterator var = _vars.begin(); var != _vars.end(); ++var )
         {
-        	if( pLhs->has( var->second ) )
-        	{
-        		mVariables.insert( *var );
-        	}
+            if( pLhs->has( var->second ) )
+            {
+                mVariables.insert( *var );
+            }
         }
-#ifdef TS_CONSTRAINT_SIMPLIFIER
+        #ifdef TS_CONSTRAINT_SIMPLIFIER
         simplify();
-#endif
+        #endif
     }
 
     Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _vars )
@@ -76,14 +76,14 @@ namespace smtrat
         mVariables        = symtab();
         for( symtab::const_iterator var = _vars.begin(); var != _vars.end(); ++var )
         {
-        	if( pLhs->has( var->second ) )
-        	{
-        		mVariables.insert( *var );
-        	}
+            if( pLhs->has( var->second ) )
+            {
+                mVariables.insert( *var );
+            }
         }
-#ifdef TS_CONSTRAINT_SIMPLIFIER
+        #ifdef TS_CONSTRAINT_SIMPLIFIER
         simplify();
-#endif
+        #endif
     }
 
     Constraint::Constraint( const Constraint& _constraint )
@@ -119,7 +119,7 @@ namespace smtrat
         symtab::const_iterator var = variables().find( _variableName );
         if( var != variables().end() )
         {
-            _variable = ex_to< symbol >(var->second );
+            _variable = ex_to<symbol>( var->second );
             return true;
         }
         else
@@ -156,60 +156,60 @@ namespace smtrat
      */
     unsigned Constraint::isConsistent() const
     {
-#ifdef VS_DEBUG
+        #ifdef VS_DEBUG
         cout << "   Try: ";
         print( cout );
-#endif
+        #endif
         unsigned result = 0;
         if( variables().size() == 0 )
         {
             switch( relation() )
             {
-            case CR_EQ:
-            {
-                if( lhs() == 0 )
-                    result = 1;
-                break;
-            }
-            case CR_NEQ:
-            {
-                if( lhs() != 0 )
-                    result = 1;
-                break;
-            }
-            case CR_LESS:
-            {
-                if( lhs() < 0 )
-                    result = 1;
-                break;
-            }
-            case CR_GREATER:
-            {
-                if( lhs() > 0 )
-                    result = 1;
-                break;
-            }
-            case CR_LEQ:
-            {
-                if( lhs() <= 0 )
-                    result = 1;
-                break;
-            }
-            case CR_GEQ:
-            {
-                if( lhs() >= 0 )
-                    result = 1;
-                break;
-            }
-            default:
-                cout << "Error in isConsistent: unexpected relation symbol." << endl;
+                case CR_EQ:
+                {
+                    if( lhs() == 0 )
+                        result = 1;
+                    break;
+                }
+                case CR_NEQ:
+                {
+                    if( lhs() != 0 )
+                        result = 1;
+                    break;
+                }
+                case CR_LESS:
+                {
+                    if( lhs() < 0 )
+                        result = 1;
+                    break;
+                }
+                case CR_GREATER:
+                {
+                    if( lhs() > 0 )
+                        result = 1;
+                    break;
+                }
+                case CR_LEQ:
+                {
+                    if( lhs() <= 0 )
+                        result = 1;
+                    break;
+                }
+                case CR_GEQ:
+                {
+                    if( lhs() >= 0 )
+                        result = 1;
+                    break;
+                }
+                default:
+                    cout << "Error in isConsistent: unexpected relation symbol." << endl;
             }
         }
         else
             result = 2;
-#ifdef VS_DEBUG
+        #ifdef VS_DEBUG
         cout << " -> " << result << endl;
-#endif
+        #endif
         return result;
     }
 
@@ -240,14 +240,14 @@ namespace smtrat
             vector<ex> coeffs = vector<ex>();
             if( _forElimination )
             {
-                for( int i = 0; i <= multiRootLessLhs( ex_to<symbol>(var->second) ).degree( ex( var->second ) ); ++i )
+                for( int i = 0; i <= multiRootLessLhs( ex_to<symbol>( var->second ) ).degree( ex( var->second ) ); ++i )
                 {
-                    coeffs.push_back( ex( multiRootLessLhs( ex_to<symbol>(var->second) ).coeff( ex( var->second ), i ) ) );
+                    coeffs.push_back( ex( multiRootLessLhs( ex_to<symbol>( var->second ) ).coeff( ex( var->second ), i ) ) );
                 }
             }
             else
             {
-                getCoefficients( ex_to<symbol>(var->second), coeffs );
+                getCoefficients( ex_to<symbol>( var->second ), coeffs );
             }
 
             /*
@@ -256,26 +256,26 @@ namespace smtrat
             unsigned relationSymbolWeight = 0;
             switch( relation() )
             {
-            case CR_EQ:
-                relationSymbolWeight += 4;
-                break;
-            case CR_GEQ:
-                relationSymbolWeight += 3;
-                break;
-            case CR_LEQ:
-                relationSymbolWeight += 3;
-                break;
-            case CR_LESS:
-                relationSymbolWeight += 2;
-                break;
-            case CR_GREATER:
-                relationSymbolWeight += 2;
-                break;
-            case CR_NEQ:
-                relationSymbolWeight += 1;
-                break;
-            default:
-                return 0;
+                case CR_EQ:
+                    relationSymbolWeight += 4;
+                    break;
+                case CR_GEQ:
+                    relationSymbolWeight += 3;
+                    break;
+                case CR_LEQ:
+                    relationSymbolWeight += 3;
+                    break;
+                case CR_LESS:
+                    relationSymbolWeight += 2;
+                    break;
+                case CR_GREATER:
+                    relationSymbolWeight += 2;
+                    break;
+                case CR_NEQ:
+                    relationSymbolWeight += 1;
+                    break;
+                default:
+                    return 0;
             }
 
             /*
@@ -290,7 +290,7 @@ namespace smtrat
 
             if( degree <= 1 )
             {
-                if( coeffs.at( coeffs.size() - 1 ).info( info_flags::rational ))
+                if( coeffs.at( coeffs.size() - 1 ).info( info_flags::rational ) )
                 {
                     lCoeffWeight += 3;
                 }
@@ -301,11 +301,11 @@ namespace smtrat
             }
             else if( degree == 2 )
             {
-                if( coeffs.at( coeffs.size() - 1 ).info( info_flags::rational ) && coeffs.at( coeffs.size() - 2 ).info( info_flags::rational ))
+                if( coeffs.at( coeffs.size() - 1 ).info( info_flags::rational ) && coeffs.at( coeffs.size() - 2 ).info( info_flags::rational ) )
                 {
                     lCoeffWeight += 3;
                 }
-                else if( coeffs.at( coeffs.size() - 1 ).info( info_flags::rational ))
+                else if( coeffs.at( coeffs.size() - 1 ).info( info_flags::rational ) )
                 {
                     lCoeffWeight += 2;
                 }
@@ -396,7 +396,7 @@ namespace smtrat
          * constraint) is constant.
          */
         symtab::const_iterator bestVar                                   = var;
-        bool                         bestVariableLeadingCoefficientHasVariable = false;
+        bool                   bestVariableLeadingCoefficientHasVariable = false;
         for( symtab::const_iterator var2 = variables().begin(); var2 != variables().end(); ++var2 )
         {
             if( lhs().lcoeff( ex( var->second ) ).has( ex( var2->second ) ) )
@@ -460,7 +460,7 @@ namespace smtrat
          * than the fact, that the variable has a constant leading coefficient.
          */
         unsigned variableQuality = 0;
-        unsigned degree          = static_cast< unsigned >( lhs().degree( ex( bestVar->second ) ) );
+        unsigned degree          = static_cast<unsigned>(lhs().degree( ex( bestVar->second ) ));
         if( relation() == CR_EQ )
         {
             variableQuality = 1000 * degree;
@@ -512,12 +512,12 @@ namespace smtrat
             if( var != variables().end() )
             {
                 vector<ex> coeffs = vector<ex>();
-                getCoefficients( ex_to<symbol>(var->second), coeffs );
+                getCoefficients( ex_to<symbol>( var->second ), coeffs );
                 signed i = coeffs.size() - 1;
 
                 for( ; i > 0; --i )
                 {
-                    if( !coeffs.at( i ).info( info_flags::rational ))
+                    if( !coeffs.at( i ).info( info_flags::rational ) )
                     {
                         return false;
                     }
@@ -543,7 +543,7 @@ namespace smtrat
     {
         for( int i = 0; i <= lhs().degree( ex( _variable ) ); ++i )
         {
-            _coefficients.push_back( ex( lhs().expand().coeff( ex( _variable ), i )));
+            _coefficients.push_back( ex( lhs().expand().coeff( ex( _variable ), i ) ) );
         }
     }
 
@@ -555,7 +555,7 @@ namespace smtrat
     signed Constraint::degree( const std::string& _variableName ) const
     {
         symbol sym;
-        if( variable( _variableName, sym ))
+        if( variable( _variableName, sym ) )
         {
             return lhs().degree( ex( sym ) );
         }
@@ -589,7 +589,7 @@ namespace smtrat
         {
             if( lhs().degree( ex( var->second ) ) > 1 )
             {
-            	return false;
+                return false;
             }
         }
         return true;
@@ -600,18 +600,18 @@ namespace smtrat
      *
      * @return The linear coefficients of each variable and their common constant part.
      */
-	vector< ex > Constraint::linearAndConstantCoefficients() const
-	{
-		vector< ex > result = vector< ex >();
-		ex constantPart = lhs();
-		for( symtab::const_iterator var = variables().begin(); var != variables().end(); ++var )
+    vector<ex> Constraint::linearAndConstantCoefficients() const
+    {
+        vector<ex> result = vector<ex>();
+        ex constantPart = lhs();
+        for( symtab::const_iterator var = variables().begin(); var != variables().end(); ++var )
         {
-        	result.push_back( ex( constantPart.expand().coeff( ex( var->second ), 1 ) ) );
+            result.push_back( ex( constantPart.expand().coeff( ex( var->second ), 1 ) ) );
             constantPart = ex( constantPart.coeff( ex( var->second ), 0 ) );
         }
         result.push_back( constantPart );
         return result;
-	}
+    }
 
     /**
      * Compares whether the two expressions are the same.
@@ -660,7 +660,7 @@ namespace smtrat
                     for( int i = 0; i <= degreeA; ++i )
                     {
                         symtab remVarsA = symtab( varA, _varsA.end() );
-                        ex ithCoeffA          = _expressionA.coeff( currentVar, i );
+                        ex ithCoeffA    = _expressionA.coeff( currentVar, i );
                         symtab::iterator var = remVarsA.begin();
                         while( var != remVarsA.end() )
                         {
@@ -668,24 +668,24 @@ namespace smtrat
                             {
                                 remVarsA.erase( var++ );
                             }
-			    			else
-							{
-                            	var++;
-							}
+                            else
+                            {
+                                var++;
+                            }
                         }
-                        symtab remVarsB =symtab( varB, _varsB.end() );
-                        ex ithCoeffB          = _expressionB.coeff( currentVar, i );
-                        var                   = remVarsB.begin();
+                        symtab remVarsB = symtab( varB, _varsB.end() );
+                        ex ithCoeffB    = _expressionB.coeff( currentVar, i );
+                        var             = remVarsB.begin();
                         while( var != remVarsB.end() )
                         {
                             if( !ithCoeffB.has( ex( var->second ) ) )
                             {
                                 remVarsB.erase( var++ );
                             }
-			    			else
-							{
-                            	var++;
-							}
+                            else
+                            {
+                                var++;
+                            }
                         }
                         int coeffCompResult = exCompare( ithCoeffA, remVarsA, ithCoeffB, remVarsB );
                         if( coeffCompResult < 0 )
@@ -728,47 +728,47 @@ namespace smtrat
 
     ex& Constraint::multiRootLessLhs( const symbol& _variable )
     {
-/*
-        if( pMultiRootLessLhs != NULL )
-        {
-            if( pMultiRootLessLhs->first == ex( _variable ) )
-            {
-                return pMultiRootLessLhs->second;
-            }
-            else
-            {
-                pMultiRootLessLhs->first = ex( _variable );
-            }
-        }
+        /*
+                if( pMultiRootLessLhs != NULL )
+                {
+                    if( pMultiRootLessLhs->first == ex( _variable ) )
+                    {
+                        return pMultiRootLessLhs->second;
+                    }
+                    else
+                    {
+                        pMultiRootLessLhs->first = ex( _variable );
+                    }
+                }
 
-        ex derivate            = lhs().diff( _variable, 1 );
-        ex gcdOfLhsAndDerivate = gcd( lhs(), derivate );
-        gcdOfLhsAndDerivate    = gcdOfLhsAndDerivate.expand().normal();
-        ex quotient;
-        if( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, quotient ))
-        {
-            if( pMultiRootLessLhs != NULL )
-            {
-                pMultiRootLessLhs->second = quotient;
-            }
-            else
-            {
-                pMultiRootLessLhs = new VS_MultiRootLessLhs( ex( _variable ), quotient );
-            }
-        }
-        else
-        {
-            if( pMultiRootLessLhs != NULL )
-            {
-                pMultiRootLessLhs->second = lhs();
-            }
-            else
-            {
-                pMultiRootLessLhs = new VS_MultiRootLessLhs( ex( _variable ), lhs() );
-            }
-        }
-        return pMultiRootLessLhs->second;
-*/
+                ex derivate            = lhs().diff( _variable, 1 );
+                ex gcdOfLhsAndDerivate = gcd( lhs(), derivate );
+                gcdOfLhsAndDerivate    = gcdOfLhsAndDerivate.expand().normal();
+                ex quotient;
+                if( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, quotient ))
+                {
+                    if( pMultiRootLessLhs != NULL )
+                    {
+                        pMultiRootLessLhs->second = quotient;
+                    }
+                    else
+                    {
+                        pMultiRootLessLhs = new VS_MultiRootLessLhs( ex( _variable ), quotient );
+                    }
+                }
+                else
+                {
+                    if( pMultiRootLessLhs != NULL )
+                    {
+                        pMultiRootLessLhs->second = lhs();
+                    }
+                    else
+                    {
+                        pMultiRootLessLhs = new VS_MultiRootLessLhs( ex( _variable ), lhs() );
+                    }
+                }
+                return pMultiRootLessLhs->second;
+        */
         return rLhs();
     }
 
@@ -835,7 +835,7 @@ namespace smtrat
         {
             ex un, con, prim;
             lhs().unitcontprim( ex( variables().begin()->second ), un, con, prim );
-            if( con.info( info_flags::rational ))
+            if( con.info( info_flags::rational ) )
             {
                 rLhs() = prim * un;
             }
@@ -855,26 +855,26 @@ namespace smtrat
         result += sstream.str();
         switch( relation() )
         {
-        case CR_EQ:
-            result += "=";
-            break;
-        case CR_NEQ:
-            result += "<>";
-            break;
-        case CR_LESS:
-            result += "<";
-            break;
-        case CR_GREATER:
-            result += ">";
-            break;
-        case CR_LEQ:
-            result += "<=";
-            break;
-        case CR_GEQ:
-            result += ">=";
-            break;
-        default:
-            result += "~";
+            case CR_EQ:
+                result += "=";
+                break;
+            case CR_NEQ:
+                result += "<>";
+                break;
+            case CR_LESS:
+                result += "<";
+                break;
+            case CR_GREATER:
+                result += ">";
+                break;
+            case CR_LEQ:
+                result += "<=";
+                break;
+            case CR_GEQ:
+                result += ">=";
+                break;
+            default:
+                result += "~";
         }
         result += "0";
         return result;
@@ -890,26 +890,26 @@ namespace smtrat
         _out << lhs();
         switch( relation() )
         {
-        case CR_EQ:
-            _out << "=";
-            break;
-        case CR_NEQ:
-            _out << "<>";
-            break;
-        case CR_LESS:
-            _out << "<";
-            break;
-        case CR_GREATER:
-            _out << ">";
-            break;
-        case CR_LEQ:
-            _out << "<=";
-            break;
-        case CR_GEQ:
-            _out << ">=";
-            break;
-        default:
-            _out << "~";
+            case CR_EQ:
+                _out << "=";
+                break;
+            case CR_NEQ:
+                _out << "<>";
+                break;
+            case CR_LESS:
+                _out << "<";
+                break;
+            case CR_GREATER:
+                _out << ">";
+                break;
+            case CR_LEQ:
+                _out << "<=";
+                break;
+            case CR_GEQ:
+                _out << ">=";
+                break;
+            default:
+                _out << "~";
         }
         _out << "0";
     }
@@ -924,26 +924,26 @@ namespace smtrat
         _out << lhs();
         switch( relation() )
         {
-        case CR_EQ:
-            _out << "=";
-            break;
-        case CR_NEQ:
-            _out << "!=";
-            break;
-        case CR_LESS:
-            _out << "<";
-            break;
-        case CR_GREATER:
-            _out << ">";
-            break;
-        case CR_LEQ:
-            _out << "<=";
-            break;
-        case CR_GEQ:
-            _out << ">=";
-            break;
-        default:
-            _out << "~";
+            case CR_EQ:
+                _out << "=";
+                break;
+            case CR_NEQ:
+                _out << "!=";
+                break;
+            case CR_LESS:
+                _out << "<";
+                break;
+            case CR_GREATER:
+                _out << ">";
+                break;
+            case CR_LEQ:
+                _out << "<=";
+                break;
+            case CR_GEQ:
+                _out << ">=";
+                break;
+            default:
+                _out << "~";
         }
         _out << "0";
     }
@@ -980,9 +980,9 @@ namespace smtrat
             ex lcoeffB = _constraintB.lhs().lcoeff( ex( _constraintB.variables().begin()->second ) );
             ex lhsA    = _constraintA.lhs();
             ex lhsB    = _constraintB.lhs();
-            if( lcoeffA.info( info_flags::rational ) && lcoeffB.info( info_flags::rational ))
+            if( lcoeffA.info( info_flags::rational ) && lcoeffB.info( info_flags::rational ) )
             {
-                if( lcoeffB.info( info_flags::positive ))
+                if( lcoeffB.info( info_flags::positive ) )
                 {
                     lhsA = lhsA * lcoeffB;
                 }
@@ -990,7 +990,7 @@ namespace smtrat
                 {
                     lhsA = lhsA * (-1) * lcoeffB;
                 }
-                if( lcoeffA.info( info_flags::positive ))
+                if( lcoeffA.info( info_flags::positive ) )
                 {
                     lhsB = lhsB * lcoeffA;
                 }
@@ -999,546 +999,546 @@ namespace smtrat
                     lhsB = lhsB * (-1) * lcoeffA;
                 }
             }
-            else if( lcoeffA.info( info_flags::rational ) || lcoeffB.info( info_flags::rational ))
+            else if( lcoeffA.info( info_flags::rational ) || lcoeffB.info( info_flags::rational ) )
             {
                 return 0;
             }
             switch( _constraintB.relation() )
             {
-            case CR_EQ:
-            {
-                switch( _constraintA.relation() )
-                {
                 case CR_EQ:
                 {
-                    ex result1 = lhsA - lhsB;
-                    if( result1 == 0 )
-                        return 2;
-                    if( result1.info( info_flags::rational ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return 2;
-                    if( result2.info( info_flags::rational ))
-                        return -2;
-                    return 0;
+                    switch( _constraintA.relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1 == 0 )
+                                return 2;
+                            if( result1.info( info_flags::rational ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return 2;
+                            if( result2.info( info_flags::rational ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_NEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1 == 0 )
+                                return -2;
+                            if( result1.info( info_flags::rational ) )
+                                return -1;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return -2;
+                            if( result2.info( info_flags::rational ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1.info( info_flags::negative ) )
+                                return -1;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2.info( info_flags::negative ) )
+                                return -1;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            if( result1.info( info_flags::negative ) )
+                                return -1;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return -2;
+                            if( result2.info( info_flags::negative ) )
+                                return -2;
+                            if( result2.info( info_flags::positive ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_LEQ:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -1;
+                            if( result1.info( info_flags::negative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return -1;
+                            if( result2.info( info_flags::negative ) )
+                                return -1;
+                            if( result2.info( info_flags::positive ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_GEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -1;
+                            if( result1.info( info_flags::negative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2.info( info_flags::negative ) )
+                                return -2;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -1;
+                            return 0;
+                        }
+                        default:
+                            return false;
+                    }
                 }
                 case CR_NEQ:
                 {
-                    ex result1 = lhsA - lhsB;
-                    if( result1 == 0 )
-                        return -2;
-                    if( result1.info( info_flags::rational ))
-                        return -1;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return -2;
-                    if( result2.info( info_flags::rational ))
-                        return -1;
-                    return 0;
+                    switch( _constraintA.relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1 == 0 )
+                                return -2;
+                            if( result1.info( info_flags::rational ) )
+                                return 1;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return -2;
+                            if( result2.info( info_flags::rational ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_NEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1 == 0 )
+                                return 2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return 2;
+                            return 0;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return 1;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            if( result2.info( info_flags::nonnegative ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            if( result1.info( info_flags::nonnegative ) )
+                                return 1;
+                            ex result2 = lhsA + lhsB;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_LEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1 == 0 )
+                                return -3;
+                            if( result1.info( info_flags::positive ) )
+                                return 1;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            if( result2 == 0 )
+                                return -3;
+                            if( result2.info( info_flags::positive ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_GEQ:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            if( result1 == 0 )
+                                return -3;
+                            if( result1.info( info_flags::positive ) )
+                                return 1;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return -3;
+                            if( result2.info( info_flags::positive ) )
+                                return 1;
+                            return 0;
+                        }
+                        default:
+                            return 0;
+                    }
                 }
                 case CR_LESS:
                 {
-                    ex result1 = lhsA - lhsB;
-                    if( result1.info( info_flags::negative ))
-                        return -1;
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2.info( info_flags::negative ))
-                        return -1;
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
+                    switch( _constraintA.relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            if( result1.info( info_flags::negative ) )
+                                return 1;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2.info( info_flags::negative ) )
+                                return 1;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_NEQ:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -1;
+                            ex result2 = lhsA + lhsB;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1 == 0 )
+                                return 2;
+                            if( result1.info( info_flags::negative ) )
+                                return -1;
+                            if( result1.info( info_flags::positive ) )
+                                return 1;
+                            ex result2 = lhsA + lhsB;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return 2;
+                            if( result2.info( info_flags::positive ) )
+                                return -1;
+                            if( result2.info( info_flags::negative ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_LEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1.info( info_flags::positive ) )
+                                return 1;
+                            if( result1.info( info_flags::rational ) )
+                                return -1;
+                            ex result2 = lhsA + lhsB;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_GEQ:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -1;
+                            if( result2.info( info_flags::negative ) )
+                                return 1;
+                            return 0;
+                        }
+                        default:
+                            return 0;
+                    }
                 }
                 case CR_GREATER:
                 {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    if( result1.info( info_flags::negative ))
-                        return -1;
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return -2;
-                    if( result2.info( info_flags::negative ))
-                        return -2;
-                    if( result2.info( info_flags::positive ))
-                        return -1;
-                    return 0;
+                    switch( _constraintA.relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1.info( info_flags::negative ) )
+                                return 1;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return -2;
+                            if( result2.info( info_flags::negative ) )
+                                return -2;
+                            if( result2.info( info_flags::positive ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_NEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -1;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return 2;
+                            if( result2.info( info_flags::positive ) )
+                                return 1;
+                            if( result2.info( info_flags::negative ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1 == 0 )
+                                return 2;
+                            if( result1.info( info_flags::negative ) )
+                                return 1;
+                            if( result1.info( info_flags::positive ) )
+                                return -1;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_LEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -1;
+                            if( result2.info( info_flags::negative ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_GEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1.info( info_flags::negative ) )
+                                return 1;
+                            if( result1.info( info_flags::rational ) )
+                                return -1;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        default:
+                            return 0;
+                    }
                 }
                 case CR_LEQ:
                 {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    if( result1.info( info_flags::nonnegative ))
-                        return -1;
-                    if( result1.info( info_flags::negative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return -1;
-                    if( result2.info( info_flags::negative ))
-                        return -1;
-                    if( result2.info( info_flags::positive ))
-                        return -2;
-                    return 0;
+                    switch( _constraintA.relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return 1;
+                            if( result1.info( info_flags::negative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return 1;
+                            if( result2.info( info_flags::negative ) )
+                                return 1;
+                            if( result2.info( info_flags::positive ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_NEQ:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            if( result1 == 0 )
+                                return -3;
+                            if( result1.info( info_flags::positive ) )
+                                return -1;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return -3;
+                            if( result2.info( info_flags::positive ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1.info( info_flags::negative ) )
+                                return -1;
+                            if( result1.info( info_flags::rational ) )
+                                return 1;
+                            ex result2 = lhsA + lhsB;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            if( result2.info( info_flags::nonnegative ) )
+                                return 1;
+                            if( result2.info( info_flags::negative ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_LEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1 == 0 )
+                                return 2;
+                            if( result1.info( info_flags::negative ) )
+                                return -1;
+                            if( result1.info( info_flags::positive ) )
+                                return 1;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return -3;
+                            if( result2.info( info_flags::positive ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_GEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1 == 0 )
+                                return -3;
+                            if( result1.info( info_flags::negative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return 2;
+                            if( result2.info( info_flags::positive ) )
+                                return -1;
+                            if( result2.info( info_flags::negative ) )
+                                return 1;
+                            return 0;
+                        }
+                        default:
+                            return 0;
+                    }
                 }
                 case CR_GEQ:
                 {
-                    ex result1 = lhsA - lhsB;
-                    if( result1.info( info_flags::nonnegative ))
-                        return -1;
-                    if( result1.info( info_flags::negative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2.info( info_flags::negative ))
-                        return -2;
-                    if( result2.info( info_flags::nonnegative ))
-                        return -1;
-                    return 0;
-                }
-                default:
-                    return false;
-                }
-            }
-            case CR_NEQ:
-            {
-                switch( _constraintA.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1 == 0 )
-                        return -2;
-                    if( result1.info( info_flags::rational ))
-                        return 1;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return -2;
-                    if( result2.info( info_flags::rational ))
-                        return 1;
-                    return 0;
-                }
-                case CR_NEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1 == 0 )
-                        return 2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return 2;
-                    return 0;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1.info( info_flags::nonnegative ))
-                        return 1;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    if( result2.info( info_flags::nonnegative ))
-                        return 1;
-                    return 0;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    if( result1.info( info_flags::nonnegative ))
-                        return 1;
-                    ex result2 = lhsA + lhsB;
-                    if( result2.info( info_flags::nonnegative ))
-                        return 1;
-                    return 0;
-                }
-                case CR_LEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1 == 0 )
-                        return -3;
-                    if( result1.info( info_flags::positive ))
-                        return 1;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    if( result2 == 0 )
-                        return -3;
-                    if( result2.info( info_flags::positive ))
-                        return 1;
-                    return 0;
-                }
-                case CR_GEQ:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    if( result1 == 0 )
-                        return -3;
-                    if( result1.info( info_flags::positive ))
-                        return 1;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return -3;
-                    if( result2.info( info_flags::positive ))
-                        return 1;
-                    return 0;
-                }
-                default:
-                    return 0;
-                }
-            }
-            case CR_LESS:
-            {
-                switch( _constraintA.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    if( result1.info( info_flags::negative ))
-                        return 1;
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2.info( info_flags::negative ))
-                        return 1;
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
-                }
-                case CR_NEQ:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    if( result1.info( info_flags::nonnegative ))
-                        return -1;
-                    ex result2 = lhsA + lhsB;
-                    if( result2.info( info_flags::nonnegative ))
-                        return -1;
-                    return 0;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1 == 0 )
-                        return 2;
-                    if( result1.info( info_flags::negative ))
-                        return -1;
-                    if( result1.info( info_flags::positive ))
-                        return 1;
-                    ex result2 = lhsA + lhsB;
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return 2;
-                    if( result2.info( info_flags::positive ))
-                        return -1;
-                    if( result2.info( info_flags::negative ))
-                        return 1;
-                    return 0;
-                }
-                case CR_LEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1.info( info_flags::positive ))
-                        return 1;
-                    if( result1.info( info_flags::rational ))
-                        return -1;
-                    ex result2 = lhsA + lhsB;
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
-                }
-                case CR_GEQ:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2.info( info_flags::nonnegative ))
-                        return -1;
-                    if( result2.info( info_flags::negative ))
-                        return 1;
-                    return 0;
+                    switch( _constraintA.relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            if( result1.info( info_flags::nonnegative ) )
+                                return 1;
+                            if( result1.info( info_flags::negative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2.info( info_flags::negative ) )
+                                return -2;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_NEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1 == 0 )
+                                return -3;
+                            if( result1.info( info_flags::positive ) )
+                                return -1;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            if( result2 == 0 )
+                                return -3;
+                            if( result2.info( info_flags::positive ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return 1;
+                            if( result2.info( info_flags::negative ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1.info( info_flags::positive ) )
+                                return -1;
+                            if( result1.info( info_flags::rational ) )
+                                return 1;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_LEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1 == 0 )
+                                return -3;
+                            if( result1.info( info_flags::positive ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return 2;
+                            if( result2.info( info_flags::positive ) )
+                                return 1;
+                            if( result2.info( info_flags::negative ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_GEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            if( result1 == 0 )
+                                return 2;
+                            if( result1.info( info_flags::negative ) )
+                                return 1;
+                            if( result1.info( info_flags::positive ) )
+                                return -1;
+                            ex result2 = lhsA + lhsB;
+                            if( result2 == 0 )
+                                return -3;
+                            if( result2.info( info_flags::negative ) )
+                                return -2;
+                            return 0;
+                        }
+                        default:
+                            return 0;
+                    }
                 }
                 default:
                     return 0;
-                }
-            }
-            case CR_GREATER:
-            {
-                switch( _constraintA.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1.info( info_flags::negative ))
-                        return 1;
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return -2;
-                    if( result2.info( info_flags::negative ))
-                        return -2;
-                    if( result2.info( info_flags::positive ))
-                        return 1;
-                    return 0;
-                }
-                case CR_NEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1.info( info_flags::nonnegative ))
-                        return -1;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    if( result2.info( info_flags::nonnegative ))
-                        return -1;
-                    return 0;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return 2;
-                    if( result2.info( info_flags::positive ))
-                        return 1;
-                    if( result2.info( info_flags::negative ))
-                        return -1;
-                    return 0;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1 == 0 )
-                        return 2;
-                    if( result1.info( info_flags::negative ))
-                        return 1;
-                    if( result1.info( info_flags::positive ))
-                        return -1;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
-                }
-                case CR_LEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    if( result2.info( info_flags::nonnegative ))
-                        return -1;
-                    if( result2.info( info_flags::negative ))
-                        return 1;
-                    return 0;
-                }
-                case CR_GEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1.info( info_flags::negative ))
-                        return 1;
-                    if( result1.info( info_flags::rational ))
-                        return -1;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
-                }
-                default:
-                    return 0;
-                }
-            }
-            case CR_LEQ:
-            {
-                switch( _constraintA.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1.info( info_flags::nonnegative ))
-                        return 1;
-                    if( result1.info( info_flags::negative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return 1;
-                    if( result2.info( info_flags::negative ))
-                        return 1;
-                    if( result2.info( info_flags::positive ))
-                        return -2;
-                    return 0;
-                }
-                case CR_NEQ:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    if( result1 == 0 )
-                        return -3;
-                    if( result1.info( info_flags::positive ))
-                        return -1;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return -3;
-                    if( result2.info( info_flags::positive ))
-                        return -1;
-                    return 0;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1.info( info_flags::negative ))
-                        return -1;
-                    if( result1.info( info_flags::rational ))
-                        return 1;
-                    ex result2 = lhsA + lhsB;
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    if( result2.info( info_flags::nonnegative ))
-                        return 1;
-                    if( result2.info( info_flags::negative ))
-                        return -1;
-                    return 0;
-                }
-                case CR_LEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1 == 0 )
-                        return 2;
-                    if( result1.info( info_flags::negative ))
-                        return -1;
-                    if( result1.info( info_flags::positive ))
-                        return 1;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return -3;
-                    if( result2.info( info_flags::positive ))
-                        return -2;
-                    return 0;
-                }
-                case CR_GEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1 == 0 )
-                        return -3;
-                    if( result1.info( info_flags::negative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return 2;
-                    if( result2.info( info_flags::positive ))
-                        return -1;
-                    if( result2.info( info_flags::negative ))
-                        return 1;
-                    return 0;
-                }
-                default:
-                    return 0;
-                }
-            }
-            case CR_GEQ:
-            {
-                switch( _constraintA.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    if( result1.info( info_flags::nonnegative ))
-                        return 1;
-                    if( result1.info( info_flags::negative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2.info( info_flags::negative ))
-                        return -2;
-                    if( result2.info( info_flags::nonnegative ))
-                        return 1;
-                    return 0;
-                }
-                case CR_NEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1 == 0 )
-                        return -3;
-                    if( result1.info( info_flags::positive ))
-                        return -1;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    if( result2 == 0 )
-                        return -3;
-                    if( result2.info( info_flags::positive ))
-                        return -1;
-                    return 0;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2.info( info_flags::nonnegative ))
-                        return 1;
-                    if( result2.info( info_flags::negative ))
-                        return -1;
-                    return 0;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1.info( info_flags::positive ))
-                        return -1;
-                    if( result1.info( info_flags::rational ))
-                        return 1;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
-                }
-                case CR_LEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1 == 0 )
-                        return -3;
-                    if( result1.info( info_flags::positive ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return 2;
-                    if( result2.info( info_flags::positive ))
-                        return 1;
-                    if( result2.info( info_flags::negative ))
-                        return -1;
-                    return 0;
-                }
-                case CR_GEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    if( result1 == 0 )
-                        return 2;
-                    if( result1.info( info_flags::negative ))
-                        return 1;
-                    if( result1.info( info_flags::positive ))
-                        return -1;
-                    ex result2 = lhsA + lhsB;
-                    if( result2 == 0 )
-                        return -3;
-                    if( result2.info( info_flags::negative ))
-                        return -2;
-                    return 0;
-                }
-                default:
-                    return 0;
-                }
-            }
-            default:
-                return 0;
             }
         }
         else
@@ -1578,360 +1578,360 @@ namespace smtrat
         {
             switch( _constraintA.relation() )
             {
-            case CR_EQ:
-            {
-                switch( _constraintB.relation() )
-                {
                 case CR_EQ:
                 {
-                    return false;
+                    switch( _constraintB.relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            return false;
+                        }
+                        case CR_NEQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rLhs() = 0;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rLhs() = 0;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_LEQ;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_LEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_GEQ;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_GEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_LEQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_LEQ;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_LEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_GEQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_GEQ;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_GEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        default:
+                            return false;
+                    }
                 }
                 case CR_NEQ:
                 {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    if( result1 == 0 )
+                    switch( _constraintB.relation() )
                     {
-                        _constraintA.rLhs() = 0;
-                        return true;
+                        case CR_EQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rLhs() = 1;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rLhs() = 1;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_NEQ:
+                        {
+                            return false;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            if( result2 == 0 )
+                            {
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            if( result2 == 0 )
+                            {
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_LEQ:
+                        {
+                            return false;
+                        }
+                        case CR_GEQ:
+                        {
+                            return false;
+                        }
+                        default:
+                            return false;
                     }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rLhs() = 0;
-                        return true;
-                    }
-                    return false;
                 }
                 case CR_LESS:
                 {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    if( result1 == 0 )
+                    switch( _constraintB.relation() )
                     {
-                        _constraintA.rRelation() = CR_LEQ;
-                        return true;
+                        case CR_EQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_LEQ;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_LEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_NEQ:
+                        {
+                            return false;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = _constraintA.lhs() + _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_NEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_NEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_LEQ:
+                        {
+                            return false;
+                        }
+                        case CR_GEQ:
+                        {
+                            return false;
+                        }
+                        default:
+                            return false;
                     }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_LEQ;
-                        return true;
-                    }
-                    return false;
                 }
                 case CR_GREATER:
                 {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    if( result1 == 0 )
+                    switch( _constraintB.relation() )
                     {
-                        _constraintA.rRelation() = CR_GEQ;
-                        return true;
+                        case CR_EQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_GEQ;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_GEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_NEQ:
+                        {
+                            return false;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_NEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = _constraintA.lhs() + _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_NEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_LEQ:
+                        {
+                            return false;
+                        }
+                        case CR_GEQ:
+                        {
+                            return false;
+                        }
+                        default:
+                            return false;
                     }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_GEQ;
-                        return true;
-                    }
-                    return false;
                 }
                 case CR_LEQ:
                 {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    if( result1 == 0 )
+                    switch( _constraintB.relation() )
                     {
-                        _constraintA.rRelation() = CR_LEQ;
-                        return true;
+                        case CR_EQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            if( result2 == 0 )
+                            {
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_NEQ:
+                        {
+                            return false;
+                        }
+                        case CR_LESS:
+                        {
+                            return false;
+                        }
+                        case CR_GREATER:
+                        {
+                            return false;
+                        }
+                        case CR_LEQ:
+                        {
+                            return false;
+                        }
+                        case CR_GEQ:
+                        {
+                            return false;
+                        }
+                        default:
+                            return false;
                     }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_LEQ;
-                        return true;
-                    }
-                    return false;
                 }
                 case CR_GEQ:
                 {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    if( result1 == 0 )
+                    switch( _constraintB.relation() )
                     {
-                        _constraintA.rRelation() = CR_GEQ;
-                        return true;
+                        case CR_EQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            if( result1 == 0 )
+                            {
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            if( result2 == 0 )
+                            {
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_NEQ:
+                        {
+                            return false;
+                        }
+                        case CR_LESS:
+                        {
+                            return false;
+                        }
+                        case CR_GREATER:
+                        {
+                            return false;
+                        }
+                        case CR_LEQ:
+                        {
+                            return false;
+                        }
+                        case CR_GEQ:
+                        {
+                            return false;
+                        }
+                        default:
+                            return false;
                     }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_GEQ;
-                        return true;
-                    }
-                    return false;
                 }
                 default:
                     return false;
-                }
-            }
-            case CR_NEQ:
-            {
-                switch( _constraintB.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    if( result1 == 0 )
-                    {
-                        _constraintA.rLhs() = 1;
-                        return true;
-                    }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rLhs() = 1;
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_NEQ:
-                {
-                    return false;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    if( result1 == 0 )
-                    {
-                        return true;
-                    }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    if( result2 == 0 )
-                    {
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    if( result1 == 0 )
-                    {
-                        return true;
-                    }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    if( result2 == 0 )
-                    {
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_LEQ:
-                {
-                    return false;
-                }
-                case CR_GEQ:
-                {
-                    return false;
-                }
-                default:
-                    return false;
-                }
-            }
-            case CR_LESS:
-            {
-                switch( _constraintB.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    if( result1 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_LEQ;
-                        return true;
-                    }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_LEQ;
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_NEQ:
-                {
-                    return false;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = _constraintA.lhs() + _constraintB.lhs();
-                    if( result1 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_NEQ;
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    if( result1 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_NEQ;
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_LEQ:
-                {
-                    return false;
-                }
-                case CR_GEQ:
-                {
-                    return false;
-                }
-                default:
-                    return false;
-                }
-            }
-            case CR_GREATER:
-            {
-                switch( _constraintB.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    if( result1 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_GEQ;
-                        return true;
-                    }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_GEQ;
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_NEQ:
-                {
-                    return false;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    if( result1 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_NEQ;
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = _constraintA.lhs() + _constraintB.lhs();
-                    if( result1 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_NEQ;
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_LEQ:
-                {
-                    return false;
-                }
-                case CR_GEQ:
-                {
-                    return false;
-                }
-                default:
-                    return false;
-                }
-            }
-            case CR_LEQ:
-            {
-                switch( _constraintB.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    if( result1 == 0 )
-                    {
-                        return true;
-                    }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    if( result2 == 0 )
-                    {
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_NEQ:
-                {
-                    return false;
-                }
-                case CR_LESS:
-                {
-                    return false;
-                }
-                case CR_GREATER:
-                {
-                    return false;
-                }
-                case CR_LEQ:
-                {
-                    return false;
-                }
-                case CR_GEQ:
-                {
-                    return false;
-                }
-                default:
-                    return false;
-                }
-            }
-            case CR_GEQ:
-            {
-                switch( _constraintB.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    if( result1 == 0 )
-                    {
-                        return true;
-                    }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    if( result2 == 0 )
-                    {
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_NEQ:
-                {
-                    return false;
-                }
-                case CR_LESS:
-                {
-                    return false;
-                }
-                case CR_GREATER:
-                {
-                    return false;
-                }
-                case CR_LEQ:
-                {
-                    return false;
-                }
-                case CR_GEQ:
-                {
-                    return false;
-                }
-                default:
-                    return false;
-                }
-            }
-            default:
-                return false;
             }
         }
         else

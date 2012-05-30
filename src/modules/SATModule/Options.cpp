@@ -29,11 +29,11 @@ void Minisat::parseOptions( int& argc, char** argv, bool strict )
     for( i = j = 1; i < argc; i++ )
     {
         const char* str = argv[i];
-        if( match( str, "--" ) && match( str, Option::getHelpPrefixString() ) && match( str, "help" ))
+        if( match( str, "--" ) && match( str, Option::getHelpPrefixString() ) && match( str, "help" ) )
         {
             if( *str == '\0' )
                 printUsageAndExit( argc, argv );
-            else if( match( str, "-verb" ))
+            else if( match( str, "-verb" ) )
                 printUsageAndExit( argc, argv, true );
         }
         else

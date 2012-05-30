@@ -19,7 +19,8 @@
  *
  */
 
-/* 
+
+/*
  * File:   PreProCNFModule.h
  * Author: Dennis Scully
  *
@@ -40,17 +41,17 @@ namespace smtrat
         public Module
     {
         public:
-            
+
             /**
              * Constructors:
              */
             PreProCNFModule( Manager* const _tsManager, const Formula* const _formula );
-           
+
             /**
              * Destructor:
              */
             virtual ~PreProCNFModule();
-            
+
             /**
              * Methods:
              */
@@ -63,16 +64,16 @@ namespace smtrat
             void pushBacktrackPoint();
 
         private:
-            
-            std::vector< unsigned >          mActivities;
-            std::vector< Formula* >          mFormula;
-            std::vector<const Formula*>      mConstraintOrigins;
-            std::vector< Formula* >          mBacktrackPoint;
-            bool                             mNewFormulaReceived;
-            unsigned                         mNumberOfSubstitutedFormulas;
-            unsigned                         mNumberOfAppliedSubstitutions;
-            std::vector< pair< pair<std::string, bool>, pair<GiNaC::ex, GiNaC::ex> > > mSubstitutions;
-            std::vector< const Formula* >    mSubstitutionOrigins;
+
+            std::vector<unsigned>                                                    mActivities;
+            std::vector<Formula*>                                                    mFormula;
+            std::vector<const Formula*>                                              mConstraintOrigins;
+            std::vector<Formula*>                                                    mBacktrackPoint;
+            bool                                                                     mNewFormulaReceived;
+            unsigned                                                                 mNumberOfSubstitutedFormulas;
+            unsigned                                                                 mNumberOfAppliedSubstitutions;
+            std::vector<pair<pair<std::string, bool>, pair<GiNaC::ex, GiNaC::ex> > > mSubstitutions;
+            std::vector<const Formula*>                                              mSubstitutionOrigins;
     };
 
 }    // namespace smtrat

@@ -73,15 +73,15 @@ namespace smtrat
                         //entry i,i
                         //  std::cout << "Reducing " << monoms[i].pow(2);
                         //std::cout << " to " << GiNaCRA::reduction(mGroebnerBasis,(monoms[i].pow(2))) << std::endl;
-                        constraintMatrixFactory.addReducedTerm( MatrixIndex( i, i ), GiNaCRA::reduction( mGroebnerBasis, (monoms[i].pow( 2 ))));
+                        constraintMatrixFactory.addReducedTerm( MatrixIndex( i, i ), GiNaCRA::reduction( mGroebnerBasis, (monoms[i].pow( 2 )) ) );
 
                         //entry i,j j>i
                         for( unsigned j = i + 1; j < size; ++j )
                         {
                             //      std::cout << "Reducing " << Rational(2) * monoms[i] * monoms[j];
-							//std::cout << " to " << GiNaCRA::reduction(mGroebnerBasis, Rational(2)*monoms[i]*monoms[j]) << std::endl;
+                            //std::cout << " to " << GiNaCRA::reduction(mGroebnerBasis, Rational(2)*monoms[i]*monoms[j]) << std::endl;
                             constraintMatrixFactory.addReducedTerm( MatrixIndex( i, j ),
-                                                                    GiNaCRA::reduction( mGroebnerBasis, Rational( 2 ) * monoms[i] * monoms[j] ));
+                                                                    GiNaCRA::reduction( mGroebnerBasis, Rational( 2 ) * monoms[i] * monoms[j] ) );
                         }
                     }
 

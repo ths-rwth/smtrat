@@ -29,26 +29,30 @@
  */
 
 #ifndef CSDP_UNITTEST_H
-#define	CSDP_UNITTEST_H
+#define CSDP_UNITTEST_H
 
 #include <cppunit/extensions/HelperMacros.h>
 #include "../utilities/SDP/CSDPFacade.h"
 #include "../utilities/debug/debug.h"
 
-class CSDP_unittest : public CPPUNIT_NS::TestFixture {
-	CPPUNIT_TEST_SUITE(CSDP_unittest);
-	//CPPUNIT_TEST(testCSDP);
-	CPPUNIT_TEST_SUITE_END();
+class CSDP_unittest:
+    public CPPUNIT_NS:: TestFixture
+{
+    CPPUNIT_TEST_SUITE( CSDP_unittest );
 
-public:
-	CSDP_unittest();
-	virtual ~CSDP_unittest();
-	void setUp();
-	void tearDown();
+ //CPPUNIT_TEST(testCSDP);
+ CPPUNIT_TEST_SUITE_END()
 
-private:
-	void testCSDP();
+ ;
+
+ public:
+     CSDP_unittest();
+     virtual ~CSDP_unittest();
+     void setUp();
+     void tearDown();
+
+ private:
+     void testCSDP();
 };
 
-#endif	/* CSDP_UNITTEST_H */
-
+#endif   /* CSDP_UNITTEST_H */

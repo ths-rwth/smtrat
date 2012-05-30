@@ -44,7 +44,7 @@ namespace Minisat
             var = abs( parsed_lit ) - 1;
             while( var >= S.nVars() )
                 S.newVar();
-            lits.push( (parsed_lit > 0) ? mkLit( var ) : ~mkLit( var ));
+            lits.push( (parsed_lit > 0) ? mkLit( var ) : ~mkLit( var ) );
         }
     }
 
@@ -62,7 +62,7 @@ namespace Minisat
                 break;
             else if( *in == 'p' )
             {
-                if( eagerMatch( in, "p cnf" ))
+                if( eagerMatch( in, "p cnf" ) )
                 {
                     vars    = parseInt( in );
                     clauses = parseInt( in );

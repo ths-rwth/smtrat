@@ -39,13 +39,14 @@ namespace smtrat
     * @version
     *
     */
-    class NRATSolver: public Manager
+    class NRATSolver:
+        public Manager
     {
-    public:
-        NRATSolver( Formula* = new Formula( AND ) );
-        ~NRATSolver();
+        public:
+            NRATSolver( Formula* = new Formula( AND ) );
+            ~NRATSolver();
 
     };
 
-} // namespace smtrat
+}    // namespace smtrat
 #endif   /** SMTRAT_NRATSOLVER_H */

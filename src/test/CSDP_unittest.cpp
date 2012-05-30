@@ -32,69 +32,61 @@
 
 #include <vector>
 #include <bits/unique_ptr.h>
+
 using namespace smtrat;
+
 using std::unique_ptr;
 
-CPPUNIT_TEST_SUITE_REGISTRATION(CSDP_unittest);
+CPPUNIT_TEST_SUITE_REGISTRATION( CSDP_unittest );
 
-CSDP_unittest::CSDP_unittest() {
+CSDP_unittest::CSDP_unittest(){}
+
+CSDP_unittest::~CSDP_unittest(){}
+
+void CSDP_unittest::setUp(){}
+
+void CSDP_unittest::tearDown(){}
+
+void CSDP_unittest::testCSDP()
+{
+    //CSDPFacade::test();
+    SparseMatrix s1 = SparseMatrix( 7, 7 );
+    s1.set( 0, 0, 3 );
+    s1.set( 0, 1, 1 );
+    //s1.set(1,0,1);
+    s1.set( 1, 1, 3 );
+    s1.set( 5, 5, 1 );
+    s1.PrintEntries();
+
+    SparseMatrix s2 = SparseMatrix( 7, 7 );
+    s2.set( 2, 2, 3 );
+    s2.set( 2, 4, 1 );
+    //s2.set(4,2,1);
+    s2.set( 3, 3, 4 );
+    s2.set( 4, 4, 5 );
+    s2.set( 6, 6, 1 );
+    s2.PrintEntries();
+
+    print_debug( "Building cost", 2 );
+    double cost[49] =
+    {
+        2, 1, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0
+    };
+
+    print_debug( "Building constraints", 2 );
+
+    std::vector<SparseMatrix> constraints;
+    constraints.push_back( s1 );
+    constraints.push_back( s2 );
+
+    print_debug( "Building rhs", 2 );
+    double b[2] = { 1, 2 };
+
+    print_debug( "Initializing interface to CSDP", 2 );
+    CSDPFacade facade = CSDPFacade( 7, cost, constraints, b );
+
+    print_debug( "Call routine", 2 );
+    unique_ptr<std::vector<double> > solution;
+    facade.callRoutine( solution );
 }
-
-CSDP_unittest::~CSDP_unittest() {
-}
-
-void CSDP_unittest::setUp() {
-
-}
-
-void CSDP_unittest::tearDown() {	
-
-}
-
-void CSDP_unittest::testCSDP() {
-	//CSDPFacade::test();
-	SparseMatrix s1 = SparseMatrix(7,7);
-	s1.set(0,0,3);
-	s1.set(0,1,1);
-	//s1.set(1,0,1);
-	s1.set(1,1,3);
-	s1.set(5,5,1);
-	s1.PrintEntries();
-	
-	SparseMatrix s2 = SparseMatrix(7,7);
-	s2.set(2,2,3);
-	s2.set(2,4,1);
-	//s2.set(4,2,1);
-	s2.set(3,3,4);
-	s2.set(4,4,5);
-	s2.set(6,6,1);
-	s2.PrintEntries();
-	
-
-	
-	print_debug("Building cost", 2);
-	double cost[49] = { 2, 1, 0, 0, 0, 0, 0, 
-						1, 2, 0, 0, 0, 0, 0,
-						0, 0, 3, 0, 1, 0, 0,
-						0, 0, 0, 2, 0, 0, 0,
-						0, 0, 1, 0, 3, 0, 0,
-						0, 0, 0, 0, 0, 0, 0,
-						0, 0, 0, 0, 0, 0, 0 };
-	
-	print_debug("Building constraints", 2);
-	
-	std::vector<SparseMatrix> constraints;
-	constraints.push_back(s1);
-	constraints.push_back(s2);
-	
-	print_debug("Building rhs", 2);
-	double b[2] = {1, 2};
-	
-	print_debug("Initializing interface to CSDP", 2);
-	CSDPFacade facade = CSDPFacade(7, cost, constraints,  b);
-	
-	print_debug("Call routine", 2);
-	unique_ptr<std::vector<double> > solution;
-	facade.callRoutine(solution);
-}
-

@@ -53,29 +53,29 @@ namespace smtrat
         mIsUnknown( false )
     {
         mModuleType = MT_UnivariateCADModule;
-std::cout << mpTSManager->allVariables().size() << std::endl;
-        GiNaC::symtab::const_iterator sym = mpTSManager->allVariables().begin(); 
+        std::cout << mpTSManager->allVariables().size() << std::endl;
+        GiNaC::symtab::const_iterator sym = mpTSManager->allVariables().begin();
         while( sym != mpTSManager->allVariables().end() )
         {
-            symbol variable = ex_to<symbol>(sym->second);
+            symbol variable = ex_to<symbol>( sym->second );
             mVariables.push_back( variable );
-            mCADs[variable]                 = CAD( UnivariatePolynomialSet(), vector<symbol>( 1, variable ));
-//            mCADsToCheck[variable]          = false;
-//            mConstraintsBuckets[variable]   = vector<GiNaCRA::Constraint>();
-//std::cout << __func__ << ":" << __LINE__ << std::endl;
-//            mSubformulaBuckets[variable] = set< const Formula* >();
-std::cout << __func__ << ":" << __LINE__ << std::endl;
-			++sym; 
-std::cout << __func__ << ":" << __LINE__ << std::endl;
+            mCADs[variable] = CAD( UnivariatePolynomialSet(), vector<symbol>( 1, variable ) );
+            //            mCADsToCheck[variable]          = false;
+            //            mConstraintsBuckets[variable]   = vector<GiNaCRA::Constraint>();
+            //std::cout << __func__ << ":" << __LINE__ << std::endl;
+            //            mSubformulaBuckets[variable] = set< const Formula* >();
+            std::cout << __func__ << ":" << __LINE__ << std::endl;
+            ++sym;
+            std::cout << __func__ << ":" << __LINE__ << std::endl;
         }
-std::cout << __func__ << ":" << __LINE__ << std::endl;
+        std::cout << __func__ << ":" << __LINE__ << std::endl;
     }
 
     UnivariateCADModule::~UnivariateCADModule(){}
 
     bool UnivariateCADModule::assertSubformula( const Formula* const _formula )
     {
-    	assert( _formula->getType() == REALCONSTRAINT );
+        assert( _formula->getType() == REALCONSTRAINT );
         Module::assertSubFormula( _formula );
         addReceivedSubformulaToPassedFormula( receivedFormulaSize() - 1 );
         // check whether we get a multivariate constraint in which case we do not solve for the constraint
@@ -84,13 +84,13 @@ std::cout << __func__ << ":" << __LINE__ << std::endl;
             mIsUnknown = true;    // set to false again if the unresolvable constraint(s) are removed again due to popBacktrackPoint
             return true;
         }
-        symbol variable = ex_to< symbol >( _formula->constraint().variables().begin()->second );
+        symbol variable = ex_to<symbol>( _formula->constraint().variables().begin()->second );
         // find the cad appropriate to the constraint's variable and add the polynomial
         mCADs.find( variable )->second.addPolynomial( UnivariatePolynomial( _formula->constraint().lhs(), variable, false ), mVariables );
         // enable the flag indicating that this cad needs to be checked for consistency
         mCADsToCheck[variable] = true;
         // find the constraint bucket appropriate to the constraint's variable and add the constraint
-        mConstraintsBuckets[variable].push_back( convertConstraint( _formula->constraint() ));
+        mConstraintsBuckets[variable].push_back( convertConstraint( _formula->constraint() ) );
         mSubformulaBuckets[variable].insert( _formula );
         return true;
     }
@@ -106,7 +106,7 @@ std::cout << __func__ << ":" << __LINE__ << std::endl;
             if( mCADsToCheck[*variable] )
             {
                 RealAlgebraicPoint r;
-                if( !mCADs[*variable].check( mConstraintsBuckets[*variable], r ))
+                if( !mCADs[*variable].check( mConstraintsBuckets[*variable], r ) )
                 {
                     mInfeasibleSubsets.clear();
                     mInfeasibleSubsets.push_back( mSubformulaBuckets[*variable] );
@@ -121,31 +121,31 @@ std::cout << __func__ << ":" << __LINE__ << std::endl;
 
     void UnivariateCADModule::popBacktrackPoint()
     {
-//TODO: uncomment and bugfix this
-//        vector< const Constraint* > constraintsToRemove = removeAllOriginatedBy( mBackTrackPoints.back() );
-//		
-//		assert( !constraintsToRemove.empty() );
+        //TODO: uncomment and bugfix this
+        //        vector< const Constraint* > constraintsToRemove = removeAllOriginatedBy( mBackTrackPoints.back() );
+        //      
+        //      assert( !constraintsToRemove.empty() );
 
-//        for( vector< const Constraint* >::iterator constraint = constraintsToRemove.begin();
-//        	 constraint != constraintsToRemove.end();
-//        	 ++constraint )
-//        {
-//            set< const Formula* > currentSubformulas = mSubformulaBuckets[(*constraint)->variables().begin()->second];
-//            set< const Formula* >::iterator delIter = currentSubformulas.begin();
-//            while( delIter != currentSubformulas.end() )
-//            {
-//            	if( (*delIter)->pConstraint() == *constraint )
-//            	{
-//            		break;
-//            	}
-//            	++delIter;
-//            }
-//            if( delIter != currentSubformulas.end() )
-//            {    // element to erase has been found
-//                currentSubformulas.erase( delIter );
-//                mSubformulaBuckets[(*constraint)->variables().begin()->second] = currentSubformulas;
-//            }
-//        }
+        //        for( vector< const Constraint* >::iterator constraint = constraintsToRemove.begin();
+        //           constraint != constraintsToRemove.end();
+        //           ++constraint )
+        //        {
+        //            set< const Formula* > currentSubformulas = mSubformulaBuckets[(*constraint)->variables().begin()->second];
+        //            set< const Formula* >::iterator delIter = currentSubformulas.begin();
+        //            while( delIter != currentSubformulas.end() )
+        //            {
+        //              if( (*delIter)->pConstraint() == *constraint )
+        //              {
+        //                  break;
+        //              }
+        //              ++delIter;
+        //            }
+        //            if( delIter != currentSubformulas.end() )
+        //            {    // element to erase has been found
+        //                currentSubformulas.erase( delIter );
+        //                mSubformulaBuckets[(*constraint)->variables().begin()->second] = currentSubformulas;
+        //            }
+        //        }
     }
 
     ///////////////////////
@@ -162,46 +162,46 @@ std::cout << __func__ << ":" << __LINE__ << std::endl;
         // convert the constraints variables
         vector<symbol> variables = vector<symbol>();
         for( register GiNaC::symtab::const_iterator i = c.variables().begin(); i != c.variables().end(); ++i )
-            variables.push_back( ex_to<symbol>( i->second ));
+            variables.push_back( ex_to<symbol>( i->second ) );
         register sign signForConstraint    = ZERO_SIGN;
         register bool cadConstraintNegated = false;
         switch( c.relation() )
         {
-        case CR_EQ:
-        {
-            break;
-        }
-        case CR_LEQ:
-        {
-            signForConstraint    = POSITIVE_SIGN;
-            cadConstraintNegated = true;
-            break;
-        }
-        case CR_GEQ:
-        {
-            signForConstraint    = NEGATIVE_SIGN;
-            cadConstraintNegated = true;
-            break;
-        }
-        case CR_LESS:
-        {
-            signForConstraint = NEGATIVE_SIGN;
-            break;
-        }
-        case CR_GREATER:
-        {
-            signForConstraint = POSITIVE_SIGN;
-            break;
-        }
-        case CR_NEQ:
-        {
-            cadConstraintNegated = true;
-            break;
-        }
-        default:
-        {
-            assert( false == true );
-        }
+            case CR_EQ:
+            {
+                break;
+            }
+            case CR_LEQ:
+            {
+                signForConstraint    = POSITIVE_SIGN;
+                cadConstraintNegated = true;
+                break;
+            }
+            case CR_GEQ:
+            {
+                signForConstraint    = NEGATIVE_SIGN;
+                cadConstraintNegated = true;
+                break;
+            }
+            case CR_LESS:
+            {
+                signForConstraint = NEGATIVE_SIGN;
+                break;
+            }
+            case CR_GREATER:
+            {
+                signForConstraint = POSITIVE_SIGN;
+                break;
+            }
+            case CR_NEQ:
+            {
+                cadConstraintNegated = true;
+                break;
+            }
+            default:
+            {
+                assert( false == true );
+            }
         }
         return GiNaCRA::Constraint( Polynomial( c.lhs() ), signForConstraint, variables, cadConstraintNegated );
     }

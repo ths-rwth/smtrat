@@ -62,14 +62,14 @@ namespace smtrat
         Module::assertSubFormula( _formula );
         for( GiNaC::symtab::const_iterator it = _formula->constraint().variables().begin(); it != _formula->constraint().variables().end(); ++it )
         {
-            VariableListPool::addVariable( ex_to<symbol>( it->second ));
+            VariableListPool::addVariable( ex_to<symbol>( it->second ) );
             mListOfVariables.insert( *it );
         }
 
         //only equalities should be added
         if( _formula->constraint().relation() == CR_EQ )
         {
-            mBasis.addPolynomial( MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic>( _formula->constraint().lhs() ));
+            mBasis.addPolynomial( MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic>( _formula->constraint().lhs() ) );
         }
 
         return true;
@@ -102,7 +102,7 @@ namespace smtrat
                 // We currently only try with a low nr of variables.
                 if( vars < 6 )
                 {
-                    GroebnerToSDP<GiNaCRA::GradedLexicgraphic> sdp( mBasis.getGbIdeal(), MonomialIterator( vars ));
+                    GroebnerToSDP<GiNaCRA::GradedLexicgraphic> sdp( mBasis.getGbIdeal(), MonomialIterator( vars ) );
                     witness = sdp.findWitness();
                 }
             }
@@ -163,7 +163,7 @@ namespace smtrat
             std::list<Polynomial> simplified = mBasis.getGb();
             for( std::list<Polynomial>::const_iterator simplIt = simplified.begin(); simplIt != simplified.end(); ++simplIt )
             {
-                addSubformulaToPassedFormula( new Formula( new Constraint( simplIt->toEx(), CR_EQ, mListOfVariables )), originals );
+                addSubformulaToPassedFormula( new Formula( new Constraint( simplIt->toEx(), CR_EQ, mListOfVariables ) ), originals );
             }
             //printPassedFormula();
 
@@ -181,7 +181,7 @@ namespace smtrat
     {
         super::pushBacktrackPoint();
         //std::cout << "We add a new state" << std::endl;
-        mStateHistory.push_back( GroebnerModuleState( mBasis ));
+        mStateHistory.push_back( GroebnerModuleState( mBasis ) );
 
     }
 
@@ -215,12 +215,12 @@ namespace smtrat
      */
     bool GroebnerModule::saveState()
     {
-		//If nothing new was added, we just update our state!
+        //If nothing new was added, we just update our state!
         if( mBackTrackPoints.back() == receivedFormulaSize() - 1 )
         {
             //  std::cout << "We update our state!" << std::endl;
             mStateHistory.pop_back();
-            mStateHistory.push_back( GroebnerModuleState( mBasis ));
+            mStateHistory.push_back( GroebnerModuleState( mBasis ) );
             return true;
         }
         return false;

@@ -31,21 +31,22 @@
 
 namespace smtrat
 {
-/**
- * Only call the complete CAD module immediately.
- *
- * @author Ulrich Loup
- * @since 2012-03-21
- * @version 2012-05-21
- *
- */
-class NRATSolver_CADonly: public Manager
-{
-public:
-    NRATSolver_CADonly( Formula* = new Formula( AND ) );
-    ~NRATSolver_CADonly();
+    /**
+     * Only call the complete CAD module immediately.
+     *
+     * @author Ulrich Loup
+     * @since 2012-03-21
+     * @version 2012-05-21
+     *
+     */
+    class NRATSolver_CADonly:
+        public Manager
+    {
+        public:
+            NRATSolver_CADonly( Formula* = new Formula( AND ) );
+            ~NRATSolver_CADonly();
 
-};
+    };
 
-} // namespace smtrat
+}    // namespace smtrat
 #endif   /** SMTRAT_NRATSOLVERCADONLY_H */

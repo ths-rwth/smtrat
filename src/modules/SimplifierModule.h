@@ -62,11 +62,10 @@ namespace smtrat
 
         private:
 
-            bool         	mFreshConstraintReceived;
-            bool         	mInconsistentConstraintAdded;
-            unsigned 		mNumberOfComparedConstraints;
-            GiNaC::symtab 	mAllVariables;
-
+            bool          mFreshConstraintReceived;
+            bool          mInconsistentConstraintAdded;
+            unsigned      mNumberOfComparedConstraints;
+            GiNaC::symtab mAllVariables;
 
     };
 
