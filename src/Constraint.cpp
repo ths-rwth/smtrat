@@ -728,6 +728,7 @@ namespace smtrat
 
     ex& Constraint::multiRootLessLhs( const symbol& _variable )
     {
+/*
         if( pMultiRootLessLhs != NULL )
         {
             if( pMultiRootLessLhs->first == ex( _variable ) )
@@ -767,6 +768,8 @@ namespace smtrat
             }
         }
         return pMultiRootLessLhs->second;
+*/
+        return rLhs();
     }
 
     /**
