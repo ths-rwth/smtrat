@@ -742,10 +742,9 @@ namespace smtrat
 
         ex derivate            = lhs().diff( _variable, 1 );
         ex gcdOfLhsAndDerivate = gcd( lhs(), derivate );
-        gcdOfLhsAndDerivate    = gcdOfLhsAndDerivate.expand();
-        gcdOfLhsAndDerivate    = gcdOfLhsAndDerivate.normal();
+        gcdOfLhsAndDerivate    = gcdOfLhsAndDerivate.expand().normal();
         ex quotient;
-        if( divide( lhs(), gcdOfLhsAndDerivate, quotient ))
+        if( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, quotient ))
         {
             if( pMultiRootLessLhs != NULL )
             {
