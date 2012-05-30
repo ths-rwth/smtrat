@@ -216,6 +216,11 @@ namespace smtrat
             	return mLastBacktrackpointsEnd;
             }
 
+            const std::vector< Module* >& usedBackends() const
+            {
+                return mUsedBackends;
+            }
+
         //SMT
         protected:
             bool 		   addReceivedSubformulaToPassedFormula( unsigned );
@@ -227,6 +232,7 @@ namespace smtrat
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             Answer 		   specialCaseConsistencyCheck() const;
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
+            const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
             Answer 		   runBackends();
             void 		   removeSubformulaFromPassedFormula( Formula* );
             void 		   removeSubformulaFromPassedFormula( unsigned );

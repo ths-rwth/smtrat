@@ -292,8 +292,9 @@ else if( a == False )
 
     /**
      * Get the infeasible subsets the given backend provides. Note, that an infeasible subset
-     * in a backend contains subformulas of the passed formula and an
-     * infeasible subset of this module contains subformulas of the received formula.
+     * in a backend contains subformulas of the passed formula and an infeasible subset of
+     * this module contains subformulas of the received formula. In this method the LATTER is
+     * returned.
      *
      * @param _backend  The backend from which to obtain the infeasible subsets.
      *

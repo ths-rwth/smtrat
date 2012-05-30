@@ -96,7 +96,7 @@
 %token END	0	"end of file"
 %token BOOL
 %token REAL
-%token PLUS MINUS TIMES UMINUS DIV
+%token PLUS MINUS TIMES DIV
 %token EQ LEQ GEQ LESS GREATER
 %token AND OR NOT IFF XOR IMPLIES
 %token TRUE FALSE
@@ -248,6 +248,10 @@ expr:
             std::string errstr = std::string( "The Boolean variable " + *$2 + " is not defined!");
   			error( yyloc, errstr );
         }
+        else
+        {
+            $$ = new smtrat::Formula( *$2 );
+        }
     }
 	;
 
@@ -339,7 +343,7 @@ term :
     ;
 
 termOp :
-		OB UMINUS term CB
+		OB MINUS term CB
 	{
 		$$ = new std::string( "(-1)*(" + *$3 + ")" );
 	}
@@ -407,7 +411,7 @@ nums :
 	{
 		$$ = $3;
 	}
-	| 	OB UMINUS nums CB
+	| 	OB MINUS nums CB
 	{
 		$$ = new std::string( "(-1)*(" + *$3 + ")" );
 	}

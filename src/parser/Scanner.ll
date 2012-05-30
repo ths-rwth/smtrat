@@ -23,7 +23,7 @@
 /**
  * @file Scanner.ll
  *
- * @author Safoura Rezapour Lakani 
+ * @author Safoura Rezapour Lakani
  * @author Florian Corzilius
  * @since 2012-03-19
  * @version 2012-03-19
@@ -66,7 +66,7 @@ typedef smtrat::Parser::token_type token_type;
 %option debug
 
 /* no support for include files is planned */
-%option yywrap nounput 
+%option yywrap nounput
 
 /* enables the use of start condition stacks */
 %option stack
@@ -97,7 +97,7 @@ typedef smtrat::Parser::token_type token_type;
 "assert"            { return token::ASSERT; }
 "declare-fun"       { return token::DECLAREFUN; }
 "+"                 { return token::PLUS; }
-"-"                 { return token::UMINUS; }
+"-"                 { return token::MINUS; }
 "*"                 { return token::TIMES; }
 "/"                 { return token::DIV; }
 "="                 { return token::EQ; }
@@ -124,15 +124,15 @@ typedef smtrat::Parser::token_type token_type;
                                                         yylval->sval = new std::string (yytext);
 							return token::NUM;
 						}
-[a-zA-Z][a-zA-Z_0-9]* 	{ 
-							yylval->sval = new std::string (yytext); 
+[a-zA-Z][a-zA-Z_0-9]* 	{
+							yylval->sval = new std::string (yytext);
 							return token::SYM;
 						}
 \:[a-zA-Z0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\/]+      { yylval->sval = new std::string (yytext);
                                                   return token::KEY; }
 
 [a-zA-Z0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\:\|\"\/]*     { yylval->sval = new std::string (yytext);
-                                                  return token::EMAIL; } 
+                                                  return token::EMAIL; }
 [(]            { return token::OB; }
 [)]            { return token::CB; }
  /*** END EXAMPLE - Change the smtrat lexer rules above ***/

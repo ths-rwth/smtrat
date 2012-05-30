@@ -50,6 +50,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "../NRATSolver.h"
 #include "SATModule.h"
 #include <math.h>
+#include <smtrat/Constraint.h>
+#include <smtrat/Module.h>
 #include "SATModule/Sort.h"
 
 using namespace std;
@@ -83,7 +85,7 @@ namespace smtrat
         Module( _tsManager, _formula ),
         // Parameters (user settable):
         //
-        verbosity( 0 ),
+        verbosity( 1 ),
         var_decay( opt_var_decay ),
         clause_decay( opt_clause_decay ),
         random_var_freq( opt_random_var_freq ),
@@ -175,13 +177,23 @@ namespace smtrat
 		Module::assertSubFormula( _formula );
 
         addClauseToSatSolver( _formula );
-        mBacktrackpointInSatSolver.push_back( clauses.last() );
+//        printLitConstraintMap();
+//        printConstraintLiteralMap();
 
 /*
         print();
 */
 
         return true;
+    }
+
+    /**
+     * Pushes a backtrack point to the stack of backtrack points.
+     */
+    void SATModule::pushBacktrackPoint()
+    {
+        Module::pushBacktrackPoint();
+        mBacktrackpointInSatSolver.push_back( clauses.size() );
     }
 
     /**
@@ -193,38 +205,48 @@ namespace smtrat
      */
     Answer SATModule::isConsistent()
     {
-/*
-        cout << __func__ << __LINE__ << endl;
-        Module::print();
-*/
+
+//      cout << __func__ << __LINE__ << endl;
+//      Module::print();
+
         if( solve() )
         {
-/*
-            cout << "*** True!" << endl;
-*/
+
+//          cout << "*** True!" << endl;
+
             return True;
         }
         else
         {
-/*
-            cout << "*** False!" << endl;
-*/
+
+//            cout << "*** False!" << endl;
+
+            mInfeasibleSubsets.clear();
+
+            /*
+             * Set the infeasible subset to the set of all received constraints.
+             */
+            set<const Formula*> infeasibleSubset = set<const Formula*>();
+            for( Formula::const_iterator subformula = receivedFormulaBegin(); subformula != receivedFormulaEnd(); ++subformula )
+                infeasibleSubset.insert( *subformula );
+            mInfeasibleSubsets.push_back( infeasibleSubset );
             return False;
         }
     }
 
     /**
-     * Pops the last backtrackpoint, from the stack of backtrackpoints.
+     * Pops the last backtrack point, from the stack of backtrack points.
      */
     void SATModule::popBacktrackPoint()
     {
-        cout << __func__ << __LINE__ << endl;
-        for( unsigned level = receivedFormulaSize() - 1; level >= mBackTrackPoints.back(); --level )
-        {
-            removeClause( mBacktrackpointInSatSolver.at( level ) );
-            mBacktrackpointInSatSolver.pop_back();
+//        cout << __func__ << __LINE__ << endl;
 
+        for( unsigned level = clauses.size() - 1; level >= mBacktrackpointInSatSolver.back(); --level )
+        {
+            removeClause( clauses[level] );
         }
+        mBacktrackpointInSatSolver.pop_back();
+
         Module::popBacktrackPoint();
     }
 
@@ -250,18 +272,18 @@ namespace smtrat
                 	{
 						case REALCONSTRAINT:
 						{
-						    clauseLits.push( getLiteral( *subFormula ) );
+						    clauseLits.push( getLiteral( *subFormula, _formula ) );
 						    break;
 						}
 						case NOT:
 						{
-						    Lit literal = getLiteral( (*subFormula)->back() );
+						    Lit literal = getLiteral( (*subFormula)->back(), _formula );
 						    clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
 						    break;
 						}
 						case BOOL:
 						{
-						    clauseLits.push( getLiteral( *subFormula ) );
+						    clauseLits.push( getLiteral( *subFormula, _formula ) );
 						    break;
 						}
 						case TTRUE:
@@ -284,7 +306,7 @@ namespace smtrat
             }
             case REALCONSTRAINT:
             {
-                addClause( getLiteral( _formula ) );
+                addClause( getLiteral( _formula, _formula ) );
                 return Unknown;
             }
             case NOT:
@@ -295,13 +317,13 @@ namespace smtrat
             	{
 					case REALCONSTRAINT:
 					{
-				        Lit literal = getLiteral( subformula );
+				        Lit literal = getLiteral( subformula, _formula );
 				        addClause( mkLit( var( literal ), !sign( literal ) ) );
 					    return Unknown;
 					}
 					case BOOL:
 					{
-				        Lit literal = getLiteral( subformula );
+				        Lit literal = getLiteral( subformula, _formula );
 				        addClause( mkLit( var( literal ), !sign( literal ) ) );
 					    return Unknown;
 					}
@@ -324,7 +346,7 @@ namespace smtrat
             }
             case BOOL:
             {
-                addClause( getLiteral( _formula ) );
+                addClause( getLiteral( _formula, _formula ) );
                 return Unknown;
             }
             case TTRUE:
@@ -345,7 +367,7 @@ namespace smtrat
         }
     }
 
-    Lit SATModule::getLiteral( const Formula* _formula )
+    Lit SATModule::getLiteral( const Formula* _formula, const Formula* _origin )
     {
         switch( _formula->getType() )
         {
@@ -354,13 +376,13 @@ namespace smtrat
                BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find( _formula->identifier() );
                if( booleanVarPair != mBooleanVarMap.end() )
                {
-                   return mkLit( booleanVarPair->second, true );
+                   return mkLit( booleanVarPair->second, false );
                }
                else
                {
                    Var var = newVar();
                    mBooleanVarMap[ _formula->identifier() ] = var;
-                   return mkLit( var, true );
+                   return mkLit( var, false );
                }
             }
             case REALCONSTRAINT:
@@ -396,13 +418,14 @@ namespace smtrat
                 }
                 else
                 {
+                    assert( _origin != NULL );
                     /*
                      * Add the constraint and its negation, both using either the relation
                      * symbol = or <=, to the map (normal form). A new Boolean variable gets generated.
                      */
                     Var booleanVariable = newVar();
-                    Lit posLit = mkLit( booleanVariable, true );
-                    Lit negLit = mkLit( booleanVariable, false );
+                    Lit posLit = mkLit( booleanVariable, false );
+                    Lit negLit = mkLit( booleanVariable, true );
                     /*
                      * Map the literals to the corresponding constraints.
                      */
@@ -410,55 +433,55 @@ namespace smtrat
                     {
                         case CR_EQ:
                         {
-                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _formula );
+                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = posLit;
                             Constraint invertedConstraint = Constraint( constraint.lhs(), CR_NEQ, constraint.variables() );
-                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _formula );
+                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint] = negLit;
                             break;
                         }
                         case CR_NEQ:
                         {
                             Constraint invertedConstraint = Constraint( constraint.lhs(), CR_EQ, constraint.variables() );
-                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _formula );
+                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint] = posLit;
-                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _formula );
+                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = negLit;
                             break;
                         }
                         case CR_LEQ:
                         {
-                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _formula );
+                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = posLit;
-                            Constraint invertedConstraint = Constraint( constraint.lhs(), CR_GREATER, constraint.variables() );
-                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _formula );
+                            Constraint invertedConstraint = Constraint( -constraint.lhs(), CR_LESS, constraint.variables() );
+                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint] = negLit;
                             break;
                         }
                         case CR_GEQ:
                         {
-                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _formula );
+                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = posLit;
-                            Constraint invertedConstraint = Constraint( -constraint.lhs(), CR_GREATER, constraint.variables() );
-                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _formula );
+                            Constraint invertedConstraint = Constraint( constraint.lhs(), CR_LESS, constraint.variables() );
+                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint] = negLit;
                             break;
                         }
                         case CR_LESS:
                         {
                             Constraint invertedConstraint = Constraint( -constraint.lhs(), CR_LEQ, constraint.variables() );
-                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _formula );
+                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint] = posLit;
-                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _formula );
+                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = negLit;
                             break;
                         }
                         case CR_GREATER:
                         {
                             Constraint invertedConstraint = Constraint( constraint.lhs(), CR_LEQ, constraint.variables() );
-                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _formula );
+                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint] = posLit;
-                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _formula );
+                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = negLit;
                             break;
                         }
@@ -512,10 +535,13 @@ namespace smtrat
             lbool assignment = assigns[posInAssigns];
             if( assignment != l_Undef )
             {
-                Lit lit = mkLit( posInAssigns, ( assignment == l_True ? true : false ) );
+                Lit lit = mkLit( posInAssigns, ( assignment == l_True ? false : true ) );
                 LitConstraintMap::iterator iter = mLitConstraintMap.find( lit );
-                assert( iter != mLitConstraintMap.end() );
-                constraintsToCheck.insert( pair< const Formula*, const Formula* >( iter->second.first, iter->second.second ) );
+                // if it is not a Boolean variable
+                if( iter != mLitConstraintMap.end() )
+                {
+                    constraintsToCheck.insert( pair< const Formula*, const Formula* >( iter->second.first, iter->second.second ) );
+                }
             }
             ++posInAssigns;
         }
@@ -525,11 +551,16 @@ namespace smtrat
          * and remove the subformulas (constraints) in the passed formula, which do not occur in the
          * constraints to add.
          */
-        for( unsigned pos = 0; pos < passedFormulaSize(); ++pos )
+        unsigned pos = 0;
+        while( pos < passedFormulaSize() )
         {
             if( constraintsToCheck.erase( passedFormulaAt( pos ) ) == 0 )
             {
                 removeSubformulaFromPassedFormula( pos );
+            }
+            else
+            {
+                ++pos;
             }
         }
 
@@ -586,7 +617,7 @@ namespace smtrat
      */
     bool SATModule::addClause_( vec<Lit>& ps )
     {
-        assert( decisionLevel() == 0 );
+        // assert( decisionLevel() == 0 ); // Commented, as we already allow to add clauses belatedly
         if( !ok )
             return false;
 
@@ -1184,8 +1215,11 @@ namespace smtrat
     {
         if( verbosity > 0 )
         {
-            cout << "### search( " << nof_conflicts << " )" << endl;
+            cout << "### search( " << nof_conflicts << " )" << endl << "###" << endl;
             printClauses( cout, "### ");
+            cout << "###" << endl;
+            printLitConstraintMap( cout, "###" );
+            cout << "###" << endl;
         }
         assert( ok );
         int      backtrack_level;
@@ -1201,7 +1235,10 @@ namespace smtrat
             {
                 if( verbosity > 0 )
                 {
-                    cout << "### " << endl;
+                    cout << "######################################################################" << endl;
+                    cout << "###" << endl;
+                    printClauses( cout, "### " );
+                    cout << "###" << endl;
                     printCurrentAssignment( cout, "### " );
                     cout << "### " << endl;
                 }
@@ -1210,9 +1247,7 @@ namespace smtrat
                 adaptPassedFormula();
                 if( verbosity > 0 )
                 {
-                    cout << "### Check: " << endl;
-                    printPassedFormula( cout, "### ");
-                    cout << endl;
+                    cout << "### Check the constraints: ";
                 }
                 switch( runBackends() )
                 {
@@ -1220,7 +1255,7 @@ namespace smtrat
                     {
                         if( verbosity > 0 )
                         {
-                            cout << "### Result: True!" << endl;
+                            cout << "True!" << endl;
                         }
                         break;
                     }
@@ -1228,21 +1263,40 @@ namespace smtrat
                     {
                         if( verbosity > 0 )
                         {
-                            cout << "### Result: False!" << endl;
+                            cout << "False!" << endl;
                         }
                         learnt_clause.clear();
-                        for( int pos = 0; pos < assigns.size(); ++pos )
+                        vector< Module* >::const_iterator backend = usedBackends().begin();
+                        while( backend != usedBackends().end() )
                         {
-                            if( assigns[pos] == l_True )
+                            if( !(*backend)->rInfeasibleSubsets().empty() )
                             {
-                                learnt_clause.push( mkLit( pos, false ) );
+                                for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
+                                     infsubset != (*backend)->rInfeasibleSubsets().end();
+                                     ++infsubset )
+                                {
+                                    cout << "### Infeasible subset: rlqe ex({x_0, y_0, x_1, y_1, delta_x, delta_y}, ";
+                                    set<const Formula*>::const_iterator subformula = infsubset->begin();
+                                    for( ;    subformula != infsubset->end();
+                                        ++subformula )
+                                    {
+                                        if( subformula != infsubset->begin() )
+                                        {
+                                            cout << " and ";
+                                        }
+                                        (*subformula)->print();
+                                        Lit lit = getLiteral( *subformula );
+                                        learnt_clause.push( lit );
+                                    }
+                                    cout << ");";
+                                    cout << endl;
+                                    break; // TODO: Add all infeasible subsets as conflicting clauses.
+                                }
+                                break;
                             }
-                            else if( assigns[pos] == l_False )
-                            {
-                                learnt_clause.push( mkLit( pos, true ) );
-                            }
+                            ++backend;
                         }
-
+                        assert( backend != usedBackends().end() );
 
                         // Do not store theory lemma
                         if( learnt_clause.size() == 1 )
@@ -1250,7 +1304,7 @@ namespace smtrat
                             if( verbosity > 0 )
                             {
                                 cout << "###" << endl << "### Do not store theory lemma" << endl;
-                                cout << "### Learnt clause (" << learnt_clause.size() << ") = ";
+                                cout << "### Learnt clause = ";
                             }
 
                             confl = ca.alloc( learnt_clause, true );
@@ -1282,9 +1336,6 @@ namespace smtrat
                             }
                         }
 
-                        varDecayActivity();
-                        claDecayActivity();
-
                         break;
                     }
                     case Unknown:
@@ -1309,10 +1360,6 @@ namespace smtrat
             if( confl != CRef_Undef )
             {
                 // CONFLICT
-                if( verbosity > 0 )
-                {
-                    cout << "### CONFLICT" << endl;
-                }
                 conflicts++;
                 conflictC++;
                 if( decisionLevel() == 0 )
@@ -1321,6 +1368,18 @@ namespace smtrat
                 learnt_clause.clear();
                 assert( confl != CRef_Undef );
                 analyze( confl, learnt_clause, backtrack_level );
+
+                cout << "### Asserting clause: ";
+                for( int pos = 0; pos < learnt_clause.size(); ++pos )
+                {
+                    cout << " ";
+                    if( sign( learnt_clause[pos] ) )
+                    {
+                        cout << "-";
+                    }
+                    cout << var( learnt_clause[pos] );
+                }
+                cout << endl;
                 cancelUntil( backtrack_level );
 
                 if( learnt_clause.size() == 1 )
@@ -1360,10 +1419,6 @@ namespace smtrat
             }
             else
             {
-                if( verbosity > 0 )
-                {
-                    cout << "### NO CONFLICT" << endl;
-                }
                 // NO CONFLICT
                 if( nof_conflicts >= 0 && ( conflictC >= nof_conflicts || !withinBudget() ) )
                 {
@@ -1635,9 +1690,9 @@ namespace smtrat
              ++clPair )
         {
             _out << _init << "    " << clPair->first.toString() << "  ->  ";
-            if( !sign( clPair->second ) )
+            if( sign( clPair->second ) )
             {
-                _out << "~";
+                _out << "-";
             }
             _out << var( clPair->second ) << endl;
         }
@@ -1674,9 +1729,9 @@ namespace smtrat
              ++clPair )
         {
             _out << _init << "    ";
-            if( !sign( clPair->first ) )
+            if( sign( clPair->first ) )
             {
-                _out << "~";
+                _out << "-";
             }
             _out << var( clPair->first ) << "  ->  " << clPair->second.first->constraint().toString() << endl;
         }
@@ -1711,7 +1766,8 @@ namespace smtrat
 
         for( int i = 0; i < c.size(); i++ )
             if( value( c[i] ) != l_False )
-                _out << " " << ( sign( c[i] ) ? "-" : "" ) << ( mapVar( var( c[i] ), map, max ) + 1 );
+//                _out << " " << ( sign( c[i] ) ? "-" : "" ) << ( mapVar( var( c[i] ), map, max ) + 1 );
+                _out << " " << ( sign( c[i] ) ? "-" : "" ) << var( c[i] );
 
         if( satisfied( c ))
             cout << "   is satisfied";
@@ -1730,7 +1786,8 @@ namespace smtrat
     {
         for( int i = 0; i < c.size(); i++ )
             if( value( c[i] ) != l_False )
-                _out << " " << ( sign( c[i] ) ? "-" : "" ) << ( mapVar( var( c[i] ), map, max ) + 1 );
+//                _out << " " << ( sign( c[i] ) ? "-" : "" ) << ( mapVar( var( c[i] ), map, max ) + 1 );
+                _out << " " << ( sign( c[i] ) ? "-" : "" ) << var( c[i] );
 
         if( satisfied( c ))
             cout << "   is satisfied";
@@ -1806,18 +1863,38 @@ namespace smtrat
         _out << _init << "    assigns           = " << "      The current assignments." << std::endl;
         for( int pos = 0; pos < assigns.size(); ++pos )
         {
-            _out << _init << "       ";
+            _out << _init << "       " << pos << " -> ";
             if( assigns[pos] == l_True )
             {
-                _out << "l_True" << std::endl;
+                _out << "l_True";
+                // if it is not a Boolean variable
+                Lit lit = mkLit( pos, false );
+                LitConstraintMap::const_iterator iter = mLitConstraintMap.find( lit );
+                if( iter != mLitConstraintMap.end() )
+                {
+                    cout << "   ( ";
+                    iter->second.first->print( cout, "", true );
+                    cout << " )";
+                }
+                cout << endl;
             }
             else if( assigns[pos] == l_False )
             {
-                _out << "l_False" << std::endl;
+                _out << "l_False";
+                // if it is not a Boolean variable
+                Lit lit = mkLit( pos, true );
+                LitConstraintMap::const_iterator iter = mLitConstraintMap.find( lit );
+                if( iter != mLitConstraintMap.end() )
+                {
+                    cout << "   ( ";
+                    iter->second.first->print( cout, "", true );
+                    cout << " )";
+                }
+                cout << endl;
             }
             else
             {
-                _out << "l_Undef" << std::endl;
+                _out << "l_Undef" << endl;
             }
         }
     }
@@ -1853,9 +1930,9 @@ namespace smtrat
         for( int pos = 0; pos < conflict.size(); ++pos )
         {
             _out << _init << "       ";
-            if( !sign( conflict[pos] ) )
+            if( sign( conflict[pos] ) )
             {
-                _out << "~";
+                _out << "-";
             }
             _out << var( conflict[pos] ) << std::endl;
         }
@@ -1931,9 +2008,9 @@ namespace smtrat
         for( int pos = 0; pos < trail.size(); ++pos )
         {
             _out << _init << "       ";
-            if( !sign( trail[pos] ) )
+            if( sign( trail[pos] ) )
             {
-                _out << "~";
+                _out << "-";
             }
             _out << var( trail[pos] ) << endl;
         }
@@ -1954,9 +2031,9 @@ namespace smtrat
         for( int pos = 0; pos < assumptions.size(); ++pos )
         {
             _out << _init << "       ";
-            if( !sign( assumptions[pos] ) )
+            if( sign( assumptions[pos] ) )
             {
-                _out << "~";
+                _out << "-";
             }
             _out << var( assumptions[pos] ) << std::endl;
         }
@@ -1980,9 +2057,9 @@ namespace smtrat
         for( int pos = 0; pos < analyze_stack.size(); ++pos )
         {
             _out << _init << "       ";
-            if( !sign( analyze_stack[pos] ) )
+            if( sign( analyze_stack[pos] ) )
             {
-                _out << "~";
+                _out << "-";
             }
             _out << var( analyze_stack[pos] ) << std::endl;
         }
@@ -1990,9 +2067,9 @@ namespace smtrat
         for( int pos = 0; pos < analyze_toclear.size(); ++pos )
         {
             _out << _init << "       ";
-            if( !sign( analyze_toclear[pos] ) )
+            if( sign( analyze_toclear[pos] ) )
             {
-                _out << "~";
+                _out << "-";
             }
             _out << var( analyze_toclear[pos] ) << std::endl;
         }
@@ -2000,9 +2077,9 @@ namespace smtrat
         for( int pos = 0; pos < add_tmp.size(); ++pos )
         {
             _out << _init << "       ";
-            if( !sign( add_tmp[pos] ) )
+            if( sign( add_tmp[pos] ) )
             {
-                _out << "~";
+                _out << "-";
             }
             _out << var( add_tmp[pos] ) << std::endl;
         }

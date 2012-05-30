@@ -90,7 +90,7 @@ namespace smtrat
             ConstraintLiteralMap mConstraintLiteralMap;
             BooleanVarMap mBooleanVarMap;
             LitConstraintMap mLitConstraintMap;
-            std::vector< Minisat::CRef > mBacktrackpointInSatSolver;
+            std::vector< unsigned > mBacktrackpointInSatSolver;
 
         public:
 
@@ -112,6 +112,7 @@ namespace smtrat
             bool assertSubFormula( const Formula* const );
             Answer isConsistent();
             void popBacktrackPoint();
+            void pushBacktrackPoint();
 
             // Printing.
             void print( std::ostream& = std::cout, const std::string = "***" ) const;
@@ -380,7 +381,7 @@ namespace smtrat
             }
 
             Answer addClauseToSatSolver( const Formula* );
-            Minisat::Lit getLiteral( const Formula* );
+            Minisat::Lit getLiteral( const Formula*, const Formula* = NULL );
             void adaptPassedFormula();
     };
 
