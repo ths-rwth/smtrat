@@ -50,8 +50,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "../NRATSolver.h"
 #include "SATModule.h"
 #include <math.h>
-#include <smtrat/Constraint.h>
-#include <smtrat/Module.h>
 #include "SATModule/Sort.h"
 
 using namespace std;
