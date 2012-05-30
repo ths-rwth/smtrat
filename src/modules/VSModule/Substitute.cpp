@@ -1405,7 +1405,7 @@ namespace vs
                 bool multivariatePolynomDivisionSuccessful = divide( dividend, f, quotient );
                 assert( multivariatePolynomDivisionSuccessful );
                 ex g = dividend - f * quotient;
-                g    = g.expand().normal();
+                g    = g;
                 assert( g.degree( ex( sym ) ) < 3 );
             }
 
