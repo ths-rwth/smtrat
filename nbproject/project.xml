@@ -4,9 +4,9 @@
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
             <name>smtrat</name>
-            <c-extensions>c,m</c-extensions>
-            <cpp-extensions>cc,cpp</cpp-extensions>
-            <header-extensions>h</header-extensions>
+            <c-extensions>c,cpp,m</c-extensions>
+            <cpp-extensions>cc</cpp-extensions>
+            <header-extensions>h,hh</header-extensions>
             <sourceEncoding>UTF-8</sourceEncoding>
             <make-dep-projects/>
             <sourceRootList>

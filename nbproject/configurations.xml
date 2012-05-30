@@ -2,11 +2,77 @@
 <configurationDescriptor version="80">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df name="smtrat" root=".">
+      <df name="build">
+        <df name="CMakeFiles">
+          <df name="CMakeTmp">
+            <df name="CMakeFiles">
+              <df name="cmTryCompileExec.dir">
+              </df>
+            </df>
+          </df>
+          <df name="CompilerIdC">
+            <in>CMakeCCompilerId.c</in>
+          </df>
+          <df name="CompilerIdCXX">
+            <in>CMakeCXXCompilerId.cpp</in>
+          </df>
+          <df name="csdp_lib.dir">
+          </df>
+        </df>
+        <df name="manual">
+          <df name="CMakeFiles">
+          </df>
+        </df>
+        <df name="src">
+          <df name="CMakeFiles">
+            <df name="lib_smtrat.dir">
+              <df name="modules">
+                <df name="LRAModule">
+                </df>
+                <df name="NSSModule">
+                </df>
+                <df name="SATModule">
+                </df>
+                <df name="VSModule">
+                </df>
+              </df>
+              <df name="utilities">
+                <df name="SDP">
+                </df>
+              </df>
+            </df>
+          </df>
+          <df name="gui">
+            <df name="CMakeFiles">
+              <df name="gui.dir">
+              </df>
+              <df name="run-gui.dir">
+              </df>
+            </df>
+          </df>
+          <df name="parser">
+            <df name="CMakeFiles">
+              <df name="parser.dir">
+              </df>
+              <df name="smtratSolver.dir">
+                <df name="__">
+                </df>
+              </df>
+            </df>
+            <in>Parser.tab.cc</in>
+            <in>Parser.tab.hh</in>
+            <in>lex.smtrat.cc</in>
+            <in>location.hh</in>
+            <in>position.hh</in>
+            <in>stack.hh</in>
+          </df>
+          <in>libsmtrat.so.0.2.1</in>
+        </df>
+        <in>config.h</in>
+      </df>
       <df name="cmake">
       </df>
       <df name="doxygen-conf">
-      </df>
-      <df name="examples">
       </df>
       <df name="external">
         <df name="csdp">
@@ -257,6 +323,207 @@
           <executablePath></executablePath>
         </makeTool>
       </makefileType>
+      <item path="build/config.h" ex="true" tool="3" flavor="0">
+      </item>
+      <folder path="smtrat/build">
+        <ccTool>
+          <incDir>
+            <pElem>src/parser</pElem>
+            <pElem>build/src/parser</pElem>
+            <pElem>src</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+      <folder path="smtrat/src/modules">
+        <ccTool>
+          <incDir>
+            <pElem>build/src</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>lib_smtrat_EXPORTS</Elem>
+          </preprocessorList>
+        </ccTool>
+      </folder>
+      <folder path="smtrat/src/parser">
+        <ccTool>
+          <incDir>
+            <pElem>src/parser</pElem>
+            <pElem>build/src/parser</pElem>
+            <pElem>src</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+      <folder path="smtrat/src/utilities">
+        <ccTool>
+          <incDir>
+            <pElem>build/src</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>lib_smtrat_EXPORTS</Elem>
+          </preprocessorList>
+        </ccTool>
+      </folder>
+      <item path="src/Constraint.cpp" ex="false" tool="1" flavor="0">
+        <ccTool>
+          <incDir>
+            <pElem>build/src</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>lib_smtrat_EXPORTS</Elem>
+          </preprocessorList>
+        </ccTool>
+      </item>
+      <item path="src/Formula.cpp" ex="false" tool="1" flavor="0">
+        <ccTool>
+          <incDir>
+            <pElem>build/src</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>lib_smtrat_EXPORTS</Elem>
+          </preprocessorList>
+        </ccTool>
+      </item>
+      <item path="src/Manager.cpp" ex="false" tool="1" flavor="0">
+        <ccTool>
+          <incDir>
+            <pElem>build/src</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>lib_smtrat_EXPORTS</Elem>
+          </preprocessorList>
+        </ccTool>
+      </item>
+      <item path="src/Module.cpp" ex="false" tool="1" flavor="0">
+        <ccTool>
+          <incDir>
+            <pElem>build/src</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>lib_smtrat_EXPORTS</Elem>
+          </preprocessorList>
+        </ccTool>
+      </item>
+      <item path="src/NRATSolver.cpp" ex="false" tool="1" flavor="0">
+        <ccTool>
+          <incDir>
+            <pElem>src/parser</pElem>
+            <pElem>build/src/parser</pElem>
+            <pElem>src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="src/NRATSolver_CADonly.cpp" ex="false" tool="1" flavor="0">
+        <ccTool>
+          <incDir>
+            <pElem>build/src</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>lib_smtrat_EXPORTS</Elem>
+          </preprocessorList>
+        </ccTool>
+      </item>
+      <item path="src/Strategy.cpp" ex="false" tool="1" flavor="0">
+        <ccTool>
+          <incDir>
+            <pElem>build/src</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>lib_smtrat_EXPORTS</Elem>
+          </preprocessorList>
+        </ccTool>
+      </item>
+      <item path="src/modules/CADModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/CNFerModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/GroebnerModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/LRAModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/LRAModule/Delta.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/LRAModule/LAArray.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/LRAModule/LAColumn.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/LRAModule/LARow.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/LRAModule/LAVar.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/LRAModule/LRASolverA.cpp"
+            ex="false"
+            tool="1"
+            flavor="0">
+      </item>
+      <item path="src/modules/NSSModule/ConstraintMatrixFactory.cpp"
+            ex="false"
+            tool="1"
+            flavor="0">
+      </item>
+      <item path="src/modules/NSSModule/MonomialIterator.cpp"
+            ex="false"
+            tool="1"
+            flavor="0">
+      </item>
+      <item path="src/modules/PreProCNFModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/PreProModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/SATModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/SATModule/Dimacs.h" ex="true" tool="3" flavor="0">
+      </item>
+      <item path="src/modules/SATModule/Options.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/SATModule/Queue.h" ex="true" tool="3" flavor="0">
+      </item>
+      <item path="src/modules/SATModule/System.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/SimplifierModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/UnivariateCADModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/VSModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/VSModule/Condition.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/VSModule/SqrtEx.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/VSModule/State.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/VSModule/Substitute.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/VSModule/Substitution.cpp"
+            ex="false"
+            tool="1"
+            flavor="0">
+      </item>
+      <item path="src/smtratSolver.cpp" ex="false" tool="1" flavor="0">
+        <ccTool>
+          <incDir>
+            <pElem>src/parser</pElem>
+            <pElem>build/src/parser</pElem>
+            <pElem>src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
+      <item path="src/test/CSDP_unittest.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/test/ConstraintMatrixFactory_unittest.cpp"
+            ex="false"
+            tool="1"
+            flavor="0">
+      </item>
+      <item path="src/test/DenseMatrix_unittest.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/test/GroebnerToSDP_unittest.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/test/test.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/utilities/SDP/CSDPFacade.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/utilities/SDP/SparseMatrix.cpp" ex="false" tool="1" flavor="0">
+      </item>
     </conf>
   </confs>
 </configurationDescriptor>
