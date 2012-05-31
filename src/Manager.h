@@ -89,7 +89,7 @@ namespace smtrat
             }
 
 
-            inline const GiNaC::symtab allVariables() const
+            inline const GiNaC::symtab& allVariables() const
             {
                 return mAllVariables;
             }

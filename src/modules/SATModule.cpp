@@ -18,26 +18,26 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-/***************************************************************************************[Solver.cc]
-Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
-Copyright (c) 2007-2010, Niklas Sorensson
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute,
-sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or
-substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
-OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-**************************************************************************************************/
-
+/*
+ * **************************************************************************************[Solver.cc]
+ * Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
+ * Copyright (c) 2007-2010, Niklas Sorensson
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+ * OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 
 /*
@@ -52,6 +52,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <math.h>
 #include "SATModule/Sort.h"
 
+//#define DEBUG_SATMODULE
+#define SATMODULE_WITH_CALL_NUMBER
+
 using namespace std;
 using namespace Minisat;
 
@@ -62,19 +65,20 @@ namespace smtrat
 
     static const char*  _cat = "CORE";
 
-    static DoubleOption opt_var_decay( _cat, "var-decay", "The variable activity decay factor", 0.95, DoubleRange( 0, false, 1, false ));
-    static DoubleOption opt_clause_decay( _cat, "cla-decay", "The clause activity decay factor", 0.999, DoubleRange( 0, false, 1, false ));
-    static DoubleOption opt_random_var_freq( _cat, "rnd-freq", "The frequency with which the decision heuristic tries to choose a random variable", 0,
-                                            DoubleRange( 0, true, 1, true ));
-    static DoubleOption opt_random_seed( _cat, "rnd-seed", "Used by the random variable selection", 91648253, DoubleRange( 0, false, HUGE_VAL, false ));
-    static IntOption    opt_ccmin_mode( _cat, "ccmin-mode", "Controls conflict clause minimization (0=none, 1=basic, 2=deep)", 2, IntRange( 0, 2 ));
-    static IntOption    opt_phase_saving( _cat, "phase-saving", "Controls the level of phase saving (0=none, 1=limited, 2=full)", 2, IntRange( 0, 2 ));
+    static DoubleOption opt_var_decay( _cat, "var-decay", "The variable activity decay factor", 0.95, DoubleRange( 0, false, 1, false ) );
+    static DoubleOption opt_clause_decay( _cat, "cla-decay", "The clause activity decay factor", 0.999, DoubleRange( 0, false, 1, false ) );
+    static DoubleOption opt_random_var_freq( _cat, "rnd-freq", "The frequency with which the decision heuristic tries to choose a random variable",
+                                             0, DoubleRange( 0, true, 1, true ) );
+    static DoubleOption opt_random_seed( _cat, "rnd-seed", "Used by the random variable selection", 91648253,
+                                         DoubleRange( 0, false, HUGE_VAL, false ) );
+    static IntOption    opt_ccmin_mode( _cat, "ccmin-mode", "Controls conflict clause minimization (0=none, 1=basic, 2=deep)", 2, IntRange( 0, 2 ) );
+    static IntOption    opt_phase_saving( _cat, "phase-saving", "Controls the level of phase saving (0=none, 1=limited, 2=full)", 2, IntRange( 0, 2 ) );
     static BoolOption   opt_rnd_init_act( _cat, "rnd-init", "Randomize the initial activity", false );
     static BoolOption   opt_luby_restart( _cat, "luby", "Use the Luby restart sequence", true );
-    static IntOption    opt_restart_first( _cat, "rfirst", "The base restart interval", 100, IntRange( 1, INT32_MAX ));
-    static DoubleOption opt_restart_inc( _cat, "rinc", "Restart interval increase factor", 2, DoubleRange( 1, false, HUGE_VAL, false ));
+    static IntOption    opt_restart_first( _cat, "rfirst", "The base restart interval", 100, IntRange( 1, INT32_MAX ) );
+    static DoubleOption opt_restart_inc( _cat, "rinc", "Restart interval increase factor", 2, DoubleRange( 1, false, HUGE_VAL, false ) );
     static DoubleOption opt_garbage_frac( _cat, "gc-frac", "The fraction of wasted memory allowed before a garbage collection is triggered", 0.20,
-                                        DoubleRange( 0, false, HUGE_VAL, false ));
+                                          DoubleRange( 0, false, HUGE_VAL, false ) );
 
     /**
      * Constructor
@@ -83,7 +87,7 @@ namespace smtrat
         Module( _tsManager, _formula ),
         // Parameters (user settable):
         //
-        verbosity( 1 ),
+        verbosity( 0 ),
         var_decay( opt_var_decay ),
         clause_decay( opt_clause_decay ),
         random_var_freq( opt_random_var_freq ),
@@ -123,11 +127,11 @@ namespace smtrat
         ok( true ),
         cla_inc( 1 ),
         var_inc( 1 ),
-        watches( WatcherDeleted( ca )),
+        watches( WatcherDeleted( ca ) ),
         qhead( 0 ),
         simpDB_assigns( -1 ),
         simpDB_props( 0 ),
-        order_heap( VarOrderLt( activity )),
+        order_heap( VarOrderLt( activity ) ),
         progress_estimate( 0 ),
         remove_satisfied( true )
         // Resource constraints:
@@ -137,19 +141,17 @@ namespace smtrat
         propagation_budget( -1 ),
         asynch_interrupt( false )
     {
-        this->mModuleType = MT_SATModule;
-        mConstraintLiteralMap = ConstraintLiteralMap();
-        mBooleanVarMap = BooleanVarMap();
-        mLitConstraintMap = LitConstraintMap();
-        mBacktrackpointInSatSolver = vector< CRef >();
+        this->mModuleType          = MT_SATModule;
+        mConstraintLiteralMap      = ConstraintLiteralMap();
+        mBooleanVarMap             = BooleanVarMap();
+        mLitConstraintMap          = LitConstraintMap();
+        mBacktrackpointInSatSolver = vector<CRef>();
     }
 
     /**
      * Destructor:
      */
-    SATModule::~SATModule()
-    {
-    }
+    SATModule::~SATModule(){}
 
     /**
      * Methods:
@@ -165,22 +167,11 @@ namespace smtrat
      */
     bool SATModule::assertSubFormula( const Formula* const _formula )
     {
-/*
-        cout << __func__ << __LINE__ << endl;
-        _formula->print();
-        Module::print();
-*/
 
         assert( (_formula->proposition() | ~PROP_IS_A_CLAUSE) == ~PROP_TRUE );
-		Module::assertSubFormula( _formula );
+        Module::assertSubFormula( _formula );
 
         addClauseToSatSolver( _formula );
-//        printLitConstraintMap();
-//        printConstraintLiteralMap();
-
-/*
-        print();
-*/
 
         return true;
     }
@@ -203,30 +194,23 @@ namespace smtrat
      */
     Answer SATModule::isConsistent()
     {
-
-//      cout << __func__ << __LINE__ << endl;
-//      Module::print();
-
         if( solve() )
         {
-
-//          cout << "*** True!" << endl;
-
             return True;
         }
         else
         {
-
-//            cout << "*** False!" << endl;
-
             mInfeasibleSubsets.clear();
 
             /*
              * Set the infeasible subset to the set of all received constraints.
              */
             set<const Formula*> infeasibleSubset = set<const Formula*>();
-            for( Formula::const_iterator subformula = receivedFormulaBegin(); subformula != receivedFormulaEnd(); ++subformula )
+            for( Formula::const_iterator subformula = receivedFormulaBegin();
+                 subformula != receivedFormulaEnd(); ++subformula )
+            {
                 infeasibleSubset.insert( *subformula );
+            }
             mInfeasibleSubsets.push_back( infeasibleSubset );
             return False;
         }
@@ -237,8 +221,6 @@ namespace smtrat
      */
     void SATModule::popBacktrackPoint()
     {
-//        cout << __func__ << __LINE__ << endl;
-
         for( unsigned level = clauses.size() - 1; level >= mBacktrackpointInSatSolver.back(); --level )
         {
             removeClause( clauses[level] );
@@ -261,43 +243,41 @@ namespace smtrat
         {
             case OR:
             {
-                vec< Lit > clauseLits;
-                for( Formula::const_iterator subFormula = _formula->begin();
-                    subFormula != _formula->end();
-                    ++subFormula )
+                vec<Lit> clauseLits;
+                for( Formula::const_iterator subFormula = _formula->begin(); subFormula != _formula->end(); ++subFormula )
                 {
-                	switch( (*subFormula)->getType() )
-                	{
-						case REALCONSTRAINT:
-						{
-						    clauseLits.push( getLiteral( *subFormula, _formula ) );
-						    break;
-						}
-						case NOT:
-						{
-						    Lit literal = getLiteral( (*subFormula)->back(), _formula );
-						    clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
-						    break;
-						}
-						case BOOL:
-						{
-						    clauseLits.push( getLiteral( *subFormula, _formula ) );
-						    break;
-						}
-						case TTRUE:
-						{
-						    return True;
-						}
-						case FFALSE:
-						{
-						    break;
-						}
-						default:
-						{
-						    cerr << "Unexpected type of formula! Expected a literal." << endl;
-						    assert( false );
-						}
-					}
+                    switch( (*subFormula)->getType() )
+                    {
+                        case REALCONSTRAINT:
+                        {
+                            clauseLits.push( getLiteral( *subFormula, _formula ) );
+                            break;
+                        }
+                        case NOT:
+                        {
+                            Lit literal = getLiteral( (*subFormula)->back(), _formula );
+                            clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
+                            break;
+                        }
+                        case BOOL:
+                        {
+                            clauseLits.push( getLiteral( *subFormula, _formula ) );
+                            break;
+                        }
+                        case TTRUE:
+                        {
+                            return True;
+                        }
+                        case FFALSE:
+                        {
+                            break;
+                        }
+                        default:
+                        {
+                            cerr << "Unexpected type of formula! Expected a literal." << endl;
+                            assert( false );
+                        }
+                    }
                 }
                 addClause( clauseLits );
                 return Unknown;
@@ -309,38 +289,38 @@ namespace smtrat
             }
             case NOT:
             {
-                vec< Lit > clauseLits;
-            	const Formula* subformula = _formula->back();
-            	switch( subformula->getType() )
-            	{
-					case REALCONSTRAINT:
-					{
-				        Lit literal = getLiteral( subformula, _formula );
-				        addClause( mkLit( var( literal ), !sign( literal ) ) );
-					    return Unknown;
-					}
-					case BOOL:
-					{
-				        Lit literal = getLiteral( subformula, _formula );
-				        addClause( mkLit( var( literal ), !sign( literal ) ) );
-					    return Unknown;
-					}
-					case TTRUE:
-					{
-				        addEmptyClause();
-				        return False;
-					}
-					case FFALSE:
-					{
-            			return True;
-					}
-					default:
-					{
-					    cerr << "Unexpected type of formula! Expected a literal." << endl;
-					    assert( false );
+                vec<Lit>       clauseLits;
+                const Formula* subformula = _formula->back();
+                switch( subformula->getType() )
+                {
+                    case REALCONSTRAINT:
+                    {
+                        Lit literal = getLiteral( subformula, _formula );
+                        addClause( mkLit( var( literal ), !sign( literal ) ) );
                         return Unknown;
-					}
-				}
+                    }
+                    case BOOL:
+                    {
+                        Lit literal = getLiteral( subformula, _formula );
+                        addClause( mkLit( var( literal ), !sign( literal ) ) );
+                        return Unknown;
+                    }
+                    case TTRUE:
+                    {
+                        addEmptyClause();
+                        return False;
+                    }
+                    case FFALSE:
+                    {
+                        return True;
+                    }
+                    default:
+                    {
+                        cerr << "Unexpected type of formula! Expected a literal." << endl;
+                        assert( false );
+                        return Unknown;
+                    }
+                }
             }
             case BOOL:
             {
@@ -371,17 +351,17 @@ namespace smtrat
         {
             case BOOL:
             {
-               BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find( _formula->identifier() );
-               if( booleanVarPair != mBooleanVarMap.end() )
-               {
-                   return mkLit( booleanVarPair->second, false );
-               }
-               else
-               {
-                   Var var = newVar();
-                   mBooleanVarMap[ _formula->identifier() ] = var;
-                   return mkLit( var, false );
-               }
+                BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find( _formula->identifier() );
+                if( booleanVarPair != mBooleanVarMap.end() )
+                {
+                    return mkLit( booleanVarPair->second, false );
+                }
+                else
+                {
+                    Var var                                = newVar();
+                    mBooleanVarMap[_formula->identifier()] = var;
+                    return mkLit( var, false );
+                }
             }
             case REALCONSTRAINT:
             {
@@ -393,13 +373,13 @@ namespace smtrat
                 {
                     case CR_GEQ:
                     {
-                        rel = CR_LEQ;
+                        rel  = CR_LEQ;
                         sign = -1;
                         break;
                     }
                     case CR_GREATER:
                     {
-                        rel = CR_LESS;
+                        rel  = CR_LESS;
                         sign = -1;
                         break;
                     }
@@ -408,7 +388,7 @@ namespace smtrat
                         break;
                     }
                 }
-                Constraint normalizedConstraint = Constraint( sign*constraint.lhs(), rel, constraint.variables() );
+                Constraint normalizedConstraint = Constraint( sign * constraint.lhs(), rel, constraint.variables() );
                 ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( normalizedConstraint );
                 if( constraintLiteralPair != mConstraintLiteralMap.end() )
                 {
@@ -417,13 +397,15 @@ namespace smtrat
                 else
                 {
                     assert( _origin != NULL );
+
                     /*
                      * Add the constraint and its negation, both using either the relation
                      * symbol = or <=, to the map (normal form). A new Boolean variable gets generated.
                      */
                     Var booleanVariable = newVar();
-                    Lit posLit = mkLit( booleanVariable, false );
-                    Lit negLit = mkLit( booleanVariable, true );
+                    Lit posLit          = mkLit( booleanVariable, false );
+                    Lit negLit          = mkLit( booleanVariable, true );
+
                     /*
                      * Map the literals to the corresponding constraints.
                      */
@@ -431,55 +413,55 @@ namespace smtrat
                     {
                         case CR_EQ:
                         {
-                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _origin );
+                            mLitConstraintMap[posLit]                   = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = posLit;
-                            Constraint invertedConstraint = Constraint( constraint.lhs(), CR_NEQ, constraint.variables() );
-                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _origin );
-                            mConstraintLiteralMap[invertedConstraint] = negLit;
+                            Constraint invertedConstraint               = Constraint( constraint.lhs(), CR_NEQ, constraint.variables() );
+                            mLitConstraintMap[negLit]                   = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
+                            mConstraintLiteralMap[invertedConstraint]   = negLit;
                             break;
                         }
                         case CR_NEQ:
                         {
-                            Constraint invertedConstraint = Constraint( constraint.lhs(), CR_EQ, constraint.variables() );
-                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _origin );
-                            mConstraintLiteralMap[invertedConstraint] = posLit;
-                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _origin );
+                            Constraint invertedConstraint               = Constraint( constraint.lhs(), CR_EQ, constraint.variables() );
+                            mLitConstraintMap[posLit]                   = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
+                            mConstraintLiteralMap[invertedConstraint]   = posLit;
+                            mLitConstraintMap[negLit]                   = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = negLit;
                             break;
                         }
                         case CR_LEQ:
                         {
-                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _origin );
+                            mLitConstraintMap[posLit]                   = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = posLit;
-                            Constraint invertedConstraint = Constraint( -constraint.lhs(), CR_LESS, constraint.variables() );
-                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _origin );
-                            mConstraintLiteralMap[invertedConstraint] = negLit;
+                            Constraint invertedConstraint               = Constraint( -constraint.lhs(), CR_LESS, constraint.variables() );
+                            mLitConstraintMap[negLit]                   = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
+                            mConstraintLiteralMap[invertedConstraint]   = negLit;
                             break;
                         }
                         case CR_GEQ:
                         {
-                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _origin );
+                            mLitConstraintMap[posLit]                   = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = posLit;
-                            Constraint invertedConstraint = Constraint( constraint.lhs(), CR_LESS, constraint.variables() );
-                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _origin );
-                            mConstraintLiteralMap[invertedConstraint] = negLit;
+                            Constraint invertedConstraint               = Constraint( constraint.lhs(), CR_LESS, constraint.variables() );
+                            mLitConstraintMap[negLit]                   = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
+                            mConstraintLiteralMap[invertedConstraint]   = negLit;
                             break;
                         }
                         case CR_LESS:
                         {
-                            Constraint invertedConstraint = Constraint( -constraint.lhs(), CR_LEQ, constraint.variables() );
-                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _origin );
-                            mConstraintLiteralMap[invertedConstraint] = posLit;
-                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _origin );
+                            Constraint invertedConstraint               = Constraint( -constraint.lhs(), CR_LEQ, constraint.variables() );
+                            mLitConstraintMap[posLit]                   = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
+                            mConstraintLiteralMap[invertedConstraint]   = posLit;
+                            mLitConstraintMap[negLit]                   = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = negLit;
                             break;
                         }
                         case CR_GREATER:
                         {
-                            Constraint invertedConstraint = Constraint( constraint.lhs(), CR_LEQ, constraint.variables() );
-                            mLitConstraintMap[posLit] = pair< Formula*, const Formula* >( new Formula( invertedConstraint ), _origin );
-                            mConstraintLiteralMap[invertedConstraint] = posLit;
-                            mLitConstraintMap[negLit] = pair< Formula*, const Formula* >( new Formula( normalizedConstraint ), _origin );
+                            Constraint invertedConstraint               = Constraint( constraint.lhs(), CR_LEQ, constraint.variables() );
+                            mLitConstraintMap[posLit]                   = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
+                            mConstraintLiteralMap[invertedConstraint]   = posLit;
+                            mLitConstraintMap[negLit]                   = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = negLit;
                             break;
                         }
@@ -526,19 +508,19 @@ namespace smtrat
         /*
          * Collect the constraints to check.
          */
-        map< const Formula*, const Formula*, formulaCmp> constraintsToCheck = map< const Formula*, const Formula*, formulaCmp>();
-        signed posInAssigns = 0;
+        map<const Formula*, const Formula*, formulaCmp> constraintsToCheck = map<const Formula*, const Formula*, formulaCmp>();
+        signed                                          posInAssigns       = 0;
         while( posInAssigns < assigns.size() )
         {
             lbool assignment = assigns[posInAssigns];
             if( assignment != l_Undef )
             {
-                Lit lit = mkLit( posInAssigns, ( assignment == l_True ? false : true ) );
+                Lit lit = mkLit( posInAssigns, (assignment == l_True ? false : true) );
                 LitConstraintMap::iterator iter = mLitConstraintMap.find( lit );
                 // if it is not a Boolean variable
                 if( iter != mLitConstraintMap.end() )
                 {
-                    constraintsToCheck.insert( pair< const Formula*, const Formula* >( iter->second.first, iter->second.second ) );
+                    constraintsToCheck.insert( pair<const Formula*, const Formula*>( iter->second.first, iter->second.second ) );
                 }
             }
             ++posInAssigns;
@@ -565,12 +547,10 @@ namespace smtrat
         /*
          * Add the the remaining constraints to add to the passed formula.
          */
-        for( map< const Formula*, const Formula*, formulaCmp>::iterator iter = constraintsToCheck.begin();
-             iter != constraintsToCheck.end();
-             ++iter )
+        for( map<const Formula*, const Formula*, formulaCmp>::iterator iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
         {
             vec_set_const_pFormula origins = vec_set_const_pFormula();
-            set< const Formula* > origin = set< const Formula* >();
+            set<const Formula*> origin = set<const Formula*>();
             origin.insert( iter->second );
             origins.push_back( origin );
             addSubformulaToPassedFormula( new Formula( *iter->first ), origins );
@@ -592,10 +572,10 @@ namespace smtrat
     Var SATModule::newVar( bool sign, bool dvar )
     {
         int v = nVars();
-        watches.init( mkLit( v, false ));
-        watches.init( mkLit( v, true ));
+        watches.init( mkLit( v, false ) );
+        watches.init( mkLit( v, true ) );
         assigns.push( l_Undef );
-        vardata.push( mkVarData( CRef_Undef, 0 ));
+        vardata.push( mkVarData( CRef_Undef, 0 ) );
         //activity .push(0);
         activity.push( rnd_init_act ? drand( random_seed ) * 0.00001 : 0 );
         seen.push( 0 );
@@ -656,8 +636,8 @@ namespace smtrat
     {
         const Clause& c = ca[cr];
         assert( c.size() > 1 );
-        watches[~c[0]].push( Watcher( cr, c[1] ));
-        watches[~c[1]].push( Watcher( cr, c[0] ));
+        watches[~c[0]].push( Watcher( cr, c[1] ) );
+        watches[~c[1]].push( Watcher( cr, c[0] ) );
         if( c.learnt() )
             learnts_literals += c.size();
         else
@@ -677,8 +657,8 @@ namespace smtrat
 
         if( strict )
         {
-            remove( watches[~c[0]], Watcher( cr, c[1] ));
-            remove( watches[~c[1]], Watcher( cr, c[0] ));
+            remove( watches[~c[0]], Watcher( cr, c[1] ) );
+            remove( watches[~c[1]], Watcher( cr, c[0] ) );
         }
         else
         {
@@ -703,7 +683,7 @@ namespace smtrat
         Clause& c = ca[cr];
         detachClause( cr );
         // Don't leave pointers to free'd memory!
-        if( locked( c ))
+        if( locked( c ) )
             vardata[var( c[0] )].reason = CRef_Undef;
         c.mark( 1 );
         ca.free( cr );
@@ -737,7 +717,7 @@ namespace smtrat
             {
                 Var x      = var( trail[c] );
                 assigns[x] = l_Undef;
-                if( ( phase_saving > 1 || (phase_saving == 1) ) && c > trail_lim.last() )
+                if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
                     polarity[x] = sign( trail[c] );
                 insertVarOrder( x );
             }
@@ -821,11 +801,11 @@ namespace smtrat
             {
                 Lit q = c[j];
 
-                if( !seen[var( q )] && level( var( q )) > 0 )
+                if( !seen[var( q )] && level( var( q ) ) > 0 )
                 {
-                    varBumpActivity( var( q ));
+                    varBumpActivity( var( q ) );
                     seen[var( q )] = 1;
-                    if( level( var( q )) >= decisionLevel() )
+                    if( level( var( q ) ) >= decisionLevel() )
                         pathC++;
                     else
                         out_learnt.push( q );
@@ -835,7 +815,7 @@ namespace smtrat
             // Select next clause to look at:
             while( !seen[var( trail[index--] )] );
             p              = trail[index + 1];
-            confl          = reason( var( p ));
+            confl          = reason( var( p ) );
             seen[var( p )] = 0;
             pathC--;
 
@@ -851,10 +831,10 @@ namespace smtrat
         {
             uint32_t abstract_level = 0;
             for( i = 1; i < out_learnt.size(); i++ )
-                abstract_level |= abstractLevel( var( out_learnt[i] ));    // (maintain an abstraction of levels involved in conflict)
+                abstract_level |= abstractLevel( var( out_learnt[i] ) );    // (maintain an abstraction of levels involved in conflict)
 
             for( i = j = 1; i < out_learnt.size(); i++ )
-                if( reason( var( out_learnt[i] )) == CRef_Undef ||!litRedundant( out_learnt[i], abstract_level ))
+                if( reason( var( out_learnt[i] ) ) == CRef_Undef ||!litRedundant( out_learnt[i], abstract_level ) )
                     out_learnt[j++] = out_learnt[i];
 
         }
@@ -868,9 +848,9 @@ namespace smtrat
                     out_learnt[j++] = out_learnt[i];
                 else
                 {
-                    Clause& c = ca[reason( var( out_learnt[i] ))];
+                    Clause& c = ca[reason( var( out_learnt[i] ) )];
                     for( int k = 1; k < c.size(); k++ )
-                        if( !seen[var( c[k] )] && level( var( c[k] )) > 0 )
+                        if( !seen[var( c[k] )] && level( var( c[k] ) ) > 0 )
                         {
                             out_learnt[j++] = out_learnt[i];
                             break;
@@ -894,13 +874,13 @@ namespace smtrat
             int max_i = 1;
             // Find the first literal assigned at the next-highest level:
             for( int i = 2; i < out_learnt.size(); i++ )
-                if( level( var( out_learnt[i] )) > level( var( out_learnt[max_i] )))
+                if( level( var( out_learnt[i] ) ) > level( var( out_learnt[max_i] ) ) )
                     max_i = i;
             // Swap-in this literal at index 1:
             Lit p             = out_learnt[max_i];
             out_learnt[max_i] = out_learnt[1];
             out_learnt[1]     = p;
-            out_btlevel       = level( var( p ));
+            out_btlevel       = level( var( p ) );
         }
 
         for( int j = 0; j < analyze_toclear.size(); j++ )
@@ -923,16 +903,16 @@ namespace smtrat
         int top = analyze_toclear.size();
         while( analyze_stack.size() > 0 )
         {
-            assert( reason( var( analyze_stack.last() )) != CRef_Undef );
-            Clause& c = ca[reason( var( analyze_stack.last() ))];
+            assert( reason( var( analyze_stack.last() ) ) != CRef_Undef );
+            Clause& c = ca[reason( var( analyze_stack.last() ) )];
             analyze_stack.pop();
 
             for( int i = 1; i < c.size(); i++ )
             {
                 Lit p = c[i];
-                if( !seen[var( p )] && level( var( p )) > 0 )
+                if( !seen[var( p )] && level( var( p ) ) > 0 )
                 {
-                    if( reason( var( p )) != CRef_Undef && (abstractLevel( var( p )) & abstract_levels) != 0 )
+                    if( reason( var( p ) ) != CRef_Undef && (abstractLevel( var( p ) ) & abstract_levels) != 0 )
                     {
                         seen[var( p )] = 1;
                         analyze_stack.push( p );
@@ -987,7 +967,7 @@ namespace smtrat
                 {
                     Clause& c = ca[reason( x )];
                     for( int j = 1; j < c.size(); j++ )
-                        if( level( var( c[j] )) > 0 )
+                        if( level( var( c[j] ) ) > 0 )
                             seen[var( c[j] )] = 1;
                 }
                 seen[x] = 0;
@@ -1006,7 +986,7 @@ namespace smtrat
     void SATModule::uncheckedEnqueue( Lit p, CRef from )
     {
         assert( value( p ) == l_Undef );
-        assigns[var( p )] = lbool( !sign( p ));
+        assigns[var( p )] = lbool( !sign( p ) );
         vardata[var( p )] = mkVarData( from, decisionLevel() );
         trail.push_( p );
     }
@@ -1087,7 +1067,7 @@ namespace smtrat
                 else
                     uncheckedEnqueue( first, cr );
 
-    NextClause:
+NextClause:
                 ;
             }
             ws.shrink( i - j );
@@ -1123,7 +1103,7 @@ namespace smtrat
         int    i, j;
         double extra_lim = cla_inc / learnts.size();    // Remove any clause below this activity
 
-        sort( learnts, reduceDB_lt( ca ));
+        sort( learnts, reduceDB_lt( ca ) );
         // Don't delete binary or locked clauses. From the rest, delete clauses from the first half
         // and clauses with activity smaller than 'extra_lim':
         for( i = j = 0; i < learnts.size(); i++ )
@@ -1144,7 +1124,7 @@ namespace smtrat
         for( i = j = 0; i < cs.size(); i++ )
         {
             Clause& c = ca[cs[i]];
-            if( satisfied( c ))
+            if( satisfied( c ) )
                 removeClause( cs[i] );
             else
                 cs[j++] = cs[i];
@@ -1193,6 +1173,14 @@ namespace smtrat
         return true;
     }
 
+    struct formulaCmpB
+    {
+        bool operator ()( const Formula* const _formulaA, const Formula* const _formulaB ) const
+        {
+            return (_formulaA->constraint() < _formulaB->constraint());
+        }
+    };
+
     /**
      * search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
      *
@@ -1211,19 +1199,22 @@ namespace smtrat
      */
     lbool SATModule::search( int nof_conflicts )
     {
-        if( verbosity > 0 )
-        {
-            cout << "### search( " << nof_conflicts << " )" << endl << "###" << endl;
-            printClauses( cout, "### ");
-            cout << "###" << endl;
-            printLitConstraintMap( cout, "###" );
-            cout << "###" << endl;
-        }
+        #ifdef DEBUG_SATMODULE
+        cout << "### search( " << nof_conflicts << " )" << endl << "###" << endl;
+        printClauses( cout, "### " );
+        cout << "###" << endl;
+        printLitConstraintMap( cout, "###" );
+        cout << "###" << endl;
+        #endif
         assert( ok );
         int      backtrack_level;
         int      conflictC = 0;
         vec<Lit> learnt_clause;
         starts++;
+        #ifdef SATMODULE_WITH_CALL_NUMBER
+        unsigned theorycalls = 0;
+        cout << endl << "Number of theory calls:" << endl << endl;
+        #endif
 
         for( ; ; )
         {
@@ -1231,64 +1222,76 @@ namespace smtrat
 
             if( confl == CRef_Undef )
             {
-                if( verbosity > 0 )
-                {
-                    cout << "######################################################################" << endl;
-                    cout << "###" << endl;
-                    printClauses( cout, "### " );
-                    cout << "###" << endl;
-                    printCurrentAssignment( cout, "### " );
-                    cout << "### " << endl;
-                }
+                #ifdef SATMODULE_WITH_CALL_NUMBER
+                cout << "\r" << theorycalls << "    ";
+                theorycalls++;
+                #endif
+                #ifdef DEBUG_SATMODULE
+                cout << "######################################################################" << endl;
+                cout << "###" << endl;
+                printClauses( cout, "### " );
+                cout << "###" << endl;
+                printCurrentAssignment( cout, "### " );
+                cout << "### " << endl;
+                printDecisions( cout, "### " );
+                cout << "### " << endl;
+                cout << "### Check the constraints: ";
+                #endif
 
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
                 adaptPassedFormula();
-                if( verbosity > 0 )
-                {
-                    cout << "### Check the constraints: ";
-                }
                 switch( runBackends() )
                 {
                     case True:
                     {
-                        if( verbosity > 0 )
-                        {
-                            cout << "True!" << endl;
-                        }
+                        #ifdef DEBUG_SATMODULE
+                        cout << "True!" << endl;
+                        #endif
                         break;
                     }
                     case False:
                     {
-                        if( verbosity > 0 )
-                        {
-                            cout << "False!" << endl;
-                        }
+                        #ifdef DEBUG_SATMODULE
+                        cout << "False!" << endl;
+                        #endif
                         learnt_clause.clear();
-                        vector< Module* >::const_iterator backend = usedBackends().begin();
+                        vector<Module*>::const_iterator backend = usedBackends().begin();
                         while( backend != usedBackends().end() )
                         {
                             if( !(*backend)->rInfeasibleSubsets().empty() )
                             {
                                 for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
-                                     infsubset != (*backend)->rInfeasibleSubsets().end();
-                                     ++infsubset )
+                                        infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
                                 {
-                                    cout << "### Infeasible subset: rlqe ex({x_0, y_0, x_1, y_1, delta_x, delta_y}, ";
-                                    set<const Formula*>::const_iterator subformula = infsubset->begin();
-                                    for( ;    subformula != infsubset->end();
-                                        ++subformula )
+                                    #ifdef DEBUG_SATMODULE
+                                    cout << "### { ";
+                                    #endif
+                                    // Sort the constraints in a unique way.
+                                    set<const Formula*, formulaCmpB> sortedConstraints = set<const Formula*, formulaCmpB>();
+                                    for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                                     {
+                                        sortedConstraints.insert( *subformula );
+                                    }
+                                    // Add the according literals to the conflict clause.
+                                    for( set<const Formula*, formulaCmpB>::const_iterator subformula = sortedConstraints.begin();
+                                         subformula != sortedConstraints.end();
+                                         ++subformula )
+                                    {
+                                        #ifdef DEBUG_SATMODULE
                                         if( subformula != infsubset->begin() )
                                         {
-                                            cout << " and ";
+                                            cout << ", ";
                                         }
                                         (*subformula)->print();
+                                        #endif
                                         Lit lit = getLiteral( *subformula );
-                                        learnt_clause.push( lit );
+                                        learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
                                     }
-                                    cout << ");";
+                                    #ifdef DEBUG_SATMODULE
+                                    cout << " }";
                                     cout << endl;
-                                    break; // TODO: Add all infeasible subsets as conflicting clauses.
+                                    #endif
+                                    break;    // TODO: Add all infeasible subsets as conflicting clauses.
                                 }
                                 break;
                             }
@@ -1299,50 +1302,45 @@ namespace smtrat
                         // Do not store theory lemma
                         if( learnt_clause.size() == 1 )
                         {
-                            if( verbosity > 0 )
-                            {
-                                cout << "###" << endl << "### Do not store theory lemma" << endl;
-                                cout << "### Learnt clause = ";
-                            }
+                            #ifdef DEBUG_SATMODULE
+                            cout << "###" << endl << "### Do not store theory lemma" << endl;
+                            cout << "### Learnt clause = ";
+                            #endif
 
                             confl = ca.alloc( learnt_clause, true );
 
-                            if( verbosity > 0 )
-                            {
-                                printClause( cout, ca[confl] );
-                                cout << endl << "###" << endl;
-                            }
+                            #ifdef DEBUG_SATMODULE
+                            printClause( cout, ca[confl] );
+                            cout << endl << "###" << endl;
+                            #endif
                         }
                         // Learn theory lemma
                         else
                         {
-                            if( verbosity > 0 )
-                            {
-                                cout << "###" << endl << "### Learn theory lemma" << endl;
-                                cout << "### Learnt clause (" << learnt_clause.size() << ") = ";
-                            }
+                            #ifdef DEBUG_SATMODULE
+                            cout << "###" << endl << "### Learn theory lemma" << endl;
+                            cout << "### Conflict clause (" << learnt_clause.size() << ") = ";
+                            #endif
 
                             confl = ca.alloc( learnt_clause, true );
                             learnts.push( confl );
                             attachClause( confl );
                             claBumpActivity( ca[confl] );
 
-                            if( verbosity > 0 )
-                            {
-                                printClause( cout, ca[confl] );
-                                cout << endl << "###" << endl;
-                            }
+                            #ifdef DEBUG_SATMODULE
+                            printClause( cout, ca[confl] );
+                            cout << endl << "###" << endl;
+                            #endif
                         }
 
                         break;
                     }
                     case Unknown:
                     {
-                        if( verbosity > 0 )
-                        {
-                            cout << "### Result: Unknown!" << endl;
-                            cout << "Warning! Unknown as answer in SAT solver." << endl;
-                        }
+                        #ifdef DEBUG_SATMODULE
+                        cout << "### Result: Unknown!" << endl;
+                        cout << "Warning! Unknown as answer in SAT solver." << endl;
+                        #endif
                         return l_Undef;
                     }
                     default:
@@ -1353,7 +1351,6 @@ namespace smtrat
                     }
                 }
             }
-
 
             if( confl != CRef_Undef )
             {
@@ -1367,6 +1364,7 @@ namespace smtrat
                 assert( confl != CRef_Undef );
                 analyze( confl, learnt_clause, backtrack_level );
 
+                #ifdef DEBUG_SATMODULE
                 cout << "### Asserting clause: ";
                 for( int pos = 0; pos < learnt_clause.size(); ++pos )
                 {
@@ -1378,6 +1376,9 @@ namespace smtrat
                     cout << var( learnt_clause[pos] );
                 }
                 cout << endl;
+                cout << "### Backtrack to level " << backtrack_level << endl;
+                cout << "###" << endl;
+                #endif
                 cancelUntil( backtrack_level );
 
                 if( learnt_clause.size() == 1 )
@@ -1402,7 +1403,7 @@ namespace smtrat
                     learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
                     max_learnts             *= learntsize_inc;
 
-                    if( verbosity >= 2 )
+                    if( verbosity >= 1 )
                         printf( "| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
                                 (int)conflicts,
                                 (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]),
@@ -1418,7 +1419,7 @@ namespace smtrat
             else
             {
                 // NO CONFLICT
-                if( nof_conflicts >= 0 && ( conflictC >= nof_conflicts || !withinBudget() ) )
+                if( nof_conflicts >= 0 && (conflictC >= nof_conflicts ||!withinBudget()) )
                 {
                     // Reached bound on number of conflicts:
                     progress_estimate = progressEstimate();
@@ -1540,7 +1541,7 @@ namespace smtrat
         learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
         lbool status            = l_Undef;
 
-        if( verbosity >= 2 )
+        if( verbosity >= 1 )
         {
             printf( "============================[ Search Statistics ]==============================\n" );
             printf( "| Conflicts |          ORIGINAL         |          LEARNT          | Progress |\n" );
@@ -1559,7 +1560,7 @@ namespace smtrat
             curr_restarts++;
         }
 
-        if( verbosity >= 2 )
+        if( verbosity >= 1 )
             printf( "===============================================================================\n" );
 
         if( status == l_True )
@@ -1606,7 +1607,7 @@ namespace smtrat
         {
             Var v = var( trail[i] );
 
-            if( reason( v ) != CRef_Undef && (ca[reason( v )].reloced() || locked( ca[reason( v )] )))
+            if( reason( v ) != CRef_Undef && (ca[reason( v )].reloced() || locked( ca[reason( v )] )) )
                 ca.reloc( vardata[v].reason, to );
         }
 
@@ -1631,7 +1632,7 @@ namespace smtrat
         ClauseAllocator to( ca.size() - ca.wasted() );
 
         relocAll( to );
-        if( verbosity >= 3 )
+        if( verbosity >= 2 )
             printf( "|  Garbage collection:   %12d bytes => %12d bytes             |\n",
                     ca.size() * ClauseAllocator::Unit_Size,
                     to.size() * ClauseAllocator::Unit_Size );
@@ -1640,7 +1641,6 @@ namespace smtrat
 
     //=================================================================================================
     // Methods to print.
-
 
     /**
      * Description.
@@ -1683,9 +1683,7 @@ namespace smtrat
     void SATModule::printConstraintLiteralMap( ostream& _out, const string _init ) const
     {
         _out << _init << " ConstraintLiteralMap" << endl;
-        for( ConstraintLiteralMap::const_iterator clPair = mConstraintLiteralMap.begin();
-             clPair != mConstraintLiteralMap.end();
-             ++clPair )
+        for( ConstraintLiteralMap::const_iterator clPair = mConstraintLiteralMap.begin(); clPair != mConstraintLiteralMap.end(); ++clPair )
         {
             _out << _init << "    " << clPair->first.toString() << "  ->  ";
             if( sign( clPair->second ) )
@@ -1705,9 +1703,7 @@ namespace smtrat
     void SATModule::printBooleanVarMap( ostream& _out, const string _init ) const
     {
         _out << _init << " BooleanVarMap" << endl;
-        for( BooleanVarMap::const_iterator clPair = mBooleanVarMap.begin();
-             clPair != mBooleanVarMap.end();
-             ++clPair )
+        for( BooleanVarMap::const_iterator clPair = mBooleanVarMap.begin(); clPair != mBooleanVarMap.end(); ++clPair )
         {
             _out << _init << "    " << clPair->first << "  ->  " << clPair->second << endl;
         }
@@ -1722,9 +1718,7 @@ namespace smtrat
     void SATModule::printLitConstraintMap( ostream& _out, const string _init ) const
     {
         _out << _init << " LitConstraintMap" << endl;
-        for( LitConstraintMap::const_iterator clPair = mLitConstraintMap.begin();
-             clPair != mLitConstraintMap.end();
-             ++clPair )
+        for( LitConstraintMap::const_iterator clPair = mLitConstraintMap.begin(); clPair != mLitConstraintMap.end(); ++clPair )
         {
             _out << _init << "    ";
             if( sign( clPair->first ) )
@@ -1750,11 +1744,11 @@ namespace smtrat
         // to deallocate them at this point. Could be improved.
         int cnt = 0;
         for( int i = 0; i < clauses.size(); i++ )
-            if( !satisfied( ca[clauses[i]] ))
+            if( !satisfied( ca[clauses[i]] ) )
                 cnt++;
 
         for( int i = 0; i < clauses.size(); i++ )
-            if( !satisfied( ca[clauses[i]] ))
+            if( !satisfied( ca[clauses[i]] ) )
             {
                 Clause& c = ca[clauses[i]];
                 for( int j = 0; j < c.size(); j++ )
@@ -1763,11 +1757,10 @@ namespace smtrat
             }
 
         for( int i = 0; i < c.size(); i++ )
-            if( value( c[i] ) != l_False )
-//                _out << " " << ( sign( c[i] ) ? "-" : "" ) << ( mapVar( var( c[i] ), map, max ) + 1 );
-                _out << " " << ( sign( c[i] ) ? "-" : "" ) << var( c[i] );
+            //                _out << " " << ( sign( c[i] ) ? "-" : "" ) << ( mapVar( var( c[i] ), map, max ) + 1 );
+            _out << " " << (sign( c[i] ) ? "-" : "") << var( c[i] );
 
-        if( satisfied( c ))
+        if( satisfied( c ) )
             cout << "   is satisfied";
     }
 
@@ -1783,11 +1776,10 @@ namespace smtrat
     void SATModule::printClauses( ostream& _out, Clause& c, vec<Var>& map, Var& max )
     {
         for( int i = 0; i < c.size(); i++ )
-            if( value( c[i] ) != l_False )
-//                _out << " " << ( sign( c[i] ) ? "-" : "" ) << ( mapVar( var( c[i] ), map, max ) + 1 );
-                _out << " " << ( sign( c[i] ) ? "-" : "" ) << var( c[i] );
+            //                _out << " " << ( sign( c[i] ) ? "-" : "" ) << ( mapVar( var( c[i] ), map, max ) + 1 );
+            _out << " " << (sign( c[i] ) ? "-" : "") << var( c[i] );
 
-        if( satisfied( c ))
+        if( satisfied( c ) )
             cout << "   is satisfied";
     }
 
@@ -1799,12 +1791,13 @@ namespace smtrat
      */
     void SATModule::printClauses( ostream& _out, const string _init )
     {
+        _out << _init << " Clauses:" << endl;
         // Handle case when solver is in contradictory state:
         if( !ok )
         {
-            _out << _init << "p cnf 1 2" << endl;
-            _out << _init << "1 0" << endl;
-            _out << _init << "-1 0" << endl;
+            _out << _init << "  p cnf 1 2" << endl;
+            _out << _init << "  1 0" << endl;
+            _out << _init << "  -1 0" << endl;
             return;
         }
 
@@ -1815,11 +1808,11 @@ namespace smtrat
         // to deallocate them at this point. Could be improved.
         int cnt = 0;
         for( int i = 0; i < clauses.size(); i++ )
-            if( !satisfied( ca[clauses[i]] ))
+            if( !satisfied( ca[clauses[i]] ) )
                 cnt++;
 
         for( int i = 0; i < clauses.size(); i++ )
-            if( !satisfied( ca[clauses[i]] ))
+            if( !satisfied( ca[clauses[i]] ) )
             {
                 Clause& c = ca[clauses[i]];
                 for( int j = 0; j < c.size(); j++ )
@@ -1830,23 +1823,23 @@ namespace smtrat
         // Assumptions are added as unit clauses:
         cnt += assumptions.size();
 
-        _out << _init << "p cnf " << max << " " << cnt << endl;
+        _out << _init << "  p cnf " << max << " " << cnt << endl;
 
         for( int i = 0; i < assumptions.size(); i++ )
         {
             assert( value( assumptions[i] ) != l_False );
-            _out << _init << ( sign( assumptions[i] ) ? "-" : "") << ( mapVar( var( assumptions[i] ), map, max ) + 1 ) << endl;
+            _out << _init << "  " << (sign( assumptions[i] ) ? "-" : "") << (mapVar( var( assumptions[i] ), map, max ) + 1) << endl;
         }
 
         for( int i = 0; i < clauses.size(); i++ )
         {
-            _out << _init;
+            _out << _init << " ";
             printClauses( _out, ca[clauses[i]], map, max );
             _out << endl;
         }
 
-        if( verbosity > 1 )
-            _out << _init << "Wrote " << cnt << " clauses with " << max << " variables." << endl;
+        if( verbosity > 0 )
+            _out << _init << "  Wrote " << cnt << " clauses with " << max << " variables." << endl;
     }
 
     /**
@@ -1857,11 +1850,14 @@ namespace smtrat
      */
     void SATModule::printCurrentAssignment( ostream& _out, string _init ) const
     {
-
-        _out << _init << "    assigns           = " << "      The current assignments." << std::endl;
+        _out << _init << " Assignments:  ";
         for( int pos = 0; pos < assigns.size(); ++pos )
         {
-            _out << _init << "       " << pos << " -> ";
+            if( pos > 0 )
+            {
+                _out <<  _init << "               ";
+            }
+            _out << pos << " -> ";
             if( assigns[pos] == l_True )
             {
                 _out << "l_True";
@@ -1898,200 +1894,33 @@ namespace smtrat
     }
 
     /**
-     * Prints everything corresponding to the SAT solver.
+     * Prints the decisions the SAT solver has made.
      *
      * @param _out  The output stream where the answer should be printed.
      * @param _init The line initiation.
      */
-    void SATModule::printSatState( std::ostream& _out, const std::string _init )
+    void SATModule::printDecisions( ostream& _out, string _init ) const
     {
-        _out << _init << " Extra results: (read-only member variable)" << std::endl;
-        _out << _init << "    model    = " << "      If problem is satisfiable, this vector contains the model (if any)." << std::endl;
-        for( int pos = 0; pos < model.size(); ++pos )
-        {
-            _out << _init << "       ";
-            if( model[pos] == l_True )
-            {
-                _out << "l_True" << std::endl;
-            }
-            else if( model[pos] == l_False )
-            {
-                _out << "l_False" << std::endl;
-            }
-            else
-            {
-                _out << "l_Undef" << std::endl;
-            }
-        }
-        _out << _init << "    conflict = " << "      If problem is unsatisfiable (possibly under assumptions)," << std::endl;
-        _out << _init << "               " << "      this vector represent the final conflict clause expressed in the assumptions." << std::endl;
-        for( int pos = 0; pos < conflict.size(); ++pos )
-        {
-            _out << _init << "       ";
-            if( sign( conflict[pos] ) )
-            {
-                _out << "-";
-            }
-            _out << var( conflict[pos] ) << std::endl;
-        }
-
-    /*
-        _out << _init << " Mode of operation" << std::endl;
-        _out << _init << "    verbosity         = " << verbosity << std::endl;
-        _out << _init << "    var_decay         = " << var_decay << std::endl;
-        _out << _init << "    clause_decay      = " << clause_decay << std::endl;
-        _out << _init << "    random_var_freq   = " << random_var_freq << std::endl;
-        _out << _init << "    random_seed       = " << random_seed << std::endl;
-        _out << _init << "    luby_restart      = " << luby_restart << std::endl;
-        _out << _init << "    ccmin_mode        = " << ccmin_mode << "      Controls conflict clause minimization (0=none, 1=basic, 2=deep)." << std::endl;
-        _out << _init << "    phase_saving      = " << phase_saving << "      Controls the level of phase saving (0=none, 1=limited, 2=full)." << std::endl;
-        _out << _init << "    rnd_pol           = " << rnd_pol << "      Use random polarities for branching heuristics." << std::endl;
-        _out << _init << "    rnd_init_act      = " << rnd_init_act << "      Initialize variable activities with a small random value." << std::endl;
-        _out << _init << "    garbage_frac      = " << garbage_frac << "      The fraction of wasted memory allowed before a garbage collection is triggered." << std::endl;
-        _out << _init << "    restart_first     = " << restart_first << "      The initial restart limit. (default 100)" << std::endl;
-        _out << _init << "    restart_inc       = " << restart_inc << "      The factor with which the restart limit is multiplied in each restart. (default 1.5)" << std::endl;
-        _out << _init << "    learntsize_factor = " << learntsize_factor << "      The intitial limit for learnt clauses is a factor of the original clauses. (default 1 / 3)" << std::endl;
-        _out << _init << "    learntsize_inc    = " << learntsize_inc << "      The limit for learnt clauses is multiplied with this factor each restart. (default 1.1)" << std::endl;
-        _out << _init << "    learntsize_adjust_start_confl = " << learntsize_adjust_start_confl << std::endl;
-        _out << _init << "    learntsize_adjust_inc         = " << learntsize_adjust_inc << std::endl;
-    */
-
-        _out << _init << std::endl;
-        _out << _init << " Statistics: (read-only member variable)" << std::endl;
-        _out << _init << "    solves           = " << solves << std::endl;
-        _out << _init << "    starts           = " << starts << std::endl;
-        _out << _init << "    decisions        = " << decisions << std::endl;
-        _out << _init << "    rnd_decisions    = " << rnd_decisions << std::endl;
-        _out << _init << "    propagations     = " << propagations << std::endl;
-        _out << _init << "    conflicts        = " << conflicts << std::endl;
-        _out << _init << "    dec_vars         = " << dec_vars << std::endl;
-        _out << _init << "    clauses_literals = " << clauses_literals << std::endl;
-        _out << _init << "    learnts_literals = " << learnts_literals << std::endl;
-        _out << _init << "    max_literals     = " << max_literals << std::endl;
-        _out << _init << "    tot_literals     = " << tot_literals << std::endl;
-
-        _out << _init << std::endl;
-        _out << _init << " Solver state:" << std::endl;
-        _out << _init << "    ok                = " << ok << "      If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!" << std::endl;
-        _out << _init << "    clauses           = " << "      List of problem clauses." << std::endl;
-        printClauses( _out, _init + "       " );
-        _out << _init << "    learnts           = " << "      List of learnt clauses." << std::endl;
-        for( int pos = 0; pos < learnts.size(); ++pos )
-        {
-            _out << _init << "       " << learnts[pos] << std::endl;
-        }
-        _out << _init << "    cla_inc           = " << cla_inc << "      Amount to bump next clause with." << std::endl;
-        _out << _init << "    activity          = " << "      A heuristic measurement of the activity of a variable." << std::endl;
-        for( int pos = 0; pos < activity.size(); ++pos )
-        {
-            _out << _init << "       " << activity[pos] << std::endl;
-        }
-        _out << _init << "    var_inc           = " << var_inc << "      Amount to bump next variable with." << std::endl;
-        _out << _init << "    watches           = " << "      'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true)." << std::endl;
-    /*
-        OccLists<Lit, vec<Watcher>, WatcherDeleted> watches;
-    */
-        printCurrentAssignment( _out, _init );
-        _out << _init << "    polarity          = " << "      The preferred polarity of each variable." << std::endl;
-        for( int pos = 0; pos < polarity.size(); ++pos )
-        {
-            _out << _init << "       " << (bool) polarity[pos] << std::endl;
-        }
-        _out << _init << "    decision          = " << "      Declares if a variable is eligible for selection in the decision heuristic." << std::endl;
-        for( int pos = 0; pos < decision.size(); ++pos )
-        {
-            _out << _init << "       " << (bool) decision[pos] << std::endl;
-        }
-        _out << _init << "    trail             = " << "      Assignment stack; stores all assigments made in the order they were made." << std::endl;
+        _out << _init << " Decisions:  ";
+        int level = 0;
         for( int pos = 0; pos < trail.size(); ++pos )
         {
-            _out << _init << "       ";
+            if( level < trail_lim.size() )
+            {
+                if( pos == trail_lim[level] )
+                {
+                    ++level;
+                }
+            }
+            if( pos > 0 )
+            {
+                _out << _init << "             ";
+            }
             if( sign( trail[pos] ) )
             {
                 _out << "-";
             }
-            _out << var( trail[pos] ) << endl;
+            _out << var( trail[pos] ) << " @ " << level << endl;
         }
-        _out << _init << "    trail_lim         = " << "      Separator indices for different decision levels in 'trail'." << std::endl;
-        for( int pos = 0; pos < trail_lim.size(); ++pos )
-        {
-            _out << _init << "       " << trail_lim[pos] << std::endl;
-        }
-        _out << _init << "    vardata           = " << "      Stores reason and level for each variable." << std::endl;
-        for( int pos = 0; pos < vardata.size(); ++pos )
-        {
-            _out << _init << "       " << "reason: " << vardata[pos].reason << ", level: " << vardata[pos].level << std::endl;
-        }
-        _out << _init << "    qhead             = " << qhead << "      Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat)." << std::endl;
-        _out << _init << "    simpDB_assigns    = " << simpDB_assigns << "      Number of top-level assignments since last execution of 'simplify()'." << std::endl;
-        _out << _init << "    simpDB_props      = " << simpDB_props << "      Remaining number of propagations that must be made before next execution of 'simplify()'." << std::endl;
-        _out << _init << "    assumptions       = " << solves << "      Current set of assumptions provided to solve by the user." << std::endl;
-        for( int pos = 0; pos < assumptions.size(); ++pos )
-        {
-            _out << _init << "       ";
-            if( sign( assumptions[pos] ) )
-            {
-                _out << "-";
-            }
-            _out << var( assumptions[pos] ) << std::endl;
-        }
-    /*
-        _out << _init << "    order_heap        = " << << "      A priority queue of variables ordered with respect to the variable activity." << std::endl;
-        Heap<VarOrderLt> order_heap;    //
-    */
-        _out << _init << "    progress_estimate = " << progress_estimate << "      Set by 'search()'." << std::endl;
-        _out << _init << "    remove_satisfied  = " << remove_satisfied << "      Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'." << std::endl;
-
-    /*
-        _out << _init << std::endl;
-        _out << _init << " Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is" << std::endl;
-        _out << _init << " used, exept 'seen' wich is used in several places." << std::endl;
-        _out << _init << "    seen                    = " << std::endl;
-        for( int pos = 0; pos < seen.size(); ++pos )
-        {
-            _out << _init << "       " << seen[pos] << std::endl;
-        }
-        _out << _init << "    analyze_stack           = " << std::endl;
-        for( int pos = 0; pos < analyze_stack.size(); ++pos )
-        {
-            _out << _init << "       ";
-            if( sign( analyze_stack[pos] ) )
-            {
-                _out << "-";
-            }
-            _out << var( analyze_stack[pos] ) << std::endl;
-        }
-        _out << _init << "    analyze_toclear         = " << std::endl;
-        for( int pos = 0; pos < analyze_toclear.size(); ++pos )
-        {
-            _out << _init << "       ";
-            if( sign( analyze_toclear[pos] ) )
-            {
-                _out << "-";
-            }
-            _out << var( analyze_toclear[pos] ) << std::endl;
-        }
-        _out << _init << "    add_tmp                 = " << std::endl;
-        for( int pos = 0; pos < add_tmp.size(); ++pos )
-        {
-            _out << _init << "       ";
-            if( sign( add_tmp[pos] ) )
-            {
-                _out << "-";
-            }
-            _out << var( add_tmp[pos] ) << std::endl;
-        }
-        _out << _init << "    max_learnts             = " << max_learnts << std::endl;
-        _out << _init << "    learntsize_adjust_confl = " << learntsize_adjust_confl << std::endl;
-        _out << _init << "    learntsize_adjust_cnt   = " << learntsize_adjust_cnt << std::endl;
-    */
-
-        _out << _init << std::endl;
-        _out << _init << " Resource contraints:" << std::endl;
-        _out << _init << "    conflict_budget    = " << conflict_budget << "      -1 means no budget.." << std::endl;
-        _out << _init << "    propagation_budget = " << propagation_budget << "      -1 means no budget." << std::endl;
-        _out << _init << "    asynch_interrupt   = " << asynch_interrupt << std::endl;
     }
-
 }    // namespace smtrat
-

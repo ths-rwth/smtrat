@@ -29,10 +29,10 @@ namespace Minisat {
 // Default hash/equals functions
 //
 
-template<class K> struct Hash  { uint32_t operator()(const K& k)               const { /*return hash(k);*/  } };
+template<class K> struct Hash  { uint32_t operator()(const K& k)               const { return hash<K>(k);  } };
 template<class K> struct Equal { bool     operator()(const K& k1, const K& k2) const { return k1 == k2; } };
 
-template<class K> struct DeepHash  { uint32_t operator()(const K* k)               const { /*return hash(*k);*/  } };
+template<class K> struct DeepHash  { uint32_t operator()(const K* k)               const { return hash<K>(*k);  } };
 template<class K> struct DeepEqual { bool     operator()(const K* k1, const K* k2) const { return *k1 == *k2; } };
 
 static inline uint32_t hash(uint32_t x){ return x; }
@@ -72,7 +72,7 @@ class Map {
     bool    checkCap(int new_size) const { return new_size > cap; }
 
     int32_t index  (const K& k) const { return hash(k) % cap; }
-    void   _insert (const K& k, const D& d) { 
+    void   _insert (const K& k, const D& d) {
         vec<Pair>& ps = table[index(k)];
         ps.push(); ps.last().key = k; ps.last().data = d; }
 
@@ -96,7 +96,7 @@ class Map {
         // printf(" --- rehashing, old-cap=%d, new-cap=%d\n", cap, newsize);
     }
 
-    
+
  public:
 
     Map () : table(NULL), cap(0), size(0) {}
@@ -137,7 +137,7 @@ class Map {
         for (int i = 0; i < ps.size(); i++)
             if (equals(ps[i].key, k)){
                 d = ps[i].data;
-                return true; } 
+                return true; }
         return false;
     }
 

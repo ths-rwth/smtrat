@@ -50,7 +50,7 @@ namespace vs
             {
                 bool operator ()( const Condition* const pCondA, const Condition* const pCondB ) const
                 {
-                    return (*pCondA).pConstraint() < (*pCondB).pConstraint();
+                    return (*pCondA).constraint() < (*pCondB).constraint();
                 }
             };
             typedef std::set<Condition*, condComp> ConditionSet;
