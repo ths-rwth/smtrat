@@ -47,10 +47,10 @@ namespace vs
      *  Type and object definitions:
      */
 
-    #ifndef TS_CONSTRAINT_CONJUNCTION
-    #define TS_CONSTRAINT_CONJUNCTION
+#ifndef TS_CONSTRAINT_CONJUNCTION
+#define TS_CONSTRAINT_CONJUNCTION
     typedef std::vector<smtrat::Constraint*>      TS_ConstraintConjunction;
-    #endif
+#endif
     typedef std::vector<TS_ConstraintConjunction> DisjunctionOfConstraintConjunctions;
 
     /*
@@ -99,11 +99,17 @@ namespace vs
                                  const GiNaC::symtab& );
     void substituteMinusInf( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void clear( DisjunctionOfConstraintConjunctions& );
-    void substituteInfLessGreater( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions&, const GiNaC::symtab& );
+    void substituteInfLessGreater( const smtrat::Constraint&,
+                                   const Substitution&,
+                                   DisjunctionOfConstraintConjunctions&,
+                                   const GiNaC::symtab& );
     void substituteTrivialCase( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions&, const GiNaC::symtab& );
-    void substituteNotTrivialCase( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions&, const GiNaC::symtab& );
+    void substituteNotTrivialCase( const smtrat::Constraint&,
+                                   const Substitution&,
+                                   DisjunctionOfConstraintConjunctions&,
+                                   const GiNaC::symtab& );
 
-    #ifdef VS_CUBIC_CASE
+#ifdef VS_CUBIC_CASE
     void substituteCubicRoot( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteCubicRootInLinear( const smtrat::Constraint&,
                                       const Substitution&,
@@ -146,7 +152,7 @@ namespace vs
                                                const Substitution&,
                                                DisjunctionOfConstraintConjunctions&,
                                                const GiNaC::symtab& );
-    #endif
+#endif
 
     SqrtEx subBySqrtEx( const GiNaC::ex&, const GiNaC::ex&, const SqrtEx& );
     void simplify( DisjunctionOfConstraintConjunctions& );

@@ -58,7 +58,7 @@ namespace smtrat
             return strcmp( s1.c_str(), s2.c_str() ) < 0;
         }
     };
-    typedef std::pair<GiNaC::ex, GiNaC::ex> VS_MultiRootLessLhs;
+    typedef std::pair<GiNaC::ex, GiNaC::ex>   VS_MultiRootLessLhs;
 
     /**
      * Class to create a constraint object.
@@ -128,7 +128,7 @@ namespace smtrat
             signed degree( const std::string& ) const;
             signed highestDegree() const;
             bool isLinear() const;
-            std::vector<GiNaC::ex> linearAndConstantCoefficients() const;
+            std::vector< GiNaC::ex > linearAndConstantCoefficients() const;
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
 
             // Data access methods (read and write).

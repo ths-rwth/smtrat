@@ -47,33 +47,33 @@ namespace vs
 
     SqrtEx::SqrtEx( const GiNaC::ex& _ex )
     {
-        mpConstantPart = new ex( _ex.numer() );
+        mpConstantPart = new ex( _ex.numer().expand().normal() );
         mpFactor       = new ex( 0 );
-        mpDenominator  = new ex( _ex.denom() );
+        mpDenominator  = new ex( _ex.denom().expand().normal() );
         mpRadicand     = new ex( 0 );
     }
 
     SqrtEx::SqrtEx( const GiNaC::ex& _constantPart, const GiNaC::ex& _factor, const GiNaC::ex& _denominator, const GiNaC::ex& _radicand )
     {
         assert( _denominator != 0 );
-        assert( !_radicand.info( info_flags::rational ) || _radicand.info( info_flags::nonnegative ) );
-        mpConstantPart = new ex( _constantPart );
+        assert( !_radicand.info( info_flags::rational ) || _radicand.info( info_flags::nonnegative ));
+        mpConstantPart = new ex( _constantPart.expand().normal() );
         if( _radicand == 0 )
         {
             mpFactor = new ex( 0 );
         }
         else
         {
-            mpFactor = new ex( _factor );
+            mpFactor = new ex( _factor.expand().normal() );
         }
-        mpDenominator = new ex( _denominator );
+        mpDenominator = new ex( _denominator.expand().normal() );
         if( _factor == 0 )
         {
             mpRadicand = new ex( 0 );
         }
         else
         {
-            mpRadicand = new ex( _radicand );
+            mpRadicand = new ex( _radicand.expand().normal() );
         }
     }
 
@@ -110,15 +110,15 @@ namespace vs
      */
     bool SqrtEx::hasVariable( const ex& _variable ) const
     {
-        if( constantPart().has( _variable ) )
+        if( constantPart().has( _variable ))
         {
             return true;
         }
-        else if( factor().has( _variable ) )
+        else if( factor().has( _variable ))
         {
             return true;
         }
-        else if( radicand().has( _variable ) )
+        else if( radicand().has( _variable ))
         {
             return true;
         }
@@ -152,7 +152,7 @@ namespace vs
     bool SqrtEx::operator ==( const SqrtEx& _sqrtEx ) const
     {
         ex difference = expression() - _sqrtEx.expression();
-        difference    = difference;
+        difference    = difference.expand().normal();
         if( difference == 0 )
         {
             return true;

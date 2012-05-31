@@ -19,7 +19,6 @@
  *
  */
 
-
 /*
  * File:   CNFTransformerModule.h
  * Author: Florian Corzilius
@@ -38,16 +37,13 @@ namespace smtrat
         public Module
     {
         private:
-
             /**
              * Members.
              */
-            bool                  mFixedTheModuleID;
-            unsigned              mModuleID;
-            std::vector<unsigned> mAuxVarCounterHistory;
-
+            bool mFixedTheModuleID;
+            unsigned mModuleID;
+            std::vector< unsigned > mAuxVarCounterHistory;
         public:
-
             /**
              * Constructor and destructor.
              */
@@ -65,6 +61,7 @@ namespace smtrat
             void pushBacktrackPoint();
             void popBacktrackPoint();
 
+
             /**
              * Generates a fresh Boolean variable and returns its identifier.
              *
@@ -76,7 +73,7 @@ namespace smtrat
                 assert( !mAuxVarCounterHistory.empty() );
                 if( !mFixedTheModuleID )
                 {
-                    mModuleID         = mpTSManager->uniqueModuleNumber( this );
+                    mModuleID = mpTSManager->uniqueModuleNumber( this );
                     mFixedTheModuleID = true;
                 }
                 std::stringstream out;
@@ -85,13 +82,12 @@ namespace smtrat
             }
 
         private:
-
             /**
              * Methods:
              */
-            bool assertClauses( std::vector<Formula*>&, vec_set_const_pFormula& );
+            bool assertClauses( std::vector< Formula* >&, vec_set_const_pFormula& );
             Formula* resolveNegation( Formula* ) const;
-            void printSolverState( const std::vector<Formula*>& ) const;
+            void printSolverState( const std::vector< Formula* >& ) const;
     };
 
 }    // namespace smtrat

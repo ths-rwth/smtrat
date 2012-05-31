@@ -183,7 +183,7 @@ namespace vs
         ConditionVector::const_iterator cond = conditions().begin();
         while( cond != conditions().end() )
         {
-            if( substitutionApplicable( (**cond).constraint() ) )
+            if( substitutionApplicable( (**cond).constraint() ))
             {
                 return true;
             }
@@ -261,7 +261,7 @@ namespace vs
     {
         for( ConditionVector::const_iterator cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
-            if( (**cond).constraint().relation() == smtrat::CR_EQ && (**cond).constraint().hasVariable( _variableName ) )
+            if( (**cond).constraint().relation() == smtrat::CR_EQ && (**cond).constraint().hasVariable( _variableName ))
             {
                 return true;
             }
@@ -301,7 +301,8 @@ namespace vs
     {
         for( ConditionVector::const_iterator cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
-            for( symtab::const_iterator var = (**cond).constraint().variables().begin(); var != (**cond).constraint().variables().end(); ++var )
+            for( symtab::const_iterator var = (**cond).constraint().variables().begin(); var != (**cond).constraint().variables().end();
+                    ++var )
             {
                 _variables.insert( (*var).first );
             }
@@ -341,9 +342,9 @@ namespace vs
      */
     bool State::checkSubResultsCombs() const
     {
-        #ifdef VS_DEBUG_METHODS
+#ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
-        #endif
+#endif
         if( hasSubstitutionResults() )
         {
             if( hasSubResultsCombination() )
@@ -393,9 +394,9 @@ namespace vs
      */
     bool State::unfinishedAncestor( State*& _unfinAnt )
     {
-        #ifdef VS_DEBUG_METHODS_X
+#ifdef VS_DEBUG_METHODS_X
         cout << __func__ << endl;
-        #endif
+#endif
         _unfinAnt = this;
         while( !_unfinAnt->isRoot() )
         {
@@ -420,9 +421,9 @@ namespace vs
      */
     bool State::bestCondition( Condition*& _bestCondition, const unsigned _numberOfAllVariables )
     {
-        #ifdef VS_DEBUG_METHODS
+#ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
-        #endif
+#endif
         ConditionVector::iterator cond = rConditions().begin();
         if( cond == conditions().end() )
         {
@@ -498,12 +499,12 @@ namespace vs
      */
     void State::simplify()
     {
-        #ifdef VS_DEBUG_METHODS_X
+#ifdef VS_DEBUG_METHODS_X
         cout << __func__ << endl;
-        #endif
-        #ifdef VS_DEBUG_BACKENDS
+#endif
+#ifdef VS_DEBUG_BACKENDS
         printAlone( "", cout );
-        #endif
+#endif
 
         if( !subResultsSimplified() )
         {
@@ -524,7 +525,7 @@ namespace vs
                     {
                         ConditionVector redundantConditions       = ConditionVector();
                         ConditionSetSet conflictingConditionPairs = ConditionSetSet();
-                        if( !simplify( condConjunction->first, redundantConditions, conflictingConditionPairs ) )
+                        if( !simplify( condConjunction->first, redundantConditions, conflictingConditionPairs ))
                         {
                             condConjunction = subResult->erase( condConjunction );
                         }
@@ -596,7 +597,7 @@ namespace vs
                 {
                     ConditionVector redundantConditions       = ConditionVector();
                     ConditionSetSet conflictingConditionPairs = ConditionSetSet();
-                    if( !simplify( fixedConditions->back().first, redundantConditions, conflictingConditionPairs ) )
+                    if( !simplify( fixedConditions->back().first, redundantConditions, conflictingConditionPairs ))
                     {
                         addConflicts( NULL, conflictingConditionPairs );
                         passConflictToFather();
@@ -613,7 +614,7 @@ namespace vs
         {
             ConditionVector redundantConditions       = ConditionVector();
             ConditionSetSet conflictingConditionPairs = ConditionSetSet();
-            if( !simplify( rConditions(), redundantConditions, conflictingConditionPairs ) )
+            if( !simplify( rConditions(), redundantConditions, conflictingConditionPairs ))
             {
                 addConflictSet( NULL, conflictingConditionPairs );
                 rInconsistent() = true;
@@ -625,9 +626,9 @@ namespace vs
             mConditionsSimplified = true;
         }
         //printAlone( "      ", cout );
-        #ifdef VS_DEBUG_METHODS_X
+#ifdef VS_DEBUG_METHODS_X
         cout << "end " << __func__ << "1" << endl;
-        #endif
+#endif
     }
 
     /**
@@ -642,9 +643,9 @@ namespace vs
      */
     bool State::simplify( ConditionVector& _conditionVectorToSimplify, ConditionVector& _redundantConditions, ConditionSetSet& _conflictSet )
     {
-        #ifdef VS_DEBUG_METHODS_X
+#ifdef VS_DEBUG_METHODS_X
         cout << __func__ << "2" << endl;
-        #endif
+#endif
         if( _conditionVectorToSimplify.size() > 1 )
         {
             set<Condition*>           redundantConditionSet = set<Condition*>();
@@ -667,8 +668,8 @@ namespace vs
                     //(**cond2).print( cout );
                     //cout << endl;
                     //cout << "### Results in:   ";
-                    signed strongProp = smtrat::Constraint::compare( (**cond1).constraint(), (**cond2).constraint() );
-                    //cout << strongProp << endl;
+                    signed strongProp = compareConstraints( (**cond1).constraint(), (**cond2).constraint() );
+                    //cout << strongProp << endl;               
 
                     /*
                      * If the two conditions have the same solution space.
@@ -828,9 +829,9 @@ namespace vs
                 //(**redundantCond).print( cout );
             }
         }
-        #ifdef VS_DEBUG_METHODS_X
+#ifdef VS_DEBUG_METHODS_X
         cout << "end " << __func__ << "2" << endl;
-        #endif
+#endif
         return _conflictSet.empty();
     }
 
@@ -897,9 +898,9 @@ namespace vs
      */
     void State::addConflictSet( const Substitution* const _substitution, ConditionSetSet& _condSetSet )
     {
-        #ifdef VS_DEBUG_METHODS
+#ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
-        #endif
+#endif
         ConflictSets::iterator iter = mpConflictSets->find( _substitution );
         if( iter != mpConflictSets->end() )
         {
@@ -909,7 +910,7 @@ namespace vs
         {
             ConditionSetSetSet condSetSetSet = ConditionSetSetSet();
             condSetSetSet.insert( _condSetSet );
-            mpConflictSets->insert( pair<const Substitution* const , ConditionSetSetSet>( _substitution, condSetSetSet ) );
+            mpConflictSets->insert( pair<const Substitution* const , ConditionSetSetSet>( _substitution, condSetSetSet ));
         }
         if( _substitution == NULL )
         {
@@ -926,9 +927,9 @@ namespace vs
      */
     void State::addConflicts( const Substitution* const _substitution, ConditionSetSet& _condSetSet )
     {
-        #ifdef VS_DEBUG_METHODS
+#ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
-        #endif
+#endif
         ConflictSets::iterator iter = mpConflictSets->find( _substitution );
         if( iter != mpConflictSets->end() )
         {
@@ -946,7 +947,7 @@ namespace vs
         {
             ConditionSetSetSet condSetSetSet = ConditionSetSetSet();
             condSetSetSet.insert( _condSetSet );
-            mpConflictSets->insert( pair<const Substitution* const , ConditionSetSetSet>( _substitution, condSetSetSet ) );
+            mpConflictSets->insert( pair<const Substitution* const , ConditionSetSetSet>( _substitution, condSetSetSet ));
         }
     }
 
@@ -981,9 +982,9 @@ namespace vs
      */
     void State::addSubstitutionResults( vector<DisjunctionOfConditionConjunctions>& _disjunctionsOfCondConj )
     {
-        #ifdef VS_DEBUG_METHODS_X
+#ifdef VS_DEBUG_METHODS_X
         cout << __func__ << endl;
-        #endif
+#endif
 
         /*
          * For each disjunction add a substitution result to the substitution results of this state.
@@ -998,7 +999,7 @@ namespace vs
             mpSubstitutionResults->push_back( SubstitutionResult() );
             for( DisjunctionOfConditionConjunctions::iterator conjunction = disjunction->begin(); conjunction != disjunction->end(); ++conjunction )
             {
-                mpSubstitutionResults->back().push_back( pair<ConditionVector, bool>( *conjunction, false ) );
+                mpSubstitutionResults->back().push_back( pair<ConditionVector, bool>( *conjunction, false ));
             }
         }
 
@@ -1023,9 +1024,9 @@ namespace vs
      */
     bool State::extendSubResultCombination()
     {
-        #ifdef VS_DEBUG_METHODS_X
+#ifdef VS_DEBUG_METHODS_X
         cout << __func__ << endl;
-        #endif
+#endif
         assert( subResultsSimplified() );
 
         if( mpSubResultCombination == NULL )
@@ -1099,7 +1100,7 @@ namespace vs
             /*
              * Add the found substitution result to the substitution result combinations.
              */
-            mpSubResultCombination->push_back( pair<unsigned, unsigned>( bestSubResultIndex, 0 ) );
+            mpSubResultCombination->push_back( pair<unsigned, unsigned>( bestSubResultIndex, 0 ));
             //            if( checkSubResultsCombs() )
             //            {
             //                cout << __func__ << endl;
@@ -1124,9 +1125,9 @@ namespace vs
      */
     bool State::nextSubResultCombination()
     {
-        #ifdef VS_DEBUG_METHODS_X
+#ifdef VS_DEBUG_METHODS_X
         cout << __func__ << endl;
-        #endif
+#endif
         assert( stateType() == COMBINE_SUBRESULTS );
 
         if( !hasSubResultsCombination() )
@@ -1243,7 +1244,7 @@ namespace vs
             for( ConditionVector::const_iterator cond = mpSubstitutionResults->at( iter->first ).at( iter->second ).first.begin();
                     cond != mpSubstitutionResults->at( iter->first ).at( iter->second ).first.end(); ++cond )
             {
-                currentSubresultCombination.push_back( new Condition( **cond ) );
+                currentSubresultCombination.push_back( new Condition( **cond ));
             }
             ++iter;
         }
@@ -1256,9 +1257,9 @@ namespace vs
      */
     bool State::refreshConditions()
     {
-        #ifdef VS_DEBUG_METHODS_X
+#ifdef VS_DEBUG_METHODS_X
         cout << __func__ << endl;
-        #endif
+#endif
         assert( stateType() == COMBINE_SUBRESULTS );
 
         bool conditionsChanged = false;
@@ -1274,7 +1275,7 @@ namespace vs
              */
             ConditionVector redundantConditions       = ConditionVector();
             ConditionSetSet conflictingConditionPairs = ConditionSetSet();
-            if( !simplify( newCombination, redundantConditions, conflictingConditionPairs ) )
+            if( !simplify( newCombination, redundantConditions, conflictingConditionPairs ))
             {
                 rInconsistent() = true;
             }
@@ -1394,7 +1395,7 @@ namespace vs
     {
         for( ConditionVector::iterator cond = rConditions().begin(); cond != conditions().end(); ++cond )
         {
-            if( (**cond).constraint().hasVariable( index() ) )
+            if( (**cond).constraint().hasVariable( index() ))
             {
                 (**cond).rFlag() = false;
             }
@@ -1409,9 +1410,9 @@ namespace vs
      */
     bool State::initIndex( const symtab& _allVariables )
     {
-        #ifdef VS_DEBUG_METHODS
+#ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
-        #endif
+#endif
 
         mTryToRefreshIndex = false;
 
@@ -1423,7 +1424,7 @@ namespace vs
         map<string, multiset<unsigned, unsignedGreater> > varVals = map<string, multiset<unsigned, unsignedGreater> >();
         for( symtab::const_iterator var = _allVariables.begin(); var != _allVariables.end(); ++var )
         {
-            varVals.insert( pair<string, multiset<unsigned, unsignedGreater> >( var->first, multiset<unsigned, unsignedGreater>() ) );
+            varVals.insert( pair<string, multiset<unsigned, unsignedGreater> >( var->first, multiset<unsigned, unsignedGreater>() ));
         }
 
         /*
@@ -1444,7 +1445,7 @@ namespace vs
             }
         }
 
-        #ifdef VS_DEBUG_METHODS_X
+#ifdef VS_DEBUG_METHODS_X
         for( map<string, multiset<unsigned, unsignedGreater> >::const_iterator var = varVals.begin(); var != varVals.end(); ++var )
         {
             cout << var->first << ":  ";
@@ -1454,7 +1455,7 @@ namespace vs
             }
             cout << endl;
         }
-        #endif
+#endif
 
         /*
          * Find the variable which has in a constraint the best valuation. If more than one
@@ -1556,9 +1557,9 @@ namespace vs
                               const unsigned _valutation,
                               const bool _recentlyAdded )
     {
-        #ifdef VS_DEBUG_METHODS
+#ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
-        #endif
+#endif
 
         /*
          * Check if the constraint is variable-free and consistent.
@@ -1602,11 +1603,11 @@ namespace vs
                 if( _constraint.variables().find( index() ) == _constraint.variables().end()
                         || constraintWithFinitlyManySolutionCandidatesInIndexExists )
                 {
-                    rConditions().push_back( new Condition( _constraint, true, _originalConditions, _valutation, _recentlyAdded ) );
+                    rConditions().push_back( new Condition( _constraint, true, _originalConditions, _valutation, _recentlyAdded ));
                 }
                 else
                 {
-                    rConditions().push_back( new Condition( _constraint, false, _originalConditions, _valutation, _recentlyAdded ) );
+                    rConditions().push_back( new Condition( _constraint, false, _originalConditions, _valutation, _recentlyAdded ));
                 }
             }
 
@@ -1615,7 +1616,7 @@ namespace vs
              */
             else
             {
-                rConditions().push_back( new Condition( _constraint, false, _originalConditions, _valutation, false ) );
+                rConditions().push_back( new Condition( _constraint, false, _originalConditions, _valutation, false ));
             }
         }
     }
@@ -1628,9 +1629,9 @@ namespace vs
      */
     void State::deleteConditions( ConditionVector& _conditionsToDelete )
     {
-        #ifdef VS_DEBUG_METHODS_X
+#ifdef VS_DEBUG_METHODS_X
         cout << __func__ << endl;
-        #endif
+#endif
         if( !_conditionsToDelete.empty() )
         {
             bool                  constraintWithFinitlyManySolutionCandidatesInIndexExists = false;
@@ -1721,7 +1722,7 @@ namespace vs
                                         {
                                             ConditionSet oConds = ConditionSet();
                                             oConds.insert( *oCond );
-                                            conditionsToAdd.push_back( new Condition( (**oCond).constraint(), false, oConds, (**cond).valuation() ) );
+                                            conditionsToAdd.push_back( new Condition( (**oCond).constraint(), false, oConds, (**cond).valuation() ));
                                             ++oCond;
                                         }
                                         Condition* rpCond = *cond;
@@ -2009,9 +2010,9 @@ namespace vs
         mToHighDegree      = false;
         mMarkedAsDeleted   = false;
         mTryToRefreshIndex = true;
-        #ifdef VS_DEBUG_METHODS_X
+#ifdef VS_DEBUG_METHODS_X
         cout << "end " << __func__ << endl;
-        #endif
+#endif
     }
 
     /**
@@ -2026,13 +2027,13 @@ namespace vs
      */
     bool State::addChild( const string& _eliminationVar, const Substitution_Type& _substitutionType, const ConditionSet& _oConditions )
     {
-        #ifdef VS_DEBUG_METHODS
+#ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
-        #endif
+#endif
         Substitution * sub;
         sub = new Substitution( _eliminationVar, _substitutionType, _oConditions );
 
-        if( !updateOCondsOfSubstitutions( *sub ) )
+        if( !updateOCondsOfSubstitutions( *sub ))
         {
             State * dt;
             dt = new State( this, *sub );
@@ -2077,9 +2078,9 @@ namespace vs
                           const Substitution_Type& _substitutionType,
                           const ConditionSet& _oConditions )
     {
-        #ifdef VS_DEBUG_METHODS
+#ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
-        #endif
+#endif
         smtrat::Constraint * cons;
         cons = new smtrat::Constraint( _lhsCondition, _relationCondition, _constraintVariables );
         unsigned isConsConsistent = (*cons).isConsistent();
@@ -2089,7 +2090,7 @@ namespace vs
             sqEx = new SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand );
             Substitution * sub;
             sub = new Substitution( _eliminationVar, *sqEx, _substitutionType, _constraintVariables, _oConditions );
-            if( !updateOCondsOfSubstitutions( *sub ) )
+            if( !updateOCondsOfSubstitutions( *sub ))
             {
                 State* state = new State( this, *sub );
 
@@ -2099,7 +2100,7 @@ namespace vs
                     subResults.push_back( DisjunctionOfConditionConjunctions() );
                     subResults.back().push_back( ConditionVector() );
 
-                    subResults.back().back().push_back( new Condition( *cons, false, _oConditions, (*state).treeDepth(), false ) );
+                    subResults.back().back().push_back( new Condition( *cons, false, _oConditions, (*state).treeDepth(), false ));
 
                     state->addSubstitutionResults( subResults );
                     state->rStateType() = SUBSTITUTION_TO_APPLY;
@@ -2159,9 +2160,9 @@ namespace vs
                           const Substitution_Type& _substitutionType,
                           const ConditionSet& _oConditions )
     {
-        #ifdef VS_DEBUG_METHODS
+#ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
-        #endif
+#endif
         smtrat::Constraint * cons1;
         cons1 = new smtrat::Constraint( _lhsCondition1, _relationCondition1, _constraintVariables );
         unsigned isCons1Consistent = (*cons1).isConsistent();
@@ -2176,7 +2177,7 @@ namespace vs
                 sqEx = new SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand );
                 Substitution * sub;
                 sub = new Substitution( _eliminationVar, *sqEx, _substitutionType, _constraintVariables, _oConditions );
-                if( !updateOCondsOfSubstitutions( *sub ) )
+                if( !updateOCondsOfSubstitutions( *sub ))
                 {
                     State * state;
                     state = new State( this, *sub );
@@ -2187,11 +2188,11 @@ namespace vs
 
                     if( isCons1Consistent != 1 )
                     {
-                        subResults.back().back().push_back( new Condition( *cons1, false, _oConditions, (*state).treeDepth(), false ) );
+                        subResults.back().back().push_back( new Condition( *cons1, false, _oConditions, (*state).treeDepth(), false ));
                     }
                     if( isCons2Consistent != 1 )
                     {
-                        subResults.back().back().push_back( new Condition( *cons2, false, _oConditions, (*state).treeDepth(), false ) );
+                        subResults.back().back().push_back( new Condition( *cons2, false, _oConditions, (*state).treeDepth(), false ));
                     }
                     if( !subResults.back().back().empty() )
                     {
@@ -2287,9 +2288,9 @@ namespace vs
      */
     bool State::passConflictToFather()
     {
-        #ifdef VS_DEBUG_METHODS_X
+#ifdef VS_DEBUG_METHODS_X
         cout << __func__ << endl;
-        #endif
+#endif
         assert( isInconsistent() );
 
         /*
@@ -2311,7 +2312,7 @@ namespace vs
         }
         coveringSet( confSets, covSet, treeDepth() );
 
-        #ifdef VS_DEBUG_METHODS_X
+#ifdef VS_DEBUG_METHODS_X
         cout << "*** PassConflictToFather: " << endl;
         printAlone( "   ", cout );
         cout << "***" << endl;
@@ -2321,7 +2322,7 @@ namespace vs
             cout << "  " << (**cond).constraint().toString();
         }
         cout << endl;
-        #endif
+#endif
 
         /*
          * Get the original conditions to the covering set.
@@ -2339,7 +2340,7 @@ namespace vs
                 ConditionSet::iterator oCond = (**cond).originalConditions().begin();
                 while( oCond != (**cond).originalConditions().end() )
                 {
-                    if( (**oCond).constraint().hasVariable( father().index() ) )
+                    if( (**oCond).constraint().hasVariable( father().index() ))
                     {
                         coverSetOCondsContainIndexOfFather = true;
                     }
@@ -2458,25 +2459,25 @@ namespace vs
         _out << _initiation << "                                       ID: " << mID << endl;
         switch( stateType() )
         {
-            case COMBINE_SUBRESULTS:
-            {
-                _out << _initiation << "                               state type: COMBINE_SUBRESULTS" << endl;
-                break;
-            }
-            case SUBSTITUTION_TO_APPLY:
-            {
-                _out << _initiation << "                               state type: SUBSTITUTION_TO_APPLY" << endl;
-                break;
-            }
-            case TEST_CANDIDATE_TO_GENERATE:
-            {
-                _out << _initiation << "                               state type: TEST_CANDIDATE_TO_GENERATE" << endl;
-                break;
-            }
-            default:
-            {
-                _out << _initiation << "                               state type: Undefined" << endl;
-            }
+        case COMBINE_SUBRESULTS:
+        {
+            _out << _initiation << "                               state type: COMBINE_SUBRESULTS" << endl;
+            break;
+        }
+        case SUBSTITUTION_TO_APPLY:
+        {
+            _out << _initiation << "                               state type: SUBSTITUTION_TO_APPLY" << endl;
+            break;
+        }
+        case TEST_CANDIDATE_TO_GENERATE:
+        {
+            _out << _initiation << "                               state type: TEST_CANDIDATE_TO_GENERATE" << endl;
+            break;
+        }
+        default:
+        {
+            _out << _initiation << "                               state type: Undefined" << endl;
+        }
         }
         if( hasRecentlyAddedConditions() )
         {
@@ -2839,6 +2840,677 @@ namespace vs
             }
         }
         return greatestTreeDepth;
+    }
+
+    /**
+     * Compares this constraint with the given constraint.
+     *
+     * @return  2,  if it is easy to decide that this constraint and the given constraint have the same solutions.(are equal)
+     *          1,  if it is easy to decide that the given constraint includes all solutions of this constraint;
+     *          -1, if it is easy to decide that this constraint includes all solutions if the given constraint;
+     *          -2, if it is easy to decide that this constraint has no solution common with the given constraint;
+     *          -3, if it is easy to decide that this constraint and the given constraint can be intersected;
+     *          0,  otherwise.
+     */
+    signed State::compareConstraints( const smtrat::Constraint& _constraintA, const smtrat::Constraint& _constraintB )
+    {
+        symtab::const_iterator var1 = _constraintA.variables().begin();
+        symtab::const_iterator var2 = _constraintB.variables().begin();
+        while( var1 != _constraintA.variables().end() && var2 != _constraintB.variables().end() )
+        {
+            if( strcmp( (*var1).first.c_str(), (*var2).first.c_str() ) == 0 )
+            {
+                var1++;
+                var2++;
+            }
+            else
+            {
+                break;
+            }
+        }
+        if( var1 == _constraintA.variables().end() && var2 == _constraintB.variables().end() )
+        {
+            ex lcoeffA = _constraintA.lhs().lcoeff( ex( _constraintA.variables().begin()->second ) );
+            ex lcoeffB = _constraintB.lhs().lcoeff( ex( _constraintB.variables().begin()->second ) );
+            ex lhsA    = _constraintA.lhs();
+            ex lhsB    = _constraintB.lhs();
+            if( lcoeffA.info( info_flags::rational ) && lcoeffB.info( info_flags::rational ))
+            {
+                if( lcoeffB.info( info_flags::positive ))
+                {
+                    lhsA = lhsA * lcoeffB;
+                }
+                else
+                {
+                    lhsA = lhsA * (-1) * lcoeffB;
+                }
+                if( lcoeffA.info( info_flags::positive ))
+                {
+                    lhsB = lhsB * lcoeffA;
+                }
+                else
+                {
+                    lhsB = lhsB * (-1) * lcoeffA;
+                }
+            }
+            else if( lcoeffA.info( info_flags::rational ) || lcoeffB.info( info_flags::rational ))
+            {
+                return 0;
+            }
+            switch( _constraintB.relation() )
+            {
+            case smtrat::CR_EQ:
+            {
+                switch( _constraintA.relation() )
+                {
+                case smtrat::CR_EQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1 == 0 )
+                        return 2;
+                    if( result1.info( info_flags::rational ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return 2;
+                    if( result2.info( info_flags::rational ))
+                        return -2;
+                    return 0;
+                }
+                case smtrat::CR_NEQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1 == 0 )
+                        return -2;
+                    if( result1.info( info_flags::rational ))
+                        return -1;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return -2;
+                    if( result2.info( info_flags::rational ))
+                        return -1;
+                    return 0;
+                }
+                case smtrat::CR_LESS:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::negative ))
+                        return -1;
+                    if( result1.info( info_flags::nonnegative ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::negative ))
+                        return -1;
+                    if( result2.info( info_flags::nonnegative ))
+                        return -2;
+                    return 0;
+                }
+                case smtrat::CR_GREATER:
+                {
+                    ex result1 = -1 * (lhsA - lhsB);
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::negative ))
+                        return -1;
+                    if( result1.info( info_flags::nonnegative ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return -2;
+                    if( result2.info( info_flags::negative ))
+                        return -2;
+                    if( result2.info( info_flags::positive ))
+                        return -1;
+                    return 0;
+                }
+                case smtrat::CR_LEQ:
+                {
+                    ex result1 = -1 * (lhsA - lhsB);
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::nonnegative ))
+                        return -1;
+                    if( result1.info( info_flags::negative ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return -1;
+                    if( result2.info( info_flags::negative ))
+                        return -1;
+                    if( result2.info( info_flags::positive ))
+                        return -2;
+                    return 0;
+                }
+                case smtrat::CR_GEQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::nonnegative ))
+                        return -1;
+                    if( result1.info( info_flags::negative ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::negative ))
+                        return -2;
+                    if( result2.info( info_flags::nonnegative ))
+                        return -1;
+                    return 0;
+                }
+                default:
+                    return false;
+                }
+            }
+            case smtrat::CR_NEQ:
+            {
+                switch( _constraintA.relation() )
+                {
+                case smtrat::CR_EQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1 == 0 )
+                        return -2;
+                    if( result1.info( info_flags::rational ))
+                        return 1;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return -2;
+                    if( result2.info( info_flags::rational ))
+                        return 1;
+                    return 0;
+                }
+                case smtrat::CR_NEQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1 == 0 )
+                        return 2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return 2;
+                    return 0;
+                }
+                case smtrat::CR_LESS:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::nonnegative ))
+                        return 1;
+                    ex result2 = -1 * (lhsA + lhsB);
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::nonnegative ))
+                        return 1;
+                    return 0;
+                }
+                case smtrat::CR_GREATER:
+                {
+                    ex result1 = -1 * (lhsA - lhsB);
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::nonnegative ))
+                        return 1;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::nonnegative ))
+                        return 1;
+                    return 0;
+                }
+                case smtrat::CR_LEQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1 == 0 )
+                        return -3;
+                    if( result1.info( info_flags::positive ))
+                        return 1;
+                    ex result2 = -1 * (lhsA + lhsB);
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return -3;
+                    if( result2.info( info_flags::positive ))
+                        return 1;
+                    return 0;
+                }
+                case smtrat::CR_GEQ:
+                {
+                    ex result1 = -1 * (lhsA - lhsB);
+                    result1    = result1.expand().normal();
+                    if( result1 == 0 )
+                        return -3;
+                    if( result1.info( info_flags::positive ))
+                        return 1;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return -3;
+                    if( result2.info( info_flags::positive ))
+                        return 1;
+                    return 0;
+                }
+                default:
+                    return 0;
+                }
+            }
+            case smtrat::CR_LESS:
+            {
+                switch( _constraintA.relation() )
+                {
+                case smtrat::CR_EQ:
+                {
+                    ex result1 = -1 * (lhsA - lhsB);
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::negative ))
+                        return 1;
+                    if( result1.info( info_flags::nonnegative ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::negative ))
+                        return 1;
+                    if( result2.info( info_flags::nonnegative ))
+                        return -2;
+                    return 0;
+                }
+                case smtrat::CR_NEQ:
+                {
+                    ex result1 = -1 * (lhsA - lhsB);
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::nonnegative ))
+                        return -1;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::nonnegative ))
+                        return -1;
+                    return 0;
+                }
+                case smtrat::CR_LESS:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1 == 0 )
+                        return 2;
+                    if( result1.info( info_flags::negative ))
+                        return -1;
+                    if( result1.info( info_flags::positive ))
+                        return 1;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::nonnegative ))
+                        return -2;
+                    return 0;
+                }
+                case smtrat::CR_GREATER:
+                {
+                    ex result1 = -1 * (lhsA - lhsB);
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::nonnegative ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return 2;
+                    if( result2.info( info_flags::positive ))
+                        return -1;
+                    if( result2.info( info_flags::negative ))
+                        return 1;
+                    return 0;
+                }
+                case smtrat::CR_LEQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::positive ))
+                        return 1;
+                    if( result1.info( info_flags::rational ))
+                        return -1;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::nonnegative ))
+                        return -2;
+                    return 0;
+                }
+                case smtrat::CR_GEQ:
+                {
+                    ex result1 = -1 * (lhsA - lhsB);
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::nonnegative ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::nonnegative ))
+                        return -1;
+                    if( result2.info( info_flags::negative ))
+                        return 1;
+                    return 0;
+                }
+                default:
+                    return 0;
+                }
+            }
+            case smtrat::CR_GREATER:
+            {
+                switch( _constraintA.relation() )
+                {
+                case smtrat::CR_EQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::negative ))
+                        return 1;
+                    if( result1.info( info_flags::nonnegative ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return -2;
+                    if( result2.info( info_flags::negative ))
+                        return -2;
+                    if( result2.info( info_flags::positive ))
+                        return 1;
+                    return 0;
+                }
+                case smtrat::CR_NEQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::nonnegative ))
+                        return -1;
+                    ex result2 = -1 * (lhsA + lhsB);
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::nonnegative ))
+                        return -1;
+                    return 0;
+                }
+                case smtrat::CR_LESS:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::nonnegative ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return 2;
+                    if( result2.info( info_flags::positive ))
+                        return 1;
+                    if( result2.info( info_flags::negative ))
+                        return -1;
+                    return 0;
+                }
+                case smtrat::CR_GREATER:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1 == 0 )
+                        return 2;
+                    if( result1.info( info_flags::negative ))
+                        return 1;
+                    if( result1.info( info_flags::positive ))
+                        return -1;
+                    ex result2 = -1 * (lhsA + lhsB);
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::nonnegative ))
+                        return -2;
+                    return 0;
+                }
+                case smtrat::CR_LEQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::nonnegative ))
+                        return -2;
+                    ex result2 = -1 * (lhsA + lhsB);
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::nonnegative ))
+                        return -1;
+                    if( result2.info( info_flags::negative ))
+                        return 1;
+                    return 0;
+                }
+                case smtrat::CR_GEQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::negative ))
+                        return 1;
+                    if( result1.info( info_flags::rational ))
+                        return -1;
+                    ex result2 = -1 * (lhsA + lhsB);
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::nonnegative ))
+                        return -2;
+                    return 0;
+                }
+                default:
+                    return 0;
+                }
+            }
+            case smtrat::CR_LEQ:
+            {
+                switch( _constraintA.relation() )
+                {
+                case smtrat::CR_EQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::nonnegative ))
+                        return 1;
+                    if( result1.info( info_flags::negative ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return 1;
+                    if( result2.info( info_flags::negative ))
+                        return 1;
+                    if( result2.info( info_flags::positive ))
+                        return -2;
+                    return 0;
+                }
+                case smtrat::CR_NEQ:
+                {
+                    ex result1 = -1 * (lhsA - lhsB);
+                    result1    = result1.expand().normal();
+                    if( result1 == 0 )
+                        return -3;
+                    if( result1.info( info_flags::positive ))
+                        return -1;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return -3;
+                    if( result2.info( info_flags::positive ))
+                        return -1;
+                    return 0;
+                }
+                case smtrat::CR_LESS:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::negative ))
+                        return -1;
+                    if( result1.info( info_flags::rational ))
+                        return 1;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::nonnegative ))
+                        return -2;
+                    return 0;
+                }
+                case smtrat::CR_GREATER:
+                {
+                    ex result1 = -1 * (lhsA - lhsB);
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::nonnegative ))
+                        return -2;
+                    ex result2 = -1 * (lhsA + lhsB);
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::nonnegative ))
+                        return 1;
+                    if( result2.info( info_flags::negative ))
+                        return -1;
+                    return 0;
+                }
+                case smtrat::CR_LEQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1 == 0 )
+                        return 2;
+                    if( result1.info( info_flags::negative ))
+                        return -1;
+                    if( result1.info( info_flags::positive ))
+                        return 1;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return -3;
+                    if( result2.info( info_flags::positive ))
+                        return -2;
+                    return 0;
+                }
+                case smtrat::CR_GEQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1 == 0 )
+                        return -3;
+                    if( result1.info( info_flags::negative ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return 2;
+                    if( result2.info( info_flags::positive ))
+                        return -1;
+                    if( result2.info( info_flags::negative ))
+                        return 1;
+                    return 0;
+                }
+                default:
+                    return 0;
+                }
+            }
+            case smtrat::CR_GEQ:
+            {
+                switch( _constraintA.relation() )
+                {
+                case smtrat::CR_EQ:
+                {
+                    ex result1 = -1 * (lhsA - lhsB);
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::nonnegative ))
+                        return 1;
+                    if( result1.info( info_flags::negative ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::negative ))
+                        return -2;
+                    if( result2.info( info_flags::nonnegative ))
+                        return 1;
+                    return 0;
+                }
+                case smtrat::CR_NEQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1 == 0 )
+                        return -3;
+                    if( result1.info( info_flags::positive ))
+                        return -1;
+                    ex result2 = -1 * (lhsA + lhsB);
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return -3;
+                    if( result2.info( info_flags::positive ))
+                        return -1;
+                    return 0;
+                }
+                case smtrat::CR_LESS:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::nonnegative ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::nonnegative ))
+                        return 1;
+                    if( result2.info( info_flags::negative ))
+                        return -1;
+                    return 0;
+                }
+                case smtrat::CR_GREATER:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1.info( info_flags::positive ))
+                        return -1;
+                    if( result1.info( info_flags::rational ))
+                        return 1;
+                    ex result2 = -1 * (lhsA + lhsB);
+                    result2    = result2.expand().normal();
+                    if( result2.info( info_flags::nonnegative ))
+                        return -2;
+                    return 0;
+                }
+                case smtrat::CR_LEQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1 == 0 )
+                        return -3;
+                    if( result1.info( info_flags::positive ))
+                        return -2;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return 2;
+                    if( result2.info( info_flags::positive ))
+                        return 1;
+                    if( result2.info( info_flags::negative ))
+                        return -1;
+                    return 0;
+                }
+                case smtrat::CR_GEQ:
+                {
+                    ex result1 = lhsA - lhsB;
+                    result1    = result1.expand().normal();
+                    if( result1 == 0 )
+                        return 2;
+                    if( result1.info( info_flags::negative ))
+                        return 1;
+                    if( result1.info( info_flags::positive ))
+                        return -1;
+                    ex result2 = lhsA + lhsB;
+                    result2    = result2.expand().normal();
+                    if( result2 == 0 )
+                        return -3;
+                    if( result2.info( info_flags::negative ))
+                        return -2;
+                    return 0;
+                }
+                default:
+                    return 0;
+                }
+            }
+            default:
+                return 0;
+            }
+        }
+        else
+        {
+            return 0;
+        }
     }
 
 }    // end namspace vs

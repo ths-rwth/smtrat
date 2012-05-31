@@ -371,6 +371,8 @@ public:
 	static unsigned 						coveringSet							( const ConditionSetSetSet&,
 																		 		  ConditionSet&			  ,
 																		 		  const unsigned		 	   ) 									;
+	static signed 							compareConstraints					( const smtrat::Constraint&,
+																				  const smtrat::Constraint& )										;
 
 private:
 

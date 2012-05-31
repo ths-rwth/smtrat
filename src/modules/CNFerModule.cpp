@@ -19,7 +19,6 @@
  *
  */
 
-
 /*
  * File:   CNFerModule.cpp
  * Author: Florian Corzilius
@@ -35,13 +34,16 @@ namespace smtrat
     CNFerModule::CNFerModule( Manager* const _tsManager, const Formula* const _formula ):
         Module( _tsManager, _formula )
     {
-        this->mModuleType     = MT_CNFerModule;
-        mFixedTheModuleID     = false;
-        mModuleID             = 0;
-        mAuxVarCounterHistory = vector<unsigned>();
+        this->mModuleType = MT_CNFerModule;
+        mFixedTheModuleID = false;
+        mModuleID = 0;
+        mAuxVarCounterHistory = vector< unsigned >();
     }
 
-    CNFerModule::~CNFerModule(){}
+    CNFerModule::~CNFerModule()
+    {
+
+    }
 
     /**
      * Methods:
@@ -57,7 +59,7 @@ namespace smtrat
      */
     bool CNFerModule::assertSubFormula( const Formula* const _formula )
     {
-        Module::assertSubFormula( _formula );
+		Module::assertSubFormula( _formula );
         return true;
     }
 
@@ -70,27 +72,26 @@ namespace smtrat
      */
     Answer CNFerModule::isConsistent()
     {
-        /*
-        cout << endl << "isConsistent of " << this << " having type " << type() << endl;
-        print();
-        */
-        for( unsigned pos = mBackTrackPoints.back(); pos < receivedFormulaSize(); ++pos )
-        {
-            const Formula* currentFormulaToAdd = receivedFormulaBack();
 
+/*
+cout << endl << "isConsistent of " << this << " having type " << type() << endl;
+print();
+*/
+        for( unsigned pos = mBackTrackPoints.back(); pos < receivedFormulaSize(); ++pos )
+    	{
+            const Formula* currentFormulaToAdd = receivedFormulaBack();
             /*
              * Create the origins containting only the currently considered formula of
              * the received formula.
              */
             vec_set_const_pFormula origins = vec_set_const_pFormula();
-            origins.push_back( set<const Formula*>() );
+            origins.push_back( set< const Formula* >() );
             origins.back().insert( currentFormulaToAdd );
-
             /*
              * Add the currently considered formula of the received constraint as clauses
              * to the passed formula.
              */
-            vector<Formula*> formulasToAssert = vector<Formula*>();
+            vector< Formula* > formulasToAssert = vector< Formula* >();
             formulasToAssert.push_back( new Formula( *currentFormulaToAdd ) );
             if( !assertClauses( formulasToAssert, origins ) )
             {
@@ -100,28 +101,27 @@ namespace smtrat
                 return False;
             }
         }
+/*
+print();
+*/
+		Answer a = runBackends();
 
-        /*
-        print();
-        */
-        Answer a = runBackends();
-
-        /*
-        cout << "Result:   ";
-        if( a == True )
-        {
-            cout << "True" << endl;
-        }
-        else if( a == Unknown )
-        {
-            cout << "Unknown" << endl;
-        }
-        else if( a == False )
-        {
-            cout << "False" << endl;
-            printInfeasibleSubsets( cout, "          " );
-        }
-        */
+/*
+cout << "Result:   ";
+if( a == True )
+{
+	cout << "True" << endl;
+}
+else if( a == Unknown )
+{
+	cout << "Unknown" << endl;
+}
+else if( a == False )
+{
+	cout << "False" << endl;
+	printInfeasibleSubsets( cout, "          " );
+}
+*/
         return a;
     }
 
@@ -161,91 +161,91 @@ namespace smtrat
      * @return  false,  if an empty clause/false is asserted to the passed formula;
      *          true,   otherwise.
      */
-    bool CNFerModule::assertClauses( vector<Formula*>& _formulasToAssert, vec_set_const_pFormula& _origins )
+    bool CNFerModule::assertClauses( vector< Formula* >& _formulasToAssert, vec_set_const_pFormula& _origins )
     {
-        while( !_formulasToAssert.empty() )
-        {
-            //          printSolverState( _formulasToAssert );
-            Formula* currentFormula = _formulasToAssert.back();
-            _formulasToAssert.pop_back();
-            switch( currentFormula->getType() )
-            {
-                case BOOL:
-                {
-                    addSubformulaToPassedFormula( currentFormula, _origins );
-                    break;
-                }
-                case REALCONSTRAINT:
-                {
-                    addSubformulaToPassedFormula( currentFormula, _origins );
-                    break;
-                }
-                case TTRUE:
-                {
+    	while( !_formulasToAssert.empty() )
+    	{
+//    		printSolverState( _formulasToAssert );
+		    Formula* currentFormula = _formulasToAssert.back();
+		    _formulasToAssert.pop_back();
+		    switch( currentFormula->getType() )
+		    {
+		        case BOOL:
+		        {
+		            addSubformulaToPassedFormula( currentFormula, _origins );
+		        	break;
+		        }
+		        case REALCONSTRAINT:
+		        {
+		            addSubformulaToPassedFormula( currentFormula, _origins );
+		        	break;
+		        }
+		        case TTRUE:
+		        {
                     /*
                      * Remove it.
                      */
-                    break;
-                }
-                case FFALSE:
-                {
+		        	break;
+		        }
+		        case FFALSE:
+		        {
                     /*
                      * Makes everything false.
                      */
-                    return false;
-                }
-                case NOT:
-                {
-                    /*
-                     * Try to resolve this negation.
-                     */
+		            return false;
+		        }
+		        case NOT:
+		        {
+		        	/*
+		        	 * Try to resolve this negation.
+		        	 */
                     Formula* tmpFormula = resolveNegation( currentFormula );
-                    if( tmpFormula == NULL )
-                    {
-                        /*
-                         * It is a literal.
-                         */
-                        addSubformulaToPassedFormula( currentFormula, _origins );
-                    }
+		            if( tmpFormula == NULL )
+		            {
+		            	/*
+		            	 * It is a literal.
+		            	 */
+		            	addSubformulaToPassedFormula( currentFormula, _origins );
+		            }
                     else
                     {
                         _formulasToAssert.push_back( tmpFormula );
                     }
-                    break;
-                }
-                case AND:
-                {
-                    /*
-                     * (and phi_1 .. phi_n) -> psi_1 .. psi_m
-                     */
-                    while( !currentFormula->empty() )
-                    {
-                        _formulasToAssert.push_back( currentFormula->pruneBack() );
-                    }
-                    delete currentFormula;
-                    break;
-                }
+		        	break;
+		        }
+		        case AND:
+		        {
+		        	/*
+		        	 * (and phi_1 .. phi_n) -> psi_1 .. psi_m
+		        	 */
+		        	while( !currentFormula->empty() )
+		        	{
+		        		_formulasToAssert.push_back( currentFormula->pruneBack() );
+		        	}
+		        	delete currentFormula;
+		        	break;
+		        }
                 // Note, that the following case could be implemented using less code, but it would clearly
                 // lead to a worse performance as we would then not benefit from the properties of a disjunction.
-                case OR:
-                {
-                    /*
-                     * (or phi_1 .. phi_n) -> (or psi_1 .. psi_m)
-                     *
-                     * where phi_i is transformed as follows:
-                     */
-                    vector<Formula*> phis = vector<Formula*>();
-                    while( !currentFormula->empty() )
-                    {
-                        phis.push_back( currentFormula->pruneBack() );
-                    }
+		        case OR:
+		        {
+		        	/*
+		        	 * (or phi_1 .. phi_n) -> (or psi_1 .. psi_m)
+		        	 *
+		        	 * where phi_i is transformed as follows:
+		        	 */
+                    vector< Formula* > phis = vector< Formula* >();
+		        	while( !currentFormula->empty() )
+		        	{
+		        		phis.push_back( currentFormula->pruneBack() );
+		        	}
                     unsigned formulasToAssertSizeBefore = _formulasToAssert.size();
-                    unsigned passedFormulaSizeBefore    = passedFormulaSize();
-                    while( !phis.empty() )
-                    {
-                        Formula* currentSubformula = phis.back();
+                    unsigned passedFormulaSizeBefore = passedFormulaSize();
+		        	while( !phis.empty() )
+		        	{
+		        		Formula* currentSubformula = phis.back();
                         phis.pop_back();
-                        switch( currentSubformula->getType() )
+		        		switch( currentSubformula->getType() )
                         {
                             // B -> B
                             case BOOL:
@@ -309,107 +309,107 @@ namespace smtrat
                             // (and phi_i1 .. phi_ik) -> h_i, where (or (not h_i) phi_i1) .. (or (not h_i) phi_ik) is added to the queue
                             case AND:
                             {
-                                Formula* hi = new Formula( getFreeBooleanIdentifier() );
-                                while( !currentSubformula->empty() )
-                                {
-                                    Formula* formulaToAssert = new Formula( OR );
-                                    formulaToAssert->addSubformula( new Formula( NOT ) );
-                                    formulaToAssert->back()->addSubformula( new Formula( *hi ) );
-                                    formulaToAssert->addSubformula( currentSubformula->pruneBack() );
+                            	Formula* hi = new Formula( getFreeBooleanIdentifier() );
+                            	while( !currentSubformula->empty() )
+                            	{
+                            		Formula* formulaToAssert = new Formula( OR );
+                            		formulaToAssert->addSubformula( new Formula( NOT ) );
+                            		formulaToAssert->back()->addSubformula( new Formula( *hi ) );
+                            		formulaToAssert->addSubformula( currentSubformula->pruneBack() );
                                     _formulasToAssert.push_back( formulaToAssert );
-                                }
-                                delete currentSubformula;
-                                currentFormula->addSubformula( hi );
+                            	}
+                            	delete currentSubformula;
+                            	currentFormula->addSubformula( hi );
                                 break;
                             }
                             // (or phi_i1 .. phi_ik) -> phi_i1 .. phi_ik
                             case OR:
                             {
-                                while( !currentSubformula->empty() )
-                                {
-                                    phis.push_back( currentSubformula->pruneBack() );
-                                }
-                                delete currentSubformula;
+                            	while( !currentSubformula->empty() )
+                            	{
+                            		phis.push_back( currentSubformula->pruneBack() );
+                            	}
+                            	delete currentSubformula;
                                 break;
                             }
                             // (-> lhs_i rhs_i) -> (not lhs_i) rhs_i
                             case IMPLIES:
                             {
-                                assert( currentSubformula->back()->size() == 2 );
-                                Formula* rhs = currentSubformula->pruneBack();
-                                Formula* lhs = currentSubformula->pruneBack();
-                                delete currentSubformula;
-                                phis.push_back( new Formula( NOT ) );
-                                phis.back()->addSubformula( lhs );
-                                phis.push_back( rhs );
+						    	assert( currentSubformula->back()->size() == 2 );
+						        Formula* rhs = currentSubformula->pruneBack();
+						        Formula* lhs = currentSubformula->pruneBack();
+						        delete currentSubformula;
+						        phis.push_back( new Formula( NOT ) );
+						        phis.back()->addSubformula( lhs );
+						        phis.push_back( rhs );
                                 break;
                             }
                             // (iff lhs_i rhs_i) -> h_i1 h_i2, where (or (not h_i1) lhs_i) (or (not h_i1) rhs_i)
                             //                                       (or (not h_i2) (not lhs_i)) (or (not h_i2) (not rhs_i))  is added to the queue
                             case IFF:
                             {
-                                assert( currentSubformula->back()->size() == 2 );
-                                Formula* h_i1  = new Formula( getFreeBooleanIdentifier() );
-                                Formula* h_i2  = new Formula( getFreeBooleanIdentifier() );
-                                Formula* rhs_i = currentSubformula->pruneBack();
-                                Formula* lhs_i = currentSubformula->pruneBack();
-                                delete currentSubformula;
+						    	assert( currentSubformula->back()->size() == 2 );
+                            	Formula* h_i1 = new Formula( getFreeBooleanIdentifier() );
+                            	Formula* h_i2 = new Formula( getFreeBooleanIdentifier() );
+						        Formula* rhs_i = currentSubformula->pruneBack();
+						        Formula* lhs_i = currentSubformula->pruneBack();
+						        delete currentSubformula;
 
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
-                                phis.back()->addSubformula( lhs_i );
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
-                                phis.back()->addSubformula( rhs_i );
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *lhs_i ) );
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *rhs_i ) );
+						        phis.push_back( new Formula( OR ) );
+						        phis.back()->addSubformula( new Formula( NOT ) );
+						        phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
+						        phis.back()->addSubformula( lhs_i );
+						        phis.push_back( new Formula( OR ) );
+						        phis.back()->addSubformula( new Formula( NOT ) );
+						        phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
+						        phis.back()->addSubformula( rhs_i );
+						        phis.push_back( new Formula( OR ) );
+						        phis.back()->addSubformula( new Formula( NOT ) );
+						        phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
+						        phis.back()->addSubformula( new Formula( NOT ) );
+						        phis.back()->back()->addSubformula( new Formula( *lhs_i ) );
+						        phis.push_back( new Formula( OR ) );
+						        phis.back()->addSubformula( new Formula( NOT ) );
+						        phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
+						        phis.back()->addSubformula( new Formula( NOT ) );
+						        phis.back()->back()->addSubformula( new Formula( *rhs_i ) );
 
-                                currentFormula->addSubformula( h_i1 );
-                                currentFormula->addSubformula( h_i2 );
+                            	currentFormula->addSubformula( h_i1 );
+                            	currentFormula->addSubformula( h_i2 );
                                 break;
                             }
                             // (xor lhs_i rhs_i) -> h_i1 h_i2, where (or (not h_i1) (not lhs_i)) (or (not h_i1) rhs_i)
                             //                                       (or (not h_i2) lhs_i) (or (not h_i2) (not rhs_i))  is added to the queue
                             case XOR:
                             {
-                                assert( currentSubformula->back()->size() == 2 );
-                                Formula* h_i1  = new Formula( getFreeBooleanIdentifier() );
-                                Formula* h_i2  = new Formula( getFreeBooleanIdentifier() );
-                                Formula* rhs_i = currentSubformula->pruneBack();
-                                Formula* lhs_i = currentSubformula->pruneBack();
-                                delete currentSubformula;
+						    	assert( currentSubformula->back()->size() == 2 );
+                            	Formula* h_i1 = new Formula( getFreeBooleanIdentifier() );
+                            	Formula* h_i2 = new Formula( getFreeBooleanIdentifier() );
+						        Formula* rhs_i = currentSubformula->pruneBack();
+						        Formula* lhs_i = currentSubformula->pruneBack();
+						        delete currentSubformula;
 
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( lhs_i );
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
-                                phis.back()->addSubformula( rhs_i );
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
-                                phis.back()->addSubformula( new Formula( *lhs_i ) );
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *rhs_i ) );
+						        phis.push_back( new Formula( OR ) );
+						        phis.back()->addSubformula( new Formula( NOT ) );
+						        phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
+						        phis.back()->addSubformula( new Formula( NOT ) );
+						        phis.back()->back()->addSubformula( lhs_i );
+						        phis.push_back( new Formula( OR ) );
+						        phis.back()->addSubformula( new Formula( NOT ) );
+						        phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
+						        phis.back()->addSubformula( rhs_i );
+						        phis.push_back( new Formula( OR ) );
+						        phis.back()->addSubformula( new Formula( NOT ) );
+						        phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
+						        phis.back()->addSubformula( new Formula( *lhs_i ) );
+						        phis.push_back( new Formula( OR ) );
+						        phis.back()->addSubformula( new Formula( NOT ) );
+						        phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
+						        phis.back()->addSubformula( new Formula( NOT ) );
+						        phis.back()->back()->addSubformula( new Formula( *rhs_i ) );
 
-                                currentFormula->addSubformula( h_i1 );
-                                currentFormula->addSubformula( h_i2 );
+                            	currentFormula->addSubformula( h_i1 );
+                            	currentFormula->addSubformula( h_i2 );
                                 break;
                             }
                             default:
@@ -418,39 +418,39 @@ namespace smtrat
                                 assert( false );
                             }
                         }
-                    }
-                    addSubformulaToPassedFormula( currentFormula, _origins );
-                    break;
-                }
-                case IMPLIES:
-                {
-                    /*
-                     * (-> lhs rhs)  ->  (or (not lhs) rhs)
-                     */
-                    assert( currentFormula->back()->size() == 2 );
+		        	}
+		        	addSubformulaToPassedFormula( currentFormula, _origins );
+		        	break;
+		        }
+		        case IMPLIES:
+		        {
+                	/*
+                	 * (-> lhs rhs)  ->  (or (not lhs) rhs)
+                	 */
+                	assert( currentFormula->back()->size() == 2 );
                     Formula* rhs = currentFormula->pruneBack();
                     Formula* lhs = currentFormula->pruneBack();
-                    delete currentFormula;
+                	delete currentFormula;
                     currentFormula = new Formula( OR );
                     currentFormula->addSubformula( new Formula( NOT ) );
                     currentFormula->back()->addSubformula( lhs );
                     currentFormula->addSubformula( rhs );
                     _formulasToAssert.push_back( currentFormula );
-                    break;
-                }
-                case IFF:
-                {
-                    /*
-                     * (iff lhs rhs)  ->  (or h1 h2) (or (not h1) lhs) (or (not h1) rhs) (or (not h2) (not lhs)) (or (not h2) (not rhs))
-                     */
-                    assert( currentFormula->back()->size() == 2 );
+		        	break;
+		        }
+		        case IFF:
+		        {
+                	/*
+                	 * (iff lhs rhs)  ->  (or h1 h2) (or (not h1) lhs) (or (not h1) rhs) (or (not h2) (not lhs)) (or (not h2) (not rhs))
+                	 */
+                	assert( currentFormula->back()->size() == 2 );
                     // Get lhs and rhs and delete currentFormula.
                     Formula* rhs = currentFormula->pruneBack();
                     Formula* lhs = currentFormula->pruneBack();
                     delete currentFormula;
                     // Add (or h1 h2) to the passed formula, where h1 and h2 are fresh Boolean variables.
-                    Formula* h1     = new Formula( getFreeBooleanIdentifier() );
-                    Formula* h2     = new Formula( getFreeBooleanIdentifier() );
+                    Formula* h1 = new Formula( getFreeBooleanIdentifier() );
+                    Formula* h2 = new Formula( getFreeBooleanIdentifier() );
                     Formula* clause = new Formula( OR );
                     clause->addSubformula( h1 );
                     clause->addSubformula( h2 );
@@ -459,12 +459,12 @@ namespace smtrat
                     Formula* formulaToAssertA = new Formula( OR );
                     formulaToAssertA->addSubformula( new Formula( NOT ) );
                     formulaToAssertA->back()->addSubformula( new Formula( *h1 ) );
-                    formulaToAssertA->addSubformula( lhs );    // Once it can be used, otherwise copy it,
+                    formulaToAssertA->addSubformula( lhs ); // Once it can be used, otherwise copy it,
                     _formulasToAssert.push_back( formulaToAssertA );
                     Formula* formulaToAssertB = new Formula( OR );
                     formulaToAssertA->addSubformula( new Formula( NOT ) );
                     formulaToAssertA->back()->addSubformula( new Formula( *h1 ) );
-                    formulaToAssertA->addSubformula( rhs );    // Once it can be used, otherwise copy it,
+                    formulaToAssertA->addSubformula( rhs ); // Once it can be used, otherwise copy it,
                     _formulasToAssert.push_back( formulaToAssertB );
                     Formula* formulaToAssertC = new Formula( OR );
                     formulaToAssertA->addSubformula( new Formula( NOT ) );
@@ -478,21 +478,21 @@ namespace smtrat
                     formulaToAssertA->addSubformula( new Formula( NOT ) );
                     formulaToAssertA->back()->addSubformula( new Formula( *rhs ) );
                     _formulasToAssert.push_back( formulaToAssertD );
-                    break;
-                }
-                case XOR:
-                {
-                    /*
-                     * (xor lhs rhs)  ->  (or h1 h2) (or (not h1) (not lhs)) (or (not h1) rhs) (or (not h2) lhs) (or (not h2) (not rhs))
-                     */
-                    assert( currentFormula->back()->size() == 2 );
+		        	break;
+		        }
+		        case XOR:
+		        {
+                	/*
+                	 * (xor lhs rhs)  ->  (or h1 h2) (or (not h1) (not lhs)) (or (not h1) rhs) (or (not h2) lhs) (or (not h2) (not rhs))
+                	 */
+                	assert( currentFormula->back()->size() == 2 );
                     // Get lhs and rhs and delete currentFormula.
                     Formula* rhs = currentFormula->pruneBack();
                     Formula* lhs = currentFormula->pruneBack();
                     delete currentFormula;
                     // Add (or h1 h2) to the passed formula, where h1 and h2 are fresh Boolean variables.
-                    Formula* h1     = new Formula( getFreeBooleanIdentifier() );
-                    Formula* h2     = new Formula( getFreeBooleanIdentifier() );
+                    Formula* h1 = new Formula( getFreeBooleanIdentifier() );
+                    Formula* h2 = new Formula( getFreeBooleanIdentifier() );
                     Formula* clause = new Formula( OR );
                     clause->addSubformula( h1 );
                     clause->addSubformula( h2 );
@@ -502,12 +502,12 @@ namespace smtrat
                     formulaToAssertA->addSubformula( new Formula( NOT ) );
                     formulaToAssertA->back()->addSubformula( new Formula( *h1 ) );
                     formulaToAssertA->addSubformula( new Formula( NOT ) );
-                    formulaToAssertA->back()->addSubformula( lhs );    // Once it can be used, otherwise copy it,
+                    formulaToAssertA->back()->addSubformula( lhs ); // Once it can be used, otherwise copy it,
                     _formulasToAssert.push_back( formulaToAssertA );
                     Formula* formulaToAssertB = new Formula( OR );
                     formulaToAssertA->addSubformula( new Formula( NOT ) );
                     formulaToAssertA->back()->addSubformula( new Formula( *h1 ) );
-                    formulaToAssertA->addSubformula( rhs );    // Once it can be used, otherwise copy it,
+                    formulaToAssertA->addSubformula( rhs ); // Once it can be used, otherwise copy it,
                     _formulasToAssert.push_back( formulaToAssertB );
                     Formula* formulaToAssertC = new Formula( OR );
                     formulaToAssertA->addSubformula( new Formula( NOT ) );
@@ -521,32 +521,31 @@ namespace smtrat
                     formulaToAssertA->back()->addSubformula( new Formula( *rhs ) );
                     _formulasToAssert.push_back( formulaToAssertD );
                     break;
-                }
-                default:
-                {
-                    cerr << "Unexpected type of formula!" << endl;
-                    assert( false );
-                }
-            }
-        }
+		        }
+		        default:
+		        {
+		            cerr << "Unexpected type of formula!" << endl;
+		        	assert( false );
+		        }
+		    }
+		}
         return true;
     }
 
-    /**
-     * Resolves the negation in the beginning of the given formula. If anything can
+	/**
+	 * Resolves the negation in the beginning of the given formula. If anything can
      * be resolved, the given formula gets deleted.
-     *
-     * @param _formula  The formula, to resolve the negation in.
-     *
-     * @return  Either a pointer to the resolved Formula or NULL, if there was nothing to resolve.
-     */
+	 *
+	 * @param _formula	The formula, to resolve the negation in.
+	 *
+	 * @return 	Either a pointer to the resolved Formula or NULL, if there was nothing to resolve.
+	 */
     Formula* CNFerModule::resolveNegation( Formula* _formula ) const
     {
         assert( _formula->cpFather() == NULL );
-
-        /*
-         * If the formula starts with the Boolean operator not, resolve it.
-         */
+    	/*
+		 * If the formula starts with the Boolean operator not, resolve it.
+		 */
         if( _formula->getType() == NOT )
         {
             Formula* subformula = _formula->back();
@@ -620,79 +619,78 @@ namespace smtrat
                 }
                 case TTRUE:
                 {
-                    /*
-                     * (not true)  ->  false
-                     */
+                	/*
+                	 * (not true)  ->  false
+                	 */
                     delete _formula;
                     return new Formula( FFALSE );
                 }
                 case FFALSE:
                 {
-                    /*
-                     * (not false)  ->  true
-                     */
+                	/*
+                	 * (not false)  ->  true
+                	 */
                     delete _formula;
                     return new Formula( TTRUE );
                 }
                 case NOT:
                 {
-                    /*
-                     * (not (not phi))  ->  phi
-                     */
+                	/*
+                	 * (not (not phi))  ->  phi
+                	 */
                     Formula* subsubformula = subformula->pruneBack();
                     delete _formula;
                     return subsubformula;
                 }
                 case AND:
                 {
-                    /*
-                     * (not (and phi_1 .. phi_n))  ->  (or (not phi_1) .. (not phi_n))
-                     */
-                    vector<Formula*> subsubformulas = vector<Formula*>();
-                    while( !subformula->empty() )
-                    {
-                        subsubformulas.push_back( subformula->pruneBack() );
-                    }
-                    delete _formula;
+                	/*
+                	 * (not (and phi_1 .. phi_n))  ->  (or (not phi_1) .. (not phi_n))
+                	 */
+                	vector< Formula* > subsubformulas = vector< Formula* >();
+                	while( !subformula->empty() )
+                	{
+                		subsubformulas.push_back( subformula->pruneBack() );
+                	}
+                	delete _formula;
                     Formula* result = new Formula( OR );
-                    while( !subsubformulas.empty() )
-                    {
-                        result->addSubformula( new Formula( NOT ) );
-                        result->back()->addSubformula( subsubformulas.back() );
-                        subsubformulas.pop_back();
-                    }
+                	while( !subsubformulas.empty() )
+                	{
+                		result->addSubformula( new Formula( NOT ) );
+                		result->back()->addSubformula( subsubformulas.back() );
+                		subsubformulas.pop_back();
+                	}
                     return result;
                 }
                 case OR:
                 {
-                    /*
-                     * (not (or phi_1 .. phi_n))  ->  (and (not phi_1) .. (not phi_n))
-                     */
-                    vector<Formula*> subsubformulas = vector<Formula*>();
-                    while( !subformula->empty() )
-                    {
-                        subsubformulas.push_back( subformula->pruneBack() );
-                    }
-                    delete _formula;
+                	/*
+                	 * (not (or phi_1 .. phi_n))  ->  (and (not phi_1) .. (not phi_n))
+                	 */
+                	vector< Formula* > subsubformulas = vector< Formula* >();
+                	while( !subformula->empty() )
+                	{
+                		subsubformulas.push_back( subformula->pruneBack() );
+                	}
+                	delete _formula;
                     Formula* result = new Formula( AND );
-                    while( !subsubformulas.empty() )
-                    {
-                        result->addSubformula( new Formula( NOT ) );
-                        result->back()->addSubformula( subsubformulas.back() );
-                        subsubformulas.pop_back();
-                    }
+                	while( !subsubformulas.empty() )
+                	{
+                		result->addSubformula( new Formula( NOT ) );
+                		result->back()->addSubformula( subsubformulas.back() );
+                		subsubformulas.pop_back();
+                	}
                     return result;
                 }
                 case IMPLIES:
                 {
-                    assert( subformula->size() == 2 );
-
-                    /*
-                     * (not (implies lhs rhs))  ->  (implies rhs lhs)
-                     */
+                	assert( subformula->size() == 2 );
+                	/*
+                	 * (not (implies lhs rhs))  ->  (implies rhs lhs)
+                	 */
                     Formula* rhsOfSubformula = subformula->pruneBack();
                     Formula* lhsOfSubformula = subformula->pruneBack();
-                    delete _formula;
+                	delete _formula;
                     Formula* result = new Formula( AND );
                     result->addSubformula( lhsOfSubformula );
                     result->addSubformula( new Formula( NOT ) );
@@ -701,14 +699,13 @@ namespace smtrat
                 }
                 case IFF:
                 {
-                    assert( subformula->size() == 2 );
-
-                    /*
-                     * (not (iff lhs rhs))  ->  (xor lhs rhs)
-                     */
+                	assert( subformula->size() == 2 );
+                	/*
+                	 * (not (iff lhs rhs))  ->  (xor lhs rhs)
+                	 */
                     Formula* rhsOfSubformula = subformula->pruneBack();
                     Formula* lhsOfSubformula = subformula->pruneBack();
-                    delete _formula;
+                	delete _formula;
                     Formula* result = new Formula( XOR );
                     result->addSubformula( lhsOfSubformula );
                     result->addSubformula( rhsOfSubformula );
@@ -716,14 +713,13 @@ namespace smtrat
                 }
                 case XOR:
                 {
-                    assert( subformula->size() == 2 );
-
-                    /*
-                     * (not (xor lhs rhs))  ->  (iff lhs rhs)
-                     */
+                	assert( subformula->size() == 2 );
+                	/*
+                	 * (not (xor lhs rhs))  ->  (iff lhs rhs)
+                	 */
                     Formula* rhsOfSubformula = subformula->pruneBack();
                     Formula* lhsOfSubformula = subformula->pruneBack();
-                    delete _formula;
+                	delete _formula;
                     Formula* result = new Formula( IFF );
                     result->addSubformula( lhsOfSubformula );
                     result->addSubformula( rhsOfSubformula );
@@ -746,22 +742,24 @@ namespace smtrat
     /**
      * Prints the current state of the solver.
      *
-     * @param _out              The output stream where the answer should be printed.
-     * @param _init             The line initiation.
-     * @param _formulasToAssert The formulas which still have to get asserted.
+     * @param _out      		The output stream where the answer should be printed.
+     * @param _init   			The line initiation.
+     * @param _formulasToAssert	The formulas which still have to get asserted.
      */
-    void CNFerModule::printSolverState( const vector<Formula*>& _formulasToAssert ) const
+    void CNFerModule::printSolverState( const vector< Formula* >& _formulasToAssert ) const
     {
-        cout << endl << "[" << endl;
-        for( vector<Formula*>::const_iterator formToAssert = _formulasToAssert.begin(); formToAssert != _formulasToAssert.end(); ++formToAssert )
-        {
-            cout << "   ";
-            (*formToAssert)->print( cout, "", true );
-            cout << endl;
-        }
-        cout << "]" << endl;
-        printPassedFormulaAlone( cout, "", true );
-        cout << endl << endl;
+    	cout << endl << "[" << endl;
+    	for( vector< Formula* >::const_iterator formToAssert = _formulasToAssert.begin();
+    		 formToAssert != _formulasToAssert.end();
+    		 ++formToAssert )
+    	{
+    		cout << "   ";
+    		(*formToAssert)->print( cout, "", true );
+    		cout << endl;
+    	}
+    	cout << "]" << endl;
+    	printPassedFormulaAlone( cout, "", true );
+    	cout << endl << endl;
     }
 }    // namespace smtrat
 

@@ -46,37 +46,36 @@ namespace smtrat
 {
     class Manager;
 
-    typedef std::vector<std::set<const Formula*> > vec_set_const_pFormula;
-    typedef std::vector<vec_set_const_pFormula>    FormulaOrigins;
-
+	typedef std::vector< std::set< const Formula* > > vec_set_const_pFormula;
+	typedef std::vector< vec_set_const_pFormula > 	  FormulaOrigins;
     /**
      * A base class for all kind of theory-solving methods
      */
     class Module
     {
         protected:
-            std::vector<unsigned> mBackTrackPoints;
-            signed                mLastBacktrackpointsEnd;
+            std::vector< unsigned >     mBackTrackPoints;
+            signed                      mLastBacktrackpointsEnd;
             /// Saves the infeasible subsets
-            vec_set_const_pFormula mInfeasibleSubsets;
+            vec_set_const_pFormula      mInfeasibleSubsets;
             /// A reference to the manager
-            Manager* const mpTSManager;
-            ModuleType     mModuleType;
+            Manager* const 		mpTSManager;
+            ModuleType     		mModuleType;
 
         private:
             /// A vector of received constraints
-            std::vector<Module*> mUsedBackends;
-            std::vector<Module*> mAllBackends;
-            bool                 mBackendsUptodate;
+            std::vector< Module* >  mUsedBackends;
+            std::vector< Module* > 	mAllBackends;
+            bool                    mBackendsUptodate;
             /// formula passed to this module
-            const Formula* mpReceivedFormula;
+            const Formula*          mpReceivedFormula;
             /// formula passed to the backends
-            Formula* mpPassedFormula;
+            Formula*              	mpPassedFormula;
             /// for each passed formula index its original subformulas in mpReceivedFormula
-            FormulaOrigins mPassedFormulaOrigins;
+            FormulaOrigins  		mPassedFormulaOrigins;
 
         public:
-            Module( Manager* const , const Formula* const );
+            Module( Manager* const, const Formula* const );
             virtual ~Module();
 
             //Main interfaces
@@ -91,7 +90,7 @@ namespace smtrat
 
             virtual void pushBacktrackPoint()
             {
-                mBackTrackPoints.push_back( mLastBacktrackpointsEnd + 1 );
+				mBackTrackPoints.push_back( mLastBacktrackpointsEnd+1 );
             }
 
             virtual void popBacktrackPoint();
@@ -214,39 +213,37 @@ namespace smtrat
 
             signed lastBacktrackpointsEnd() const
             {
-                return mLastBacktrackpointsEnd;
+            	return mLastBacktrackpointsEnd;
             }
 
-            const std::vector<Module*>& usedBackends() const
+            const std::vector< Module* >& usedBackends() const
             {
                 return mUsedBackends;
             }
 
-            //SMT
-
+        //SMT
         protected:
-            bool addReceivedSubformulaToPassedFormula( unsigned );
-            void addSubformulaToPassedFormula( Formula*, vec_set_const_pFormula& );
-            unsigned getPositionOfReceivedFormula( const Formula* const ) const;
-            unsigned getPositionOfPassedFormula( const Formula* const ) const;
-            void setOrigins( unsigned, vec_set_const_pFormula& );
-            void getOrigins( const Formula* const , vec_set_const_pFormula& ) const;
+            bool 		   addReceivedSubformulaToPassedFormula( unsigned );
+            void 		   addSubformulaToPassedFormula( Formula*, vec_set_const_pFormula& );
+            unsigned 		   getPositionOfReceivedFormula( const Formula* const ) const;
+            unsigned 		   getPositionOfPassedFormula( const Formula* const ) const;
+            void 		   setOrigins( unsigned, vec_set_const_pFormula& );
+            void 		   getOrigins( const Formula* const , vec_set_const_pFormula& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
-            Answer specialCaseConsistencyCheck() const;
+            Answer 		   specialCaseConsistencyCheck() const;
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
             const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
-            Answer runBackends();
-            void removeSubformulaFromPassedFormula( Formula* );
-            void removeSubformulaFromPassedFormula( unsigned );
+            Answer 		   runBackends();
+            void 		   removeSubformulaFromPassedFormula( Formula* );
+            void 		   removeSubformulaFromPassedFormula( unsigned );
 
         private:
             void updateBackends();
             void removeAllOriginatedBy( unsigned );
             void removeAllOriginatedBy( const Formula* const );
 
-            //Printing
-
-        public:
+		//Printing
+	public:
             void printWithBackends( std::ostream& = std::cout, const string = "***" ) const;
             void print( std::ostream& = std::cout, const string = "***" ) const;
             void printReceivedFormula( std::ostream& = std::cout, const std::string = "***" ) const;

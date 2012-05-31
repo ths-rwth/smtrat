@@ -1923,35 +1923,4 @@ NextClause:
             _out << var( trail[pos] ) << " @ " << level << endl;
         }
     }
-
-    /**
-     * Prints the decisions the SAT solver has made.
-     *
-     * @param _out  The output stream where the answer should be printed.
-     * @param _init The line initiation.
-     */
-    void SATModule::printDecisions( ostream& _out, string _init ) const
-    {
-        _out << _init << " Decisions:  ";
-        int level = 0;
-        for( int pos = 0; pos < trail.size(); ++pos )
-        {
-            if( level < trail_lim.size() )
-            {
-                if( pos == trail_lim[level] )
-                {
-                    ++level;
-                }
-            }
-            if( pos > 0 )
-            {
-                _out << _init << "             ";
-            }
-            if( sign( trail[pos] ) )
-            {
-                _out << "-";
-            }
-            _out << var( trail[pos] ) << " @ " << level << endl;
-        }
-    }
 }    // namespace smtrat
