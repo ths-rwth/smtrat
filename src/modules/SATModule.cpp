@@ -167,22 +167,11 @@ namespace smtrat
      */
     bool SATModule::assertSubFormula( const Formula* const _formula )
     {
-        /*
-                cout << __func__ << __LINE__ << endl;
-                _formula->print();
-                Module::print();
-        */
 
         assert( (_formula->proposition() | ~PROP_IS_A_CLAUSE) == ~PROP_TRUE );
         Module::assertSubFormula( _formula );
 
         addClauseToSatSolver( _formula );
-        //        printLitConstraintMap();
-        //        printConstraintLiteralMap();
-
-        /*
-                print();
-        */
 
         return true;
     }
@@ -205,27 +194,23 @@ namespace smtrat
      */
     Answer SATModule::isConsistent()
     {
-        //      cout << __func__ << __LINE__ << endl;
-        //      Module::print();
-
         if( solve() )
         {
-            //          cout << "*** True!" << endl;
-
             return True;
         }
         else
         {
-            //            cout << "*** False!" << endl;
-
             mInfeasibleSubsets.clear();
 
             /*
              * Set the infeasible subset to the set of all received constraints.
              */
             set<const Formula*> infeasibleSubset = set<const Formula*>();
-            for( Formula::const_iterator subformula = receivedFormulaBegin(); subformula != receivedFormulaEnd(); ++subformula )
+            for( Formula::const_iterator subformula = receivedFormulaBegin();
+                 subformula != receivedFormulaEnd(); ++subformula )
+            {
                 infeasibleSubset.insert( *subformula );
+            }
             mInfeasibleSubsets.push_back( infeasibleSubset );
             return False;
         }
@@ -236,8 +221,6 @@ namespace smtrat
      */
     void SATModule::popBacktrackPoint()
     {
-        //        cout << __func__ << __LINE__ << endl;
-
         for( unsigned level = clauses.size() - 1; level >= mBacktrackpointInSatSolver.back(); --level )
         {
             removeClause( clauses[level] );
@@ -1190,6 +1173,14 @@ NextClause:
         return true;
     }
 
+    struct formulaCmpB
+    {
+        bool operator ()( const Formula* const _formulaA, const Formula* const _formulaB ) const
+        {
+            return (_formulaA->constraint() < _formulaB->constraint());
+        }
+    };
+
     /**
      * search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
      *
@@ -1273,15 +1264,23 @@ NextClause:
                                         infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
                                 {
                                     #ifdef DEBUG_SATMODULE
-                                    cout << "### Infeasible subset: rlqe ex({x_0, y_0, x_1, y_1, delta_x, delta_y}, ";
+                                    cout << "### { ";
                                     #endif
-                                    set<const Formula*>::const_iterator subformula = infsubset->begin();
-                                    for( ; subformula != infsubset->end(); ++subformula )
+                                    // Sort the constraints in a unique way.
+                                    set<const Formula*, formulaCmpB> sortedConstraints = set<const Formula*, formulaCmpB>();
+                                    for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
+                                    {
+                                        sortedConstraints.insert( *subformula );
+                                    }
+                                    // Add the according literals to the conflict clause.
+                                    for( set<const Formula*, formulaCmpB>::const_iterator subformula = sortedConstraints.begin();
+                                         subformula != sortedConstraints.end();
+                                         ++subformula )
                                     {
                                         #ifdef DEBUG_SATMODULE
                                         if( subformula != infsubset->begin() )
                                         {
-                                            cout << " and ";
+                                            cout << ", ";
                                         }
                                         (*subformula)->print();
                                         #endif
@@ -1289,7 +1288,7 @@ NextClause:
                                         learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
                                     }
                                     #ifdef DEBUG_SATMODULE
-                                    cout << ");";
+                                    cout << " }";
                                     cout << endl;
                                     #endif
                                     break;    // TODO: Add all infeasible subsets as conflicting clauses.
@@ -1926,209 +1925,33 @@ NextClause:
     }
 
     /**
-     * Prints everything corresponding to the SAT solver.
+     * Prints the decisions the SAT solver has made.
      *
      * @param _out  The output stream where the answer should be printed.
      * @param _init The line initiation.
      */
-    void SATModule::printSatState( std::ostream& _out, const std::string _init )
+    void SATModule::printDecisions( ostream& _out, string _init ) const
     {
-        _out << _init << " Extra results: (read-only member variable)" << std::endl;
-        _out << _init << "    model    = " << "      If problem is satisfiable, this vector contains the model (if any)." << std::endl;
-        for( int pos = 0; pos < model.size(); ++pos )
-        {
-            _out << _init << "       ";
-            if( model[pos] == l_True )
-            {
-                _out << "l_True" << std::endl;
-            }
-            else if( model[pos] == l_False )
-            {
-                _out << "l_False" << std::endl;
-            }
-            else
-            {
-                _out << "l_Undef" << std::endl;
-            }
-        }
-        _out << _init << "    conflict = " << "      If problem is unsatisfiable (possibly under assumptions)," << std::endl;
-        _out << _init << "               " << "      this vector represent the final conflict clause expressed in the assumptions." << std::endl;
-        for( int pos = 0; pos < conflict.size(); ++pos )
-        {
-            _out << _init << "       ";
-            if( sign( conflict[pos] ) )
-            {
-                _out << "-";
-            }
-            _out << var( conflict[pos] ) << std::endl;
-        }
-
-        /*
-            _out << _init << " Mode of operation" << std::endl;
-            _out << _init << "    verbosity         = " << verbosity << std::endl;
-            _out << _init << "    var_decay         = " << var_decay << std::endl;
-            _out << _init << "    clause_decay      = " << clause_decay << std::endl;
-            _out << _init << "    random_var_freq   = " << random_var_freq << std::endl;
-            _out << _init << "    random_seed       = " << random_seed << std::endl;
-            _out << _init << "    luby_restart      = " << luby_restart << std::endl;
-            _out << _init << "    ccmin_mode        = " << ccmin_mode << "      Controls conflict clause minimization (0=none, 1=basic, 2=deep)." << std::endl;
-            _out << _init << "    phase_saving      = " << phase_saving << "      Controls the level of phase saving (0=none, 1=limited, 2=full)." << std::endl;
-            _out << _init << "    rnd_pol           = " << rnd_pol << "      Use random polarities for branching heuristics." << std::endl;
-            _out << _init << "    rnd_init_act      = " << rnd_init_act << "      Initialize variable activities with a small random value." << std::endl;
-            _out << _init << "    garbage_frac      = " << garbage_frac << "      The fraction of wasted memory allowed before a garbage collection is triggered." << std::endl;
-            _out << _init << "    restart_first     = " << restart_first << "      The initial restart limit. (default 100)" << std::endl;
-            _out << _init << "    restart_inc       = " << restart_inc << "      The factor with which the restart limit is multiplied in each restart. (default 1.5)" << std::endl;
-            _out << _init << "    learntsize_factor = " << learntsize_factor << "      The intitial limit for learnt clauses is a factor of the original clauses. (default 1 / 3)" << std::endl;
-            _out << _init << "    learntsize_inc    = " << learntsize_inc << "      The limit for learnt clauses is multiplied with this factor each restart. (default 1.1)" << std::endl;
-            _out << _init << "    learntsize_adjust_start_confl = " << learntsize_adjust_start_confl << std::endl;
-            _out << _init << "    learntsize_adjust_inc         = " << learntsize_adjust_inc << std::endl;
-        */
-
-        _out << _init << std::endl;
-        _out << _init << " Statistics: (read-only member variable)" << std::endl;
-        _out << _init << "    solves           = " << solves << std::endl;
-        _out << _init << "    starts           = " << starts << std::endl;
-        _out << _init << "    decisions        = " << decisions << std::endl;
-        _out << _init << "    rnd_decisions    = " << rnd_decisions << std::endl;
-        _out << _init << "    propagations     = " << propagations << std::endl;
-        _out << _init << "    conflicts        = " << conflicts << std::endl;
-        _out << _init << "    dec_vars         = " << dec_vars << std::endl;
-        _out << _init << "    clauses_literals = " << clauses_literals << std::endl;
-        _out << _init << "    learnts_literals = " << learnts_literals << std::endl;
-        _out << _init << "    max_literals     = " << max_literals << std::endl;
-        _out << _init << "    tot_literals     = " << tot_literals << std::endl;
-
-        _out << _init << std::endl;
-        _out << _init << " Solver state:" << std::endl;
-        _out << _init << "    ok                = " << ok
-             << "      If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!" << std::endl;
-        _out << _init << "    clauses           = " << "      List of problem clauses." << std::endl;
-        printClauses( _out, _init + "       " );
-        _out << _init << "    learnts           = " << "      List of learnt clauses." << std::endl;
-        for( int pos = 0; pos < learnts.size(); ++pos )
-        {
-            _out << _init << "       " << learnts[pos] << std::endl;
-        }
-        _out << _init << "    cla_inc           = " << cla_inc << "      Amount to bump next clause with." << std::endl;
-        _out << _init << "    activity          = " << "      A heuristic measurement of the activity of a variable." << std::endl;
-        for( int pos = 0; pos < activity.size(); ++pos )
-        {
-            _out << _init << "       " << activity[pos] << std::endl;
-        }
-        _out << _init << "    var_inc           = " << var_inc << "      Amount to bump next variable with." << std::endl;
-        _out << _init << "    watches           = "
-             << "      'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true)." << std::endl;
-
-        /*
-            OccLists<Lit, vec<Watcher>, WatcherDeleted> watches;
-        */
-        printCurrentAssignment( _out, _init );
-        _out << _init << "    polarity          = " << "      The preferred polarity of each variable." << std::endl;
-        for( int pos = 0; pos < polarity.size(); ++pos )
-        {
-            _out << _init << "       " << (bool)polarity[pos] << std::endl;
-        }
-        _out << _init << "    decision          = " << "      Declares if a variable is eligible for selection in the decision heuristic."
-             << std::endl;
-        for( int pos = 0; pos < decision.size(); ++pos )
-        {
-            _out << _init << "       " << (bool)decision[pos] << std::endl;
-        }
-        _out << _init << "    trail             = " << "      Assignment stack; stores all assigments made in the order they were made." << std::endl;
+        _out << _init << " Decisions:  ";
+        int level = 0;
         for( int pos = 0; pos < trail.size(); ++pos )
         {
-            _out << _init << "       ";
+            if( level < trail_lim.size() )
+            {
+                if( pos == trail_lim[level] )
+                {
+                    ++level;
+                }
+            }
+            if( pos > 0 )
+            {
+                _out << _init << "             ";
+            }
             if( sign( trail[pos] ) )
             {
                 _out << "-";
             }
-            _out << var( trail[pos] ) << endl;
+            _out << var( trail[pos] ) << " @ " << level << endl;
         }
-        _out << _init << "    trail_lim         = " << "      Separator indices for different decision levels in 'trail'." << std::endl;
-        for( int pos = 0; pos < trail_lim.size(); ++pos )
-        {
-            _out << _init << "       " << trail_lim[pos] << std::endl;
-        }
-        _out << _init << "    vardata           = " << "      Stores reason and level for each variable." << std::endl;
-        for( int pos = 0; pos < vardata.size(); ++pos )
-        {
-            _out << _init << "       " << "reason: " << vardata[pos].reason << ", level: " << vardata[pos].level << std::endl;
-        }
-        _out << _init << "    qhead             = " << qhead
-             << "      Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat)." << std::endl;
-        _out << _init << "    simpDB_assigns    = " << simpDB_assigns
-             << "      Number of top-level assignments since last execution of 'simplify()'." << std::endl;
-        _out << _init << "    simpDB_props      = " << simpDB_props
-             << "      Remaining number of propagations that must be made before next execution of 'simplify()'." << std::endl;
-        _out << _init << "    assumptions       = " << solves << "      Current set of assumptions provided to solve by the user." << std::endl;
-        for( int pos = 0; pos < assumptions.size(); ++pos )
-        {
-            _out << _init << "       ";
-            if( sign( assumptions[pos] ) )
-            {
-                _out << "-";
-            }
-            _out << var( assumptions[pos] ) << std::endl;
-        }
-
-        /*
-            _out << _init << "    order_heap        = " << << "      A priority queue of variables ordered with respect to the variable activity." << std::endl;
-            Heap<VarOrderLt> order_heap;    //
-        */
-        _out << _init << "    progress_estimate = " << progress_estimate << "      Set by 'search()'." << std::endl;
-        _out << _init << "    remove_satisfied  = " << remove_satisfied
-             << "      Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'." << std::endl;
-
-        /*
-            _out << _init << std::endl;
-            _out << _init << " Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is" << std::endl;
-            _out << _init << " used, exept 'seen' wich is used in several places." << std::endl;
-            _out << _init << "    seen                    = " << std::endl;
-            for( int pos = 0; pos < seen.size(); ++pos )
-            {
-                _out << _init << "       " << seen[pos] << std::endl;
-            }
-            _out << _init << "    analyze_stack           = " << std::endl;
-            for( int pos = 0; pos < analyze_stack.size(); ++pos )
-            {
-                _out << _init << "       ";
-                if( sign( analyze_stack[pos] ) )
-                {
-                    _out << "-";
-                }
-                _out << var( analyze_stack[pos] ) << std::endl;
-            }
-            _out << _init << "    analyze_toclear         = " << std::endl;
-            for( int pos = 0; pos < analyze_toclear.size(); ++pos )
-            {
-                _out << _init << "       ";
-                if( sign( analyze_toclear[pos] ) )
-                {
-                    _out << "-";
-                }
-                _out << var( analyze_toclear[pos] ) << std::endl;
-            }
-            _out << _init << "    add_tmp                 = " << std::endl;
-            for( int pos = 0; pos < add_tmp.size(); ++pos )
-            {
-                _out << _init << "       ";
-                if( sign( add_tmp[pos] ) )
-                {
-                    _out << "-";
-                }
-                _out << var( add_tmp[pos] ) << std::endl;
-            }
-            _out << _init << "    max_learnts             = " << max_learnts << std::endl;
-            _out << _init << "    learntsize_adjust_confl = " << learntsize_adjust_confl << std::endl;
-            _out << _init << "    learntsize_adjust_cnt   = " << learntsize_adjust_cnt << std::endl;
-        */
-
-        _out << _init << std::endl;
-        _out << _init << " Resource contraints:" << std::endl;
-        _out << _init << "    conflict_budget    = " << conflict_budget << "      -1 means no budget.." << std::endl;
-        _out << _init << "    propagation_budget = " << propagation_budget << "      -1 means no budget." << std::endl;
-        _out << _init << "    asynch_interrupt   = " << asynch_interrupt << std::endl;
     }
-
 }    // namespace smtrat
-

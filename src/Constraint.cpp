@@ -657,7 +657,7 @@ namespace smtrat
                 {
                     varA++;
                     varB++;
-                    for( int i = 0; i <= degreeA; ++i )
+                    for( int i = degreeA; i >= 0; --i )
                     {
                         symtab remVarsA = symtab( varA, _varsA.end() );
                         ex ithCoeffA    = _expressionA.coeff( currentVar, i );

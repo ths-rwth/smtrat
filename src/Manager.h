@@ -88,7 +88,7 @@ namespace smtrat
                 mpPrimaryBackend->pushBacktrackPoint();
             }
 
-            inline const GiNaC::symtab allVariables() const
+            inline const GiNaC::symtab& allVariables() const
             {
                 return mAllVariables;
             }
