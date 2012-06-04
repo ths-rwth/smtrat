@@ -101,6 +101,10 @@ else if( a == False )
 	printInfeasibleSubsets( cout, "          " );
 }
 */
+        if( a == False )
+        {
+            getInfeasibleSubsets();
+        }
         return a;
     }
 
@@ -245,6 +249,7 @@ else if( a == False )
     void Module::getOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins ) const
     {
     	unsigned posOfPassedFormula = getPositionOfPassedFormula( _formula );
+        if( posOfPassedFormula >= passedFormulaSize() ) print();
     	assert( posOfPassedFormula < passedFormulaSize() );
         _origins = mPassedFormulaOrigins.at( posOfPassedFormula );
     }
@@ -291,6 +296,23 @@ else if( a == False )
     }
 
     /**
+     *
+     */
+    void Module::getInfeasibleSubsets()
+    {
+
+        vector<Module*>::const_iterator backend = usedBackends().begin();
+        while( backend != usedBackends().end() )
+        {
+            if( !(*backend)->rInfeasibleSubsets().empty() )
+            {
+                mInfeasibleSubsets = getInfeasibleSubsets( **backend );
+                return;
+            }
+        }
+    }
+
+    /**
      * Get the infeasible subsets the given backend provides. Note, that an infeasible subset
      * in a backend contains subformulas of the passed formula and an infeasible subset of
      * this module contains subformulas of the received formula. In this method the LATTER is
@@ -303,10 +325,13 @@ else if( a == False )
     vec_set_const_pFormula Module::getInfeasibleSubsets( const Module& _backend ) const
     {
     	vec_set_const_pFormula result = vec_set_const_pFormula();
-        for( vec_set_const_pFormula::const_iterator infSubSet = _backend.rInfeasibleSubsets().begin();
-        	 infSubSet != _backend.rInfeasibleSubsets().end();
+        const vec_set_const_pFormula& backendsInfsubsets = _backend.rInfeasibleSubsets();
+        assert( !backendsInfsubsets.empty() );
+        for( vec_set_const_pFormula::const_iterator infSubSet = backendsInfsubsets.begin();
+        	 infSubSet != backendsInfsubsets.end();
              ++infSubSet )
         {
+            assert( !infSubSet->empty() );
             result.push_back( set< const Formula* >() );
             for( set< const Formula* >::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
             {
@@ -365,8 +390,8 @@ else if( a == False )
         while( tsmodule != mUsedBackends.end() )
         {
 //cout << endl << "isConsistent of " << *tsmodule << " having type " << (**tsmodule).type() << endl;
-//(**tsmodule).print( cout, " ");
             Answer result = (**tsmodule).isConsistent();
+//(**tsmodule).print( cout, " ");
             switch( result )
             {
 		        case True:
@@ -376,7 +401,6 @@ else if( a == False )
 		        }
 		        case False:
 		        {
-		            mInfeasibleSubsets = getInfeasibleSubsets( **tsmodule );
 //cout << "Result:   False" << endl;
 //(**tsmodule).printInfeasibleSubsets( cout, "          " );
 		            return False;
@@ -454,6 +478,7 @@ else if( a == False )
     	}
 		mPassedFormulaOrigins.erase( formulaOrigin );
         mpPassedFormula->erase( _positionOfPassedFormula );
+        mBackendsUptodate = false;
     }
 
     /**
@@ -738,6 +763,7 @@ printWithBackends();
 	        }
             _out << " )" << endl;
             (*passedSubformula)->print( _out, _initiation + "   ", false );
+            _out << endl;
             ++formulaOrigins;
         }
 /*

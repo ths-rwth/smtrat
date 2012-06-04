@@ -349,7 +349,12 @@ namespace smtrat
             }
             if( mInfeasibleSubsets.empty() )
             {
-                return runBackends();
+                Answer a = runBackends();
+                if( a == False )
+                {
+                    getInfeasibleSubsets();
+                }
+                return a;
             }
             else
             {
@@ -375,7 +380,12 @@ namespace smtrat
                 {
                     addReceivedSubformulaToPassedFormula( 0 );
                     mNumberOfComparedConstraints = 1;
-                    return runBackends();
+                    Answer a = runBackends();
+                    if( a == False )
+                    {
+                        getInfeasibleSubsets();
+                    }
+                    return a;
                 }
                 default:
                 {

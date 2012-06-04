@@ -1226,6 +1226,7 @@ namespace smtrat
                                                 cout << "*** Eliminate ready." << endl;
                                             }
                                             worseConditionFound = true;
+                                            break;
                                         }
                                         ++oCond;
                                     }
@@ -1402,7 +1403,7 @@ namespace smtrat
     {
         if( debugmethods )
         {
-            cout << __func__ << endl;
+            cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
         }
 #ifdef VS_INFEASIBLE_SUBSET_GENERATION
 

@@ -231,6 +231,7 @@ namespace smtrat
             void 		   getOrigins( const Formula* const , vec_set_const_pFormula& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             Answer 		   specialCaseConsistencyCheck() const;
+            void           getInfeasibleSubsets( );
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
             const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
             Answer 		   runBackends();

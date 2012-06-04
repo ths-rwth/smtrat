@@ -85,14 +85,14 @@ namespace smtrat
             };
             typedef std::map<const Constraint, Minisat::Lit, constraintCompare>        ConstraintLiteralMap;
             typedef std::map<const std::string, Minisat::Var>                          BooleanVarMap;
-            typedef std::map<const Minisat::Lit, std::pair<Formula*, const Formula*> > LitConstraintMap;
+            typedef std::map<const Minisat::Var, std::pair<Formula*, const Formula*> > BooleanConstraintMap;
 
             /**
              * Members:
              */
             ConstraintLiteralMap  mConstraintLiteralMap;
             BooleanVarMap         mBooleanVarMap;
-            LitConstraintMap      mLitConstraintMap;
+            BooleanConstraintMap  mBooleanConstraintMap;
             std::vector<unsigned> mBacktrackpointInSatSolver;
 
         public:
@@ -121,7 +121,7 @@ namespace smtrat
             void print( std::ostream& = std::cout, const std::string = "***" ) const;
             void printConstraintLiteralMap( std::ostream& = std::cout, const std::string = "***" ) const;
             void printBooleanVarMap( std::ostream& = std::cout, const std::string = "***" ) const;
-            void printLitConstraintMap( std::ostream& = std::cout, const std::string = "***" ) const;
+            void printBooleanConstraintMap( std::ostream& = std::cout, const std::string = "***" ) const;
             void printClause( std::ostream&, Minisat::Clause& );
             void printClauses( std::ostream&, Minisat::Clause&, Minisat::vec<Minisat::Var>&, Minisat::Var& );
             void printClauses( std::ostream& = std::cout, const std::string = "***" );

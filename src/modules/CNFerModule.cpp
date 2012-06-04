@@ -106,6 +106,10 @@ print();
 */
 		Answer a = runBackends();
 
+        if( a == False )
+        {
+            getInfeasibleSubsets();
+        }
 /*
 cout << "Result:   ";
 if( a == True )
