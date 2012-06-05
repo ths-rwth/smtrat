@@ -431,7 +431,7 @@ else if( a == False )
                 	/*
                 	 * (-> lhs rhs)  ->  (or (not lhs) rhs)
                 	 */
-                	assert( currentFormula->back()->size() == 2 );
+                	assert( currentFormula->size() == 2 );
                     Formula* rhs = currentFormula->pruneBack();
                     Formula* lhs = currentFormula->pruneBack();
                 	delete currentFormula;
@@ -447,7 +447,7 @@ else if( a == False )
                 	/*
                 	 * (iff lhs rhs)  ->  (or h1 h2) (or (not h1) lhs) (or (not h1) rhs) (or (not h2) (not lhs)) (or (not h2) (not rhs))
                 	 */
-                	assert( currentFormula->back()->size() == 2 );
+                	assert( currentFormula->size() == 2 );
                     // Get lhs and rhs and delete currentFormula.
                     Formula* rhs = currentFormula->pruneBack();
                     Formula* lhs = currentFormula->pruneBack();
@@ -489,7 +489,7 @@ else if( a == False )
                 	/*
                 	 * (xor lhs rhs)  ->  (or h1 h2) (or (not h1) (not lhs)) (or (not h1) rhs) (or (not h2) lhs) (or (not h2) (not rhs))
                 	 */
-                	assert( currentFormula->back()->size() == 2 );
+                	assert( currentFormula->size() == 2 );
                     // Get lhs and rhs and delete currentFormula.
                     Formula* rhs = currentFormula->pruneBack();
                     Formula* lhs = currentFormula->pruneBack();

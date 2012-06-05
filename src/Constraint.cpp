@@ -950,7 +950,7 @@ namespace smtrat
      *
      * @return  2,  if it is easy to decide that this constraint and the given constraint have the same solutions.(are equal)
      *          1,  if it is easy to decide that the given constraint includes all solutions of this constraint;
-     *          -1, if it is easy to decide that this constraint includes all solutions if the given constraint;
+     *          -1, if it is easy to decide that this constraint includes all solutions of the given constraint;
      *          -2, if it is easy to decide that this constraint has no solution common with the given constraint;
      *          -3, if it is easy to decide that this constraint and the given constraint can be intersected;
      *          0,  otherwise.

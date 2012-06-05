@@ -390,8 +390,8 @@ else if( a == False )
         while( tsmodule != mUsedBackends.end() )
         {
 //cout << endl << "isConsistent of " << *tsmodule << " having type " << (**tsmodule).type() << endl;
-            Answer result = (**tsmodule).isConsistent();
 //(**tsmodule).print( cout, " ");
+            Answer result = (**tsmodule).isConsistent();
             switch( result )
             {
 		        case True:

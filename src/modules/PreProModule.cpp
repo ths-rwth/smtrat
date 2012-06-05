@@ -41,10 +41,9 @@ namespace smtrat
         Module( _tsManager, _formula ),
         mFreshConstraintReceived( false ),
         mNumberOfComparedConstraints( 0 ),
-        mNumberOfAddedSubformulas( 0 ),
         mReceivedConstraints( std::vector<const Constraint* >() ),
         mConstraintOrigins( std::vector<const Formula* >() ),
-        mConstraintBacktrackPoints( std::vector<unsigned>() )
+        mConstraintBacktrackPoints( std::vector< pair< pair< bool, unsigned >, pair< unsigned, unsigned > > >() )
     {
         this->mModuleType = MT_PreProModule;
     }
@@ -68,8 +67,10 @@ namespace smtrat
      */
     bool PreProModule::assertSubFormula( const Formula* const _formula )
     {
+        Module::assertSubFormula( _formula );
+        addReceivedSubformulaToPassedFormula( receivedFormulaSize() - 1 );
         _formula->FormulaToConstraints( mReceivedConstraints );
-        while( mReceivedConstraints.size() <= mConstraintOrigins.size() )
+        while( mReceivedConstraints.size() > mConstraintOrigins.size() )
         {
             mConstraintOrigins.push_back( _formula );
         }
@@ -86,55 +87,61 @@ namespace smtrat
      */
     Answer PreProModule::isConsistent()
     {
+        string str_out = "";
+        cout << endl << "Before isConsistent:" << endl << endl;
+        this->pPassedFormula()->print(cout, str_out, true);
+        cout << endl;
+
         if( mFreshConstraintReceived == true )
         {
-            for( unsigned i = mNumberOfAddedSubformulas; i < receivedFormulaSize(); ++i )
+            for( unsigned posConsA = mNumberOfComparedConstraints; posConsA < mReceivedConstraints.size(); ++posConsA )
             {
-                addReceivedSubformulaToPassedFormula( i );
-            }
-            for( unsigned posConsA = mNumberOfComparedConstraints; posConsA < mReceivedConstraints.size(); posConsA++ )
-            {
+
                 const Constraint* tempConstraintA = mReceivedConstraints.at( posConsA );
                 mNumberOfComparedConstraints++;
-                for( unsigned posConsB = 0; posConsB < posConsA; posConsB++)
+                for( unsigned posConsB = 0; posConsB < posConsA; ++posConsB )
                 {
                     const Constraint* tempConstraintB = mReceivedConstraints.at( posConsB );
+                    Formula* _tSubformula = NULL;
                     switch( Constraint::compare( *tempConstraintA, *tempConstraintB ) )
                     {
-                        Formula* _tSubformula;
-                        case 2: // A IFF B
+
+                        /*case 2: // A IFF B
                         {
                             _tSubformula = new Formula( IFF );
                             _tSubformula->addSubformula( new Formula( tempConstraintA ) );
                             _tSubformula->addSubformula( new Formula( tempConstraintB ) );
                             break;
-                        }
+                        }*/
                         case 1: // A => B
                         {
                             _tSubformula = new Formula( IMPLIES );
-                            _tSubformula->addSubformula( new Formula( tempConstraintA ) );
                             _tSubformula->addSubformula( new Formula( tempConstraintB ) );
+                            _tSubformula->addSubformula( new Formula( tempConstraintA ) );
                             break;
                         }
 
                         case -1: // B => A
                         {
                             _tSubformula = new Formula( IMPLIES );
-                            _tSubformula->addSubformula( new Formula( tempConstraintB ) );
                             _tSubformula->addSubformula( new Formula( tempConstraintA ) );
+                            _tSubformula->addSubformula( new Formula( tempConstraintB ) );
                             break;
                         }
                         case -2: // A XOR B
                         {
-                            _tSubformula = new Formula( XOR );
-                            _tSubformula->addSubformula( new Formula( tempConstraintA ) );
-                            _tSubformula->addSubformula( new Formula( tempConstraintB ) );
+//                            _tSubformula = new Formula( XOR );
+//                            _tSubformula->addSubformula( new Formula( tempConstraintA ) );
+//                            _tSubformula->addSubformula( new Formula( tempConstraintB ) );
                             break;
                         }
                         default:
                         {
                             break;
                         }
+                    }
+                    if( _tSubformula != NULL )
+                    {
                         // Create Origins
                         std::set< const Formula* > originset;
                         originset.insert( mConstraintOrigins.at( posConsA ) );
@@ -148,7 +155,18 @@ namespace smtrat
             }
             mFreshConstraintReceived = false;
         }
-        return True;
+        cout << endl << "After isConsistent:" << endl << endl;
+        this->pPassedFormula()->print(cout, str_out, true);
+        cout << endl;
+
+		Answer a = runBackends();
+
+        if( a == False )
+        {
+            getInfeasibleSubsets();
+        }
+
+        return a;
     }
 
      /**
@@ -156,7 +174,11 @@ namespace smtrat
      */
     void PreProModule::pushBacktrackPoint()
     {
-        mConstraintBacktrackPoints.push_back( mReceivedConstraints.size() );
+        Module::pushBacktrackPoint();
+        pair< bool, unsigned > firstpair( mFreshConstraintReceived, mNumberOfComparedConstraints );
+        pair< unsigned, unsigned > secondpair( pPassedFormula()->size(), mReceivedConstraints.size() );
+        pair< pair< bool, unsigned >, pair< unsigned, unsigned > > newbacktrack( firstpair, secondpair );
+        mConstraintBacktrackPoints.push_back( newbacktrack );
     }
 
     /**
@@ -164,9 +186,16 @@ namespace smtrat
      */
     void PreProModule::popBacktrackPoint()
     {
-        while( mReceivedConstraints.size() > mConstraintBacktrackPoints.back() )
+        mFreshConstraintReceived = mConstraintBacktrackPoints.back().first.first;
+        mNumberOfComparedConstraints = mConstraintBacktrackPoints.back().first.second;
+        while( mConstraintBacktrackPoints.back().second.first != pPassedFormula()->size() )
+        {
+            removeSubformulaFromPassedFormula( pPassedFormula()->size()-1 );
+        }
+        while( mReceivedConstraints.size() != mConstraintBacktrackPoints.back().second.second )
         {
             mReceivedConstraints.pop_back();
+            mConstraintOrigins.pop_back();
         }
         mConstraintBacktrackPoints.pop_back();
         Module::popBacktrackPoint();
