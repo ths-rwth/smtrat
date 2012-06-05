@@ -15,7 +15,7 @@
 # # # # # # # # #
 
 cmake_minimum_required (VERSION 2.8)
-project(smtrat)
+project(smtrat CXX Fortran)
 
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -g -std=c++0x")
 
@@ -73,13 +73,17 @@ find_package(FLEX) # for building the parser
 
 # LAPACK and BLAS are both needed for successfull using CSDP
 # todo: maybe CLAPACK would also do?
+
+
+enable_language(Fortran) 
+find_package(LAPACK)
+find_package(BLAS)
+
 add_custom_target(
    csdp_lib
    COMMAND make
    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/external/csdp
 )
-find_package(LAPACK)
-find_package(BLAS)
 
 # GUI settings
 # # # # # # # #
