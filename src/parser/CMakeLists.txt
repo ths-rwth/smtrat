@@ -46,4 +46,4 @@ add_dependencies( smtratSolver
 	)
 
 # Other libraries that are used by the project library should go here.
-target_link_libraries( smtratSolver lib_${PROJECT_NAME} ${cln_LIBRARIES} ${GINAC_LIBRARY} ${GINACRA_LIBRARY} )
+target_link_libraries( smtratSolver lib_${PROJECT_NAME} )

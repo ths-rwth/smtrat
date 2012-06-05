@@ -5,4 +5,6 @@
 #define PROJECT_NAME "@PROJECT_FULLNAME@"
 #define VERSION "@PROJECT_VERSION@"
 
+#define USE_NSS @USE_NSS@
+
 #endif
