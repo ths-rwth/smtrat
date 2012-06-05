@@ -118,7 +118,7 @@ set(lib_LRAModule_src
 	modules/LRAModule/LRASolverA.cpp
 )
 
-
+if(USE_NSS)
 set(lib_NSSModule_headers
 	modules/NSSModule/ConstraintMatrixFactory.h
 	modules/NSSModule/GroebnerToSDP.h
@@ -146,6 +146,7 @@ set(lib_LinAlg
 	utilities/LinAlg/DenseMatrix.h
 	utilities/LinAlg/FindExactSolution.h
 )
+endif()
 set(lib_Utilities
 	utilities/debug/debug.h
 )
@@ -187,14 +188,19 @@ if(${STATICLIB_SWITCH} STREQUAL "ON")
 endif()
 add_library(lib_${PROJECT_NAME} ${STATICLIB} ${lib_${PROJECT_NAME}_SRCS} )
 
-add_library(csdp UNKNOWN IMPORTED)
-set_target_properties(csdp PROPERTIES IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/external/csdp/lib/libsdp.a")
+SET( libraries ${libraries}  ${cln_LIBRARIES} ${GINAC_LIBRARY} ${GINACRA_LIBRARY} )
 
-#Csdp should be automatically compiled whenever we compile smtrat
-add_dependencies(csdp csdp_lib)
+if(USE_NSS)
+	add_library(csdp UNKNOWN IMPORTED)
+	set_target_properties(csdp PROPERTIES IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/external/csdp/lib/libsdp.a")
+
+	#Csdp should be automatically compiled whenever we compile smtrat
+	add_dependencies(csdp csdp_lib)
+	SET( libraries ${libraries} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}  csdp ) 
+endif()
 
 # Other libraries that are used by the project library should go here.
-target_link_libraries( lib_${PROJECT_NAME} ${cln_LIBRARIES} ${GINAC_LIBRARY} ${GINACRA_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}  csdp )
+target_link_libraries( lib_${PROJECT_NAME} ${libraries} )
 
 
 set_target_properties( lib_${PROJECT_NAME} PROPERTIES
@@ -222,4 +228,3 @@ install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/modu
 if(CppUnit_FOUND)
 add_subdirectory(test)
 endif()
-

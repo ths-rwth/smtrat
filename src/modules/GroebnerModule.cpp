@@ -31,7 +31,9 @@
 
 #include "GroebnerModule.h"
 #include "../Manager.h"
+#if(USE_NSS)
 #include "NSSModule/GroebnerToSDP.h"
+#endif
 
 using GiNaC::ex_to;
 
@@ -94,7 +96,8 @@ namespace smtrat
             mBasis.calculate();
 
             MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic> witness;
-            if( !mBasis.isConstant() )
+#if(USE_NSS)
+			if( !mBasis.isConstant() )
             {
                 // Lets search for a witness. We only have to do this if the gb is non-constant.
                 // Better, we change this to the variables in the gb.
@@ -104,9 +107,9 @@ namespace smtrat
                 {
                     GroebnerToSDP<GiNaCRA::GradedLexicgraphic> sdp( mBasis.getGbIdeal(), MonomialIterator( vars ) );
                     witness = sdp.findWitness();
-                }
+				}
             }
-
+#endif
             // We have found an infeasible subset. Generate it.
             if( mBasis.isConstant() ||!witness.isZero() )
             {
