@@ -394,7 +394,7 @@ namespace smtrat
                         break;
                     }
                 }
-                Constraint normalizedConstraint = Constraint( sign * constraint.lhs(), rel, constraint.variables() );
+                const Constraint* normalizedConstraint = Formula::newConstraint( sign * constraint.lhs(), rel );
                 ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( normalizedConstraint );
                 if( constraintLiteralPair != mConstraintLiteralMap.end() )
                 {
@@ -427,14 +427,14 @@ namespace smtrat
                         {
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = mkLit( normConstrAuxBoolean, false );
-                            Constraint invertedConstraint               = Constraint( constraint.lhs(), CR_NEQ, constraint.variables() );
+                            const Constraint* invertedConstraint        = Formula::newConstraint( constraint.lhs(), CR_NEQ );
                             mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint]   = mkLit( invConstrAuxBoolean, false );
                             break;
                         }
                         case CR_NEQ:
                         {
-                            Constraint invertedConstraint               = Constraint( constraint.lhs(), CR_EQ, constraint.variables() );
+                            const Constraint* invertedConstraint        = Formula::newConstraint( constraint.lhs(), CR_EQ );
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint]   = mkLit( normConstrAuxBoolean, false );
                             mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
@@ -445,7 +445,7 @@ namespace smtrat
                         {
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = mkLit( normConstrAuxBoolean, false );
-                            Constraint invertedConstraint               = Constraint( -constraint.lhs(), CR_LESS, constraint.variables() );
+                            const Constraint* invertedConstraint        = Formula::newConstraint( -constraint.lhs(), CR_LESS );
                             mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint]   = mkLit( invConstrAuxBoolean, false );
                             break;
@@ -454,14 +454,14 @@ namespace smtrat
                         {
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = mkLit( normConstrAuxBoolean, false );
-                            Constraint invertedConstraint               = Constraint( constraint.lhs(), CR_LESS, constraint.variables() );
+                            const Constraint* invertedConstraint        = Formula::newConstraint( constraint.lhs(), CR_LESS );
                             mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint]   = mkLit( invConstrAuxBoolean, false );
                             break;
                         }
                         case CR_LESS:
                         {
-                            Constraint invertedConstraint               = Constraint( -constraint.lhs(), CR_LEQ, constraint.variables() );
+                            const Constraint* invertedConstraint        = Formula::newConstraint( -constraint.lhs(), CR_LEQ );
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint]   = mkLit( normConstrAuxBoolean, false );
                             mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
@@ -470,7 +470,7 @@ namespace smtrat
                         }
                         case CR_GREATER:
                         {
-                            Constraint invertedConstraint               = Constraint( constraint.lhs(), CR_LEQ, constraint.variables() );
+                            const Constraint* invertedConstraint        = Formula::newConstraint( constraint.lhs(), CR_LEQ );
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint]   = mkLit( normConstrAuxBoolean, false );
                             mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
@@ -1700,7 +1700,7 @@ NextClause:
         _out << _init << " ConstraintLiteralMap" << endl;
         for( ConstraintLiteralMap::const_iterator clPair = mConstraintLiteralMap.begin(); clPair != mConstraintLiteralMap.end(); ++clPair )
         {
-            _out << _init << "    " << clPair->first.toString() << "  ->  ";
+            _out << _init << "    " << clPair->first->toString() << "  ->  ";
             if( sign( clPair->second ) )
             {
                 _out << "-";

@@ -83,9 +83,9 @@ namespace smtrat
                     return false;
                 }
             };
-            typedef std::map<const Constraint, Minisat::Lit, constraintCompare>        ConstraintLiteralMap;
-            typedef std::map<const std::string, Minisat::Var>                          BooleanVarMap;
-            typedef std::map<const Minisat::Var, std::pair<Formula*, const Formula*> > BooleanConstraintMap;
+            typedef std::map<const Constraint* const, Minisat::Lit>                     ConstraintLiteralMap;
+            typedef std::map<const std::string, Minisat::Var>                           BooleanVarMap;
+            typedef std::map<const Minisat::Var, std::pair<Formula*, const Formula*> >  BooleanConstraintMap;
 
             /**
              * Members:

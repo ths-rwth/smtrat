@@ -49,7 +49,7 @@ namespace smtrat
 	typedef std::vector< std::set< const Formula* > > vec_set_const_pFormula;
 	typedef std::vector< vec_set_const_pFormula > 	  FormulaOrigins;
     /**
-     * A base class for all kind of theory-solving methods
+     * A base class for all kind of theory solving methods.
      */
     class Module
     {
@@ -225,8 +225,8 @@ namespace smtrat
         protected:
             bool 		   addReceivedSubformulaToPassedFormula( unsigned );
             void 		   addSubformulaToPassedFormula( Formula*, vec_set_const_pFormula& );
-            unsigned 		   getPositionOfReceivedFormula( const Formula* const ) const;
-            unsigned 		   getPositionOfPassedFormula( const Formula* const ) const;
+            unsigned 	   getPositionOfReceivedFormula( const Formula* const ) const;
+            unsigned 	   getPositionOfPassedFormula( const Formula* const ) const;
             void 		   setOrigins( unsigned, vec_set_const_pFormula& );
             void 		   getOrigins( const Formula* const , vec_set_const_pFormula& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;

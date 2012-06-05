@@ -77,44 +77,44 @@ namespace smtrat
             Manager( Formula* = new Formula( AND ) );
             virtual ~Manager();
 
-            inline Answer isConsistent()
+            Answer isConsistent()
             {
                 return mpPrimaryBackend->isConsistent();
             }
 
-            inline void pushBacktrackPoint()
+            void pushBacktrackPoint()
             {
                 mBackTrackPoints.push_back( mpPassedFormula->size() );
                 mpPrimaryBackend->pushBacktrackPoint();
             }
 
 
-            inline const GiNaC::symtab& allVariables() const
+            const GiNaC::symtab& allVariables() const
             {
                 return mAllVariables;
             }
 
-            inline const std::map<const ModuleType, ModuleFactory*>& rModulFactories() const
+            const std::map<const ModuleType, ModuleFactory*>& rModulFactories() const
             {
                 return *mpModulFactories;
             }
 
-            inline void addModuleType( const ModuleType _moduleType, ModuleFactory* _factory )
+            void addModuleType( const ModuleType _moduleType, ModuleFactory* _factory )
             {
                 mpModulFactories->insert( std::pair<const ModuleType, ModuleFactory*>( _moduleType, _factory ));
             }
 
-            inline Strategy& strategy()
+            Strategy& strategy()
             {
                 return *mpStrategy;
             }
 
-            inline std::vector<Module*> getAllBackends( Module* _module )
+            std::vector<Module*> getAllBackends( Module* _module )
             {
             	return mBackendsOfModules[_module];
             }
 
-            inline unsigned uniqueModuleNumber( const Module* const _module )
+            unsigned uniqueModuleNumber( const Module* const _module )
             {
                 unsigned result = 0;
                 std::vector< Module* >::const_iterator moduleIter = mGeneratedModules.begin();

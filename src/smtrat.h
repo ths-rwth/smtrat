@@ -22,9 +22,10 @@
 
 /**
  *
- * @file smt-rat.h
+ * @file smtrat.h
  * @author Sebastian Junges
  * @author Ulrich Loup
+ * @author Florian Corzilius
  * @version 2012-02-12
  * @sinve 2012-01-19
  */
@@ -40,6 +41,7 @@
 #define SMTRAT_H
 
 #include "Constraint.h"
+#include "ConstraintPool.h"
 #include "Manager.h"
 #include "NRATSolver.h"
 #include "NRATSolver_CADonly.h"

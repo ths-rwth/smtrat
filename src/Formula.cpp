@@ -35,6 +35,9 @@ using namespace std;
 
 namespace smtrat
 {
+
+    ConstraintPool Formula::mConstraintPool = ConstraintPool( 10000 );
+
     Formula::Formula()
     {
        	mType 			= TTRUE;
@@ -91,24 +94,13 @@ namespace smtrat
     	updateID();
     }
 
-    Formula::Formula( const Constraint& _constraint )
-    {
-       	mType 			= REALCONSTRAINT;
-       	mpFather		= NULL;
-        mpConstraint 	= new Constraint( _constraint );
-       	mRealValuedVars.insert( _constraint.variables().begin(), _constraint.variables().end() );
-        mPropositions 	= Condition();
-        mPropositionsUptodate = false;
-    	updateID();
-    }
-
     Formula::Formula( const Formula& _formula )
     {
        	mType 		= _formula.getType();
        	mpFather	= NULL;
         if( _formula.getType() == REALCONSTRAINT )
         {
-        	mpConstraint = new Constraint( _formula.constraint() );
+        	mpConstraint = _formula.pConstraint();
         }
         else if( _formula.getType() != BOOL &&  _formula.getType() != TTRUE &&  _formula.getType() != FFALSE )
         {
@@ -132,11 +124,11 @@ namespace smtrat
 
     Formula::~Formula()
     {
-        if( mType == REALCONSTRAINT )
+        if( mType == BOOL )
         {
-        	delete mpConstraint;
+        	delete mpIdentifier;
         }
-        else if( mType != BOOL )
+        else if( mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE )
         {
         	while( !mpSubformulas->empty() )
         	{
@@ -145,10 +137,6 @@ namespace smtrat
         		delete pSubForm;
         	}
         	delete mpSubformulas;
-        }
-        else if( mType == BOOL )
-        {
-        	delete mpIdentifier;
         }
     }
 

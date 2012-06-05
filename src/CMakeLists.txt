@@ -17,6 +17,7 @@ set(lib_core_src
     Formula.cpp
     Strategy.cpp
     Constraint.cpp
+    ConstraintPool.cpp
 )
 
 set(lib_core_headers
@@ -28,6 +29,7 @@ set(lib_core_headers
     ModuleFactory.h
     ModuleType.h
     Constraint.h
+    ConstraintPool.h
     smtrat.h
 )
 
@@ -125,7 +127,7 @@ set(lib_NSSModule_headers
 
 set(lib_NSSModule_src
 	modules/NSSModule/ConstraintMatrixFactory.cpp
-	
+
 	modules/NSSModule/MonomialIterator.cpp
 )
 
@@ -144,7 +146,7 @@ set(lib_LinAlg
 	utilities/LinAlg/DenseMatrix.h
 	utilities/LinAlg/FindExactSolution.h
 )
-set(lib_Utilities 
+set(lib_Utilities
 	utilities/debug/debug.h
 )
 

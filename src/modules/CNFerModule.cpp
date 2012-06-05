@@ -570,8 +570,8 @@ else if( a == False )
                     {
                         case CR_EQ:
                         {
-                            Constraint* newConstraintA = new Constraint( constraint.lhs(), CR_LESS, constraint.variables() );
-                            Constraint* newConstraintB = new Constraint( constraint.lhs(), CR_GREATER, constraint.variables() );
+                            const Constraint* newConstraintA = Formula::newConstraint( constraint.lhs(), CR_LESS );
+                            const Constraint* newConstraintB = Formula::newConstraint( constraint.lhs(), CR_GREATER );
                             delete _formula;
                             Formula* newFormula = new Formula( OR );
                             newFormula->addSubformula( newConstraintA );
@@ -580,34 +580,34 @@ else if( a == False )
                         }
                         case CR_NEQ:
                         {
-                            Constraint* newConstraint = new Constraint( constraint.lhs(), CR_EQ, constraint.variables() );
+                            const Constraint* newConstraint = Formula::newConstraint( constraint.lhs(), CR_EQ );
                             delete _formula;
                             return new Formula( newConstraint );
                         }
                         case CR_LEQ:
                         {
-                            Constraint* newConstraint = new Constraint( constraint.lhs(), CR_GREATER, constraint.variables() );
+                            const Constraint* newConstraint = Formula::newConstraint( constraint.lhs(), CR_GREATER );
                             delete _formula;
                             return new Formula( newConstraint );
                             break;
                         }
                         case CR_GEQ:
                         {
-                            Constraint* newConstraint = new Constraint( constraint.lhs(), CR_LESS, constraint.variables() );
+                            const Constraint* newConstraint = Formula::newConstraint( constraint.lhs(), CR_LESS );
                             delete _formula;
                             return new Formula( newConstraint );
                             break;
                         }
                         case CR_LESS:
                         {
-                            Constraint* newConstraint = new Constraint( constraint.lhs(), CR_GEQ, constraint.variables() );
+                            const Constraint* newConstraint = Formula::newConstraint( constraint.lhs(), CR_GEQ );
                             delete _formula;
                             return new Formula( newConstraint );
                             break;
                         }
                         case CR_GREATER:
                         {
-                            Constraint* newConstraint = new Constraint( constraint.lhs(), CR_LEQ, constraint.variables() );
+                            const Constraint* newConstraint = Formula::newConstraint( constraint.lhs(), CR_LEQ );
                             delete _formula;
                             return new Formula( newConstraint );
                             break;

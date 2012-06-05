@@ -125,7 +125,7 @@
 %type  <fval> 	expr
 %type  <sval>   keys
 %type  <vfval>  exprlist;
-%type  <eval>  	relationSymbol;
+%type  <sval>  	relationSymbol;
 %type  <eval>  	unaryOperator;
 %type  <eval>  	binaryOperator;
 %type  <eval>  	nnaryOperator;
@@ -225,20 +225,9 @@ expr:
 	}
 	| 	OB relationSymbol term term CB
 	{
-		GiNaC::parser reader( driver.formulaRoot->rRealValuedVars() );
-		GiNaC::ex lhs, rhs;
-		try
-		{
-			lhs = reader( *$3 );
-			rhs = reader( *$4 );
-		}
-		catch( GiNaC::parse_error& err )
-		{
-			cerr << err.what() << endl;
-		}
-		driver.formulaRoot->rRealValuedVars().insert( reader.get_syms().begin(), reader.get_syms().end() );
-		smtrat::Formula* formulaTmp = new smtrat::Formula( new smtrat::Constraint( lhs, rhs, (smtrat::Constraint_Relation) $2, driver.formulaRoot->realValuedVars() ) );
-		$$ = formulaTmp;
+        const smtrat::Constraint* constraint = Formula::newConstraint( *$3 + *$2 + *$4 );
+		driver.formulaRoot->rRealValuedVars().insert( constraint->variables().begin(), constraint->variables().end() );
+		$$ = new smtrat::Formula( constraint );
 	}
 	| 	OB SYM CB
 	{
@@ -269,23 +258,23 @@ exprlist :
 relationSymbol :
 		EQ
 	{
-		$$ = smtrat::CR_EQ;
+		$$ = new std::string( "=" );
 	}
     |	LEQ
 	{
-		$$ = smtrat::CR_LEQ;
+		$$ = new std::string( "<=" );
 	}
     |	GEQ
 	{
-		$$ = smtrat::CR_GEQ;
+		$$ = new std::string( ">=" );
 	}
     |	LESS
 	{
-		$$ = smtrat::CR_LESS;
+		$$ = new std::string( "<" );
 	}
     |	GREATER
 	{
-		$$ = smtrat::CR_GREATER;
+		$$ = new std::string( ">" );
 	}
 	;
 

@@ -28,24 +28,6 @@ add_custom_command( OUTPUT ${CMAKE_BINARY_DIR}/src/parser/lex.smtrat.cc
 	ARGS ${CMAKE_SOURCE_DIR}/src/parser/Scanner.ll
 	)
 
-# Create target for the parser
-add_executable( parser
-	${CMAKE_BINARY_DIR}/src/parser/lex.smtrat.cc
-	${CMAKE_SOURCE_DIR}/src/parser/Driver.cc
-	${CMAKE_SOURCE_DIR}/src/parser/exprtest.cc
-	${CMAKE_BINARY_DIR}/src/parser/Parser.tab.cc
-	)
-
-add_dependencies( parser
-	${CMAKE_BINARY_DIR}/src/parser/lex.smtrat.cc
-	${CMAKE_SOURCE_DIR}/src/parser/Driver.cc
-	${CMAKE_SOURCE_DIR}/src/parser/exprtest.cc
-	${CMAKE_BINARY_DIR}/src/parser/Parser.tab.cc
-	)
-
-# Other libraries that are used by the project library should go here.
-target_link_libraries( parser lib_${PROJECT_NAME} ${cln_LIBRARIES} ${GINAC_LIBRARY} ${GINACRA_LIBRARY} )
-
 # Create executable solver
 add_executable( smtratSolver
 	${CMAKE_BINARY_DIR}/src/parser/lex.smtrat.cc

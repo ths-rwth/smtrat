@@ -217,33 +217,33 @@ namespace smtrat
                 {
                     case CR_EQ:
                     {
-                        Constraint* constraintA = new Constraint( _constraint->lhs(), CR_LEQ, _constraint->variables() );
-                        Constraint* constraintB = new Constraint( _constraint->lhs(), CR_GEQ, _constraint->variables() );
+                        const Constraint* constraintA = Formula::newConstraint( _constraint->lhs(), CR_LEQ );
+                        const Constraint* constraintB = Formula::newConstraint( _constraint->lhs(), CR_GEQ );
                         constraintPolarityPairs.push_back( cons_bool_pair( constraintA, true ) );
                         constraintPolarityPairs.push_back( cons_bool_pair( constraintB, true ) );
                         break;
                     }
                     case CR_LEQ:
                     {
-                        Constraint* constraint = new Constraint( *_constraint );
+                        const Constraint* constraint = _constraint;
                         constraintPolarityPairs.push_back( cons_bool_pair( constraint, true ) );
                         break;
                     }
                     case CR_GEQ:
                     {
-                        Constraint* constraint = new Constraint( *_constraint );
+                        const Constraint* constraint = _constraint ;
                         constraintPolarityPairs.push_back( cons_bool_pair( constraint, true ) );
                         break;
                     }
                     case CR_LESS:
                     {
-                        Constraint* constraint = new Constraint( _constraint->lhs(), CR_GEQ, _constraint->variables() );
+                        const Constraint* constraint = Formula::newConstraint( _constraint->lhs(), CR_GEQ );
                         constraintPolarityPairs.push_back( cons_bool_pair( constraint, false ) );
                         break;
                     }
                     case CR_GREATER:
                     {
-                        Constraint* constraint = new Constraint( _constraint->lhs(), CR_LEQ, _constraint->variables() );
+                        const Constraint* constraint = Formula::newConstraint( _constraint->lhs(), CR_LEQ );
                         constraintPolarityPairs.push_back( cons_bool_pair( constraint, false ) );
                         break;
                     }

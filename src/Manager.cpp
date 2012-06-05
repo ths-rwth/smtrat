@@ -116,19 +116,7 @@ namespace smtrat
      */
     bool Manager::inform( const string& _constraint, const bool _infix )
     {
-        if( mAllConstraints.find( _constraint + "1" ) == mAllConstraints.end() )
-        {
-            Constraint* constraint = new Constraint( stringToConstraint( _constraint, _infix, true ));
-            mAllConstraints.insert( pair<const std::string, Constraint*>( _constraint + "1", constraint ));
-        }
-
-        if( mAllConstraints.find( _constraint + "0" ) == mAllConstraints.end() )
-        {
-            Constraint* constraint = new Constraint( stringToConstraint( _constraint, _infix, false ));
-            mAllConstraints.insert( pair<const std::string, Constraint*>( _constraint + "0", constraint ));
-        }
-
-        return (!mAllConstraints[_constraint + "1"]->isConsistent() == -1);
+        return Formula::newConstraint( _constraint, _infix, true )->isConsistent();
     }
 
 	/**
@@ -165,19 +153,9 @@ namespace smtrat
          * Add the constraint to the primary backend module.
          */
         mBackendsUptodate = false;
-        map<const std::string, Constraint*>::const_iterator iter = mAllConstraints.find( _constraint + (_polarity ? "1" : "0") );
-        if( iter != mAllConstraints.end() )
-        {
-        	mpPassedFormula->addSubformula( new Formula( new Constraint( *iter->second ) ) );
-            return mpPrimaryBackend->assertSubFormula( mpPassedFormula->back() );
-        }
-        else
-        {
-        	Constraint* constraint = new Constraint( stringToConstraint( _constraint, _infix, _polarity ));
-            mAllConstraints[_constraint + (_polarity ? "1" : "0")] = constraint;
-        	mpPassedFormula->addSubformula( constraint );
-            return mpPrimaryBackend->assertSubFormula( new Formula( new Constraint( *constraint ) ) );
-        }
+
+        mpPassedFormula->addSubformula( Formula::newConstraint( _constraint, _infix, _polarity ) );
+        return mpPrimaryBackend->assertSubFormula( mpPassedFormula->back() );
     }
 
     /**

@@ -105,30 +105,30 @@ namespace smtrat
                         case 2: // A IFF B
                         {
                             _tSubformula = new Formula( IFF );
-                            _tSubformula->addSubformula( new Formula( *tempConstraintA ) );
-                            _tSubformula->addSubformula( new Formula( *tempConstraintB ) );
+                            _tSubformula->addSubformula( new Formula( tempConstraintA ) );
+                            _tSubformula->addSubformula( new Formula( tempConstraintB ) );
                             break;
                         }
                         case 1: // A => B
                         {
                             _tSubformula = new Formula( IMPLIES );
-                            _tSubformula->addSubformula( new Formula( *tempConstraintA ) );
-                            _tSubformula->addSubformula( new Formula( *tempConstraintB ) );
+                            _tSubformula->addSubformula( new Formula( tempConstraintA ) );
+                            _tSubformula->addSubformula( new Formula( tempConstraintB ) );
                             break;
                         }
 
                         case -1: // B => A
                         {
                             _tSubformula = new Formula( IMPLIES );
-                            _tSubformula->addSubformula( new Formula( *tempConstraintB ) );
-                            _tSubformula->addSubformula( new Formula( *tempConstraintA ) );
+                            _tSubformula->addSubformula( new Formula( tempConstraintB ) );
+                            _tSubformula->addSubformula( new Formula( tempConstraintA ) );
                             break;
                         }
                         case -2: // A XOR B
                         {
                             _tSubformula = new Formula( XOR );
-                            _tSubformula->addSubformula( new Formula( *tempConstraintA ) );
-                            _tSubformula->addSubformula( new Formula( *tempConstraintB ) );
+                            _tSubformula->addSubformula( new Formula( tempConstraintA ) );
+                            _tSubformula->addSubformula( new Formula( tempConstraintB ) );
                             break;
                         }
                         default:
@@ -150,7 +150,7 @@ namespace smtrat
         }
         return True;
     }
-    
+
      /**
      * Pushs a backtrackpoint, to the stack of backtrackpoints.
      */
@@ -158,7 +158,7 @@ namespace smtrat
     {
         mConstraintBacktrackPoints.push_back( mReceivedConstraints.size() );
     }
-    
+
     /**
      * Pops the last backtrackpoint, from the stack of backtrackpoints.
      */

@@ -163,7 +163,7 @@ namespace smtrat
             std::list<Polynomial> simplified = mBasis.getGb();
             for( std::list<Polynomial>::const_iterator simplIt = simplified.begin(); simplIt != simplified.end(); ++simplIt )
             {
-                addSubformulaToPassedFormula( new Formula( new Constraint( simplIt->toEx(), CR_EQ, mListOfVariables ) ), originals );
+                addSubformulaToPassedFormula( new Formula( Formula::newConstraint( simplIt->toEx(), CR_EQ ) ), originals );
             }
             //printPassedFormula();
 
