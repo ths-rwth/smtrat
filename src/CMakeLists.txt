@@ -192,7 +192,11 @@ if(${STATICLIB_SWITCH} STREQUAL "ON")
 endif()
 add_library(lib_${PROJECT_NAME} ${STATICLIB} ${lib_${PROJECT_NAME}_SRCS} )
 
-SET( libraries ${libraries}  ${cln_LIBRARIES} ${GINAC_LIBRARY} ${GINACRA_LIBRARY} )
+SET( libraries ${libraries}  ${cln_LIBRARIES} ${GINAC_LIBRARY} )
+
+if(USE_GINACRA)
+	SET( libraries ${libraries} ${GINACRA_LIBRARY} )
+endif()
 
 if(USE_NSS)
 	add_library(csdp UNKNOWN IMPORTED)
