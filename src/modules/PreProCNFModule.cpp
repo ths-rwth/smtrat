@@ -19,7 +19,6 @@
  *
  */
 
-
 /*
  * File:   PreProCNFModule.cpp
  * Author: Dennis Scully
@@ -40,14 +39,12 @@ namespace smtrat
      */
     PreProCNFModule::PreProCNFModule( Manager* const _tsManager, const Formula* const _formula ):
         Module( _tsManager, _formula ),
-        mActivities( std::vector<unsigned>() ),
-        mFormula( std::vector<Formula*>() ),
-        mBacktrackPoint( std::vector<Formula*>() ),
         mNewFormulaReceived( false ),
-        mNumberOfSubstitutedFormulas( 0 ),
-        mNumberOfAppliedSubstitutions( 0 ),
-        mSubstitutions( std::vector<pair<pair<std::string, bool>, pair<GiNaC::ex, GiNaC::ex> > >() ),
-        mSubstitutionOrigins( std::vector<const Formula*>() )
+        mNumberOfCheckedFormulas( 0 ),
+        mSubstitutionOrigins( std::vector< vec_set_const_pFormula >() ),
+        mNumberOfVariables( std::map< std::string, unsigned >() ),
+        mSubstitutions( std::vector< pair< pair< std::string, bool >, pair< pair< GiNaC::symtab, GiNaC::symtab >, pair< GiNaC::ex, GiNaC::ex> > > >() ),
+        mBacktrackPoints( std::vector< pair< std::vector< pair< Formula*, vec_set_const_pFormula > >, pair < bool, pair< unsigned, unsigned> > > >() )
     {
         this->mModuleType = MT_PreProCNFModule;
     }
@@ -71,7 +68,7 @@ namespace smtrat
      */
     bool PreProCNFModule::assertSubFormula( const Formula* const _formula )
     {
-        mFormula.push_back( new Formula( *_formula ) );
+        addReceivedSubformulaToPassedFormula( getPositionOfReceivedFormula( _formula ) );
         mNewFormulaReceived = true;
         return true;
     }
@@ -87,177 +84,324 @@ namespace smtrat
     {
         if( mNewFormulaReceived )
         {
-            bool foundCandidate;
-            bool negativeIdentifier;
-            Formula * father;
-            for( unsigned i = mNumberOfSubstitutedFormulas; i < mFormula.size(); ++i )
+            cout << endl << "Before isConsistent:" << endl << endl;
+            this->pPassedFormula()->print();
+            cout << endl << "--------------------------------------------------------------------";
+            //--------------------------------------------------------------------------- Apply Old Substitutions on new Formulas
+            unsigned t_passedFormulaSize = passedFormulaSize();
+            for( unsigned i = mNumberOfCheckedFormulas; i < t_passedFormulaSize; ++i)
             {
-                father = mFormula.at( i );
-                std::vector<Formula*>* subformulas = father->pSubformulas();
-                if( father->getType() == OR && subformulas->size() == 2 )
+                for( unsigned j = 0; j < mSubstitutions.size(); ++j)
                 {
-                    foundCandidate = false;
-                    Formula * ConstraintChild;
-                    Formula * BoolChild;
-                    Type type0 = subformulas->at( 0 )->getType();
-                    Type type1 = subformulas->at( 1 )->getType();
-                    if( (type0 == REALCONSTRAINT && ((type1 == NOT) | (type1 == BOOL)))
-                            | (type1 == REALCONSTRAINT && ((type0 == NOT) | (type0 == BOOL))) )
+                    if( substituteConstraint( passedFormulaAt( i ), mSubstitutions.at( j ), mSubstitutionOrigins.at( j ) ) ) // If substitution was succesfull manipulate count variables
                     {
-                        foundCandidate = true;
-                        if( type0 == REALCONSTRAINT )
+                        --i;                                                             //    c1,c2,c3 =>  c1,c3,c2'  (only c3 should be checked)
+                        --t_passedFormulaSize;                                           //        c2 is substituted to c2'
+                    }
+                }
+            }
+            //--------------------------------------------------------------------------- Update Number of occurences of variables
+            for( unsigned i = mNumberOfCheckedFormulas; i != passedFormulaSize(); ++i)
+            {
+                const Formula* father = pPassedFormula()->at( i );
+                pair< const Formula*, const Formula* > _pair = isCandidate( father );
+                const Formula* constraintfather = _pair.first;
+                if( (father != NULL) && (constraintfather != NULL) && (_pair.second != NULL) && constraintfather->constraint().relation() == CR_EQ )
+                {
+                    assert( constraintfather->getType() == REALCONSTRAINT);
+                    GiNaC::symtab var = constraintfather->constraint().variables();
+                    for( GiNaC::symtab::const_iterator iteratorvar = var.begin();
+                            iteratorvar != var.end(); ++iteratorvar)
+                    {
+                        bool foundvar = false;
+                        for( map< std::string, unsigned >::iterator iteratormap = mNumberOfVariables.begin();
+                            iteratormap != mNumberOfVariables.end(); ++iteratormap )
                         {
-                            ConstraintChild = subformulas->at( 0 );
-                            BoolChild       = subformulas->at( 1 );
-                            if( type1 == NOT )
-                                negativeIdentifier = true;
-                            else
-                                negativeIdentifier = false;
-
-                        }
-                        else if( type1 == REALCONSTRAINT )
-                        {
-                            ConstraintChild = subformulas->at( 1 );
-                            BoolChild       = subformulas->at( 0 );
-                            if( type0 == NOT )
-                                negativeIdentifier = true;
-                            else
-                                negativeIdentifier = false;
-                        }
-                        if( negativeIdentifier )
-                        {
-                            if( BoolChild->pSubformulas()->size() == 1 )
+                            if( iteratormap->first == iteratorvar->first )
                             {
-                                BoolChild = BoolChild->pSubformulas()->at( 0 );
-                                if( BoolChild->getType() != BOOL )
+                                mNumberOfVariables[ iteratorvar->first ] = iteratormap->second + 1;
+                                foundvar = true;
+                                break;
+                            }
+                        }
+                        if( !foundvar )
+                        {
+                            mNumberOfVariables[ iteratorvar->first ] = 1;
+                        }
+                    }
+                }
+            }
+            //--------------------------------------------------------------------------- Search in new Formulas for Substitutions
+            for( unsigned i = mNumberOfCheckedFormulas; i != passedFormulaSize(); ++i)
+            {
+                const Formula* father = pPassedFormula()->at( i );
+                pair< const Formula*, const Formula* > _pair = isCandidate( father );
+                const Formula* constraintfather = _pair.first;
+                const Formula* boolfather = _pair.second;
+                vec_set_const_pFormula _origins;
+                if( (father != NULL) && (constraintfather != NULL) && (boolfather != NULL) && constraintfather->constraint().relation() == CR_EQ )
+                {
+                    assert( constraintfather->getType() == REALCONSTRAINT);
+                    GiNaC::ex expression = constraintfather->constraint().lhs();
+                    GiNaC::symtab var = constraintfather->constraint().variables();
+                    GiNaC::ex maxvarex;
+                    GiNaC::ex varex;
+                    std::string maxvarstr;
+                    unsigned maxocc = 0;
+                    for( GiNaC::symtab::const_iterator iteratorvar = var.begin();                        // Seach for variable with the most occurences
+                            iteratorvar != var.end(); ++iteratorvar)
+                    {
+                        varex = (*iteratorvar).second;
+                        if( (!expression.coeff( varex, 1 ).is_zero()) && (!expression.coeff( varex, 0 ).is_zero()) )
+                        {
+                            if( mNumberOfVariables.at( (*iteratorvar).first ) > maxocc )
+                            {
+                                maxvarstr = (*iteratorvar).first;
+                                maxvarex = (*iteratorvar).second;
+                                maxocc = mNumberOfVariables.at( (*iteratorvar).first );
+                            }
+                           // cout << mNumberOfVariables.at( (*iteratorvar).first ) << ": curvar   " << maxocc << ": lastvar   ";
+                        }
+                    }
+                    if( !maxvarex.is_zero() )
+                    {
+                        // Create new Expression for Substitution
+                        GiNaC::ex t_expression = - expression.coeff( maxvarex, 0 ) / expression.coeff( maxvarex, 1 );
+                        // Create substitution pair
+                        pair< GiNaC::ex, GiNaC::ex > SubstitutionExpression( maxvarex, t_expression );
+                        assert( boolfather->getType() == BOOL );
+                        bool constraintisnegated = false;
+                        if( constraintfather->father().getType() == NOT ) constraintisnegated = true;
+                        pair< std::string, bool > SubstitutionIdentifier( boolfather->identifier(), constraintisnegated );
+                        GiNaC::symtab t_var = var;
+                        var.erase( maxvarstr );
+                        pair< GiNaC::symtab, GiNaC::symtab > varpair( t_var, var );
+                        pair< pair< GiNaC::symtab, GiNaC::symtab >, pair< GiNaC::ex, GiNaC::ex > >
+                                    subplusvars( varpair, SubstitutionExpression);
+                        pair< pair< std::string, bool >, pair< pair< GiNaC::symtab, GiNaC::symtab >,
+                                    pair< GiNaC::ex, GiNaC::ex > > > substitution( SubstitutionIdentifier, subplusvars );
+                        // Save Substitution Pair
+                        mSubstitutions.push_back( substitution );
+                        cout << endl << "Found substitution: " << mSubstitutions.back().second.second.first
+                                    << " == " << mSubstitutions.back().second.second.second << endl;
+                        // Add origins
+                        getOrigins( father, _origins );
+                        mSubstitutionOrigins.push_back( _origins );
+                        // Stop searching for Variables in this Constraint
+                        t_passedFormulaSize = passedFormulaSize();
+                        for( unsigned j = 0; j < t_passedFormulaSize; ++j )                          // If substitution was found apply to all Formula
+                        {
+                            if( j != i )                                                             // except the origin
+                            {
+                                if( substituteConstraint( passedFormulaAt( j ), substitution, _origins ) )
                                 {
-                                    foundCandidate = false;
+                                    --j;                                                             //    c1,c2,c3 =>  c1,c3,c2'  (only c3 should be checked)
+                                    --t_passedFormulaSize;                                           //        c2 is substituted to c2'
                                 }
                             }
-                            else
-                                foundCandidate = false;
-                        }
-                    }
-
-                    if( foundCandidate && ConstraintChild->constraint().relation() == CR_EQ )
-                    {
-                        assert( BoolChild->identifier() != "" );
-                        assert( ConstraintChild->pSubformulas() == NULL );
-
-                        GiNaC::ex     expression = ConstraintChild->constraint().lhs();
-                        GiNaC::symtab var        = ConstraintChild->constraint().variables();
-                        for( GiNaC::symtab::const_iterator iteratorvar = var.begin(); iteratorvar != var.end(); ++iteratorvar )
-                        {
-                            if( expression.has( (*iteratorvar).second ) )    // TODO: Consider Coefficent != 1
-                            {
-                                // TODO: Delete iteratorvar of expression and negate it
-                                pair<GiNaC::ex, GiNaC::ex>                                 SubstitutionExpression( (*iteratorvar).second, expression );
-                                pair<std::string, bool>                                    SubstitutionIdentifier( BoolChild->identifier(), negativeIdentifier );
-                                pair<pair<std::string, bool>, pair<GiNaC::ex, GiNaC::ex> > Substitution( SubstitutionIdentifier,
-                                                                                                         SubstitutionExpression );    // MAP?
-                                mSubstitutions.push_back( Substitution );
-                                mSubstitutionOrigins.push_back( father );
-                                (*(*father).pFather()).erase( father );
-                                delete (father);
-                                substituteConstraints( *(mFormula.at( i )) );
-                                mNewFormulaReceived = false;
-                                iteratorvar         = var.end();
-                            }
                         }
                     }
                 }
+                ++mNumberOfCheckedFormulas;
             }
         }
-        return True;
-    }
-
-    void PreProCNFModule::substituteConstraints( const Formula& _formula )
-    {
-        const std::vector<Formula*> subformulas = _formula.subformulas();
-        if( subformulas.size() != 0 )
-        {
-            if( _formula.getType() == OR && subformulas.size() == 2 )
-            {
-                Type type0 = subformulas.at( 0 )->getType();
-                Type type1 = subformulas.at( 1 )->getType();
-                Formula * ConstraintChild;
-                Formula * BoolChild;
-                bool negativeIdentifier = false;
-                bool foundCandidate     = false;
-                if( type0 == REALCONSTRAINT )
-                {
-                    if( (type1 == BOOL) | (type1 == NOT) )
-                    {
-                        ConstraintChild = subformulas.at( 0 );
-                        BoolChild       = subformulas.at( 1 );
-                        if( type1 == NOT )
-                        {
-                            if( BoolChild->size() == 1 )
-                            {
-                                foundCandidate     = true;
-                                negativeIdentifier = true;
-                                BoolChild          = subformulas.at( 0 );
-                            }
-                        }
-                        else
-                            foundCandidate = true;
-                    }
-                }
-                else if( type1 == REALCONSTRAINT )
-                {
-                    if( (type0 == BOOL) | (type0 == NOT) )
-                    {
-                        ConstraintChild = subformulas.at( 1 );
-                        BoolChild       = subformulas.at( 0 );
-                        if( type0 == NOT )
-                        {
-                            if( BoolChild->size() == 1 )
-                            {
-                                foundCandidate     = true;
-                                negativeIdentifier = true;
-                                BoolChild          = subformulas.at( 0 );
-                            }
-                        }
-                        else
-                            foundCandidate = true;
-                    }
-                }
-                if( foundCandidate )
-                {
-                    std::string _identifier = BoolChild->identifier();
-                    Constraint _constraint = ConstraintChild->constraint();
-                    for( unsigned i = 0; i < mSubstitutions.size(); ++i )
-                    {
-                        if( mSubstitutions.at( i ).first.first == _identifier && mSubstitutions.at( i ).first.second == negativeIdentifier )
-                            ;
-                        {
-                            GiNaC::ex _lhs = _constraint.rLhs();
-                            if( _lhs.has( mSubstitutions.at( i ).second.first ) )
-                            {
-                                _lhs.subs( mSubstitutions.at( i ).second.first == mSubstitutions.at( i ).second.second );    // Substitution not works with expressions?
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                for( unsigned i = 0; i < subformulas.size(); ++i )
-                {
-                    substituteConstraints( *(subformulas.at( i )) );
-                }
-            }
-        }
+        mNewFormulaReceived = false;
+        cout << endl << "--------------------------------------------------------------------";
+        cout << endl << "After isConsistent:" << endl << endl;
+        this->pPassedFormula()->print();
+        cout << endl;
+        return Unknown;
     }
 
     /**
-    * Pushs a backtrackpoint, to the stack of backtrackpoints.
-    */
-    void PreProCNFModule::pushBacktrackPoint(){}
+     * Applies so far found Substitutions on _formula and his Subformulas.
+     * If _NewFormula is true just all Substitutions are Applied,
+     * if it's false only new Substitutions ( >= mNumberOfAppliedSubstitutions ) are applied
+     *
+     */
+    bool PreProCNFModule::substituteConstraint( const Formula* _formula, pair< pair< std::string, bool >,
+            pair< pair<GiNaC::symtab, GiNaC::symtab>, pair< GiNaC::ex, GiNaC::ex> > > _substitution,
+            vec_set_const_pFormula _suborigin )
+    {
+        pair< const Formula*, const Formula* > t_pair = isCandidate( _formula );                                 // Check form of _formula
+        const Formula* constraintfather = t_pair.first;
+        const Formula* boolfather = t_pair.second;
+        GiNaC::ex substitutedExpression;
+        GiNaC::symtab _newvars;
+        if( (constraintfather != NULL) && (boolfather != NULL) )
+        {
+            std::string t_identifier;
+            Constraint t_constraint = constraintfather->constraint();
+            Formula* newformula = new Formula( OR );
+            t_identifier = boolfather->identifier();
+            if( _substitution.first.first == t_identifier
+                    && (constraintfather->father().getType() == NOT) == _substitution.first.second )
+            {
+                if( !t_constraint.rLhs().coeff( _substitution.second.second.first, 1 ).is_zero() )
+                {
+                    t_constraint.rLhs().subs( _substitution.second.second.first==_substitution.second.second.second );
+                    substitutedExpression = t_constraint.rLhs().subs( _substitution.second.second.first==_substitution.second.second.second );    // Substitute
+                    _newvars = t_constraint.variables();
+                    vec_set_const_pFormula t_origins;
+                    getOrigins( _formula, t_origins );
+                    t_origins = merge( t_origins, _suborigin );
+                    Formula* newnotformula = new Formula( NOT );
+                    Formula* newboolformula = new Formula( *boolfather );
+                    newnotformula->addSubformula( newboolformula);
+                    newformula->addSubformula( newnotformula );
+                    const Constraint* newconstraint = Formula::newConstraint( substitutedExpression, CR_EQ );
+                    Formula* newconstraintformula = new Formula( newconstraint );     // Create new ConstraintFormula for Substituted constraint
+                    if( constraintfather->father().getType() == NOT )
+                    {
+                        Formula* newnotformulaforconstraint = new Formula( NOT );
+                        newnotformulaforconstraint->addSubformula( newconstraintformula );
+                        newformula->addSubformula( newnotformulaforconstraint );
+                    }
+                    else newformula->addSubformula( newconstraintformula );
+                    cout << endl << "--------------------------------------------------------------------";
+                    cout << endl << "Substitute:"  << endl;
+                        this->passedFormulaAt( getPositionOfPassedFormula( _formula ) )->print();
+                        cout << endl;
+                    removeSubformulaFromPassedFormula( getPositionOfPassedFormula( _formula ) );
+
+                    addSubformulaToPassedFormula( newformula, t_origins );
+                    cout << endl << "By: " << endl;
+                    newformula->print();
+                    cout << endl << "--------------------------------------------------------------------" << endl;
+                    cout << endl;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks form of _formula
+     * @return  pair< Formula*( Constraint ), Formula*( Bool ) >
+     */
+    pair< const Formula*, const Formula*> PreProCNFModule::isCandidate( const Formula* const _formula ) const
+    {
+        if( _formula != NULL )
+        {
+            if( _formula->getType() == OR)
+            {
+                std::vector< Formula* > subformulas = _formula->subformulas();
+                if( subformulas.at(0) != NULL && subformulas.at(1)!= NULL )
+                {
+                    Type type0 = subformulas.at(0)->getType();
+                    Type type1 = subformulas.at(1)->getType();
+                    if( type0 == REALCONSTRAINT && type1 == NOT )
+                    {
+                        if( subformulas.at( 1 )->subformulas().at( 0 ) != NULL )
+                        {
+                            if( subformulas.at( 1 )->subformulas().at( 0 )->getType() == BOOL )
+                            {
+                                pair< const Formula*, const Formula*> _pair(subformulas.at(0), subformulas.at( 1 )->subformulas().at( 0 ));
+                                return _pair;
+                            }
+                        }
+                    }
+                    else if( type1 == REALCONSTRAINT && type0 == NOT )
+                    {
+                        if( subformulas.at( 0 )->subformulas().at( 0 ) != NULL )
+                        {
+                            if( subformulas.at( 0 )->subformulas().at( 0 )->getType() == BOOL )
+                            {
+                                pair< const Formula*, const Formula*> _pair(subformulas.at(1), subformulas.at( 0 )->subformulas().at( 0 ));
+                                return _pair;
+                            }
+                        }
+                    }
+                    else if( type0 == NOT && type1 == NOT)
+                    {
+                        if( subformulas.at( 0 )->subformulas().at( 0 ) != NULL && subformulas.at( 1 )->subformulas().at( 0 ) != NULL )
+                        {
+                            if( subformulas.at( 0 )->subformulas().at( 0 )->getType() == REALCONSTRAINT &&
+                                    subformulas.at( 1 )->subformulas().at( 0 )->getType() == BOOL )
+                            {
+                                pair< const Formula*, const Formula*> _pair( subformulas.at( 0 )->subformulas().at( 0 ), subformulas.at( 1 )->subformulas().at( 0 ) );
+                                return _pair;
+                            }
+                            else if( subformulas.at( 0 )->subformulas().at( 0 )->getType() == BOOL &&
+                                subformulas.at( 1 )->subformulas().at( 0 )->getType() == REALCONSTRAINT )
+                            {
+                                pair< const Formula*, const Formula*> _pair( subformulas.at( 1 )->subformulas().at( 0 ), subformulas.at( 0 )->subformulas().at( 0 ) );
+                                return _pair;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        pair< Formula*, Formula*> _pair( NULL, NULL);
+        return _pair;
+    }
+
+     /**
+     * Pushs a backtrackpoint, to the stack of backtrackpoints.
+     */
+    void PreProCNFModule::pushBacktrackPoint()
+    {
+        std::vector< Formula* > vec_subformulas = rPassedFormula().subformulas();
+        std::vector< pair < Formula*, vec_set_const_pFormula > > vec_formulasandorigins;
+        for( std::vector< Formula* >::iterator formula = vec_subformulas.begin(); formula < vec_subformulas.end(); ++formula )    // Add all Formulas and their origins
+        {
+            vec_set_const_pFormula origin;
+            getOrigins( (*formula), origin );
+            pair < Formula*, vec_set_const_pFormula > formulaandorigin( (*formula), origin );
+            vec_formulasandorigins.push_back( formulaandorigin );
+        }
+        pair< unsigned, unsigned > unsignedpair( mNumberOfCheckedFormulas, mSubstitutions.size() );
+        pair < bool, pair< unsigned, unsigned> > secondpair( mNewFormulaReceived, unsignedpair );
+        pair< std::vector< pair< Formula*, vec_set_const_pFormula > >, pair < bool, pair< unsigned, unsigned> > >  bt( vec_formulasandorigins, secondpair );
+        mBacktrackPoints.push_back( bt );
+    }
 
     /**
      * Pops the last backtrackpoint, from the stack of backtrackpoints.
      */
-    void PreProCNFModule::popBacktrackPoint(){}
+    void PreProCNFModule::popBacktrackPoint()
+    {
+        std::vector< pair< Formula*, vec_set_const_pFormula > >* vec_btsubformulas = &( mBacktrackPoints.at( mBacktrackPoints.size()-1 ).first );
+        const std::vector< Formula* >* vec_cursubformulas = &( pPassedFormula()->subformulas() );
+        for( std::vector< Formula* >::const_iterator cursubform = vec_cursubformulas->begin();
+                cursubform < vec_cursubformulas->end(); ++cursubform )
+        {
+            bool found = false;
+            for( std::vector< pair< Formula*, vec_set_const_pFormula > >::iterator btsubform
+                    = vec_btsubformulas->begin(); btsubform < vec_btsubformulas->end(); ++btsubform )
+            {
+                if( (*cursubform) == (*btsubform).first )
+                {
+                    found = true;
+                    vec_btsubformulas->erase( btsubform );                      // Delete all subformulas of the passed formula which does not appear in the backtrackpoint
+                    btsubform = vec_btsubformulas->end();
+                }
+            }
+            if( !found )
+            {
+                removeSubformulaFromPassedFormula( (*cursubform) );
+                delete( (*cursubform) );
+            }
+        }
+                                                                                // Add all subformulas of the backtrackpoint which does not appear in the passed formula
+        for( std::vector< pair< Formula*, vec_set_const_pFormula > >::iterator btsubform
+                = vec_btsubformulas->begin(); btsubform < vec_btsubformulas->end(); ++btsubform )
+        {
+            addSubformulaToPassedFormula( (*btsubform).first, (*btsubform).second );
+        }
+                                                                                // Delete Unknow Substitutions again
+        while( mSubstitutionOrigins.size() != mBacktrackPoints.at( mBacktrackPoints.size()-1 ).second.second.second )
+        {
+            mSubstitutions.pop_back();
+            mSubstitutionOrigins.pop_back();
+        }
+                                                                                // Restore old Variables
+        mNewFormulaReceived = mBacktrackPoints.at( mBacktrackPoints.size()-1 ).second.first;
+        mNumberOfCheckedFormulas = mBacktrackPoints.at( mBacktrackPoints.size()-1 ).second.second.first;
+        mBacktrackPoints.pop_back();                                            // Delete last BacktrackPoint
+    }
 }    // namespace smtrat
+
 

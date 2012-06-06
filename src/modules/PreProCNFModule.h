@@ -19,7 +19,6 @@
  *
  */
 
-
 /*
  * File:   PreProCNFModule.h
  * Author: Dennis Scully
@@ -59,21 +58,27 @@ namespace smtrat
             // Interfaces.
             bool assertSubFormula( const Formula* const );
             Answer isConsistent();
-            void substituteConstraints( const Formula& );
+            pair< const Formula*, const Formula* > isCandidate( const Formula* const ) const;
+            bool substituteConstraint( const Formula* const, pair< pair< std::string, bool >,
+                    pair< pair<GiNaC::symtab, GiNaC::symtab>, pair< GiNaC::ex, GiNaC::ex> > >,
+                    vec_set_const_pFormula );
             void popBacktrackPoint();
             void pushBacktrackPoint();
 
         private:
 
-            std::vector<unsigned>                                                    mActivities;
-            std::vector<Formula*>                                                    mFormula;
-            std::vector<const Formula*>                                              mConstraintOrigins;
-            std::vector<Formula*>                                                    mBacktrackPoint;
-            bool                                                                     mNewFormulaReceived;
-            unsigned                                                                 mNumberOfSubstitutedFormulas;
-            unsigned                                                                 mNumberOfAppliedSubstitutions;
-            std::vector<pair<pair<std::string, bool>, pair<GiNaC::ex, GiNaC::ex> > > mSubstitutions;
-            std::vector<const Formula*>                                              mSubstitutionOrigins;
+            bool                                                                mNewFormulaReceived;
+            unsigned                                                            mNumberOfCheckedFormulas;
+            std::vector< vec_set_const_pFormula >                               mSubstitutionOrigins;
+            std::map< std::string, unsigned >                                     mNumberOfVariables;
+            std::vector< pair< pair< std::string, bool >, pair< pair<GiNaC::symtab, GiNaC::symtab>, pair< GiNaC::ex, GiNaC::ex> > > >    mSubstitutions;
+            std::vector< pair< std::vector< pair< Formula*, vec_set_const_pFormula > >, pair < bool, pair< unsigned, unsigned> > > >    mBacktrackPoints;
+                                                                                          // mBacktrackPoints saves all requiered data
+                                                                                          // Subformulas + Origins + mNewFormulaReceived
+                                                                                          // + mNumberOfCheckedFormulas + NumberOfKnownSubstitutions
+
+
+
     };
 
 }    // namespace smtrat

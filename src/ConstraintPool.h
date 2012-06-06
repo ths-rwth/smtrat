@@ -83,7 +83,7 @@ namespace smtrat
 
             virtual ~ConstraintPool()
             {
-                std::cout << "Number of created constraints:  " << mAllConstraints.size() << std::endl;
+//                std::cout << "Number of created constraints:  " << mAllConstraints.size() << std::endl;
                 while( !mAllConstraints.empty() )
                 {
                     const Constraint* pCons = *mAllConstraints.begin();

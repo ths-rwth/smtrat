@@ -19,7 +19,6 @@
  *
  */
 
-
 /*
  * File:   PreProModule.h
  * Author: Dennis Scully
@@ -61,12 +60,12 @@ namespace smtrat
 
         private:
 
-            bool                           mFreshConstraintReceived;
-            unsigned                       mNumberOfComparedConstraints;
-            unsigned                       mNumberOfAddedSubformulas;
-            std::vector<const Constraint*> mReceivedConstraints;
-            std::vector<const Formula*>    mConstraintOrigins;
-            std::vector<unsigned>          mConstraintBacktrackPoints;
+            bool                        mFreshConstraintReceived;
+            unsigned                    mNumberOfComparedConstraints;
+            std::vector<const Constraint*>   mReceivedConstraints;
+            std::vector<const Formula*>      mConstraintOrigins;
+            std::vector< pair< pair< bool, unsigned >, pair< unsigned, unsigned > > >  mConstraintBacktrackPoints;
+
     };
 
 }    // namespace smtrat

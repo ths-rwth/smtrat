@@ -342,6 +342,7 @@ namespace smtrat
             void erase( unsigned );
             void erase( const Formula* );
             Formula* pruneBack();
+            Formula* prune( unsigned );
             void clear();
             void notSolvableBy( ModuleType );
             void print( ostream& = std::cout, const string = "", bool = false ) const;
