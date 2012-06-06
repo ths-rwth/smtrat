@@ -39,6 +39,8 @@
 #include "CADModule.h"
 #include "SATModule.h"
 #include "LRAModule.h"
+#include "LRAOneModule.h"
+#include "LRATwoModule.h"
 #include "PreProModule.h"
 #include "PreProCNFModule.h"
 #include "CNFerModule.h"
