@@ -43,6 +43,8 @@ set(lib_modules_headers
     modules/CADModule.h
     modules/SATModule.h
     modules/LRAModule.h
+    modules/LRAOneModule.h
+    modules/LRATwoModule.h
     modules/PreProModule.h
     modules/PreProCNFModule.h
     modules/CNFerModule.h
@@ -56,6 +58,8 @@ set(lib_modules_src
     modules/CADModule.cpp
     modules/SATModule.cpp
     modules/LRAModule.cpp
+    modules/LRAOneModule.cpp
+    modules/LRATwoModule.cpp
     modules/PreProModule.cpp
     modules/PreProCNFModule.cpp
     modules/CNFerModule.cpp
@@ -118,6 +122,28 @@ set(lib_LRAModule_src
 	modules/LRAModule/LRASolverA.cpp
 )
 
+set(lib_LRATwoModule_headers
+    modules/LRATwoModule/BetaMap.h
+    modules/LRATwoModule/Bound.h
+    modules/LRATwoModule/BoundMap.h
+    modules/LRATwoModule/EqualBound.h
+    modules/LRATwoModule/LowerBound.h
+    modules/LRATwoModule/Real.h
+    modules/LRATwoModule/SimplexTableaux.h
+    modules/LRATwoModule/UpperBound.h
+)
+
+set(lib_LRATwoModule_src
+    modules/LRATwoModule/BetaMap.cpp
+    modules/LRATwoModule/Bound.cpp
+    modules/LRATwoModule/BoundMap.cpp
+    modules/LRATwoModule/EqualBound.cpp
+    modules/LRATwoModule/LowerBound.cpp
+    modules/LRATwoModule/Real.cpp
+    modules/LRATwoModule/SimplexTableaux.cpp
+    modules/LRATwoModule/UpperBound.cpp
+)
+
 if(USE_NSS)
 set(lib_NSSModule_headers
 	modules/NSSModule/ConstraintMatrixFactory.h
@@ -175,6 +201,10 @@ set(lib_${PROJECT_NAME}_SRCS
 	${lib_SATModule_src}
 	${lib_LRAModule_headers}
 	${lib_LRAModule_src}
+	${lib_LRAOneModule_headers}
+	${lib_LRAOneModule_src}
+	${lib_LRATwoModule_headers}
+	${lib_LRATwoModule_src}
 	${lib_NSSModule_headers}
 	${lib_NSSModule_src}
 	${lib_SDP_headers}
@@ -196,7 +226,7 @@ if(USE_NSS)
 
 	#Csdp should be automatically compiled whenever we compile smtrat
 	add_dependencies(csdp csdp_lib)
-	SET( libraries ${libraries} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}  csdp ) 
+	SET( libraries ${libraries} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}  csdp )
 endif()
 
 # Other libraries that are used by the project library should go here.
@@ -224,6 +254,8 @@ install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/module
 install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/modules/VSModule)
 install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/modules/SATModule)
 install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRAModule)
+install( FILES ${lib_LRAOneModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRAOneModule)
+install( FILES ${lib_LRATwoModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRATwoModule)
 
 if(CppUnit_FOUND)
 add_subdirectory(test)
