@@ -430,7 +430,7 @@ cout << "Result:   Unknown" << endl;
      * @return  true,   if _constraint is a member of the vector of passed constraints;
      *          false,  otherwise.
      */
-    void Module::removeSubformulaFromPassedFormula( Formula* _formula )
+    void Module::removeSubformulaFromPassedFormula( const Formula* _formula )
     {
        	removeSubformulaFromPassedFormula( getPositionOfPassedFormula( _formula ) );
     }
@@ -489,9 +489,9 @@ cout << "Result:   Unknown" << endl;
      * @return  true,   if _constraint is a member of the vector of passed constraints;
      *          false,  otherwise.
      */
-    Formula* Module::pruneSubformulaFromPassedFormula( Formula* _formula )
+    void Module::pruneSubformulaFromPassedFormula( const Formula* _formula )
     {
-       	return pruneSubformulaFromPassedFormula( getPositionOfPassedFormula( _formula ) );
+       	pruneSubformulaFromPassedFormula( getPositionOfPassedFormula( _formula ) );
     }
 
     /**
