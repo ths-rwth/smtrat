@@ -73,13 +73,11 @@ namespace smtrat
     Answer CNFerModule::isConsistent()
     {
 
-/*
-cout << endl << "isConsistent of " << this << " having type " << type() << endl;
-print();
-*/
+//cout << endl << "isConsistent of " << this << " having type " << type() << endl;
+//print();
         for( unsigned pos = mBackTrackPoints.back(); pos < receivedFormulaSize(); ++pos )
     	{
-            const Formula* currentFormulaToAdd = receivedFormulaBack();
+            const Formula* currentFormulaToAdd = receivedFormulaAt( pos );
             /*
              * Create the origins containting only the currently considered formula of
              * the received formula.
@@ -101,31 +99,27 @@ print();
                 return False;
             }
         }
-/*
-print();
-*/
+//print();
 		Answer a = runBackends();
 
         if( a == False )
         {
             getInfeasibleSubsets();
         }
-/*
-cout << "Result:   ";
-if( a == True )
-{
-	cout << "True" << endl;
-}
-else if( a == Unknown )
-{
-	cout << "Unknown" << endl;
-}
-else if( a == False )
-{
-	cout << "False" << endl;
-	printInfeasibleSubsets( cout, "          " );
-}
-*/
+//cout << "Result:   ";
+//if( a == True )
+//{
+//	cout << "True" << endl;
+//}
+//else if( a == Unknown )
+//{
+//	cout << "Unknown" << endl;
+//}
+//else if( a == False )
+//{
+//	cout << "False" << endl;
+//	printInfeasibleSubsets( cout, "          " );
+//}
         return a;
     }
 
@@ -167,6 +161,7 @@ else if( a == False )
      */
     bool CNFerModule::assertClauses( vector< Formula* >& _formulasToAssert, vec_set_const_pFormula& _origins )
     {
+//        cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
     	while( !_formulasToAssert.empty() )
     	{
 //    		printSolverState( _formulasToAssert );
@@ -466,21 +461,21 @@ else if( a == False )
                     formulaToAssertA->addSubformula( lhs ); // Once it can be used, otherwise copy it,
                     _formulasToAssert.push_back( formulaToAssertA );
                     Formula* formulaToAssertB = new Formula( OR );
-                    formulaToAssertA->addSubformula( new Formula( NOT ) );
-                    formulaToAssertA->back()->addSubformula( new Formula( *h1 ) );
-                    formulaToAssertA->addSubformula( rhs ); // Once it can be used, otherwise copy it,
+                    formulaToAssertB->addSubformula( new Formula( NOT ) );
+                    formulaToAssertB->back()->addSubformula( new Formula( *h1 ) );
+                    formulaToAssertB->addSubformula( rhs ); // Once it can be used, otherwise copy it,
                     _formulasToAssert.push_back( formulaToAssertB );
                     Formula* formulaToAssertC = new Formula( OR );
-                    formulaToAssertA->addSubformula( new Formula( NOT ) );
-                    formulaToAssertA->back()->addSubformula( new Formula( *h2 ) );
-                    formulaToAssertA->addSubformula( new Formula( NOT ) );
-                    formulaToAssertA->back()->addSubformula( new Formula( *lhs ) );
+                    formulaToAssertC->addSubformula( new Formula( NOT ) );
+                    formulaToAssertC->back()->addSubformula( new Formula( *h2 ) );
+                    formulaToAssertC->addSubformula( new Formula( NOT ) );
+                    formulaToAssertC->back()->addSubformula( new Formula( *lhs ) );
                     _formulasToAssert.push_back( formulaToAssertC );
                     Formula* formulaToAssertD = new Formula( OR );
-                    formulaToAssertA->addSubformula( new Formula( NOT ) );
-                    formulaToAssertA->back()->addSubformula( new Formula( *h2 ) );
-                    formulaToAssertA->addSubformula( new Formula( NOT ) );
-                    formulaToAssertA->back()->addSubformula( new Formula( *rhs ) );
+                    formulaToAssertD->addSubformula( new Formula( NOT ) );
+                    formulaToAssertD->back()->addSubformula( new Formula( *h2 ) );
+                    formulaToAssertD->addSubformula( new Formula( NOT ) );
+                    formulaToAssertD->back()->addSubformula( new Formula( *rhs ) );
                     _formulasToAssert.push_back( formulaToAssertD );
 		        	break;
 		        }
@@ -509,20 +504,20 @@ else if( a == False )
                     formulaToAssertA->back()->addSubformula( lhs ); // Once it can be used, otherwise copy it,
                     _formulasToAssert.push_back( formulaToAssertA );
                     Formula* formulaToAssertB = new Formula( OR );
-                    formulaToAssertA->addSubformula( new Formula( NOT ) );
-                    formulaToAssertA->back()->addSubformula( new Formula( *h1 ) );
-                    formulaToAssertA->addSubformula( rhs ); // Once it can be used, otherwise copy it,
+                    formulaToAssertB->addSubformula( new Formula( NOT ) );
+                    formulaToAssertB->back()->addSubformula( new Formula( *h1 ) );
+                    formulaToAssertB->addSubformula( rhs ); // Once it can be used, otherwise copy it,
                     _formulasToAssert.push_back( formulaToAssertB );
                     Formula* formulaToAssertC = new Formula( OR );
-                    formulaToAssertA->addSubformula( new Formula( NOT ) );
-                    formulaToAssertA->back()->addSubformula( new Formula( *h2 ) );
-                    formulaToAssertA->addSubformula( new Formula( *lhs ) );
+                    formulaToAssertC->addSubformula( new Formula( NOT ) );
+                    formulaToAssertC->back()->addSubformula( new Formula( *h2 ) );
+                    formulaToAssertC->addSubformula( new Formula( *lhs ) );
                     _formulasToAssert.push_back( formulaToAssertC );
                     Formula* formulaToAssertD = new Formula( OR );
-                    formulaToAssertA->addSubformula( new Formula( NOT ) );
-                    formulaToAssertA->back()->addSubformula( new Formula( *h2 ) );
-                    formulaToAssertA->addSubformula( new Formula( NOT ) );
-                    formulaToAssertA->back()->addSubformula( new Formula( *rhs ) );
+                    formulaToAssertD->addSubformula( new Formula( NOT ) );
+                    formulaToAssertD->back()->addSubformula( new Formula( *h2 ) );
+                    formulaToAssertD->addSubformula( new Formula( NOT ) );
+                    formulaToAssertD->back()->addSubformula( new Formula( *rhs ) );
                     _formulasToAssert.push_back( formulaToAssertD );
                     break;
 		        }
@@ -562,63 +557,7 @@ else if( a == False )
                 }
                 case REALCONSTRAINT:
                 {
-                    /*
-                     * Invert the constraint. ( "!=" is transformed to "< or >" )
-                     */
-                    const Constraint& constraint = subformula->constraint();
-                    switch( constraint.relation() )
-                    {
-                        case CR_EQ:
-                        {
-                            const Constraint* newConstraintA = Formula::newConstraint( constraint.lhs(), CR_LESS );
-                            const Constraint* newConstraintB = Formula::newConstraint( constraint.lhs(), CR_GREATER );
-                            delete _formula;
-                            Formula* newFormula = new Formula( OR );
-                            newFormula->addSubformula( newConstraintA );
-                            newFormula->addSubformula( newConstraintB );
-                            return newFormula;
-                        }
-                        case CR_NEQ:
-                        {
-                            const Constraint* newConstraint = Formula::newConstraint( constraint.lhs(), CR_EQ );
-                            delete _formula;
-                            return new Formula( newConstraint );
-                        }
-                        case CR_LEQ:
-                        {
-                            const Constraint* newConstraint = Formula::newConstraint( constraint.lhs(), CR_GREATER );
-                            delete _formula;
-                            return new Formula( newConstraint );
-                            break;
-                        }
-                        case CR_GEQ:
-                        {
-                            const Constraint* newConstraint = Formula::newConstraint( constraint.lhs(), CR_LESS );
-                            delete _formula;
-                            return new Formula( newConstraint );
-                            break;
-                        }
-                        case CR_LESS:
-                        {
-                            const Constraint* newConstraint = Formula::newConstraint( constraint.lhs(), CR_GEQ );
-                            delete _formula;
-                            return new Formula( newConstraint );
-                            break;
-                        }
-                        case CR_GREATER:
-                        {
-                            const Constraint* newConstraint = Formula::newConstraint( constraint.lhs(), CR_LEQ );
-                            delete _formula;
-                            return new Formula( newConstraint );
-                            break;
-                        }
-                        default:
-                        {
-                            cerr << "Unknown relation symbol!" << endl;
-                            assert( false );
-                            return NULL;
-                        }
-                    }
+                    return NULL;
 
                 }
                 case TTRUE:

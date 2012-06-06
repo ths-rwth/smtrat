@@ -389,25 +389,25 @@ else if( a == False )
         vector< Module* >::iterator tsmodule = mUsedBackends.begin();
         while( tsmodule != mUsedBackends.end() )
         {
-//cout << endl << "isConsistent of " << *tsmodule << " having type " << (**tsmodule).type() << endl;
-//(**tsmodule).print( cout, " ");
+cout << endl << "isConsistent of " << *tsmodule << " having type " << (**tsmodule).type() << endl;
+(**tsmodule).print( cout, " ");
             Answer result = (**tsmodule).isConsistent();
             switch( result )
             {
 		        case True:
 		        {
-//cout << "Result:   True" << endl;
+cout << "Result:   True" << endl;
 		            return True;
 		        }
 		        case False:
 		        {
-//cout << "Result:   False" << endl;
-//(**tsmodule).printInfeasibleSubsets( cout, "          " );
+cout << "Result:   False" << endl;
+(**tsmodule).printInfeasibleSubsets( cout, "          " );
 		            return False;
 		        }
 		        case Unknown:
 		        {
-//cout << "Result:   Unknown" << endl;
+cout << "Result:   Unknown" << endl;
 		            return Unknown;
 		        }
 		        default:
@@ -418,7 +418,7 @@ else if( a == False )
             }
             ++tsmodule;
         }
-//cout << "Result:   Unknown" << endl;
+cout << "Result:   Unknown" << endl;
         return Unknown;
     }
 
@@ -479,6 +479,65 @@ else if( a == False )
 		mPassedFormulaOrigins.erase( formulaOrigin );
         mpPassedFormula->erase( _positionOfPassedFormula );
         mBackendsUptodate = false;
+    }
+
+    /**
+     * Removes a constraint from the vector of passed constraints.
+     *
+     * @param _constraint The constraint to remove from the vector of passed constraints.
+     *
+     * @return  true,   if _constraint is a member of the vector of passed constraints;
+     *          false,  otherwise.
+     */
+    Formula* Module::pruneSubformulaFromPassedFormula( Formula* _formula )
+    {
+       	return pruneSubformulaFromPassedFormula( getPositionOfPassedFormula( _formula ) );
+    }
+
+    /**
+     * Removes a constraint from the vector of passed constraints.
+     *
+     * @param _pos The position of the constraint to remove from the vector of passed constraints.
+     *
+     * @return  true,   if _constraint is a member of the vector of passed constraints;
+     *          false,  otherwise.
+     */
+    Formula* Module::pruneSubformulaFromPassedFormula( unsigned _positionOfPassedFormula )
+    {
+       	assert( _positionOfPassedFormula < mpPassedFormula->size() );
+    	/*
+    	 * Find the position of the subFormula to remove in the passed formula.
+    	 */
+    	signed posOfSubformulaAsSigned = _positionOfPassedFormula;
+
+        if( !mAllBackends.empty() )
+        {
+            /*
+             * Pop all backend's backtrackpoints as long as the subformula is considered by them.
+             */
+            for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+            {
+            	while( (*module)->lastBacktrackpointsEnd() >= posOfSubformulaAsSigned )
+				{
+                	(**module).popBacktrackPoint();
+                }
+            }
+        }
+
+        /*
+         * Delete the constraint from the passed constraints.
+         */
+    	FormulaOrigins::iterator formulaOrigin = mPassedFormulaOrigins.begin();
+    	unsigned pos = 0;
+    	while( pos < _positionOfPassedFormula )
+    	{
+    		assert( formulaOrigin != mPassedFormulaOrigins.end() );
+    		++pos;
+    		++formulaOrigin;
+    	}
+		mPassedFormulaOrigins.erase( formulaOrigin );
+        mBackendsUptodate = false;
+        return mpPassedFormula->prune( _positionOfPassedFormula );
     }
 
     /**

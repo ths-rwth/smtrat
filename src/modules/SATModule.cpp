@@ -52,8 +52,8 @@
 #include <math.h>
 #include "SATModule/Sort.h"
 
-//#define DEBUG_SATMODULE
-#define SATMODULE_WITH_CALL_NUMBER
+#define DEBUG_SATMODULE
+//#define SATMODULE_WITH_CALL_NUMBER
 
 using namespace std;
 using namespace Minisat;
@@ -1220,6 +1220,8 @@ NextClause:
         cout << "###" << endl;
         printBooleanConstraintMap( cout, "###" );
         cout << "###" << endl;
+        printBooleanVarMap( cout, "###" );
+        cout << "###" << endl;
         #endif
         assert( ok );
         int      backtrack_level;
@@ -1720,7 +1722,7 @@ NextClause:
         _out << _init << " BooleanVarMap" << endl;
         for( BooleanVarMap::const_iterator clPair = mBooleanVarMap.begin(); clPair != mBooleanVarMap.end(); ++clPair )
         {
-            _out << _init << "    " << clPair->first << "  ->  " << clPair->second << endl;
+            _out << _init << "    " << clPair->first << "  ->  " << clPair->second + 1 << endl;
         }
     }
 
@@ -1735,7 +1737,7 @@ NextClause:
         _out << _init << " BooleanConstraintMap" << endl;
         for( BooleanConstraintMap::const_iterator bcPair = mBooleanConstraintMap.begin(); bcPair != mBooleanConstraintMap.end(); ++bcPair )
         {
-            _out << _init << "   " << bcPair->first << "  ->  " << bcPair->second.first->constraint().toString() << endl;
+            _out << _init << "   " << bcPair->first + 1 << "  ->  " << bcPair->second.first->constraint().toString() << endl;
         }
     }
 
@@ -1768,7 +1770,7 @@ NextClause:
 
         for( int i = 0; i < c.size(); i++ )
             //                _out << " " << ( sign( c[i] ) ? "-" : "" ) << ( mapVar( var( c[i] ), map, max ) + 1 );
-            _out << " " << (sign( c[i] ) ? "-" : "") << var( c[i] );
+            _out << " " << (sign( c[i] ) ? "-" : "") << var( c[i] ) + 1;
 
         if( satisfied( c ) )
             cout << "   is satisfied";
@@ -1787,7 +1789,7 @@ NextClause:
     {
         for( int i = 0; i < c.size(); i++ )
             //                _out << " " << ( sign( c[i] ) ? "-" : "" ) << ( mapVar( var( c[i] ), map, max ) + 1 );
-            _out << " " << (sign( c[i] ) ? "-" : "") << var( c[i] );
+            _out << " " << (sign( c[i] ) ? "-" : "") << var( c[i] ) + 1;
 
         if( satisfied( c ) )
             cout << "   is satisfied";

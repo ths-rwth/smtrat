@@ -88,9 +88,9 @@ namespace smtrat
     Answer PreProModule::isConsistent()
     {
         string str_out = "";
-        cout << endl << "Before isConsistent:" << endl << endl;
-        this->pPassedFormula()->print(cout, str_out, true);
-        cout << endl;
+//        cout << endl << "Before isConsistent:" << endl << endl;
+//        this->pPassedFormula()->print(cout, str_out, true);
+//        cout << endl;
 
         if( mFreshConstraintReceived == true )
         {
@@ -116,23 +116,23 @@ namespace smtrat
                         case 1: // A => B
                         {
                             _tSubformula = new Formula( IMPLIES );
-                            _tSubformula->addSubformula( new Formula( tempConstraintB ) );
                             _tSubformula->addSubformula( new Formula( tempConstraintA ) );
+                            _tSubformula->addSubformula( new Formula( tempConstraintB ) );
                             break;
                         }
 
                         case -1: // B => A
                         {
                             _tSubformula = new Formula( IMPLIES );
-                            _tSubformula->addSubformula( new Formula( tempConstraintA ) );
                             _tSubformula->addSubformula( new Formula( tempConstraintB ) );
+                            _tSubformula->addSubformula( new Formula( tempConstraintA ) );
                             break;
                         }
                         case -2: // A XOR B
                         {
-//                            _tSubformula = new Formula( XOR );
-//                            _tSubformula->addSubformula( new Formula( tempConstraintA ) );
-//                            _tSubformula->addSubformula( new Formula( tempConstraintB ) );
+                            _tSubformula = new Formula( XOR );
+                            _tSubformula->addSubformula( new Formula( tempConstraintA ) );
+                            _tSubformula->addSubformula( new Formula( tempConstraintB ) );
                             break;
                         }
                         default:
@@ -155,9 +155,9 @@ namespace smtrat
             }
             mFreshConstraintReceived = false;
         }
-        cout << endl << "After isConsistent:" << endl << endl;
-        this->pPassedFormula()->print(cout, str_out, true);
-        cout << endl;
+//        cout << endl << "After isConsistent:" << endl << endl;
+//        this->pPassedFormula()->print(cout, str_out, true);
+//        cout << endl;
 
 		Answer a = runBackends();
 

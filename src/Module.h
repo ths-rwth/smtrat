@@ -237,6 +237,8 @@ namespace smtrat
             Answer 		   runBackends();
             void 		   removeSubformulaFromPassedFormula( Formula* );
             void 		   removeSubformulaFromPassedFormula( unsigned );
+            Formula*	   pruneSubformulaFromPassedFormula( Formula* );
+            Formula*	   pruneSubformulaFromPassedFormula( unsigned );
 
         private:
             void updateBackends();

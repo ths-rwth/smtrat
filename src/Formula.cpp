@@ -434,6 +434,28 @@ namespace smtrat
         return result;
 	}
 
+    Formula* Formula::prune( unsigned _position )
+	{
+		assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+		assert( _position < mpSubformulas->size() );
+		std::vector< Formula* >::iterator subFormula = mpSubformulas->begin();
+		unsigned pos = 0;
+		while( subFormula != mpSubformulas->end() )
+		{
+			if( pos == _position )
+			{
+				Formula* pSubFormula = *subFormula;
+				mpSubformulas->erase( subFormula );
+                mPropositionsUptodate = false;
+				return pSubFormula;
+                break;
+			}
+            ++subFormula;
+			++pos;
+		}
+        return NULL;
+	}
+
 	void Formula::clear()
 	{
 		assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
