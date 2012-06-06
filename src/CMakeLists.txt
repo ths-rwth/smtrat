@@ -38,9 +38,6 @@ set(lib_modules_headers
     modules/StandardModuleFactory.h
     modules/SimplifierModule.h
     modules/VSModule.h
-    modules/GroebnerModule.h
-    modules/UnivariateCADModule.h
-    modules/CADModule.h
     modules/SATModule.h
     modules/LRAModule.h
     modules/PreProModule.h
@@ -51,15 +48,22 @@ set(lib_modules_headers
 set(lib_modules_src
     modules/SimplifierModule.cpp
     modules/VSModule.cpp
-    modules/GroebnerModule.cpp
-    modules/UnivariateCADModule.cpp
-    modules/CADModule.cpp
     modules/SATModule.cpp
     modules/LRAModule.cpp
     modules/PreProModule.cpp
     modules/PreProCNFModule.cpp
     modules/CNFerModule.cpp
 )
+
+if(USE_GB)
+	set(lib_modules_headers ${lib_modules_headers} modules/GroebnerModule.h)
+	set(lib_modules_src ${lib_modules_src}  modules/GroebnerModule.cpp)
+endif()
+
+if(USE_CAD)
+	set(lib_modules_headers ${lib_modules_headers} modules/UnivariateCADModule.h modules/CADModule.h)
+	set(lib_modules_src ${lib_modules_src}  modules/UnivariateCADModule.cpp modules/CADModule.cpp)
+endif()
 
 set(lib_VSModule_headers
     modules/VSModule/Condition.h

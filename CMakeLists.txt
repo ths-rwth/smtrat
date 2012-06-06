@@ -17,13 +17,24 @@
 cmake_minimum_required (VERSION 2.8)
 
 option(USE_NSS "Compile the NSS Module")
+option(USE_GINACRA "Compile modules using GiNaCRA")
+option(USE_GB "Compile modules using GroebnerBasis")
+option(USE_CAD "Compile modules using CAD")
+
+if(!USE_GINACRA) 
+	SET(USE_GB false)
+	SET(USE_CAD false)
+endif()
+
+if(!USE_GB) 
+	SET(USE_NSS false)
+endif()
 
 if(USE_NSS)
 	project(smtrat CXX Fortran)
 else()
 	project(smtrat CXX)
 endif()
-
 
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -g -std=c++0x")
 
@@ -42,8 +53,10 @@ set( smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 # options
 option( STATICLIB_SWITCH "Compile a statically linked version of the library." )
 
+
 # path to find own modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
 
 # path to put in the executables
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
@@ -54,7 +67,10 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 # GiNaCRA libraries and tools all need GiNaC
 # TODO: add support for version number
 find_package(GiNaC REQUIRED)
-find_package(GiNaCRA REQUIRED)
+if(USE_GINACRA)
+	find_package(GiNaCRA REQUIRED)
+endif()
+
 
 # find CLN ..
 # TODO: we should write a find-module for this
@@ -130,7 +146,7 @@ install( FILES ${CMAKE_BINARY_DIR}/smtrat.pc DESTINATION lib/pkgconfig )
 # # # # # # # # # # # # # #
 
 set( CPACK_GENERATOR "TGZ" )
-set( CPACK_PACKAGE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README" )
+set( CPACK_PACKAGE_FILE_README "${CMAKE_CURRENT_SOURCE_DIROPTIONAL}/README" )
 set( CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_DESCRIPTION} )
 set( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING" )
 set( CPACK_PACKAGE_VERSION_MAJOR ${smtrat_MAJORVERSION})

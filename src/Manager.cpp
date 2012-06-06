@@ -36,6 +36,9 @@
 #include <cln/cln.h>
 
 using namespace std;
+using GiNaC::ex;
+using GiNaC::numeric;
+using GiNaC::symbol;
 
 namespace smtrat
 {
@@ -59,11 +62,15 @@ namespace smtrat
          * Add all existing modules.
          */
         addModuleType( MT_SimplifierModule, new StandardModuleFactory<SimplifierModule>() );
-        addModuleType( MT_GroebnerModule, new StandardModuleFactory<GroebnerModule>() );
-        addModuleType( MT_VSModule, new StandardModuleFactory<VSModule>() );
-        addModuleType( MT_UnivariateCADModule, new StandardModuleFactory<UnivariateCADModule>() );
+#if(USE_GB)
+		addModuleType( MT_GroebnerModule, new StandardModuleFactory<GroebnerModule>() );
+#endif        
+		addModuleType( MT_VSModule, new StandardModuleFactory<VSModule>() );
+#if(USE_CAD)       
+		addModuleType( MT_UnivariateCADModule, new StandardModuleFactory<UnivariateCADModule>() );
         addModuleType( MT_CADModule, new StandardModuleFactory<CADModule>() );
-        addModuleType( MT_SATModule, new StandardModuleFactory<SATModule>() );
+#endif        
+		addModuleType( MT_SATModule, new StandardModuleFactory<SATModule>() );
         addModuleType( MT_PreProModule, new StandardModuleFactory<PreProModule>() );
         addModuleType( MT_PreProCNFModule, new StandardModuleFactory<PreProCNFModule>() );
         addModuleType( MT_CNFerModule, new StandardModuleFactory<CNFerModule>() );
