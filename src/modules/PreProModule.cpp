@@ -113,26 +113,34 @@ namespace smtrat
                             _tSubformula->addSubformula( new Formula( tempConstraintB ) );
                             break;
                         }*/
-                        case 1: // A => B
+                        case 1: // not A or B
                         {
-                            _tSubformula = new Formula( IMPLIES );
-                            _tSubformula->addSubformula( new Formula( tempConstraintA ) );
+                            _tSubformula = new Formula( OR );
+                            Formula* tmpFormula = new Formula( NOT );
+                            tmpFormula->addSubformula( new Formula( tempConstraintA ) );
+                            _tSubformula->addSubformula( tmpFormula );
                             _tSubformula->addSubformula( new Formula( tempConstraintB ) );
                             break;
                         }
 
-                        case -1: // B => A
+                        case -1: // not B or A
                         {
-                            _tSubformula = new Formula( IMPLIES );
-                            _tSubformula->addSubformula( new Formula( tempConstraintB ) );
+                            _tSubformula = new Formula( OR );
+                            Formula* tmpFormula = new Formula( NOT );
+                            tmpFormula->addSubformula( new Formula( tempConstraintB ) );
+                            _tSubformula->addSubformula( tmpFormula );
                             _tSubformula->addSubformula( new Formula( tempConstraintA ) );
                             break;
                         }
-                        case -2: // A XOR B
+                        case -2: // not A or not B
                         {
-                            _tSubformula = new Formula( XOR );
-                            _tSubformula->addSubformula( new Formula( tempConstraintA ) );
-                            _tSubformula->addSubformula( new Formula( tempConstraintB ) );
+                            _tSubformula = new Formula( OR );
+                            Formula* tmpFormulaA = new Formula( NOT );
+                            tmpFormulaA->addSubformula( new Formula( tempConstraintA ) );
+                            Formula* tmpFormulaB = new Formula( NOT );
+                            tmpFormulaB->addSubformula( new Formula( tempConstraintB ) );
+                            _tSubformula->addSubformula( tmpFormulaA );
+                            _tSubformula->addSubformula( tmpFormulaB );
                             break;
                         }
                         default:

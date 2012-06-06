@@ -52,8 +52,8 @@
 #include <math.h>
 #include "SATModule/Sort.h"
 
-#define DEBUG_SATMODULE
-//#define SATMODULE_WITH_CALL_NUMBER
+//#define DEBUG_SATMODULE
+#define SATMODULE_WITH_CALL_NUMBER
 
 using namespace std;
 using namespace Minisat;

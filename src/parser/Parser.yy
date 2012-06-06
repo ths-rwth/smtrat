@@ -229,17 +229,21 @@ expr:
 		driver.formulaRoot->rRealValuedVars().insert( constraint->variables().begin(), constraint->variables().end() );
 		$$ = new smtrat::Formula( constraint );
 	}
-	| 	OB SYM CB
+	| 	SYM
 	{
-        if( driver.collectedBooleans.find( *$2 ) == driver.collectedBooleans.end() )
+        if( driver.collectedBooleans.find( *$1 ) == driver.collectedBooleans.end() )
         {
-            std::string errstr = std::string( "The Boolean variable " + *$2 + " is not defined!");
+            std::string errstr = std::string( "The Boolean variable " + *$1 + " is not defined!");
   			error( yyloc, errstr );
         }
         else
         {
-            $$ = new smtrat::Formula( *$2 );
+            $$ = new smtrat::Formula( *$1 );
         }
+    }
+    | OB expr CB
+    {
+        $$ = $2;
     }
 	;
 

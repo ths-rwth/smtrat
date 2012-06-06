@@ -768,7 +768,7 @@ namespace smtrat
         {
             _const.push_back( mpConstraint );
         }
-        else if( mpSubformulas->size() != 0 )
+        else if( mType == AND || mType == OR ||  mType == NOT || mType == IFF || mType == XOR || mType == IMPLIES )
         {
            for( const_iterator subFormula = mpSubformulas->begin();
                         subFormula != mpSubformulas->end();

@@ -389,25 +389,25 @@ else if( a == False )
         vector< Module* >::iterator tsmodule = mUsedBackends.begin();
         while( tsmodule != mUsedBackends.end() )
         {
-cout << endl << "isConsistent of " << *tsmodule << " having type " << (**tsmodule).type() << endl;
-(**tsmodule).print( cout, " ");
+//cout << endl << "isConsistent of " << *tsmodule << " having type " << (**tsmodule).type() << endl;
+//(**tsmodule).print( cout, " ");
             Answer result = (**tsmodule).isConsistent();
             switch( result )
             {
 		        case True:
 		        {
-cout << "Result:   True" << endl;
+//cout << "Result:   True" << endl;
 		            return True;
 		        }
 		        case False:
 		        {
-cout << "Result:   False" << endl;
-(**tsmodule).printInfeasibleSubsets( cout, "          " );
+//cout << "Result:   False" << endl;
+//(**tsmodule).printInfeasibleSubsets( cout, "          " );
 		            return False;
 		        }
 		        case Unknown:
 		        {
-cout << "Result:   Unknown" << endl;
+//cout << "Result:   Unknown" << endl;
 		            return Unknown;
 		        }
 		        default:
@@ -418,7 +418,7 @@ cout << "Result:   Unknown" << endl;
             }
             ++tsmodule;
         }
-cout << "Result:   Unknown" << endl;
+//cout << "Result:   Unknown" << endl;
         return Unknown;
     }
 
