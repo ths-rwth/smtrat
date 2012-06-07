@@ -31,7 +31,7 @@ if(!USE_GB)
 endif()
 
 if(USE_NSS)
-	project(smtrat CXX Fortran)
+	project(smtrat CXX Fortran C)
 else()
 	project(smtrat CXX)
 endif()
