@@ -25,14 +25,14 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @since 2012-04-09
+ * @since 2012-06-07
  */
 
 #include "../Manager.h"
 #include "UnivariateCADModule.h"
 
 using GiNaCRA::UnivariatePolynomial;
-using GiNaCRA::UnivariatePolynomialSet;
+using GiNaCRA::EliminationSet;
 using GiNaCRA::Constraint;
 using GiNaCRA::Polynomial;
 using GiNaCRA::CAD;
@@ -59,7 +59,7 @@ namespace smtrat
         {
             symbol variable = ex_to<symbol>( sym->second );
             mVariables.push_back( variable );
-            mCADs[variable] = CAD( UnivariatePolynomialSet(), vector<symbol>( 1, variable ) );
+            mCADs[variable] = CAD( EliminationSet(), vector<symbol>( 1, variable ) );
             //            mCADsToCheck[variable]          = false;
             //            mConstraintsBuckets[variable]   = vector<GiNaCRA::Constraint>();
             //std::cout << __func__ << ":" << __LINE__ << std::endl;
@@ -123,7 +123,7 @@ namespace smtrat
     {
         //TODO: uncomment and bugfix this
         //        vector< const Constraint* > constraintsToRemove = removeAllOriginatedBy( mBackTrackPoints.back() );
-        //      
+        //
         //      assert( !constraintsToRemove.empty() );
 
         //        for( vector< const Constraint* >::iterator constraint = constraintsToRemove.begin();
