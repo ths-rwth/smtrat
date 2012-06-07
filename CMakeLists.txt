@@ -22,7 +22,13 @@ option(USE_GB "Compile modules using GroebnerBasis")
 option(USE_CAD "Compile modules using CAD")
 
 if(NOT USE_GINACRA) 
+	if(USE_GB)
+		message(WARNING, "GB is automatically switched off when GiNaCRA is not available")
+	endif()
 	SET(USE_GB FALSE)
+	if(USE_CAD)
+		message(WARNING, "CAD is automatically switched off when GiNaCRA is not available")
+	endif()
 	SET(USE_CAD FALSE)
 endif()
 
