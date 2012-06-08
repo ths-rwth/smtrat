@@ -35,7 +35,10 @@ namespace smtrat
         Manager( _inputFormula )
     {
         //        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE, MT_CADModule );
-        strategy().addModuleType( PROP_TRUE, MT_CADModule );
+        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SATMODULE, MT_CADModule );
+        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE, MT_SATModule );
+        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE, MT_CNFerModule );
+        strategy().addModuleType( PROP_TRUE, MT_PreProModule );
     }
 
     NRATSolver_CADonly::~NRATSolver_CADonly(){}

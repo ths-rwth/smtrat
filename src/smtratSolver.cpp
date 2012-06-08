@@ -30,7 +30,7 @@
 #include <iostream>
 #include <fstream>
 #include "parser/Driver.h"
-#include "NRATSolver.h"
+#include "NRATSolver_CADonly.h"
 
 /**
  *
@@ -64,7 +64,7 @@ int main( int argc, char* argv[] )
             bool result = driver.parse_stream( infile, argv[ai] );
             if( result )
             {
-                smtrat::NRATSolver* nratSolver = new smtrat::NRATSolver( form );
+                smtrat::NRATSolver_CADonly* nratSolver = new smtrat::NRATSolver_CADonly( form );
                 switch( nratSolver->isConsistent() )
                 {
                     case smtrat::True:

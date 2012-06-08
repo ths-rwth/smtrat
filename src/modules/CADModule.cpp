@@ -50,26 +50,26 @@ namespace smtrat
 {
     CADModule::CADModule( Manager* const _tsManager, const Formula* const _formula ):
         Module( _tsManager, _formula ),
-        mCAD(),
+        mCAD( ),
         mConstraints()
     {
-        this->mModuleType = MT_CADModule;
-        vector<symbol> variables = vector<symbol>();
-        for( register GiNaC::symtab::const_iterator sym = mpTSManager->allVariables().begin(); sym != mpTSManager->allVariables().end(); ++sym )
-            variables.push_back( ex_to<symbol>( sym->second ));
-        GiNaCRA::CADSettings setting = GiNaCRA::CADSettings::getSettings( );
-        mCAD = CAD( EliminationSet(), variables, setting );
+        mModuleType = MT_CADModule;
+//        vector<symbol> variables = vector<symbol>();
+//        for( register GiNaC::symtab::const_iterator sym = mpTSManager->allVariables().begin(); sym != mpTSManager->allVariables().end(); ++sym )
+//            variables.push_back( ex_to<symbol>( sym->second ));
+//        GiNaCRA::CADSettings setting = GiNaCRA::CADSettings::getSettings( );
+//        mCAD = CAD( EliminationSet(), variables, setting );
     }
 
     CADModule::~CADModule(){}
 
     bool CADModule::assertSubFormula( const Formula* const _formula )
     {
+        assert( _formula->getType() == REALCONSTRAINT );
         vector<symbol> variables = vector<symbol>();
         for( register GiNaC::symtab::const_iterator sym = _formula->constraint().variables().begin(); sym != _formula->constraint().variables().end();
                 ++sym )
             variables.push_back( ex_to<symbol>( sym->second ));
-        assert( _formula->getType() == REALCONSTRAINT );
         Module::assertSubFormula( _formula );
         addReceivedSubformulaToPassedFormula( receivedFormulaSize() - 1 );
         // add the polynomial to the cad
@@ -112,7 +112,9 @@ namespace smtrat
 
     void CADModule::popBacktrackPoint()
     {
+        std::cout << "pop btpoint " << lastBacktrackpointsEnd() << std::endl;
         Module::popBacktrackPoint();
+        
         signed upperBound = receivedFormulaSize();
         // remove each constraint in the backtracked range from the local constraint list, and remove the respective polynomials from the CAD
         for( signed pos = lastBacktrackpointsEnd() + 1; pos < upperBound; ++pos )
