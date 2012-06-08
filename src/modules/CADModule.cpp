@@ -54,7 +54,7 @@ namespace smtrat
     {
         mModuleType = MT_CADModule;
         vector<symbol> variables = vector<symbol>();
-        for( register GiNaC::symtab::const_iterator sym = mpTSManager->allVariables().begin(); sym != mpTSManager->allVariables().end(); ++sym )
+        for( register GiNaC::symtab::const_iterator sym = Formula::mConstraintPool.variables().begin(); sym != Formula::mConstraintPool.variables().end(); ++sym )
             variables.push_back( ex_to<symbol>( sym->second ));
         GiNaCRA::CADSettings setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::ODDDEG_CADSETTING | GiNaCRA::EAGERLIFTING_CADSETTING );
         mCAD = CAD( UnivariatePolynomialSet(), variables, setting );

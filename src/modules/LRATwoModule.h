@@ -19,34 +19,46 @@
  *
  */
 
-/*
- * File:   CNFTransformerModule.h
- * Author: Florian Corzilius
+
+/**
+ * @file LRATwoModule.h
+ * @author name surname <emailadress>
  *
- * Created on 02. May 2012, 20:53
+ * @version 2012-04-05
+ * Created on April 5th, 2012, 3:22 PM
  */
 
-#ifndef SMTRAT_CNFERMODULE_H
-#define SMTRAT_CNFERMODULE_H
+#ifndef SMTRAT_LRATWOMODULE_H
+#define SMTRAT_LRATWOMODULE_H
 
 #include "../Module.h"
+#include "LRATwoModule/SimplexTableaux.h"
+#include "LRATwoModule/BoundMap.h"
+#include "LRATwoModule/BetaMap.h"
 
 namespace smtrat
 {
-    class CNFerModule:
+    class LRATwoModule:
         public Module
     {
-        private:
+    	private:
             /**
-             * Members.
+             * Members:
              */
+        	SimplexTableaux simplexTableaux;
+        	BoundMap boundMap;
+        	BetaMap betaMap;
         public:
-            /**
-             * Constructor and destructor.
-             */
-            CNFerModule( Manager* const _tsManager, const Formula* const _formula );
 
-            ~CNFerModule();
+            /**
+             * Constructors:
+             */
+            LRATwoModule( Manager* const _tsManager, const Formula* const _formula  );
+
+            /**
+             * Destructor:
+             */
+            virtual ~LRATwoModule();
 
             /**
              * Methods:
@@ -54,18 +66,17 @@ namespace smtrat
 
             // Interfaces.
             bool assertSubFormula( const Formula* const );
+            bool inform( const Constraint* const );
             Answer isConsistent();
-            void pushBacktrackPoint();
             void popBacktrackPoint();
+            void pushBacktrackPoint();
 
         private:
             /**
              * Methods:
              */
-            bool assertClauses( std::vector< Formula* >&, vec_set_const_pFormula& );
-            Formula* resolveNegation( Formula* ) const;
-            void printSolverState( const std::vector< Formula* >& ) const;
     };
 
 }    // namespace smtrat
-#endif   /** CNFTRANSFORMERMODULE_H */
+
+#endif   /* LRATWOMODULE_H */

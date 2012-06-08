@@ -52,10 +52,6 @@ namespace smtrat
     {
         private:
 
-            /// the symbol table containing the variables of all constraints
-            GiNaC::symtab mAllVariables;
-            /// for each string representation its constraint (considering all constraints of which the manager has already been informed)
-            std::map<const std::string, Constraint*> mAllConstraints;
             /// the constraints so far passed to the primary backend
             Formula* mpPassedFormula;
             /// all generated instances of modules
@@ -86,12 +82,6 @@ namespace smtrat
             {
                 mBackTrackPoints.push_back( mpPassedFormula->size() );
                 mpPrimaryBackend->pushBacktrackPoint();
-            }
-
-
-            const GiNaC::symtab& allVariables() const
-            {
-                return mAllVariables;
             }
 
             const std::map<const ModuleType, ModuleFactory*>& rModulFactories() const
@@ -128,6 +118,7 @@ namespace smtrat
                     ++result;
                 }
                 assert( false );
+                return 0;
             }
 
             bool inform( const std::string&, bool );
@@ -136,27 +127,6 @@ namespace smtrat
             std::vector<std::vector<unsigned> > getReasons() const;
             std::vector<Module*> getBackends( Formula*, Module* );
             std::vector<ModuleFactory*> getBackendsFactories( Formula* const , Module* ) const;
-
-        private:
-
-            /*
-             * Auxiliary Methods
-             */
-            Constraint stringToConstraint( const std::string&, const bool, const bool );
-            static std::string prefixToInfix( const std::string& );
-            static const GiNaC::ex toRationalExpression( const GiNaC::ex& p, const vector<GiNaC::symbol>& symbolLst );
-            static const GiNaC::ex toRationalExpression( const GiNaC::ex& p, GiNaC::symtab v )
-            {
-                std::vector<GiNaC::symbol> symbolLst;
-                for( register GiNaC::symtab::const_iterator i = v.begin(); i != v.end(); ++i )
-                    symbolLst.push_back( GiNaC::ex_to<GiNaC::symbol>( i->second ));
-                return toRationalExpression( p, symbolLst );
-            }
-            static void isolateByVariables( const GiNaC::ex& polynomial,
-                                            const vector<GiNaC::symbol>& symbolLst,
-                                            GiNaC::ex& coefficient,
-                                            GiNaC::ex& monomial );
-            static bool is_constant( const GiNaC::ex& polynomial, const vector<GiNaC::symbol>& symbolLst );
     };
 
 }    // namespace smtrat

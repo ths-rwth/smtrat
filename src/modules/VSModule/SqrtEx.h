@@ -29,6 +29,8 @@
 
 #ifndef SMTRAT_VS_SQRTEX_H
 #define SMTRAT_VS_SQRTEX_H
+//#define VS_USE_GINAC_EXPAND
+//#define VS_USE_GINAC_NORMAL
 
 #include <ginac/ginac.h>
 #include <ginac/flags.h>
@@ -100,6 +102,21 @@ namespace vs
             bool hasSqrt() const
             {
                 return *mpFactor != 0;
+            }
+
+            static void normalize( GiNaC::ex& _exp )
+            {
+                #ifdef VS_USE_GINAC_NORMAL
+                #ifdef VS_USE_GINAC_EXPAND
+                _exp    = _exp.expand().normal();
+                #else
+                _exp    = _exp.normal();
+                #endif
+                #else
+                #ifdef VS_USE_GINAC_EXPAND
+                _exp    = _exp.expand();
+                #endif
+                #endif
             }
 
             // Data access methods (read only).

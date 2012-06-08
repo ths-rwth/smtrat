@@ -38,9 +38,6 @@ set(lib_modules_headers
     modules/StandardModuleFactory.h
     modules/SimplifierModule.h
     modules/VSModule.h
-    modules/GroebnerModule.h
-    modules/UnivariateCADModule.h
-    modules/CADModule.h
     modules/SATModule.h
     modules/LRAModule.h
     modules/LRAOneModule.h
@@ -53,9 +50,6 @@ set(lib_modules_headers
 set(lib_modules_src
     modules/SimplifierModule.cpp
     modules/VSModule.cpp
-    modules/GroebnerModule.cpp
-    modules/UnivariateCADModule.cpp
-    modules/CADModule.cpp
     modules/SATModule.cpp
     modules/LRAModule.cpp
     modules/LRAOneModule.cpp
@@ -64,6 +58,16 @@ set(lib_modules_src
     modules/PreProCNFModule.cpp
     modules/CNFerModule.cpp
 )
+
+if(USE_GB)
+	set(lib_modules_headers ${lib_modules_headers} modules/GroebnerModule.h)
+	set(lib_modules_src ${lib_modules_src}  modules/GroebnerModule.cpp)
+endif()
+
+if(USE_CAD)
+	set(lib_modules_headers ${lib_modules_headers} modules/UnivariateCADModule.h modules/CADModule.h)
+	set(lib_modules_src ${lib_modules_src}  modules/UnivariateCADModule.cpp modules/CADModule.cpp)
+endif()
 
 set(lib_VSModule_headers
     modules/VSModule/Condition.h
@@ -218,7 +222,11 @@ if(${STATICLIB_SWITCH} STREQUAL "ON")
 endif()
 add_library(lib_${PROJECT_NAME} ${STATICLIB} ${lib_${PROJECT_NAME}_SRCS} )
 
-SET( libraries ${libraries}  ${cln_LIBRARIES} ${GINAC_LIBRARY} ${GINACRA_LIBRARY} )
+SET( libraries ${libraries}  ${cln_LIBRARIES} ${GINAC_LIBRARY} )
+
+if(USE_GINACRA)
+	SET( libraries ${libraries} ${GINACRA_LIBRARY} )
+endif()
 
 if(USE_NSS)
 	add_library(csdp UNKNOWN IMPORTED)

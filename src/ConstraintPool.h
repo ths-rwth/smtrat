@@ -74,6 +74,8 @@ namespace smtrat
 
         public:
 
+            typedef std::unordered_set< const Constraint*, constraintHash, constraintEqual>::const_iterator const_iterator;
+
             ConstraintPool( unsigned _capacity = 1000 )
             {
                 mAllVariables = GiNaC::symtab();
@@ -90,6 +92,26 @@ namespace smtrat
                     mAllConstraints.erase( mAllConstraints.begin() );
                     delete pCons;
                 }
+            }
+
+            const_iterator begin() const
+            {
+                return mAllConstraints.begin();
+            }
+
+            const_iterator end() const
+            {
+                return mAllConstraints.end();
+            }
+
+            unsigned size() const
+            {
+                return mAllConstraints.size();
+            }
+
+            const GiNaC::symtab& variables() const
+            {
+                return mAllVariables;
             }
 
             const Constraint* newConstraint()

@@ -53,9 +53,8 @@ namespace smtrat
         mIsUnknown( false )
     {
         mModuleType = MT_UnivariateCADModule;
-        std::cout << mpTSManager->allVariables().size() << std::endl;
-        GiNaC::symtab::const_iterator sym = mpTSManager->allVariables().begin();
-        while( sym != mpTSManager->allVariables().end() )
+        GiNaC::symtab::const_iterator sym = Formula::mConstraintPool.variables().begin();
+        while( sym != Formula::mConstraintPool.variables().end() )
         {
             symbol variable = ex_to<symbol>( sym->second );
             mVariables.push_back( variable );
@@ -123,7 +122,7 @@ namespace smtrat
     {
         //TODO: uncomment and bugfix this
         //        vector< const Constraint* > constraintsToRemove = removeAllOriginatedBy( mBackTrackPoints.back() );
-        //      
+        //
         //      assert( !constraintsToRemove.empty() );
 
         //        for( vector< const Constraint* >::iterator constraint = constraintsToRemove.begin();

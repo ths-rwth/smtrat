@@ -220,6 +220,7 @@ namespace vs
                             break;
                         default:
                             assert( false );
+                            inverseRelation = smtrat::CR_EQ;
                         }
                         _substitutionResults.push_back( TS_ConstraintConjunction() );
                         _substitutionResults.back().push_back( new smtrat::Constraint( substituted.denominator(), smtrat::CR_LESS, variables ));
@@ -365,14 +366,7 @@ namespace vs
 #endif
 
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
-
-#ifdef VS_USE_GINAC_EXPAND
-        lhs    = lhs.expand();
-#endif
-
-#ifdef VS_USE_GINAC_NORMAL
-        lhs    = lhs.normal();
-#endif
+        smtrat::Constraint::normalize( lhs );
 
 #ifdef VS_DEBUG_CALCULATIONS
         cout << "q^2-r^2*radicand:        " << lhs << endl;
@@ -417,12 +411,7 @@ namespace vs
         _substitutionResults.back().push_back( new smtrat::Constraint( lhs, smtrat::CR_EQ, _variables ));
 #else
         ex qr = _q * _r;
-#ifdef VS_USE_GINAC_EXPAND
-        qr    = qr.expand();
-#endif
-#ifdef VS_USE_GINAC_NORMAL
-        qr    = qr.normal();
-#endif
+        smtrat::Constraint::normalize( qr );
 
 #ifdef VS_DEBUG_CALCULATIONS
         cout << "q*r:                     " << qr << endl;
@@ -470,14 +459,7 @@ namespace vs
 #endif
 
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
-
-#ifdef VS_USE_GINAC_EXPAND
-        lhs    = lhs.expand();
-#endif
-
-#ifdef VS_USE_GINAC_NORMAL
-        lhs    = lhs.normal();
-#endif
+        smtrat::Constraint::normalize( lhs );
 
 #ifdef VS_DEBUG_CALCULATIONS
         cout << "q^2-r^2*radicand:        " << lhs << endl;
@@ -513,14 +495,7 @@ namespace vs
 #else
 
         ex qr = _q * _r;
-
-#ifdef VS_USE_GINAC_EXPAND
-        qr    = qr.expand();
-#endif
-
-#ifdef VS_USE_GINAC_NORMAL
-        qr    = qr.normal();
-#endif
+        smtrat::Constraint::normalize( qr );
 
 #ifdef VS_DEBUG_CALCULATIONS
         cout << "q*r:                     " << qr << endl;
@@ -570,14 +545,7 @@ namespace vs
 #endif
 
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
-
-#ifdef VS_USE_GINAC_EXPAND
-        lhs    = lhs.expand();
-#endif
-
-#ifdef VS_USE_GINAC_NORMAL
-        lhs    = lhs.normal();
-#endif
+        smtrat::Constraint::normalize( lhs );
 
 #ifdef VS_DEBUG_CALCULATIONS
         cout << "q^2-r^2*radicand:        " << lhs << endl;
@@ -641,23 +609,10 @@ namespace vs
 #else
 
         ex qs = _q * _s;
-
-#ifdef VS_USE_GINAC_EXPAND
-        qs    = qs.expand();
-#endif
-
-#ifdef VS_USE_GINAC_NORMAL
-        qs    = qs.normal();
-#endif
+        smtrat::Constraint::normalize( qs );
 
         ex rs = _r * _s;
-#ifdef VS_USE_GINAC_EXPAND
-        rs    = rs.expand();
-#endif
-
-#ifdef VS_USE_GINAC_NORMAL
-        rs    = rs.normal();
-#endif
+        smtrat::Constraint::normalize( rs );
 
 #ifdef VS_DEBUG_CALCULATIONS
         cout << "q*s:                     " << qs << endl;
@@ -723,14 +678,7 @@ namespace vs
 #endif
 
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
-
-#ifdef VS_USE_GINAC_EXPAND
-        lhs    = lhs.expand();
-#endif
-
-#ifdef VS_USE_GINAC_NORMAL
-        lhs    = lhs.normal();
-#endif
+        smtrat::Constraint::normalize( lhs );
 
 #ifdef VS_DEBUG_CALCULATIONS
         cout << "q^2-r^2*radicand:        " << lhs << endl;
@@ -792,24 +740,10 @@ namespace vs
 #else
 
         ex qs = _q * _s;
-
-#ifdef VS_USE_GINAC_EXPAND
-        qs    = qs.expand();
-#endif
-
-#ifdef VS_USE_GINAC_NORMAL
-        qs    = qs.normal();
-#endif
+        smtrat::Constraint::normalize( qs );
 
         ex rs = _r * _s;
-
-#ifdef VS_USE_GINAC_EXPAND
-        rs    = rs.expand();
-#endif
-
-#ifdef VS_USE_GINAC_NORMAL
-        rs    = rs.normal();
-#endif
+        smtrat::Constraint::normalize( rs );
 
 #ifdef VS_DEBUG_CALCULATIONS
         cout << "q*s:                     " << qs << endl;
@@ -1405,7 +1339,7 @@ namespace vs
                 bool multivariatePolynomDivisionSuccessful = divide( dividend, f, quotient );
                 assert( multivariatePolynomDivisionSuccessful );
                 ex g = dividend - f * quotient;
-                g    = g.expand().normal();
+                smtrat::Constraint::normalize( g );
                 assert( g.degree( ex( sym ) ) < 3 );
             }
 
@@ -1442,7 +1376,7 @@ namespace vs
         vector<ex> coeffs = vector<ex>();
         for( int i = 0; i <= _g.degree( _variable ); ++i )
         {
-            coeffs.push_back( ex( _g.expand().coeff( _variable, i )));
+            coeffs.push_back( ex( _g.coeff( _variable, i )));
         }
 
         /*
@@ -1574,15 +1508,10 @@ namespace vs
         vector<ex> coeffs = vector<ex>();
         for( int i = 0; i <= _g.degree( _variable ); ++i )
         {
-            coeffs.push_back( ex( _g.expand().coeff( _variable, i )));
+            coeffs.push_back( ex( _g.coeff( _variable, i )));
         }
         ex radicand = ex( pow( coeffs.at( 1 ), 2 ) - 4 * coeffs.at( 2 ) * coeffs.at( 0 ));
-#ifdef VS_USE_GINAC_EXPAND
-        radicand    = radicand.expand();
-#endif
-#ifdef VS_USE_GINAC_NORMAL
-        radicand    = radicand.normal();
-#endif
+        smtrat::Constraint::normalize( radicand );
 
         /*
          * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

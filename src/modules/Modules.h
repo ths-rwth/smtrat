@@ -34,9 +34,16 @@
 
 #include "VSModule.h"
 #include "SimplifierModule.h"
+
+#if(USE_GB)
 #include "GroebnerModule.h"
+#endif
+
+#if(USE_CAD)
 #include "UnivariateCADModule.h"
 #include "CADModule.h"
+#endif
+
 #include "SATModule.h"
 #include "LRAModule.h"
 #include "LRAOneModule.h"

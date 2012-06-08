@@ -50,6 +50,7 @@
 
 #ifndef SMTRAT_SATMODULE_H
 #define SMTRAT_SATMODULE_H
+#define SATMODULE_WITH_CALL_NUMBER
 
 #include "SATModule/Vec.h"
 #include "SATModule/Heap.h"
@@ -94,6 +95,9 @@ namespace smtrat
             BooleanVarMap         mBooleanVarMap;
             BooleanConstraintMap  mBooleanConstraintMap;
             std::vector<unsigned> mBacktrackpointInSatSolver;
+            #ifdef SATMODULE_WITH_CALL_NUMBER
+            unsigned mTheorycalls;
+            #endif
 
         public:
 
@@ -385,7 +389,7 @@ namespace smtrat
             }
 
             Answer addClauseToSatSolver( const Formula* );
-            Minisat::Lit getLiteral( const Formula*, const Formula* = NULL );
+            Minisat::Lit getLiteral( const Formula&, const Formula* = NULL );
             void adaptPassedFormula();
     };
 

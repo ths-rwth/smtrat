@@ -86,11 +86,14 @@ namespace smtrat
     static const Condition PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE        = Condition().set( 55, 1 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE     = Condition().set( 57, 1 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE         = Condition().set( 56, 1 );
+    static const Condition PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE        = Condition().set( 57, 1 );
+    static const Condition PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE        = Condition().set( 58, 1 );
     static const Condition SOLVABLE_CONDITIONS                          = PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE | PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE
                                                  | PROP_CANNOT_BE_SOLVED_BY_VSMODULE | PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE
                                                  | PROP_CANNOT_BE_SOLVED_BY_CADMODULE | PROP_CANNOT_BE_SOLVED_BY_SATMODULE
                                                  | PROP_CANNOT_BE_SOLVED_BY_LRAMODULE | PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE | PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE;
+                                                 | PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE | PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE
+                                                 | PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE | PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE;
 
     class Formula
     {
@@ -123,6 +126,14 @@ namespace smtrat
 
             /// A pool to manage all generated constraints.
             static ConstraintPool mConstraintPool;
+            /// The prefix for any auxiliary Boolean defined in this formula.
+            static const std::string mAuxiliaryBooleanNamePrefix;
+            /// A counter for the auxiliary Booleans defined in this formula.
+            static unsigned mAuxiliaryBooleanCounter;
+            /// The prefix for any auxiliary Boolean defined in this formula.
+            static const std::string mAuxiliaryRealNamePrefix;
+            /// A counter for the auxiliary Booleans defined in this formula.
+            static unsigned mAuxiliaryRealCounter;
 
             /**
              *  Constructors and destructor.
@@ -330,6 +341,30 @@ namespace smtrat
             static GiNaC::ex newVariable( const std::string& _name )
             {
                 return mConstraintPool.newVariable( _name );
+            }
+
+            /**
+             * Generates a fresh real variable and returns its identifier.
+             *
+             * @return The identifier of a fresh real variable.
+             */
+            static std::string getAuxiliaryReal()
+            {
+                std::stringstream out;
+                out << mAuxiliaryRealNamePrefix << mAuxiliaryRealCounter++;
+                return out.str();
+            }
+
+            /**
+             * Generates a fresh Boolean variable and returns its identifier.
+             *
+             * @return The identifier of a fresh Boolean variable.
+             */
+            static std::string getAuxiliaryBoolean()
+            {
+                std::stringstream out;
+                out << mAuxiliaryBooleanNamePrefix << mAuxiliaryBooleanCounter++;
+                return out.str();
             }
 
             Condition getPropositions();

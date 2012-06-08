@@ -694,13 +694,14 @@ namespace smtrat
         {
             ex derivate            = lhs.diff( sym, 1 );
             ex gcdOfLhsAndDerivate = gcd( lhs, derivate );
-            gcdOfLhsAndDerivate    = gcdOfLhsAndDerivate.expand().normal();
+            Constraint::normalize( gcdOfLhsAndDerivate );
             if( gcdOfLhsAndDerivate != 1 )
             {
                 ex quotient;
-                if( divide( lhs, gcdOfLhsAndDerivate, quotient ))
+                if( gcdOfLhsAndDerivate != 0 && divide( lhs, gcdOfLhsAndDerivate, quotient ))
                 {
-                    lhs = quotient.expand().normal();
+                    Constraint::normalize( quotient );
+                    lhs = quotient;
                 }
             }
         }
@@ -708,7 +709,7 @@ namespace smtrat
         vector<ex> coeffs = vector<ex>();
         for( signed i = 0; i <= lhs.degree( ex( sym ) ); ++i )
         {
-            coeffs.push_back( ex( lhs.expand().coeff( ex( sym ), i )));
+            coeffs.push_back( ex( lhs.coeff( ex( sym ), i )));
         }
 
         ConditionSet oConditions = ConditionSet();
@@ -762,12 +763,7 @@ namespace smtrat
         case 3:
         {
             ex radicand = ex( pow( coeffs.at( 1 ), 2 ) - 4 * coeffs.at( 2 ) * coeffs.at( 0 ));
-#ifdef VS_USE_GINAC_EXPAND
-            radicand    = radicand.expand();
-#endif
-#ifdef VS_USE_GINAC_NORMAL
-            radicand    = radicand.normal();
-#endif
+            Constraint::normalize( radicand );
 
             /*
              * Create state ({a==0, b!=0} + oldConditions,

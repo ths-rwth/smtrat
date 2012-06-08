@@ -35,9 +35,6 @@ namespace smtrat
         Module( _tsManager, _formula )
     {
         this->mModuleType = MT_CNFerModule;
-        mFixedTheModuleID = false;
-        mModuleID = 0;
-        mAuxVarCounterHistory = vector< unsigned >();
     }
 
     CNFerModule::~CNFerModule()
@@ -129,14 +126,6 @@ namespace smtrat
     void CNFerModule::pushBacktrackPoint()
     {
         Module::pushBacktrackPoint();
-        if( mAuxVarCounterHistory.empty() )
-        {
-            mAuxVarCounterHistory.push_back( 0 );
-        }
-        else
-        {
-            mAuxVarCounterHistory.push_back( mAuxVarCounterHistory.back() );
-        }
     }
 
     /**
@@ -144,7 +133,6 @@ namespace smtrat
      */
     void CNFerModule::popBacktrackPoint()
     {
-        mAuxVarCounterHistory.pop_back();
         Module::popBacktrackPoint();
     }
 
@@ -308,7 +296,7 @@ namespace smtrat
                             // (and phi_i1 .. phi_ik) -> h_i, where (or (not h_i) phi_i1) .. (or (not h_i) phi_ik) is added to the queue
                             case AND:
                             {
-                            	Formula* hi = new Formula( getFreeBooleanIdentifier() );
+                            	Formula* hi = new Formula( Formula::getAuxiliaryBoolean() );
                             	while( !currentSubformula->empty() )
                             	{
                             		Formula* formulaToAssert = new Formula( OR );
@@ -348,8 +336,8 @@ namespace smtrat
                             case IFF:
                             {
 						    	assert( currentSubformula->back()->size() == 2 );
-                            	Formula* h_i1 = new Formula( getFreeBooleanIdentifier() );
-                            	Formula* h_i2 = new Formula( getFreeBooleanIdentifier() );
+                            	Formula* h_i1 = new Formula( Formula::getAuxiliaryBoolean() );
+                            	Formula* h_i2 = new Formula( Formula::getAuxiliaryBoolean() );
 						        Formula* rhs_i = currentSubformula->pruneBack();
 						        Formula* lhs_i = currentSubformula->pruneBack();
 						        delete currentSubformula;
@@ -382,8 +370,8 @@ namespace smtrat
                             case XOR:
                             {
 						    	assert( currentSubformula->back()->size() == 2 );
-                            	Formula* h_i1 = new Formula( getFreeBooleanIdentifier() );
-                            	Formula* h_i2 = new Formula( getFreeBooleanIdentifier() );
+                            	Formula* h_i1 = new Formula( Formula::getAuxiliaryBoolean() );
+                            	Formula* h_i2 = new Formula( Formula::getAuxiliaryBoolean() );
 						        Formula* rhs_i = currentSubformula->pruneBack();
 						        Formula* lhs_i = currentSubformula->pruneBack();
 						        delete currentSubformula;
@@ -448,8 +436,8 @@ namespace smtrat
                     Formula* lhs = currentFormula->pruneBack();
                     delete currentFormula;
                     // Add (or h1 h2) to the passed formula, where h1 and h2 are fresh Boolean variables.
-                    Formula* h1 = new Formula( getFreeBooleanIdentifier() );
-                    Formula* h2 = new Formula( getFreeBooleanIdentifier() );
+                    Formula* h1 = new Formula( Formula::getAuxiliaryBoolean() );
+                    Formula* h2 = new Formula( Formula::getAuxiliaryBoolean() );
                     Formula* clause = new Formula( OR );
                     clause->addSubformula( h1 );
                     clause->addSubformula( h2 );
@@ -490,8 +478,8 @@ namespace smtrat
                     Formula* lhs = currentFormula->pruneBack();
                     delete currentFormula;
                     // Add (or h1 h2) to the passed formula, where h1 and h2 are fresh Boolean variables.
-                    Formula* h1 = new Formula( getFreeBooleanIdentifier() );
-                    Formula* h2 = new Formula( getFreeBooleanIdentifier() );
+                    Formula* h1 = new Formula( Formula::getAuxiliaryBoolean() );
+                    Formula* h2 = new Formula( Formula::getAuxiliaryBoolean() );
                     Formula* clause = new Formula( OR );
                     clause->addSubformula( h1 );
                     clause->addSubformula( h2 );

@@ -34,9 +34,6 @@
 //#define VS_DEBUG_SUBSTITUTION
 //#define VS_DEBUG_CALCULATIONS
 
-#define VS_USE_GINAC_EXPAND
-#define VS_USE_GINAC_NORMAL
-
 #include "Substitution.h"
 #include "Tools.h"
 #include <cmath>

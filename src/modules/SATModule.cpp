@@ -53,7 +53,6 @@
 #include "SATModule/Sort.h"
 
 //#define DEBUG_SATMODULE
-#define SATMODULE_WITH_CALL_NUMBER
 
 using namespace std;
 using namespace Minisat;
@@ -146,6 +145,9 @@ namespace smtrat
         mBooleanVarMap             = BooleanVarMap();
         mBooleanConstraintMap      = BooleanConstraintMap();
         mBacktrackpointInSatSolver = vector<CRef>();
+        #ifdef SATMODULE_WITH_CALL_NUMBER
+        mTheorycalls = 0;
+        #endif
     }
 
     /**
@@ -244,24 +246,60 @@ namespace smtrat
             case OR:
             {
                 vec<Lit> clauseLits;
-                for( Formula::const_iterator subFormula = _formula->begin(); subFormula != _formula->end(); ++subFormula )
+                for( Formula::const_iterator subformula = _formula->begin(); subformula != _formula->end(); ++subformula )
                 {
-                    switch( (*subFormula)->getType() )
+                    switch( (*subformula)->getType() )
                     {
                         case REALCONSTRAINT:
                         {
-                            clauseLits.push( getLiteral( *subFormula, _formula ) );
+                            if( (*subformula)->constraint().relation() == CR_NEQ )
+                            {
+                                const Constraint& constraint = (*subformula)->constraint();
+                                Formula subformulaA = Formula( Formula::newConstraint( constraint.lhs(), CR_LESS ) );
+                                Formula subformulaB = Formula( Formula::newConstraint( constraint.lhs(), CR_GREATER ) );
+
+                                Lit litA = getLiteral( subformulaA, _formula );
+                                Lit litB = getLiteral( subformulaB, _formula );
+                                clauseLits.push( litA );
+                                clauseLits.push( litB );
+                                addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                            }
+                            else
+                            {
+                                clauseLits.push( getLiteral( **subformula, _formula ) );
+                            }
                             break;
                         }
                         case NOT:
                         {
-                            Lit literal = getLiteral( (*subFormula)->back(), _formula );
-                            clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
+                            const Formula& subsubformula = *(*subformula)->back();
+                            if( subsubformula.getType() == REALCONSTRAINT && subsubformula.constraint().relation() == CR_NEQ )
+                            {
+                                Formula subsubformula = Formula( Formula::newConstraint( subsubformula.constraint().lhs(), CR_EQ ) );
+                                clauseLits.push( getLiteral( subsubformula, _formula ) );
+                            }
+                            else if( subsubformula.getType() == REALCONSTRAINT && subsubformula.constraint().relation() == CR_EQ )
+                            {
+                                const Constraint& constraint = subsubformula.constraint();
+                                Formula subsubformulaA = Formula( Formula::newConstraint( constraint.lhs(), CR_LESS ) );
+                                Formula subsubformulaB = Formula( Formula::newConstraint( constraint.lhs(), CR_GREATER ) );
+
+                                Lit litA = getLiteral( subsubformulaA, _formula );
+                                Lit litB = getLiteral( subsubformulaB, _formula );
+                                clauseLits.push( litA );
+                                clauseLits.push( litB );
+                                addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                            }
+                            else
+                            {
+                                Lit literal = getLiteral( subsubformula, _formula );
+                                clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
+                            }
                             break;
                         }
                         case BOOL:
                         {
-                            clauseLits.push( getLiteral( *subFormula, _formula ) );
+                            clauseLits.push( getLiteral( **subformula, _formula ) );
                             break;
                         }
                         case TTRUE:
@@ -284,19 +322,51 @@ namespace smtrat
             }
             case REALCONSTRAINT:
             {
-                addClause( getLiteral( _formula, _formula ) );
+                if( _formula->constraint().relation() == CR_NEQ )
+                {
+                    const Constraint& constraint = _formula->constraint();
+                    Formula subformulaA = Formula( Formula::newConstraint( constraint.lhs(), CR_LESS ) );
+                    Formula subformulaB = Formula( Formula::newConstraint( constraint.lhs(), CR_GREATER ) );
+
+                    Lit litA = getLiteral( subformulaA, _formula );
+                    Lit litB = getLiteral( subformulaA, _formula );
+                    addClause( litA, litB );
+                    addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                }
+                else
+                {
+                    addClause( getLiteral( *_formula, _formula ) );
+                }
                 return Unknown;
             }
             case NOT:
             {
-                vec<Lit>       clauseLits;
-                const Formula* subformula = _formula->back();
-                switch( subformula->getType() )
+                const Formula& subformula = *_formula->back();
+                switch( subformula.getType() )
                 {
                     case REALCONSTRAINT:
                     {
-                        Lit literal = getLiteral( subformula, _formula );
-                        addClause( mkLit( var( literal ), !sign( literal ) ) );
+                        if( subformula.constraint().relation() == CR_EQ )
+                        {
+                            const Constraint& constraint = subformula.constraint();
+                            Formula subsubformulaA = Formula( Formula::newConstraint( constraint.lhs(), CR_LESS ) );
+                            Formula subsubformulaB = Formula( Formula::newConstraint( constraint.lhs(), CR_GREATER ) );
+
+                            Lit litA = getLiteral( subsubformulaA, _formula );
+                            Lit litB = getLiteral( subsubformulaB, _formula );
+                            addClause( litA, litB );
+                            addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                        }
+                        else if( subformula.constraint().relation() == CR_NEQ )
+                        {
+                            Formula subsubformula = Formula( Formula::newConstraint( subformula.constraint().lhs(), CR_EQ ) );
+                            addClause( getLiteral( subsubformula, _formula ) );
+                        }
+                        else
+                        {
+                            Lit literal = getLiteral( subformula, _formula );
+                            addClause( mkLit( var( literal ), !sign( literal ) ) );
+                        }
                         return Unknown;
                     }
                     case BOOL:
@@ -324,7 +394,7 @@ namespace smtrat
             }
             case BOOL:
             {
-                addClause( getLiteral( _formula, _formula ) );
+                addClause( getLiteral( *_formula, _formula ) );
                 return Unknown;
             }
             case TTRUE:
@@ -351,13 +421,14 @@ namespace smtrat
      * @param _origin
      * @return
      */
-    Lit SATModule::getLiteral( const Formula* _formula, const Formula* _origin )
+    Lit SATModule::getLiteral( const Formula& _formula, const Formula* _origin )
     {
-        switch( _formula->getType() )
+        assert( _formula.getType() != REALCONSTRAINT || _formula.constraint().relation() != CR_NEQ );
+        switch( _formula.getType() )
         {
             case BOOL:
             {
-                BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find( _formula->identifier() );
+                BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find( _formula.identifier() );
                 if( booleanVarPair != mBooleanVarMap.end() )
                 {
                     return mkLit( booleanVarPair->second, false );
@@ -365,13 +436,13 @@ namespace smtrat
                 else
                 {
                     Var var                                = newVar();
-                    mBooleanVarMap[_formula->identifier()] = var;
+                    mBooleanVarMap[_formula.identifier()] = var;
                     return mkLit( var, false );
                 }
             }
             case REALCONSTRAINT:
             {
-                const Constraint& constraint = _formula->constraint();
+                const Constraint& constraint = _formula.constraint();
                 // Bring the constraint to normal form, i.e. just using the relations =, !=, <= and >
                 Constraint_Relation rel = constraint.relation();
                 GiNaC::ex sign = 1;
@@ -490,6 +561,7 @@ namespace smtrat
             {
                 cerr << "Unexpected type of formula!" << endl;
                 assert( false );
+                return mkLit( newVar(), false );
             }
         }
     }
@@ -517,6 +589,9 @@ namespace smtrat
      */
     void SATModule::adaptPassedFormula()
     {
+        #ifdef SATMODULE_WITH_CALL_NUMBER
+        bool changedPassedFormula = false;
+        #endif
         /*
          * Collect the constraints to check.
          */
@@ -552,6 +627,9 @@ namespace smtrat
             if( constraintsToCheck.erase( passedFormulaAt( pos ) ) == 0 )
             {
                 removeSubformulaFromPassedFormula( pos );
+                #ifdef SATMODULE_WITH_CALL_NUMBER
+                changedPassedFormula = true;
+                #endif
             }
             else
             {
@@ -564,12 +642,22 @@ namespace smtrat
          */
         for( map<const Formula*, const Formula*, formulaCmp>::iterator iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
         {
+            #ifdef SATMODULE_WITH_CALL_NUMBER
+            changedPassedFormula = true;
+            #endif
             vec_set_const_pFormula origins = vec_set_const_pFormula();
             set<const Formula*> origin = set<const Formula*>();
             origin.insert( iter->second );
             origins.push_back( origin );
             addSubformulaToPassedFormula( new Formula( *iter->first ), origins );
         }
+        #ifdef SATMODULE_WITH_CALL_NUMBER
+        if( changedPassedFormula )
+        {
+            ++mTheorycalls;
+            cout << "\r" << mTheorycalls << "    ";
+        }
+        #endif
     }
 
     //=================================================================================================
@@ -591,8 +679,8 @@ namespace smtrat
         watches.init( mkLit( v, true ) );
         assigns.push( l_Undef );
         vardata.push( mkVarData( CRef_Undef, 0 ) );
-        //activity .push(0);
-        activity.push( rnd_init_act ? drand( random_seed ) * 0.00001 : 0 );
+        activity .push(0);
+//        activity.push( rnd_init_act ? drand( random_seed ) * 0.00001 : 0 );
         seen.push( 0 );
         polarity.push( sign );
         decision.push();
@@ -1229,7 +1317,6 @@ NextClause:
         vec<Lit> learnt_clause;
         starts++;
         #ifdef SATMODULE_WITH_CALL_NUMBER
-        unsigned theorycalls = 0;
         cout << endl << "Number of theory calls:" << endl << endl;
         #endif
 
@@ -1239,10 +1326,6 @@ NextClause:
 
             if( confl == CRef_Undef )
             {
-                #ifdef SATMODULE_WITH_CALL_NUMBER
-                cout << "\r" << theorycalls << "    ";
-                theorycalls++;
-                #endif
                 #ifdef DEBUG_SATMODULE
                 cout << "######################################################################" << endl;
                 cout << "###" << endl;
@@ -1301,7 +1384,7 @@ NextClause:
                                         }
                                         (*subformula)->print();
                                         #endif
-                                        Lit lit = getLiteral( *subformula );
+                                        Lit lit = getLiteral( **subformula );
                                         learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
                                     }
                                     #ifdef DEBUG_SATMODULE

@@ -37,6 +37,10 @@ namespace smtrat
 {
 
     ConstraintPool Formula::mConstraintPool = ConstraintPool( 10000 );
+    const string Formula::mAuxiliaryBooleanNamePrefix = string( "h_b_" );
+    unsigned Formula::mAuxiliaryBooleanCounter = 0;
+    const string Formula::mAuxiliaryRealNamePrefix = string( "h_r_" );
+    unsigned Formula::mAuxiliaryRealCounter = 0;
 
     Formula::Formula()
     {
@@ -507,6 +511,16 @@ namespace smtrat
             mPropositions |= PROP_CANNOT_BE_SOLVED_BY_LRAMODULE;
             break;
         }
+        case MT_LRAOneModule:
+        {
+            mPropositions |= PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE;
+            break;
+        }
+        case MT_LRATwoModule:
+        {
+            mPropositions |= PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE;
+            break;
+        }
         case MT_PreProModule:
         {
             mPropositions |= PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE;
@@ -756,6 +770,10 @@ namespace smtrat
     	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_SATMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
 		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_LRAMODULE           = ";
     	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_LRAMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
+		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE           = ";
+    	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
+		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE           = ";
+    	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
 		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE        = ";
     	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
 		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE         = ";

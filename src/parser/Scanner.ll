@@ -111,6 +111,7 @@ typedef smtrat::Parser::token_type token_type;
 "not"	            { return token::NOT; }
 "iff"               { return token::IFF; }
 "xor"               { return token::XOR; }
+"let"               { return token::LET; }
 "true"              { return token::TRUE; }
 "false"             { return token::FALSE; }
 "Bool"              { return token::BOOL; }
@@ -127,6 +128,10 @@ typedef smtrat::Parser::token_type token_type;
 [a-zA-Z][a-zA-Z_0-9]* 	{
 							yylval->sval = new std::string (yytext);
 							return token::SYM;
+						}
+\?[a-zA-Z][a-zA-Z_0-9]* 	{
+							yylval->sval = new std::string (yytext);
+							return token::AUXSYM;
 						}
 \:[a-zA-Z0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\/]+      { yylval->sval = new std::string (yytext);
                                                   return token::KEY; }

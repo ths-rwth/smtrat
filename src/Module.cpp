@@ -43,6 +43,7 @@ namespace smtrat
         mBackTrackPoints( vector< unsigned >() ),
         mLastBacktrackpointsEnd( -1 ),
         mInfeasibleSubsets( vec_set_const_pFormula() ),
+        mDeductions( vector< const Constraint* >() ),
         mpTSManager( _tsManager ),
         mModuleType( MT_Module ),
         mUsedBackends( vector<Module*>() ),

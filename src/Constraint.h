@@ -25,6 +25,8 @@
 
 //#define SMTRAT_TS_CONSTRAINT_SIMPLIFIER
 //#define NDEBUG
+#define VS_USE_GINAC_EXPAND
+//#define VS_USE_GINAC_NORMAL
 
 #include <ginac/ginac.h>
 #include <ginac/flags.h>
@@ -114,6 +116,21 @@ namespace smtrat
             const Constraint_Relation relation() const
             {
                 return mRelation;
+            }
+
+            static void normalize( GiNaC::ex& _exp )
+            {
+                #ifdef VS_USE_GINAC_NORMAL
+                #ifdef VS_USE_GINAC_EXPAND
+                _exp    = _exp.expand().normal();
+                #else
+                _exp    = _exp.normal();
+                #endif
+                #else
+                #ifdef VS_USE_GINAC_EXPAND
+                _exp    = _exp.expand();
+                #endif
+                #endif
             }
 
             // Data access methods (read only).

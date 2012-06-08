@@ -54,10 +54,12 @@ namespace smtrat
     class Module
     {
         protected:
-            std::vector< unsigned >     mBackTrackPoints;
-            signed                      mLastBacktrackpointsEnd;
+            std::vector< unsigned >             mBackTrackPoints;
+            signed                              mLastBacktrackpointsEnd;
             /// Saves the infeasible subsets
-            vec_set_const_pFormula      mInfeasibleSubsets;
+            vec_set_const_pFormula              mInfeasibleSubsets;
+            /// Saves the infeasible subsets
+            std::vector< const Constraint* >    mDeductions;
             /// A reference to the manager
             Manager* const 		mpTSManager;
             ModuleType     		mModuleType;

@@ -19,34 +19,40 @@
  *
  */
 
-/*
- * File:   CNFTransformerModule.h
- * Author: Florian Corzilius
+
+/**
+ * @file LRAOneModule.h
+ * @author name surname <emailadress>
  *
- * Created on 02. May 2012, 20:53
+ * @version 2012-04-05
+ * Created on April 5th, 2012, 3:22 PM
  */
 
-#ifndef SMTRAT_CNFERMODULE_H
-#define SMTRAT_CNFERMODULE_H
+#ifndef LRAONEMODULE_H
+#define	LRAONEMODULE_H
 
 #include "../Module.h"
 
 namespace smtrat
 {
-    class CNFerModule:
+    class LRAOneModule:
         public Module
     {
-        private:
+    	private:
             /**
-             * Members.
+             * Members:
              */
         public:
-            /**
-             * Constructor and destructor.
-             */
-            CNFerModule( Manager* const _tsManager, const Formula* const _formula );
 
-            ~CNFerModule();
+            /**
+             * Constructors:
+             */
+            LRAOneModule( Manager* const _tsManager, const Formula* const _formula  );
+
+            /**
+             * Destructor:
+             */
+            virtual ~LRAOneModule();
 
             /**
              * Methods:
@@ -54,18 +60,19 @@ namespace smtrat
 
             // Interfaces.
             bool assertSubFormula( const Formula* const );
+            bool inform( const Constraint* const );
             Answer isConsistent();
-            void pushBacktrackPoint();
             void popBacktrackPoint();
+            void pushBacktrackPoint();
 
         private:
             /**
              * Methods:
              */
-            bool assertClauses( std::vector< Formula* >&, vec_set_const_pFormula& );
-            Formula* resolveNegation( Formula* ) const;
-            void printSolverState( const std::vector< Formula* >& ) const;
     };
 
 }    // namespace smtrat
-#endif   /** CNFTRANSFORMERMODULE_H */
+
+
+#endif	/* LRAONEMODULE_H */
+
