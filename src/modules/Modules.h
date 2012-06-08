@@ -35,11 +35,11 @@
 #include "VSModule.h"
 #include "SimplifierModule.h"
 
-#if(USE_GB)
+#ifdef USE_GB
 #include "GroebnerModule.h"
 #endif
 
-#if(USE_CAD)
+#ifdef USE_CAD
 #include "UnivariateCADModule.h"
 #include "CADModule.h"
 #endif

@@ -27,7 +27,7 @@
  * @author Ulrich Loup
  * @author Sebastian Junges
  * @since 2012-01-18
- * @version 2012-02-11
+ * @version 2012-06-08
  */
 
 #ifndef SMTRAT_TSMANAGER_H

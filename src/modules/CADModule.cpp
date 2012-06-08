@@ -25,16 +25,17 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2012-05-21
+ * @version 2012-06-07
  */
 
 #include "../Manager.h"
 #include "CADModule.h"
+#include "UnivariateCADModule.h"
 
 #include <ginacra/ginacra.h>
 
 using GiNaCRA::UnivariatePolynomial;
-using GiNaCRA::UnivariatePolynomialSet;
+using GiNaCRA::EliminationSet;
 using GiNaCRA::Constraint;
 using GiNaCRA::Polynomial;
 using GiNaCRA::CAD;
@@ -52,12 +53,12 @@ namespace smtrat
         mCAD(),
         mConstraints()
     {
-        mModuleType = MT_CADModule;
+        this->mModuleType = MT_CADModule;
         vector<symbol> variables = vector<symbol>();
         for( register GiNaC::symtab::const_iterator sym = Formula::mConstraintPool.variables().begin(); sym != Formula::mConstraintPool.variables().end(); ++sym )
             variables.push_back( ex_to<symbol>( sym->second ));
-        GiNaCRA::CADSettings setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::ODDDEG_CADSETTING | GiNaCRA::EAGERLIFTING_CADSETTING );
-        mCAD = CAD( UnivariatePolynomialSet(), variables, setting );
+        GiNaCRA::CADSettings setting = GiNaCRA::CADSettings::getSettings( );
+        mCAD = CAD( EliminationSet(), variables, setting );
     }
 
     CADModule::~CADModule(){}
@@ -113,21 +114,22 @@ namespace smtrat
     {
         Module::popBacktrackPoint();
         signed upperBound = receivedFormulaSize();
-        // remove each constraint in the backtracked range from the local constraint list
+        // remove each constraint in the backtracked range from the local constraint list, and remove the respective polynomials from the CAD
         for( signed pos = lastBacktrackpointsEnd() + 1; pos < upperBound; ++pos )
         {
             GiNaCRA::Constraint                   constraint     = convertConstraint( *receivedFormulaAt( pos )->pConstraint() );
             vector<GiNaCRA::Constraint>::iterator constraintIter = std::find( mConstraints.begin(), mConstraints.end(), constraint );
             assert( constraintIter != mConstraints.end() );
+            mCAD.removePolynomial( UnivariatePolynomial( constraintIter->polynomial(), constraintIter->variables().front() ) );
             mConstraints.erase( constraintIter );
         }
-        /// recompute the CAD projection for the remaining polynomials (@todo: use incremental remove operation instead)
-        symbol mainVariable = mCAD.variables().front();
-        UnivariatePolynomialSet polynomials = UnivariatePolynomialSet();
-        for( vector<GiNaCRA::Constraint>::const_iterator constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
-            polynomials.insert( UnivariatePolynomial( constraint->polynomial(), mainVariable ) );
-        GiNaCRA::CADSettings setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::ODDDEG_CADSETTING | GiNaCRA::EAGERLIFTING_CADSETTING );
-        mCAD = CAD( polynomials, mCAD.variables(), setting );
+//        /// recompute the CAD projection for the remaining polynomials (@todo: use incremental remove operation instead)
+//        symbol mainVariable = mCAD.variables().front();
+//        EliminationSet polynomials = EliminationSet();
+//        for( vector<GiNaCRA::Constraint>::const_iterator constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
+//            polynomials.insert( UnivariatePolynomial( constraint->polynomial(), mainVariable ) );
+//        GiNaCRA::CADSettings setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::ODDDEG_CADSETTING | GiNaCRA::EAGERLIFTING_CADSETTING );
+//        mCAD = CAD( polynomials, mCAD.variables(), setting );
     }
 
     ///////////////////////

@@ -28,7 +28,7 @@
  *
  * Created on January 18, 2012, 3:22 PM
  */
-
+#include "config.h"
 #include "Manager.h"
 #include "modules/Modules.h"
 
@@ -60,17 +60,18 @@ namespace smtrat
          * Add all existing modules.
          */
         addModuleType( MT_SimplifierModule, new StandardModuleFactory<SimplifierModule>() );
-#if(USE_GB)
-		addModuleType( MT_GroebnerModule, new StandardModuleFactory<GroebnerModule>() );
+#ifdef USE_GB
+        addModuleType( MT_GroebnerModule, new StandardModuleFactory<GroebnerModule>() );
 #endif
-		addModuleType( MT_VSModule, new StandardModuleFactory<VSModule>() );
-#if(USE_CAD)
-		addModuleType( MT_UnivariateCADModule, new StandardModuleFactory<UnivariateCADModule>() );
+        addModuleType( MT_VSModule, new StandardModuleFactory<VSModule>() );
+#ifdef USE_CAD
+        addModuleType( MT_UnivariateCADModule, new StandardModuleFactory<UnivariateCADModule>() );
         addModuleType( MT_CADModule, new StandardModuleFactory<CADModule>() );
 #endif
 		addModuleType( MT_SATModule, new StandardModuleFactory<SATModule>() );
         addModuleType( MT_LRAOneModule, new StandardModuleFactory<LRAOneModule>() );
         addModuleType( MT_LRATwoModule, new StandardModuleFactory<LRATwoModule>() );
+        addModuleType( MT_SATModule, new StandardModuleFactory<SATModule>() );
         addModuleType( MT_PreProModule, new StandardModuleFactory<PreProModule>() );
         addModuleType( MT_PreProCNFModule, new StandardModuleFactory<PreProCNFModule>() );
         addModuleType( MT_CNFerModule, new StandardModuleFactory<CNFerModule>() );

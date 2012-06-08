@@ -185,8 +185,10 @@ set(lib_Utilities
 set( lib_nratsolver_headers NRATSolver.h )
 set( lib_nratsolver_src NRATSolver.cpp )
 
+if(USE_CAD)
 set( lib_nratsolvercadonly_headers NRATSolver_CADonly.h )
 set( lib_nratsolvercadonly_src NRATSolver_CADonly.cpp )
+endif()
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/parser)
 
