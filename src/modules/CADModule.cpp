@@ -53,7 +53,7 @@ namespace smtrat
         mCAD(),
         mConstraints()
     {
-        mModuleType = MT_CADModule;
+        this->mModuleType = MT_CADModule;
         vector<symbol> variables = vector<symbol>();
         for( register GiNaC::symtab::const_iterator sym = mpTSManager->allVariables().begin(); sym != mpTSManager->allVariables().end(); ++sym )
             variables.push_back( ex_to<symbol>( sym->second ));

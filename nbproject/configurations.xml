@@ -6,39 +6,36 @@
         <df name="CMakeFiles">
           <df name="CMakeTmp">
             <df name="CMakeFiles">
-              <df name="cmTryCompileExec3360288445.dir">
+              <df name="cmTryCompileExec2180019092.dir">
               </df>
-              <df name="cmTryCompileExec3650009845.dir">
+              <df name="cmTryCompileExec2570617695.dir">
+              </df>
+              <df name="cmTryCompileExec2759061716.dir">
+              </df>
+              <df name="cmTryCompileExec584741141.dir">
               </df>
             </df>
           </df>
+          <df name="CompilerIdC">
+            <in>CMakeCCompilerId.c</in>
+          </df>
           <df name="CompilerIdCXX">
             <in>CMakeCXXCompilerId.cpp</in>
+          </df>
+          <df name="csdp_lib.dir">
           </df>
         </df>
         <df name="doxygen-conf">
           <df name="CMakeFiles">
             <df name="doc.dir">
-              <in>DependInfo.cmake</in>
-              <in>build.make</in>
-              <in>cmake_clean.cmake</in>
-              <in>progress.make</in>
             </df>
             <df name="doxygen-doc.dir">
-              <in>DependInfo.cmake</in>
-              <in>build.make</in>
-              <in>cmake_clean.cmake</in>
-              <in>progress.make</in>
             </df>
           </df>
         </df>
         <df name="manual">
           <df name="CMakeFiles">
             <df name="manual.dir">
-              <in>DependInfo.cmake</in>
-              <in>build.make</in>
-              <in>cmake_clean.cmake</in>
-              <in>progress.make</in>
             </df>
           </df>
         </df>
@@ -48,53 +45,37 @@
               <df name="modules">
                 <df name="LRAModule">
                 </df>
+                <df name="NSSModule">
+                </df>
                 <df name="SATModule">
                 </df>
                 <df name="VSModule">
                 </df>
               </df>
-              <in>DependInfo.cmake</in>
-              <in>build.make</in>
-              <in>cmake_clean.cmake</in>
-              <in>depend.make</in>
-              <in>flags.make</in>
-              <in>link.txt</in>
-              <in>progress.make</in>
+              <df name="utilities">
+                <df name="SDP">
+                </df>
+              </df>
             </df>
           </df>
           <df name="gui">
             <df name="CMakeFiles">
               <df name="gui.dir">
-                <in>DependInfo.cmake</in>
-                <in>build.make</in>
-                <in>cmake_clean.cmake</in>
-                <in>progress.make</in>
               </df>
               <df name="run-gui.dir">
-                <in>DependInfo.cmake</in>
-                <in>build.make</in>
-                <in>cmake_clean.cmake</in>
-                <in>progress.make</in>
               </df>
             </df>
           </df>
           <df name="parser">
             <df name="CMakeFiles">
+              <df name="parser.dir">
+              </df>
               <df name="smtratSolver.dir">
                 <df name="__">
                 </df>
-                <in>DependInfo.cmake</in>
-                <in>build.make</in>
-                <in>cmake_clean.cmake</in>
-                <in>depend.make</in>
-                <in>flags.make</in>
-                <in>link.txt</in>
-                <in>progress.make</in>
               </df>
             </df>
-            <in>Parser.tab.cc</in>
             <in>Parser.tab.hh</in>
-            <in>lex.smtrat.cc</in>
             <in>location.hh</in>
             <in>position.hh</in>
             <in>stack.hh</in>
@@ -102,19 +83,8 @@
           <df name="test">
             <df name="CMakeFiles">
               <df name="check.dir">
-                <in>DependInfo.cmake</in>
-                <in>build.make</in>
-                <in>cmake_clean.cmake</in>
-                <in>progress.make</in>
               </df>
               <df name="check_smtrat.dir">
-                <in>DependInfo.cmake</in>
-                <in>build.make</in>
-                <in>cmake_clean.cmake</in>
-                <in>depend.make</in>
-                <in>flags.make</in>
-                <in>link.txt</in>
-                <in>progress.make</in>
               </df>
             </df>
           </df>
@@ -125,6 +95,8 @@
       <df name="cmake">
       </df>
       <df name="doxygen-conf">
+      </df>
+      <df name="examples">
       </df>
       <df name="external">
         <df name="csdp">
@@ -375,12 +347,12 @@
           <buildCommandWorkingDir>build</buildCommandWorkingDir>
           <buildCommand>${MAKE} -f Makefile</buildCommand>
           <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
-          <executablePath></executablePath>
+          <executablePath>build/smtratSolver</executablePath>
         </makeTool>
       </makefileType>
-      <item path="build/config.h" ex="true" tool="3" flavor="0">
+      <item path="build/src/config.h" ex="true" tool="3" flavor="0">
       </item>
-      <folder path="smtrat/build/src">
+      <item path="build/src/parser/Parser.tab.cc" ex="false" tool="1" flavor="0">
         <ccTool>
           <incDir>
             <pElem>src/parser</pElem>
@@ -388,7 +360,16 @@
             <pElem>src</pElem>
           </incDir>
         </ccTool>
-      </folder>
+      </item>
+      <item path="build/src/parser/lex.smtrat.cc" ex="false" tool="1" flavor="0">
+        <ccTool>
+          <incDir>
+            <pElem>src/parser</pElem>
+            <pElem>build/src/parser</pElem>
+            <pElem>src</pElem>
+          </incDir>
+        </ccTool>
+      </item>
       <folder path="smtrat/src/modules">
         <ccTool>
           <incDir>

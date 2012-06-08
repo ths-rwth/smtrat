@@ -31,7 +31,7 @@
 
 #include "GroebnerModule.h"
 #include "../Manager.h"
-#if(USE_NSS)
+#ifdef USE_NSS
 #include "NSSModule/GroebnerToSDP.h"
 #endif
 
@@ -96,7 +96,7 @@ namespace smtrat
             mBasis.calculate();
 
             MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic> witness;
-#if(USE_NSS)
+#ifdef USE_NSS
 			if( !mBasis.isConstant() )
             {
                 // Lets search for a witness. We only have to do this if the gb is non-constant.
