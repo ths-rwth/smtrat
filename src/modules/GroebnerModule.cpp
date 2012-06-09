@@ -40,7 +40,6 @@ using GiNaC::ex_to;
 using GiNaCRA::VariableListPool;
 using GiNaCRA::MultivariatePolynomialMR;
 
-using GiNaCRA::MultivariateMonomialMR;
 
 namespace smtrat
 {
@@ -51,9 +50,7 @@ namespace smtrat
         mStateHistory()
 
     {
-        //mOrder      = GiNaCRA::MonomMRCompare( &GiNaCRA::MultivariateMonomialMR::GrRevLexCompare );
         mModuleType = MT_GroebnerModule;
-        GiNaCRA::MultivariatePolynomialSettings::InitializeGiNaCRAMultivariateMR();
     }
 
     GroebnerModule::~GroebnerModule(){}
@@ -64,22 +61,20 @@ namespace smtrat
         Module::assertSubFormula( _formula );
         for( GiNaC::symtab::const_iterator it = _formula->constraint().variables().begin(); it != _formula->constraint().variables().end(); ++it )
         {
-            VariableListPool::addVariable( ex_to<symbol>( it->second ) );
-            mListOfVariables.insert( *it );
+	        VariableListPool::addVariable( ex_to<symbol>( it->second ) );
+	        mListOfVariables.insert( *it );
         }
 
         //only equalities should be added
         if( _formula->constraint().relation() == CR_EQ )
         {
-            mBasis.addPolynomial( MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic>( _formula->constraint().lhs() ) );
+		    mBasis.addPolynomial( MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic>( _formula->constraint().lhs() ) );			
         }
-
         return true;
     }
 
     Answer GroebnerModule::isConsistent()
     {
-        std::cout << "Groebner: Is Consistent?!" << std::endl;
         Answer answer = specialCaseConsistencyCheck();
         if( answer != Unknown )
         {
@@ -90,13 +85,14 @@ namespace smtrat
         //If no equalities are added, we do not know anything
         if( mBasis.nrOriginalConstraints() > 0 )
         {
-            //first, we interreduce the input!
+	        //first, we interreduce the input!
             mBasis.reduceInput();
-            //now, we calculate the groebner basis
+	        //now, we calculate the groebner basis
             mBasis.calculate();
-
+			//mBasis.getGbIdeal().print();
+			
+			#ifdef USE_NSS
             MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic> witness;
-#ifdef USE_NSS
 			if( !mBasis.isConstant() )
             {
                 // Lets search for a witness. We only have to do this if the gb is non-constant.
@@ -109,10 +105,12 @@ namespace smtrat
                     witness = sdp.findWitness();
 				}
             }
-#endif
             // We have found an infeasible subset. Generate it.
-            if( mBasis.isConstant() ||!witness.isZero() )
-            {
+            if( mBasis.isConstant() || !witness.isZero() )
+			#else
+			if(mBasis.isConstant()) 
+			#endif
+			{
                 mInfeasibleSubsets.push_back( set<const Formula*>() );
                 // The equalities we used for the basis-computation are the infeasible subset
                 for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
@@ -171,9 +169,9 @@ namespace smtrat
             //printPassedFormula();
 
         }
-        print( std::cout );
-        Answer ans = runBackends();
-        std::cout << "Backend result:" << ans << std::endl;
+     //   print( std::cout );
+		  Answer ans = runBackends();
+      //  std::cout << "Backend result:" << ans << std::endl;
         return ans;
     }
 
