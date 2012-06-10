@@ -1769,23 +1769,30 @@ namespace smtrat
                  * Get the conflict sets formed by the infeasible subsets in the backend.
                  */
                 ConditionSetSet conflictSet = ConditionSetSet();
-                for( vec_set_const_pFormula::const_iterator infSubSet = mInfeasibleSubsets.begin();
-                     infSubSet != mInfeasibleSubsets.end();
-                     ++infSubSet )
+                vector<Module*>::const_iterator backend = usedBackends().begin();
+                while( backend != usedBackends().end() )
                 {
-                    ConditionSet conflict = ConditionSet();
-                    for( set< const Formula* >::const_iterator subformula = infSubSet->begin(); subformula != infSubSet->end(); ++subformula )
+                    if( !(*backend)->rInfeasibleSubsets().empty() )
                     {
-                        for( ConditionVector::const_iterator cond = _state->conditions().begin(); cond != _state->conditions().end(); ++cond )
+                        for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
+                                infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
                         {
-                            if( (*cond)->pConstraint() == (*subformula)->pConstraint() )
+                            ConditionSet conflict = ConditionSet();
+                            for( set< const Formula* >::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                             {
-                                conflict.insert( *cond );
-                                break;
+                                for( ConditionVector::const_iterator cond = _state->conditions().begin(); cond != _state->conditions().end(); ++cond )
+                                {
+                                    if( (*cond)->pConstraint() == (*subformula)->pConstraint() )
+                                    {
+                                        conflict.insert( *cond );
+                                        break;
+                                    }
+                                }
                             }
+                            conflictSet.insert( conflict );
                         }
+                        break;
                     }
-                    conflictSet.insert( conflict );
                 }
                 _state->addConflictSet( NULL, conflictSet );
                 eraseDTsOfRanking( *_state );
