@@ -34,13 +34,13 @@ namespace smtrat
 {
     NRATSolver::NRATSolver( Formula* _inputFormula ) : Manager( _inputFormula )
     {
-		#ifndef USE_GB
+		#ifdef USE_GB
         GiNaCRA::MultivariatePolynomialSettings::InitializeGiNaCRAMultivariateMR();
 		#endif
 		#ifdef USE_CAD
 		strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_VSMODULE, MT_CADModule );
 		#endif
-		#ifndef USE_GB
+		#ifdef USE_GB
 		strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE, MT_VSModule );
 		strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SATMODULE, MT_GroebnerModule);
 		#else
