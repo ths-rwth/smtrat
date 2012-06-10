@@ -61,14 +61,14 @@ namespace smtrat
          */
         addModuleType( MT_SimplifierModule, new StandardModuleFactory<SimplifierModule>() );
 #ifdef USE_GB
-	addModuleType( MT_GroebnerModule, new StandardModuleFactory<GroebnerModule>() );
+        addModuleType( MT_GroebnerModule, new StandardModuleFactory<GroebnerModule>() );
 #endif
-	addModuleType( MT_VSModule, new StandardModuleFactory<VSModule>() );
+        addModuleType( MT_VSModule, new StandardModuleFactory<VSModule>() );
 #ifdef USE_CAD
-	addModuleType( MT_UnivariateCADModule, new StandardModuleFactory<UnivariateCADModule>() );
+        addModuleType( MT_UnivariateCADModule, new StandardModuleFactory<UnivariateCADModule>() );
         addModuleType( MT_CADModule, new StandardModuleFactory<CADModule>() );
 #endif
-	addModuleType( MT_SATModule, new StandardModuleFactory<SATModule>() );
+        addModuleType( MT_SATModule, new StandardModuleFactory<SATModule>() );
         addModuleType( MT_PreProModule, new StandardModuleFactory<PreProModule>() );
         addModuleType( MT_PreProCNFModule, new StandardModuleFactory<PreProCNFModule>() );
         addModuleType( MT_CNFerModule, new StandardModuleFactory<CNFerModule>() );

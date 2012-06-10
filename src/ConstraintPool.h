@@ -56,7 +56,7 @@ namespace smtrat
             /// the symbol table containing the variables of all constraints
             GiNaC::symtab mAllVariables;
             /// for each string representation its constraint (considering all constraints of which the manager has already been informed)
-            std::unordered_set< const Constraint*, constraintHash, constraintEqual> mAllConstraints;
+            std::unordered_set<const Constraint*, constraintHash, constraintEqual> mAllConstraints;
 
             // Methods:
 

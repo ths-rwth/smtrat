@@ -6,8 +6,8 @@
 #define VERSION "0.2.1"
 
 /* #undef USE_NSS */
-/* #undef USE_GINACRA */
+#define USE_GINACRA
 /* #undef USE_GB */
-/* #undef USE_CAD */
+#define USE_CAD
 
 #endif
