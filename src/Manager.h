@@ -41,6 +41,7 @@
 #include "Strategy.h"
 #include "ModuleType.h"
 #include "Module.h"
+#include "config.h"
 #include "modules/StandardModuleFactory.h"
 
 namespace smtrat

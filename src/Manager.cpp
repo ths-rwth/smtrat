@@ -28,7 +28,6 @@
  *
  * Created on January 18, 2012, 3:22 PM
  */
-#include "config.h"
 #include "Manager.h"
 #include "modules/Modules.h"
 
