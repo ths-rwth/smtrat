@@ -97,15 +97,11 @@ set(lib_SATModule_headers
 	modules/SATModule/Vec.h
 	modules/SATModule/XAlloc.h
 	modules/SATModule/Options.h
-	modules/SATModule/ParseUtils.h
-	modules/SATModule/System.h
-	modules/SATModule/Dimacs.h
 	modules/SATModule/SolverTypes.h
 )
 
 set(lib_SATModule_src
 	modules/SATModule/Options.cpp
-	modules/SATModule/System.cpp
 )
 
 set(lib_LRAModule_headers

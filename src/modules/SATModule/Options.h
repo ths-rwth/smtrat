@@ -27,14 +27,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "IntTypes.h"
 #include "Vec.h"
-#include "ParseUtils.h"
 
 namespace Minisat
 {
     //==================================================================================================
-    // Top-level option parse/help functions:
+    // Top-level option help functions:
 
-    extern void parseOptions( int& argc, char** argv, bool strict = false );
     extern void printUsageAndExit( int argc, char** argv, bool verbose = false );
     extern void setUsageHelp( const char* str );
     extern void setHelpPrefixStr( const char* str );
@@ -89,10 +87,8 @@ namespace Minisat
         public:
             virtual ~Option(){}
 
-            virtual bool parse( const char* str ) = 0;
             virtual void help( bool verbose = false ) = 0;
 
-            friend void parseOptions( int& argc, char** argv, bool strict );
             friend void printUsageAndExit( int argc, char** argv, bool verbose );
             friend void setUsageHelp( const char* str );
             friend void setHelpPrefixStr( const char* str );
@@ -180,35 +176,6 @@ namespace Minisat
                 return *this;
             }
 
-            virtual bool parse( const char* str )
-            {
-                const char* span = str;
-
-                if( !match( span, "-" ) ||!match( span, name ) ||!match( span, "=" ) )
-                    return false;
-
-                char*  end;
-                double tmp = strtod( span, &end );
-
-                if( end == NULL )
-                    return false;
-                else if( tmp >= range.end && (!range.end_inclusive || tmp != range.end) )
-                {
-                    fprintf( stderr, "ERROR! value <%s> is too large for option \"%s\".\n", span, name );
-                    exit( 1 );
-                }
-                else if( tmp <= range.begin && (!range.begin_inclusive || tmp != range.begin) )
-                {
-                    fprintf( stderr, "ERROR! value <%s> is too small for option \"%s\".\n", span, name );
-                    exit( 1 );
-                }
-
-                value = tmp;
-                // fprintf(stderr, "READ VALUE: %g\n", value);
-
-                return true;
-            }
-
             virtual void help( bool verbose = false )
             {
                 fprintf( stderr,
@@ -259,34 +226,6 @@ namespace Minisat
             {
                 value = x;
                 return *this;
-            }
-
-            virtual bool parse( const char* str )
-            {
-                const char* span = str;
-
-                if( !match( span, "-" ) ||!match( span, name ) ||!match( span, "=" ) )
-                    return false;
-
-                char* end;
-                int32_t tmp = strtol( span, &end, 10 );
-
-                if( end == NULL )
-                    return false;
-                else if( tmp > range.end )
-                {
-                    fprintf( stderr, "ERROR! value <%s> is too large for option \"%s\".\n", span, name );
-                    exit( 1 );
-                }
-                else if( tmp < range.begin )
-                {
-                    fprintf( stderr, "ERROR! value <%s> is too small for option \"%s\".\n", span, name );
-                    exit( 1 );
-                }
-
-                value = tmp;
-
-                return true;
             }
 
             virtual void help( bool verbose = false )
@@ -342,17 +281,6 @@ namespace Minisat
                 return *this;
             }
 
-            virtual bool parse( const char* str )
-            {
-                const char* span = str;
-
-                if( !match( span, "-" ) ||!match( span, name ) ||!match( span, "=" ) )
-                    return false;
-
-                value = span;
-                return true;
-            }
-
             virtual void help( bool verbose = false )
             {
                 fprintf( stderr, "  -%-10s = %8s\n", name, type_name );
@@ -392,24 +320,6 @@ namespace Minisat
             {
                 value = b;
                 return *this;
-            }
-
-            virtual bool parse( const char* str )
-            {
-                const char* span = str;
-
-                if( match( span, "-" ) )
-                {
-                    bool b = !match( span, "no-" );
-
-                    if( strcmp( span, name ) == 0 )
-                    {
-                        value = b;
-                        return true;
-                    }
-                }
-
-                return false;
             }
 
             virtual void help( bool verbose = false )

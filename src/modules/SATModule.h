@@ -57,6 +57,7 @@
 #include "SATModule/Alg.h"
 #include "SATModule/Options.h"
 #include "SATModule/SolverTypes.h"
+#include "SATModule/Sort.h"
 #include "../Module.h"
 
 namespace smtrat
@@ -95,9 +96,6 @@ namespace smtrat
             BooleanVarMap         mBooleanVarMap;
             BooleanConstraintMap  mBooleanConstraintMap;
             std::vector<unsigned> mBacktrackpointInSatSolver;
-            #ifdef SATMODULE_WITH_CALL_NUMBER
-            unsigned mTheorycalls;
-            #endif
 
         public:
 
@@ -390,7 +388,7 @@ namespace smtrat
 
             Answer addClauseToSatSolver( const Formula* );
             Minisat::Lit getLiteral( const Formula&, const Formula* = NULL );
-            void adaptPassedFormula();
+            bool adaptPassedFormula();
     };
 
     //=================================================================================================
