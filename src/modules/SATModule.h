@@ -333,7 +333,7 @@ namespace smtrat
             void analyze( Minisat::CRef confl, Minisat::vec<Minisat::Lit>& out_learnt, int& out_btlevel );    // (bt = backtrack)
             void analyzeFinal( Minisat::Lit p, Minisat::vec<Minisat::Lit>& out_conflict );    // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
             bool litRedundant( Minisat::Lit p, uint32_t abstract_levels );    // (helper method for 'analyze()')
-            Minisat::lbool search( int nof_conflicts );    // Search for a given number of conflicts.
+            Minisat::lbool search( int nof_conflicts = 100 );    // Search for a given number of conflicts.
             Minisat::lbool solve_();    // Main solve method (assumptions given in 'assumptions').
             void reduceDB();    // Reduce the set of learnt clauses.
             void removeSatisfied( Minisat::vec<Minisat::CRef>& cs );    // Shrink 'cs' to contain only non-satisfied clauses.
