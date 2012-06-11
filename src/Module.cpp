@@ -811,7 +811,7 @@ printWithBackends();
             _out << _initiation << "   " << "[" << *receivedSubformula << "]";
            	while( btpoint != mBackTrackPoints.end() && *btpoint == upos )
 	        {
-	            _out << "   <- Backtrackpoint #" << numberOfBacktrackPoint;
+	            _out << "   <- Backtrackpoint #" << numberOfBacktrackPoint << "(" << *btpoint<< ")";
 	            ++btpoint;
 	            ++numberOfBacktrackPoint;
 	        }
