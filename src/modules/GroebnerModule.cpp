@@ -28,13 +28,16 @@
  *
  * @version 2012-03-20
  */
-
+#include <set>
 #include "GroebnerModule.h"
+
 #include "../Manager.h"
 #ifdef USE_NSS
 #include "NSSModule/GroebnerToSDP.h"
 #endif
 
+
+using std::set;
 using GiNaC::ex_to;
 
 using GiNaCRA::VariableListPool;
