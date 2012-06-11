@@ -83,6 +83,7 @@ namespace smtrat
             virtual Answer isConsistent();
             virtual void pushBacktrackPoint();
             virtual void popBacktrackPoint();
+			void printStateHistory();
 
         protected:
             /// The current Groebner basis

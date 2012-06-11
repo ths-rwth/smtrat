@@ -65,11 +65,17 @@ namespace smtrat
 	        mListOfVariables.insert( *it );
         }
 
-        //only equalities should be added
+        //only equalities should be added to the gb
         if( _formula->constraint().relation() == CR_EQ )
         {
 		    mBasis.addPolynomial( MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic>( _formula->constraint().lhs() ) );			
         }
+		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
+		{
+			addReceivedSubformulaToPassedFormula( _formula );
+		}
+        
+		
         return true;
     }
 
@@ -85,11 +91,12 @@ namespace smtrat
         //If no equalities are added, we do not know anything
         if( mBasis.nrOriginalConstraints() > 0 )
         {
-	        //first, we interreduce the input!
-            mBasis.reduceInput();
+	        
+			//first, we interreduce the input!
+            
+			mBasis.reduceInput();
 	        //now, we calculate the groebner basis
-            mBasis.calculate();
-			//mBasis.getGbIdeal().print();
+			mBasis.calculate();
 			
 			#ifdef USE_NSS
             MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic> witness;
@@ -120,6 +127,7 @@ namespace smtrat
                         mInfeasibleSubsets.back().insert( *it );
                     }
                 }
+				//print( );
                 return False;
             }
 
@@ -137,15 +145,6 @@ namespace smtrat
                 }
             }
 
-            unsigned lastBTP = mBackTrackPoints.back();
-            // Add new inequalities to passed formula
-            for( unsigned j = lastBTP; j < receivedFormulaSize(); ++j )
-            {
-                if( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
-                {
-                    addReceivedSubformulaToPassedFormula( j );
-                }
-            }
 
             //remove equalities from subformulas
             for( unsigned i = 0; i < passedFormulaSize(); )
@@ -159,7 +158,8 @@ namespace smtrat
                     ++i;
                 }
             }
-
+			
+		
             // The gb should be passed
             std::list<Polynomial> simplified = mBasis.getGb();
             for( std::list<Polynomial>::const_iterator simplIt = simplified.begin(); simplIt != simplified.end(); ++simplIt )
@@ -169,9 +169,11 @@ namespace smtrat
             //printPassedFormula();
 
         }
-     //   print( std::cout );
-		  Answer ans = runBackends();
-      //  std::cout << "Backend result:" << ans << std::endl;
+		Answer ans = runBackends();
+		if(ans == False) {
+			 getInfeasibleSubsets();
+		}
+        //std::cout << "Backend result:" << ans << std::endl;
         return ans;
     }
 
@@ -180,10 +182,11 @@ namespace smtrat
      */
     void GroebnerModule::pushBacktrackPoint()
     {
+		//std::cout << "Push backtrackpoint" << std::endl;
+		saveState();
         super::pushBacktrackPoint();
-        //std::cout << "We add a new state" << std::endl;
         mStateHistory.push_back( GroebnerModuleState( mBasis ) );
-
+		//printStateHistory();
     }
 
     /**
@@ -191,21 +194,24 @@ namespace smtrat
      */
     void GroebnerModule::popBacktrackPoint()
     {
-        //std::cout << "Restore the old state" << std::endl;
+		//std::cout << "Pop backtrack" << std::endl;
         mStateHistory.pop_back();
         // Load the state to be restored;
         if( mStateHistory.empty() )
         {
-            //  std::cout << "Restore the base state" << std::endl;
+            // std::cout << "Restore the base state" << std::endl;
             mBasis = GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic>();
+			
         }
         else
         {
-            //  std::cout << "Restore from history" << std::endl;
+			//  std::cout << "Restore from history" << std::endl;
             mBasis = mStateHistory.back().getBasis();
-            //  std::cout << "Restored successfully" << std::endl;
+            
         }
-
+		//std::cout << " New basis: ";
+		//mBasis.getGbIdeal().print();
+		//std::cout << std::endl;
         super::popBacktrackPoint();
 
     }
@@ -217,14 +223,24 @@ namespace smtrat
     bool GroebnerModule::saveState()
     {
         //If nothing new was added, we just update our state!
-        if( mBackTrackPoints.back() == receivedFormulaSize() - 1 )
+        if( !mBackTrackPoints.empty() && lastBacktrackpointsEnd() == (signed)receivedFormulaSize() - 1 )
         {
-            //  std::cout << "We update our state!" << std::endl;
+         //   std::cout << "We update our state!" << std::endl;
             mStateHistory.pop_back();
             mStateHistory.push_back( GroebnerModuleState( mBasis ) );
             return true;
-        }
+        } 
+		
         return false;
     }
+	
+	void GroebnerModule::printStateHistory() 
+	{
+		std::cout <<"[";
+		for(auto it =  mStateHistory.begin(); it != mStateHistory.end(); ++it)  {
+			it->getBasis().getGbIdeal().print(); std::cout << ","<<std::endl;
+		}
+		std::cout << "]" << std::endl;
+	}
 }    // namespace smtrat
 
