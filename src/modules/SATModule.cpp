@@ -50,7 +50,6 @@
 #include "../NRATSolver.h"
 #include "SATModule.h"
 #include <math.h>
-#include "SATModule/Sort.h"
 
 //#define DEBUG_SATMODULE
 
@@ -145,9 +144,6 @@ namespace smtrat
         mBooleanVarMap             = BooleanVarMap();
         mBooleanConstraintMap      = BooleanConstraintMap();
         mBacktrackpointInSatSolver = vector<CRef>();
-        #ifdef SATMODULE_WITH_CALL_NUMBER
-        mTheorycalls = 0;
-        #endif
     }
 
     /**
@@ -586,12 +582,13 @@ namespace smtrat
 
     /**
      * Adapts the passed formula according to the current assignment within the SAT solver.
+     *
+     * @return  true,   if the passed formula has been changed;
+     *          false,  otherwise.
      */
-    void SATModule::adaptPassedFormula()
+    bool SATModule::adaptPassedFormula()
     {
-        #ifdef SATMODULE_WITH_CALL_NUMBER
         bool changedPassedFormula = false;
-        #endif
         /*
          * Collect the constraints to check.
          */
@@ -627,9 +624,7 @@ namespace smtrat
             if( constraintsToCheck.erase( passedFormulaAt( pos ) ) == 0 )
             {
                 removeSubformulaFromPassedFormula( pos );
-                #ifdef SATMODULE_WITH_CALL_NUMBER
                 changedPassedFormula = true;
-                #endif
             }
             else
             {
@@ -642,22 +637,14 @@ namespace smtrat
          */
         for( map<const Formula*, const Formula*, formulaCmp>::iterator iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
         {
-            #ifdef SATMODULE_WITH_CALL_NUMBER
             changedPassedFormula = true;
-            #endif
             vec_set_const_pFormula origins = vec_set_const_pFormula();
             set<const Formula*> origin = set<const Formula*>();
             origin.insert( iter->second );
             origins.push_back( origin );
             addSubformulaToPassedFormula( new Formula( *iter->first ), origins );
         }
-        #ifdef SATMODULE_WITH_CALL_NUMBER
-        if( changedPassedFormula )
-        {
-            ++mTheorycalls;
-            cout << "\r" << mTheorycalls << "    ";
-        }
-        #endif
+        return changedPassedFormula;
     }
 
     //=================================================================================================
@@ -1317,6 +1304,7 @@ NextClause:
         vec<Lit> learnt_clause;
         starts++;
         #ifdef SATMODULE_WITH_CALL_NUMBER
+        unsigned numberOfTheoryCalls = 0;
         cout << endl << "Number of theory calls:" << endl << endl;
         #endif
 
@@ -1339,115 +1327,121 @@ NextClause:
                 #endif
 
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
-                adaptPassedFormula();
-                switch( runBackends() )
+                if( adaptPassedFormula() )
                 {
-                    case True:
+                    #ifdef SATMODULE_WITH_CALL_NUMBER
+                    ++numberOfTheoryCalls;
+                    cout << "\r" << numberOfTheoryCalls << "    ";
+                    #endif
+                    switch( runBackends() )
                     {
-                        #ifdef DEBUG_SATMODULE
-                        cout << "True!" << endl;
-                        #endif
-                        break;
-                    }
-                    case False:
-                    {
-                        #ifdef DEBUG_SATMODULE
-                        cout << "False!" << endl;
-                        #endif
-                        learnt_clause.clear();
-                        vector<Module*>::const_iterator backend = usedBackends().begin();
-                        while( backend != usedBackends().end() )
+                        case True:
                         {
-                            if( !(*backend)->rInfeasibleSubsets().empty() )
+                            #ifdef DEBUG_SATMODULE
+                            cout << "True!" << endl;
+                            #endif
+                            break;
+                        }
+                        case False:
+                        {
+                            #ifdef DEBUG_SATMODULE
+                            cout << "False!" << endl;
+                            #endif
+                            learnt_clause.clear();
+                            vector<Module*>::const_iterator backend = usedBackends().begin();
+                            while( backend != usedBackends().end() )
                             {
-                                for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
-                                        infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
+                                if( !(*backend)->rInfeasibleSubsets().empty() )
                                 {
-                                    #ifdef DEBUG_SATMODULE
-                                    cout << "### { ";
-                                    #endif
-                                    // Sort the constraints in a unique way.
-                                    set<const Formula*, formulaCmpB> sortedConstraints = set<const Formula*, formulaCmpB>();
-                                    for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
-                                    {
-                                        sortedConstraints.insert( *subformula );
-                                    }
-                                    // Add the according literals to the conflict clause.
-                                    for( set<const Formula*, formulaCmpB>::const_iterator subformula = sortedConstraints.begin();
-                                         subformula != sortedConstraints.end();
-                                         ++subformula )
+                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
+                                            infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
                                     {
                                         #ifdef DEBUG_SATMODULE
-                                        if( subformula != sortedConstraints.begin() )
-                                        {
-                                            cout << ", ";
-                                        }
-                                        (*subformula)->print();
+                                        cout << "### { ";
                                         #endif
-                                        Lit lit = getLiteral( **subformula );
-                                        learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
+                                        // Sort the constraints in a unique way.
+                                        set<const Formula*, formulaCmpB> sortedConstraints = set<const Formula*, formulaCmpB>();
+                                        for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
+                                        {
+                                            sortedConstraints.insert( *subformula );
+                                        }
+                                        // Add the according literals to the conflict clause.
+                                        for( set<const Formula*, formulaCmpB>::const_iterator subformula = sortedConstraints.begin();
+                                            subformula != sortedConstraints.end();
+                                            ++subformula )
+                                        {
+                                            #ifdef DEBUG_SATMODULE
+                                            if( subformula != sortedConstraints.begin() )
+                                            {
+                                                cout << ", ";
+                                            }
+                                            (*subformula)->print();
+                                            #endif
+                                            Lit lit = getLiteral( **subformula );
+                                            learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
+                                        }
+                                        #ifdef DEBUG_SATMODULE
+                                        cout << " }";
+                                        cout << endl;
+                                        #endif
+                                        break;    // TODO: Add all infeasible subsets as conflicting clauses.
                                     }
-                                    #ifdef DEBUG_SATMODULE
-                                    cout << " }";
-                                    cout << endl;
-                                    #endif
-                                    break;    // TODO: Add all infeasible subsets as conflicting clauses.
+                                    break;
                                 }
-                                break;
+                                ++backend;
                             }
-                            ++backend;
-                        }
-                        assert( backend != usedBackends().end() );
+                            assert( backend != usedBackends().end() );
 
-                        // Do not store theory lemma
-                        if( learnt_clause.size() == 1 )
+                            // Do not store theory lemma
+                            if( learnt_clause.size() == 1 )
+                            {
+                                #ifdef DEBUG_SATMODULE
+                                cout << "###" << endl << "### Do not store theory lemma" << endl;
+                                cout << "### Learnt clause = ";
+                                #endif
+
+                                confl = ca.alloc( learnt_clause, true );
+
+                                #ifdef DEBUG_SATMODULE
+                                printClause( cout, ca[confl] );
+                                cout << endl << "###" << endl;
+                                #endif
+                            }
+                            // Learn theory lemma
+                            else
+                            {
+                                #ifdef DEBUG_SATMODULE
+                                cout << "###" << endl << "### Learn theory lemma" << endl;
+                                cout << "### Conflict clause (" << learnt_clause.size() << ") = ";
+                                #endif
+
+                                confl = ca.alloc( learnt_clause, true );
+                                learnts.push( confl );
+                                attachClause( confl );
+                                claBumpActivity( ca[confl] );
+
+                                #ifdef DEBUG_SATMODULE
+                                printClause( cout, ca[confl] );
+                                cout << endl << "###" << endl;
+                                #endif
+                            }
+
+                            break;
+                        }
+                        case Unknown:
                         {
                             #ifdef DEBUG_SATMODULE
-                            cout << "###" << endl << "### Do not store theory lemma" << endl;
-                            cout << "### Learnt clause = ";
+                            cout << "### Result: Unknown!" << endl;
+                            cout << "Warning! Unknown as answer in SAT solver." << endl;
                             #endif
-
-                            confl = ca.alloc( learnt_clause, true );
-
-                            #ifdef DEBUG_SATMODULE
-                            printClause( cout, ca[confl] );
-                            cout << endl << "###" << endl;
-                            #endif
+                            return l_Undef;
                         }
-                        // Learn theory lemma
-                        else
+                        default:
                         {
-                            #ifdef DEBUG_SATMODULE
-                            cout << "###" << endl << "### Learn theory lemma" << endl;
-                            cout << "### Conflict clause (" << learnt_clause.size() << ") = ";
-                            #endif
-
-                            confl = ca.alloc( learnt_clause, true );
-                            learnts.push( confl );
-                            attachClause( confl );
-                            claBumpActivity( ca[confl] );
-
-                            #ifdef DEBUG_SATMODULE
-                            printClause( cout, ca[confl] );
-                            cout << endl << "###" << endl;
-                            #endif
+                            cerr << "Unexpected output!" << endl;
+                            assert( false );
+                            return l_Undef;
                         }
-
-                        break;
-                    }
-                    case Unknown:
-                    {
-                        #ifdef DEBUG_SATMODULE
-                        cout << "### Result: Unknown!" << endl;
-                        cout << "Warning! Unknown as answer in SAT solver." << endl;
-                        #endif
-                        return l_Undef;
-                    }
-                    default:
-                    {
-                        cerr << "Unexpected output!" << endl;
-                        assert( false );
-                        return l_Undef;
                     }
                 }
             }
