@@ -225,8 +225,12 @@ namespace smtrat
 
         //SMT
         protected:
-            bool 		   addReceivedSubformulaToPassedFormula( unsigned );
-            void 		   addSubformulaToPassedFormula( Formula*, vec_set_const_pFormula& );
+            bool			addReceivedSubformulaToPassedFormula( unsigned );
+			void			addReceivedSubformulaToPassedFormula( const Formula* _subformula );
+	
+            void			addSubformulaToPassedFormula( Formula*, vec_set_const_pFormula& );
+			void			addSubformulaToPassedFormula( Formula* _formula, const Formula* _origin ); 
+	
             unsigned 	   getPositionOfReceivedFormula( const Formula* const ) const;
             unsigned 	   getPositionOfPassedFormula( const Formula* const ) const;
             void 		   setOrigins( unsigned, vec_set_const_pFormula& );

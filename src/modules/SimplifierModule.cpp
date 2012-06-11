@@ -377,7 +377,7 @@ namespace smtrat
                 }
                 case 2:
                 {
-                    addReceivedSubformulaToPassedFormula( 0 );
+                    addReceivedSubformulaToPassedFormula( (unsigned)0 );
                     mNumberOfComparedConstraints = 1;
                     Answer a = runBackends();
                     if( a == False )

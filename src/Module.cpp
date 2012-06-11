@@ -165,6 +165,24 @@ else if( a == False )
             return false;
         }
     }
+	
+	/**
+     * Add the formula, which has the given entry in the vector of the received formulas, to the
+     * vector of passed formulas. Furthermore, a map entry, mapping from the constraints in the
+     * vector of passed formulas to its original constraints in the vector of the received
+     * formulas, is generated.
+     *
+     * @param _subformula    The formula to add to the vector of
+     *                                      of passed formulas in the vector of received
+     *                                      formulas.
+     *
+     */
+    
+	void Module::addReceivedSubformulaToPassedFormula( const Formula* _subformula ) 
+	{
+		addSubformulaToPassedFormula(new Formula(*_subformula), _subformula);
+		assert( mpPassedFormula->size() == mPassedFormulaOrigins.size() );
+	}
 
     /**
      * Add the constraint, which has the given entry in the vector of received constraints, to the
@@ -188,6 +206,23 @@ else if( a == False )
         assert( mpPassedFormula->size() == mPassedFormulaOrigins.size() );
         mBackendsUptodate = false;
     }
+	
+	/**
+	 * Adds a formula to the passed subformula, with only one origin
+     * @param _formula The new passed subformula
+	 * @param _origin A pointer to the original (received) subformula.
+     */
+	void Module::addSubformulaToPassedFormula( Formula* _formula, const Formula* _origin ) 
+	{
+		assert( receivedFormulaSize() != UINT_MAX );
+		mpPassedFormula->addSubformula(_formula);
+		vec_set_const_pFormula originals;
+        originals.push_back( set<const Formula*>() );
+		originals.front().insert( _origin );
+		mPassedFormulaOrigins.push_back(originals);
+		assert(mpPassedFormula->size() == mPassedFormulaOrigins.size() );
+		mBackendsUptodate = false;
+	}
 
     unsigned Module::getPositionOfReceivedFormula( const Formula* const _formula ) const
     {
@@ -301,7 +336,6 @@ else if( a == False )
      */
     void Module::getInfeasibleSubsets()
     {
-
         vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )
         {
