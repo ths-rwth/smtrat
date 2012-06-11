@@ -46,6 +46,7 @@ namespace smtrat
         mDeductions( vector< const Constraint* >() ),
         mpTSManager( _tsManager ),
         mModuleType( MT_Module ),
+        mConstraintsToInform( fastConstraintSet() ),
         mUsedBackends( vector<Module*>() ),
         mAllBackends( vector<Module*>() ),
         mBackendsUptodate( false ),
@@ -165,7 +166,7 @@ else if( a == False )
             return false;
         }
     }
-	
+
 	/**
      * Add the formula, which has the given entry in the vector of the received formulas, to the
      * vector of passed formulas. Furthermore, a map entry, mapping from the constraints in the
@@ -177,8 +178,8 @@ else if( a == False )
      *                                      formulas.
      *
      */
-    
-	void Module::addReceivedSubformulaToPassedFormula( const Formula* _subformula ) 
+
+	void Module::addReceivedSubformulaToPassedFormula( const Formula* _subformula )
 	{
 		addSubformulaToPassedFormula(new Formula(*_subformula), _subformula);
 		assert( mpPassedFormula->size() == mPassedFormulaOrigins.size() );
@@ -206,13 +207,13 @@ else if( a == False )
         assert( mpPassedFormula->size() == mPassedFormulaOrigins.size() );
         mBackendsUptodate = false;
     }
-	
+
 	/**
 	 * Adds a formula to the passed subformula, with only one origin
      * @param _formula The new passed subformula
 	 * @param _origin A pointer to the original (received) subformula.
      */
-	void Module::addSubformulaToPassedFormula( Formula* _formula, const Formula* _origin ) 
+	void Module::addSubformulaToPassedFormula( Formula* _formula, const Formula* _origin )
 	{
 		assert( receivedFormulaSize() != UINT_MAX );
 		mpPassedFormula->addSubformula(_formula);

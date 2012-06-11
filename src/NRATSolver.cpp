@@ -56,7 +56,7 @@ namespace smtrat
     }
     static bool caseSix ( Condition _condition )
     {
-        return true;
+        return !(PROP_CANNOT_BE_SOLVED_BY_VSMODULE <= _condition);
     }
 
     NRATSolver::NRATSolver( Formula* _inputFormula ) : Manager( _inputFormula )

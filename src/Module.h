@@ -63,6 +63,7 @@ namespace smtrat
             /// A reference to the manager
             Manager* const 		mpTSManager;
             ModuleType     		mModuleType;
+            fastConstraintSet   mConstraintsToInform;
 
         private:
             /// A vector of received constraints
@@ -81,8 +82,9 @@ namespace smtrat
             virtual ~Module();
 
             //Main interfaces
-            virtual bool inform( const Constraint* const c )
+            virtual bool inform( const Constraint* const _constraint )
             {
+                mConstraintsToInform.insert( _constraint );
                 return true;
             }
 
@@ -223,14 +225,19 @@ namespace smtrat
                 return mUsedBackends;
             }
 
+            const fastConstraintSet& constraintsToInform() const
+            {
+                return mConstraintsToInform;
+            }
+
         //SMT
         protected:
             bool			addReceivedSubformulaToPassedFormula( unsigned );
 			void			addReceivedSubformulaToPassedFormula( const Formula* _subformula );
-	
+
             void			addSubformulaToPassedFormula( Formula*, vec_set_const_pFormula& );
-			void			addSubformulaToPassedFormula( Formula* _formula, const Formula* _origin ); 
-	
+			void			addSubformulaToPassedFormula( Formula* _formula, const Formula* _origin );
+
             unsigned 	   getPositionOfReceivedFormula( const Formula* const ) const;
             unsigned 	   getPositionOfPassedFormula( const Formula* const ) const;
             void 		   setOrigins( unsigned, vec_set_const_pFormula& );
@@ -253,8 +260,8 @@ namespace smtrat
 
 		//Printing
 	public:
-            void printWithBackends( std::ostream& = std::cout, const string = "***" ) const;
-            void print( std::ostream& = std::cout, const string = "***" ) const;
+            void printWithBackends( std::ostream& = std::cout, const std::string = "***" ) const;
+            void print( std::ostream& = std::cout, const std::string = "***" ) const;
             void printReceivedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printPassedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printInfeasibleSubsets( std::ostream& = std::cout, const std::string = "***" ) const;
