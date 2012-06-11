@@ -191,25 +191,57 @@ namespace smtrat
      */
     Answer SATModule::isConsistent()
     {
-        if( solve() )
+        budgetOff();
+        assumptions.clear();
+
+        model.clear();
+        conflict.clear();
+        if( !ok )
+            return False;
+
+        solves++;
+
+        max_learnts             = nClauses() * learntsize_factor;
+        learntsize_adjust_confl = learntsize_adjust_start_confl;
+        learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
+
+        lbool result = search();
+
+        if( result == l_True )
+        {
+            // Extend & copy model:
+            model.growTo( nVars() );
+            for( int i = 0; i < nVars(); i++ )
+                model[i] = value( i );
+        }
+        else if( result == l_False && conflict.size() == 0 )
+            ok = false;
+
+        cancelUntil( 0 );
+
+        if( result == l_True )
         {
             return True;
         }
-        else
+        else if( result == l_False )
         {
             mInfeasibleSubsets.clear();
 
             /*
-             * Set the infeasible subset to the set of all received constraints.
-             */
+            * Set the infeasible subset to the set of all received constraints.
+            */
             set<const Formula*> infeasibleSubset = set<const Formula*>();
             for( Formula::const_iterator subformula = receivedFormulaBegin();
-                 subformula != receivedFormulaEnd(); ++subformula )
+                subformula != receivedFormulaEnd(); ++subformula )
             {
                 infeasibleSubset.insert( *subformula );
             }
             mInfeasibleSubsets.push_back( infeasibleSubset );
             return False;
+        }
+        else
+        {
+            return Unknown;
         }
     }
 
