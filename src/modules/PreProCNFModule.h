@@ -58,9 +58,9 @@ namespace smtrat
             // Interfaces.
             bool assertSubFormula( const Formula* const );
             Answer isConsistent();
-            pair< const Formula*, const Formula* > isCandidate( const Formula* const ) const;
-            bool substituteConstraint( const Formula* const, pair< pair< std::string, bool >,
-                    pair< pair<GiNaC::symtab, GiNaC::symtab>, pair< GiNaC::ex, GiNaC::ex> > >,
+            std::pair< const Formula*, const Formula* > isCandidate( const Formula* const ) const;
+            bool substituteConstraint( const Formula* const, std::pair< std::pair< std::string, bool >,
+                    std::pair< std::pair<GiNaC::symtab, GiNaC::symtab>, std::pair< GiNaC::ex, GiNaC::ex> > >,
                     vec_set_const_pFormula );
             void popBacktrackPoint();
             void pushBacktrackPoint();
@@ -71,8 +71,8 @@ namespace smtrat
             unsigned                                                            mNumberOfCheckedFormulas;
             std::vector< vec_set_const_pFormula >                               mSubstitutionOrigins;
             std::map< std::string, unsigned >                                     mNumberOfVariables;
-            std::vector< pair< pair< std::string, bool >, pair< pair<GiNaC::symtab, GiNaC::symtab>, pair< GiNaC::ex, GiNaC::ex> > > >    mSubstitutions;
-            std::vector< pair< std::vector< pair< Formula*, vec_set_const_pFormula > >, pair < bool, pair< unsigned, unsigned> > > >    mBacktrackPoints;
+            std::vector< std::pair< std::pair< std::string, bool >, std::pair< std::pair<GiNaC::symtab, GiNaC::symtab>, std::pair< GiNaC::ex, GiNaC::ex> > > >    mSubstitutions;
+            std::vector< std::pair< std::vector< std::pair< Formula*, vec_set_const_pFormula > >, std::pair < bool, std::pair< unsigned, unsigned> > > >    mBacktrackPoints;
                                                                                           // mBacktrackPoints saves all requiered data
                                                                                           // Subformulas + Origins + mNewFormulaReceived
                                                                                           // + mNumberOfCheckedFormulas + NumberOfKnownSubstitutions

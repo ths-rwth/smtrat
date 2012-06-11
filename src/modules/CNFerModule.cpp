@@ -29,6 +29,8 @@
 #include "../Manager.h"
 #include "CNFerModule.h"
 
+using namespace std;
+
 namespace smtrat
 {
     CNFerModule::CNFerModule( Manager* const _tsManager, const Formula* const _formula ):

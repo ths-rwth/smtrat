@@ -45,6 +45,7 @@ using GiNaC::ZERO_SIGN;
 using GiNaC::POSITIVE_SIGN;
 using GiNaC::NEGATIVE_SIGN;
 using GiNaC::ex_to;
+using namespace std;
 
 namespace smtrat
 {

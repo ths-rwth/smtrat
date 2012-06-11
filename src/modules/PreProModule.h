@@ -64,7 +64,7 @@ namespace smtrat
             unsigned                    mNumberOfComparedConstraints;
             std::vector<const Constraint*>   mReceivedConstraints;
             std::vector<const Formula*>      mConstraintOrigins;
-            std::vector< pair< pair< bool, unsigned >, pair< unsigned, unsigned > > >  mConstraintBacktrackPoints;
+            std::vector< std::pair< std::pair< bool, unsigned >, std::pair< unsigned, unsigned > > >  mConstraintBacktrackPoints;
 
     };
 

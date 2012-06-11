@@ -24,6 +24,7 @@ set(lib_core_headers
     Manager.h
     Answer.h
     Module.h
+    Condition.h
     Formula.h
     Strategy.h
     ModuleFactory.h

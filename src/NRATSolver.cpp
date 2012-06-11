@@ -32,23 +32,50 @@
 
 namespace smtrat
 {
+    static bool caseOne ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_VSMODULE <= _condition;
+    }
+    #ifdef USE_GB
+    static bool caseTwo ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE <= _condition;
+    }
+    #endif
+    static bool caseThree ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_SATMODULE <= _condition;
+    }
+    static bool caseFour ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE <= _condition;
+    }
+    static bool caseFive ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE <= _condition;
+    }
+    static bool caseSix ( Condition _condition )
+    {
+        return true;
+    }
+
     NRATSolver::NRATSolver( Formula* _inputFormula ) : Manager( _inputFormula )
     {
 		#ifdef USE_GB
         GiNaCRA::MultivariatePolynomialSettings::InitializeGiNaCRAMultivariateMR();
 		#endif
 		#ifdef USE_CAD
-		strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_VSMODULE, MT_CADModule );
+		strategy().addModuleType( caseOne, MT_CADModule );
 		#endif
 		#ifdef USE_GB
-		strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE, MT_VSModule );
-		strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SATMODULE, MT_GroebnerModule);
+		strategy().addModuleType( caseTwo, MT_VSModule );
+		strategy().addModuleType( caseThree, MT_GroebnerModule);
 		#else
-		strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SATMODULE, MT_VSModule );
+		strategy().addModuleType( caseThree, MT_VSModule );
 		#endif
-		strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE, MT_SATModule );
-        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE, MT_CNFerModule );
-        strategy().addModuleType( PROP_TRUE, MT_PreProModule );
+		strategy().addModuleType( caseFour, MT_SATModule );
+        strategy().addModuleType( caseFive, MT_CNFerModule );
+        strategy().addModuleType( caseSix, MT_PreProModule );
     }
 
     NRATSolver::~NRATSolver() {}

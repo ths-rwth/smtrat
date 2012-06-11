@@ -45,7 +45,8 @@ namespace smtrat
     ///////////
 
     class Strategy;
-    typedef std::pair<Condition, std::set<ModuleType> > ModuleStrategyCase;
+    typedef bool (*conditionEvaluation)( Condition );
+    typedef std::pair<conditionEvaluation, std::set<ModuleType> > ModuleStrategyCase;
 
     /**
      *
@@ -85,11 +86,11 @@ namespace smtrat
 
             // Methods
 
-            bool addModuleType( const Condition, ModuleType );
+            bool addModuleType( conditionEvaluation, ModuleType );
 
-            bool removeCase( const Condition );
+            bool removeCase( conditionEvaluation );
 
-            bool removeModuleType( const Condition, ModuleType );
+            bool removeModuleType( conditionEvaluation, ModuleType );
     };
 }    // namespace smtrat
 #endif   /* SMTRAT_STRATEGY_H */

@@ -55,6 +55,14 @@ namespace smtrat
         mpStrategy       = new Strategy();
         mpModulFactories = new map<const ModuleType, ModuleFactory*>();
 
+        // inform it about all constraints
+        for( fcs_const_iterator constraint = Formula::mConstraintPool.begin();
+                constraint != Formula::mConstraintPool.end();
+                ++constraint )
+        {
+            mpPrimaryBackend->inform( *constraint );
+        }
+
         /*
          * Add all existing modules.
          */
@@ -226,8 +234,8 @@ namespace smtrat
                 allBackends.push_back( pBackend );
                 backends.push_back( pBackend );
                 // inform it about all constraints
-                for( ConstraintPool::const_iterator constraint = Formula::mConstraintPool.begin();
-                     constraint != Formula::mConstraintPool.end();
+                for( fcs_const_iterator constraint = _requiredBy->constraintsToInform().begin();
+                     constraint != _requiredBy->constraintsToInform().end();
                      ++constraint )
                 {
                     pBackend->inform( *constraint );

@@ -27,36 +27,39 @@
 
 namespace smtrat
 {
+    struct constraintEqual
+    {
+        bool operator ()( const Constraint* const _constraintA, const Constraint* const _constraintB ) const
+        {
+            if( _constraintA->relation() == _constraintB->relation() )
+            {
+                return _constraintA->lhs().is_equal( _constraintB->lhs() );
+            }
+            return false;
+        }
+    };
+
+    struct constraintHash
+    {
+        size_t operator ()( const Constraint* const _constraint ) const
+        {
+            return _constraint->lhs().gethash() * 6 + _constraint->relation();
+        }
+    };
+
+    typedef std::unordered_set<const Constraint*, constraintHash, constraintEqual> fastConstraintSet;
+    typedef std::unordered_set< const Constraint*, constraintHash, constraintEqual>::const_iterator fcs_const_iterator;
+
     class ConstraintPool
     {
         private:
-
-            struct constraintEqual
-            {
-                bool operator ()( const Constraint* const _constraintA, const Constraint* const _constraintB ) const
-                {
-                    if( _constraintA->relation() == _constraintB->relation() )
-                    {
-                        return _constraintA->lhs().is_equal( _constraintB->lhs() );
-                    }
-                    return false;
-                }
-            };
-
-            struct constraintHash
-            {
-                size_t operator ()( const Constraint* const _constraint ) const
-                {
-                    return _constraint->lhs().gethash() * 6 + _constraint->relation();
-                }
-            };
 
             // Members:
 
             /// the symbol table containing the variables of all constraints
             GiNaC::symtab mAllVariables;
             /// for each string representation its constraint (considering all constraints of which the manager has already been informed)
-            std::unordered_set<const Constraint*, constraintHash, constraintEqual> mAllConstraints;
+            fastConstraintSet mAllConstraints;
 
             // Methods:
 
@@ -74,12 +77,10 @@ namespace smtrat
 
         public:
 
-            typedef std::unordered_set< const Constraint*, constraintHash, constraintEqual>::const_iterator const_iterator;
-
             ConstraintPool( unsigned _capacity = 1000 )
             {
                 mAllVariables = GiNaC::symtab();
-                mAllConstraints = std::unordered_set< const Constraint*, constraintHash, constraintEqual>();
+                mAllConstraints = fastConstraintSet();
                 mAllConstraints.reserve( _capacity );
             }
 
@@ -94,12 +95,12 @@ namespace smtrat
                 }
             }
 
-            const_iterator begin() const
+            fcs_const_iterator begin() const
             {
                 return mAllConstraints.begin();
             }
 
-            const_iterator end() const
+            fcs_const_iterator end() const
             {
                 return mAllConstraints.end();
             }

@@ -47,11 +47,10 @@
  * Created on January 18, 2012, 3:51 PM
  */
 
-#include "../NRATSolver.h"
 #include "SATModule.h"
-#include <math.h>
 
 //#define DEBUG_SATMODULE
+#define SATMODULE_WITH_CALL_NUMBER
 
 using namespace std;
 using namespace Minisat;
@@ -462,6 +461,7 @@ namespace smtrat
                     }
                 }
                 const Constraint* normalizedConstraint = Formula::newConstraint( sign * constraint.lhs(), rel );
+                mConstraintsToInform.insert( normalizedConstraint );
                 ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( normalizedConstraint );
                 if( constraintLiteralPair != mConstraintLiteralMap.end() )
                 {
@@ -494,18 +494,6 @@ namespace smtrat
                         {
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = mkLit( normConstrAuxBoolean, false );
-                            const Constraint* invertedConstraint        = Formula::newConstraint( constraint.lhs(), CR_NEQ );
-                            mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
-                            mConstraintLiteralMap[invertedConstraint]   = mkLit( invConstrAuxBoolean, false );
-                            break;
-                        }
-                        case CR_NEQ:
-                        {
-                            const Constraint* invertedConstraint        = Formula::newConstraint( constraint.lhs(), CR_EQ );
-                            mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
-                            mConstraintLiteralMap[invertedConstraint]   = mkLit( normConstrAuxBoolean, false );
-                            mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
-                            mConstraintLiteralMap[normalizedConstraint] = mkLit( invConstrAuxBoolean, false );
                             break;
                         }
                         case CR_LEQ:
@@ -513,6 +501,7 @@ namespace smtrat
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = mkLit( normConstrAuxBoolean, false );
                             const Constraint* invertedConstraint        = Formula::newConstraint( -constraint.lhs(), CR_LESS );
+                            mConstraintsToInform.insert( invertedConstraint );
                             mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint]   = mkLit( invConstrAuxBoolean, false );
                             break;
@@ -522,6 +511,7 @@ namespace smtrat
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = mkLit( normConstrAuxBoolean, false );
                             const Constraint* invertedConstraint        = Formula::newConstraint( constraint.lhs(), CR_LESS );
+                            mConstraintsToInform.insert( invertedConstraint );
                             mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint]   = mkLit( invConstrAuxBoolean, false );
                             break;
@@ -529,6 +519,7 @@ namespace smtrat
                         case CR_LESS:
                         {
                             const Constraint* invertedConstraint        = Formula::newConstraint( -constraint.lhs(), CR_LEQ );
+                            mConstraintsToInform.insert( invertedConstraint );
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint]   = mkLit( normConstrAuxBoolean, false );
                             mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
@@ -538,6 +529,7 @@ namespace smtrat
                         case CR_GREATER:
                         {
                             const Constraint* invertedConstraint        = Formula::newConstraint( constraint.lhs(), CR_LEQ );
+                            mConstraintsToInform.insert( invertedConstraint );
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint]   = mkLit( normConstrAuxBoolean, false );
                             mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
@@ -1291,7 +1283,9 @@ NextClause:
     {
         #ifdef DEBUG_SATMODULE
         cout << "### search( " << nof_conflicts << " )" << endl << "###" << endl;
-        printClauses( cout, "### " );
+        printClauses( clauses, "Clauses", cout, "### " );
+        cout << "###" << endl;
+        printClauses( learnts, "Learnts", cout, "### " );
         cout << "###" << endl;
         printBooleanConstraintMap( cout, "###" );
         cout << "###" << endl;
@@ -1317,7 +1311,9 @@ NextClause:
                 #ifdef DEBUG_SATMODULE
                 cout << "######################################################################" << endl;
                 cout << "###" << endl;
-                printClauses( cout, "### " );
+                printClauses( clauses, "Clauses", cout, "### " );
+                cout << "###" << endl;
+                printClauses( learnts, "Learnts", cout, "### " );
                 cout << "###" << endl;
                 printCurrentAssignment( cout, "### " );
                 cout << "### " << endl;
@@ -1878,9 +1874,9 @@ NextClause:
      * @param _out  The output stream where the answer should be printed.
      * @param _init The line initiation.
      */
-    void SATModule::printClauses( ostream& _out, const string _init )
+    void SATModule::printClauses( const vec<CRef>& _clauses, const string _name, ostream& _out, const string _init )
     {
-        _out << _init << " Clauses:" << endl;
+        _out << _init << " " << _name << ":" << endl;
         // Handle case when solver is in contradictory state:
         if( !ok )
         {
@@ -1896,14 +1892,14 @@ NextClause:
         // Cannot use removeClauses here because it is not safe
         // to deallocate them at this point. Could be improved.
         int cnt = 0;
-        for( int i = 0; i < clauses.size(); i++ )
-            if( !satisfied( ca[clauses[i]] ) )
+        for( int i = 0; i < _clauses.size(); i++ )
+            if( !satisfied( ca[_clauses[i]] ) )
                 cnt++;
 
-        for( int i = 0; i < clauses.size(); i++ )
-            if( !satisfied( ca[clauses[i]] ) )
+        for( int i = 0; i < _clauses.size(); i++ )
+            if( !satisfied( ca[_clauses[i]] ) )
             {
-                Clause& c = ca[clauses[i]];
+                Clause& c = ca[_clauses[i]];
                 for( int j = 0; j < c.size(); j++ )
                     if( value( c[j] ) != l_False )
                         mapVar( var( c[j] ), map, max );
@@ -1920,10 +1916,10 @@ NextClause:
             _out << _init << "  " << (sign( assumptions[i] ) ? "-" : "") << (mapVar( var( assumptions[i] ), map, max ) + 1) << endl;
         }
 
-        for( int i = 0; i < clauses.size(); i++ )
+        for( int i = 0; i < _clauses.size(); i++ )
         {
             _out << _init << " ";
-            printClauses( _out, ca[clauses[i]], map, max );
+            printClauses( _out, ca[_clauses[i]], map, max );
             _out << endl;
         }
 

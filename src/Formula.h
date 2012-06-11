@@ -33,13 +33,11 @@
 #define SMTRAT_FORMULA_H
 
 #include <vector>
-#include <bitset>
 #include <string.h>
 #include <string>
+#include "Condition.h"
 #include "ModuleType.h"
 #include "ConstraintPool.h"
-
-using namespace std;
 
 namespace smtrat
 {
@@ -47,53 +45,6 @@ namespace smtrat
     {
         AND, OR, NOT, IFF, XOR, IMPLIES, BOOL, REALCONSTRAINT, TTRUE, FFALSE
     };
-
-    typedef std::bitset<64> Condition;
-
-    static const Condition  PROP_TRUE = Condition();
-
-    //Propositions which hold, if they hold for each subformula of a formula including itself (0-15)
-    static const Condition PROP_IS_IN_NNF                       = Condition().set( 0, 1 );
-    static const Condition PROP_IS_IN_CNF                       = Condition().set( 1, 1 ) | PROP_IS_IN_NNF;
-    static const Condition PROP_IS_PURE_CONJUNCTION             = Condition().set( 2, 1 ) | PROP_IS_IN_CNF;
-    static const Condition PROP_IS_A_CLAUSE                     = Condition().set( 3, 1 ) | PROP_IS_IN_CNF;
-    static const Condition PROP_IS_A_LITERAL                    = Condition().set( 4, 1 ) | PROP_IS_A_CLAUSE | PROP_IS_PURE_CONJUNCTION;
-    static const Condition PROP_IS_AN_ATOM                      = Condition().set( 5, 1 ) | PROP_IS_A_LITERAL;
-    static const Condition PROP_VARIABLE_DEGREE_LESS_THAN_FIVE  = Condition().set( 6, 1 );
-    static const Condition PROP_VARIABLE_DEGREE_LESS_THAN_FOUR  = Condition().set( 7, 1 ) | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
-    static const Condition PROP_VARIABLE_DEGREE_LESS_THAN_THREE = Condition().set( 8, 1 ) | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR;
-    static const Condition STRONG_CONDITIONS                    = PROP_IS_AN_ATOM | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-
-    //Propositions which hold, if they hold in at least one subformula (16-31)
-    static const Condition PROP_CONTAINS_EQUATION                = Condition().set( 16, 1 );
-    static const Condition PROP_CONTAINS_INEQUALITY              = Condition().set( 17, 1 );
-    static const Condition PROP_CONTAINS_STRICT_INEQUALITY       = Condition().set( 18, 1 ) | PROP_CONTAINS_INEQUALITY;
-    static const Condition PROP_CONTAINS_LINEAR_POLYNOMIAL       = Condition().set( 19, 1 );
-    static const Condition PROP_CONTAINS_NONLINEAR_POLYNOMIAL    = Condition().set( 20, 1 );
-    static const Condition PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL = Condition().set( 21, 1 );
-    static const Condition WEAK_CONDITIONS                       = PROP_CONTAINS_EQUATION | PROP_CONTAINS_INEQUALITY | PROP_CONTAINS_STRICT_INEQUALITY
-                                             | PROP_CONTAINS_LINEAR_POLYNOMIAL | PROP_CONTAINS_LINEAR_POLYNOMIAL | PROP_CONTAINS_NONLINEAR_POLYNOMIAL
-                                             | PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL;
-
-    //Propositions indicating that a solver cannot solve the formula
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE    = Condition().set( 48, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE      = Condition().set( 49, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_VSMODULE            = Condition().set( 50, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE = Condition().set( 51, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_CADMODULE           = Condition().set( 52, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_SATMODULE           = Condition().set( 53, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_LRAMODULE           = Condition().set( 54, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE        = Condition().set( 55, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE     = Condition().set( 57, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE         = Condition().set( 56, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE        = Condition().set( 57, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE        = Condition().set( 58, 1 );
-    static const Condition SOLVABLE_CONDITIONS                          = PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE | PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_VSMODULE | PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_CADMODULE | PROP_CANNOT_BE_SOLVED_BY_SATMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_LRAMODULE | PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE | PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE | PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE;
 
     class Formula
     {
@@ -380,9 +331,9 @@ namespace smtrat
             Formula* prune( unsigned );
             void clear();
             void notSolvableBy( ModuleType );
-            void print( ostream& = std::cout, const string = "", bool = false ) const;
-            void printPropositions( ostream& = std::cout, const string = "" ) const;
-            void FormulaToConstraints( vector<const Constraint*>& ) const;
+            void print( std::ostream& = std::cout, const std::string = "", bool = false ) const;
+            void printPropositions( std::ostream& = std::cout, const std::string = "" ) const;
+            void FormulaToConstraints( std::vector<const Constraint*>& ) const;
 
         private:
 
