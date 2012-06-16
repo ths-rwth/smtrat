@@ -71,6 +71,7 @@ namespace smtrat
         //only equalities should be added to the gb
         if( _formula->constraint().relation() == CR_EQ )
         {
+			mAddedEqualitySinceLastCheck = true;
 		    mBasis.addPolynomial( MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic>( _formula->constraint().lhs() ) );
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
@@ -92,9 +93,9 @@ namespace smtrat
 
         vec_set_const_pFormula originals;
         //If no equalities are added, we do not know anything
-        if( mBasis.nrOriginalConstraints() > 0 )
+        if( mAddedEqualitySinceLastCheck )
         {
-	        
+			mAddedEqualitySinceLastCheck = false;
 			//first, we interreduce the input!
             
 			mBasis.reduceInput();
@@ -164,29 +165,74 @@ namespace smtrat
 			}
 
 
-            //remove equalities from subformulas
-            for( unsigned i = 0; i < passedFormulaSize(); )
+            //remove the former GB from subformulas and if enabled check the inequalities
+			// We might add some Formulas, these do not have to be treated again.
+			unsigned nrOfFormulasInPassed = passedFormulaSize(); 
+			std::cout << "nrOfFormulasPassed" << nrOfFormulasInPassed << std::endl;
+            for( unsigned i = 0; i < nrOfFormulasInPassed; )
             {
+				std::cout << "i" << std::endl;
                 if( passedFormulaAt( i )->constraint().relation() == CR_EQ )
                 {
                     removeSubformulaFromPassedFormula( i );
+					--nrOfFormulasInPassed;
                 }
                 else
                 {
-                    ++i;
+					if(checkInequalities && passInequalities == FULL_REDUCED) {
+						Polynomial ineq = passedFormulaAt( i )->constraint().lhs();
+						if(ineq.isTrivialSumOfSquares()) std::cout << "Found trivial sum of squares" << std::endl;
+						GiNaCRA::BaseReductor<GiNaCRA::GradedLexicgraphic> red(mBasis.getGbIdeal(), ineq);
+						Polynomial redIneq = red.fullReduce();
+						if(redIneq.isTrivialSumOfSquares() && !redIneq.isZero() && !redIneq.isConstant()) std::cout << redIneq << std::endl;
+						Constraint_Relation relation = passedFormulaAt(i)->constraint().relation();
+						// Check if we have direct unsatisfiability
+						if(redIneq.isZero() && ( relation == CR_GREATER || relation == CR_LESS || relation == CR_NEQ ) ) {
+							mInfeasibleSubsets.push_back(generateReasons(redIneq.getOrigins().getBitVector()));
+							mInfeasibleSubsets.back().insert(getOrigins(i));
+							++i;
+						}
+						else
+						{
+							originals.front() = generateReasons(redIneq.getOrigins().getBitVector());
+							//If we did reduce something, we used reductors, so we can check nicely if we reduced our constraint.
+							if(!originals.front().empty()) {
+								originals.front().insert(getOrigins(i));
+								// we reduced something, so we eliminate this constraint
+								removeSubformulaFromPassedFormula(i);
+								--nrOfFormulasInPassed;
+								// and we add a new one.
+								addSubformulaToPassedFormula(new Formula( Formula::newConstraint( redIneq.toEx(), relation ) ), originals);
+							}
+							else 
+							{
+								// go to next passed formula
+								++i;
+							}
+						}
+					} else {
+						++i;
+					} 
+					
+						
+					
                 }
             }
 		
+			if(!mInfeasibleSubsets.empty()) {
+				return False;
+			}
+			
             // The gb should be passed
             std::list<Polynomial> simplified = mBasis.getGb();
             for( std::list<Polynomial>::const_iterator simplIt = simplified.begin(); simplIt != simplified.end(); ++simplIt )
             {
+				if(simplIt->isTrivialSumOfSquares()) std::cout << "Found trivial sum of square" << std::endl;
 				if(passWithMinimalReasons) {
 					originals.front() =  generateReasons(simplIt->getOrigins().getBitVector());
 				}
                 addSubformulaToPassedFormula( new Formula( Formula::newConstraint( simplIt->toEx(), CR_EQ ) ), originals ); 
             }
-			//print();
 
         }
 		Answer ans = runBackends();
@@ -214,6 +260,7 @@ namespace smtrat
      */
     void GroebnerModule::popBacktrackPoint()
     {
+		mAddedEqualitySinceLastCheck = false;
 		//std::cout << "Pop backtrack" << std::endl;
         mStateHistory.pop_back();
         // Load the state to be restored;

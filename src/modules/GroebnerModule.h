@@ -42,6 +42,8 @@
 
 namespace smtrat
 {
+	enum pass_inequalities { AS_RECEIVED, FULL_REDUCED, REDUCED };
+	
     /**
      * A class to save the current state of a GroebnerModule.
      * Needed for backtracking-support
@@ -92,9 +94,9 @@ namespace smtrat
             GiNaC::symtab mListOfVariables;
             /// Saves the relevant history to support backtracking
             std::list<GroebnerModuleState> mStateHistory;
-			/// Saves the received constraints which were added to the Groebner basis.
-			std::vector<const Formula*> mReceivedConstraintsInGb;
-
+			
+			bool mAddedEqualitySinceLastCheck;
+			
             bool saveState();
 			std::set<const Formula*> generateReasons(const GiNaCRA::BitVector& reasons);
 
@@ -103,6 +105,9 @@ namespace smtrat
 			
 			static const bool getReasonsForInfeasibility = true;
 			static const bool passWithMinimalReasons = true;
+			static const bool checkInequalities = true;
+			static const pass_inequalities passInequalities = FULL_REDUCED;
+			
 
     };
 
