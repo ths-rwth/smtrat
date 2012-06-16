@@ -241,6 +241,7 @@ namespace smtrat
             unsigned 	   getPositionOfReceivedFormula( const Formula* const ) const;
             unsigned 	   getPositionOfPassedFormula( const Formula* const ) const;
             void 		   setOrigins( unsigned, vec_set_const_pFormula& );
+			const Formula* const getOrigins( unsigned posOfPassedFormula ) const;
             void 		   getOrigins( const Formula* const , vec_set_const_pFormula& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             Answer 		   specialCaseConsistencyCheck() const;
