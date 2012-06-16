@@ -71,8 +71,8 @@ namespace smtrat
         //only equalities should be added to the gb
         if( _formula->constraint().relation() == CR_EQ )
         {
-		    mBasis.addPolynomial( MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic>( _formula->constraint().lhs() ) );			
-        }
+		    mBasis.addPolynomial( MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic>( _formula->constraint().lhs() ) );
+		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
 		{
 			addReceivedSubformulaToPassedFormula( _formula );
@@ -123,13 +123,25 @@ namespace smtrat
 			{
                 mInfeasibleSubsets.push_back( set<const Formula*>() );
                 // The equalities we used for the basis-computation are the infeasible subset
-                for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
+				MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic> constPol = mBasis.getGb().front();
+				GiNaCRA::BitVector::const_iterator origIt = constPol.getOrigins().getBitVector().begin();
+				
+				for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
                 {
                     if( (*it)->constraint().relation() == CR_EQ )
                     {
-                        mInfeasibleSubsets.back().insert( *it );
+						if(getReasonsForInfeasibility) {
+							if (origIt.get()) {
+								mInfeasibleSubsets.back().insert( *it );
+							}
+							origIt++;
+						} else {
+							mInfeasibleSubsets.back().insert(*it);
+						}
                     }
                 }
+			
+				
 				//print( );
                 return False;
             }
@@ -139,14 +151,17 @@ namespace smtrat
             // We do not know, but we want to present our simplified constraints to other modules.
             // We therefore add the equalities
             originals.push_back( set<const Formula*>() );
+			
+			if(!passWithMinimalReasons) {
             // find original constraints which made the gb.
-            for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
-            {
-                if( (*it)->constraint().relation() == CR_EQ )
-                {
-                    originals.front().insert( *it );
-                }
-            }
+				for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
+				{
+					if( (*it)->constraint().relation() == CR_EQ )
+					{
+					   originals.front().insert( *it );
+					}
+				}
+			}
 
 
             //remove equalities from subformulas
@@ -161,15 +176,17 @@ namespace smtrat
                     ++i;
                 }
             }
-			
 		
             // The gb should be passed
             std::list<Polynomial> simplified = mBasis.getGb();
             for( std::list<Polynomial>::const_iterator simplIt = simplified.begin(); simplIt != simplified.end(); ++simplIt )
             {
-                addSubformulaToPassedFormula( new Formula( Formula::newConstraint( simplIt->toEx(), CR_EQ ) ), originals );
+				if(passWithMinimalReasons) {
+					originals.front() =  generateReasons(simplIt->getOrigins().getBitVector());
+				}
+                addSubformulaToPassedFormula( new Formula( Formula::newConstraint( simplIt->toEx(), CR_EQ ) ), originals ); 
             }
-            //printPassedFormula();
+			//print();
 
         }
 		Answer ans = runBackends();
@@ -236,6 +253,23 @@ namespace smtrat
 		
         return false;
     }
+	
+	std::set<const Formula*> GroebnerModule::generateReasons(const GiNaCRA::BitVector& reasons) 
+	{
+		GiNaCRA::BitVector::const_iterator origIt =  reasons.begin();
+		std::set<const Formula*> origins;
+		for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
+		{
+			if( (*it)->constraint().relation() == CR_EQ )
+			{
+				if (origIt.get()) {
+					origins.insert( *it );
+				}
+				origIt++;
+			}
+		}
+		return origins;
+	}
 	
 	void GroebnerModule::printStateHistory() 
 	{

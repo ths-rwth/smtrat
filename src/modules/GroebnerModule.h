@@ -92,11 +92,17 @@ namespace smtrat
             GiNaC::symtab mListOfVariables;
             /// Saves the relevant history to support backtracking
             std::list<GroebnerModuleState> mStateHistory;
+			/// Saves the received constraints which were added to the Groebner basis.
+			std::vector<const Formula*> mReceivedConstraintsInGb;
 
             bool saveState();
+			std::set<const Formula*> generateReasons(const GiNaCRA::BitVector& reasons);
 
         private:
             typedef Module super;
+			
+			static const bool getReasonsForInfeasibility = true;
+			static const bool passWithMinimalReasons = true;
 
     };
 
