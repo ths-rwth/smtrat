@@ -53,6 +53,7 @@ namespace smtrat
         mStateHistory()
 
     {
+		assert(passInequalities != FULL_REDUCED_ONLYNEW); // not supported yet!
         mModuleType = MT_GroebnerModule;
     }
 
@@ -179,20 +180,30 @@ namespace smtrat
                 }
                 else
                 {
-					if(checkInequalities && passInequalities == FULL_REDUCED) {
+					if(checkInequalities && passInequalities != FULL_REDUCED_ONLYNEW) {
 						Polynomial ineq = passedFormulaAt( i )->constraint().lhs();
-						if(ineq.isTrivialSumOfSquares()) std::cout << "Found trivial sum of squares" << std::endl;
-						GiNaCRA::BaseReductor<GiNaCRA::GradedLexicgraphic> red(mBasis.getGbIdeal(), ineq);
-						Polynomial redIneq = red.fullReduce();
-						if(redIneq.isTrivialSumOfSquares() && !redIneq.isZero() && !redIneq.isConstant()) std::cout << redIneq << std::endl;
+						Polynomial redIneq;
 						Constraint_Relation relation = passedFormulaAt(i)->constraint().relation();
+						bool relationIsStrict = ( relation == CR_GREATER || relation == CR_LESS || relation == CR_NEQ );
+						
+						if(checkInequalitiesForTrivialSumOfSquares && ineq.isTrivialSumOfSquares() ) std::cout << "Found trivial sum of squares" << std::endl;
+						GiNaCRA::BaseReductor<GiNaCRA::GradedLexicgraphic> red(mBasis.getGbIdeal(), ineq);
+						
+						if(passInequalities == FULL_REDUCED) 
+						{
+							Polynomial redIneq = red.fullReduce();
+						} else if( passInequalities == REDUCED || (passInequalities == REDUCED_ONLYSTRICT && relationIsStrict)  ){
+							//Polynomial redIneq = red.singleReduce();
+						}
+						if(checkInequalitiesForTrivialSumOfSquares && redIneq.isTrivialSumOfSquares() && !redIneq.isZero() && !redIneq.isConstant()) std::cout << redIneq << std::endl;
 						// Check if we have direct unsatisfiability
-						if(redIneq.isZero() && ( relation == CR_GREATER || relation == CR_LESS || relation == CR_NEQ ) ) {
+						if(relationIsStrict && redIneq.isZero() ) {
 							mInfeasibleSubsets.push_back(generateReasons(redIneq.getOrigins().getBitVector()));
 							mInfeasibleSubsets.back().insert(getOrigins(i));
 							++i;
 						}
-						else
+						// We do not have direct unsatisfiability, but we pass the simplified constraints to our backends.
+						else if(passInequalities != AS_RECEIVED && (!passInequalities == REDUCED_ONLYSTRICT || relationIsStrict )
 						{
 							originals.front() = generateReasons(redIneq.getOrigins().getBitVector());
 							//If we did reduce something, we used reductors, so we can check nicely if we reduced our constraint.
@@ -206,11 +217,17 @@ namespace smtrat
 							}
 							else 
 							{
-								// go to next passed formula
+								// go to next passed formula.
 								++i;
 							}
+						} 
+						else 
+						{
+							//go to the next passed formula.
+							++i;
 						}
 					} else {
+						// go to the next passed formula.
 						++i;
 					} 
 					
@@ -227,7 +244,7 @@ namespace smtrat
             std::list<Polynomial> simplified = mBasis.getGb();
             for( std::list<Polynomial>::const_iterator simplIt = simplified.begin(); simplIt != simplified.end(); ++simplIt )
             {
-				if(simplIt->isTrivialSumOfSquares()) std::cout << "Found trivial sum of square" << std::endl;
+				if(checkEqualitiesForTrivialSumOfSquares && simplIt->isTrivialSumOfSquares()) std::cout << "Found trivial sum of square" << std::endl;
 				if(passWithMinimalReasons) {
 					originals.front() =  generateReasons(simplIt->getOrigins().getBitVector());
 				}
