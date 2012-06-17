@@ -94,7 +94,7 @@ namespace smtrat
 
         vec_set_const_pFormula originals;
         //If no equalities are added, we do not know anything
-        if( mAddedEqualitySinceLastCheck )
+        if( mBasis.nrOriginalConstraints() > 0 )
         {
 			mAddedEqualitySinceLastCheck = false;
 			//first, we interreduce the input!
@@ -169,10 +169,8 @@ namespace smtrat
             //remove the former GB from subformulas and if enabled check the inequalities
 			// We might add some Formulas, these do not have to be treated again.
 			unsigned nrOfFormulasInPassed = passedFormulaSize(); 
-			std::cout << "nrOfFormulasPassed" << nrOfFormulasInPassed << std::endl;
-            for( unsigned i = 0; i < nrOfFormulasInPassed; )
+			for( unsigned i = 0; i < nrOfFormulasInPassed; )
             {
-				std::cout << "i" << std::endl;
                 if( passedFormulaAt( i )->constraint().relation() == CR_EQ )
                 {
                     removeSubformulaFromPassedFormula( i );
@@ -191,24 +189,30 @@ namespace smtrat
 						
 						if(passInequalities == FULL_REDUCED) 
 						{
-							Polynomial redIneq = red.fullReduce();
-						} else if( passInequalities == REDUCED || (passInequalities == REDUCED_ONLYSTRICT && relationIsStrict)  ){
-							//Polynomial redIneq = red.singleReduce();
+							redIneq = red.fullReduce();
+						} else if( passInequalities == AS_RECEIVED || passInequalities == REDUCED || (passInequalities == REDUCED_ONLYSTRICT && relationIsStrict)  ){
+							redIneq = red.fullReduce();
 						}
-						if(checkInequalitiesForTrivialSumOfSquares && redIneq.isTrivialSumOfSquares() && !redIneq.isZero() && !redIneq.isConstant()) std::cout << redIneq << std::endl;
+						
 						// Check if we have direct unsatisfiability
 						if(relationIsStrict && redIneq.isZero() ) {
 							mInfeasibleSubsets.push_back(generateReasons(redIneq.getOrigins().getBitVector()));
-							mInfeasibleSubsets.back().insert(getOrigins(i));
+							const std::set<const Formula*> origs= getOrigins(i);
+							mInfeasibleSubsets.back().insert(origs.begin(), origs.end() );
+							++i;
+						} else if (redIneq.isConstant()) {
 							++i;
 						}
+						
+						
 						// We do not have direct unsatisfiability, but we pass the simplified constraints to our backends.
-						else if(passInequalities != AS_RECEIVED && (!passInequalities == REDUCED_ONLYSTRICT || relationIsStrict ) )
+						else if(!mInfeasibleSubsets.empty() && passInequalities != AS_RECEIVED && (!passInequalities == REDUCED_ONLYSTRICT || relationIsStrict ) )
 						{
 							originals.front() = generateReasons(redIneq.getOrigins().getBitVector());
 							//If we did reduce something, we used reductors, so we can check nicely if we reduced our constraint.
 							if(!originals.front().empty()) {
-								originals.front().insert(getOrigins(i));
+								const std::set<const Formula*> origs= getOrigins(i);
+								originals.front().insert(origs.begin(), origs.end());
 								// we reduced something, so we eliminate this constraint
 								removeSubformulaFromPassedFormula(i);
 								--nrOfFormulasInPassed;
@@ -223,19 +227,21 @@ namespace smtrat
 						} 
 						else 
 						{
-							//go to the next passed formula.
+							
+							if(checkInequalitiesForTrivialSumOfSquares && redIneq.isTrivialSumOfSquares())
+							{
+								std::cout << redIneq << std::endl;
+							}
+								//go to the next passed formula.
 							++i;
 						}
 					} else {
 						// go to the next passed formula.
 						++i;
 					} 
-					
-						
-					
                 }
             }
-		
+			
 			if(!mInfeasibleSubsets.empty()) {
 				return False;
 			}
@@ -250,7 +256,6 @@ namespace smtrat
 				}
                 addSubformulaToPassedFormula( new Formula( Formula::newConstraint( simplIt->toEx(), CR_EQ ) ), originals ); 
             }
-
         }
 		Answer ans = runBackends();
 		if(ans == False) {
