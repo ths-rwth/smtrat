@@ -203,7 +203,7 @@ namespace smtrat
 							++i;
 						}
 						// We do not have direct unsatisfiability, but we pass the simplified constraints to our backends.
-						else if(passInequalities != AS_RECEIVED && (!passInequalities == REDUCED_ONLYSTRICT || relationIsStrict )
+						else if(passInequalities != AS_RECEIVED && (!passInequalities == REDUCED_ONLYSTRICT || relationIsStrict ) )
 						{
 							originals.front() = generateReasons(redIneq.getOrigins().getBitVector());
 							//If we did reduce something, we used reductors, so we can check nicely if we reduced our constraint.
