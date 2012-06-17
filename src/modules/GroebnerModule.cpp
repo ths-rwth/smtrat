@@ -32,6 +32,7 @@
 #include "GroebnerModule.h"
 
 #include "../Manager.h"
+#include "NSSModule/definitions.h"
 #ifdef USE_NSS
 #include "NSSModule/GroebnerToSDP.h"
 #endif
@@ -86,6 +87,7 @@ namespace smtrat
 
     Answer GroebnerModule::isConsistent()
     {
+		printReceivedFormula();
         Answer answer = specialCaseConsistencyCheck();
         if( answer != Unknown )
         {
@@ -203,7 +205,39 @@ namespace smtrat
 						}
 						// We are constant.. 
 						else if (redIneq.isConstant()) {
-							++i;
+							assert(relation != CR_EQ);
+							// lets assume the constraint is not satisfied.
+							bool satisfied = false; 
+							// and now we look for cases where it is satisfied.
+							// If the relation is !=, then c != 0 is always fulfilled.
+							if (relation == CR_NEQ) {
+								satisfied = true;
+							}
+							
+							const Rational reducedConstant = redIneq.lcoeff();
+							assert(reducedConstant != 0);
+							
+							
+							if(reducedConstant > 0 ) {
+								if(relation == CR_LESS || relation == CR_LEQ) {
+									satisfied = false;
+								} 
+							} else {
+								if(relation == CR_GREATER || relation == CR_GEQ ) {
+									satisfied = false;
+								}
+							}
+							
+							if(satisfied) {
+								removeSubformulaFromPassedFormula(i);
+								--nrOfFormulasInPassed;
+							} else  {
+								mInfeasibleSubsets.push_back(generateReasons(redIneq.getOrigins().getBitVector()));
+								const std::set<const Formula*> origs= getOrigins(i);
+								mInfeasibleSubsets.back().insert(origs.begin(), origs.end() );
+								++i;
+							}
+							
 						}
 						// We do not have direct unsatisfiability, but we pass the simplified constraints to our backends.
 						else if(!mInfeasibleSubsets.empty() && passInequalities != AS_RECEIVED && (passInequalities != REDUCED_ONLYSTRICT || relationIsStrict ) )
