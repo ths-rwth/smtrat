@@ -76,6 +76,8 @@ namespace smtrat
      */
     Answer Module::isConsistent()
     {
+		assert(mInfeasibleSubsets.empty());
+		
 	    for( unsigned i = passedFormulaSize(); i < receivedFormulaSize(); ++i )
 	    {
 	        addReceivedSubformulaToPassedFormula( i );
@@ -270,6 +272,15 @@ else if( a == False )
         mPassedFormulaOrigins.at( _pos ) = _origins;
     }
 
+	
+	const std::set<const Formula*>& Module::getOrigins( unsigned posOfPassedFormula ) const
+	{
+		assert( posOfPassedFormula < passedFormulaSize() );
+		vec_set_const_pFormula _origins = mPassedFormulaOrigins.at( posOfPassedFormula );
+		assert(_origins.size() == 1);
+		return _origins.front();
+	}
+	
     /**
      * Gets the original constraints of _constraint, which are in the vector of the received constraints, of
      * the given constraint, which is in the vector of the passed constraints.

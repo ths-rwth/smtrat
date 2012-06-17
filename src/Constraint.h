@@ -160,8 +160,8 @@ namespace smtrat
 
             // Printing methods.
             std::string toString() const;
-            void print( std::ostream& _out ) const;
-            void print2( std::ostream& _out ) const;
+            void print( std::ostream& _out = std::cout) const;
+            void print2( std::ostream& _out = std::cout ) const;
 
             //
             static signed compare( const Constraint&, const Constraint& );

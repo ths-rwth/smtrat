@@ -53,6 +53,7 @@ namespace smtrat
         mStateHistory()
 
     {
+		assert(passInequalities != FULL_REDUCED_ONLYNEW); // not supported yet!
         mModuleType = MT_GroebnerModule;
     }
 
@@ -71,8 +72,9 @@ namespace smtrat
         //only equalities should be added to the gb
         if( _formula->constraint().relation() == CR_EQ )
         {
-		    mBasis.addPolynomial( MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic>( _formula->constraint().lhs() ) );			
-        }
+			mAddedEqualitySinceLastCheck = true;
+		    mBasis.addPolynomial( MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic>( _formula->constraint().lhs() ) );
+		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
 		{
 			addReceivedSubformulaToPassedFormula( _formula );
@@ -94,7 +96,7 @@ namespace smtrat
         //If no equalities are added, we do not know anything
         if( mBasis.nrOriginalConstraints() > 0 )
         {
-	        
+			mAddedEqualitySinceLastCheck = false;
 			//first, we interreduce the input!
             
 			mBasis.reduceInput();
@@ -123,13 +125,25 @@ namespace smtrat
 			{
                 mInfeasibleSubsets.push_back( set<const Formula*>() );
                 // The equalities we used for the basis-computation are the infeasible subset
-                for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
+				MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic> constPol = mBasis.getGb().front();
+				GiNaCRA::BitVector::const_iterator origIt = constPol.getOrigins().getBitVector().begin();
+				
+				for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
                 {
                     if( (*it)->constraint().relation() == CR_EQ )
                     {
-                        mInfeasibleSubsets.back().insert( *it );
+						if(getReasonsForInfeasibility) {
+							if (origIt.get()) {
+								mInfeasibleSubsets.back().insert( *it );
+							}
+							origIt++;
+						} else {
+							mInfeasibleSubsets.back().insert(*it);
+						}
                     }
                 }
+			
+				
 				//print( );
                 return False;
             }
@@ -139,38 +153,109 @@ namespace smtrat
             // We do not know, but we want to present our simplified constraints to other modules.
             // We therefore add the equalities
             originals.push_back( set<const Formula*>() );
+			
+			if(!passWithMinimalReasons) {
             // find original constraints which made the gb.
-            for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
-            {
-                if( (*it)->constraint().relation() == CR_EQ )
-                {
-                    originals.front().insert( *it );
-                }
-            }
+				for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
+				{
+					if( (*it)->constraint().relation() == CR_EQ )
+					{
+					   originals.front().insert( *it );
+					}
+				}
+			}
 
 
-            //remove equalities from subformulas
-            for( unsigned i = 0; i < passedFormulaSize(); )
+            //remove the former GB from subformulas and if enabled check the inequalities
+			// We might add some Formulas, these do not have to be treated again.
+			unsigned nrOfFormulasInPassed = passedFormulaSize(); 
+			for( unsigned i = 0; i < nrOfFormulasInPassed; )
             {
                 if( passedFormulaAt( i )->constraint().relation() == CR_EQ )
                 {
                     removeSubformulaFromPassedFormula( i );
+					--nrOfFormulasInPassed;
                 }
                 else
                 {
-                    ++i;
+					if(checkInequalities && passInequalities != FULL_REDUCED_ONLYNEW) {
+						Polynomial ineq = passedFormulaAt( i )->constraint().lhs();
+						Polynomial redIneq;
+						Constraint_Relation relation = passedFormulaAt(i)->constraint().relation();
+						bool relationIsStrict = ( relation == CR_GREATER || relation == CR_LESS || relation == CR_NEQ );
+						
+						if(checkInequalitiesForTrivialSumOfSquares && ineq.isTrivialSumOfSquares() ) std::cout << "Found trivial sum of squares" << std::endl;
+						GiNaCRA::BaseReductor<GiNaCRA::GradedLexicgraphic> red(mBasis.getGbIdeal(), ineq);
+						
+						if(passInequalities == FULL_REDUCED) 
+						{
+							redIneq = red.fullReduce();
+						} else if( passInequalities == AS_RECEIVED || passInequalities == REDUCED || (passInequalities == REDUCED_ONLYSTRICT && relationIsStrict)  ){
+							redIneq = red.fullReduce();
+						}
+						
+						// Check if we have direct unsatisfiability
+						if(relationIsStrict && redIneq.isZero() ) {
+							mInfeasibleSubsets.push_back(generateReasons(redIneq.getOrigins().getBitVector()));
+							const std::set<const Formula*> origs= getOrigins(i);
+							mInfeasibleSubsets.back().insert(origs.begin(), origs.end() );
+							++i;
+						} else if (redIneq.isConstant()) {
+							++i;
+						}
+						
+						
+						// We do not have direct unsatisfiability, but we pass the simplified constraints to our backends.
+						else if(!mInfeasibleSubsets.empty() && passInequalities != AS_RECEIVED && (!passInequalities == REDUCED_ONLYSTRICT || relationIsStrict ) )
+						{
+							originals.front() = generateReasons(redIneq.getOrigins().getBitVector());
+							//If we did reduce something, we used reductors, so we can check nicely if we reduced our constraint.
+							if(!originals.front().empty()) {
+								const std::set<const Formula*> origs= getOrigins(i);
+								originals.front().insert(origs.begin(), origs.end());
+								// we reduced something, so we eliminate this constraint
+								removeSubformulaFromPassedFormula(i);
+								--nrOfFormulasInPassed;
+								// and we add a new one.
+								addSubformulaToPassedFormula(new Formula( Formula::newConstraint( redIneq.toEx(), relation ) ), originals);
+							}
+							else 
+							{
+								// go to next passed formula.
+								++i;
+							}
+						} 
+						else 
+						{
+							
+							if(checkInequalitiesForTrivialSumOfSquares && redIneq.isTrivialSumOfSquares())
+							{
+								std::cout << redIneq << std::endl;
+							}
+								//go to the next passed formula.
+							++i;
+						}
+					} else {
+						// go to the next passed formula.
+						++i;
+					} 
                 }
             }
 			
-		
+			if(!mInfeasibleSubsets.empty()) {
+				return False;
+			}
+			
             // The gb should be passed
             std::list<Polynomial> simplified = mBasis.getGb();
             for( std::list<Polynomial>::const_iterator simplIt = simplified.begin(); simplIt != simplified.end(); ++simplIt )
             {
-                addSubformulaToPassedFormula( new Formula( Formula::newConstraint( simplIt->toEx(), CR_EQ ) ), originals );
+				if(checkEqualitiesForTrivialSumOfSquares && simplIt->isTrivialSumOfSquares()) std::cout << "Found trivial sum of square" << std::endl;
+				if(passWithMinimalReasons) {
+					originals.front() =  generateReasons(simplIt->getOrigins().getBitVector());
+				}
+                addSubformulaToPassedFormula( new Formula( Formula::newConstraint( simplIt->toEx(), CR_EQ ) ), originals ); 
             }
-            //printPassedFormula();
-
         }
 		Answer ans = runBackends();
 		if(ans == False) {
@@ -197,6 +282,7 @@ namespace smtrat
      */
     void GroebnerModule::popBacktrackPoint()
     {
+		mAddedEqualitySinceLastCheck = false;
 		//std::cout << "Pop backtrack" << std::endl;
         mStateHistory.pop_back();
         // Load the state to be restored;
@@ -236,6 +322,23 @@ namespace smtrat
 		
         return false;
     }
+	
+	std::set<const Formula*> GroebnerModule::generateReasons(const GiNaCRA::BitVector& reasons) 
+	{
+		GiNaCRA::BitVector::const_iterator origIt =  reasons.begin();
+		std::set<const Formula*> origins;
+		for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
+		{
+			if( (*it)->constraint().relation() == CR_EQ )
+			{
+				if (origIt.get()) {
+					origins.insert( *it );
+				}
+				origIt++;
+			}
+		}
+		return origins;
+	}
 	
 	void GroebnerModule::printStateHistory() 
 	{
