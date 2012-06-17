@@ -33,6 +33,8 @@ using namespace std;
 using namespace GiNaC;
 using namespace vs;
 
+#define VS_ASSIGNMENT_DEBUG
+
 namespace smtrat
 {
     /**
@@ -159,7 +161,6 @@ namespace smtrat
         {
             if( mInfeasibleSubsets.empty() )
             {
-                //printAnswer( cout );
                 return True;
             }
             else
@@ -170,15 +171,21 @@ namespace smtrat
         mFreshConstraintReceived = false;
         if( receivedFormulaEmpty() )
         {
+            #ifdef VS_USE_DEDUCTIONS
+            updateDeductions();
+            #endif
             return True;
         }
         if( mInconsistentConstraintAdded )
         {
+            #ifdef VS_USE_DEDUCTIONS
+            updateDeductions();
+            #endif
             return False;
         }
-#ifndef VS_INCREMENTAL
+        #ifndef VS_INCREMENTAL
         reset();
-#endif
+        #endif
 
         while( !mpRanking->empty() )
         {
@@ -351,7 +358,9 @@ namespace smtrat
                                     {
                                         printAll( cout );
                                     }
-                                    //printAnswer( cout );
+                                    #ifdef VS_USE_DEDUCTIONS
+                                    updateDeductions();
+                                    #endif
                                     return True;
                                 }
                             }
@@ -450,62 +459,70 @@ namespace smtrat
                                     {
                                         cout << "*** No elimination. (Too high degree)" << endl;
                                     }
-#ifdef VS_DELAY_BACKEND_CALL
+                                    #ifdef VS_DELAY_BACKEND_CALL
                                     if( (*currentState).toHighDegree() )
                                     {
-#endif
+                                    #endif
 
                                         /*
                                          * If we need to involve a complete approach.
                                          */
-#ifdef VS_WITH_BACKEND
+                                        #ifdef VS_WITH_BACKEND
                                         switch( runBackendSolvers( currentState ))
                                         {
-                                        case True:
-                                        {
-                                            currentState->rToHighDegree() = true;
-                                            //printAnswer( cout );
-                                            return True;
-                                        }
-                                        case False:
-                                        {
-                                            currentState->rToHighDegree() = true;
-                                            break;
-                                        }
-                                        case Unknown:
-                                        {
-                                            if( !currentState->rToHighDegree() )
+                                            case True:
                                             {
                                                 currentState->rToHighDegree() = true;
-                                                insertDTinRanking( currentState );
+                                                //printAnswer( cout );
+                                                #ifdef VS_USE_DEDUCTIONS
+                                                updateDeductions();
+                                                #endif
+                                                return True;
+                                            }
+                                            case False:
+                                            {
+                                                currentState->rToHighDegree() = true;
                                                 break;
                                             }
-                                            else
+                                            case Unknown:
                                             {
+                                                if( !currentState->rToHighDegree() )
+                                                {
+                                                    currentState->rToHighDegree() = true;
+                                                    insertDTinRanking( currentState );
+                                                    break;
+                                                }
+                                                else
+                                                {
+                                                    mDeductions.clear();
+                                                    return Unknown;
+                                                }
+                                            }
+                                            default:
+                                            {
+                                                cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
+                                                #ifdef VS_USE_DEDUCTIONS
+                                                mDeductions.clear();
+                                                #endif
                                                 return Unknown;
                                             }
                                         }
-                                        default:
-                                        {
-                                            cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
-                                            return Unknown;
-                                        }
-                                        }
-#else
+                                        #else
                                         currentState->printAlone( "   ", cout );
                                         cout << "###" << endl;
                                         cout << "###                  Unknown!" << endl;
                                         cout << "###" << endl;
+                                        mDeductions.clear();
                                         return Unknown;
-#endif
-#ifdef VS_DELAY_BACKEND_CALL
+                                        #endif
+                                    #ifdef VS_DELAY_BACKEND_CALL
                                     }
                                     else
                                     {
                                         currentState->rToHighDegree() = true;
                                         insertDTinRanking( currentState );
                                     }
-#endif
+                                    #endif
                                 }
                             }
                             else
@@ -527,6 +544,9 @@ namespace smtrat
             }
         }
         updateInfeasibleSubset();
+        #ifdef VS_USE_DEDUCTIONS
+        updateDeductions();
+        #endif
         return False;
     }
 
@@ -1586,6 +1606,180 @@ namespace smtrat
             cons++;
         }
     }
+
+    #ifdef VS_USE_DEDUCTIONS
+    /**
+     * Updates the deductions.
+     */
+    void VSModule::updateDeductions()
+    {
+        if( !mFreshConstraintReceived )
+        {
+            mDeductions.clear();
+            if( mInfeasibleSubsets.empty() )
+            {
+                vector<pair<string, numeric> > assignment = getNumericAssignment();
+                lst substitutionList = lst();
+                for( vector<pair<string, numeric> >::const_iterator assign = assignment.begin();
+                    assign != assignment.end();
+                    ++assign )
+                {
+                    substitutionList.append( mAllVariables[assign->first] == assign->second );
+                }
+                for( fcs_const_iterator constraint = mConstraintsToInform.begin();
+                    constraint != mConstraintsToInform.end();
+                    ++constraint )
+                {
+                    ex tmpLhs = (*constraint)->lhs().subs( substitutionList );
+                    Constraint tmpConstraint = Constraint( tmpLhs, (*constraint)->relation(), (*constraint)->variables() );
+                    if( tmpConstraint.isConsistent() == 1 )
+                    {
+                        mDeductions.push_back( *constraint );
+                    }
+                }
+            }
+        }
+    }
+    #endif
+
+    /**
+     * Gets a symbolic assignment, if an assignment exists and the consistency check determined
+     * the satisfiability of the given set of constraints.
+     *
+     * @return A symbolic assignment.
+     */
+    vector<pair<string, pair<Substitution_Type, ex> > > VSModule::getSymbolicAssignment() const
+    {
+        assert( !mFreshConstraintReceived && mInfeasibleSubsets.empty() );
+        vector<pair<string, pair<Substitution_Type, ex> > > result = vector<pair<string, pair<Substitution_Type, ex> > >();
+        vector<pair<string, pair<Substitution_Type, ex> > > resultTmp = vector<pair<string, pair<Substitution_Type, ex> > >();
+        symtab uncheckedVariables = mAllVariables;
+        const State* currentState = mpRanking->begin()->second;
+        while( !currentState->isRoot() )
+        {
+            const Substitution& sub = currentState->substitution();
+            uncheckedVariables.erase( sub.variable() );
+            pair<Substitution_Type, ex> symValue = pair<Substitution_Type, ex>( sub.type(), sub.term().expression() );
+            pair<string, pair<Substitution_Type, ex> > symVarValuePair = pair<string, pair<Substitution_Type, ex> >( sub.variable(), symValue );
+            resultTmp.push_back( symVarValuePair );
+            currentState = (*currentState).pFather();
+        }
+        for( symtab::const_iterator var = uncheckedVariables.begin(); var != uncheckedVariables.end(); ++var )
+        {
+            pair<Substitution_Type, ex> symValue = pair<Substitution_Type, ex>( ST_NORMAL, 0 );
+            pair<string, pair<Substitution_Type, ex> > symVarValuePair = pair<string, pair<Substitution_Type, ex> >( var->first, symValue );
+            result.push_back( symVarValuePair );
+        }
+        result.insert( result.end(), resultTmp.begin(), resultTmp.end() );
+        return result;
+    }
+
+    #ifdef VS_USE_DEDUCTIONS
+    /**
+     * Gets a numeric assignment, if an assignment exists and the consistency check determined
+     * the satisfiability of the given set of constraints.
+     *
+     * @return A numeric assignment.
+     */
+    vector<pair<string, numeric> > VSModule::getNumericAssignment( const unsigned _refinementParameter ) const
+    {
+        #ifdef VS_ASSIGNMENT_DEBUG
+        cout << __func__ << "(" << _refinementParameter << ") :" << __LINE__ << endl;
+        #endif
+        assert( !mFreshConstraintReceived && mInfeasibleSubsets.empty() );
+        vector<pair<string, numeric> > result = vector<pair<string, numeric> >();
+        vector<pair<string, ex> > resultTmp = vector<pair<string, ex> >();
+        vector< Constraint > constraintsA = vector< Constraint >();
+        for( Formula::const_iterator subformula = receivedFormulaBegin();
+            subformula != receivedFormulaEnd();
+            ++subformula )
+        {
+            constraintsA.push_back( (*subformula)->constraint() );
+        }
+        vector<pair<string, pair<Substitution_Type, ex> > > symbolicAssignment = getSymbolicAssignment();
+        unsigned counter = 0;
+        symtab vars = mAllVariables;
+        for( vector<pair<string, pair<Substitution_Type, ex> > >::iterator symAssign = symbolicAssignment.begin();
+            symAssign != symbolicAssignment.end();
+            ++symAssign )
+        {
+            #ifdef VS_ASSIGNMENT_DEBUG
+            cout << "constraints: " << endl;
+            for( vector< Constraint >::const_iterator cons = constraintsA.begin();
+                 cons != constraintsA.end();
+                 ++cons )
+            {
+                cout << "    " << cons->toString() << endl;
+            }
+            cout << "symAssign: " << endl;
+            for( vector<pair<string, pair<Substitution_Type, ex> > >::const_iterator iter = symbolicAssignment.begin();
+                    iter != symbolicAssignment.end();
+                    ++iter )
+            {
+                cout << "    " << iter->first << "  ->  ( " << iter->second.first << " , " << iter->second.second << " )" << endl;
+            }
+            #endif
+//            assert( is_a<numeric>( symAssign->second.second ) );
+
+            Substitution_Type currentSubsType = symAssign->second.first;
+            string currentVarName = symAssign->first;
+            symtab::const_iterator var = mAllVariables.find(symAssign->first);
+            assert( var != mAllVariables.end() );
+            const ex currentVar = var->second;
+            ex currentAssignValue = symAssign->second.second;
+            if( currentSubsType == ST_PLUS_EPSILON )
+            {
+                std::stringstream out;
+                out << "eps_" << counter++;
+                symbol eps(out.str());
+                currentAssignValue += eps;
+                vars[out.str()] = eps;
+            }
+            else if( currentSubsType == ST_MINUS_INFINITY )
+            {
+                std::stringstream out;
+                out << "inf_" << counter++;
+                symbol inf(out.str());
+                currentAssignValue -= inf;
+                vars[out.str()] = inf;
+            }
+
+            resultTmp.push_back( pair<string, ex>( currentVarName, currentAssignValue ) );
+            pair<string, ex>& numAssign = resultTmp.back();
+            #ifdef VS_ASSIGNMENT_DEBUG
+            cout << numAssign.first << "  ->  " << numAssign.second << endl;
+            #endif
+
+            vector<Constraint> tmpConstraints = vector<Constraint>();
+            vector<Constraint>::const_iterator constraint = constraintsA.begin();
+            while( constraint != constraintsA.end() )
+            {
+                ex tmpLhs = constraint->lhs().subs( currentVar == numAssign.second );
+                Constraint tmpConstraint = Constraint( tmpLhs, constraint->relation(), vars );
+                unsigned consistent = tmpConstraint.isConsistent();
+                assert( consistent != 0 );
+                if( consistent == 2 )
+                {
+                    tmpConstraints.push_back( tmpConstraint );
+                }
+                ++constraint;
+            }
+            constraintsA.clear();
+            constraintsA.insert( constraintsA.end(), tmpConstraints.begin(), tmpConstraints.end() );
+
+            for( vector<pair<string, pair<Substitution_Type, ex> > >::iterator symAssignTmp = symAssign;
+                    symAssignTmp != symbolicAssignment.end();
+                    ++symAssignTmp )
+            {
+                symAssignTmp->second.second = symAssignTmp->second.second.subs( currentVar == numAssign.second );
+            }
+        }
+        #ifdef VS_ASSIGNMENT_DEBUG
+        cout << __func__ << ":" << __LINE__ << endl;
+        #endif
+        return result;
+    }
+    #endif
 
     /**
      * Finds all minimum covering sets of a vector of sets of sets. A minimum covering set

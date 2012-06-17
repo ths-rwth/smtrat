@@ -51,6 +51,7 @@
 
 //#define DEBUG_SATMODULE
 #define SATMODULE_WITH_CALL_NUMBER
+//#define SAT_MODULE_THEORY_PROPAGATION
 
 using namespace std;
 using namespace Minisat;
@@ -1365,6 +1366,56 @@ NextClause:
                     {
                         case True:
                         {
+                            #ifdef SAT_MODULE_THEORY_PROPAGATION
+                            /*
+                             * Theory propagation.
+                             */
+                            learnt_clause.clear();
+                            vector<Module*>::const_iterator backend = usedBackends().begin();
+                            while( backend != usedBackends().end() )
+                            {
+                                /*
+                                 * Find a backend which provides deductions.
+                                 */
+                                if( !(*backend)->deductions().empty() )
+                                {
+                                    /*
+                                     * Generate the clause (~b_1 or .. or ~b_n) where b_i corresponds to the
+                                     * auxiliary Boolean representing the i-th constraints added to the backend.
+                                     */
+                                    for( Formula::const_iterator subformula = passedFormulaBegin();
+                                        subformula != passedFormulaEnd();
+                                        ++subformula )
+                                    {
+                                        Lit lit = getLiteral( **subformula );
+                                        learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
+                                    }
+                                    // For all constraints we can deduce.
+                                    for( vector<const Constraint*>::const_iterator constraint = (*backend)->deductions().begin();
+                                            constraint != (*backend)->deductions().end(); ++constraint )
+                                    {
+                                        /*
+                                         * Learn the clause (~b_1 or .. or ~b_n or b) where b corresponds to the
+                                         * Boolean (not auxiliary) representing the constraint.
+                                         */
+                                        ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( *constraint );
+                                        if( constraintLiteralPair != mConstraintLiteralMap.end() )
+                                        {
+                                            learnt_clause.push( mkLit( var( constraintLiteralPair->second )+1, false ) );
+
+                                            CRef clause = ca.alloc( learnt_clause, true );
+                                            learnts.push( clause );
+                                            attachClause( clause );
+                                            claBumpActivity( ca[clause] );
+                                            learnt_clause.pop();
+                                        }
+                                    }
+                                    learnt_clause.clear();
+                                    break;
+                                }
+                                ++backend;
+                            }
+                            #endif
                             #ifdef DEBUG_SATMODULE
                             cout << "True!" << endl;
                             #endif
@@ -1874,11 +1925,13 @@ NextClause:
             }
 
         for( int i = 0; i < c.size(); i++ )
-            //                _out << " " << ( sign( c[i] ) ? "-" : "" ) << ( mapVar( var( c[i] ), map, max ) + 1 );
-            _out << " " << (sign( c[i] ) ? "-" : "") << var( c[i] ) + 1;
+        {
+            signed tmp = (sign( c[i] ) ? -1 : 1) * var( c[i] ) + 1;
+            _out << setw(6) << tmp;
+        }
 
         if( satisfied( c ) )
-            cout << "   is satisfied";
+            cout << "      ok";
     }
 
     /**
@@ -1893,11 +1946,13 @@ NextClause:
     void SATModule::printClauses( ostream& _out, Clause& c, vec<Var>& map, Var& max )
     {
         for( int i = 0; i < c.size(); i++ )
-            //                _out << " " << ( sign( c[i] ) ? "-" : "" ) << ( mapVar( var( c[i] ), map, max ) + 1 );
-            _out << " " << (sign( c[i] ) ? "-" : "") << var( c[i] ) + 1;
+        {
+            signed tmp = (sign( c[i] ) ? -1 : 1) * var( c[i] ) + 1;
+            _out << setw(6) << tmp;
+        }
 
         if( satisfied( c ) )
-            cout << "   is satisfied";
+            cout << "      ok";
     }
 
     /**
@@ -1974,7 +2029,8 @@ NextClause:
             {
                 _out <<  _init << "               ";
             }
-            _out << pos << " -> ";
+            _out << setw(5) << pos;
+            _out << "  (" << setw(7) << activity[pos] << ") " << " -> ";
             if( assigns[pos] == l_True )
             {
                 _out << "l_True";
@@ -2025,11 +2081,8 @@ NextClause:
             {
                 _out << _init << "             ";
             }
-            if( sign( trail[pos] ) )
-            {
-                _out << "-";
-            }
-            _out << var( trail[pos] ) << " @ " << level << endl;
+            signed tmp = (sign( trail[pos] ) ? -1 : 1) * var( trail[pos] ) + 1;
+            _out << setw(6) << tmp << " @ " << level << endl;
         }
     }
 }    // namespace smtrat
