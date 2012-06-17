@@ -593,15 +593,7 @@ namespace smtrat
         {
             const Constraint& constraintA = _formulaA->constraint();
             const Constraint& constraintB = _formulaB->constraint();
-            if( constraintA.relation() < constraintB.relation() )
-            {
-                return true;
-            }
-            else if( constraintA.relation() == constraintB.relation() )
-            {
-                return GiNaC::ex_is_less()( constraintA.lhs(), constraintB.lhs() );
-            }
-            return false;
+            return constraintA < constraintB;
         }
     };
 
@@ -1332,7 +1324,9 @@ NextClause:
         starts++;
         #ifdef SATMODULE_WITH_CALL_NUMBER
         unsigned numberOfTheoryCalls = 0;
+        #ifndef DEBUG_SATMODULE
         cout << endl << "Number of theory calls:" << endl << endl;
+        #endif
         #endif
 
         for( ; ; )
@@ -1341,26 +1335,37 @@ NextClause:
 
             if( confl == CRef_Undef )
             {
-                #ifdef DEBUG_SATMODULE
-                cout << "######################################################################" << endl;
-                cout << "###" << endl;
-                printClauses( clauses, "Clauses", cout, "### " );
-                cout << "###" << endl;
-                printClauses( learnts, "Learnts", cout, "### " );
-                cout << "###" << endl;
-                printCurrentAssignment( cout, "### " );
-                cout << "### " << endl;
-                printDecisions( cout, "### " );
-                cout << "### " << endl;
-                cout << "### Check the constraints: ";
-                #endif
-
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
                 if( adaptPassedFormula() )
                 {
+                    #ifdef DEBUG_SATMODULE
+                    cout << "######################################################################" << endl;
+                    cout << "###" << endl;
+                    printClauses( clauses, "Clauses", cout, "### " );
+                    cout << "###" << endl;
+                    printClauses( learnts, "Learnts", cout, "### " );
+                    cout << "###" << endl;
+                    printCurrentAssignment( cout, "### " );
+                    cout << "### " << endl;
+                    printDecisions( cout, "### " );
+                    cout << "### " << endl;
+                    cout << "### Check the constraints: ";
+                    #endif
                     #ifdef SATMODULE_WITH_CALL_NUMBER
                     ++numberOfTheoryCalls;
+                    #ifdef DEBUG_SATMODULE
+                    cout << "#" << numberOfTheoryCalls << "  ";
+                    #else
                     cout << "\r" << numberOfTheoryCalls << "    ";
+                    #endif
+                    #endif
+                    #ifdef DEBUG_SATMODULE
+                    cout << "{ ";
+                    for( Formula::const_iterator subformula = passedFormulaBegin(); subformula != passedFormulaEnd(); ++subformula )
+                    {
+                        cout << (*subformula)->constraint().toString() << " ";
+                    }
+                    cout << "}" << endl;
                     #endif
                     switch( runBackends() )
                     {
@@ -1417,14 +1422,14 @@ NextClause:
                             }
                             #endif
                             #ifdef DEBUG_SATMODULE
-                            cout << "True!" << endl;
+                            cout << "### Result: True!" << endl;
                             #endif
                             break;
                         }
                         case False:
                         {
                             #ifdef DEBUG_SATMODULE
-                            cout << "False!" << endl;
+                            cout << "### Result: False!" << endl;
                             #endif
                             learnt_clause.clear();
                             vector<Module*>::const_iterator backend = usedBackends().begin();
@@ -1436,6 +1441,7 @@ NextClause:
                                             infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
                                     {
                                         #ifdef DEBUG_SATMODULE
+                                        (*backend)->printInfeasibleSubsets();
                                         cout << "### { ";
                                         #endif
                                         // Sort the constraints in a unique way.

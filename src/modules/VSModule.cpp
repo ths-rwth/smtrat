@@ -1442,37 +1442,23 @@ namespace smtrat
             }
         }
         allMinimumCoveringSets( confSets, minCoverSets );
+        assert( !minCoverSets.empty() );
+
         /*
-         * Get the smallest infeasible subset.
+         * Change the globally stored infeasible subset to the smaller one.
          */
-        ConditionSetSet::const_iterator smallestMinCoverSet = minCoverSets.begin();
-
-        if( smallestMinCoverSet != minCoverSets.end() )
+        mInfeasibleSubsets.clear();
+        mInfeasibleSubsets.push_back( set< const Formula* >() );
+        for( ConditionSetSet::const_iterator minCoverSet = minCoverSets.begin();
+             minCoverSet != minCoverSets.end();
+             ++minCoverSet )
         {
-            ConditionSetSet::const_iterator minCoverSet = minCoverSets.begin();
-            minCoverSet++;
-            while( minCoverSet != minCoverSets.end() )
-            {
-                /*
-                 * The infeasible subset is smaller than the globally stored one.
-                 */
-                if( (*minCoverSet).size() < (*smallestMinCoverSet).size() )
-                {
-                    smallestMinCoverSet = minCoverSet;
-                }
-                minCoverSet++;
-            }
-
-            /*
-             * Change the globally stored infeasible subset to the smaller one.
-             */
-            mInfeasibleSubsets.clear();
-            mInfeasibleSubsets.push_back( set< const Formula* >() );
-            for( ConditionSet::const_iterator cond = (*smallestMinCoverSet).begin(); cond != (*smallestMinCoverSet).end(); ++cond )
+            assert( !minCoverSet->empty() );
+            for( ConditionSet::const_iterator cond = minCoverSet->begin(); cond != minCoverSet->end(); ++cond )
             {
                 for( ConditionSet::const_iterator oCond = (**cond).originalConditions().begin();
-                	 oCond != (**cond).originalConditions().end();
-                     ++oCond )
+                        oCond != (**cond).originalConditions().end();
+                        ++oCond )
                 {
                     Formula::const_iterator receivedConstraint = receivedFormulaBegin();
                     while( receivedConstraint != receivedFormulaEnd() )
@@ -1493,19 +1479,6 @@ namespace smtrat
 
                     mInfeasibleSubsets.back().insert( *receivedConstraint );
                 }
-            }
-        }
-        else
-        {
-            /*
-             * Set the infeasible subset to the set of all received constraints.
-             */
-            mInfeasibleSubsets.push_back( set< const Formula* >() );
-            for( Formula::const_iterator cons = receivedFormulaBegin();
-            	 cons != receivedFormulaEnd();
-            	 ++cons )
-            {
-            	mInfeasibleSubsets.back().insert( *cons );
             }
         }
 #else
