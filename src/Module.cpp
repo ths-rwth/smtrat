@@ -273,13 +273,12 @@ else if( a == False )
     }
 
 	
-	const Formula* const Module::getOrigins( unsigned posOfPassedFormula ) const
+	const std::set<const Formula*>& Module::getOrigins( unsigned posOfPassedFormula ) const
 	{
 		assert( posOfPassedFormula < passedFormulaSize() );
 		vec_set_const_pFormula _origins = mPassedFormulaOrigins.at( posOfPassedFormula );
 		assert(_origins.size() == 1);
-		assert(_origins.front().size() == 1);
-		return *_origins.front().begin();
+		return _origins.front();
 	}
 	
     /**
