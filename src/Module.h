@@ -230,6 +230,11 @@ namespace smtrat
                 return mConstraintsToInform;
             }
 
+            const std::vector<const Constraint*>& deductions() const
+            {
+                return mDeductions;
+            }
+
         //SMT
         protected:
             bool			addReceivedSubformulaToPassedFormula( unsigned );

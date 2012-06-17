@@ -290,5 +290,71 @@ namespace vs
         return _ostream;
     }
 
+    /**
+     * Substitutes a variable in an expression by a square root expression, which
+     * results in a square root expression.
+     *
+     * @param _ex       The expression to substitute in.
+     * @param _var      The variable to substitute.
+     * @param _subTerm  The square root expression by which the variable gets substituted.
+     *
+     * @return The resulting square root expression.
+     */
+    SqrtEx subBySqrtEx( const ex& _ex, const ex& _var, const SqrtEx& _subTerm )
+    {
+#ifdef VS_DEBUG_METHODS
+        cout << "subBySqrtEx" << endl;
+#endif
+
+        /*
+         * We have to calculate the result of the substitution:
+         *
+         *                           q+r*sqrt{t}
+         *        (a_n*x^n+...+a_0)[------------ / x]
+         *                               s
+         * being:
+         *
+         *      \sum_{k=0}^n (a_k * (q+r*sqrt{t})^k * s^{n-k})
+         *      ----------------------------------------------
+         *                           s^n
+         */
+        signed n = _ex.degree( _var );
+        if( n == 0 )
+        {
+            SqrtEx result = SqrtEx( _ex.numer(), 0, _ex.denom(), 0 );
+            return result;
+        }
+
+        // Calculate the s^k:   (0<=k<=n)
+        vector<ex> sk = vector<ex>( n + 1 );
+        sk[0] = ex( 1 );
+        for( signed i = 1; i <= n; i++ )
+        {
+            sk[i] = sk[i - 1] * _subTerm.denominator();
+        }
+
+        // Calculate the constant part and factor of the square root
+        // of (q+r*sqrt{t})^k:   (1<=k<=n)
+        vector<ex> qk = vector<ex>( n );
+        vector<ex> rk = vector<ex>( n );
+        qk[0] = ex( _subTerm.constantPart() );
+        rk[0] = ex( _subTerm.factor() );
+        for( signed i = 1; i < n; i++ )
+        {
+            qk[i] = _subTerm.constantPart() * qk[i - 1] + _subTerm.factor() * rk[i - 1] * _subTerm.radicand();
+            rk[i] = _subTerm.constantPart() * rk[i - 1] + _subTerm.factor() * qk[i - 1];
+        }
+        // Calculate the result:
+        ex resConstantPart = sk[n] * _ex.coeff( _var, 0 );
+        ex resFactor       = 0;
+        for( signed i = 1; i <= n; i++ )
+        {
+            resConstantPart += _ex.coeff( _var, i ) * qk[i - 1] * sk[n - i];
+            resFactor       += _ex.coeff( _var, i ) * rk[i - 1] * sk[n - i];
+        }
+        SqrtEx result = SqrtEx( resConstantPart, resFactor, sk[n], _subTerm.radicand() );
+        return result;
+    }
+
 }    // end namspace vs
 

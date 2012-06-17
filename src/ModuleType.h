@@ -65,7 +65,9 @@ namespace smtrat
         /// type of class PreProCNFModule
         MT_PreProCNFModule,
         /// type of class CNFTransformerModule
-        MT_CNFerModule
+        MT_CNFerModule,
+        /// type of class VSModule
+        MT_SingleVSModule
     };
 }    // namespace smtrat
 

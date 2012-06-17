@@ -46,6 +46,7 @@ set(lib_modules_headers
     modules/PreProModule.h
     modules/PreProCNFModule.h
     modules/CNFerModule.h
+    modules/SingleVSModule.h
 )
 
 set(lib_modules_src
@@ -58,6 +59,7 @@ set(lib_modules_src
     modules/PreProModule.cpp
     modules/PreProCNFModule.cpp
     modules/CNFerModule.cpp
+    modules/SingleVSModule.cpp
 )
 
 if(USE_GB)
@@ -85,6 +87,14 @@ set(lib_VSModule_src
     modules/VSModule/State.cpp
     modules/VSModule/Substitute.cpp
     modules/VSModule/Substitution.cpp
+)
+
+set(lib_SingleVSModule_headers
+    modules/SingleVSModule/Substitute.h
+)
+
+set(lib_SingleVSModule_src
+    modules/SingleVSModule/Substitute.cpp
 )
 
 set(lib_SATModule_headers
@@ -213,6 +223,8 @@ set(lib_${PROJECT_NAME}_SRCS
 	${lib_SDP_headers}
 	${lib_SDP_src}
 	${lib_LinAlg}
+    ${lib_SingleVSModule_headers}
+    ${lib_SingleVSModule_src}
 )
 
 set(STATICLIB "SHARED")
@@ -263,6 +275,7 @@ install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/modu
 install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRAModule)
 install( FILES ${lib_LRAOneModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRAOneModule)
 install( FILES ${lib_LRATwoModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRATwoModule)
+install( FILES ${lib_SingleVSModule_headers} DESTINATION include/${PROJECT_NAME}/modules/SingleVSModule)
 
 if(CppUnit_FOUND)
 add_subdirectory(test)

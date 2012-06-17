@@ -143,7 +143,7 @@ namespace vs
             GiNaC::ex* mpRadicand;
             GiNaC::ex* mpDenominator;
     };
-
+    SqrtEx subBySqrtEx( const GiNaC::ex&, const GiNaC::ex&, const SqrtEx& );
 }    // end namspace vs
 
 #endif

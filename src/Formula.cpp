@@ -536,6 +536,11 @@ namespace smtrat
             mPropositions |= PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE;
             break;
         }
+        case MT_SingleVSModule:
+        {
+            mPropositions |= PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE;
+            break;
+        }
         default:
         {
         }

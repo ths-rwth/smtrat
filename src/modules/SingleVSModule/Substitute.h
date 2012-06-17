@@ -30,82 +30,26 @@
 #ifndef SMTRAT_VS_SUBSTITUTE_H
 #define SMTRAT_VS_SUBSTITUTE_H
 
-//#define VS_DEBUG_METHODS
-//#define VS_DEBUG_SUBSTITUTION
-//#define VS_DEBUG_CALCULATIONS
-
-#include "Substitution.h"
-#include "Tools.h"
+#include "../VSModule/SqrtEx.h"
+#include "../../Formula.h"
 #include <cmath>
 
-namespace vs
+namespace svs
 {
-    /*
-     *  Type and object definitions:
-     */
-
-#ifndef TS_CONSTRAINT_CONJUNCTION
-#define TS_CONSTRAINT_CONJUNCTION
-    typedef std::vector<smtrat::Constraint*>      TS_ConstraintConjunction;
-#endif
-    typedef std::vector<TS_ConstraintConjunction> DisjunctionOfConstraintConjunctions;
-
     /*
      * Methods:
      */
-
-    void substitute( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
-    void substituteNormal( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
-    void substituteNormalSqrt( const smtrat::Constraint&, const Substitution&, const GiNaC::ex&, DisjunctionOfConstraintConjunctions& );
-    void substituteNormalSqrtEq( const smtrat::Constraint&,
-                                 const Substitution&,
-                                 const GiNaC::ex&,
-                                 const GiNaC::ex&,
-                                 const GiNaC::ex&,
-                                 DisjunctionOfConstraintConjunctions&,
-                                 const GiNaC::symtab& );
-    void substituteNormalSqrtNeq( const smtrat::Constraint&,
-                                  const Substitution&,
-                                  const GiNaC::ex&,
-                                  const GiNaC::ex&,
-                                  const GiNaC::ex&,
-                                  DisjunctionOfConstraintConjunctions&,
-                                  const GiNaC::symtab& );
-    void substituteNormalSqrtLess( const smtrat::Constraint&,
-                                   const Substitution&,
-                                   const GiNaC::ex&,
-                                   const GiNaC::ex&,
-                                   const GiNaC::ex&,
-                                   const GiNaC::ex&,
-                                   DisjunctionOfConstraintConjunctions&,
-                                   const GiNaC::symtab& );
-    void substituteNormalSqrtLeq( const smtrat::Constraint&,
-                                  const Substitution&,
-                                  const GiNaC::ex&,
-                                  const GiNaC::ex&,
-                                  const GiNaC::ex&,
-                                  const GiNaC::ex&,
-                                  DisjunctionOfConstraintConjunctions&,
-                                  const GiNaC::symtab& );
-    void substitutePlusEps( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
-    void substituteEpsGradients( const smtrat::Constraint&,
-                                 const Substitution&,
-                                 const smtrat::Constraint_Relation,
-                                 const smtrat::Constraint_Relation,
-                                 DisjunctionOfConstraintConjunctions&,
-                                 const GiNaC::symtab& );
-    void substituteMinusInf( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
-    void clear( DisjunctionOfConstraintConjunctions& );
-    void substituteInfLessGreater( const smtrat::Constraint&,
-                                   const Substitution&,
-                                   DisjunctionOfConstraintConjunctions&,
-                                   const GiNaC::symtab& );
-    void substituteTrivialCase( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions&, const GiNaC::symtab& );
-    void substituteNotTrivialCase( const smtrat::Constraint&,
-                                   const Substitution&,
-                                   DisjunctionOfConstraintConjunctions&,
-                                   const GiNaC::symtab& );
-
+    smtrat::Formula* substituteNormal( const smtrat::Constraint*, const GiNaC::symbol&, const vs::SqrtEx& );
+    smtrat::Formula* substituteNormalSqrtEq( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex& );
+    smtrat::Formula* substituteNormalSqrtNeq( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex& );
+    smtrat::Formula* substituteNormalSqrtLess( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex& );
+    smtrat::Formula* substituteNormalSqrtLeq( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex& );
+    smtrat::Formula* substitutePlusEps( const smtrat::Constraint*, const GiNaC::symbol&, const vs::SqrtEx& );
+    smtrat::Formula* substituteEpsGradients( const smtrat::Constraint*, const GiNaC::symbol&, const vs::SqrtEx&, const smtrat::Constraint_Relation, const smtrat::Constraint_Relation );
+    smtrat::Formula* substituteMinusInf( const smtrat::Constraint*, const GiNaC::symbol&, const vs::SqrtEx& );
+    smtrat::Formula* substituteInfLessGreater( const smtrat::Constraint&, const GiNaC::symbol&, const vs::SqrtEx& );
+    smtrat::Formula* substituteTrivialCase( const smtrat::Constraint&, const GiNaC::symbol&, const vs::SqrtEx& );
+    smtrat::Formula* substituteNotTrivialCase( const smtrat::Constraint&, const GiNaC::symbol&, const vs::SqrtEx& );
 #ifdef VS_CUBIC_CASE
     void substituteCubicRoot( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteCubicRootInLinear( const smtrat::Constraint&,
@@ -150,8 +94,6 @@ namespace vs
                                                DisjunctionOfConstraintConjunctions&,
                                                const GiNaC::symtab& );
 #endif
-
-    void simplify( DisjunctionOfConstraintConjunctions& );
 
 }    // end namspace vs
 

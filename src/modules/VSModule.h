@@ -33,6 +33,7 @@
 //#define VS_INCREMENTAL
 //#define VS_BACKTRACKING
 #define VS_INFEASIBLE_SUBSET_GENERATION
+//#define VS_USE_DEDUCTIONS
 
 //#define VS_DELAY_BACKEND_CALL
 #define VS_WITH_BACKEND
@@ -141,6 +142,11 @@ namespace smtrat
             void eraseDTsOfRanking( vs::State& );
             void updateInfeasibleSubset();
             void reset();
+            #ifdef VS_USE_DEDUCTIONS
+            void updateDeductions();
+            std::vector<std::pair<std::string, GiNaC::numeric> > getNumericAssignment( const unsigned = 10 ) const;
+            #endif
+            std::vector<std::pair<std::string, std::pair<vs::Substitution_Type, GiNaC::ex> > > getSymbolicAssignment() const;
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
             Answer runBackendSolvers( vs::State* );
             vec_set_const_pFormula getOriginsOfCondition( const vs::Condition*, const vs::State* ) const;
