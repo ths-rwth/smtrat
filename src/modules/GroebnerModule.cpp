@@ -200,13 +200,13 @@ namespace smtrat
 							const std::set<const Formula*> origs= getOrigins(i);
 							mInfeasibleSubsets.back().insert(origs.begin(), origs.end() );
 							++i;
-						} else if (redIneq.isConstant()) {
+						}
+						// We are constant.. 
+						else if (redIneq.isConstant()) {
 							++i;
 						}
-						
-						
 						// We do not have direct unsatisfiability, but we pass the simplified constraints to our backends.
-						else if(!mInfeasibleSubsets.empty() && passInequalities != AS_RECEIVED && (!passInequalities == REDUCED_ONLYSTRICT || relationIsStrict ) )
+						else if(!mInfeasibleSubsets.empty() && passInequalities != AS_RECEIVED && (passInequalities != REDUCED_ONLYSTRICT || relationIsStrict ) )
 						{
 							originals.front() = generateReasons(redIneq.getOrigins().getBitVector());
 							//If we did reduce something, we used reductors, so we can check nicely if we reduced our constraint.
@@ -232,7 +232,7 @@ namespace smtrat
 							{
 								std::cout << redIneq << std::endl;
 							}
-								//go to the next passed formula.
+							//go to the next passed formula.
 							++i;
 						}
 					} else {
