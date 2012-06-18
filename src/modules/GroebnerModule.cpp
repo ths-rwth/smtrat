@@ -206,14 +206,14 @@ namespace smtrat
 						else if (redIneq.isConstant())
 						{
 							assert(relation != CR_EQ);
-//							// lets assume the constraint is not satisfied.
+							// lets assume the constraint is not satisfied.
 							bool satisfied = false; 
-//							// and now we look for cases where it is satisfied.
-//							// If the relation is !=, then c != 0 is always fulfilled.
+							// and now we look for cases where it is satisfied.
+							// If the relation is !=, then c != 0 is always fulfilled.
 							if (relation == CR_NEQ) {
 								satisfied = true;
 							}
-//							
+							
 							const Rational reducedConstant = redIneq.lcoeff();
 							assert(reducedConstant != 0);
 							
@@ -229,8 +229,9 @@ namespace smtrat
 							}
 
 							if(satisfied) {
-								removeSubformulaFromPassedFormula(i);
-								--nrOfFormulasInPassed;
+//								removeSubformulaFromPassedFormula(i);
+//								--nrOfFormulasInPassed;
+								++i;
 							}
 							else
 							{

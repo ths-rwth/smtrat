@@ -115,8 +115,8 @@ namespace smtrat
 			static const bool passWithMinimalReasons = true;
 			static const bool checkInequalities = true;
 			static const pass_inequalities passInequalities = AS_RECEIVED;
-			static const bool checkInequalitiesForTrivialSumOfSquares = true;
-			static const bool checkEqualitiesForTrivialSumOfSquares = true;
+			static const bool checkInequalitiesForTrivialSumOfSquares = false;
+			static const bool checkEqualitiesForTrivialSumOfSquares = false;
 			
 
     };
