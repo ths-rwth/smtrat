@@ -82,14 +82,15 @@ namespace smtrat
 
     Answer CADModule::isConsistent()
     {
-        cout << "Check constraint set " << endl;
-
-        for( auto k = mConstraints.begin(); k != mConstraints.end(); ++k )
-            cout << " " << *k << endl;
-        vector<symbol> variables = mCAD.variables();
-        cout << "over the variables " << endl;
-        for( auto k = variables.begin(); k != variables.end(); ++k )
-            cout << " " << *k << endl;
+        #ifdef MODULE_VERBOSE
+//        cout << "Check constraint set " << endl;
+//        for( auto k = mConstraints.begin(); k != mConstraints.end(); ++k )
+//            cout << " " << *k << endl;
+//        vector<symbol> variables = mCAD.variables();
+//        cout << "over the variables " << endl;
+//        for( auto k = variables.begin(); k != variables.end(); ++k )
+//            cout << " " << *k << endl;
+        #endif
         RealAlgebraicPoint r;
         if( !mCAD.check( mConstraints, r ))
         {
@@ -102,12 +103,16 @@ namespace smtrat
             for( Formula::const_iterator cons = receivedFormulaBegin(); cons != receivedFormulaEnd(); ++cons )
                 infeasibleSubset.insert( *cons );
             mInfeasibleSubsets.push_back( infeasibleSubset );
-            cout << "#Samples: " << mCAD.samples().size() << endl;
-            cout << "Result: false" << endl;
-            printInfeasibleSubsets();
+            #ifdef MODULE_VERBOSE
+//            cout << "#Samples: " << mCAD.samples().size() << endl;
+//            cout << "Result: false" << endl;
+//            printInfeasibleSubsets();
+            #endif
             return False;
         }
-        cout << "Result: true" << endl;
+        #ifdef MODULE_VERBOSE
+//        cout << "Result: true" << endl;
+        #endif
         return True;
     }
 
@@ -192,7 +197,6 @@ namespace smtrat
                 assert( false == true );
             }
         }
-//        cout << "Convert constraint " << c << ": " << Polynomial( c.lhs() ) <<
         return GiNaCRA::Constraint( Polynomial( c.lhs() ), signForConstraint, variables, cadConstraintNegated );
     }
 
