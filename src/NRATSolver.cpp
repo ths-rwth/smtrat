@@ -66,7 +66,6 @@ namespace smtrat
 		#endif
 		#ifdef USE_CAD
 		strategy().addModuleType( caseOne, MT_CADModule );
-//        strategy().addModuleType( caseThree, MT_CADModule );
 		#endif
 		#ifdef USE_GB
 		strategy().addModuleType( caseTwo, MT_VSModule );
@@ -75,10 +74,8 @@ namespace smtrat
 		strategy().addModuleType( caseThree, MT_VSModule );
 		#endif
 		strategy().addModuleType( caseFour, MT_SATModule );
-        strategy().addModuleType( caseSix, MT_CNFerModule );
-//		strategy().addModuleType( caseFour, MT_SATModule );
-//        strategy().addModuleType( caseFive, MT_CNFerModule );
-//        strategy().addModuleType( caseSix, MT_PreProModule );
+        strategy().addModuleType( caseFive, MT_CNFerModule );
+        strategy().addModuleType( caseSix, MT_PreProModule );
     }
 
     NRATSolver::~NRATSolver() {}
