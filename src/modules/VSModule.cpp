@@ -459,13 +459,42 @@ namespace smtrat
                                          * If we need to involve a complete approach.
                                          */
                                         #ifdef VS_WITH_BACKEND
-                                        switch( runBackendSolvers( currentState ))
+                                        switch( runBackendSolvers( currentState ) )
                                         {
                                             case True:
                                             {
                                                 currentState->rToHighDegree() = true;
                                                 //printAnswer( cout );
-//                                                return True;
+
+                                                State * unfinishedAncestor;
+                                                if( currentState->unfinishedAncestor( unfinishedAncestor ))
+                                                {
+                                                    /*
+                                                    * Go back to this ancestor and refine.
+                                                    */
+                                                    eraseDTsOfRanking( *unfinishedAncestor );
+                                                    unfinishedAncestor->extendSubResultCombination();
+                                                    unfinishedAncestor->rStateType() = COMBINE_SUBRESULTS;
+                                                    if( unfinishedAncestor->refreshConditions() )
+                                                    {
+                                                        insertDTinRanking( unfinishedAncestor );
+                                                    }
+                                                    else
+                                                    {
+                                                        insertDTsinRanking( unfinishedAncestor );
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    /*
+                                                    * Solution.
+                                                    */
+                                                    if( debug )
+                                                    {
+                                                        printAll( cout );
+                                                    }
+                                                    return True;
+                                                }
                                                 break;
                                             }
                                             case False:
@@ -1878,38 +1907,21 @@ namespace smtrat
         /*
          * Run the backends on the constraint of the state.
          */
-        for( unsigned pos = 0; pos < passedFormulaSize(); ++pos )
+        while( passedFormulaSize() > 0 )
         {
-            removeSubformulaFromPassedFormula( pos );
+            removeSubformulaFromPassedFormula( passedFormulaSize() - 1 );
         }
         for( ConditionVector::const_iterator cond = _state->conditions().begin(); cond != _state->conditions().end(); ++cond )
         {
+            const Constraint& constraint = (**cond).constraint();
             vec_set_const_pFormula origins = vec_set_const_pFormula();
-            addSubformulaToPassedFormula( new Formula( (**cond).pConstraint() ), origins );
+            addSubformulaToPassedFormula( new Formula( Formula::newConstraint( constraint.lhs(), constraint.relation() ) ), origins );
         }
 
         switch( runBackends() )
         {
             case True:
             {
-                State * unfinishedAncestor;
-                if( _state->unfinishedAncestor( unfinishedAncestor ))
-                {
-                    /*
-                     * Go back to this ancestor and refine.
-                     */
-                    eraseDTsOfRanking( *unfinishedAncestor );
-                    unfinishedAncestor->extendSubResultCombination();
-                    unfinishedAncestor->rStateType() = COMBINE_SUBRESULTS;
-                    if( unfinishedAncestor->refreshConditions() )
-                    {
-                        insertDTinRanking( unfinishedAncestor );
-                    }
-                    else
-                    {
-                        insertDTsinRanking( unfinishedAncestor );
-                    }
-                }
                 return True;
             }
             case False:
@@ -1931,7 +1943,7 @@ namespace smtrat
                             {
                                 for( ConditionVector::const_iterator cond = _state->conditions().begin(); cond != _state->conditions().end(); ++cond )
                                 {
-                                    if( (*cond)->pConstraint() == (*subformula)->pConstraint() )
+                                    if( (*cond)->constraint() == (*subformula)->constraint() )
                                     {
                                         conflict.insert( *cond );
                                         break;
