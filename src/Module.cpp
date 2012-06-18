@@ -26,8 +26,8 @@
  * @author Florian Corzilius
  * @author Ulrich Loup
  * @author Sebastian Junges
- * Since: 2012-01-18
- * Version: 2012-01-20
+ * @since: 2012-01-18
+ * @version: 2012-06-18
  */
 
 #include "Module.h"
@@ -64,7 +64,6 @@ namespace smtrat
     {
     	++mLastBacktrackpointsEnd;
     	mBackendsUptodate = false;
-        mDeductions.clear();
         return true;
     }
 
@@ -437,26 +436,55 @@ else if( a == False )
         vector< Module* >::iterator tsmodule = mUsedBackends.begin();
         while( tsmodule != mUsedBackends.end() )
         {
-//cout << endl << "isConsistent of " << *tsmodule << " having type " << (**tsmodule).type() << endl;
-//(**tsmodule).print( cout, " ");
+            #ifdef MODULE_VERBOSE
+            string moduleName = "";
+            switch( (**tsmodule).type() )
+            {
+            case MT_SimplifierModule:
+                moduleName = "Simplifier";
+                break;
+            case MT_GroebnerModule:
+                moduleName = "Groebner";
+                break;
+            case MT_CADModule:
+                moduleName = "CAD";
+                break;
+            case MT_VSModule:
+                moduleName = "VS";
+                break;
+            case MT_PreProModule:
+                moduleName = "Preprocessor";
+                break;
+            default:
+                break;
+            }
+            cout << endl << "Call to module " << moduleName << endl;
+            (**tsmodule).print( cout, " ");
+            #endif
             Answer result = (**tsmodule).isConsistent();
             switch( result )
             {
 		        case True:
 		        {
-//cout << "Result:   True" << endl;
+                    #ifdef MODULE_VERBOSE
+                    cout << "Result:   True" << endl;
+                    #endif
 		            return True;
 		        }
 		        case False:
 		        {
-//cout << "Result:   False" << endl;
-//(**tsmodule).printInfeasibleSubsets( cout, "          " );
+                    #ifdef MODULE_VERBOSE
+                    cout << "Result:   False" << endl;
+                    (**tsmodule).printInfeasibleSubsets( cout, "          " );
+                    #endif
 		            return False;
 		        }
 		        case Unknown:
 		        {
-//cout << "Result:   Unknown" << endl;
-		            return Unknown;
+                    #ifdef MODULE_VERBOSE
+                    cout << "Result:   Unknown" << endl;
+                    #endif
+                    return Unknown;
 		        }
 		        default:
 		        {
@@ -466,7 +494,6 @@ else if( a == False )
             }
             ++tsmodule;
         }
-//cout << "Result:   Unknown" << endl;
         return Unknown;
     }
 
@@ -604,24 +631,24 @@ printWithBackends();
         if( !mBackendsUptodate )
         {
         	mBackendsUptodate = true;
-            /*
-             * Add all subformulas to the backends after the last one asserted.
-             */
-            for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
-            {
-                (*module)->pushBacktrackPoint();
+			    /*
+			     * Add all subformulas to the backends after the last one asserted.
+			     */
+			    for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+			    {
+			    	(*module)->pushBacktrackPoint();
 
-                signed pos = 0;
-                for( Formula::const_iterator iter = passedFormulaBegin(); iter != passedFormulaEnd(); ++iter )
-                {
-                    if( pos > (*module)->lastBacktrackpointsEnd() )
-                    {
-                        (*module)->assertSubFormula( *iter );
-                    }
-                    ++pos;
-                }
-            }
-		}
+			    	signed pos = 0;
+			    	for( Formula::const_iterator iter = passedFormulaBegin(); iter != passedFormulaEnd(); ++iter )
+			    	{
+			    		if( pos > (*module)->lastBacktrackpointsEnd() )
+			    		{
+			    			(*module)->assertSubFormula( *iter );
+			    		}
+			    		++pos;
+			    	}
+		        }
+		    }
 /*
 cout << "updateBackends end " << this << " having type " << type() << endl;
 printWithBackends();

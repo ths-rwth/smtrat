@@ -26,11 +26,14 @@
  * @author Ulrich Loup
  * @author Sebastian Junges
  * @since 2012-01-18
- * @version 2012-02-11
+ * @version 2012-06-18
  */
 
 #ifndef SMTRAT_MODULE_H
 #define SMTRAT_MODULE_H
+
+/// Flag activating some informative and not exaggerated output about module calls.
+#define MODULE_VERBOSE
 
 #include <vector>
 #include <map>
