@@ -43,7 +43,6 @@ namespace smtrat
         mBackTrackPoints( vector< unsigned >() ),
         mLastBacktrackpointsEnd( -1 ),
         mInfeasibleSubsets( vec_set_const_pFormula() ),
-        mDeductions( vector< const Constraint* >() ),
         mpTSManager( _tsManager ),
         mModuleType( MT_Module ),
         mConstraintsToInform( fastConstraintSet() ),
@@ -52,7 +51,8 @@ namespace smtrat
         mBackendsUptodate( false ),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),
-        mPassedFormulaOrigins( FormulaOrigins() )
+        mPassedFormulaOrigins( FormulaOrigins() ),
+        mDeductions( vector< Formula* >() )
     {}
 
     Module::~Module()
@@ -64,6 +64,7 @@ namespace smtrat
     {
     	++mLastBacktrackpointsEnd;
     	mBackendsUptodate = false;
+        mDeductions.clear();
         return true;
     }
 
@@ -77,7 +78,7 @@ namespace smtrat
     Answer Module::isConsistent()
     {
 		assert(mInfeasibleSubsets.empty());
-		
+
 	    for( unsigned i = passedFormulaSize(); i < receivedFormulaSize(); ++i )
 	    {
 	        addReceivedSubformulaToPassedFormula( i );
@@ -272,7 +273,7 @@ else if( a == False )
         mPassedFormulaOrigins.at( _pos ) = _origins;
     }
 
-	
+
 	const std::set<const Formula*>& Module::getOrigins( unsigned posOfPassedFormula ) const
 	{
 		assert( posOfPassedFormula < passedFormulaSize() );
@@ -280,7 +281,7 @@ else if( a == False )
 		assert(_origins.size() == 1);
 		return _origins.front();
 	}
-	
+
     /**
      * Gets the original constraints of _constraint, which are in the vector of the received constraints, of
      * the given constraint, which is in the vector of the passed constraints.
@@ -603,26 +604,23 @@ printWithBackends();
         if( !mBackendsUptodate )
         {
         	mBackendsUptodate = true;
-		    if( !mUsedBackends.empty() )
-		    {
-			    /*
-			     * Add all subformulas to the backends after the last one asserted.
-			     */
-			    for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
-			    {
-			    	(*module)->pushBacktrackPoint();
+            /*
+             * Add all subformulas to the backends after the last one asserted.
+             */
+            for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+            {
+                (*module)->pushBacktrackPoint();
 
-			    	signed pos = 0;
-			    	for( Formula::const_iterator iter = passedFormulaBegin(); iter != passedFormulaEnd(); ++iter )
-			    	{
-			    		if( pos > (*module)->lastBacktrackpointsEnd() )
-			    		{
-			    			(*module)->assertSubFormula( *iter );
-			    		}
-			    		++pos;
-			    	}
-		        }
-		    }
+                signed pos = 0;
+                for( Formula::const_iterator iter = passedFormulaBegin(); iter != passedFormulaEnd(); ++iter )
+                {
+                    if( pos > (*module)->lastBacktrackpointsEnd() )
+                    {
+                        (*module)->assertSubFormula( *iter );
+                    }
+                    ++pos;
+                }
+            }
 		}
 /*
 cout << "updateBackends end " << this << " having type " << type() << endl;
@@ -752,6 +750,19 @@ printWithBackends();
 //_formula->print();
 //cout << "(" << _formula << ")   end  " << this << " having type " << type() << endl;
 //printWithBackends();
+    }
+
+    void Module::updateDeductions()
+    {
+        for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+        {
+            for( vector< Formula*>::const_iterator deduction = (*module)->deductions().begin();
+                 deduction != (*module)->deductions().end();
+                 ++deduction )
+            {
+                // TODO: project backends deductions constraints to the constraints in the received formula
+            }
+        }
     }
 
 	/**

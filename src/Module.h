@@ -54,16 +54,14 @@ namespace smtrat
     class Module
     {
         protected:
-            std::vector< unsigned >             mBackTrackPoints;
-            signed                              mLastBacktrackpointsEnd;
-            /// Saves the infeasible subsets
-            vec_set_const_pFormula              mInfeasibleSubsets;
-            /// Saves the infeasible subsets
-            std::vector< const Constraint* >    mDeductions;
+            std::vector< unsigned > mBackTrackPoints;
+            signed                  mLastBacktrackpointsEnd;
+            /// Stores the infeasible subsets
+            vec_set_const_pFormula  mInfeasibleSubsets;
             /// A reference to the manager
-            Manager* const 		mpTSManager;
-            ModuleType     		mModuleType;
-            fastConstraintSet   mConstraintsToInform;
+            Manager* const          mpTSManager;
+            ModuleType              mModuleType;
+            fastConstraintSet       mConstraintsToInform;
 
         private:
             /// A vector of received constraints
@@ -76,6 +74,8 @@ namespace smtrat
             Formula*              	mpPassedFormula;
             /// for each passed formula index its original subformulas in mpReceivedFormula
             FormulaOrigins  		mPassedFormulaOrigins;
+            /// Stores the deductions this module or its backends made.
+            std::vector< Formula* > mDeductions;
 
         public:
             Module( Manager* const, const Formula* const );
@@ -230,7 +230,13 @@ namespace smtrat
                 return mConstraintsToInform;
             }
 
-            const std::vector<const Constraint*>& deductions() const
+            void addDeduction( Formula* _deduction )
+            {
+                assert( PROP_IS_A_CLAUSE <= _deduction->getPropositions() );
+                mDeductions.push_back( _deduction );
+            }
+
+            const std::vector<Formula*>& deductions() const
             {
                 return mDeductions;
             }
@@ -263,6 +269,7 @@ namespace smtrat
             void updateBackends();
             void removeAllOriginatedBy( unsigned );
             void removeAllOriginatedBy( const Formula* const );
+            void updateDeductions();
 
 		//Printing
 	public:

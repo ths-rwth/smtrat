@@ -113,13 +113,13 @@ namespace smtrat
 
     void CADModule::popBacktrackPoint()
     {
-        Module::popBacktrackPoint();
         signed upperBound = receivedFormulaSize();
+        Module::popBacktrackPoint();
         // remove each constraint in the backtracked range from the local constraint list, and remove the respective polynomials from the CAD
         for( signed pos = lastBacktrackpointsEnd() + 1; pos < upperBound; ++pos )
         {
-            GiNaCRA::Constraint                   constraint     = convertConstraint( *receivedFormulaAt( pos )->pConstraint() );
-            vector<GiNaCRA::Constraint>::iterator constraintIter = std::find( mConstraints.begin(), mConstraints.end(), constraint );
+            GiNaCRA::Constraint                   constraint     = convertConstraint( receivedFormulaAt( pos )->constraint() );
+            vector<GiNaCRA::Constraint>::iterator constraintIter = find( mConstraints.begin(), mConstraints.end(), constraint );
             assert( constraintIter != mConstraints.end() );
             mCAD.removePolynomial( UnivariatePolynomial( constraintIter->polynomial(), constraintIter->variables().front() ) );
             mConstraints.erase( constraintIter );

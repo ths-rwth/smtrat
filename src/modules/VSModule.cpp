@@ -171,16 +171,10 @@ namespace smtrat
         mFreshConstraintReceived = false;
         if( receivedFormulaEmpty() )
         {
-            #ifdef VS_USE_DEDUCTIONS
-            updateDeductions();
-            #endif
             return True;
         }
         if( mInconsistentConstraintAdded )
         {
-            #ifdef VS_USE_DEDUCTIONS
-            updateDeductions();
-            #endif
             return False;
         }
         #ifndef VS_INCREMENTAL
@@ -358,9 +352,6 @@ namespace smtrat
                                     {
                                         printAll( cout );
                                     }
-                                    #ifdef VS_USE_DEDUCTIONS
-                                    updateDeductions();
-                                    #endif
                                     return True;
                                 }
                             }
@@ -474,10 +465,8 @@ namespace smtrat
                                             {
                                                 currentState->rToHighDegree() = true;
                                                 //printAnswer( cout );
-                                                #ifdef VS_USE_DEDUCTIONS
-                                                updateDeductions();
-                                                #endif
-                                                return True;
+//                                                return True;
+                                                break;
                                             }
                                             case False:
                                             {
@@ -494,16 +483,12 @@ namespace smtrat
                                                 }
                                                 else
                                                 {
-                                                    mDeductions.clear();
                                                     return Unknown;
                                                 }
                                             }
                                             default:
                                             {
                                                 cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
-                                                #ifdef VS_USE_DEDUCTIONS
-                                                mDeductions.clear();
-                                                #endif
                                                 return Unknown;
                                             }
                                         }
@@ -544,9 +529,6 @@ namespace smtrat
             }
         }
         updateInfeasibleSubset();
-        #ifdef VS_USE_DEDUCTIONS
-        updateDeductions();
-        #endif
         return False;
     }
 
