@@ -33,7 +33,7 @@
 #define SMTRAT_MODULE_H
 
 /// Flag activating some informative and not exaggerated output about module calls.
-#define MODULE_VERBOSE
+//#define MODULE_VERBOSE
 
 #include <vector>
 #include <map>
