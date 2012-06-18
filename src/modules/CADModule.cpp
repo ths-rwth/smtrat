@@ -113,13 +113,22 @@ namespace smtrat
 
     void CADModule::popBacktrackPoint()
     {
-        signed upperBound = receivedFormulaSize();
+        cout << "WURST0" << endl;
+        printReceivedFormula();
+        cout << "WURST1" << endl;
         Module::popBacktrackPoint();
+        cout << "WURST2" << endl;
+        printReceivedFormula();
+        signed upperBound = receivedFormulaSize();
+        assert( lastBacktrackpointsEnd() < upperBound );
+        cout << "upperBound: " << upperBound << "    lastBTPt: " << lastBacktrackpointsEnd() << endl;
         // remove each constraint in the backtracked range from the local constraint list, and remove the respective polynomials from the CAD
         for( signed pos = lastBacktrackpointsEnd() + 1; pos < upperBound; ++pos )
         {
-            GiNaCRA::Constraint                   constraint     = convertConstraint( receivedFormulaAt( pos )->constraint() );
-            vector<GiNaCRA::Constraint>::iterator constraintIter = find( mConstraints.begin(), mConstraints.end(), constraint );
+            cout << "pos= " << pos << endl;
+            cout << "(unsigned)pos= " << ( (unsigned)pos ) << endl;
+            GiNaCRA::Constraint                   constraint     = convertConstraint( *receivedFormulaAt( pos )->pConstraint() );
+            vector<GiNaCRA::Constraint>::iterator constraintIter = std::find( mConstraints.begin(), mConstraints.end(), constraint );
             assert( constraintIter != mConstraints.end() );
             mCAD.removePolynomial( UnivariatePolynomial( constraintIter->polynomial(), constraintIter->variables().front() ) );
             mConstraints.erase( constraintIter );
@@ -142,12 +151,15 @@ namespace smtrat
      * @param c constraint of the SMT-RAT
      * @return constraint of GiNaCRA
      */
-    const GiNaCRA::Constraint CADModule::convertConstraint( const Constraint& c )
+    const GiNaCRA::Constraint CADModule::convertConstraint( const smtrat::Constraint& c )
     {
-        //        // convert the constraints variables
-        //        vector<symbol> variables = vector<symbol>();
-        //        for( register GiNaC::symtab::const_iterator i = c.variables().begin(); i != c.variables().end(); ++i )
-        //            variables.push_back( ex_to<symbol>( i->second ));
+        // convert the constraints variable
+        vector<symbol> variables = vector<symbol>();
+        for( register GiNaC::symtab::const_iterator i = c.variables().begin(); i != c.variables().end(); ++i )
+        {
+            assert( is_exactly_a<symbol>( i->second ) );
+            variables.push_back( ex_to<symbol>( i->second ));
+        }
         register sign signForConstraint    = ZERO_SIGN;
         register bool cadConstraintNegated = false;
         switch( c.relation() )
@@ -188,7 +200,8 @@ namespace smtrat
                 assert( false == true );
             }
         }
-        return GiNaCRA::Constraint( Polynomial( c.lhs() ), signForConstraint, mCAD.variables(), cadConstraintNegated );
+//        cout << "Convert constraint " << c << ": " << Polynomial( c.lhs() ) <<
+        return GiNaCRA::Constraint( Polynomial( c.lhs() ), signForConstraint, variables, cadConstraintNegated );
     }
 
 }    // namespace smtrat
