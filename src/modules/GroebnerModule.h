@@ -39,6 +39,7 @@
 
 #include <ginacra/mr/Buchberger.h>
 #include "../Module.h"
+#include "GBModule/InequalitiesTable.h"
 
 namespace smtrat
 {
@@ -73,6 +74,7 @@ namespace smtrat
         protected:
             ///The state of the basis
             const GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic> mBasis;
+			const std::vector<unsigned> mVariablesInEqualities;
     };
 
     /**
@@ -104,6 +106,8 @@ namespace smtrat
             std::list<GroebnerModuleState> mStateHistory;
 			
 			bool mAddedEqualitySinceLastCheck;
+			
+			InequalitiesTable mInequalities;
 			
             bool saveState();
 			std::set<const Formula*> generateReasons(const GiNaCRA::BitVector& reasons);
