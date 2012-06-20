@@ -28,6 +28,7 @@
  */
 
 #include "VSModule.h"
+#include <set>
 
 using namespace std;
 using namespace GiNaC;
@@ -1890,6 +1891,55 @@ namespace smtrat
     }
 
     /**
+     * Adapts the passed formula according to the current assignment within the SAT solver.
+     *
+     * @return  true,   if the passed formula has been changed;
+     *          false,  otherwise.
+     */
+    bool VSModule::adaptPassedFormula( const State& _state )
+    {
+        bool changedPassedFormula = false;
+        /*
+         * Collect the constraints to check.
+         */
+        set< Constraint > constraintsToCheck = set< Constraint >();
+        for( ConditionVector::const_iterator cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
+        {
+            constraintsToCheck.insert( (**cond).constraint() );
+        }
+
+        /*
+         * Remove the constraints from the constraints to check, which are already in the passed formula
+         * and remove the subformulas (constraints) in the passed formula, which do not occur in the
+         * constraints to add.
+         */
+        unsigned pos = 0;
+        while( pos < passedFormulaSize() )
+        {
+            if( constraintsToCheck.erase( passedFormulaAt( pos )->constraint() ) == 0 )
+            {
+                removeSubformulaFromPassedFormula( pos );
+                changedPassedFormula = true;
+            }
+            else
+            {
+                ++pos;
+            }
+        }
+
+        /*
+         * Add the the remaining constraints to add to the passed formula.
+         */
+        for( set< Constraint >::iterator iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
+        {
+            changedPassedFormula = true;
+            vec_set_const_pFormula origins = vec_set_const_pFormula();
+            addSubformulaToPassedFormula( new smtrat::Formula( smtrat::Formula::newConstraint( iter->lhs(), iter->relation() ) ), origins );
+        }
+        return changedPassedFormula;
+    }
+
+    /**
      * Run the backend solvers on the conditions of the given state.
      *
      * @param _state    The state to check the conditions of.
@@ -1907,16 +1957,7 @@ namespace smtrat
         /*
          * Run the backends on the constraint of the state.
          */
-        while( passedFormulaSize() > 0 )
-        {
-            removeSubformulaFromPassedFormula( passedFormulaSize() - 1 );
-        }
-        for( ConditionVector::const_iterator cond = _state->conditions().begin(); cond != _state->conditions().end(); ++cond )
-        {
-            const Constraint& constraint = (**cond).constraint();
-            vec_set_const_pFormula origins = vec_set_const_pFormula();
-            addSubformulaToPassedFormula( new Formula( Formula::newConstraint( constraint.lhs(), constraint.relation() ) ), origins );
-        }
+        adaptPassedFormula( *_state );
 
         switch( runBackends() )
         {
@@ -1927,8 +1968,8 @@ namespace smtrat
             case False:
             {
                 /*
-                 * Get the conflict sets formed by the infeasible subsets in the backend.
-                 */
+                * Get the conflict sets formed by the infeasible subsets in the backend.
+                */
                 ConditionSetSet conflictSet = ConditionSetSet();
                 vector<Module*>::const_iterator backend = usedBackends().begin();
                 while( backend != usedBackends().end() )
@@ -1959,15 +2000,15 @@ namespace smtrat
                 eraseDTsOfRanking( *_state );
 
                 /*
-                 * If the considered state is the root, update the found infeasible subset as infeasible subset.
-                 */
+                * If the considered state is the root, update the found infeasible subset as infeasible subset.
+                */
                 if( _state->isRoot() )
                 {
                     updateInfeasibleSubset();
                 }
                 /*
-                 * If the considered state is not the root, pass the infeasible subset to the father.
-                 */
+                * If the considered state is not the root, pass the infeasible subset to the father.
+                */
                 else
                 {
                     if( _state->passConflictToFather() )

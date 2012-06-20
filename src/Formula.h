@@ -138,13 +138,13 @@ namespace smtrat
 
             std::vector<Formula*>* const pSubformulas()
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 return mpSubformulas;
             }
 
             const std::vector<Formula*>& subformulas() const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 return *mpSubformulas;
             }
 
@@ -215,61 +215,61 @@ namespace smtrat
             // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
             const_iterator begin() const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 return mpSubformulas->begin();
             }
 
             const_iterator end() const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 return mpSubformulas->end();
             }
 
             // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
             const_reverse_iterator rbegin() const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 return mpSubformulas->rbegin();
             }
 
             const_reverse_iterator rend() const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 return mpSubformulas->rend();
             }
 
             // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
             const Formula* at( unsigned _pos ) const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 assert( mpSubformulas->size() > _pos );
                 return mpSubformulas->at( _pos );
             }
 
             const Formula& rAt( unsigned _pos ) const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 assert( mpSubformulas->size() > _pos );
                 return *mpSubformulas->at( _pos );
             }
 
             Formula* back()
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 assert( !mpSubformulas->empty() );
                 return mpSubformulas->back();
             }
 
             const Formula* back() const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 assert( !mpSubformulas->empty() );
                 return mpSubformulas->back();
             }
 
             const Formula& rBack() const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 assert( !mpSubformulas->empty() );
                 return *mpSubformulas->back();
             }
@@ -316,6 +316,53 @@ namespace smtrat
                 std::stringstream out;
                 out << mAuxiliaryBooleanNamePrefix << mAuxiliaryBooleanCounter++;
                 return out.str();
+            }
+
+            bool isAtom() const
+            {
+                return ( mType == REALCONSTRAINT || mType == BOOL || mType == FFALSE || mType == TTRUE );
+            }
+
+            bool isBooleanCombination() const
+            {
+                return ( mType == AND || mType == OR || mType == NOT || mType == IMPLIES || mType == IFF || mType == XOR );
+            }
+
+            bool contains( const Formula* const _formula ) const
+            {
+                if( isBooleanCombination() )
+                {
+                    return (std::find( mpSubformulas->begin(), mpSubformulas->end(), _formula ) != mpSubformulas->end());
+                }
+                return false;
+            }
+
+            bool contains( const std::vector< const Formula* >& _formulas ) const
+            {
+                std::set< const Formula* > subformulas = std::set< const Formula* >();
+                for( std::vector< const Formula* >::const_iterator subformula = _formulas.begin();
+                     subformula != _formulas.end(); ++subformula )
+                {
+                    subformulas.insert( *subformula );
+                }
+                return contains( subformulas );
+            }
+
+            bool contains( const std::set< const Formula* >& _formulas ) const
+            {
+                std::set< const Formula* > subformulas = std::set< const Formula* >();
+                for( const_iterator subformula = begin(); subformula != end(); ++subformula )
+                {
+                    subformulas.insert( *subformula );
+                }
+                std::set< const Formula* >::iterator subformula = subformulas.begin();
+                std::set< const Formula* >::iterator iter = _formulas.begin();
+                while( subformula != subformulas.end() && iter != _formulas.end() )
+                {
+                    subformula = subformulas.insert( subformula, *iter );
+                    ++iter;
+                }
+                return (iter == _formulas.end());
             }
 
             Condition getPropositions();

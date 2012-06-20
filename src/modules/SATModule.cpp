@@ -522,7 +522,7 @@ namespace smtrat
                     addClause( negInvConstrAuxLit, mkLit( invConstrBoolean, false ) );
                     // Add the clause (xor normConstrAuxBoolean InvConstrAuxBoolean) in cnf.
                     addClause( mkLit( normConstrAuxBoolean, false ), mkLit( invConstrAuxBoolean, false ) );
-                    addClause( negNormConstrAuxLit, negInvConstrAuxLit );
+//                    addClause( negNormConstrAuxLit, negInvConstrAuxLit );
 
                     /*
                      * Map the literals to the corresponding constraints.
