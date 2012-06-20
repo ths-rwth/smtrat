@@ -68,7 +68,7 @@ namespace smtrat
     bool PreProModule::assertSubFormula( const Formula* const _formula )
     {
         Module::assertSubFormula( _formula );
-        addReceivedSubformulaToPassedFormula( receivedFormulaSize() - 1 );
+        addReceivedSubformulaToPassedFormula( getPositionOfReceivedFormula( _formula ) );
         _formula->FormulaToConstraints( mReceivedConstraints );
         while( mReceivedConstraints.size() > mConstraintOrigins.size() )
         {

@@ -26,8 +26,8 @@
  * @author Florian Corzilius
  * @author Ulrich Loup
  * @author Sebastian Junges
- * Since: 2012-01-18
- * Version: 2012-01-20
+ * @since: 2012-01-18
+ * @version: 2012-06-18
  */
 
 #include "Module.h"
@@ -43,7 +43,6 @@ namespace smtrat
         mBackTrackPoints( vector< unsigned >() ),
         mLastBacktrackpointsEnd( -1 ),
         mInfeasibleSubsets( vec_set_const_pFormula() ),
-        mDeductions( vector< const Constraint* >() ),
         mpTSManager( _tsManager ),
         mModuleType( MT_Module ),
         mConstraintsToInform( fastConstraintSet() ),
@@ -52,7 +51,8 @@ namespace smtrat
         mBackendsUptodate( false ),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),
-        mPassedFormulaOrigins( FormulaOrigins() )
+        mPassedFormulaOrigins( FormulaOrigins() ),
+        mDeductions( vector< Formula* >() )
     {}
 
     Module::~Module()
@@ -77,7 +77,7 @@ namespace smtrat
     Answer Module::isConsistent()
     {
 		assert(mInfeasibleSubsets.empty());
-		
+
 	    for( unsigned i = passedFormulaSize(); i < receivedFormulaSize(); ++i )
 	    {
 	        addReceivedSubformulaToPassedFormula( i );
@@ -272,7 +272,7 @@ else if( a == False )
         mPassedFormulaOrigins.at( _pos ) = _origins;
     }
 
-	
+
 	const std::set<const Formula*>& Module::getOrigins( unsigned posOfPassedFormula ) const
 	{
 		assert( posOfPassedFormula < passedFormulaSize() );
@@ -280,7 +280,7 @@ else if( a == False )
 		assert(_origins.size() == 1);
 		return _origins.front();
 	}
-	
+
     /**
      * Gets the original constraints of _constraint, which are in the vector of the received constraints, of
      * the given constraint, which is in the vector of the passed constraints.
@@ -436,26 +436,55 @@ else if( a == False )
         vector< Module* >::iterator tsmodule = mUsedBackends.begin();
         while( tsmodule != mUsedBackends.end() )
         {
-//cout << endl << "isConsistent of " << *tsmodule << " having type " << (**tsmodule).type() << endl;
-//(**tsmodule).print( cout, " ");
+            #ifdef MODULE_VERBOSE
+            string moduleName = "";
+            switch( (**tsmodule).type() )
+            {
+            case MT_SimplifierModule:
+                moduleName = "Simplifier";
+                break;
+            case MT_GroebnerModule:
+                moduleName = "Groebner";
+                break;
+            case MT_CADModule:
+                moduleName = "CAD";
+                break;
+            case MT_VSModule:
+                moduleName = "VS";
+                break;
+            case MT_PreProModule:
+                moduleName = "Preprocessor";
+                break;
+            default:
+                break;
+            }
+            cout << endl << "Call to module " << moduleName << endl;
+            (**tsmodule).print( cout, " ");
+            #endif
             Answer result = (**tsmodule).isConsistent();
             switch( result )
             {
 		        case True:
 		        {
-//cout << "Result:   True" << endl;
+                    #ifdef MODULE_VERBOSE
+                    cout << "Result:   True" << endl;
+                    #endif
 		            return True;
 		        }
 		        case False:
 		        {
-//cout << "Result:   False" << endl;
-//(**tsmodule).printInfeasibleSubsets( cout, "          " );
+                    #ifdef MODULE_VERBOSE
+                    cout << "Result:   False" << endl;
+                    (**tsmodule).printInfeasibleSubsets( cout, "          " );
+                    #endif
 		            return False;
 		        }
 		        case Unknown:
 		        {
-//cout << "Result:   Unknown" << endl;
-		            return Unknown;
+                    #ifdef MODULE_VERBOSE
+                    cout << "Result:   Unknown" << endl;
+                    #endif
+                    return Unknown;
 		        }
 		        default:
 		        {
@@ -465,7 +494,6 @@ else if( a == False )
             }
             ++tsmodule;
         }
-//cout << "Result:   Unknown" << endl;
         return Unknown;
     }
 
@@ -603,8 +631,6 @@ printWithBackends();
         if( !mBackendsUptodate )
         {
         	mBackendsUptodate = true;
-		    if( !mUsedBackends.empty() )
-		    {
 			    /*
 			     * Add all subformulas to the backends after the last one asserted.
 			     */
@@ -623,7 +649,6 @@ printWithBackends();
 			    	}
 		        }
 		    }
-		}
 /*
 cout << "updateBackends end " << this << " having type " << type() << endl;
 printWithBackends();
@@ -752,6 +777,19 @@ printWithBackends();
 //_formula->print();
 //cout << "(" << _formula << ")   end  " << this << " having type " << type() << endl;
 //printWithBackends();
+    }
+
+    void Module::updateDeductions()
+    {
+        for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+        {
+            for( vector< Formula*>::const_iterator deduction = (*module)->deductions().begin();
+                 deduction != (*module)->deductions().end();
+                 ++deduction )
+            {
+                // TODO: project backends deductions constraints to the constraints in the received formula
+            }
+        }
     }
 
 	/**

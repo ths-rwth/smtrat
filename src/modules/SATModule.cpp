@@ -513,10 +513,16 @@ namespace smtrat
                     Var invConstrAuxBoolean  = newVar();
                     Var invConstrBoolean     = newVar();
 
+                    Lit negNormConstrAuxLit = mkLit( normConstrAuxBoolean, true );
+                    Lit negInvConstrAuxLit = mkLit( invConstrAuxBoolean, true );
+
                     // Add the clause  (or (not normConstrAuxBoolean) normConstrBoolean)
-                    addClause( mkLit( normConstrAuxBoolean, true ), mkLit( normConstrBoolean, false ) );
+                    addClause( negNormConstrAuxLit, mkLit( normConstrBoolean, false ) );
                     // Add the clause  (or (not InvConstrAuxBoolean) InvConstrBoolean)
-                    addClause( mkLit( invConstrAuxBoolean, true ), mkLit( invConstrBoolean, false ) );
+                    addClause( negInvConstrAuxLit, mkLit( invConstrBoolean, false ) );
+                    // Add the clause (xor normConstrAuxBoolean InvConstrAuxBoolean) in cnf.
+                    addClause( mkLit( normConstrAuxBoolean, false ), mkLit( invConstrAuxBoolean, false ) );
+                    addClause( negNormConstrAuxLit, negInvConstrAuxLit );
 
                     /*
                      * Map the literals to the corresponding constraints.
@@ -1437,6 +1443,7 @@ NextClause:
                             {
                                 if( !(*backend)->rInfeasibleSubsets().empty() )
                                 {
+                                    int sizeOfSmallestLearntClause = passedFormulaSize() + 1;
                                     for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
                                             infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
                                     {
@@ -1469,47 +1476,65 @@ NextClause:
                                         cout << " }";
                                         cout << endl;
                                         #endif
-                                        break;    // TODO: Add all infeasible subsets as conflicting clauses.
+
+                                        // Do not store theory lemma
+                                        if( learnt_clause.size() == 1 )
+                                        {
+                                            #ifdef DEBUG_SATMODULE
+                                            cout << "###" << endl << "### Do not store theory lemma" << endl;
+                                            cout << "### Learnt clause = ";
+                                            #endif
+
+                                            if( learnt_clause.size() < sizeOfSmallestLearntClause )
+                                            {
+                                                confl = ca.alloc( learnt_clause, true );
+                                                sizeOfSmallestLearntClause = learnt_clause.size();
+                                            }
+                                            else
+                                            {
+                                                ca.alloc( learnt_clause, true );
+                                            }
+
+                                            #ifdef DEBUG_SATMODULE
+                                            printClause( cout, ca[confl] );
+                                            cout << endl << "###" << endl;
+                                            #endif
+                                        }
+                                        // Learn theory lemma
+                                        else
+                                        {
+                                            #ifdef DEBUG_SATMODULE
+                                            cout << "###" << endl << "### Learn theory lemma" << endl;
+                                            cout << "### Conflict clause (" << learnt_clause.size() << ") = ";
+                                            #endif
+
+                                            if( learnt_clause.size() < sizeOfSmallestLearntClause )
+                                            {
+                                                confl = ca.alloc( learnt_clause, true );
+                                                learnts.push( confl );
+                                                attachClause( confl );
+                                                claBumpActivity( ca[confl] );
+                                                sizeOfSmallestLearntClause = learnt_clause.size();
+                                            }
+                                            else
+                                            {
+                                                CRef conflTmp = ca.alloc( learnt_clause, true );
+                                                learnts.push( conflTmp );
+                                                attachClause( conflTmp );
+                                                claBumpActivity( ca[conflTmp] );
+                                            }
+
+                                            #ifdef DEBUG_SATMODULE
+                                            printClause( cout, ca[confl] );
+                                            cout << endl << "###" << endl;
+                                            #endif
+                                        }
                                     }
                                     break;
                                 }
                                 ++backend;
                             }
                             assert( backend != usedBackends().end() );
-
-                            // Do not store theory lemma
-                            if( learnt_clause.size() == 1 )
-                            {
-                                #ifdef DEBUG_SATMODULE
-                                cout << "###" << endl << "### Do not store theory lemma" << endl;
-                                cout << "### Learnt clause = ";
-                                #endif
-
-                                confl = ca.alloc( learnt_clause, true );
-
-                                #ifdef DEBUG_SATMODULE
-                                printClause( cout, ca[confl] );
-                                cout << endl << "###" << endl;
-                                #endif
-                            }
-                            // Learn theory lemma
-                            else
-                            {
-                                #ifdef DEBUG_SATMODULE
-                                cout << "###" << endl << "### Learn theory lemma" << endl;
-                                cout << "### Conflict clause (" << learnt_clause.size() << ") = ";
-                                #endif
-
-                                confl = ca.alloc( learnt_clause, true );
-                                learnts.push( confl );
-                                attachClause( confl );
-                                claBumpActivity( ca[confl] );
-
-                                #ifdef DEBUG_SATMODULE
-                                printClause( cout, ca[confl] );
-                                cout << endl << "###" << endl;
-                                #endif
-                            }
 
                             break;
                         }

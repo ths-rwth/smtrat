@@ -21,7 +21,7 @@ option(USE_GINACRA "Compile modules using GiNaCRA")
 option(USE_GB "Compile modules using GroebnerBasis")
 option(USE_CAD "Compile modules using CAD")
 
-if(NOT USE_GINACRA) 
+if(NOT USE_GINACRA)
 	if(USE_GB)
 		message(WARNING, "GB is automatically switched off when GiNaCRA is not available")
 	endif()
@@ -32,8 +32,8 @@ if(NOT USE_GINACRA)
 	SET(USE_CAD FALSE)
 endif()
 
-if(NOT USE_GB) 
-	if(USE_NSS) 
+if(NOT USE_GB)
+	if(USE_NSS)
 		message(WARNING, "NSS is automatically switched off when Groebner Basis are not used")
 	endif()
 	SET(USE_NSS FALSE)
@@ -45,7 +45,7 @@ else()
 	project(smtrat CXX)
 endif()
 
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -g -std=c++0x")
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -std=c++0x")
 
 
 # information about the project
@@ -108,7 +108,7 @@ find_package(FLEX) # for building the parser
 # todo: maybe CLAPACK would also do?
 
 if(USE_NSS)
-	enable_language(Fortran) 
+	enable_language(Fortran)
 	find_package(LAPACK)
 	find_package(BLAS)
 
@@ -116,7 +116,7 @@ if(USE_NSS)
 		csdp_lib
 		COMMAND make
 		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/external/csdp
-	)	
+	)
 endif()
 
 # GUI settings
