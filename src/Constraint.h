@@ -52,7 +52,9 @@ namespace smtrat
     {
         CR_EQ = 0, CR_NEQ = 1, CR_LESS = 2, CR_GREATER = 3, CR_LEQ = 4, CR_GEQ = 5
     };
-
+	
+	std::string relationToString(const Constraint_Relation rel); 
+		
     struct strCmp
     {
         bool operator ()( std::string s1, std::string s2 ) const
@@ -166,7 +168,8 @@ namespace smtrat
             //
             static signed compare( const Constraint&, const Constraint& );
             static bool mergeConstraints( Constraint&, const Constraint& );
-
+			
+		
         private:
 
             /*
