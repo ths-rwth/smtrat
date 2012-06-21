@@ -34,12 +34,12 @@ using GiNaCRA::VariableListPool;
 
 namespace smtrat
 {
-    MonomialIterator::MonomialIterator( unsigned nrVars, unsigned maxDeg ):
+    MonomialIterator::MonomialIterator( const std::set<unsigned>& nrVars, unsigned maxDeg ):
         mNrVars( nrVars ),
         mMaxDeg( maxDeg ),
         mCurDeg( 0 )
     {
-        for( unsigned i = 0; i < nrVars; ++i )
+        for( unsigned i = 0; i <= *nrVars.rbegin(); ++i )
         {
             mExps.push_back( 0 );
         }
@@ -47,37 +47,41 @@ namespace smtrat
 
     MonomialIterator::~MonomialIterator(){}
 
-    void MonomialIterator::fillExps( unsigned firstVar, unsigned degsLeft )
+    void MonomialIterator::fillExps( std::set<unsigned>::const_iterator firstVar, unsigned degsLeft )
     {
-        if( firstVar + 1 >= mNrVars )
+		assert(firstVar != mNrVars.end());
+		unsigned varNr = *firstVar;
+		assert(varNr < mExps.size());
+		
+        if( ++firstVar == mNrVars.end() )
         {
-            mExps[firstVar] = degsLeft;
+            mExps[varNr] = degsLeft;
             mTerms.push_back( mExps );
             return;
         }
         for( unsigned i = 0; i <= degsLeft; ++i )
         {
-            mExps[firstVar] = degsLeft - i;
-            fillExps( firstVar + 1, i );
+            mExps[varNr] = degsLeft - i;
+            fillExps( firstVar, i );
         }
     }
 
-    void MonomialIterator::test( unsigned deg )
-    {
-        std::ostream_iterator<unsigned> out_it( std::cout, ", " );
-        fillExps( 0, deg );
-        //for(std::list<std::vector<unsigned> >::const_iterator it = mTerms.begin(); it != mTerms.end(); ++it) {
-        //  std::copy(it->begin(), it->end(), out_it);
-        //  std::cout << std::endl;
-        //}
-    }
+//    void MonomialIterator::test( unsigned deg )
+//    {
+//        std::ostream_iterator<unsigned> out_it( std::cout, ", " );
+//        fillExps( 0, deg );
+//        //for(std::list<std::vector<unsigned> >::const_iterator it = mTerms.begin(); it != mTerms.end(); ++it) {
+//        //  std::copy(it->begin(), it->end(), out_it);
+//        //  std::cout << std::endl;
+//        //}
+//    }
 
     Term MonomialIterator::next()
     {
         if( mTerms.empty() && mCurDeg < mMaxDeg )
         {
             mCurDeg++;
-            fillExps( 0, mCurDeg );
+            fillExps( mNrVars.begin(), mCurDeg );
         }
 
         Term t( mTerms.front() );

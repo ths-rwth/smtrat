@@ -60,7 +60,7 @@ namespace smtrat
                 int          result = 0;
                 vector<Term> monoms;
                 ConstraintMatrixFactory constraintMatrixFactory( 0 );
-                unique_ptr<std::vector<double> > solution;
+                std::unique_ptr<std::vector<double> > solution;
 
                 do
                 {
