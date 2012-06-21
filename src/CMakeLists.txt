@@ -63,6 +63,8 @@ set(lib_modules_src
 )
 
 if(USE_GB)
+	set(lib_module_GBModule_headers modules/GBModule/InequalitiesTable.h modules/GBModule/GBSettings.h)
+	
 	set(lib_modules_headers ${lib_modules_headers} modules/GroebnerModule.h)
 	set(lib_modules_src ${lib_modules_src}  modules/GroebnerModule.cpp)
 endif()
@@ -218,6 +220,7 @@ set(lib_${PROJECT_NAME}_SRCS
 	${lib_LRAOneModule_src}
 	${lib_LRATwoModule_headers}
 	${lib_LRATwoModule_src}
+	${lib_GBModule_headers}
 	${lib_NSSModule_headers}
 	${lib_NSSModule_src}
 	${lib_SDP_headers}

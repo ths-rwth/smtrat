@@ -181,7 +181,7 @@ else if( a == False )
      *
      */
 
-	void Module::addReceivedSubformulaToPassedFormula( const Formula* _subformula )
+	void Module::addReceivedSubformulaToPassedFormula( const Formula*  _subformula )
 	{
 		addSubformulaToPassedFormula(new Formula(*_subformula), _subformula);
 		assert( mpPassedFormula->size() == mPassedFormulaOrigins.size() );

@@ -51,7 +51,8 @@ namespace smtrat
         Module( _tsManager, _formula ),
 
         mBasis(),
-        mStateHistory()
+        mStateHistory(),
+		mInequalities(this)
 
     {
 		assert(passInequalities != FULL_REDUCED_ONLYNEW); // not supported yet!
@@ -78,7 +79,8 @@ namespace smtrat
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
 		{
-			addReceivedSubformulaToPassedFormula( _formula );
+			//addReceivedSubformulaToPassedFormula( _formula );
+			mInequalities.InsertReceivedFormula( _formula );
 		}
 
 
@@ -166,6 +168,11 @@ namespace smtrat
 				}
 			}
 
+			mInequalities.print();
+			print();
+			mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
+		//	printReceivedFormula();
+		//	mInequalities.print();
 
             //remove the former GB from subformulas and if enabled check the inequalities
 			// We might add some Formulas, these do not have to be treated again.
@@ -174,106 +181,107 @@ namespace smtrat
             {
                 if( passedFormulaAt( i )->constraint().relation() == CR_EQ )
                 {
-                    removeSubformulaFromPassedFormula( i );
+                    super::removeSubformulaFromPassedFormula( i );
 					--nrOfFormulasInPassed;
                 }
                 else
                 {
-					if(checkInequalities && passInequalities != FULL_REDUCED_ONLYNEW) {
-						Polynomial ineq = passedFormulaAt( i )->constraint().lhs();
-						Polynomial redIneq;
-						Constraint_Relation relation = passedFormulaAt(i)->constraint().relation();
-						bool relationIsStrict = ( relation == CR_GREATER || relation == CR_LESS || relation == CR_NEQ );
-
-						if(checkInequalitiesForTrivialSumOfSquares && ineq.isTrivialSumOfSquares() ) std::cout << "Found trivial sum of squares" << std::endl;
-						GiNaCRA::BaseReductor<GiNaCRA::GradedLexicgraphic> red(mBasis.getGbIdeal(), ineq);
-
-						if(passInequalities == FULL_REDUCED)
-						{
-							redIneq = red.fullReduce();
-						} else if( passInequalities == AS_RECEIVED || passInequalities == REDUCED || (passInequalities == REDUCED_ONLYSTRICT && relationIsStrict)  ){
-							redIneq = red.fullReduce();
-						}
-
-						// Check if we have direct unsatisfiability
-						if(relationIsStrict && redIneq.isZero() ) {
-							mInfeasibleSubsets.push_back(generateReasons(redIneq.getOrigins().getBitVector()));
-							const std::set<const Formula*> origs= getOrigins(i);
-							mInfeasibleSubsets.back().insert(origs.begin(), origs.end() );
-							++i;
-						}
-						// We are constant..
-						else if (redIneq.isConstant())
-						{
-							assert(relation != CR_EQ);
-							// lets assume the constraint is not satisfied.
-							bool satisfied = false;
-							// and now we look for cases where it is satisfied.
-							// If the relation is !=, then c != 0 is always fulfilled.
-							if (relation == CR_NEQ) {
-								satisfied = true;
-							}
-
-							const Rational reducedConstant = redIneq.lcoeff();
-							assert(reducedConstant != 0);
-
-
-							if(reducedConstant < 0 ) {
-								if(relation == CR_LESS || relation == CR_LEQ) {
-									satisfied = true;
-								}
-							} else {
-								if(relation == CR_GREATER || relation == CR_GEQ ) {
-									satisfied = true;
-								}
-							}
-
-							if(satisfied) {
-//								removeSubformulaFromPassedFormula(i);
+//					
+//					if(checkInequalities && passInequalities != FULL_REDUCED_ONLYNEW) {
+//						Polynomial ineq = passedFormulaAt( i )->constraint().lhs();
+//						Polynomial redIneq;
+//						Constraint_Relation relation = passedFormulaAt(i)->constraint().relation();
+//						bool relationIsStrict = ( relation == CR_GREATER || relation == CR_LESS || relation == CR_NEQ );
+//
+//						if(checkInequalitiesForTrivialSumOfSquares && ineq.isTrivialSumOfSquares() ) std::cout << "Found trivial sum of squares" << std::endl;
+//						GiNaCRA::BaseReductor<GiNaCRA::GradedLexicgraphic> red(mBasis.getGbIdeal(), ineq);
+//
+//						if(passInequalities == FULL_REDUCED)
+//						{
+//							redIneq = red.fullReduce();
+//						} else if( passInequalities == AS_RECEIVED || passInequalities == REDUCED || (passInequalities == REDUCED_ONLYSTRICT && relationIsStrict)  ){
+//							redIneq = red.fullReduce();
+//						}
+//
+//						// Check if we have direct unsatisfiability
+//						if(relationIsStrict && redIneq.isZero() ) {
+//							mInfeasibleSubsets.push_back(generateReasons(redIneq.getOrigins().getBitVector()));
+//							const std::set<const Formula*> origs= getOrigins(i);
+//							mInfeasibleSubsets.back().insert(origs.begin(), origs.end() );
+//							++i;
+//						}
+//						// We are constant..
+//						else if (redIneq.isConstant())
+//						{
+//							assert(relation != CR_EQ);
+//							// lets assume the constraint is not satisfied.
+//							bool satisfied = false;
+//							// and now we look for cases where it is satisfied.
+//							// If the relation is !=, then c != 0 is always fulfilled.
+//							if (relation == CR_NEQ) {
+//								satisfied = true;
+//							}
+//
+//							const Rational reducedConstant = redIneq.lcoeff();
+//							assert(reducedConstant != 0);
+//
+//
+//							if(reducedConstant < 0 ) {
+//								if(relation == CR_LESS || relation == CR_LEQ) {
+//									satisfied = true;
+//								}
+//							} else {
+//								if(relation == CR_GREATER || relation == CR_GEQ ) {
+//									satisfied = true;
+//								}
+//							}
+//
+//							if(satisfied) {
+////								removeSubformulaFromPassedFormula(i);
+////								--nrOfFormulasInPassed;
+//								++i;
+//							}
+//							else
+//							{
+//								mInfeasibleSubsets.push_back(generateReasons(redIneq.getOrigins().getBitVector()));
+//								const std::set<const Formula*> origs= getOrigins(i);
+//								mInfeasibleSubsets.back().insert(origs.begin(), origs.end() );
+//								++i;
+//							}
+//						}
+////						// We do not have direct unsatisfiability, but we pass the simplified constraints to our backends.
+//						else if(!mInfeasibleSubsets.empty() && passInequalities != AS_RECEIVED && (passInequalities != REDUCED_ONLYSTRICT || relationIsStrict ) )
+//						{
+//							originals.front() = generateReasons(redIneq.getOrigins().getBitVector());
+//							//If we did reduce something, we used reductors, so we can check nicely if we reduced our constraint.
+//							if(!originals.front().empty()) {
+//								const std::set<const Formula*> origs= getOrigins(i);
+//								originals.front().insert(origs.begin(), origs.end());
+//								// we reduced something, so we eliminate this constraint
+//								super::removeSubformulaFromPassedFormula(i);
 //								--nrOfFormulasInPassed;
-								++i;
-							}
-							else
-							{
-								mInfeasibleSubsets.push_back(generateReasons(redIneq.getOrigins().getBitVector()));
-								const std::set<const Formula*> origs= getOrigins(i);
-								mInfeasibleSubsets.back().insert(origs.begin(), origs.end() );
-								++i;
-							}
-						}
-//						// We do not have direct unsatisfiability, but we pass the simplified constraints to our backends.
-						else if(!mInfeasibleSubsets.empty() && passInequalities != AS_RECEIVED && (passInequalities != REDUCED_ONLYSTRICT || relationIsStrict ) )
-						{
-							originals.front() = generateReasons(redIneq.getOrigins().getBitVector());
-							//If we did reduce something, we used reductors, so we can check nicely if we reduced our constraint.
-							if(!originals.front().empty()) {
-								const std::set<const Formula*> origs= getOrigins(i);
-								originals.front().insert(origs.begin(), origs.end());
-								// we reduced something, so we eliminate this constraint
-								removeSubformulaFromPassedFormula(i);
-								--nrOfFormulasInPassed;
-								// and we add a new one.
-								addSubformulaToPassedFormula(new Formula( Formula::newConstraint( redIneq.toEx(), relation ) ), originals);
-							}
-							else
-							{
-								// go to next passed formula.
-								++i;
-							}
-						}
-						else
-						{
-							if(checkInequalitiesForTrivialSumOfSquares && redIneq.isTrivialSumOfSquares())
-							{
-//								std::cout << redIneq << std::endl;
-							}
-							//go to the next passed formula.
-							++i;
-						}
-					} else {
+//								// and we add a new one.
+//								addSubformulaToPassedFormula(new Formula( Formula::newConstraint( redIneq.toEx(), relation ) ), originals);
+//							}
+//							else
+//							{
+//								// go to next passed formula.
+//								++i;
+//							}
+//						}
+//						else
+//						{
+//							if(checkInequalitiesForTrivialSumOfSquares && redIneq.isTrivialSumOfSquares())
+//							{
+////								std::cout << redIneq << std::endl;
+//							}
+//							//go to the next passed formula.
+//							++i;
+//						}
+//					} else {
 						// go to the next passed formula.
 						++i;
-					}
+//					}
                 }
             }
 
@@ -311,7 +319,8 @@ namespace smtrat
         super::pushBacktrackPoint();
         mStateHistory.push_back( GroebnerModuleState( mBasis ) );
 		//printStateHistory();
-    }
+		mInequalities.pushBacktrackPoint();
+	}
 
     /**
      * Erases all states which had more constraints than we have now
@@ -334,6 +343,8 @@ namespace smtrat
             mBasis = mStateHistory.back().getBasis();
 
         }
+		
+		mInequalities.popBacktrackPoint();
 		//std::cout << " New basis: ";
 		//mBasis.getGbIdeal().print();
 		//std::cout << std::endl;
@@ -384,5 +395,118 @@ namespace smtrat
 		}
 		std::cout << "]" << std::endl;
 	}
+	
+	void GroebnerModule::removeSubformulaFromPassedFormula(const Formula& _formula) {
+		super::removeSubformulaFromPassedFormula(&_formula);
+	}
+	
+	InequalitiesRow::InequalitiesRow(GroebnerModule* module, const Formula* const received, unsigned btpoint) :
+	receivedFormulaEntry(received), relation(received->constraint().relation()), passedFormulaEntry(*received), mModule(module)
+	{
+		reductions.push_back(std::pair<unsigned, Polynomial>(btpoint, Polynomial(received->constraint().lhs()) ) );
+		
+	}
+
+	/**
+		* Reduce the inequality further with the current gb.
+		* @param gb
+		* @param btpoint
+		* @return 
+		*/
+	Answer InequalitiesRow::reduceWithGb(const Ideal& gb, unsigned btpoint) {
+		Reductor reductor(gb, reductions.back().second);
+		Polynomial reduced = reductor.fullReduce();
+		if (reductor.reductionOccured()) {
+			reductions.push_back(std::pair<unsigned,Polynomial>(btpoint, reduced));
+			if(passedFormulaEntry.getType() != TTRUE) {
+				passedFormulaEntry.print();
+				mModule->removeSubformulaFromPassedFormula(passedFormulaEntry);
+			}
+			passedFormulaEntry = Formula::newConstraint(reduced.toEx(), relation);
+			std::vector<std::set<const Formula*> > originals;
+			originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
+			originals.front().insert(receivedFormulaEntry);
+			mModule->addSubformulaToPassedFormula(&passedFormulaEntry, originals );
+			
+		}
+
+		return True;
+	}
+
+	bool InequalitiesRow::popBacktrackPoint(unsigned btp) {
+		if(btp == reductions.back().first) {
+			reductions.pop_back();
+			passedFormulaEntry = Formula::newConstraint(reductions.back().second.toEx(), relation);
+			std::vector<std::set<const Formula*> > originals;
+			originals.push_back(mModule->generateReasons(reductions.back().second.getOrigins().getBitVector()));
+			originals.front().insert(receivedFormulaEntry);
+			mModule->addSubformulaToPassedFormula(&passedFormulaEntry, originals );
+		}
+		return true;
+	}
+
+	void InequalitiesRow::print(std::ostream& os) const {
+		os << receivedFormulaEntry << " " << relationToString(relation) << " 0 %%% ";
+		for( auto it = reductions.begin(); it != reductions.end(); ++it ) {
+			os << it->second << "(" << it->first << ") ";
+		}
+
+	}
+
+
+	InequalitiesTable::InequalitiesTable(GroebnerModule* module) : mModule(module)
+	{
+		
+	}
+
+	void InequalitiesTable::InsertReceivedFormula(const Formula* received ) {
+		assert(mReducedInequalities.size() == mNrInequalitiesForBtPoints.back());
+		mReducedInequalities.push_back(InequalitiesRow(mModule, received, mNrInequalitiesForBtPoints.size() -1 ) );
+		mNrInequalitiesForBtPoints.back() = mNrInequalitiesForBtPoints.back() + 1;
+		mModule->addReceivedSubformulaToPassedFormula(received);
+		
+		assert(mNrInequalitiesForBtPoints.back() == mReducedInequalities.size() );
+	}
+
+	void InequalitiesTable::pushBacktrackPoint() {
+		if(mNrInequalitiesForBtPoints.empty()) {
+			mNrInequalitiesForBtPoints.push_back(0);
+		} else {
+			mNrInequalitiesForBtPoints.push_back(mNrInequalitiesForBtPoints.back());
+		}
+
+	}
+
+	void InequalitiesTable::popBacktrackPoint() {
+		mNrInequalitiesForBtPoints.pop_back();
+		mReducedInequalities.erase(mReducedInequalities.begin() + mNrInequalitiesForBtPoints.back(), mReducedInequalities.end());
+		size_t btpoint =  mNrInequalitiesForBtPoints.size() -1;
+		for(std::vector<InequalitiesRow>::iterator it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) {
+			it->popBacktrackPoint(btpoint);
+		}
+
+		assert(mReducedInequalities.size() == mNrInequalitiesForBtPoints.back());
+
+	}
+
+	void InequalitiesTable::reduceWRTGroebnerBasis(const Ideal& gb) {
+		size_t btpoint = mNrInequalitiesForBtPoints.size() -1;
+		for(std::vector<InequalitiesRow>::iterator it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) 
+		{
+			it->reduceWithGb(gb, btpoint);
+		}
+	}
+
+	void InequalitiesTable::print(std::ostream& os) const {
+		unsigned i = 0;
+		for(auto it = mNrInequalitiesForBtPoints.begin(); it != mNrInequalitiesForBtPoints.end(); ++it ) {
+			std::cout << "Backtrackpoint #" << i++ << " " << *it << std::endl;
+		}
+		for(auto it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it ) {
+			it->print(os);
+			std::cout << std::endl;
+		}
+	}
+
 }    // namespace smtrat
 

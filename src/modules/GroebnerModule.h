@@ -24,9 +24,18 @@
  * @file   GroebnerModule.h
  *
  * @author Sebastian Junges
+ * 
+ * Note: This file might be a little messy to the reader at first. For efficiency reasons however, 
+ * there is some cross-reference  between the datastructure and the module.
+ * 
+ * The classes contained in here are
+ * GroebnerModuleState
+ * InequalitiesRow
+ * InequalitiesTable
+ * GroebnerModule
  *
  * Since: 2012-01-18
- * Version: 2012-01-20
+ * Version: 2012-06-20
  */
 
 #ifndef SMTRAT_GROEBNERMODULE_H
@@ -77,6 +86,61 @@ namespace smtrat
 			const std::vector<unsigned> mVariablesInEqualities;
     };
 
+	class GroebnerModule;
+	
+	/**
+	 * A row in the InequalitiesTable. A row basically represents an inequality.
+	 */
+	class InequalitiesRow {
+		typedef GBSettings::Polynomial Polynomial;
+		typedef GBSettings::MultivariateIdeal Ideal;
+		typedef GBSettings::Reductor Reductor;
+		
+	public:
+		InequalitiesRow(GroebnerModule*, const Formula* const received, unsigned btpoint) ;
+		
+		Answer reduceWithGb(const Ideal& gb, unsigned btpoint);
+		
+		bool popBacktrackPoint(unsigned btp);
+		
+		void print(std::ostream& os = std::cout ) const;
+	protected:
+		const Formula* receivedFormulaEntry;
+		Constraint_Relation relation;
+		Formula passedFormulaEntry;
+		std::list<std::pair<unsigned,Polynomial> > reductions;
+		GroebnerModule* mModule;
+	};
+	
+
+	/**
+	 * A table of all inequalities and how they are reduced.
+	 */
+	class InequalitiesTable {
+		
+		typedef GBSettings::Polynomial Polynomial;
+		typedef GBSettings::MultivariateIdeal Ideal;
+	public: 
+		InequalitiesTable(GroebnerModule*  module);
+		
+		void InsertReceivedFormula(const Formula* const received );
+		
+		void pushBacktrackPoint() ;
+		
+		void popBacktrackPoint() ;
+		
+		void reduceWRTGroebnerBasis(const Ideal& gb);
+		
+		void print(std::ostream& os= std::cout) const;
+		
+		std::list<size_t> mNrInequalitiesForBtPoints;
+		std::vector<InequalitiesRow> mReducedInequalities;
+		
+	
+		GroebnerModule*  mModule;
+	};
+	
+	
     /**
      * A solver module based on Groebner basis
      *
@@ -84,6 +148,9 @@ namespace smtrat
     class GroebnerModule:
         public Module
     {
+		friend InequalitiesTable;
+		friend InequalitiesRow;
+		
         public:
             typedef GiNaCRA::GradedLexicgraphic              Order;
             typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
@@ -112,6 +179,7 @@ namespace smtrat
             bool saveState();
 			std::set<const Formula*> generateReasons(const GiNaCRA::BitVector& reasons);
 
+			void removeSubformulaFromPassedFormula(const Formula&);
         private:
             typedef Module super;
 			
@@ -124,6 +192,8 @@ namespace smtrat
 			
 
     };
+	
+	
 
 }    // namespace smtrat
 #endif   /** GROEBNERMODULE_H */
