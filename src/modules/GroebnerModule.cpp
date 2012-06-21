@@ -67,14 +67,15 @@ namespace smtrat
         Module::assertSubFormula( _formula );
         for( GiNaC::symtab::const_iterator it = _formula->constraint().variables().begin(); it != _formula->constraint().variables().end(); ++it )
         {
-	        VariableListPool::addVariable( ex_to<symbol>( it->second ) );
+	        unsigned varNr = VariableListPool::addVariable( ex_to<symbol>( it->second ) );
+			mVariablesInEqualities.insert(varNr);
 	        mListOfVariables.insert( *it );
         }
 
         //only equalities should be added to the gb
         if( _formula->constraint().relation() == CR_EQ )
         {
-			mAddedEqualitySinceLastCheck = true;
+			
 		    mBasis.addPolynomial( MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic>( _formula->constraint().lhs() ) );
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
@@ -97,13 +98,13 @@ namespace smtrat
 
         vec_set_const_pFormula originals;
         //If no equalities are added, we do not know anything
-        if( mBasis.nrOriginalConstraints() > 0 )
+       	mBasis.reduceInput();
+	     
+		if( !mBasis.inputEmpty() )
         {
-			mAddedEqualitySinceLastCheck = false;
 			//first, we interreduce the input!
 
-			mBasis.reduceInput();
-	        //now, we calculate the groebner basis
+		   //now, we calculate the groebner basis
 			mBasis.calculate();
 
 			#ifdef USE_NSS
@@ -327,7 +328,6 @@ namespace smtrat
      */
     void GroebnerModule::popBacktrackPoint()
     {
-		mAddedEqualitySinceLastCheck = false;
 		//std::cout << "Pop backtrack" << std::endl;
         mStateHistory.pop_back();
         // Load the state to be restored;
@@ -400,8 +400,10 @@ namespace smtrat
 		super::removeSubformulaFromPassedFormula(&_formula);
 	}
 	
+	
+	
 	InequalitiesRow::InequalitiesRow(GroebnerModule* module, const Formula* const received, unsigned btpoint) :
-	receivedFormulaEntry(received), relation(received->constraint().relation()), passedFormulaEntry(*received), mModule(module)
+	receivedFormulaEntry(received), relation(received->constraint().relation()), passedFormulaEntry(), mModule(module)
 	{
 		reductions.push_back(std::pair<unsigned, Polynomial>(btpoint, Polynomial(received->constraint().lhs()) ) );
 		
@@ -418,15 +420,14 @@ namespace smtrat
 		Polynomial reduced = reductor.fullReduce();
 		if (reductor.reductionOccured()) {
 			reductions.push_back(std::pair<unsigned,Polynomial>(btpoint, reduced));
-			if(passedFormulaEntry.getType() != TTRUE) {
-				passedFormulaEntry.print();
-				mModule->removeSubformulaFromPassedFormula(passedFormulaEntry);
+			if((*passedFormulaEntry)->getType() != TTRUE) {
+				(*passedFormulaEntry)->print();
+//				mModule->removeSubformulaFromPassedFormula(passedFormulaEntry);
 			}
-			passedFormulaEntry = Formula::newConstraint(reduced.toEx(), relation);
 			std::vector<std::set<const Formula*> > originals;
 			originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
 			originals.front().insert(receivedFormulaEntry);
-			mModule->addSubformulaToPassedFormula(&passedFormulaEntry, originals );
+//			passedFormulaEntry = mModule->addSubformulaToPassedFormula(Formula::newConstraint(reduced.toEx(), relation), originals );
 			
 		}
 
@@ -436,11 +437,11 @@ namespace smtrat
 	bool InequalitiesRow::popBacktrackPoint(unsigned btp) {
 		if(btp == reductions.back().first) {
 			reductions.pop_back();
-			passedFormulaEntry = Formula::newConstraint(reductions.back().second.toEx(), relation);
+			passedFormulaEntry = mModule->passedFormulaEnd();
 			std::vector<std::set<const Formula*> > originals;
 			originals.push_back(mModule->generateReasons(reductions.back().second.getOrigins().getBitVector()));
 			originals.front().insert(receivedFormulaEntry);
-			mModule->addSubformulaToPassedFormula(&passedFormulaEntry, originals );
+//			mModule->addSubformulaToPassedFormula(&passedFormulaEntry, originals );
 		}
 		return true;
 	}
