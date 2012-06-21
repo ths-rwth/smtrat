@@ -100,30 +100,32 @@ namespace smtrat
 
     Formula::Formula( const Formula& _formula )
     {
-       	mType 		= _formula.getType();
-       	mpFather	= NULL;
-        if( _formula.getType() == REALCONSTRAINT )
-        {
-        	mpConstraint = _formula.pConstraint();
-        }
-        else if( _formula.getType() != BOOL &&  _formula.getType() != TTRUE &&  _formula.getType() != FFALSE )
-        {
-        	mpSubformulas = new list< Formula* >();
-            for( const_iterator subFormula = _formula.subformulas().begin();
-                 subFormula != _formula.subformulas().end();
-                 ++subFormula )
-            {
-                addSubformula( new Formula( **subFormula ) );
-            }
-        }
-        else if( _formula.getType() == BOOL )
-        {
-        	mpIdentifier = new string( _formula.identifier() );
-        }
-        mRealValuedVars = GiNaC::symtab( _formula.realValuedVars() );
-        mPropositions 	= Condition();
-        mPropositionsUptodate = false;
-    	updateID();
+		if(&_formula != this) {
+			mType 		= _formula.getType();
+			mpFather	= NULL;
+			if( _formula.getType() == REALCONSTRAINT )
+			{
+				mpConstraint = _formula.pConstraint();
+			}
+			else if( _formula.getType() != BOOL &&  _formula.getType() != TTRUE &&  _formula.getType() != FFALSE )
+			{
+				mpSubformulas = new list< Formula* >();
+				for( const_iterator subFormula = _formula.subformulas().begin();
+					subFormula != _formula.subformulas().end();
+					++subFormula )
+				{
+					addSubformula( new Formula( **subFormula ) );
+				}
+			}
+			else if( _formula.getType() == BOOL )
+			{
+				mpIdentifier = new string( _formula.identifier() );
+			}
+			mRealValuedVars = GiNaC::symtab( _formula.realValuedVars() );
+			mPropositions 	= Condition();
+			mPropositionsUptodate = false;
+			updateID();
+		}
     }
 
     Formula::~Formula()
