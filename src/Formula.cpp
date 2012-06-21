@@ -57,7 +57,7 @@ namespace smtrat
        	mType 			= _type;
         if( _type != TTRUE && _type != FFALSE )
         {
-        	mpSubformulas = new vector< Formula* >();
+        	mpSubformulas = new list< Formula* >();
         }
         else if( _type == TTRUE )
         {
@@ -108,7 +108,7 @@ namespace smtrat
         }
         else if( _formula.getType() != BOOL &&  _formula.getType() != TTRUE &&  _formula.getType() != FFALSE )
         {
-        	mpSubformulas = new vector< Formula* >();
+        	mpSubformulas = new list< Formula* >();
             for( const_iterator subFormula = _formula.subformulas().begin();
                  subFormula != _formula.subformulas().end();
                  ++subFormula )
@@ -174,7 +174,7 @@ namespace smtrat
                 case NOT:
                 {
                     mPropositions |= PROP_IS_A_LITERAL | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                    for( vector< Formula* >::iterator subFormula = mpSubformulas->begin();
+                    for( list< Formula* >::iterator subFormula = mpSubformulas->begin();
                          subFormula != mpSubformulas->end();
                          ++subFormula )
                     {
@@ -189,7 +189,7 @@ namespace smtrat
                 case OR:
                 {
                     mPropositions |= PROP_IS_A_CLAUSE | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                    for( vector< Formula* >::iterator subFormula = mpSubformulas->begin();
+                    for( list< Formula* >::iterator subFormula = mpSubformulas->begin();
                          subFormula != mpSubformulas->end();
                          ++subFormula )
                     {
@@ -204,7 +204,7 @@ namespace smtrat
                 case AND:
                 {
                     mPropositions |= PROP_IS_PURE_CONJUNCTION | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                    for( vector< Formula* >::iterator subFormula = mpSubformulas->begin();
+                    for( list< Formula* >::iterator subFormula = mpSubformulas->begin();
                          subFormula != mpSubformulas->end();
                          ++subFormula )
                     {
@@ -224,7 +224,7 @@ namespace smtrat
                 case IMPLIES:
                 {
                     mPropositions |= PROP_IS_IN_NNF | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                    for( vector< Formula* >::iterator subFormula = mpSubformulas->begin();
+                    for( list< Formula* >::iterator subFormula = mpSubformulas->begin();
                          subFormula != mpSubformulas->end();
                          ++subFormula )
                     {
@@ -235,7 +235,7 @@ namespace smtrat
                 case IFF:
                 {
                     mPropositions |= PROP_IS_IN_NNF | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                    for( vector< Formula* >::iterator subFormula = mpSubformulas->begin();
+                    for( list< Formula* >::iterator subFormula = mpSubformulas->begin();
                          subFormula != mpSubformulas->end();
                          ++subFormula )
                     {
@@ -246,7 +246,7 @@ namespace smtrat
                 case XOR:
                 {
                     mPropositions |= PROP_IS_IN_NNF | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                    for( vector< Formula* >::iterator subFormula = mpSubformulas->begin();
+                    for( list< Formula* >::iterator subFormula = mpSubformulas->begin();
                          subFormula != mpSubformulas->end();
                          ++subFormula )
                     {
@@ -392,7 +392,7 @@ namespace smtrat
 	{
 		assert( isBooleanCombination() );
 		assert( _position < mpSubformulas->size() );
-		std::vector< Formula* >::iterator subFormula = mpSubformulas->begin();
+		std::list< Formula* >::iterator subFormula = mpSubformulas->begin();
 		unsigned pos = 0;
 		while( subFormula != mpSubformulas->end() )
 		{
@@ -411,8 +411,8 @@ namespace smtrat
 
 	void Formula::erase( const Formula* _formula )
 	{
-		assert( isBooleanCombination() );
-		std::vector< Formula* >::iterator subFormula = mpSubformulas->begin();
+		assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+		std::list< Formula* >::iterator subFormula = mpSubformulas->begin();
 		while( subFormula != mpSubformulas->end() )
 		{
 			if( *subFormula == _formula )
@@ -443,7 +443,7 @@ namespace smtrat
 	{
 		assert( isBooleanCombination() );
 		assert( _position < mpSubformulas->size() );
-		std::vector< Formula* >::iterator subFormula = mpSubformulas->begin();
+		std::list< Formula* >::iterator subFormula = mpSubformulas->begin();
 		unsigned pos = 0;
 		while( subFormula != mpSubformulas->end() )
 		{
@@ -698,7 +698,7 @@ namespace smtrat
 			{
 				_out << endl;
 			}
-    		std::vector< Formula* >::const_iterator subFormula = mpSubformulas->begin();
+    		std::list< Formula* >::const_iterator subFormula = mpSubformulas->begin();
     		while( subFormula != mpSubformulas->end() )
     		{
                 assert( (*subFormula)->cpFather() == this );

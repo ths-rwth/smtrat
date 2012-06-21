@@ -62,7 +62,7 @@ namespace smtrat
             /// The content of this formula.
             union
             {
-                std::vector<Formula*>* mpSubformulas;
+                std::list<Formula*>* mpSubformulas;
                 const Constraint*      mpConstraint;
                 const std::string*     mpIdentifier;
             };
@@ -94,13 +94,14 @@ namespace smtrat
             Formula( const std::string& );
             Formula( const Constraint* _constraint );
             Formula( const Formula& );
+			
             ~Formula();
 
             /**
              * Type definitions.
              */
-            typedef std::vector<Formula*>::const_iterator         const_iterator;
-            typedef std::vector<Formula*>::const_reverse_iterator const_reverse_iterator;
+            typedef std::list<Formula*>::const_iterator         const_iterator;
+            typedef std::list<Formula*>::const_reverse_iterator const_reverse_iterator;
 
             /**
              * Accessors:
@@ -136,13 +137,13 @@ namespace smtrat
                 return mRealValuedVars;
             }
 
-            std::vector<Formula*>* const pSubformulas()
+            std::list<Formula*>* const pSubformulas()
             {
                 assert( isBooleanCombination() );
                 return mpSubformulas;
             }
 
-            const std::vector<Formula*>& subformulas() const
+            const std::list<Formula*>& subformulas() const
             {
                 assert( isBooleanCombination() );
                 return *mpSubformulas;
@@ -239,18 +240,29 @@ namespace smtrat
             }
 
             // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
-            const Formula* at( unsigned _pos ) const
+            const Formula* at(  unsigned _pos ) const
             {
                 assert( isBooleanCombination() );
                 assert( mpSubformulas->size() > _pos );
-                return mpSubformulas->at( _pos );
+                Formula::const_iterator pos = begin();
+				while(_pos < mpSubformulas->size() )  {
+					++pos;
+					--_pos;
+				}
+				return *pos;
             }
 
             const Formula& rAt( unsigned _pos ) const
             {
                 assert( isBooleanCombination() );
                 assert( mpSubformulas->size() > _pos );
-                return *mpSubformulas->at( _pos );
+				Formula::const_iterator pos = begin();
+				while(_pos < size() )  {
+					++pos;
+					--_pos;
+				}
+				return **pos;
+                
             }
 
             Formula* back()

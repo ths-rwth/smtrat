@@ -136,7 +136,12 @@ namespace smtrat
 
             inline const Formula* const receivedFormulaAt( unsigned _pos ) const
             {
-                return mpReceivedFormula->at( _pos );
+				Formula::const_iterator pos = mpReceivedFormula->begin();
+				while(_pos < mpReceivedFormula->size() )  {
+					++pos;
+					--_pos;
+				}
+                return *pos;
             }
 
             inline Formula::const_iterator receivedFormulaBegin() const
@@ -174,9 +179,15 @@ namespace smtrat
                 return mpPassedFormula->back();
             }
 
-            inline const Formula* passedFormulaAt( unsigned _pos ) const
+			// TODO formula change -> efficiency
+			inline const Formula* passedFormulaAt( unsigned _pos ) const
             {
-                return mpPassedFormula->at( _pos );
+				Formula::const_iterator pos = mpReceivedFormula->begin();
+				while(_pos < mpReceivedFormula->size() )  {
+					++pos;
+					--_pos;
+				}
+                return *pos;
             }
 
             inline Formula::const_iterator passedFormulaBegin() const
