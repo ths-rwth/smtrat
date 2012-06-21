@@ -285,48 +285,47 @@ namespace smtrat
         if( _formula != NULL )
         {
             if( _formula->getType() == OR)
-            {
-                std::vector< Formula* > subformulas = _formula->subformulas();
-                if( subformulas.at(0) != NULL && subformulas.at(1)!= NULL )
+            {	
+				if( _formula->at(0) != NULL && _formula->at(1)!= NULL )
                 {
-                    Type type0 = subformulas.at(0)->getType();
-                    Type type1 = subformulas.at(1)->getType();
+                    Type type0 = _formula->at(0)->getType();
+                    Type type1 = _formula->at(1)->getType();
                     if( type0 == REALCONSTRAINT && type1 == NOT )
                     {
-                        if( subformulas.at( 1 )->subformulas().at( 0 ) != NULL )
+                        if( _formula->at( 1 )->at( 0 ) != NULL )
                         {
-                            if( subformulas.at( 1 )->subformulas().at( 0 )->getType() == BOOL )
+                            if( _formula->at( 1 )->at( 0 )->getType() == BOOL )
                             {
-                                pair< const Formula*, const Formula*> _pair(subformulas.at(0), subformulas.at( 1 )->subformulas().at( 0 ));
+                                pair< const Formula*, const Formula*> _pair(_formula->at(0), _formula->at( 1 )->at( 0 ));
                                 return _pair;
                             }
                         }
                     }
                     else if( type1 == REALCONSTRAINT && type0 == NOT )
                     {
-                        if( subformulas.at( 0 )->subformulas().at( 0 ) != NULL )
+                        if( _formula->at( 0 )->at( 0 ) != NULL )
                         {
-                            if( subformulas.at( 0 )->subformulas().at( 0 )->getType() == BOOL )
+                            if( _formula->at( 0 )->at( 0 )->getType() == BOOL )
                             {
-                                pair< const Formula*, const Formula*> _pair(subformulas.at(1), subformulas.at( 0 )->subformulas().at( 0 ));
+                                pair< const Formula*, const Formula*> _pair(_formula->at(1), _formula->at( 0 )->at( 0 ));
                                 return _pair;
                             }
                         }
                     }
                     else if( type0 == NOT && type1 == NOT)
                     {
-                        if( subformulas.at( 0 )->subformulas().at( 0 ) != NULL && subformulas.at( 1 )->subformulas().at( 0 ) != NULL )
+                        if( _formula->at( 0 )->at( 0 ) != NULL && _formula->at( 1 )->at( 0 ) != NULL )
                         {
-                            if( subformulas.at( 0 )->subformulas().at( 0 )->getType() == REALCONSTRAINT &&
-                                    subformulas.at( 1 )->subformulas().at( 0 )->getType() == BOOL )
+                            if( _formula->at( 0 )->at( 0 )->getType() == REALCONSTRAINT &&
+                                    _formula->at( 1 )->at( 0 )->getType() == BOOL )
                             {
-                                pair< const Formula*, const Formula*> _pair( subformulas.at( 0 )->subformulas().at( 0 ), subformulas.at( 1 )->subformulas().at( 0 ) );
+                                pair< const Formula*, const Formula*> _pair( _formula->at( 0 )->at( 0 ), _formula->at( 1 )->at( 0 ) );
                                 return _pair;
                             }
-                            else if( subformulas.at( 0 )->subformulas().at( 0 )->getType() == BOOL &&
-                                subformulas.at( 1 )->subformulas().at( 0 )->getType() == REALCONSTRAINT )
+                            else if( _formula->at( 0 )->at( 0 )->getType() == BOOL &&
+                                _formula->at( 1 )->at( 0 )->getType() == REALCONSTRAINT )
                             {
-                                pair< const Formula*, const Formula*> _pair( subformulas.at( 1 )->subformulas().at( 0 ), subformulas.at( 0 )->subformulas().at( 0 ) );
+                                pair< const Formula*, const Formula*> _pair( _formula->at( 1 )->at( 0 ), _formula->at( 0 )->at( 0 ) );
                                 return _pair;
                             }
                         }
@@ -343,9 +342,9 @@ namespace smtrat
      */
     void PreProCNFModule::pushBacktrackPoint()
     {
-        std::vector< Formula* > vec_subformulas = rPassedFormula().subformulas();
+        std::list< Formula* > vec_subformulas = rPassedFormula().subformulas();
         std::vector< pair < Formula*, vec_set_const_pFormula > > vec_formulasandorigins;
-        for( std::vector< Formula* >::iterator formula = vec_subformulas.begin(); formula < vec_subformulas.end(); ++formula )    // Add all Formulas and their origins
+        for( std::list< Formula* >::iterator formula = vec_subformulas.begin(); formula != vec_subformulas.end(); ++formula )    // Add all Formulas and their origins
         {
             vec_set_const_pFormula origin;
             getOrigins( (*formula), origin );
@@ -364,9 +363,9 @@ namespace smtrat
     void PreProCNFModule::popBacktrackPoint()
     {
         std::vector< pair< Formula*, vec_set_const_pFormula > >* vec_btsubformulas = &( mBacktrackPoints.at( mBacktrackPoints.size()-1 ).first );
-        const std::vector< Formula* >* vec_cursubformulas = &( pPassedFormula()->subformulas() );
-        for( std::vector< Formula* >::const_iterator cursubform = vec_cursubformulas->begin();
-                cursubform < vec_cursubformulas->end(); ++cursubform )
+        const std::list< Formula* >* vec_cursubformulas = &( pPassedFormula()->subformulas() );
+        for( std::list< Formula* >::const_iterator cursubform = vec_cursubformulas->begin();
+                cursubform != vec_cursubformulas->end(); ++cursubform )
         {
             bool found = false;
             for( std::vector< pair< Formula*, vec_set_const_pFormula > >::iterator btsubform

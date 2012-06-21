@@ -148,16 +148,24 @@ else if( a == False )
      *                  corresponding formula is not yet a member of the vector of passed
      *                  formulas;
      *          false,  otherwise.
+	 * 
+	 * TODO efficiency after formula change..
      */
     bool Module::addReceivedSubformulaToPassedFormula( unsigned _positionInReceivedFormula )
     {
         if( _positionInReceivedFormula < mpReceivedFormula->size() )
         {
     		assert( receivedFormulaSize() != UINT_MAX );
+			
+			Formula::const_iterator pos = mpReceivedFormula->begin();
+			while(_positionInReceivedFormula < mpReceivedFormula->size() )  {
+				++pos;
+				--_positionInReceivedFormula;
+			}
 
-            mpPassedFormula->addSubformula( new Formula( mpReceivedFormula->rAt( _positionInReceivedFormula ) ) );
+            mpPassedFormula->addSubformula( new Formula( **pos ) );
             set< const Formula* > originset = set< const Formula* >();
-            originset.insert( mpReceivedFormula->at( _positionInReceivedFormula ) );
+            originset.insert( *pos );
             mPassedFormulaOrigins.push_back( vec_set_const_pFormula( 1, originset ) );
             assert( mpPassedFormula->size() == mPassedFormulaOrigins.size() );
             mBackendsUptodate = false;
