@@ -107,7 +107,7 @@ namespace smtrat
 	protected:
 		const Formula* receivedFormulaEntry;
 		Constraint_Relation relation;
-		Formula passedFormulaEntry;
+		Formula::const_iterator passedFormulaEntry;
 		std::list<std::pair<unsigned,Polynomial> > reductions;
 		GroebnerModule* mModule;
 	};
@@ -165,6 +165,7 @@ namespace smtrat
 			void printStateHistory();
 
         protected:
+			//TODO just take the last one from the state history?
             /// The current Groebner basis
             GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic> mBasis;
             /// A list of variables to help define the simplified constraints
@@ -172,9 +173,9 @@ namespace smtrat
             /// Saves the relevant history to support backtracking
             std::list<GroebnerModuleState> mStateHistory;
 			
-			bool mAddedEqualitySinceLastCheck;
-			
 			InequalitiesTable mInequalities;
+			
+			std::set<unsigned> mVariablesInEqualities;
 			
             bool saveState();
 			std::set<const Formula*> generateReasons(const GiNaCRA::BitVector& reasons);

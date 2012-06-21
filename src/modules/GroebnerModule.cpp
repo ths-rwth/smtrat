@@ -64,11 +64,15 @@ namespace smtrat
     bool GroebnerModule::assertSubFormula( const Formula* const _formula )
     {
         assert( _formula->getType() == REALCONSTRAINT );
-        Module::assertSubFormula( _formula );
+        Module::assertSubFormula( _formula ); 
+		
         for( GiNaC::symtab::const_iterator it = _formula->constraint().variables().begin(); it != _formula->constraint().variables().end(); ++it )
         {
 	        unsigned varNr = VariableListPool::addVariable( ex_to<symbol>( it->second ) );
-			mVariablesInEqualities.insert(varNr);
+			if( _formula->constraint().relation() == CR_EQ )
+			{
+				mVariablesInEqualities.insert(varNr);
+			}
 	        mListOfVariables.insert( *it );
         }
 
@@ -80,8 +84,8 @@ namespace smtrat
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
 		{
-			//addReceivedSubformulaToPassedFormula( _formula );
-			mInequalities.InsertReceivedFormula( _formula );
+			addReceivedSubformulaToPassedFormula( _formula );
+			//mInequalities.InsertReceivedFormula( _formula );
 		}
 
 
@@ -113,11 +117,12 @@ namespace smtrat
             {
                 // Lets search for a witness. We only have to do this if the gb is non-constant.
                 // Better, we change this to the variables in the gb.
-                unsigned vars = GiNaCRA::VariableListPool::getNrVariables();
+				unsigned vars = mVariablesInEqualities.size();
                 // We currently only try with a low nr of variables.
                 if( vars < 6 )
                 {
-                    GroebnerToSDP<GiNaCRA::GradedLexicgraphic> sdp( mBasis.getGbIdeal(), MonomialIterator( vars ) );
+					std::cout << "Run SDP" << std::endl;
+                    GroebnerToSDP<GiNaCRA::GradedLexicgraphic> sdp( mBasis.getGbIdeal(), MonomialIterator( mVariablesInEqualities ) );
                     witness = sdp.findWitness();
 				}
             }
@@ -169,8 +174,8 @@ namespace smtrat
 				}
 			}
 
-			mInequalities.print();
-			print();
+		//	mInequalities.print();
+		//	print();
 			mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
 		//	printReceivedFormula();
 		//	mInequalities.print();
