@@ -157,12 +157,13 @@ else if( a == False )
         {
     		assert( receivedFormulaSize() != UINT_MAX );
 			
+			unsigned posNr = 0;
 			Formula::const_iterator pos = mpReceivedFormula->begin();
-			while(_positionInReceivedFormula < mpReceivedFormula->size() )  {
+			while( posNr  < _positionInReceivedFormula  )  {
 				++pos;
-				--_positionInReceivedFormula;
+				++posNr;
 			}
-
+			assert(pos != mpReceivedFormula->end());
             mpPassedFormula->addSubformula( new Formula( **pos ) );
             set< const Formula* > originset = set< const Formula* >();
             originset.insert( *pos );

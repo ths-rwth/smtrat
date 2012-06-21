@@ -244,24 +244,27 @@ namespace smtrat
             {
                 assert( isBooleanCombination() );
                 assert( mpSubformulas->size() > _pos );
-                Formula::const_iterator pos = begin();
-				while(_pos < mpSubformulas->size() )  {
+                unsigned posNr = 0;
+				Formula::const_iterator pos = begin();
+				while(posNr < _pos )  {
 					++pos;
-					--_pos;
+					++posNr;
 				}
-				return *pos;
-            }
+                return *pos;
 
+			}
+			
             const Formula& rAt( unsigned _pos ) const
             {
                 assert( isBooleanCombination() );
                 assert( mpSubformulas->size() > _pos );
+				unsigned posNr = 0;
 				Formula::const_iterator pos = begin();
-				while(_pos < size() )  {
+				while(posNr < _pos )  {
 					++pos;
-					--_pos;
+					++posNr;
 				}
-				return **pos;
+                return **pos;
                 
             }
 
