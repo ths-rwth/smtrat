@@ -16,6 +16,7 @@ namespace smtrat {
 		typedef GiNaCRA::GradedLexicgraphic Order;
 		typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
 		typedef GiNaCRA::MultivariateIdeal<Order> MultivariateIdeal;
+		typedef GiNaCRA::BaseReductor<Order> Reductor;
 	};
 }
 
