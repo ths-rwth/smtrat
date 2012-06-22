@@ -73,6 +73,8 @@ namespace smtrat
             }
 			
 			void extendProblemSize(unsigned newSize);
+			void incrementProblemSize();
+			
 
         private:
             unsigned                                             mProblemSize;

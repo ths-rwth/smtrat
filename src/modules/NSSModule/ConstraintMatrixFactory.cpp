@@ -92,4 +92,11 @@ namespace smtrat
 			it->second.extend(newSize, newSize);
 		}
 	}
+	
+	void ConstraintMatrixFactory::incrementProblemSize() {
+		mProblemSize++;
+		for(auto it = constraints.begin(); it != constraints.end(); ++it) {
+			it->second.extend(mProblemSize, mProblemSize);
+		}
+	}
 }

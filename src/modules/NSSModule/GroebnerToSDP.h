@@ -66,24 +66,16 @@ namespace smtrat
                 do
                 {
                     monoms.push_back( mMonomialIterator.next() );
-                    constraintMatrixFactory = ConstraintMatrixFactory( monoms.size() );
-
+					constraintMatrixFactory.incrementProblemSize();
+					
                     unsigned size = monoms.size();
-                    for( unsigned i = 0; i < size; ++i )
+					
+					constraintMatrixFactory.addReducedTerm( MatrixIndex( size-1, size-1 ), GiNaCRA::reduction( mGroebnerBasis, (monoms.back().pow( 2 )) ) );
+                    for( unsigned i = 0; i < size-1; ++i )
                     {
-                        //entry i,i
-                        //std::cout << "Reducing (" << i <<  ","  << i << ")" << monoms[i].pow(2);
-                        //std::cout << " to " << GiNaCRA::reduction(mGroebnerBasis,(monoms[i].pow(2))) << std::endl;
-                        constraintMatrixFactory.addReducedTerm( MatrixIndex( i, i ), GiNaCRA::reduction( mGroebnerBasis, (monoms[i].pow( 2 )) ) );
-
-                        //entry i,j j>i
-                        for( unsigned j = i + 1; j < size; ++j )
-                        {
-                          //  std::cout << "Reducing (" << i <<  ","  << j << ")" << Rational(2) * monoms[i] * monoms[j];
-                           // std::cout << " to " << GiNaCRA::reduction(mGroebnerBasis, Rational(2)*monoms[i]*monoms[j]) << std::endl;
-							constraintMatrixFactory.addReducedTerm( MatrixIndex( i, j ),
-                                                                    GiNaCRA::reduction( mGroebnerBasis, monoms[i] * monoms[j] ) );
-                        }
+						constraintMatrixFactory.addReducedTerm( MatrixIndex( i, size-1 ),
+                                                                    GiNaCRA::reduction( mGroebnerBasis, monoms[i] * monoms[size-1] ) );
+                       
                     }
 
 					std::cout << "nr of constraints" << constraintMatrixFactory.exportMatrices().size() << std::endl;
