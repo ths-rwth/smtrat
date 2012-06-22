@@ -1363,6 +1363,7 @@ NextClause:
                     cout << "#" << numberOfTheoryCalls << "  ";
                     #else
                     cout << "\r" << numberOfTheoryCalls << "    ";
+					std::cout.flush();
                     #endif
                     #endif
                     #ifdef DEBUG_SATMODULE
