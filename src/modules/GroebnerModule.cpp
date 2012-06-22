@@ -55,7 +55,7 @@ namespace smtrat
 		mInequalities(this)
 
     {
-		assert(passInequalities != FULL_REDUCED_ONLYNEW); // not supported yet!
+		assert(Settings::passInequalities != FULL_REDUCED_ONLYNEW); // not supported yet!
         mModuleType = MT_GroebnerModule;
     }
 
@@ -79,7 +79,7 @@ namespace smtrat
         //only equalities should be added to the gb
         if( _formula->constraint().relation() == CR_EQ )
         {
-			
+			//std::cout << _formula->constraint().lhs() << std::endl;
 		    mBasis.addPolynomial( MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic>( _formula->constraint().lhs() ) );
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
@@ -101,12 +101,13 @@ namespace smtrat
         }
 
         vec_set_const_pFormula originals;
-        //If no equalities are added, we do not know anything
-       	mBasis.reduceInput();
-	     
+        if(!mBasis.inputEmpty()) {
+			//first, we interreduce the input!
+			mBasis.reduceInput();
+		}
+	    //If no equalities are added, we do not know anything 
 		if( !mBasis.inputEmpty() )
         {
-			//first, we interreduce the input!
 
 		   //now, we calculate the groebner basis
 			mBasis.calculate();
@@ -119,10 +120,10 @@ namespace smtrat
                 // Better, we change this to the variables in the gb.
 				unsigned vars = mVariablesInEqualities.size();
                 // We currently only try with a low nr of variables.
-                if( vars < 6 )
+                if( vars < Settings::SDPupperBoundNrVariables )
                 {
 					std::cout << "Run SDP" << std::endl;
-                    GroebnerToSDP<GiNaCRA::GradedLexicgraphic> sdp( mBasis.getGbIdeal(), MonomialIterator( mVariablesInEqualities ) );
+                    GroebnerToSDP<Settings::Order> sdp( mBasis.getGbIdeal(), MonomialIterator( mVariablesInEqualities, Settings::maxSDPdegree ) );
                     witness = sdp.findWitness();
 				}
             }
@@ -141,7 +142,7 @@ namespace smtrat
                 {
                     if( (*it)->constraint().relation() == CR_EQ )
                     {
-						if(getReasonsForInfeasibility) {
+						if(Settings::getReasonsForInfeasibility) {
 							if (origIt.get()) {
 								mInfeasibleSubsets.back().insert( *it );
 							}
@@ -163,7 +164,7 @@ namespace smtrat
             // We therefore add the equalities
             originals.push_back( set<const Formula*>() );
 
-			if(!passWithMinimalReasons) {
+			if(!Settings::passWithMinimalReasons) {
             // find original constraints which made the gb.
 				for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
 				{
@@ -300,8 +301,8 @@ namespace smtrat
             std::list<Polynomial> simplified = mBasis.getGb();
             for( std::list<Polynomial>::const_iterator simplIt = simplified.begin(); simplIt != simplified.end(); ++simplIt )
             {
-				if(checkEqualitiesForTrivialSumOfSquares && simplIt->isTrivialSumOfSquares()) std::cout << "Found trivial sum of square" << std::endl;
-				if(passWithMinimalReasons) {
+				if(Settings::checkEqualitiesForTrivialSumOfSquares && simplIt->isTrivialSumOfSquares()) std::cout << "Found trivial sum of square" << std::endl;
+				if(Settings::passWithMinimalReasons) {
 					originals.front() =  generateReasons(simplIt->getOrigins().getBitVector());
 				}
                 addSubformulaToPassedFormula( new Formula( Formula::newConstraint( simplIt->toEx(), CR_EQ ) ), originals );

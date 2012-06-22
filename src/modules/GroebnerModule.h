@@ -52,15 +52,6 @@
 
 namespace smtrat
 {
-	/**
-	 * Only active if we check inequalities.
-	 * AS_RECEIVED: Do not change the received inequalities.
-	 * FULL_REDUCED: Pass the fully reduced received inequalities.
-	 * REDUCED: Pass the reduced received inequalities.
-	 * REDUCED_ONLYSTRICT: Pass the nonstrict inequalities reduced, the others unchanged
-	 * FULL_REDUCED_ONLYNEW: Do only a full reduce on the newly added received inequalities.
-	 */
-	enum pass_inequalities { AS_RECEIVED, FULL_REDUCED, REDUCED, REDUCED_ONLYSTRICT, FULL_REDUCED_ONLYNEW };
 	
     /**
      * A class to save the current state of a GroebnerModule.
@@ -148,6 +139,8 @@ namespace smtrat
     class GroebnerModule:
         public Module
     {
+		typedef GBSettings Settings;
+		
 		friend InequalitiesTable;
 		friend InequalitiesRow;
 		
@@ -184,13 +177,8 @@ namespace smtrat
         private:
             typedef Module super;
 			
-			static const bool getReasonsForInfeasibility = true;
-			static const bool passWithMinimalReasons = true;
-			static const bool checkInequalities = true;
-			static const pass_inequalities passInequalities = AS_RECEIVED;
-			static const bool checkInequalitiesForTrivialSumOfSquares = false;
-			static const bool checkEqualitiesForTrivialSumOfSquares = false;
 			
+			static const bool gatherStatistics = false;
 
     };
 	
