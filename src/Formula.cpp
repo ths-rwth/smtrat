@@ -306,7 +306,7 @@ namespace smtrat
 
 	void Formula::addSubformula( Formula* _formula )
 	{
-		assert( mType != REALCONSTRAINT && mType != BOOL && mType != TTRUE && mType != FFALSE  );
+		assert( isBooleanCombination() );
         assert( mType != NOT || mpSubformulas->empty() );
 		_formula->setFather( this );
 
@@ -357,7 +357,8 @@ namespace smtrat
 
 	void Formula::addSubformula( const Constraint* _constraint )
 	{
-		assert( mType != REALCONSTRAINT && mType != BOOL && mType != TTRUE && mType != FFALSE  );
+		assert( isBooleanCombination() );
+        assert( mType != NOT || mpSubformulas->empty() );
 
 		/*
 		 * Add the variables of the formula to add to this formula.
@@ -382,7 +383,7 @@ namespace smtrat
 
 	void Formula::pop_back()
 	{
-		assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+		assert( isBooleanCombination() );
 		Formula* pSubForm = mpSubformulas->back();
 		mpSubformulas->pop_back();
 		delete pSubForm;
@@ -391,7 +392,7 @@ namespace smtrat
 
     void Formula::erase( unsigned _position )
 	{
-		assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+		assert( isBooleanCombination() );
 		assert( _position < mpSubformulas->size() );
 		std::list< Formula* >::iterator subFormula = mpSubformulas->begin();
 		unsigned pos = 0;
@@ -431,7 +432,7 @@ namespace smtrat
 
 	Formula* Formula::pruneBack()
 	{
-		assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+		assert( isBooleanCombination() );
         assert( !mpSubformulas->empty() );
         Formula* result = mpSubformulas->back();
 		result->resetFather();
@@ -442,7 +443,7 @@ namespace smtrat
 
     Formula* Formula::prune( unsigned _position )
 	{
-		assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+		assert( isBooleanCombination() );
 		assert( _position < mpSubformulas->size() );
 		std::list< Formula* >::iterator subFormula = mpSubformulas->begin();
 		unsigned pos = 0;
@@ -464,7 +465,7 @@ namespace smtrat
 
 	void Formula::clear()
 	{
-		assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+		assert( isBooleanCombination() );
 		while( !mpSubformulas->empty() )
 		{
 			Formula* pSubForm = mpSubformulas->back();

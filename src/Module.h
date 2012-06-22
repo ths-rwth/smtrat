@@ -51,6 +51,7 @@ namespace smtrat
 
 	typedef std::vector< std::set< const Formula* > > vec_set_const_pFormula;
 	typedef std::vector< vec_set_const_pFormula > 	  FormulaOrigins;
+    typedef std::pair< std::set< const Formula* >, const Constraint* > TheoryDeduction;
     /**
      * A base class for all kind of theory solving methods.
      */
@@ -78,7 +79,7 @@ namespace smtrat
             /// for each passed formula index its original subformulas in mpReceivedFormula
             FormulaOrigins  		mPassedFormulaOrigins;
             /// Stores the deductions this module or its backends made.
-            std::vector< Formula* > mDeductions;
+            std::vector< TheoryDeduction > mDeductions;
 
         public:
             Module( Manager* const, const Formula* const );
@@ -246,13 +247,18 @@ namespace smtrat
                 return mConstraintsToInform;
             }
 
-            void addDeduction( Formula* _deduction )
+            void addDeduction( std::set< const Formula* > _premise, const Constraint* _conclusion )
             {
-                assert( PROP_IS_A_CLAUSE <= _deduction->getPropositions() );
-                mDeductions.push_back( _deduction );
+                assert( mpReceivedFormula->contains( _premise ) );
+                mDeductions.push_back( TheoryDeduction( _premise, _conclusion ) );
             }
 
-            const std::vector<Formula*>& deductions() const
+            void clearDeductions()
+            {
+                mDeductions.clear();
+            }
+
+            const std::vector<TheoryDeduction>& deductions() const
             {
                 return mDeductions;
             }

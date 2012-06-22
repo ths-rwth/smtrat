@@ -122,6 +122,12 @@ namespace smtrat
         signed upperBound = receivedFormulaSize();
         assert( lastBacktrackpointsEnd() < upperBound );
         // remove each constraint in the backtracked range from the local constraint list, and remove the respective polynomials from the CAD
+
+        /* Just remove all polynomials corresponding to constraints which were removed for sure.
+         *
+         */
+
+
         for( signed pos = lastBacktrackpointsEnd() + 1; pos < upperBound; ++pos )
         {
             GiNaCRA::Constraint                   constraint     = convertConstraint( *receivedFormulaAt( pos )->pConstraint() );

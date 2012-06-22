@@ -148,6 +148,7 @@ namespace smtrat
             #endif
             std::vector<std::pair<std::string, std::pair<vs::Substitution_Type, GiNaC::ex> > > getSymbolicAssignment() const;
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
+            bool adaptPassedFormula( const vs::State& );
             Answer runBackendSolvers( vs::State* );
             vec_set_const_pFormula getOriginsOfCondition( const vs::Condition*, const vs::State* ) const;
     };
