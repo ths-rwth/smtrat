@@ -135,6 +135,14 @@ namespace smtrat
         assert( !cln::zerop( value ) );
         mNonZeroEntries[cell] = value;
     }
+	
+	void SparseMatrix::extend(int nrRows, int nrCols) {
+		assert( nrCols >= mNrCols);
+		assert( nrRows >= mNrRows);
+		
+		mNrRows = nrRows;
+		mNrCols = nrCols;
+	}
 
     void SparseMatrix::PrintEntries() const
     {
