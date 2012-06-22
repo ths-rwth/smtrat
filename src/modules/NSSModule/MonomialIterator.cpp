@@ -43,6 +43,7 @@ namespace smtrat
         {
             mExps.push_back( 0 );
         }
+		mTerms.push_back(mExps);
     }
 
     MonomialIterator::~MonomialIterator(){}

@@ -62,6 +62,7 @@ namespace smtrat
                 ConstraintMatrixFactory constraintMatrixFactory( 0 );
                 std::unique_ptr<std::vector<double> > solution;
 
+				
                 do
                 {
                     monoms.push_back( mMonomialIterator.next() );
@@ -71,33 +72,44 @@ namespace smtrat
                     for( unsigned i = 0; i < size; ++i )
                     {
                         //entry i,i
-                        //  std::cout << "Reducing " << monoms[i].pow(2);
+                        //std::cout << "Reducing (" << i <<  ","  << i << ")" << monoms[i].pow(2);
                         //std::cout << " to " << GiNaCRA::reduction(mGroebnerBasis,(monoms[i].pow(2))) << std::endl;
                         constraintMatrixFactory.addReducedTerm( MatrixIndex( i, i ), GiNaCRA::reduction( mGroebnerBasis, (monoms[i].pow( 2 )) ) );
 
                         //entry i,j j>i
                         for( unsigned j = i + 1; j < size; ++j )
                         {
-                            //      std::cout << "Reducing " << Rational(2) * monoms[i] * monoms[j];
-                            //std::cout << " to " << GiNaCRA::reduction(mGroebnerBasis, Rational(2)*monoms[i]*monoms[j]) << std::endl;
-                            constraintMatrixFactory.addReducedTerm( MatrixIndex( i, j ),
-                                                                    GiNaCRA::reduction( mGroebnerBasis, Rational( 2 ) * monoms[i] * monoms[j] ) );
+                          //  std::cout << "Reducing (" << i <<  ","  << j << ")" << Rational(2) * monoms[i] * monoms[j];
+                           // std::cout << " to " << GiNaCRA::reduction(mGroebnerBasis, Rational(2)*monoms[i]*monoms[j]) << std::endl;
+							constraintMatrixFactory.addReducedTerm( MatrixIndex( i, j ),
+                                                                    GiNaCRA::reduction( mGroebnerBasis, monoms[i] * monoms[j] ) );
                         }
                     }
 
+					std::cout << "nr of constraints" << constraintMatrixFactory.exportMatrices().size() << std::endl;
                     CSDPFacade csdp = CSDPFacade( monoms.size(), constraintMatrixFactory.exportMatrices() );
                     result          = csdp.callRoutine( solution );
                 }
                 while( result != 0 && mMonomialIterator.hasNext() );
                 unsigned blaa = pow( constraintMatrixFactory.getProblemSize(), 2 );
-                std::cout << blaa << std::endl;
+               
+				if(result != 0 ) {
+					return MultivariatePolynomialMR<Order>();
+				}
+				std::cout << blaa << std::endl;
                 for( unsigned i = 0; i < blaa; ++i )
                 {
                     //if((*solution)[i] > 0.001) {
                     std::cout << (*solution)[i] << " ";
                     //}
-                }
-
+				}
+				
+				for(auto it = monoms.begin(); it != monoms.end(); ++it) {
+					std::cout << *it << ", ";
+				}
+				mGroebnerBasis.print();
+				  //}
+                
                 bool res;
                 do
                 {
