@@ -67,10 +67,12 @@ namespace smtrat
             std::vector<SparseMatrix> exportMatrices() const;
             DenseMatrix exportLinEqSys() const;
 
-            unsigned getProblemSize()
+            unsigned getProblemSize() const
             {
                 return mProblemSize;
             }
+			
+			void extendProblemSize(unsigned newSize);
 
         private:
             unsigned                                             mProblemSize;
