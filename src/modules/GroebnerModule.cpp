@@ -114,8 +114,9 @@ namespace smtrat
 		   //now, we calculate the groebner basis
 			mBasis.calculate();
 
-			#ifdef USE_NSS
+			
             MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic> witness;
+			#ifdef USE_NSS
 			// On linear systems, all solutions lie in Q. So we do not have to check for a solution.
 			if( !mBasis.isConstant() && !mBasis.getGbIdeal().isLinear())  
             {
