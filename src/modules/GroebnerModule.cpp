@@ -276,7 +276,7 @@ namespace smtrat
             mStateHistory.push_back( GroebnerModuleState( mBasis ) );
             return true;
         }
-
+		
         return false;
     }
 

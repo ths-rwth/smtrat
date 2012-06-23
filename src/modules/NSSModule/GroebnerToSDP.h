@@ -57,8 +57,9 @@ namespace smtrat
             virtual ~GroebnerToSDP(){}
             MultivariatePolynomialMR<Order> findWitness()
             {
-			
-                int          result = 4;
+				// We should eliminate variables first!
+				
+				int          result = 4;
                 vector<Term> monoms;
                 ConstraintMatrixFactory constraintMatrixFactory( 0 );
                 std::unique_ptr<std::vector<double> > solution;
