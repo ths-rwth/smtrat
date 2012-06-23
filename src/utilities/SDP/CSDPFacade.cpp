@@ -141,7 +141,7 @@ namespace smtrat
         if( returnvalue == 0 )
             solution = createSparseMatrix( X );
 
-        //write_sol("sol", )
+        //write_sol("sol", (int)mProblemSize, (int)mNrConstraints, X, y, Z );
 
         free_prob( (int)mProblemSize, int(mNrConstraints), mC, mb, mpConstraints, X, y, Z );
 
