@@ -170,8 +170,11 @@ namespace smtrat
 			
 			std::set<unsigned> mVariablesInEqualities;
 			
+			bool mPopCausesRecalc;
+			
             bool saveState();
 			std::set<const Formula*> generateReasons(const GiNaCRA::BitVector& reasons);
+			void passGB();
 
 			void removeSubformulaFromPassedFormula(const Formula&);
         private:
