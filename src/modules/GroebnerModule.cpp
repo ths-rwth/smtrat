@@ -86,7 +86,7 @@ namespace smtrat
 			{
 				addReceivedSubformulaToPassedFormula( _formula );
 			}
-		    mBasis.addPolynomial( MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic>( _formula->constraint().lhs() ) );
+		    mBasis.addPolynomial( Polynomial( _formula->constraint().lhs() ) );
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
 		{
@@ -119,7 +119,7 @@ namespace smtrat
 			mBasis.calculate();
 
 			
-            MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic> witness;
+            Polynomial witness;
 			#ifdef USE_NSS
 			// On linear systems, all solutions lie in Q. So we do not have to check for a solution.
 			if( !mBasis.isConstant() && !mBasis.getGbIdeal().isLinear())  
@@ -244,7 +244,7 @@ namespace smtrat
         if( mStateHistory.empty() )
         {
             // std::cout << "Restore the base state" << std::endl;
-            mBasis = GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic>();
+            mBasis = GiNaCRA::Buchberger<GBSettings::Order>();
 
         }
         else

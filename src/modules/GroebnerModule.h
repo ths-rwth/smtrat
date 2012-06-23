@@ -61,19 +61,19 @@ namespace smtrat
     {
         public:
             GroebnerModuleState(){}
-            GroebnerModuleState( const GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic>& basis ):
+            GroebnerModuleState( const GiNaCRA::Buchberger<GBSettings::Order>& basis ):
                 mBasis( basis )
             {}
             ~GroebnerModuleState(){}
 
-            const GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic>& getBasis() const
+            const GiNaCRA::Buchberger<GBSettings::Order>& getBasis() const
             {
                 return mBasis;
             }
 
         protected:
             ///The state of the basis
-            const GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic> mBasis;
+            const GiNaCRA::Buchberger<GBSettings::Order> mBasis;
 			const std::vector<unsigned> mVariablesInEqualities;
     };
 
@@ -145,8 +145,8 @@ namespace smtrat
 		friend InequalitiesRow;
 		
         public:
-            typedef GiNaCRA::GradedLexicgraphic              Order;
-            typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+            typedef Settings::Order              Order;
+            typedef Settings::Polynomial		 Polynomial;
 
             GroebnerModule( Manager* const , const Formula* const );
             virtual ~GroebnerModule();
@@ -160,7 +160,7 @@ namespace smtrat
         protected:
 			//TODO just take the last one from the state history?
             /// The current Groebner basis
-            GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic> mBasis;
+            GiNaCRA::Buchberger<Settings::Order> mBasis;
             /// A list of variables to help define the simplified constraints
             GiNaC::symtab mListOfVariables;
             /// Saves the relevant history to support backtracking
