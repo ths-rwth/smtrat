@@ -36,7 +36,7 @@ namespace smtrat {
 		static const bool checkInequalitiesForTrivialSumOfSquares = false;
 		static const bool checkEqualitiesForTrivialSumOfSquares = false;
 
-		static const unsigned maxSDPdegree = 12;
+		static const unsigned maxSDPdegree = 6;
 		static const unsigned SDPupperBoundNrVariables = 6;
 	};
 }

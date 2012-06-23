@@ -57,12 +57,13 @@ namespace smtrat
             virtual ~GroebnerToSDP(){}
             MultivariatePolynomialMR<Order> findWitness()
             {
-                int          result = 0;
+			
+                int          result = 4;
                 vector<Term> monoms;
                 ConstraintMatrixFactory constraintMatrixFactory( 0 );
                 std::unique_ptr<std::vector<double> > solution;
 
-				
+				unsigned i = 0;
                 do
                 {
                     monoms.push_back( mMonomialIterator.next() );
@@ -78,9 +79,13 @@ namespace smtrat
                        
                     }
 
-					std::cout << "nr of constraints" << constraintMatrixFactory.exportMatrices().size() << std::endl;
-                    CSDPFacade csdp = CSDPFacade( monoms.size(), constraintMatrixFactory.exportMatrices() );
-                    result          = csdp.callRoutine( solution );
+					i++;
+					if(i % 8 == 0 || !mMonomialIterator.hasNext() )  {
+						std::cout << "nr of constraints" << constraintMatrixFactory.exportMatrices().size() << std::endl;
+						CSDPFacade csdp = CSDPFacade( monoms.size(), constraintMatrixFactory.exportMatrices() );
+						result          = csdp.callRoutine( solution );
+						std::cout << "end of call" << std::endl;
+					}
                 }
                 while( result != 0 && mMonomialIterator.hasNext() );
                 unsigned blaa = pow( constraintMatrixFactory.getProblemSize(), 2 );

@@ -69,10 +69,12 @@ namespace smtrat
         for( GiNaC::symtab::const_iterator it = _formula->constraint().variables().begin(); it != _formula->constraint().variables().end(); ++it )
         {
 	        unsigned varNr = VariableListPool::addVariable( ex_to<symbol>( it->second ) );
+#ifdef USE_NSS 
 			if( _formula->constraint().relation() == CR_EQ )
 			{
 				mVariablesInEqualities.insert(varNr);
 			}
+#endif
 	        mListOfVariables.insert( *it );
         }
 
@@ -114,7 +116,8 @@ namespace smtrat
 
 			#ifdef USE_NSS
             MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic> witness;
-			if( !mBasis.isConstant() )
+			// On linear systems, all solutions lie in Q. So we do not have to check for a solution.
+			if( !mBasis.isConstant() && !mBasis.getGbIdeal().isLinear())  
             {
                 // Lets search for a witness. We only have to do this if the gb is non-constant.
                 // Better, we change this to the variables in the gb.
@@ -135,8 +138,10 @@ namespace smtrat
 			{
                 mInfeasibleSubsets.push_back( set<const Formula*>() );
                 // The equalities we used for the basis-computation are the infeasible subset
-				MultivariatePolynomialMR<GiNaCRA::GradedLexicgraphic> constPol = mBasis.getGb().front();
-				GiNaCRA::BitVector::const_iterator origIt = constPol.getOrigins().getBitVector().begin();
+				if( mBasis.isConstant() ) {
+					witness = mBasis.getGb().front();
+				}
+				GiNaCRA::BitVector::const_iterator origIt = witness.getOrigins().getBitVector().begin();
 
 				for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
                 {
@@ -177,7 +182,7 @@ namespace smtrat
 
 		//	mInequalities.print();
 		//	print();
-			mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
+		//	mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
 		//	printReceivedFormula();
 		//	mInequalities.print();
 
@@ -326,7 +331,7 @@ namespace smtrat
         super::pushBacktrackPoint();
         mStateHistory.push_back( GroebnerModuleState( mBasis ) );
 		//printStateHistory();
-		mInequalities.pushBacktrackPoint();
+		//mInequalities.pushBacktrackPoint();
 	}
 
     /**
@@ -350,7 +355,7 @@ namespace smtrat
 
         }
 		
-		mInequalities.popBacktrackPoint();
+		//mInequalities.popBacktrackPoint();
 		//std::cout << " New basis: ";
 		//mBasis.getGbIdeal().print();
 		//std::cout << std::endl;
