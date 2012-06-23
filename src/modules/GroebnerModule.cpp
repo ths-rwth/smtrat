@@ -238,7 +238,7 @@ namespace smtrat
     {
 	
 		mPopCausesRecalc = true;
-		std::cout << "Pop backtrack" << std::endl;
+		//std::cout << "Pop backtrack" << std::endl;
         mStateHistory.pop_back();
         // Load the state to be restored;
         if( mStateHistory.empty() )
