@@ -65,7 +65,7 @@ namespace smtrat
      */
     Answer Module::isConsistent()
     {
-		assert(mInfeasibleSubsets.empty());
+		assert( mInfeasibleSubsets.empty() );
 
 	    for( unsigned i = passedFormulaSize(); i < receivedFormulaSize(); ++i )
 	    {

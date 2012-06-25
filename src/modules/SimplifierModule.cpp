@@ -69,7 +69,7 @@ namespace smtrat
      */
     bool SimplifierModule::assertSubformula( Formula::const_iterator _subformula )
     {
-        assert( _formula->getType() == REALCONSTRAINT );
+        assert( (*_subformula)->getType() == REALCONSTRAINT );
         Module::assertSubformula( _subformula );
         if( mFirstNotComparedConstraint == receivedFormulaEnd() )
         {
