@@ -1290,6 +1290,8 @@ NextClause:
     {
         bool operator ()( const Formula* const _formulaA, const Formula* const _formulaB ) const
         {
+			assert(_formulaA->getType() == REALCONSTRAINT);
+			assert(_formulaB->getType() == REALCONSTRAINT);
             return (_formulaA->constraint() < _formulaB->constraint());
         }
     };
@@ -1363,6 +1365,7 @@ NextClause:
                     cout << "#" << numberOfTheoryCalls << "  ";
                     #else
                     cout << "\r" << numberOfTheoryCalls << "    ";
+					std::cout.flush();
                     #endif
                     #endif
                     #ifdef DEBUG_SATMODULE
@@ -1455,6 +1458,7 @@ NextClause:
                                         set<const Formula*, formulaCmpB> sortedConstraints = set<const Formula*, formulaCmpB>();
                                         for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                                         {
+											assert((*subformula)->getType() == REALCONSTRAINT);
                                             sortedConstraints.insert( *subformula );
                                         }
                                         // Add the according literals to the conflict clause.

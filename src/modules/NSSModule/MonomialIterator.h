@@ -37,7 +37,7 @@ namespace smtrat
     class MonomialIterator
     {
         public:
-            MonomialIterator( unsigned nrVars, unsigned maxDeg = 5 );
+            MonomialIterator( const std::set<unsigned>& nrVars, unsigned maxDeg = 5 );
             virtual ~MonomialIterator();
             Term next();
 
@@ -49,11 +49,11 @@ namespace smtrat
             void test( unsigned deg );
 
         private:
-            void fillExps( unsigned firstVar, unsigned degLeft );
+            void fillExps( std::set<unsigned>::const_iterator firstVar, unsigned degLeft );
 
             std::vector<unsigned>             mExps;
             std::list<std::vector<unsigned> > mTerms;
-            unsigned                          mNrVars;
+            std::set<unsigned>                mNrVars;
             unsigned                          mMaxDeg;
             unsigned                          mCurDeg;
 

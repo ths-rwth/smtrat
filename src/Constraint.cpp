@@ -36,6 +36,33 @@ namespace smtrat
     using namespace std;
     using namespace GiNaC;
 
+	
+	std::string relationToString(const Constraint_Relation rel) {
+		switch( rel )
+        {
+        case CR_EQ:
+			return "=";
+            break;
+        case CR_NEQ:
+            return "<>";
+            break;
+        case CR_LESS:
+            return "<";
+            break;
+        case CR_GREATER:
+            return ">";
+            break;
+        case CR_LEQ:
+            return "<=";
+            break;
+        case CR_GEQ:
+            return ">=";
+            break;
+        default:
+            return "~";
+        }
+	}
+	
     /**
      * Constructors:
      */
@@ -851,29 +878,7 @@ namespace smtrat
         ostringstream sstream;
         sstream << lhs();
         result += sstream.str();
-        switch( relation() )
-        {
-        case CR_EQ:
-            result += "=";
-            break;
-        case CR_NEQ:
-            result += "<>";
-            break;
-        case CR_LESS:
-            result += "<";
-            break;
-        case CR_GREATER:
-            result += ">";
-            break;
-        case CR_LEQ:
-            result += "<=";
-            break;
-        case CR_GEQ:
-            result += ">=";
-            break;
-        default:
-            result += "~";
-        }
+		result += relationToString(relation());
         result += "0";
         return result;
     }
@@ -886,29 +891,7 @@ namespace smtrat
     void Constraint::print( ostream& _out ) const
     {
         _out << lhs();
-        switch( relation() )
-        {
-        case CR_EQ:
-            _out << "=";
-            break;
-        case CR_NEQ:
-            _out << "<>";
-            break;
-        case CR_LESS:
-            _out << "<";
-            break;
-        case CR_GREATER:
-            _out << ">";
-            break;
-        case CR_LEQ:
-            _out << "<=";
-            break;
-        case CR_GEQ:
-            _out << ">=";
-            break;
-        default:
-            _out << "~";
-        }
+		_out << relationToString(relation());
         _out << "0";
     }
 
@@ -920,29 +903,7 @@ namespace smtrat
     void Constraint::print2( ostream& _out ) const
     {
         _out << lhs();
-        switch( relation() )
-        {
-        case CR_EQ:
-            _out << "=";
-            break;
-        case CR_NEQ:
-            _out << "!=";
-            break;
-        case CR_LESS:
-            _out << "<";
-            break;
-        case CR_GREATER:
-            _out << ">";
-            break;
-        case CR_LEQ:
-            _out << "<=";
-            break;
-        case CR_GEQ:
-            _out << ">=";
-            break;
-        default:
-            _out << "~";
-        }
+		_out << relationToString(relation());
         _out << "0";
     }
 

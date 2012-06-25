@@ -85,4 +85,18 @@ namespace smtrat
         return m;
     }
 
+	void ConstraintMatrixFactory::extendProblemSize(unsigned newSize) {
+		assert(newSize >= mProblemSize);
+		mProblemSize = newSize;
+		for(auto it = constraints.begin(); it != constraints.end(); ++it) {
+			it->second.extend(newSize, newSize);
+		}
+	}
+	
+	void ConstraintMatrixFactory::incrementProblemSize() {
+		mProblemSize++;
+		for(auto it = constraints.begin(); it != constraints.end(); ++it) {
+			it->second.extend(mProblemSize, mProblemSize);
+		}
+	}
 }

@@ -24,9 +24,18 @@
  * @file   GroebnerModule.h
  *
  * @author Sebastian Junges
+ * 
+ * Note: This file might be a little messy to the reader at first. For efficiency reasons however, 
+ * there is some cross-reference  between the datastructure and the module.
+ * 
+ * The classes contained in here are
+ * GroebnerModuleState
+ * InequalitiesRow
+ * InequalitiesTable
+ * GroebnerModule
  *
  * Since: 2012-01-18
- * Version: 2012-01-20
+ * Version: 2012-06-20
  */
 
 #ifndef SMTRAT_GROEBNERMODULE_H
@@ -39,18 +48,10 @@
 
 #include <ginacra/mr/Buchberger.h>
 #include "../Module.h"
+#include "GBModule/InequalitiesTable.h"
 
 namespace smtrat
 {
-	/**
-	 * Only active if we check inequalities.
-	 * AS_RECEIVED: Do not change the received inequalities.
-	 * FULL_REDUCED: Pass the fully reduced received inequalities.
-	 * REDUCED: Pass the reduced received inequalities.
-	 * REDUCED_ONLYSTRICT: Pass the nonstrict inequalities reduced, the others unchanged
-	 * FULL_REDUCED_ONLYNEW: Do only a full reduce on the newly added received inequalities.
-	 */
-	enum pass_inequalities { AS_RECEIVED, FULL_REDUCED, REDUCED, REDUCED_ONLYSTRICT, FULL_REDUCED_ONLYNEW };
 	
     /**
      * A class to save the current state of a GroebnerModule.
@@ -60,21 +61,77 @@ namespace smtrat
     {
         public:
             GroebnerModuleState(){}
-            GroebnerModuleState( const GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic>& basis ):
+            GroebnerModuleState( const GiNaCRA::Buchberger<GBSettings::Order>& basis ):
                 mBasis( basis )
             {}
             ~GroebnerModuleState(){}
 
-            const GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic>& getBasis() const
+            const GiNaCRA::Buchberger<GBSettings::Order>& getBasis() const
             {
                 return mBasis;
             }
 
         protected:
             ///The state of the basis
-            const GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic> mBasis;
+            const GiNaCRA::Buchberger<GBSettings::Order> mBasis;
+			const std::vector<unsigned> mVariablesInEqualities;
     };
 
+	class GroebnerModule;
+	
+	/**
+	 * A row in the InequalitiesTable. A row basically represents an inequality.
+	 */
+	class InequalitiesRow {
+		typedef GBSettings::Polynomial Polynomial;
+		typedef GBSettings::MultivariateIdeal Ideal;
+		typedef GBSettings::Reductor Reductor;
+		
+	public:
+		InequalitiesRow(GroebnerModule*, const Formula* const received, unsigned btpoint) ;
+		
+		Answer reduceWithGb(const Ideal& gb, unsigned btpoint);
+		
+		bool popBacktrackPoint(unsigned btp);
+		
+		void print(std::ostream& os = std::cout ) const;
+	protected:
+		const Formula* receivedFormulaEntry;
+		Constraint_Relation relation;
+		Formula::const_iterator passedFormulaEntry;
+		std::list<std::pair<unsigned,Polynomial> > reductions;
+		GroebnerModule* mModule;
+	};
+	
+
+	/**
+	 * A table of all inequalities and how they are reduced.
+	 */
+	class InequalitiesTable {
+		
+		typedef GBSettings::Polynomial Polynomial;
+		typedef GBSettings::MultivariateIdeal Ideal;
+	public: 
+		InequalitiesTable(GroebnerModule*  module);
+		
+		void InsertReceivedFormula(const Formula* const received );
+		
+		void pushBacktrackPoint() ;
+		
+		void popBacktrackPoint() ;
+		
+		void reduceWRTGroebnerBasis(const Ideal& gb);
+		
+		void print(std::ostream& os= std::cout) const;
+		
+		std::list<size_t> mNrInequalitiesForBtPoints;
+		std::vector<InequalitiesRow> mReducedInequalities;
+		
+	
+		GroebnerModule*  mModule;
+	};
+	
+	
     /**
      * A solver module based on Groebner basis
      *
@@ -82,9 +139,14 @@ namespace smtrat
     class GroebnerModule:
         public Module
     {
+		typedef GBSettings Settings;
+		
+		friend InequalitiesTable;
+		friend InequalitiesRow;
+		
         public:
-            typedef GiNaCRA::GradedLexicgraphic              Order;
-            typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+            typedef Settings::Order              Order;
+            typedef Settings::Polynomial		 Polynomial;
 
             GroebnerModule( Manager* const , const Formula* const );
             virtual ~GroebnerModule();
@@ -96,30 +158,34 @@ namespace smtrat
 			void printStateHistory();
 
         protected:
+			//TODO just take the last one from the state history?
             /// The current Groebner basis
-            GiNaCRA::Buchberger<GiNaCRA::GradedLexicgraphic> mBasis;
+            GiNaCRA::Buchberger<Settings::Order> mBasis;
             /// A list of variables to help define the simplified constraints
             GiNaC::symtab mListOfVariables;
             /// Saves the relevant history to support backtracking
             std::list<GroebnerModuleState> mStateHistory;
 			
-			bool mAddedEqualitySinceLastCheck;
+			InequalitiesTable mInequalities;
+			
+			std::set<unsigned> mVariablesInEqualities;
+			
+			bool mPopCausesRecalc;
 			
             bool saveState();
 			std::set<const Formula*> generateReasons(const GiNaCRA::BitVector& reasons);
+			void passGB();
 
+			void removeSubformulaFromPassedFormula(const Formula&);
         private:
             typedef Module super;
 			
-			static const bool getReasonsForInfeasibility = true;
-			static const bool passWithMinimalReasons = true;
-			static const bool checkInequalities = true;
-			static const pass_inequalities passInequalities = AS_RECEIVED;
-			static const bool checkInequalitiesForTrivialSumOfSquares = false;
-			static const bool checkEqualitiesForTrivialSumOfSquares = false;
 			
+			static const bool gatherStatistics = false;
 
     };
+	
+	
 
 }    // namespace smtrat
 #endif   /** GROEBNERMODULE_H */
