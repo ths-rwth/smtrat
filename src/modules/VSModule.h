@@ -76,9 +76,9 @@ namespace smtrat
             }
 
             // Interfaces.
-            bool assertSubFormula( const Formula* const );
+            bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
-            void popBacktrackPoint();
+            void removeSubformula( Formula::const_iterator );
 
             // Printing methods.
             void printAll( std::ostream& = std::cout ) const;

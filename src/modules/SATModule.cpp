@@ -167,7 +167,7 @@ namespace smtrat
     {
 
         assert( (_formula->proposition() | ~PROP_IS_A_CLAUSE) == ~PROP_TRUE );
-        Module::assertSubFormula( _formula );
+        Module::assertSubformula( _formula );
 
         addClauseToSatSolver( _formula );
 

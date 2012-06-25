@@ -64,14 +64,14 @@ namespace smtrat
             Manager* const          mpManager;
             ModuleType              mModuleType;
             fastConstraintSet       mConstraintsToInform;
-
-        private:
-            std::vector< Module* > mUsedBackends;
-            std::vector< Module* > mAllBackends;
             /// formula passed to this module
             const Formula*          mpReceivedFormula;
             /// formula passed to the backends
             Formula*              	mpPassedFormula;
+
+        private:
+            std::vector< Module* > mUsedBackends;
+            std::vector< Module* > mAllBackends;
             /// for each passed formula index its original subformulas in mpReceivedFormula
             FormulaOrigins  		mPassedFormulaOrigins;
             /// Stores the deductions this module or its backends made.
@@ -141,86 +141,9 @@ namespace smtrat
                 return *pos;
             }
 
-            inline Formula::const_iterator receivedFormulaBegin() const
-            {
-                return mpReceivedFormula->begin();
-            }
-
-            inline Formula::const_iterator receivedFormulaEnd() const
-            {
-                return mpReceivedFormula->end();
-            }
-
-            inline bool receivedFormulaEmpty() const
-            {
-                return mpReceivedFormula->empty();
-            }
-
-            inline unsigned receivedFormulaSize() const
-            {
-                return mpReceivedFormula->size();
-            }
-
-            inline void printReceivedFormulaAlone( std::ostream& _out = std::cout, const std::string _init = "", bool _oneLine = false ) const
-            {
-                return mpReceivedFormula->print( _out, _init, _oneLine );
-            }
-
             inline void passedFormulaCannotBeSolved()
             {
                 mpPassedFormula->notSolvableBy( type() );
-            }
-
-            inline const Formula* passedFormulaBack() const
-            {
-                return mpPassedFormula->back();
-            }
-
-			// TODO formula change -> efficiency
-			inline const Formula* passedFormulaAt( unsigned _pos ) const
-            {
-				unsigned posNr = 0;
-				Formula::const_iterator pos = mpPassedFormula->begin();
-				while(posNr < _pos )  {
-					++pos;
-					++posNr;
-				}
-                return *pos;
-            }
-
-            inline Formula::const_iterator passedFormulaBegin() const
-            {
-                return mpPassedFormula->begin();
-            }
-
-            inline Formula::const_iterator passedFormulaEnd() const
-            {
-                return mpPassedFormula->end();
-            }
-
-            inline Formula::const_reverse_iterator passedFormulaRbegin() const
-            {
-                return mpPassedFormula->rbegin();
-            }
-
-            inline Formula::const_reverse_iterator passedFormulaRend() const
-            {
-                return mpPassedFormula->rend();
-            }
-
-            inline bool passedFormulaEmpty() const
-            {
-                return mpPassedFormula->empty();
-            }
-
-            inline unsigned passedFormulaSize() const
-            {
-                return mpPassedFormula->size();
-            }
-
-            inline void printPassedFormulaAlone( std::ostream& _out = std::cout, const std::string _init = "", bool _oneLine = false ) const
-            {
-                return mpPassedFormula->print( _out, _init, _oneLine );
             }
 
             const ModuleType type() const

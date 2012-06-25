@@ -259,6 +259,13 @@ namespace smtrat
                 return mpSubformulas->rend();
             }
 
+            iterator last()
+            {
+                assert( isBooleanCombination() );
+                assert( !mpSubformulas->empty() );
+                return --mpSubformulas->end();
+            }
+
             const_iterator last() const
             {
                 assert( isBooleanCombination() );

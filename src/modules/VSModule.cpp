@@ -82,21 +82,22 @@ namespace smtrat
     /**
      * @param _constraint The constraint to add to the already added constraints.
      */
-    bool VSModule::assertSubFormula( const Formula* const _formula )
+    bool VSModule::assertSubformula( Formula::const_iterator _subformula )
     {
-    	assert( _formula->getType() == REALCONSTRAINT );
-		Module::assertSubFormula( _formula );
+    	assert( (*_subformula)->getType() == REALCONSTRAINT );
+		Module::assertSubformula( _subformula );
         if( debugmethods )
         {
             cout << __func__ << endl;
         }
 
-        vs::Condition* condition = new vs::Condition( _formula->constraint() );
-        mReceivedConstraintsAsConditions[_formula->pConstraint()] = condition;
+        const Constraint* constraint = (*_subformula)->pConstraint();
+        vs::Condition* condition = new vs::Condition( *constraint );
+        mReceivedConstraintsAsConditions[constraint] = condition;
         /*
          * Clear the ranking.
          */
-        switch( _formula->constraint().isConsistent() )
+        switch( constraint->isConsistent() )
         {
         case 0:
         {
@@ -116,8 +117,8 @@ namespace smtrat
         {
             eraseDTsOfRanking( *mpStateTree );
             mIDCounter = 0;
-            symtab::const_iterator var = _formula->constraint().variables().begin();
-            while( var != _formula->constraint().variables().end() )
+            symtab::const_iterator var = constraint->variables().begin();
+            while( var != constraint->variables().end() )
             {
                 mAllVariables.insert( pair<const string, symbol>( var->first, ex_to<symbol>( var->second ) ) );
                 var++;
@@ -128,7 +129,7 @@ namespace smtrat
             vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
             DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
             ConditionVector condVector                   = ConditionVector();
-            condVector.push_back( new vs::Condition( _formula->constraint(), false, oConds, 0 ));
+            condVector.push_back( new vs::Condition( *constraint, false, oConds, 0 ));
             subResult.push_back( condVector );
             subResults.push_back( subResult );
             mpStateTree->addSubstitutionResults( subResults );
@@ -170,7 +171,7 @@ namespace smtrat
             }
         }
         mFreshConstraintReceived = false;
-        if( receivedFormulaEmpty() )
+        if( mpReceivedFormula->empty() )
         {
             return True;
         }
@@ -565,13 +566,12 @@ namespace smtrat
     /**
      * Backtracks until the last backtrack point.
      */
-    void VSModule::popBacktrackPoint()
+    void VSModule::removeSubformula( Formula::const_iterator _subformula )
     {
         if( debugmethods )
         {
             cout << __func__ << endl;
         }
-        assert( !mBackTrackPoints.empty() );
 
 #ifdef VS_BACKTRACKING
         eraseDTsOfRanking( *mpStateTree );
@@ -582,14 +582,11 @@ namespace smtrat
         assert( mpStateTree->substitutionResults().back().size() == 1 );
         assert( receivedFormulaSize() == mpStateTree->substitutionResults().back().back().first.size() );
 #endif
-		Module::popBacktrackPoint();
-		signed uRFS = receivedFormulaSize();
-        for( signed pos = lastBacktrackpointsEnd()+1; pos < uRFS; ++pos )
-        {
-            vs::Condition* pCondition = mReceivedConstraintsAsConditions[receivedFormulaAt( pos )->pConstraint()];
-            mReceivedConstraintsAsConditions.erase( receivedFormulaAt( pos )->pConstraint() );
-            delete pCondition;
-        }
+        const Constraint* constraint = (*_subformula)->pConstraint();
+        vs::Condition* pCondition = mReceivedConstraintsAsConditions[constraint];
+        mReceivedConstraintsAsConditions.erase( constraint );
+        delete pCondition;
+		Module::removeSubformula( _subformula );
 #ifdef VS_BACKTRACKING
 		bool firstConstraintToRemoveFound = false;
 		for( ConditionVector::iterator cond = mpStateTree->rSubstitutionResults().back().back().first.begin();
@@ -1472,8 +1469,8 @@ namespace smtrat
                         oCond != (**cond).originalConditions().end();
                         ++oCond )
                 {
-                    Formula::const_iterator receivedConstraint = receivedFormulaBegin();
-                    while( receivedConstraint != receivedFormulaEnd() )
+                    Formula::const_iterator receivedConstraint = mpReceivedFormula->begin();
+                    while( receivedConstraint != mpReceivedFormula->end() )
                     {
                         if( (**oCond).constraint() == (*receivedConstraint)->constraint() )
                         {
@@ -1482,7 +1479,7 @@ namespace smtrat
                         receivedConstraint++;
                     }
 
-                    if( receivedConstraint == receivedFormulaEnd() )
+                    if( receivedConstraint == mpReceivedFormula->end() )
                     {
                         cout << "BLA1" << endl;
                         printAll( cout );
@@ -1541,8 +1538,8 @@ namespace smtrat
             delete pRecCond;
         }
 
-        Formula::const_iterator          cons = receivedFormulaBegin();
-        while( cons != receivedFormulaEnd() )
+        Formula::const_iterator          cons = mpReceivedFormula->begin();
+        while( cons != mpReceivedFormula->end() )
         {
 			vs::Condition* condition = new vs::Condition( (*cons)->constraint() );
 			mReceivedConstraintsAsConditions[(*cons)->pConstraint()] = condition;
@@ -1910,13 +1907,14 @@ namespace smtrat
 
         /*
          * Remove the constraints from the constraints to check, which are already in the passed formula
-         * and remove the subformulas (constraints) in the passed formula, which do not occur in the
+         * and remove the sub formulas (constraints) in the passed formula, which do not occur in the
          * constraints to add.
          */
+        //TODO
         unsigned pos = 0;
-        while( pos < passedFormulaSize() )
+        while( pos < mpPassedFormula->size() )
         {
-            if( constraintsToCheck.erase( passedFormulaAt( pos )->constraint() ) == 0 )
+            if( constraintsToCheck.erase( mpPassedFormula->at( pos )->constraint() ) == 0 )
             {
                 removeSubformulaFromPassedFormula( pos );
                 changedPassedFormula = true;

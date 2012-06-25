@@ -44,10 +44,10 @@ namespace smtrat
         mpManager( _tsManager ),
         mModuleType( MT_Module ),
         mConstraintsToInform(),
-        mUsedBackends(),
-        mAllBackends(),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),
+        mUsedBackends(),
+        mAllBackends(),
         mPassedFormulaOrigins(),
         mDeductions(),
         lastPassedSubformula( mpPassedFormula->begin() )
@@ -67,9 +67,16 @@ namespace smtrat
     {
 		assert( mInfeasibleSubsets.empty() );
 
-	    for( unsigned i = passedFormulaSize(); i < receivedFormulaSize(); ++i )
+        Formula::const_iterator subformula = mpReceivedFormula->begin();
+        for( Formula::const_iterator passedSubformula = mpPassedFormula->begin();
+             passedSubformula != mpPassedFormula->end(); ++passedSubformula )
+        {
+            assert( subformula != mpReceivedFormula->end() );
+            ++subformula;
+        }
+	    while( subformula != mpReceivedFormula->end() )
 	    {
-	        addReceivedSubformulaToPassedFormula( i );
+	        addReceivedSubformulaToPassedFormula( subformula++ );
 	    }
 
 		Answer a = runBackends();
@@ -207,7 +214,7 @@ namespace smtrat
      */
     void Module::addSubformulaToPassedFormula( Formula* _formula, vec_set_const_pFormula& _origins )
     {
-    	assert( receivedFormulaSize() != UINT_MAX );
+    	assert( mpReceivedFormula->size() != UINT_MAX );
         mpPassedFormula->addSubformula( _formula );
         mPassedFormulaOrigins[_formula] = _origins;
     }
@@ -219,7 +226,7 @@ namespace smtrat
      */
 	void Module::addSubformulaToPassedFormula( Formula* _formula, const Formula* _origin )
 	{
-		assert( receivedFormulaSize() != UINT_MAX );
+		assert( mpReceivedFormula->size() != UINT_MAX );
 		mpPassedFormula->addSubformula( _formula );
 		vec_set_const_pFormula originals;
         originals.push_back( set<const Formula*>() );

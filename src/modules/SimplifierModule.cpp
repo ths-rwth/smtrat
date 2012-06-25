@@ -44,7 +44,7 @@ namespace smtrat
         Module( _tsManager, _formula ),
         mFreshConstraintReceived( false ),
         mInconsistentConstraintAdded( false ),
-        mFirstNotComparedConstraint( receivedFormulaEnd() ),
+        mFirstNotComparedConstraint( mpReceivedFormula->end() ),
         mAllVariables( symtab() )
     {
         this->mModuleType = MT_SimplifierModule;
@@ -71,7 +71,7 @@ namespace smtrat
     {
         assert( (*_subformula)->getType() == REALCONSTRAINT );
         Module::assertSubformula( _subformula );
-        if( mFirstNotComparedConstraint == receivedFormulaEnd() )
+        if( mFirstNotComparedConstraint == mpReceivedFormula->end() )
         {
             mFirstNotComparedConstraint = _subformula;
         }
@@ -136,7 +136,7 @@ namespace smtrat
             }
         }
         mFreshConstraintReceived = false;
-        if( receivedFormulaEmpty() )
+        if( mpReceivedFormula->empty() )
         {
             return True;
         }
@@ -144,31 +144,46 @@ namespace smtrat
         {
             return False;
         }
-        else if( receivedFormulaSize() > 1 )
+        else if( mpReceivedFormula->size() > 1 )
         {
             set<const Formula*> redundantFormulaSet     = set<const Formula*>();
-            unsigned            passedFormulaSizeBefore = passedFormulaSize();
-            while( mFirstNotComparedConstraint != receivedFormulaEnd() )
+            Formula::iterator firstFreshPassedSubformula;
+            bool firstFreshPassedSubformulaFound = false;
+            while( mFirstNotComparedConstraint != mpReceivedFormula->end() )
             {
                 addReceivedSubformulaToPassedFormula( mFirstNotComparedConstraint++ );
+                if( !firstFreshPassedSubformulaFound )
+                {
+                    firstFreshPassedSubformula = mpPassedFormula->last();
+                }
             }
 
             /*
              * Check all constraint combinations.
              */
-            unsigned posConsA = 0;
-            while( posConsA < passedFormulaSize() )
+            bool comparisonBetweenFreshConstraints = false;
+            Formula::iterator subformulaA = mpPassedFormula->begin();
+            while( subformulaA != mpPassedFormula->end() )
             {
-                unsigned posConsB = passedFormulaSizeBefore;
-                if( posConsB <= posConsA )
+                if( subformulaA == firstFreshPassedSubformula )
                 {
-                    posConsB = posConsA + 1;
+                    comparisonBetweenFreshConstraints = true;
                 }
-                while( posConsB < passedFormulaSize() )
+                Formula::iterator subformulaB;
+                if( comparisonBetweenFreshConstraints )
                 {
-                    const Constraint& constraintA = passedFormulaAt( posConsA )->constraint();
-                    const Constraint& constraintB = passedFormulaAt( posConsB )->constraint();
-                    switch( Constraint::compare( constraintA, constraintB ) )
+                    subformulaB = subformulaA;
+                    ++subformulaB;
+                }
+                else
+                {
+                    subformulaB = firstFreshPassedSubformula;
+                }
+                while( subformulaB != mpPassedFormula->end() )
+                {
+                    const Constraint* constraintA = (*subformulaA)->pConstraint();
+                    const Constraint* constraintB = (*subformulaB)->pConstraint();
+                    switch( Constraint::compare( *constraintA, *constraintB ) )
                     {
                         case 2:
                         {
@@ -176,9 +191,9 @@ namespace smtrat
                              * If the two constraints have the same solution space.
                              */
                             vec_set_const_pFormula originsA = vec_set_const_pFormula();
-                            getOrigins( passedFormulaAt( posConsA ), originsA );
+                            getOrigins( *subformulaA, originsA );
                             vec_set_const_pFormula originsB = vec_set_const_pFormula();
-                            getOrigins( passedFormulaAt( posConsB ), originsB );
+                            getOrigins( *subformulaB, originsB );
 
                             unsigned                         originsASizeBefore = originsA.size();
                             vec_set_const_pFormula::iterator originSetB         = originsB.begin();
@@ -215,10 +230,10 @@ namespace smtrat
                                 break;
                             }
 
-                            addSubformulaToPassedFormula( new Formula( *passedFormulaAt( posConsA ) ), originsA );
+                            addSubformulaToPassedFormula( new Formula( constraintA ), originsA );
 
-                            redundantFormulaSet.insert( passedFormulaAt( posConsA ) );
-                            redundantFormulaSet.insert( passedFormulaAt( posConsB ) );
+                            redundantFormulaSet.insert( *subformulaA );
+                            redundantFormulaSet.insert( *subformulaB );
                             break;
                         }
                         case 1:
@@ -227,14 +242,14 @@ namespace smtrat
                              * If consA's solution space is a subset of the solution space of consB.
                              */
                             vec_set_const_pFormula originsA = vec_set_const_pFormula();
-                            getOrigins( passedFormulaAt( posConsA ), originsA );
+                            getOrigins( *subformulaA, originsA );
                             vec_set_const_pFormula originsB = vec_set_const_pFormula();
-                            getOrigins( passedFormulaAt( posConsB ), originsB );
+                            getOrigins( *subformulaB, originsB );
 
                             vec_set_const_pFormula originsAB = merge( originsA, originsB );
 
-                            setOrigins( posConsA, originsAB );
-                            redundantFormulaSet.insert( passedFormulaAt( posConsB ) );
+                            setOrigins( *subformulaA, originsAB );
+                            redundantFormulaSet.insert( *subformulaB );
                             break;
                         }
                         case 0:
@@ -250,29 +265,29 @@ namespace smtrat
                              * If condA's solution space is a superset of the solution space of consB.
                              */
                             vec_set_const_pFormula originsA = vec_set_const_pFormula();
-                            getOrigins( passedFormulaAt( posConsA ), originsA );
+                            getOrigins( *subformulaA, originsA );
                             vec_set_const_pFormula originsB = vec_set_const_pFormula();
-                            getOrigins( passedFormulaAt( posConsB ), originsB );
+                            getOrigins( *subformulaB, originsB );
 
                             vec_set_const_pFormula originsAB = merge( originsA, originsB );
 
-                            setOrigins( posConsB, originsAB );
-                            redundantFormulaSet.insert( passedFormulaAt( posConsA ) );
+                            setOrigins( *subformulaB, originsAB );
+                            redundantFormulaSet.insert( *subformulaA );
                             break;
                         }
                         case -2:
                         {
-                            redundantFormulaSet.erase( passedFormulaAt( posConsA ) );
-                            redundantFormulaSet.erase( passedFormulaAt( posConsB ) );
+                            redundantFormulaSet.erase( *subformulaA );
+                            redundantFormulaSet.erase( *subformulaB );
 
                             /*
                              * If it is easy to decide that consA and consB are conflicting.
                              */
 
                             vec_set_const_pFormula originsA = vec_set_const_pFormula();
-                            getOrigins( passedFormulaAt( posConsA ), originsA );
+                            getOrigins( *subformulaA, originsA );
                             vec_set_const_pFormula originsB = vec_set_const_pFormula();
-                            getOrigins( passedFormulaAt( posConsB ), originsB );
+                            getOrigins( *subformulaB, originsB );
 
                             vec_set_const_pFormula originsAB = merge( originsA, originsB );
                             for( vec_set_const_pFormula::iterator setIter = originsAB.begin(); setIter != originsAB.end(); ++setIter )
@@ -289,19 +304,19 @@ namespace smtrat
                              * the solution spaces of consA and consB.
                              */
                             Constraint_Relation rel = CR_EQ;
-                            if( (constraintA.relation() == CR_GEQ && constraintB.relation() == CR_GEQ)
-                                    || (constraintA.relation() == CR_GEQ && constraintB.relation() == CR_LEQ)
-                                    || (constraintA.relation() == CR_LEQ && constraintB.relation() == CR_GEQ)
-                                    || (constraintA.relation() == CR_LEQ && constraintB.relation() == CR_LEQ) )
+                            if( (constraintA->relation() == CR_GEQ && constraintB->relation() == CR_GEQ)
+                                    || (constraintA->relation() == CR_GEQ && constraintB->relation() == CR_LEQ)
+                                    || (constraintA->relation() == CR_LEQ && constraintB->relation() == CR_GEQ)
+                                    || (constraintA->relation() == CR_LEQ && constraintB->relation() == CR_LEQ) )
                             {
                             }
-                            else if( (constraintA.relation() == CR_NEQ && constraintB.relation() == CR_GEQ)
-                                     || (constraintA.relation() == CR_GEQ && constraintB.relation() == CR_NEQ) )
+                            else if( (constraintA->relation() == CR_NEQ && constraintB->relation() == CR_GEQ)
+                                     || (constraintA->relation() == CR_GEQ && constraintB->relation() == CR_NEQ) )
                             {
                                 rel = CR_GREATER;
                             }
-                            else if( (constraintA.relation() == CR_NEQ && constraintB.relation() == CR_LEQ)
-                                     || (constraintA.relation() == CR_LEQ && constraintB.relation() == CR_NEQ) )
+                            else if( (constraintA->relation() == CR_NEQ && constraintB->relation() == CR_LEQ)
+                                     || (constraintA->relation() == CR_LEQ && constraintB->relation() == CR_NEQ) )
                             {
                                 rel = CR_LESS;
                             }
@@ -311,18 +326,18 @@ namespace smtrat
                             }
 
                             vec_set_const_pFormula originsA = vec_set_const_pFormula();
-                            getOrigins( passedFormulaAt( posConsA ), originsA );
+                            getOrigins( *subformulaA, originsA );
                             vec_set_const_pFormula originsB = vec_set_const_pFormula();
-                            getOrigins( passedFormulaAt( posConsB ), originsB );
+                            getOrigins( *subformulaB, originsB );
 
                             vec_set_const_pFormula originsAB = merge( originsA, originsB );
-                            addSubformulaToPassedFormula( new Formula( Formula::newConstraint( constraintB.lhs(), rel ) ), originsAB );
+                            addSubformulaToPassedFormula( new Formula( Formula::newConstraint( constraintB->lhs(), rel ) ), originsAB );
 
                             /*
                              * Remove condA from the set of redundant constraints, if it is insight.
                              */
-                            redundantFormulaSet.insert( passedFormulaAt( posConsA ) );
-                            redundantFormulaSet.insert( passedFormulaAt( posConsB ) );
+                            redundantFormulaSet.insert( *subformulaA );
+                            redundantFormulaSet.insert( *subformulaB );
                             break;
                         }
                         default:
@@ -330,16 +345,16 @@ namespace smtrat
                             assert( false );
                         }
                     }
-                    ++posConsB;
+                    ++subformulaB;
                 }
-                ++posConsA;
+                ++subformulaA;
             }
 
             /*
              * Delete the redundant constraints of the vector of constraints to simplify.
              */
-            Formula::const_iterator passedSubformula = passedFormulaBegin();
-            while( passedSubformula != passedFormulaEnd() )
+            Formula::const_iterator passedSubformula = mpPassedFormula->begin();
+            while( passedSubformula != mpPassedFormula->end() )
             {
                 if( redundantFormulaSet.find( *passedSubformula ) != redundantFormulaSet.end() )
                 {
