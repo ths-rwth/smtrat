@@ -125,13 +125,23 @@ namespace smtrat
 			if( !mBasis.isConstant() && !mBasis.getGbIdeal().isLinear())  
             {
                 // Lets search for a witness. We only have to do this if the gb is non-constant.
-                // Better, we change this to the variables in the gb.
-				unsigned vars = mVariablesInEqualities.size();
+				
+				std::set<unsigned> variables;
+				std::set<unsigned> superfluous = mBasis.getGbIdeal().getSuperfluousVariables();
+				//std::cout << "nr of sup variables: " << superfluous.size();
+				std::set_difference(mVariablesInEqualities.begin(), mVariablesInEqualities.end(),
+						superfluous.begin(),  superfluous.end(),
+						std::inserter( variables, variables.end() ));
+
+						
+				//std::cout << "reduced nr variables from " << mVariablesInEqualities.size() << " to " << variables.size() << std::endl;
+				unsigned vars = variables.size();
                 // We currently only try with a low nr of variables.
                 if( vars < Settings::SDPupperBoundNrVariables )
                 {
 					std::cout << "Run SDP" << std::endl;
-                    GroebnerToSDP<Settings::Order> sdp( mBasis.getGbIdeal(), MonomialIterator( mVariablesInEqualities, Settings::maxSDPdegree ) );
+					
+                    GroebnerToSDP<Settings::Order> sdp( mBasis.getGbIdeal(), MonomialIterator( variables, Settings::maxSDPdegree ) );
                     witness = sdp.findWitness();
 				}
             }

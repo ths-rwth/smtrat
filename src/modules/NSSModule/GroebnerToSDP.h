@@ -82,20 +82,20 @@ namespace smtrat
 
 					i++;
 					if(i % 8 == 0 || !mMonomialIterator.hasNext() )  {
-						std::cout << "nr of constraints" << constraintMatrixFactory.exportMatrices().size() << std::endl;
+					//	std::cout << "nr of constraints" << constraintMatrixFactory.exportMatrices().size() << std::endl;
 						CSDPFacade csdp = CSDPFacade( monoms.size(), constraintMatrixFactory.exportMatrices() );
 						result          = csdp.callRoutine( solution );
-						std::cout << "end of call" << std::endl;
+					//	std::cout << "end of call" << std::endl;
 					}
                 }
                 while( result != 0 && mMonomialIterator.hasNext() );
-                unsigned blaa = pow( constraintMatrixFactory.getProblemSize(), 2 );
+                unsigned problemSizeSquared = pow( constraintMatrixFactory.getProblemSize(), 2 );
                
 				if(result != 0 ) {
 					return MultivariatePolynomialMR<Order>();
 				}
-				std::cout << blaa << std::endl;
-                for( unsigned i = 0; i < blaa; ++i )
+				
+                for( unsigned i = 0; i < problemSizeSquared; ++i )
                 {
                     //if((*solution)[i] > 0.001) {
                     std::cout << (*solution)[i] << " ";

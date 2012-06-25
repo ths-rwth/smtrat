@@ -23,7 +23,7 @@ namespace smtrat {
 	
 	
 	struct GBSettings {
-		typedef GiNaCRA::GrRevLex Order;
+		typedef GiNaCRA::GradedLexicgraphic Order;
 		typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
 		typedef GiNaCRA::MultivariateIdeal<Order> MultivariateIdeal;
 		typedef GiNaCRA::BaseReductor<Order> Reductor;
@@ -36,8 +36,8 @@ namespace smtrat {
 		static const bool checkInequalitiesForTrivialSumOfSquares = true;
 		static const bool checkEqualitiesForTrivialSumOfSquares = true;
 
-		static const unsigned maxSDPdegree = 6;
-		static const unsigned SDPupperBoundNrVariables = 3;
+		static const unsigned maxSDPdegree = 4;
+		static const unsigned SDPupperBoundNrVariables = 6;
 	};
 }
 
