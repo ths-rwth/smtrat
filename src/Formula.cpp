@@ -42,90 +42,77 @@ namespace smtrat
     const string Formula::mAuxiliaryRealNamePrefix = string( "h_r_" );
     unsigned Formula::mAuxiliaryRealCounter = 0;
 
-    Formula::Formula()
+    Formula::Formula() :
+        mActivity( 0 ),
+        mType( TTRUE ),
+        mRealValuedVars(),
+        mpSubformulas( NULL ),
+        mpFather( NULL ),
+        mPropositions(),
+        mPropositionsUptodate( false )
     {
-       	mType 			= TTRUE;
-       	mRealValuedVars = GiNaC::symtab();
-        mPropositions 	= Condition();
-        mPropositionsUptodate = false;
-        mpFather		= NULL;
-    	updateID();
     }
 
-    Formula::Formula( const Type _type )
+    Formula::Formula( const Type _type ) :
+        mActivity( 0 ),
+        mType( _type ),
+        mRealValuedVars(),
+        mpSubformulas( (_type != TTRUE && _type != FFALSE) ? new list< Formula* >() : NULL ),
+        mpFather( NULL ),
+        mPropositions(),
+        mPropositionsUptodate( false )
     {
-       	mType 			= _type;
-        if( _type != TTRUE && _type != FFALSE )
-        {
-        	mpSubformulas = new list< Formula* >();
-        }
-        else if( _type == TTRUE )
-        {
-		   	mType = TTRUE;
-        }
-        else
-        {
-		   	mType = FFALSE;
-        }
-        mPropositions 	= Condition();
-        mPropositionsUptodate = false;
-       	mpFather		= NULL;
         assert( _type != REALCONSTRAINT && _type!=BOOL );
-       	mRealValuedVars = GiNaC::symtab();
-    	updateID();
     }
 
-    Formula::Formula( const string& _id )
-    {
-        mType 			= BOOL;
-        mpIdentifier 	= new string( _id );
-       	mpFather		= NULL;
-       	mRealValuedVars = GiNaC::symtab();
-        mPropositions 	= Condition();
-        mPropositionsUptodate = false;
-    	updateID();
-    }
+    Formula::Formula( const string& _id ) :
+        mActivity( 0 ),
+        mType( BOOL ),
+        mRealValuedVars(),
+        mpIdentifier( new string( _id ) ),
+        mpFather( NULL ),
+        mPropositions(),
+        mPropositionsUptodate( false )
+    {}
 
-    Formula::Formula( const Constraint* _constraint )
-    {
-       	mType 			= REALCONSTRAINT;
-       	mpFather		= NULL;
-        mpConstraint 	= _constraint;
-       	mRealValuedVars = GiNaC::symtab();
-       	mRealValuedVars.insert( _constraint->variables().begin(), _constraint->variables().end() );
-        mPropositions 	= Condition();
-        mPropositionsUptodate = false;
-    	updateID();
-    }
+    Formula::Formula( const Constraint* _constraint ) :
+        mActivity( 0 ),
+        mType( REALCONSTRAINT ),
+        mRealValuedVars( _constraint->variables() ),
+        mpConstraint( _constraint ),
+        mpFather( NULL ),
+        mPropositions(),
+        mPropositionsUptodate( false )
+    {}
 
-    Formula::Formula( const Formula& _formula )
+    Formula::Formula( const Formula& _formula ) :
+        mActivity( 0 ),
+        mType( _formula.getType() ),
+        mRealValuedVars( _formula.realValuedVars() ),
+        mpFather( NULL ),
+        mPropositions(),
+        mPropositionsUptodate( false )
     {
-		if(&_formula != this) {
-			mType 		= _formula.getType();
-			mpFather	= NULL;
-			if( _formula.getType() == REALCONSTRAINT )
-			{
-				mpConstraint = _formula.pConstraint();
-			}
-			else if( _formula.getType() != BOOL &&  _formula.getType() != TTRUE &&  _formula.getType() != FFALSE )
-			{
-				mpSubformulas = new list< Formula* >();
-				for( const_iterator subFormula = _formula.subformulas().begin();
-					subFormula != _formula.subformulas().end();
-					++subFormula )
-				{
-					addSubformula( new Formula( **subFormula ) );
-				}
-			}
-			else if( _formula.getType() == BOOL )
-			{
-				mpIdentifier = new string( _formula.identifier() );
-			}
-			mRealValuedVars = GiNaC::symtab( _formula.realValuedVars() );
-			mPropositions 	= Condition();
-			mPropositionsUptodate = false;
-			updateID();
-		}
+		assert( &_formula != this );
+
+        if( _formula.getType() == REALCONSTRAINT )
+        {
+            mpConstraint = _formula.pConstraint();
+        }
+        else if( isBooleanCombination() )
+        {
+            mpSubformulas = new list< Formula* >();
+            for( const_iterator subFormula = _formula.subformulas().begin();
+                subFormula != _formula.subformulas().end();
+                ++subFormula )
+            {
+                addSubformula( new Formula( **subFormula ) );
+            }
+        }
+        else if( _formula.getType() == BOOL )
+        {
+            mpIdentifier = new string( _formula.identifier() );
+        }
     }
 
     Formula::~Formula()
@@ -267,41 +254,10 @@ namespace smtrat
         return mPropositions;
     }
 
-	unsigned Formula::getMaxID() const
-	{
-		if( mType == BOOL || mType == REALCONSTRAINT || mType == TTRUE || mType == FFALSE )
-		{
-			return mId;
-		}
-		else
-		{
-			if( mpSubformulas->empty() )
-			{
-				return mId;
-			}
-			else
-			{
-				return mpSubformulas->back()->getMaxID();
-			}
-		}
-	}
-
 	void Formula::setFather( Formula* _father )
 	{
 		assert( mpFather == NULL );
 		mpFather = _father;
-	}
-
-	void Formula::updateID()
-	{
-    	if( mpFather != NULL )
-    	{
-        	mId	= mpFather->getMaxID() + 1;
-        }
-        else
-        {
-        	mId = 1;
-        }
 	}
 
 	void Formula::addSubformula( Formula* _formula )
@@ -319,7 +275,6 @@ namespace smtrat
 		 * Add the formula.
 		 */
 		mpSubformulas->push_back( _formula );
-    	_formula->updateID();
 
         //Adapt the conditions, if they are up to date. (In this case very cheap)
         if( mPropositionsUptodate )
@@ -393,50 +348,54 @@ namespace smtrat
     void Formula::erase( unsigned _position )
 	{
 		assert( isBooleanCombination() );
-		assert( _position < mpSubformulas->size() );
-		std::list< Formula* >::iterator subFormula = mpSubformulas->begin();
+		assert( _position < size() );
+		iterator subFormula = begin();
 		unsigned pos = 0;
-		while( subFormula != mpSubformulas->end() )
+		while( subFormula != end() )
 		{
 			if( pos == _position )
 			{
-				Formula* pSubFormula = *subFormula;
-				mpSubformulas->erase( subFormula );
-				delete pSubFormula;
-                mPropositionsUptodate = false;
                 break;
 			}
             ++subFormula;
 			++pos;
 		}
+        erase( subFormula );
 	}
 
 	void Formula::erase( const Formula* _formula )
 	{
-		assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
-		std::list< Formula* >::iterator subFormula = mpSubformulas->begin();
-		while( subFormula != mpSubformulas->end() )
+		assert( isBooleanCombination() );
+		iterator subFormula = begin();
+		while( subFormula != end() )
 		{
 			if( *subFormula == _formula )
 			{
-				Formula* pSubFormula = *subFormula;
-				mpSubformulas->erase( subFormula );
-				delete pSubFormula;
-                mPropositionsUptodate = false;
                 break;
 			}
             ++subFormula;
 		}
-        assert( false );
+        erase( subFormula );
+	}
+
+	Formula::iterator Formula::erase( Formula::iterator _subformula )
+	{
+		assert( isBooleanCombination() );
+        assert( _subformula != end() );
+        Formula* pSubFormula = *_subformula;
+        iterator result = erase( _subformula );
+        delete pSubFormula;
+        mPropositionsUptodate = false;
+        return result;
 	}
 
 	Formula* Formula::pruneBack()
 	{
 		assert( isBooleanCombination() );
-        assert( !mpSubformulas->empty() );
-        Formula* result = mpSubformulas->back();
+        assert( !empty() );
+        Formula* result = back();
 		result->resetFather();
-		mpSubformulas->pop_back();
+		pop_back();
         mPropositionsUptodate = false;
         return result;
 	}
@@ -444,15 +403,15 @@ namespace smtrat
     Formula* Formula::prune( unsigned _position )
 	{
 		assert( isBooleanCombination() );
-		assert( _position < mpSubformulas->size() );
-		std::list< Formula* >::iterator subFormula = mpSubformulas->begin();
+		assert( _position < size() );
+		iterator subFormula = begin();
 		unsigned pos = 0;
-		while( subFormula != mpSubformulas->end() )
+		while( subFormula != end() )
 		{
 			if( pos == _position )
 			{
 				Formula* pSubFormula = *subFormula;
-				mpSubformulas->erase( subFormula );
+				erase( subFormula );
                 mPropositionsUptodate = false;
 				return pSubFormula;
                 break;
@@ -463,13 +422,21 @@ namespace smtrat
         return NULL;
 	}
 
+    Formula::iterator Formula::prune( Formula::iterator _subformula )
+	{
+		assert( isBooleanCombination() );
+        assert(_subformula != end() );
+        mPropositionsUptodate = false;
+        return mpSubformulas->erase( _subformula );
+	}
+
 	void Formula::clear()
 	{
 		assert( isBooleanCombination() );
-		while( !mpSubformulas->empty() )
+		while( !empty() )
 		{
-			Formula* pSubForm = mpSubformulas->back();
-			mpSubformulas->pop_back();
+			Formula* pSubForm = back();
+			pop_back();
 			delete pSubForm;
 		}
         mPropositionsUptodate = false;

@@ -40,32 +40,21 @@ using namespace std;
 namespace smtrat
 {
     Module::Module( Manager* const _tsManager, const Formula* const _formula ):
-        mBackTrackPoints( vector< unsigned >() ),
-        mLastBacktrackpointsEnd( -1 ),
-        mInfeasibleSubsets( vec_set_const_pFormula() ),
-        mpTSManager( _tsManager ),
+        mInfeasibleSubsets(),
+        mpManager( _tsManager ),
         mModuleType( MT_Module ),
-        mConstraintsToInform( fastConstraintSet() ),
-        mUsedBackends( vector<Module*>() ),
-        mAllBackends( vector<Module*>() ),
-        mBackendsUptodate( false ),
+        mConstraintsToInform(),
+        mUsedBackends(),
+        mAllBackends(),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),
-        mPassedFormulaOrigins( FormulaOrigins() ),
-        mDeductions( vector< TheoryDeduction >() )
+        mPassedFormulaOrigins(),
+        mDeductions(),
+        lastPassedSubformula( mpPassedFormula->begin() )
     {}
 
     Module::~Module()
-    {
-
-    }
-
-    bool Module::assertSubFormula( const Formula* const _formula )
-    {
-    	++mLastBacktrackpointsEnd;
-    	mBackendsUptodate = false;
-        return true;
-    }
+    {}
 
     /**
      * Checks the received formula for consistency.
@@ -83,28 +72,7 @@ namespace smtrat
 	        addReceivedSubformulaToPassedFormula( i );
 	    }
 
-/*
-cout << endl << "isConsistent of " << this << " having type " << type() << endl;
-print();
-*/
 		Answer a = runBackends();
-
-/*
-cout << "Result:   ";
-if( a == True )
-{
-	cout << "True" << endl;
-}
-else if( a == Unknown )
-{
-	cout << "Unknown" << endl;
-}
-else if( a == False )
-{
-	cout << "False" << endl;
-	printInfeasibleSubsets( cout, "          " );
-}
-*/
         if( a == False )
         {
             getInfeasibleSubsets();
@@ -113,25 +81,76 @@ else if( a == False )
     }
 
     /**
-     * Pops the last backtrackpoint, from the stack of backtrackpoints.
+     * Undoes everything related to the given sub formula in the received formula.
+     * Note, that this does not include the received formula itself, which is actually part of the instance which
+     * called this module.
+     *
+     * @param _formula	The sub formula of the received formula.
+     *
+     * @return The constraints occurring in sub formula at the given position in the received formula.
      */
-    void Module::popBacktrackPoint()
+    void Module::removeSubformula( Formula::const_iterator _formula )
     {
-//cout << "popBacktrackPoint start  " << this << " having type " << type() << endl;
-//printWithBackends();
-        assert( !mBackTrackPoints.empty() );
-
-    	signed btback = mBackTrackPoints.back();
-		while( mLastBacktrackpointsEnd >= btback )
-		{
-			assert( mLastBacktrackpointsEnd >= 0 );
-			removeAllOriginatedBy( mLastBacktrackpointsEnd );
-			--mLastBacktrackpointsEnd;
-		}
-
-	    mBackTrackPoints.pop_back();
-//cout << "popBacktrackPoint end  " << this << " having type " << type() << endl;
-//printWithBackends();
+        /*
+         * Check if the constraint to delete is an original constraint of constraints in the vector
+         * of passed constraints.
+         */
+        for( Formula::iterator subformula = mpPassedFormula->begin();
+                subformula != mpPassedFormula->end(); ++subformula )
+        {
+            /*
+             * Remove the received formula from the set of origins.
+             */
+            vec_set_const_pFormula& formulaOrigins = mPassedFormulaOrigins[*subformula];
+            vec_set_const_pFormula::iterator formulaOrigin = formulaOrigins.begin();
+            while( formulaOrigin != formulaOrigins.end() )
+            {
+                /*
+                 * If the received formula is in the set of origins, erase it.
+                 */
+                if( formulaOrigin->erase( *_formula ) != 0 )
+                {
+                    // Erase the changed set.
+                    formulaOrigin = formulaOrigins.erase( formulaOrigin );
+                }
+                else
+                {
+                    ++formulaOrigin;
+                }
+            }
+            if( formulaOrigins.empty() )
+            {
+                removeSubformulaFromPassedFormula( subformula++ );
+            }
+            else
+            {
+                ++subformula;
+            }
+        }
+        /*
+         * Delete all infeasible subsets in which the constraint to delete occurs.
+         */
+        vec_set_const_pFormula::iterator infSubSet = mInfeasibleSubsets.begin();
+        while( infSubSet != mInfeasibleSubsets.end() )
+        {
+            set< const Formula* >::iterator infSubformula = infSubSet->begin();
+            while( infSubformula != infSubSet->end() )
+            {
+                if( *infSubformula == *_formula )
+                {
+                    break;
+                }
+                ++infSubformula;
+            }
+            if( infSubformula != infSubSet->end() )
+            {
+                infSubSet = mInfeasibleSubsets.erase( infSubSet );
+            }
+            else
+            {
+                ++infSubSet;
+            }
+        }
     }
 
     /**
@@ -148,34 +167,12 @@ else if( a == False )
      *                  corresponding formula is not yet a member of the vector of passed
      *                  formulas;
      *          false,  otherwise.
-	 * 
+	 *
 	 * TODO efficiency after formula change..
      */
-    bool Module::addReceivedSubformulaToPassedFormula( unsigned _positionInReceivedFormula )
+    void Module::addReceivedSubformulaToPassedFormula( Formula::const_iterator _subformula )
     {
-        if( _positionInReceivedFormula < mpReceivedFormula->size() )
-        {
-    		assert( receivedFormulaSize() != UINT_MAX );
-			
-			unsigned posNr = 0;
-			Formula::const_iterator pos = mpReceivedFormula->begin();
-			while( posNr  < _positionInReceivedFormula  )  {
-				++pos;
-				++posNr;
-			}
-			assert(pos != mpReceivedFormula->end());
-            mpPassedFormula->addSubformula( new Formula( **pos ) );
-            set< const Formula* > originset = set< const Formula* >();
-            originset.insert( *pos );
-            mPassedFormulaOrigins.push_back( vec_set_const_pFormula( 1, originset ) );
-            assert( mpPassedFormula->size() == mPassedFormulaOrigins.size() );
-            mBackendsUptodate = false;
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        addReceivedSubformulaToPassedFormula( *_subformula );
     }
 
 	/**
@@ -189,11 +186,9 @@ else if( a == False )
      *                                      formulas.
      *
      */
-
 	void Module::addReceivedSubformulaToPassedFormula( const Formula* _subformula )
 	{
-		addSubformulaToPassedFormula(new Formula(*_subformula), _subformula);
-		assert( mpPassedFormula->size() == mPassedFormulaOrigins.size() );
+		addSubformulaToPassedFormula( new Formula( *_subformula ), _subformula );
 	}
 
     /**
@@ -206,7 +201,7 @@ else if( a == False )
      *                      of passed constraints in the vector of received
      *                      constraints.
      *
-     * @return  true,   if the vector of the received contraint contains the given position and the
+     * @return  true,   if the vector of the received constraint contains the given position and the
      *                  corresponding constraint is not yet a member of the vector of passed constraints;
      *          false,  otherwise.
      */
@@ -214,87 +209,96 @@ else if( a == False )
     {
     	assert( receivedFormulaSize() != UINT_MAX );
         mpPassedFormula->addSubformula( _formula );
-        mPassedFormulaOrigins.push_back( _origins );
-        assert( mpPassedFormula->size() == mPassedFormulaOrigins.size() );
-        mBackendsUptodate = false;
+        mPassedFormulaOrigins[_formula] = _origins;
     }
 
 	/**
-	 * Adds a formula to the passed subformula, with only one origin
-     * @param _formula The new passed subformula
-	 * @param _origin A pointer to the original (received) subformula.
+	 * Adds a formula to the passed sub formula, with only one origin
+     * @param _formula The new passed sub formula
+	 * @param _origin A pointer to the original (received) sub formula.
      */
 	void Module::addSubformulaToPassedFormula( Formula* _formula, const Formula* _origin )
 	{
 		assert( receivedFormulaSize() != UINT_MAX );
-		mpPassedFormula->addSubformula(_formula);
+		mpPassedFormula->addSubformula( _formula );
 		vec_set_const_pFormula originals;
         originals.push_back( set<const Formula*>() );
 		originals.front().insert( _origin );
-		mPassedFormulaOrigins.push_back(originals);
-		assert(mpPassedFormula->size() == mPassedFormulaOrigins.size() );
-		mBackendsUptodate = false;
+		mPassedFormulaOrigins[_formula] = originals;
 	}
 
-    unsigned Module::getPositionOfReceivedFormula( const Formula* const _formula ) const
+    /**
+     *
+     * @param _formula
+     * @return
+     */
+    Formula::const_iterator Module::getPositionOfReceivedFormula( const Formula* const _formula ) const
     {
     	/*
     	 * Find the position of the subFormula to remove in the passed formula.
     	 */
-    	unsigned posOfSubformula = 0;
-        Formula::const_iterator subFormula = receivedFormulaBegin();
-       	while( subFormula != receivedFormulaEnd() )
+        Formula::const_iterator subFormula = mpReceivedFormula->begin();
+       	while( subFormula != mpReceivedFormula->end() )
        	{
        		if( _formula == *subFormula )
        		{
        			break;
        		}
-       		++posOfSubformula;
        		++subFormula;
        	}
-       	return posOfSubformula;
+       	return subFormula;
     }
 
-    unsigned Module::getPositionOfPassedFormula( const Formula* const _formula ) const
+    /**
+     *
+     * @param _formula
+     * @return
+     */
+    Formula::iterator Module::getPositionOfPassedFormula( const Formula* const _formula )
     {
     	/*
     	 * Find the position of the subFormula to remove in the passed formula.
     	 */
-    	unsigned posOfSubformula = 0;
-        Formula::const_iterator subFormula = passedFormulaBegin();
-       	while( subFormula != passedFormulaEnd() )
+        Formula::iterator subFormula = mpPassedFormula->begin();
+       	while( subFormula != mpPassedFormula->end() )
        	{
        		if( _formula == *subFormula )
        		{
-       			break;
+                break;
        		}
-       		++posOfSubformula;
        		++subFormula;
        	}
-       	return posOfSubformula;
+       	return subFormula;
     }
 
-    void Module::setOrigins( unsigned _pos, vec_set_const_pFormula& _origins )
+    /**
+     *
+     * @param _pos
+     * @param _origins
+     */
+    void Module::setOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins )
     {
-    	assert( _pos < mPassedFormulaOrigins.size() );
-
-        mPassedFormulaOrigins.at( _pos ) = _origins;
+        mPassedFormulaOrigins[_formula] = _origins;
     }
 
-
-	const std::set<const Formula*>& Module::getOrigins( unsigned posOfPassedFormula ) const
+    /**
+     *
+     * @param _subformula
+     * @return
+     */
+	const std::set<const Formula*>& Module::getOrigins( Formula::const_iterator _subformula ) const
 	{
-		assert( posOfPassedFormula < passedFormulaSize() );
-		vec_set_const_pFormula _origins = mPassedFormulaOrigins.at( posOfPassedFormula );
-		assert(_origins.size() == 1);
-		return _origins.front();
+		FormulaOrigins::const_iterator origins = mPassedFormulaOrigins.find( *_subformula );
+        assert( origins != mPassedFormulaOrigins.end() );
+		assert( origins->second.size() == 1 );
+		return origins->second.front();
 	}
 
     /**
      * Gets the original constraints of _constraint, which are in the vector of the received constraints, of
      * the given constraint, which is in the vector of the passed constraints.
      *
-     * Note, that in a set of a original constraints all constraints together created the contraint
+     * Note, that in a set of a original constraints all constraints together created the constraint
      * and in two sets, both are responsible for, respectively.
      *
      * @param   _constraint The constraint to which sets of original constraints are added.
@@ -303,12 +307,11 @@ else if( a == False )
      * @return  true,   if original constraints for this constraint exist;
      *          false,  otherwise.
      */
-    void Module::getOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins ) const
+    void Module::getOrigins( const Formula* const _subformula, vec_set_const_pFormula& _origins ) const
     {
-    	unsigned posOfPassedFormula = getPositionOfPassedFormula( _formula );
-        if( posOfPassedFormula >= passedFormulaSize() ) print();
-    	assert( posOfPassedFormula < passedFormulaSize() );
-        _origins = mPassedFormulaOrigins.at( posOfPassedFormula );
+		FormulaOrigins::const_iterator origins = mPassedFormulaOrigins.find( _subformula );
+        assert( origins != mPassedFormulaOrigins.end() );
+        _origins = origins->second;
     }
 
     /**
@@ -357,8 +360,8 @@ else if( a == False )
      */
     void Module::getInfeasibleSubsets()
     {
-        vector<Module*>::const_iterator backend = usedBackends().begin();
-        while( backend != usedBackends().end() )
+        vector<Module*>::const_iterator backend = mUsedBackends.begin();
+        while( backend != mUsedBackends.end() )
         {
             if( !(*backend)->rInfeasibleSubsets().empty() )
             {
@@ -370,8 +373,8 @@ else if( a == False )
 
     /**
      * Get the infeasible subsets the given backend provides. Note, that an infeasible subset
-     * in a backend contains subformulas of the passed formula and an infeasible subset of
-     * this module contains subformulas of the received formula. In this method the LATTER is
+     * in a backend contains sub formulas of the passed formula and an infeasible subset of
+     * this module contains sub formulas of the received formula. In this method the LATTER is
      * returned.
      *
      * @param _backend  The backend from which to obtain the infeasible subsets.
@@ -438,16 +441,29 @@ else if( a == False )
     {
         passedFormulaCannotBeSolved();
 
-	    updateBackends();
+        mUsedBackends = mpManager->getBackends( mpPassedFormula, this );
+
+        if( lastPassedSubformula != mpPassedFormula->end() )
+        {
+            ++lastPassedSubformula;
+            for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+            {
+                for( Formula::const_iterator subformula = lastPassedSubformula;
+                     subformula != mpPassedFormula->end(); ++subformula )
+                {
+                    (*module)->assertSubformula( subformula );
+                }
+            }
+        }
         /*
          * Run the backend solver sequentially until the first answers true or false.
          */
-        vector< Module* >::iterator tsmodule = mUsedBackends.begin();
-        while( tsmodule != mUsedBackends.end() )
+        for( vector< Module* >::iterator module = mUsedBackends.begin();
+             module != mUsedBackends.end(); ++module )
         {
             #ifdef MODULE_VERBOSE
             string moduleName = "";
-            switch( (**tsmodule).type() )
+            switch( (**module).type() )
             {
             case MT_SimplifierModule:
                 moduleName = "Simplifier";
@@ -470,7 +486,7 @@ else if( a == False )
             cout << endl << "Call to module " << moduleName << endl;
             (**tsmodule).print( cout, " ");
             #endif
-            Answer result = (**tsmodule).isConsistent();
+            Answer result = (**module).isConsistent();
             switch( result )
             {
 		        case True:
@@ -484,7 +500,7 @@ else if( a == False )
 		        {
                     #ifdef MODULE_VERBOSE
                     cout << "Result:   False" << endl;
-                    (**tsmodule).printInfeasibleSubsets( cout, "          " );
+                    (**module).printInfeasibleSubsets( cout, "          " );
                     #endif
 		            return False;
 		        }
@@ -501,7 +517,6 @@ else if( a == False )
 		            return Unknown;
 		        }
             }
-            ++tsmodule;
         }
         return Unknown;
     }
@@ -527,42 +542,20 @@ else if( a == False )
      * @return  true,   if _constraint is a member of the vector of passed constraints;
      *          false,  otherwise.
      */
-    void Module::removeSubformulaFromPassedFormula( unsigned _positionOfPassedFormula )
+    Formula::iterator Module::removeSubformulaFromPassedFormula( Formula::iterator _subformula )
     {
-       	assert( _positionOfPassedFormula < mpPassedFormula->size() );
-    	/*
-    	 * Find the position of the subFormula to remove in the passed formula.
-    	 */
-    	signed posOfSubformulaAsSigned = _positionOfPassedFormula;
-
-        if( !mAllBackends.empty() )
-        {
-            /*
-             * Pop all backend's backtrackpoints as long as the subformula is considered by them.
-             */
-            for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
-            {
-            	while( (*module)->lastBacktrackpointsEnd() >= posOfSubformulaAsSigned )
-				{
-                	(**module).popBacktrackPoint();
-                }
-            }
-        }
+       	assert( _subformula != mpPassedFormula->end() );
 
         /*
-         * Delete the constraint from the passed constraints.
+         * Delete the sub formula from the passed formula.
          */
-    	FormulaOrigins::iterator formulaOrigin = mPassedFormulaOrigins.begin();
-    	unsigned pos = 0;
-    	while( pos < _positionOfPassedFormula )
-    	{
-    		assert( formulaOrigin != mPassedFormulaOrigins.end() );
-    		++pos;
-    		++formulaOrigin;
-    	}
-		mPassedFormulaOrigins.erase( formulaOrigin );
-        mpPassedFormula->erase( _positionOfPassedFormula );
-        mBackendsUptodate = false;
+        mAllBackends = mpManager->getAllBackends( this );
+        for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+        {
+            (*module)->removeSubformula( _subformula );
+        }
+		mPassedFormulaOrigins.erase( *_subformula );
+        return mpPassedFormula->erase( _subformula );
     }
 
     /**
@@ -586,211 +579,51 @@ else if( a == False )
      * @return  true,   if _constraint is a member of the vector of passed constraints;
      *          false,  otherwise.
      */
-    Formula* Module::pruneSubformulaFromPassedFormula( unsigned _positionOfPassedFormula )
+    Formula* Module::pruneSubformulaFromPassedFormula( unsigned _posOfSubformula )
     {
-       	assert( _positionOfPassedFormula < mpPassedFormula->size() );
-    	/*
-    	 * Find the position of the subFormula to remove in the passed formula.
-    	 */
-    	signed posOfSubformulaAsSigned = _positionOfPassedFormula;
-
-        if( !mAllBackends.empty() )
-        {
-            /*
-             * Pop all backend's backtrackpoints as long as the subformula is considered by them.
-             */
-            for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
-            {
-            	while( (*module)->lastBacktrackpointsEnd() >= posOfSubformulaAsSigned )
-				{
-                	(**module).popBacktrackPoint();
-                }
-            }
-        }
+       	assert( _posOfSubformula < mpPassedFormula->size() );
 
         /*
-         * Delete the constraint from the passed constraints.
+         * Delete the sub formula from the passed formula.
          */
-    	FormulaOrigins::iterator formulaOrigin = mPassedFormulaOrigins.begin();
-    	unsigned pos = 0;
-    	while( pos < _positionOfPassedFormula )
-    	{
-    		assert( formulaOrigin != mPassedFormulaOrigins.end() );
-    		++pos;
-    		++formulaOrigin;
-    	}
-		mPassedFormulaOrigins.erase( formulaOrigin );
-        mBackendsUptodate = false;
-        return mpPassedFormula->prune( _positionOfPassedFormula );
-    }
-
-    /**
-     * Pushes a backtrackpoint to the stack of backtrackpoints for the backends, if backends exist.
-     *
-     */
-    void Module::updateBackends()
-    {
-/*
-cout << "updateBackends start " << this << " having type " << type() << endl;
-printWithBackends();
-*/
-        mUsedBackends = mpTSManager->getBackends( mpPassedFormula, this );
-        mAllBackends = mpTSManager->getAllBackends( this );
-
-        if( !mBackendsUptodate )
+        unsigned pos = 0;
+        Formula::iterator subformula = mpPassedFormula->begin();
+        while( pos <= _posOfSubformula )
         {
-        	mBackendsUptodate = true;
-			    /*
-			     * Add all subformulas to the backends after the last one asserted.
-			     */
-			    for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
-			    {
-			    	(*module)->pushBacktrackPoint();
-
-			    	signed pos = 0;
-			    	for( Formula::const_iterator iter = passedFormulaBegin(); iter != passedFormulaEnd(); ++iter )
-			    	{
-			    		if( pos > (*module)->lastBacktrackpointsEnd() )
-			    		{
-			    			(*module)->assertSubFormula( *iter );
-			    		}
-			    		++pos;
-			    	}
-		        }
-		    }
-/*
-cout << "updateBackends end " << this << " having type " << type() << endl;
-printWithBackends();
-*/
+            ++subformula;
+            ++pos;
+        }
+        Formula* result = *subformula;
+        pruneSubformulaFromPassedFormula( subformula );
+        return result;
     }
 
     /**
-     * Undoes everything related to the subformula at the given position in the received formula.
-     * Note, that this does not include the received formula itself, which is actually part of the instance which
-     * called this module.
+     * Removes a constraint from the vector of passed constraints.
      *
-     * @param	_position	The position of the subformula in the received formula.
+     * @param _pos The position of the constraint to remove from the vector of passed constraints.
      *
-     * @return The constraints occuring in subformula at the given position in the received formula.
+     * @return  true,   if _constraint is a member of the vector of passed constraints;
+     *          false,  otherwise.
      */
-    void Module::removeAllOriginatedBy( unsigned _position )
+    Formula::iterator Module::pruneSubformulaFromPassedFormula( Formula::iterator _subformula )
     {
-    	assert( _position < receivedFormulaSize() );
-    	removeAllOriginatedBy( receivedFormulaAt( _position ) );
-    }
+       	assert( _subformula != mpPassedFormula->end() );
 
-    /**
-     * Undoes everything related to the given subformula in the received formula.
-     * Note, that this does not include the received formula itself, which is actually part of the instance which
-     * called this module.
-     *
-     * @param	_formula	The subformula of the received formula.
-     *
-     * @return The constraints occuring in subformula at the given position in the received formula.
-     */
-    void Module::removeAllOriginatedBy( const Formula* const _formula )
-    {
-	//cout << "removeAllOriginatedBy ";
-	//_formula->print();
-	//cout << "(" << _formula << ")   start  " << this << " having type " << type() << endl;
-	//print();
-	//printWithBackends();
-    	if( _formula->getType() == REALCONSTRAINT )
-    	{
-			/*
-			 * Check if the constraint to delete is an original constraint of constraints in the vector
-			 * of passed constraints.
-			 */
-			unsigned posOfPassedFormula = 0;
-			while( posOfPassedFormula < mPassedFormulaOrigins.size() )
-			{
-			    /*
-			     * Remove the received formula from the set of origins.
-			     */
-			    vec_set_const_pFormula& formulaOrigins = mPassedFormulaOrigins.at( posOfPassedFormula );
-			    vec_set_const_pFormula::iterator formulaOrigin = formulaOrigins.begin();
-			    while( formulaOrigin != mPassedFormulaOrigins.at( posOfPassedFormula ).end() )
-			    {
-			        /*
-			         * If the received formula is in the set of origins, erase it.
-			         */
-			        if( formulaOrigin->erase( _formula ) != 0 )
-			        {
-			            /*
-			             * Erase the changed set and if it is the last one, add the remaining
-			             * formulas in it to the passed formula.
-			             */
-/*
-			            if( mPassedFormulaOrigins.at( posOfPassedFormula ).size() == 1 )
-			            {
-			                for( set< const Formula* >::const_iterator receivedFormula = formulaOrigin->begin();
-			                	 receivedFormula != formulaOrigin->end();
-			                	 ++receivedFormula )
-			                {
-								addReceivedSubformulaToPassedFormula( getPositionOfReceivedFormula( *receivedFormula ) );
-			                }
-			            }
-*/
-						formulaOrigin = mPassedFormulaOrigins.at( posOfPassedFormula ).erase( formulaOrigin );
-			        }
-			        else
-			        {
-			            ++formulaOrigin;
-			        }
-			    }
-			    if( mPassedFormulaOrigins.at( posOfPassedFormula ).empty() )
-			    {
-					removeSubformulaFromPassedFormula( posOfPassedFormula );
-			    }
-			    else
-			    {
-			        ++posOfPassedFormula;
-			    }
-			}
-
-			/*
-			 * Delete all infeasible subsets in which the constraint to delete occurs.
-			 */
-			vec_set_const_pFormula::iterator infSubSet = mInfeasibleSubsets.begin();
-			while( infSubSet != mInfeasibleSubsets.end() )
-			{
-			    set< const Formula* >::iterator infSubformula = infSubSet->begin();
-			    while( infSubformula != infSubSet->end() )
-			    {
-			        if( *infSubformula == _formula )
-			        {
-			            break;
-			        }
-			        ++infSubformula;
-			    }
-			    if( infSubformula != infSubSet->end() )
-			    {
-			        infSubSet = mInfeasibleSubsets.erase( infSubSet );
-			    }
-			    else
-			    {
-			        ++infSubSet;
-			    }
-			}
-		}
-    	else if( _formula->getType() != BOOL && _formula->getType() != TTRUE && _formula->getType() != FFALSE )
-    	{
-    		for( Formula::const_iterator subFormula = _formula->begin();
-    			 subFormula != _formula->end();
-    			 ++subFormula )
-    		{
-    			removeAllOriginatedBy( *subFormula );
-    		}
-    	}
-//cout << "removeAllOriginatedBy ";
-//_formula->print();
-//cout << "(" << _formula << ")   end  " << this << " having type " << type() << endl;
-//printWithBackends();
+        /*
+         * Delete the sub formula from the passed formula.
+         */
+        mAllBackends = mpManager->getAllBackends( this );
+        for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+        {
+            (*module)->removeSubformula( _subformula );
+        }
+		mPassedFormulaOrigins.erase( *_subformula );
+        return mpPassedFormula->prune( _subformula );
     }
 
     void Module::updateDeductions()
     {
-        map< const Constraint* const, string > constraintAuxvarMap = map< const Constraint* const, string >();
         for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
         {
             for( vector<TheoryDeduction>::const_iterator deduction = (*module)->deductions().begin();
@@ -803,16 +636,16 @@ printWithBackends();
                 vec_set_const_pFormula deductionsToAdd = vec_set_const_pFormula();
                 deductionsToAdd.push_back( set< const Formula* >() );
 
-                for( unsigned pos = 0; pos < mPassedFormulaOrigins.size(); ++pos )
+                for( FormulaOrigins::const_iterator origins = mPassedFormulaOrigins.begin();
+                     origins != mPassedFormulaOrigins.end(); ++origins )
                 {
-                    vec_set_const_pFormula origins = mPassedFormulaOrigins[pos];
                     vec_set_const_pFormula tmpContainer = vec_set_const_pFormula();
                     tmpContainer.swap( deductionsToAdd );
-                    vec_set_const_pFormula::const_iterator origin = origins.begin();
-                    while( origin != origins.end() )
+                    vec_set_const_pFormula::const_iterator origin = origins->second.begin();
+                    while( origin != origins->second.end() )
                     {
                         for( vec_set_const_pFormula::iterator tmpDeduction = tmpContainer.begin();
-                                tmpDeduction != tmpContainer.end(); ++tmpDeduction )
+                             tmpDeduction != tmpContainer.end(); ++tmpDeduction )
                         {
                             tmpDeduction->insert( origin->begin(), origin->end() );
                             deductionsToAdd.push_back( *tmpDeduction );
@@ -820,34 +653,6 @@ printWithBackends();
                     }
                 }
             }
-        }
-    }
-
-	/**
-     * Prints everything relevant of the solver including its backends.
-     *
-     * @param _out  The output stream where the answer should be printed.
-     */
-    void Module::printWithBackends( ostream& _out, const string _initiation ) const
-    {
-        _out << _initiation << "********************************************************************************" << endl;
-        _out << _initiation << " Solver with stored at " << this << " with type " << type() << endl;
-        _out << _initiation << endl;
-        _out << _initiation << " Current solver state" << endl;
-        _out << _initiation << endl;
-        printReceivedFormula( _out, _initiation + " " );
-        _out << _initiation << endl;
-        printPassedFormula( _out, _initiation + " " );
-        _out << _initiation << endl;
-        printInfeasibleSubsets( _out, _initiation + " " );
-        _out << _initiation << endl;
-        _out << _initiation << "********************************************************************************" << endl;
-
-        vector< Module* >::const_iterator tsmodule = mUsedBackends.begin();
-        while( tsmodule != mUsedBackends.end() )
-        {
-        	(*tsmodule)->printWithBackends( _out, "     " + _initiation );
-        	++tsmodule;
         }
     }
 
@@ -881,35 +686,14 @@ printWithBackends();
     void Module::printReceivedFormula( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "Received formula:" << endl;
-        signed pos = 0;
-        unsigned upos = 0;
-        unsigned numberOfBacktrackPoint = 0;
-        vector< unsigned >::const_iterator btpoint = mBackTrackPoints.begin();
         for( Formula::const_iterator receivedSubformula = mpReceivedFormula->begin();
              receivedSubformula != mpReceivedFormula->end();
              ++receivedSubformula )
         {
-            _out << _initiation << "   " << "[" << *receivedSubformula << "]";
-           	while( btpoint != mBackTrackPoints.end() && *btpoint == upos )
-	        {
-	            _out << "   <- Backtrackpoint #" << numberOfBacktrackPoint << "(" << *btpoint<< ")";
-	            ++btpoint;
-	            ++numberOfBacktrackPoint;
-	        }
-            if( lastBacktrackpointsEnd() == pos )
-            {
-                _out << "   <- lastBacktrackpointsEnd";
-            }
-            _out << endl;
+            _out << _initiation << "   " << "[" << *receivedSubformula << "]" << endl;
             (*receivedSubformula)->print( _out, _initiation + "   ", false );
             _out << endl;
-            ++pos;
-            ++upos;
         }
-/*
-        _out << _initiation << " Propositions:" << endl;
-        mpReceivedFormula->printPropositions( _out, _initiation + "   " );
-*/
     }
 
     /**
@@ -921,13 +705,14 @@ printWithBackends();
     void Module::printPassedFormula( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "Passed formula:";
-        FormulaOrigins::const_iterator formulaOrigins = mPassedFormulaOrigins.begin();
-        for( Formula::const_iterator passedSubformula = mpPassedFormula->begin(); passedSubformula != mpPassedFormula->end(); ++passedSubformula )
+        for( Formula::const_iterator passedSubformula = mpPassedFormula->begin();
+             passedSubformula != mpPassedFormula->end(); ++passedSubformula )
         {
+            FormulaOrigins::const_iterator formulaOrigins = mPassedFormulaOrigins.find( *passedSubformula );
         	assert( formulaOrigins != mPassedFormulaOrigins.end() );
             _out << endl << _initiation << "  [" << *passedSubformula << "]" << " from " << "(";
-	        for( vec_set_const_pFormula::const_iterator oSubformulas = formulaOrigins->begin(); oSubformulas != formulaOrigins->end();
-	                ++oSubformulas )
+	        for( vec_set_const_pFormula::const_iterator oSubformulas = formulaOrigins->second.begin();
+                 oSubformulas != formulaOrigins->second.end(); ++oSubformulas )
 	        {
 	            _out << " {";
 	            for( set< const Formula* >::const_iterator oSubformula = oSubformulas->begin(); oSubformula != oSubformulas->end(); ++oSubformula )
@@ -939,12 +724,7 @@ printWithBackends();
             _out << " )" << endl;
             (*passedSubformula)->print( _out, _initiation + "   ", false );
             _out << endl;
-            ++formulaOrigins;
         }
-/*
-        _out << endl << _initiation << " Propositions:" << endl;
-        mpPassedFormula->printPropositions( _out, _initiation + "   " );
-*/
     }
 
     /**

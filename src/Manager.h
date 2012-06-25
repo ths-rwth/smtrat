@@ -82,7 +82,6 @@ namespace smtrat
             void pushBacktrackPoint()
             {
                 mBackTrackPoints.push_back( mpPassedFormula->size() );
-                mpPrimaryBackend->pushBacktrackPoint();
             }
 
             const std::map<const ModuleType, ModuleFactory*>& rModulFactories() const

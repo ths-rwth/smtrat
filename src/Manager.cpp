@@ -135,10 +135,16 @@ namespace smtrat
 	void Manager::popBacktrackPoint()
 	{
         assert( !mBackTrackPoints.empty() );
-		mpPrimaryBackend->popBacktrackPoint();
-        while( mpPassedFormula->size() > mBackTrackPoints.back() )
+        unsigned pos = 0;
+        Formula::iterator subformula = mpPassedFormula->begin();
+        while( pos <= mBackTrackPoints.back() )
         {
-            mpPassedFormula->pop_back();
+            ++subformula;
+        }
+        while( subformula != mpPassedFormula->end() )
+        {
+            mpPrimaryBackend->removeSubformula( subformula );
+            subformula = mpPassedFormula->erase( subformula );
         }
         mBackTrackPoints.pop_back();
 	}
@@ -164,7 +170,7 @@ namespace smtrat
         mBackendsUptodate = false;
 
         mpPassedFormula->addSubformula( Formula::newConstraint( _constraint, _infix, _polarity ) );
-        return mpPrimaryBackend->assertSubFormula( mpPassedFormula->back() );
+        return mpPrimaryBackend->assertSubformula( mpPassedFormula->last() );
     }
 
     /**

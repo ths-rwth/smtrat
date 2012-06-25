@@ -56,16 +56,16 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool assertSubFormula( const Formula* const );
+            bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
-            void popBacktrackPoint();
+            void removeSubformula( Formula::const_iterator );
 
         private:
 
-            bool          mFreshConstraintReceived;
-            bool          mInconsistentConstraintAdded;
-            unsigned      mNumberOfComparedConstraints;
-            GiNaC::symtab mAllVariables;
+            bool                    mFreshConstraintReceived;
+            bool                    mInconsistentConstraintAdded;
+            Formula::const_iterator mFirstNotComparedConstraint;
+            GiNaC::symtab           mAllVariables;
 
     };
 

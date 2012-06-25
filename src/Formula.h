@@ -54,7 +54,7 @@ namespace smtrat
              */
 
             /// A unique ID within the formula containing this formula.
-            unsigned      mId;
+            double        mActivity;
             /// The type of this formula.
             Type          mType;
             /// All real valued variables used within this formula (and its subformulas).
@@ -63,8 +63,8 @@ namespace smtrat
             union
             {
                 std::list<Formula*>* mpSubformulas;
-                const Constraint*      mpConstraint;
-                const std::string*     mpIdentifier;
+                const Constraint*    mpConstraint;
+                const std::string*   mpIdentifier;
             };
             /// The formula which contains this formula as subformula.
             Formula* mpFather;
@@ -94,21 +94,29 @@ namespace smtrat
             Formula( const std::string& );
             Formula( const Constraint* _constraint );
             Formula( const Formula& );
-			
+
             ~Formula();
 
             /**
              * Type definitions.
              */
-            typedef std::list<Formula*>::const_iterator         const_iterator;
+            typedef std::list<Formula*>::iterator iterator;
+            typedef std::list<Formula*>::reverse_iterator reverse_iterator;
+            typedef std::list<Formula*>::const_iterator const_iterator;
             typedef std::list<Formula*>::const_reverse_iterator const_reverse_iterator;
 
             /**
              * Accessors:
              */
-            unsigned id() const
+
+            double activity() const
             {
-                return mId;
+                return mActivity;
+            }
+
+            void setActivity( double _activity )
+            {
+                mActivity = _activity;
             }
 
             Type getType() const
@@ -220,14 +228,26 @@ namespace smtrat
                 return mpSubformulas->begin();
             }
 
+            iterator begin()
+            {
+                assert( isBooleanCombination() );
+                return mpSubformulas->begin();
+            }
+
             const_iterator end() const
             {
                 assert( isBooleanCombination() );
                 return mpSubformulas->end();
             }
 
-            // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
+            // Important: Only the last sub formula is allowed to be changed. This ensures the right assignment of the ID.
             const_reverse_iterator rbegin() const
+            {
+                assert( isBooleanCombination() );
+                return mpSubformulas->rbegin();
+            }
+
+            reverse_iterator rbegin()
             {
                 assert( isBooleanCombination() );
                 return mpSubformulas->rbegin();
@@ -237,6 +257,13 @@ namespace smtrat
             {
                 assert( isBooleanCombination() );
                 return mpSubformulas->rend();
+            }
+
+            const_iterator last() const
+            {
+                assert( isBooleanCombination() );
+                assert( !mpSubformulas->empty() );
+                return --mpSubformulas->end();
             }
 
             // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
@@ -253,7 +280,7 @@ namespace smtrat
                 return *pos;
 
 			}
-			
+
             const Formula& rAt( unsigned _pos ) const
             {
                 assert( isBooleanCombination() );
@@ -265,7 +292,7 @@ namespace smtrat
 					++posNr;
 				}
                 return **pos;
-                
+
             }
 
             Formula* back()
@@ -381,16 +408,17 @@ namespace smtrat
             }
 
             Condition getPropositions();
-            unsigned getMaxID() const;
-            void updateID();
             void setFather( Formula* );
             void addSubformula( Formula* );
             void addSubformula( const Constraint* );
             void pop_back();
             void erase( unsigned );
             void erase( const Formula* );
+            iterator erase( iterator );
+
             Formula* pruneBack();
             Formula* prune( unsigned );
+            iterator prune( iterator );
             void clear();
             void notSolvableBy( ModuleType );
             void print( std::ostream& = std::cout, const std::string = "", bool = false ) const;

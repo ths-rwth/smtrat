@@ -44,7 +44,7 @@ namespace smtrat
         Module( _tsManager, _formula ),
         mFreshConstraintReceived( false ),
         mInconsistentConstraintAdded( false ),
-        mNumberOfComparedConstraints( 0 ),
+        mFirstNotComparedConstraint( receivedFormulaEnd() ),
         mAllVariables( symtab() )
     {
         this->mModuleType = MT_SimplifierModule;
@@ -60,22 +60,26 @@ namespace smtrat
      */
 
     /**
-     * Adds a constraint to this modul.
+     * Adds a constraint to this module.
      *
      * @param _constraint The constraint to add to the already added constraints.
      *
      * @return  true,   if the constraint and all previously added constraints are consistent;
      *          false,  if the added constraint or one of the previously added ones is inconsistent.
      */
-    bool SimplifierModule::assertSubFormula( const Formula* const _formula )
+    bool SimplifierModule::assertSubformula( Formula::const_iterator _subformula )
     {
         assert( _formula->getType() == REALCONSTRAINT );
-        Module::assertSubFormula( _formula );
+        Module::assertSubformula( _subformula );
+        if( mFirstNotComparedConstraint == receivedFormulaEnd() )
+        {
+            mFirstNotComparedConstraint = _subformula;
+        }
 
         /*
          * Check the consistency of the constraint to add.
          */
-        switch( _formula->constraint().isConsistent() )
+        switch( (*_subformula)->constraint().isConsistent() )
         {
             case 0:
             {
@@ -94,8 +98,8 @@ namespace smtrat
                 /*
                  * Add the variables of the new constraint to the history of all occured variables.
                  */
-                symtab::const_iterator var = _formula->constraint().variables().begin();
-                while( var != _formula->constraint().variables().end() )
+                symtab::const_iterator var = (*_subformula)->constraint().variables().begin();
+                while( var != (*_subformula)->constraint().variables().end() )
                 {
                     mAllVariables.insert( pair<const string, symbol>( var->first, ex_to<symbol>( var->second ) ) );
                     var++;
@@ -144,9 +148,9 @@ namespace smtrat
         {
             set<const Formula*> redundantFormulaSet     = set<const Formula*>();
             unsigned            passedFormulaSizeBefore = passedFormulaSize();
-            for( ; mNumberOfComparedConstraints < receivedFormulaSize(); ++mNumberOfComparedConstraints )
+            while( mFirstNotComparedConstraint != receivedFormulaEnd() )
             {
-                addReceivedSubformulaToPassedFormula( mNumberOfComparedConstraints );
+                addReceivedSubformulaToPassedFormula( mFirstNotComparedConstraint++ );
             }
 
             /*
@@ -363,7 +367,7 @@ namespace smtrat
         else
         {
             /*
-             * Only one constraint reveived.
+             * Only one constraint received.
              */
             switch( receivedFormulaBack()->constraint().isConsistent() )
             {
@@ -377,8 +381,7 @@ namespace smtrat
                 }
                 case 2:
                 {
-                    addReceivedSubformulaToPassedFormula( (unsigned)0 );
-                    mNumberOfComparedConstraints = 1;
+                    addReceivedSubformulaToPassedFormula( mFirstNotComparedConstraint++ );
                     Answer a = runBackends();
                     if( a == False )
                     {
@@ -396,12 +399,15 @@ namespace smtrat
     }
 
     /**
-     * Pops the last backtrackpoint, from the stack of backtrackpoints.
+     * Pops the last backtrack point, from the stack of backtrack points.
      */
-    void SimplifierModule::popBacktrackPoint()
+    void SimplifierModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        Module::popBacktrackPoint();
-        mNumberOfComparedConstraints = (lastBacktrackpointsEnd() < 0 ? 0 : lastBacktrackpointsEnd());
+        if( mFirstNotComparedConstraint == _subformula )
+        {
+            ++mFirstNotComparedConstraint;
+        }
+        Module::removeSubformula( _subformula );
     }
 
 }    // namespace smtrat
