@@ -213,7 +213,6 @@ namespace smtrat
             const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
             Answer          runBackends();
             void            removeSubformulaFromPassedFormula( const Formula* );
-            void            removeSubformulaFromPassedFormula( unsigned );
             Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator );
             void            pruneSubformulaFromPassedFormula( const Formula* );
             Formula*        pruneSubformulaFromPassedFormula( unsigned );

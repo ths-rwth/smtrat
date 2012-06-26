@@ -49,6 +49,16 @@ namespace smtrat
      * Methods:
      */
 
+	/**
+     * Informs about a new constraints.
+     * @param c A new constraint
+     *
+     */
+    bool CNFerModule::inform( const Constraint* const _constraint )
+    {
+    	return true;
+    }
+
     /**
      * Adds a constraint to this module.
      *
@@ -125,6 +135,11 @@ namespace smtrat
         return a;
     }
 
+    /**
+     * Removes a everything related to a sub formula of the received formula.
+     *
+     * @param _subformula The sub formula of the received formula to remove.
+     */
     void CNFerModule::removeSubformula( Formula::const_iterator _subformula )
     {
         Module::removeSubformula( _subformula );

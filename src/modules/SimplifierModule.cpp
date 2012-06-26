@@ -410,7 +410,9 @@ namespace smtrat
     }
 
     /**
-     * Pops the last backtrack point, from the stack of backtrack points.
+     * Removes a everything related to a sub formula of the received formula.
+     *
+     * @param _subformula The sub formula of the received formula to remove.
      */
     void SimplifierModule::removeSubformula( Formula::const_iterator _subformula )
     {

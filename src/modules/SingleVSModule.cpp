@@ -103,4 +103,14 @@ namespace smtrat
 //        }
         return True;
     }
+
+    /**
+     * Removes a everything related to a sub formula of the received formula.
+     *
+     * @param _subformula The sub formula of the received formula to remove.
+     */
+    void SingleVSModule::removeSubformula( Formula::const_iterator _subformula )
+    {
+        Module::removeSubformula( _subformula );
+    }
 }    // namespace smtrat

@@ -34,54 +34,54 @@
 #include <stdlib.h>
 using namespace std;
 
-//namespace smtrat
-//{
-//    /**
-//     * Constructor
-//     */
-//    LRATwoModule::LRATwoModule( Manager* const _tsManager, const Formula* const _formula ):
-//        Module( _tsManager, _formula ),
-//        simplexTableaux(),
-//        boundMap(),
-//        betaMap()
-//    {
-//        this->mModuleType = MT_LRATwoModule;
-//    }
-//
-//    /**
-//     * Destructor:
-//     */
-//    LRATwoModule::~LRATwoModule()
-//    {
-//    }
-//
-//    /**
-//     * Methods:
-//     */
-//
-//	/**
-//     * Informs about a new constraints.
-//     * @param c A new constraint
-//     *
-//     */
-//    bool LRATwoModule::inform( const Constraint* const _constraint )
-//    {
-//    	return this->simplexTableaux.inform( _constraint, &(this->boundMap) );
-//    }
-//
-//    /**
-//     * Adds a constraint to this module.
-//     *
-//     * @param _constraint The constraint to add to the already added constraints.
-//     *
-//     * @return  true,   if the constraint and all previously added constraints are consistent;
-//     *          false,  if the added constraint or one of the previously added ones is inconsistent.
-//     */
-//    bool LRATwoModule::assertSubFormula( const Formula* const _formula )
-//    {
-//        assert( _formula->getType() == REALCONSTRAINT );
-//        Module::assertSubFormula( _formula );
-//        const Constraint* constraint = _formula->pConstraint();
+namespace smtrat
+{
+    /**
+     * Constructor
+     */
+    LRATwoModule::LRATwoModule( Manager* const _tsManager, const Formula* const _formula ):
+        Module( _tsManager, _formula ),
+        simplexTableaux(),
+        boundMap(),
+        betaMap()
+    {
+        this->mModuleType = MT_LRATwoModule;
+    }
+
+    /**
+     * Destructor:
+     */
+    LRATwoModule::~LRATwoModule()
+    {
+    }
+
+    /**
+     * Methods:
+     */
+
+	/**
+     * Informs about a new constraints.
+     * @param c A new constraint
+     *
+     */
+    bool LRATwoModule::inform( const Constraint* const _constraint )
+    {
+    	return this->simplexTableaux.inform( _constraint, &(this->boundMap) );
+    }
+
+    /**
+     * Adds a constraint to this module.
+     *
+     * @param _constraint The constraint to add to the already added constraints.
+     *
+     * @return  true,   if the constraint and all previously added constraints are consistent;
+     *          false,  if the added constraint or one of the previously added ones is inconsistent.
+     */
+    bool LRATwoModule::assertSubformula(  Formula::const_iterator _subformula )
+    {
+        assert( (*_subformula)->getType() == REALCONSTRAINT );
+        Module::assertSubformula( _subformula );
+//        const Constraint* constraint = (*_subformula)->pConstraint();
 //    	//TODO remove all previously added constraints!
 //    	// or is this the point were backtracking hits sense?
 //    	try {
@@ -152,30 +152,30 @@ using namespace std;
 //    		return false;
 //    	}
 ////    	return (isConsistent() == True);
-//    	return true;
-//    }
-//
-//    /**
-//     * Checks the so far received constraints for consistency.
-//     *
-//     * @return  True,    if the conjunction of received constraints is consistent;
-//     *          False,   if the conjunction of received constraints is inconsistent;
-//     *          Unknown, otherwise.
-//     */
-//    Answer LRATwoModule::isConsistent()
-//    {
-//    	string mystr;
-//    	cout << "Is the given constraint consistent? " << endl;
-//
-//    	cout << this->simplexTableaux.toString();
-//    	cout << this->boundMap.toString();
-//    	cout << this->betaMap.toString();
-//    	cout << "That's it for now!";
-//    	if (this->boundMap.getActives().size() > 0) {
-//    		return False;
-//    	}
-//    	return True;
-//    }
+    	return true;
+    }
+
+    /**
+     * Checks the so far received constraints for consistency.
+     *
+     * @return  True,    if the conjunction of received constraints is consistent;
+     *          False,   if the conjunction of received constraints is inconsistent;
+     *          Unknown, otherwise.
+     */
+    Answer LRATwoModule::isConsistent()
+    {
+    	string mystr;
+    	cout << "Is the given constraint consistent? " << endl;
+
+    	cout << this->simplexTableaux.toString();
+    	cout << this->boundMap.toString();
+    	cout << this->betaMap.toString();
+    	cout << "That's it for now!";
+    	if (this->boundMap.getActives().size() > 0) {
+    		return False;
+    	}
+    	return True;
+    }
 //
 //    /**
 //     * Pops the last backtrackpoint, from the stack of backtrackpoints.
@@ -192,7 +192,16 @@ using namespace std;
 //    {
 //        Module::pushBacktrackPoint();
 //    }
-//
-//}    // namespace smtrat
+
+    /**
+     * Removes a everything related to a sub formula of the received formula.
+     *
+     * @param _subformula The sub formula of the received formula to remove.
+     */
+    void LRATwoModule::removeSubformula( Formula::const_iterator _subformula )
+    {
+        Module::removeSubformula( _subformula );
+    }
+}    // namespace smtrat
 
 

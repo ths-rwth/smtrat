@@ -29,64 +29,64 @@
 #include "LRAOneModule.h"
 using namespace std;
 
-//namespace smtrat
-//{
-//    /**
-//     * Constructor
-//     */
-//    LRAOneModule::LRAOneModule( Manager* const _tsManager, const Formula* const _formula ):
-//        Module( _tsManager, _formula )
-//    {
-//        this->mModuleType = MT_LRATwoModule;
-//    }
-//
-//    /**
-//     * Destructor:
-//     */
-//    LRAOneModule::~LRAOneModule()
-//    {
-//    }
-//
-//    /**
-//     * Methods:
-//     */
-//
-//	/**
-//     * Informs about a new constraints.
-//     * @param c A new constraint
-//     *
-//     */
-//    bool LRAOneModule::inform( const Constraint* const _constraint )
-//    {
-//    	return true;
-//    }
-//
-//    /**
-//     * Adds a constraint to this module.
-//     *
-//     * @param _constraint The constraint to add to the already added constraints.
-//     *
-//     * @return  true,   if the constraint and all previously added constraints are consistent;
-//     *          false,  if the added constraint or one of the previously added ones is inconsistent.
-//     */
-//    bool LRAOneModule::assertSubFormula( const Formula* const _formula )
-//    {
-//        assert( _formula->getType() == REALCONSTRAINT );
-//        Module::assertSubFormula( _formula );
-//        return true;
-//    }
-//
-//    /**
-//     * Checks the so far received constraints for consistency.
-//     *
-//     * @return  True,    if the conjunction of received constraints is consistent;
-//     *          False,   if the conjunction of received constraints is inconsistent;
-//     *          Unknown, otherwise.
-//     */
-//    Answer LRAOneModule::isConsistent()
-//    {
-//        return True;
-//    }
+namespace smtrat
+{
+    /**
+     * Constructor
+     */
+    LRAOneModule::LRAOneModule( Manager* const _tsManager, const Formula* const _formula ):
+        Module( _tsManager, _formula )
+    {
+        this->mModuleType = MT_LRATwoModule;
+    }
+
+    /**
+     * Destructor:
+     */
+    LRAOneModule::~LRAOneModule()
+    {
+    }
+
+    /**
+     * Methods:
+     */
+
+	/**
+     * Informs about a new constraints.
+     * @param c A new constraint
+     *
+     */
+    bool LRAOneModule::inform( const Constraint* const _constraint )
+    {
+    	return true;
+    }
+
+    /**
+     * Adds a constraint to this module.
+     *
+     * @param _constraint The constraint to add to the already added constraints.
+     *
+     * @return  true,   if the constraint and all previously added constraints are consistent;
+     *          false,  if the added constraint or one of the previously added ones is inconsistent.
+     */
+    bool LRAOneModule::assertSubformula( Formula::const_iterator _subformula )
+    {
+        assert( (*_subformula)->getType() == REALCONSTRAINT );
+        Module::assertSubformula( _subformula );
+        return true;
+    }
+
+    /**
+     * Checks the so far received constraints for consistency.
+     *
+     * @return  True,    if the conjunction of received constraints is consistent;
+     *          False,   if the conjunction of received constraints is inconsistent;
+     *          Unknown, otherwise.
+     */
+    Answer LRAOneModule::isConsistent()
+    {
+        return True;
+    }
 //
 //    /**
 //     * Pops the last backtrackpoint, from the stack of backtrackpoints.
@@ -103,5 +103,15 @@ using namespace std;
 //    {
 //        Module::pushBacktrackPoint();
 //    }
-//
-//}    // namespace smtrat
+
+    /**
+     * Removes a everything related to a sub formula of the received formula.
+     *
+     * @param _subformula The sub formula of the received formula to remove.
+     */
+    void LRAOneModule::removeSubformula( Formula::const_iterator _subformula )
+    {
+        Module::removeSubformula( _subformula );
+    }
+
+}    // namespace smtrat
