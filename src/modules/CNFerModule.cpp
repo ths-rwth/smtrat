@@ -34,7 +34,8 @@ using namespace std;
 namespace smtrat
 {
     CNFerModule::CNFerModule( Manager* const _tsManager, const Formula* const _formula ):
-        Module( _tsManager, _formula )
+        Module( _tsManager, _formula ),
+            mFirstNotCheckedFormula( )
     {
         this->mModuleType = MT_CNFerModule;
     }
@@ -56,9 +57,9 @@ namespace smtrat
      * @return  true,   if the constraint and all previously added constraints are consistent;
      *          false,  if the added constraint or one of the previously added ones is inconsistent.
      */
-    bool CNFerModule::assertSubFormula( const Formula* const _formula )
+    bool CNFerModule::assertSubformula( Formula::const_iterator _subformula )
     {
-		Module::assertSubFormula( _formula );
+		Module::assertSubformula( _subformula );
         return true;
     }
 
@@ -74,11 +75,12 @@ namespace smtrat
 
 //cout << endl << "isConsistent of " << this << " having type " << type() << endl;
 //print();
-        for( unsigned pos = mBackTrackPoints.back(); pos < receivedFormulaSize(); ++pos )
-    	{
-            const Formula* currentFormulaToAdd = receivedFormulaAt( pos );
+        Formula::const_iterator receivedSubformula = firstUncheckedReceivedSubformula();
+        while( receivedSubformula != mpReceivedFormula->end() )
+        {
+            const Formula* currentFormulaToAdd = *receivedSubformula;
             /*
-             * Create the origins containting only the currently considered formula of
+             * Create the origins containing only the currently considered formula of
              * the received formula.
              */
             vec_set_const_pFormula origins = vec_set_const_pFormula();
@@ -97,6 +99,7 @@ namespace smtrat
                  */
                 return False;
             }
+            ++receivedSubformula;
         }
 //print();
 		Answer a = runBackends();
@@ -122,20 +125,9 @@ namespace smtrat
         return a;
     }
 
-    /**
-     * Pushes a backtrackpoint to the stack of backtrackpoints.
-     */
-    void CNFerModule::pushBacktrackPoint()
+    void CNFerModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        Module::pushBacktrackPoint();
-    }
-
-    /**
-     * Pops the last backtrackpoint, from the stack of backtrackpoints.
-     */
-    void CNFerModule::popBacktrackPoint()
-    {
-        Module::popBacktrackPoint();
+        Module::removeSubformula( _subformula );
     }
 
     /**
@@ -229,7 +221,7 @@ namespace smtrat
 		        		phis.push_back( currentFormula->pruneBack() );
 		        	}
                     unsigned formulasToAssertSizeBefore = _formulasToAssert.size();
-                    unsigned passedFormulaSizeBefore = passedFormulaSize();
+                    Formula::iterator lastPassedSubformula = mpPassedFormula->last();
 		        	while( !phis.empty() )
 		        	{
 		        		Formula* currentSubformula = phis.back();
@@ -251,15 +243,20 @@ namespace smtrat
                             // remove the entire considered disjunction and everything which has been created by considering it
                             case TTRUE:
                             {
+                                if( lastPassedSubformula == mpPassedFormula->end() )
+                                {
+                                    break;
+                                }
+                                ++lastPassedSubformula;
                                 while( _formulasToAssert.size() > formulasToAssertSizeBefore )
                                 {
                                     Formula* formulaToDelete = _formulasToAssert.back();
                                     _formulasToAssert.pop_back();
                                     delete formulaToDelete;
                                 }
-                                while( passedFormulaSize() > passedFormulaSizeBefore )
+                                while( lastPassedSubformula != mpPassedFormula->end() )
                                 {
-                                    removeSubformulaFromPassedFormula( passedFormulaSize() - 1 );
+                                    lastPassedSubformula = removeSubformulaFromPassedFormula( lastPassedSubformula );
                                 }
                                 while( !phis.empty() )
                                 {
@@ -691,7 +688,7 @@ namespace smtrat
     		cout << endl;
     	}
     	cout << "]" << endl;
-    	printPassedFormulaAlone( cout, "", true );
+    	printPassedFormula( cout, "" );
     	cout << endl << endl;
     }
 }    // namespace smtrat

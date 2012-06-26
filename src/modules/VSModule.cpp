@@ -564,7 +564,9 @@ namespace smtrat
     }
 
     /**
-     * Backtracks until the last backtrack point.
+     * Removes a everything related to a sub formula of the received formula.
+     *
+     * @param _subformula The sub formula of the received formula to remove.
      */
     void VSModule::removeSubformula( Formula::const_iterator _subformula )
     {

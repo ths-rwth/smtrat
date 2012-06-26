@@ -65,14 +65,14 @@ namespace smtrat
      * @return  true,   if the constraint and all previously added constraints are consistent;
      *          false,  if the added constraint or one of the previously added ones is inconsistent.
      */
-    bool PreProModule::assertSubFormula( const Formula* const _formula )
+    bool PreProModule::assertSubformula( Formula::const_iterator _subformula )
     {
-        Module::assertSubFormula( _formula );
-        addReceivedSubformulaToPassedFormula( getPositionOfReceivedFormula( _formula ) );
-        _formula->FormulaToConstraints( mReceivedConstraints );
+        Module::assertSubformula( _subformula );
+        addReceivedSubformulaToPassedFormula( _subformula );
+        (*_subformula)->FormulaToConstraints( mReceivedConstraints );
         while( mReceivedConstraints.size() > mConstraintOrigins.size() )
         {
-            mConstraintOrigins.push_back( _formula );
+            mConstraintOrigins.push_back( *_subformula );
         }
         mFreshConstraintReceived = true;
         return true;
@@ -177,36 +177,40 @@ namespace smtrat
         return a;
     }
 
-     /**
-     * Pushs a backtrackpoint, to the stack of backtrackpoints.
-     */
-    void PreProModule::pushBacktrackPoint()
-    {
-        Module::pushBacktrackPoint();
-        pair< bool, unsigned > firstpair( mFreshConstraintReceived, mNumberOfComparedConstraints );
-        pair< unsigned, unsigned > secondpair( pPassedFormula()->size(), mReceivedConstraints.size() );
-        pair< pair< bool, unsigned >, pair< unsigned, unsigned > > newbacktrack( firstpair, secondpair );
-        mConstraintBacktrackPoints.push_back( newbacktrack );
-    }
-
     /**
-     * Pops the last backtrackpoint, from the stack of backtrackpoints.
+     * Removes a everything related to a sub formula of the received formula.
+     *
+     * @param _subformula The sub formula of the received formula to remove.
      */
-    void PreProModule::popBacktrackPoint()
+    void PreProModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        mFreshConstraintReceived = mConstraintBacktrackPoints.back().first.first;
-        mNumberOfComparedConstraints = mConstraintBacktrackPoints.back().first.second;
-        while( mConstraintBacktrackPoints.back().second.first != pPassedFormula()->size() )
-        {
-            removeSubformulaFromPassedFormula( pPassedFormula()->size()-1 );
-        }
-        while( mReceivedConstraints.size() != mConstraintBacktrackPoints.back().second.second )
-        {
-            mReceivedConstraints.pop_back();
-            mConstraintOrigins.pop_back();
-        }
-        mConstraintBacktrackPoints.pop_back();
-        Module::popBacktrackPoint();
+        // TODO: Adapt the code of the previous methods pushBacktrackPoint and
+        //       popbacktrackpoint such that it is applied here.
+
+//        PreProModule::pushBacktrackPoint()
+//        {
+//            Module::pushBacktrackPoint();
+//            pair< bool, unsigned > firstpair( mFreshConstraintReceived, mNumberOfComparedConstraints );
+//            pair< unsigned, unsigned > secondpair( pPassedFormula()->size(), mReceivedConstraints.size() );
+//            pair< pair< bool, unsigned >, pair< unsigned, unsigned > > newbacktrack( firstpair, secondpair );
+//            mConstraintBacktrackPoints.push_back( newbacktrack );
+//        }
+//        PreProModule::popBacktrackPoint()
+//        {
+//            mFreshConstraintReceived = mConstraintBacktrackPoints.back().first.first;
+//            mNumberOfComparedConstraints = mConstraintBacktrackPoints.back().first.second;
+//            while( mConstraintBacktrackPoints.back().second.first != pPassedFormula()->size() )
+//            {
+//                removeSubformulaFromPassedFormula( pPassedFormula()->size()-1 );
+//            }
+//            while( mReceivedConstraints.size() != mConstraintBacktrackPoints.back().second.second )
+//            {
+//                mReceivedConstraints.pop_back();
+//                mConstraintOrigins.pop_back();
+//            }
+//            mConstraintBacktrackPoints.pop_back();
+//            Module::popBacktrackPoint();
+//        }
     }
 }    // namespace smtrat
 

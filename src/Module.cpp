@@ -50,7 +50,8 @@ namespace smtrat
         mAllBackends(),
         mPassedFormulaOrigins(),
         mDeductions(),
-        lastPassedSubformula( mpPassedFormula->begin() )
+        mLastPassedSubformula( mpPassedFormula->begin() ),
+        mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() )
     {}
 
     Module::~Module()
@@ -88,16 +89,16 @@ namespace smtrat
     }
 
     /**
-     * Undoes everything related to the given sub formula in the received formula.
-     * Note, that this does not include the received formula itself, which is actually part of the instance which
-     * called this module.
+     * Removes a everything related to a sub formula of the received formula.
      *
-     * @param _formula	The sub formula of the received formula.
-     *
-     * @return The constraints occurring in sub formula at the given position in the received formula.
+     * @param _subformula The sub formula of the received formula to remove.
      */
-    void Module::removeSubformula( Formula::const_iterator _formula )
+    void Module::removeSubformula( Formula::const_iterator _subformula )
     {
+        if( mFirstUncheckedReceivedSubformula == _subformula )
+        {
+            ++mFirstUncheckedReceivedSubformula;
+        }
         /*
          * Check if the constraint to delete is an original constraint of constraints in the vector
          * of passed constraints.
@@ -115,7 +116,7 @@ namespace smtrat
                 /*
                  * If the received formula is in the set of origins, erase it.
                  */
-                if( formulaOrigin->erase( *_formula ) != 0 )
+                if( formulaOrigin->erase( *_subformula ) != 0 )
                 {
                     // Erase the changed set.
                     formulaOrigin = formulaOrigins.erase( formulaOrigin );
@@ -143,7 +144,7 @@ namespace smtrat
             set< const Formula* >::iterator infSubformula = infSubSet->begin();
             while( infSubformula != infSubSet->end() )
             {
-                if( *infSubformula == *_formula )
+                if( *infSubformula == *_subformula )
                 {
                     break;
                 }
@@ -450,23 +451,24 @@ namespace smtrat
 
         mUsedBackends = mpManager->getBackends( mpPassedFormula, this );
 
-        if( lastPassedSubformula != mpPassedFormula->end() )
+        if( mLastPassedSubformula != mpPassedFormula->end() )
         {
-            ++lastPassedSubformula;
+            ++mLastPassedSubformula;
             for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
             {
-                for( Formula::const_iterator subformula = lastPassedSubformula;
+                for( Formula::const_iterator subformula = mLastPassedSubformula;
                      subformula != mpPassedFormula->end(); ++subformula )
                 {
                     (*module)->assertSubformula( subformula );
                 }
             }
         }
+        Answer result = Unknown;
         /*
          * Run the backend solver sequentially until the first answers true or false.
          */
-        for( vector< Module* >::iterator module = mUsedBackends.begin();
-             module != mUsedBackends.end(); ++module )
+        vector< Module* >::iterator module = mUsedBackends.begin();
+        while( module != mUsedBackends.end() && result != Unknown )
         {
             #ifdef MODULE_VERBOSE
             string moduleName = "";
@@ -493,39 +495,14 @@ namespace smtrat
             cout << endl << "Call to module " << moduleName << endl;
             (**tsmodule).print( cout, " ");
             #endif
-            Answer result = (**module).isConsistent();
-            switch( result )
-            {
-		        case True:
-		        {
-                    #ifdef MODULE_VERBOSE
-                    cout << "Result:   True" << endl;
-                    #endif
-		            return True;
-		        }
-		        case False:
-		        {
-                    #ifdef MODULE_VERBOSE
-                    cout << "Result:   False" << endl;
-                    (**module).printInfeasibleSubsets( cout, "          " );
-                    #endif
-		            return False;
-		        }
-		        case Unknown:
-		        {
-                    #ifdef MODULE_VERBOSE
-                    cout << "Result:   Unknown" << endl;
-                    #endif
-                    return Unknown;
-		        }
-		        default:
-		        {
-		            assert( false );
-		            return Unknown;
-		        }
-            }
+            result = (*module)->isConsistent();
+            (*module)->receivedFormulaChecked();
+            ++module;
         }
-        return Unknown;
+        #ifdef MODULE_VERBOSE
+        cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : "Unknown")) << endl;
+        #endif
+        return result;
     }
 
     /**

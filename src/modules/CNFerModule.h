@@ -40,6 +40,7 @@ namespace smtrat
             /**
              * Members.
              */
+            Formula::const_iterator mFirstNotCheckedFormula;
         public:
             /**
              * Constructor and destructor.
@@ -53,10 +54,10 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool assertSubFormula( const Formula* const );
+            bool assertSubformula( Formula::const_iterator );
+            bool inform( const Constraint* const );
             Answer isConsistent();
-            void pushBacktrackPoint();
-            void popBacktrackPoint();
+            void removeSubformula( Formula::const_iterator );
 
         private:
             /**

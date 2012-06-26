@@ -44,7 +44,6 @@ namespace smtrat
         Module( _tsManager, _formula ),
         mFreshConstraintReceived( false ),
         mInconsistentConstraintAdded( false ),
-        mFirstNotComparedConstraint( mpReceivedFormula->end() ),
         mAllVariables( symtab() )
     {
         this->mModuleType = MT_SimplifierModule;
@@ -71,10 +70,6 @@ namespace smtrat
     {
         assert( (*_subformula)->getType() == REALCONSTRAINT );
         Module::assertSubformula( _subformula );
-        if( mFirstNotComparedConstraint == mpReceivedFormula->end() )
-        {
-            mFirstNotComparedConstraint = _subformula;
-        }
 
         /*
          * Check the consistency of the constraint to add.
@@ -149,9 +144,10 @@ namespace smtrat
             set<const Formula*> redundantFormulaSet     = set<const Formula*>();
             Formula::iterator firstFreshPassedSubformula;
             bool firstFreshPassedSubformulaFound = false;
-            while( mFirstNotComparedConstraint != mpReceivedFormula->end() )
+            Formula::const_iterator receivedSubformula = firstUncheckedReceivedSubformula();
+            while( receivedSubformula != mpReceivedFormula->end() )
             {
-                addReceivedSubformulaToPassedFormula( mFirstNotComparedConstraint++ );
+                addReceivedSubformulaToPassedFormula( receivedSubformula++ );
                 if( !firstFreshPassedSubformulaFound )
                 {
                     firstFreshPassedSubformula = mpPassedFormula->last();
@@ -396,7 +392,7 @@ namespace smtrat
                 }
                 case 2:
                 {
-                    addReceivedSubformulaToPassedFormula( mFirstNotComparedConstraint++ );
+                    addReceivedSubformulaToPassedFormula( firstUncheckedReceivedSubformula() );
                     Answer a = runBackends();
                     if( a == False )
                     {
@@ -418,10 +414,6 @@ namespace smtrat
      */
     void SimplifierModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        if( mFirstNotComparedConstraint == _subformula )
-        {
-            ++mFirstNotComparedConstraint;
-        }
         Module::removeSubformula( _subformula );
     }
 

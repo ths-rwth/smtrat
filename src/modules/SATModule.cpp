@@ -163,24 +163,30 @@ namespace smtrat
      * @return  true,   if the constraint and all previously added constraints are consistent;
      *          false,  if the added constraint or one of the previously added ones is inconsistent.
      */
-    bool SATModule::assertSubFormula( const Formula* const _formula )
+    bool SATModule::assertSubformula( Formula::const_iterator _subformula )
     {
 
-        assert( (_formula->proposition() | ~PROP_IS_A_CLAUSE) == ~PROP_TRUE );
-        Module::assertSubformula( _formula );
+        assert( ((*_subformula)->proposition() | ~PROP_IS_A_CLAUSE) == ~PROP_TRUE );
+        Module::assertSubformula( _subformula );
 
-        addClauseToSatSolver( _formula );
+        addClauseToSatSolver( *_subformula );
 
         return true;
     }
 
     /**
-     * Pushes a backtrack point to the stack of backtrack points.
+     * Adds a constraint to this module.
+     *
+     * @param _formula The formula to add to the already added formulas.
+     *
+     * @return  true,   if the constraint and all previously added constraints are consistent;
+     *          false,  if the added constraint or one of the previously added ones is inconsistent.
      */
-    void SATModule::pushBacktrackPoint()
+    void SATModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        Module::pushBacktrackPoint();
-        mBacktrackpointInSatSolver.push_back( clauses.size() );
+        Module::removeSubformula( _subformula );
+
+        // TODO: something
     }
 
     /**
@@ -232,8 +238,8 @@ namespace smtrat
             * Set the infeasible subset to the set of all received constraints.
             */
             set<const Formula*> infeasibleSubset = set<const Formula*>();
-            for( Formula::const_iterator subformula = receivedFormulaBegin();
-                subformula != receivedFormulaEnd(); ++subformula )
+            for( Formula::const_iterator subformula = mpReceivedFormula->begin();
+                 subformula != mpReceivedFormula->end(); ++subformula )
             {
                 infeasibleSubset.insert( *subformula );
             }
@@ -244,20 +250,6 @@ namespace smtrat
         {
             return Unknown;
         }
-    }
-
-    /**
-     * Pops the last backtrack point, from the stack of backtrack points.
-     */
-    void SATModule::popBacktrackPoint()
-    {
-        for( unsigned level = clauses.size() - 1; level >= mBacktrackpointInSatSolver.back(); --level )
-        {
-            removeClause( clauses[level] );
-        }
-        mBacktrackpointInSatSolver.pop_back();
-
-        Module::popBacktrackPoint();
     }
 
     /**
@@ -638,20 +630,20 @@ namespace smtrat
 
         /*
          * Remove the constraints from the constraints to check, which are already in the passed formula
-         * and remove the subformulas (constraints) in the passed formula, which do not occur in the
+         * and remove the sub formulas (constraints) in the passed formula, which do not occur in the
          * constraints to add.
          */
-        unsigned pos = 0;
-        while( pos < passedFormulaSize() )
+        Formula::iterator subformula = mpPassedFormula->begin();
+        while( subformula != mpPassedFormula->end() )
         {
-            if( constraintsToCheck.erase( passedFormulaAt( pos ) ) == 0 )
+            if( constraintsToCheck.erase( *subformula ) == 0 )
             {
-                removeSubformulaFromPassedFormula( pos );
+                subformula = removeSubformulaFromPassedFormula( subformula );
                 changedPassedFormula = true;
             }
             else
             {
-                ++pos;
+                ++subformula;
             }
         }
 
@@ -1446,7 +1438,7 @@ NextClause:
                             {
                                 if( !(*backend)->rInfeasibleSubsets().empty() )
                                 {
-                                    int sizeOfSmallestLearntClause = passedFormulaSize() + 1;
+                                    int sizeOfSmallestLearntClause = mpPassedFormula->size() + 1;
                                     for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
                                             infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
                                     {

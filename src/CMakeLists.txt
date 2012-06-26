@@ -44,7 +44,6 @@ set(lib_modules_headers
     modules/LRAOneModule.h
     modules/LRATwoModule.h
     modules/PreProModule.h
-    modules/PreProCNFModule.h
     modules/CNFerModule.h
     modules/SingleVSModule.h
 )
@@ -57,14 +56,13 @@ set(lib_modules_src
     modules/LRAOneModule.cpp
     modules/LRATwoModule.cpp
     modules/PreProModule.cpp
-    modules/PreProCNFModule.cpp
     modules/CNFerModule.cpp
     modules/SingleVSModule.cpp
 )
 
 if(USE_GB)
 	set(lib_module_GBModule_headers modules/GBModule/InequalitiesTable.h modules/GBModule/GBSettings.h)
-	
+
 	set(lib_modules_headers ${lib_modules_headers} modules/GroebnerModule.h)
 	set(lib_modules_src ${lib_modules_src}  modules/GroebnerModule.cpp)
 endif()

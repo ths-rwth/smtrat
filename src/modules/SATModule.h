@@ -249,10 +249,9 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool assertSubFormula( const Formula* const );
+            bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
-            void popBacktrackPoint();
-            void pushBacktrackPoint();
+            void removeSubformula( Formula::const_iterator );
 
             // Printing.
             void print( std::ostream& = std::cout, const std::string = "***" ) const;

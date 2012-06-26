@@ -77,7 +77,8 @@ namespace smtrat
             /// Stores the deductions this module or its backends made.
             std::vector< TheoryDeduction > mDeductions;
             ///
-            Formula::const_iterator lastPassedSubformula;
+            Formula::const_iterator mLastPassedSubformula;
+            Formula::const_iterator mFirstUncheckedReceivedSubformula;
 
         public:
             Module( Manager* const, const Formula* const );
@@ -92,6 +93,10 @@ namespace smtrat
 
             virtual bool assertSubformula( Formula::const_iterator _subformula )
             {
+                if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
+                {
+                    mFirstUncheckedReceivedSubformula = _subformula;
+                }
                 return true;
             }
 
@@ -175,6 +180,16 @@ namespace smtrat
             const std::vector<TheoryDeduction>& deductions() const
             {
                 return mDeductions;
+            }
+
+            Formula::const_iterator firstUncheckedReceivedSubformula() const
+            {
+                return mFirstUncheckedReceivedSubformula;
+            }
+
+            void receivedFormulaChecked()
+            {
+                mFirstUncheckedReceivedSubformula = mpReceivedFormula->end();
             }
 
         //SMT
