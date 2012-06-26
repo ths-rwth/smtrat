@@ -64,7 +64,7 @@ namespace smtrat
 
     bool GroebnerModule::assertSubformula( Formula::const_iterator _formula )
     {
-        assert( _formula->getType() == REALCONSTRAINT );
+        assert( (*_formula)->getType() == REALCONSTRAINT );
         Module::assertSubformula( _formula ); 
 		
 		const Constraint& constraint = (*_formula)->constraint();
@@ -238,15 +238,14 @@ namespace smtrat
     /**
      *  We add a savepoint
      */
-//    void GroebnerModule::pushBacktrackPoint()
-//    {
+    void GroebnerModule::pushBacktrackPoint()
+    {
 //		//std::cout << "Push backtrackpoint" << std::endl;
-//		saveState();
-//        super::pushBacktrackPoint();
-//        mStateHistory.push_back( GroebnerModuleState( mBasis ) );
+		saveState();
+        mStateHistory.push_back( GroebnerModuleState( mBasis ) );
 //		//printStateHistory();
-//		//mInequalities.pushBacktrackPoint();
-//	}
+		mInequalities.pushBacktrackPoint();
+	}
 
     /**
      * Erases all states which had more constraints than we have now
