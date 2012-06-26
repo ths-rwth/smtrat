@@ -230,6 +230,11 @@ namespace smtrat
         return ans;
     }
 
+	void GroebnerModule::removeSubformula( Formula::const_iterator _formula ) {
+		
+	}
+		
+	
     /**
      *  We add a savepoint
      */
