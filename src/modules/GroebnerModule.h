@@ -125,7 +125,7 @@ namespace smtrat
 		void print(std::ostream& os= std::cout) const;
 
 		std::list<size_t> mNrInequalitiesForBtPoints;
-		std::vector<InequalitiesRow> mReducedInequalities;
+		std::list<InequalitiesRow> mReducedInequalities;
 
 
 		GroebnerModule*  mModule;

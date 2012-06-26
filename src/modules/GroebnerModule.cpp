@@ -234,7 +234,10 @@ namespace smtrat
 	void GroebnerModule::removeSubformula( Formula::const_iterator _formula ) {
 		if((*_formula)->constraint().relation() == CR_EQ) {
 			popBacktrackPoint(_formula);
+		} else {
+			//mInequalities.re
 		}
+		
 	}
 	
     /**
@@ -257,13 +260,14 @@ namespace smtrat
     void GroebnerModule::popBacktrackPoint(Formula::const_iterator btpoint)
     {
 		mPopCausesRecalc = true;
-		unsigned nrOfBacktracks = 0;
+		unsigned nrOfBacktracks = 1;
 		
-		while(mBacktrackPoints[mBacktrackPoints.size()-1-nrOfBacktracks] != btpoint) {
+		while(mBacktrackPoints[mBacktrackPoints.size()-nrOfBacktracks] != btpoint) {
 			++nrOfBacktracks;
 		}
 //		//std::cout << "Pop backtrack" << std::endl;
-		for(int i = 0; i< nrOfBacktracks; ++i) {
+		for(unsigned i = 0; i< nrOfBacktracks; ++i) {
+			assert(!mStateHistory.empty());
 			mStateHistory.pop_back();
 		}
 		
@@ -441,10 +445,10 @@ namespace smtrat
 	}
 
 	void InequalitiesTable::popBacktrackPoint() {
+		
 		mNrInequalitiesForBtPoints.pop_back();
-		mReducedInequalities.erase(mReducedInequalities.begin() + mNrInequalitiesForBtPoints.back(), mReducedInequalities.end());
 		size_t btpoint =  mNrInequalitiesForBtPoints.size() -1;
-		for(std::vector<InequalitiesRow>::iterator it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) {
+		for(std::list<InequalitiesRow>::iterator it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) {
 			it->popBacktrackPoint(btpoint);
 		}
 
@@ -454,7 +458,7 @@ namespace smtrat
 
 	void InequalitiesTable::reduceWRTGroebnerBasis(const Ideal& gb) {
 		size_t btpoint = mNrInequalitiesForBtPoints.size() -1;
-		for(std::vector<InequalitiesRow>::iterator it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) 
+		for(std::list<InequalitiesRow>::iterator it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) 
 		{
 			it->reduceWithGb(gb, btpoint);
 		}
