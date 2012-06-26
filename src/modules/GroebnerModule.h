@@ -151,10 +151,9 @@ namespace smtrat
             GroebnerModule( Manager* const , const Formula* const );
             virtual ~GroebnerModule();
 
-            virtual bool assertSubFormula( const Formula* const );
+			bool assertSubformula( Formula::const_iterator _formula );
             virtual Answer isConsistent();
-            virtual void pushBacktrackPoint();
-            virtual void popBacktrackPoint();
+			void removeSubformula( Formula::const_iterator _formula );
 			void printStateHistory();
 
         protected:

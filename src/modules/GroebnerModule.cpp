@@ -62,16 +62,18 @@ namespace smtrat
 
     GroebnerModule::~GroebnerModule(){}
 
-    bool GroebnerModule::assertSubFormula( const Formula* const _formula )
+    bool GroebnerModule::assertSubformula( Formula::const_iterator _formula )
     {
         assert( _formula->getType() == REALCONSTRAINT );
-        Module::assertSubFormula( _formula ); 
+        Module::assertSubformula( _formula ); 
 		
-        for( GiNaC::symtab::const_iterator it = _formula->constraint().variables().begin(); it != _formula->constraint().variables().end(); ++it )
+		const Constraint& constraint = (*_formula)->constraint();
+		
+        for( GiNaC::symtab::const_iterator it = constraint.variables().begin(); it != constraint.variables().end(); ++it )
         {
 	        unsigned varNr = VariableListPool::addVariable( ex_to<symbol>( it->second ) );
 #ifdef USE_NSS 
-			if( _formula->constraint().relation() == CR_EQ )
+			if( constraint.relation() == CR_EQ )
 			{
 				mVariablesInEqualities.insert(varNr);
 			}
@@ -80,13 +82,13 @@ namespace smtrat
         }
 
         //only equalities should be added to the gb
-        if( _formula->constraint().relation() == CR_EQ )
+        if( constraint.relation() == CR_EQ )
         {
 			if(!Settings::passGB)
 			{
 				addReceivedSubformulaToPassedFormula( _formula );
 			}
-		    mBasis.addPolynomial( Polynomial( _formula->constraint().lhs() ) );
+		    mBasis.addPolynomial( Polynomial( constraint.lhs() ) );
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
 		{
@@ -158,7 +160,7 @@ namespace smtrat
 				}
 				GiNaCRA::BitVector::const_iterator origIt = witness.getOrigins().getBitVector().begin();
 
-				for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
+				for( Formula::const_iterator it = mpReceivedFormula->begin(); it != mpReceivedFormula->end(); ++it )
                 {
 					assert((*it)->getType() == REALCONSTRAINT);
                     if( (*it)->constraint().relation() == CR_EQ )
@@ -193,20 +195,20 @@ namespace smtrat
 			// We might add some Formulas, these do not have to be treated again.
 			
 			if(Settings::passGB) {
-				unsigned nrOfFormulasInPassed = passedFormulaSize();
-				for( unsigned i = 0; i < nrOfFormulasInPassed; )
-				{
-					assert(passedFormulaAt(i)->getType() == REALCONSTRAINT);
-					if( passedFormulaAt( i )->constraint().relation() == CR_EQ )
-					{
-						super::removeSubformulaFromPassedFormula( i );
-						--nrOfFormulasInPassed;
-					}
-					else
-					{
-						i++;
-					}
-				}
+//				unsigned nrOfFormulasInPassed = mpP();
+//				for( unsigned i = 0; i < nrOfFormulasInPassed; )
+//				{
+//					assert(passedFormulaAt(i)->getType() == REALCONSTRAINT);
+//					if( passedFormulaAt( i )->constraint().relation() == CR_EQ )
+//					{
+//						super::removeSubformulaFromPassedFormula( i );
+//						--nrOfFormulasInPassed;
+//					}
+//					else
+//					{
+//						i++;
+//					}
+//				}
 //		
 			
 
@@ -231,46 +233,46 @@ namespace smtrat
     /**
      *  We add a savepoint
      */
-    void GroebnerModule::pushBacktrackPoint()
-    {
-		//std::cout << "Push backtrackpoint" << std::endl;
-		saveState();
-        super::pushBacktrackPoint();
-        mStateHistory.push_back( GroebnerModuleState( mBasis ) );
-		//printStateHistory();
-		//mInequalities.pushBacktrackPoint();
-	}
+//    void GroebnerModule::pushBacktrackPoint()
+//    {
+//		//std::cout << "Push backtrackpoint" << std::endl;
+//		saveState();
+//        super::pushBacktrackPoint();
+//        mStateHistory.push_back( GroebnerModuleState( mBasis ) );
+//		//printStateHistory();
+//		//mInequalities.pushBacktrackPoint();
+//	}
 
     /**
      * Erases all states which had more constraints than we have now
      */
-    void GroebnerModule::popBacktrackPoint()
-    {
-	
-		mPopCausesRecalc = true;
-		//std::cout << "Pop backtrack" << std::endl;
-        mStateHistory.pop_back();
-        // Load the state to be restored;
-        if( mStateHistory.empty() )
-        {
-            // std::cout << "Restore the base state" << std::endl;
-            mBasis = GiNaCRA::Buchberger<GBSettings::Order>();
-
-        }
-        else
-        {
-			//  std::cout << "Restore from history" << std::endl;
-            mBasis = mStateHistory.back().getBasis();
-
-        }
-		
-		//mInequalities.popBacktrackPoint();
-		//std::cout << " New basis: ";
-		//mBasis.getGbIdeal().print();
-		//std::cout << std::endl;
-        super::popBacktrackPoint();
-		
-    }
+//    void GroebnerModule::popBacktrackPoint()
+//    {
+//	
+//		mPopCausesRecalc = true;
+//		//std::cout << "Pop backtrack" << std::endl;
+//        mStateHistory.pop_back();
+//        // Load the state to be restored;
+//        if( mStateHistory.empty() )
+//        {
+//            // std::cout << "Restore the base state" << std::endl;
+//            mBasis = GiNaCRA::Buchberger<GBSettings::Order>();
+//
+//        }
+//        else
+//        {
+//			//  std::cout << "Restore from history" << std::endl;
+//            mBasis = mStateHistory.back().getBasis();
+//
+//        }
+//		
+//		//mInequalities.popBacktrackPoint();
+//		//std::cout << " New basis: ";
+//		//mBasis.getGbIdeal().print();
+//		//std::cout << std::endl;
+//        super::popBacktrackPoint();
+//		
+//    }
 
     /**
      * Saves the current state if it is a savepoint (backtrackpoint) so it can be restored later
@@ -279,14 +281,14 @@ namespace smtrat
     bool GroebnerModule::saveState()
     {
         //If nothing new was added, we just update our state!
-        if( !mBackTrackPoints.empty() && lastBacktrackpointsEnd() == (signed)receivedFormulaSize() - 1 )
-        {
-         //   std::cout << "We update our state!" << std::endl;
-            mStateHistory.pop_back();
-            mStateHistory.push_back( GroebnerModuleState( mBasis ) );
-            return true;
-        }
-		
+//        if( !mBackTrackPoints.empty() && lastBacktrackpointsEnd() == (signed)receivedFormulaSize() - 1 )
+//        {
+//         //   std::cout << "We update our state!" << std::endl;
+//            mStateHistory.pop_back();
+//            mStateHistory.push_back( GroebnerModuleState( mBasis ) );
+//            return true;
+//        }
+//		
         return false;
     }
 
@@ -296,7 +298,7 @@ namespace smtrat
 
 		if(!Settings::passWithMinimalReasons) {
 		// find original constraints which made the gb.
-			for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
+			for( Formula::const_iterator it = mpReceivedFormula->begin(); it != mpReceivedFormula->end(); ++it )
 			{
 				if( (*it)->constraint().relation() == CR_EQ )
 				{
@@ -323,7 +325,7 @@ namespace smtrat
 	{
 		GiNaCRA::BitVector::const_iterator origIt =  reasons.begin();
 		std::set<const Formula*> origins;
-		for( Formula::const_iterator it = receivedFormulaBegin(); it != receivedFormulaEnd(); ++it )
+		for( Formula::const_iterator it = mpReceivedFormula->begin(); it != mpReceivedFormula->end(); ++it )
 		{
 			if( (*it)->constraint().relation() == CR_EQ )
 			{
@@ -386,7 +388,7 @@ namespace smtrat
 	bool InequalitiesRow::popBacktrackPoint(unsigned btp) {
 		if(btp == reductions.back().first) {
 			reductions.pop_back();
-			passedFormulaEntry = mModule->passedFormulaEnd();
+			passedFormulaEntry = mModule->mpPassedFormula->end();
 			std::vector<std::set<const Formula*> > originals;
 			originals.push_back(mModule->generateReasons(reductions.back().second.getOrigins().getBitVector()));
 			originals.front().insert(receivedFormulaEntry);
