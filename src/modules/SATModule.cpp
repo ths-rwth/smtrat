@@ -175,12 +175,9 @@ namespace smtrat
     }
 
     /**
-     * Adds a constraint to this module.
+     * Removes a everything related to a sub formula of the received formula.
      *
-     * @param _formula The formula to add to the already added formulas.
-     *
-     * @return  true,   if the constraint and all previously added constraints are consistent;
-     *          false,  if the added constraint or one of the previously added ones is inconsistent.
+     * @param _subformula The sub formula of the received formula to remove.
      */
     void SATModule::removeSubformula( Formula::const_iterator _subformula )
     {

@@ -1912,18 +1912,17 @@ namespace smtrat
          * and remove the sub formulas (constraints) in the passed formula, which do not occur in the
          * constraints to add.
          */
-        //TODO
-        unsigned pos = 0;
-        while( pos < mpPassedFormula->size() )
+        Formula::iterator subformula = mpPassedFormula->begin();
+        while( subformula != mpPassedFormula->end() )
         {
-            if( constraintsToCheck.erase( mpPassedFormula->at( pos )->constraint() ) == 0 )
+            if( constraintsToCheck.erase( (*subformula)->constraint() ) == 0 )
             {
-                removeSubformulaFromPassedFormula( pos );
+                subformula = removeSubformulaFromPassedFormula( subformula );
                 changedPassedFormula = true;
             }
             else
             {
-                ++pos;
+                ++subformula;
             }
         }
 

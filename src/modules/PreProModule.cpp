@@ -57,6 +57,16 @@ namespace smtrat
      * Methods:
      */
 
+	/**
+     * Informs about a new constraints.
+     * @param c A new constraint
+     *
+     */
+    bool PreProModule::inform( const Constraint* const _constraint )
+    {
+    	return true;
+    }
+
     /**
      * Adds a constraint to this modul.
      *

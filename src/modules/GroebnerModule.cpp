@@ -84,6 +84,7 @@ namespace smtrat
         //only equalities should be added to the gb
         if( constraint.relation() == CR_EQ )
         {
+			pushBacktrackPoint(_formula);
 			if(!Settings::passGB)
 			{
 				addReceivedSubformulaToPassedFormula( _formula );
@@ -231,17 +232,20 @@ namespace smtrat
     }
 
 	void GroebnerModule::removeSubformula( Formula::const_iterator _formula ) {
-		
+		if((*_formula)->constraint().relation() == CR_EQ) {
+			popBacktrackPoint(_formula);
+		}
 	}
-		
 	
     /**
      *  We add a savepoint
      */
-    void GroebnerModule::pushBacktrackPoint()
+    void GroebnerModule::pushBacktrackPoint(Formula::const_iterator btpoint)
     {
 //		//std::cout << "Push backtrackpoint" << std::endl;
 		saveState();
+		
+		mBacktrackPoints.push_back(btpoint);
         mStateHistory.push_back( GroebnerModuleState( mBasis ) );
 //		//printStateHistory();
 		mInequalities.pushBacktrackPoint();
@@ -250,33 +254,36 @@ namespace smtrat
     /**
      * Erases all states which had more constraints than we have now
      */
-//    void GroebnerModule::popBacktrackPoint()
-//    {
-//	
-//		mPopCausesRecalc = true;
+    void GroebnerModule::popBacktrackPoint(Formula::const_iterator btpoint)
+    {
+		mPopCausesRecalc = true;
+		unsigned nrOfBacktracks = 0;
+		
+		while(mBacktrackPoints[mBacktrackPoints.size()-1-nrOfBacktracks] != btpoint) {
+			++nrOfBacktracks;
+		}
 //		//std::cout << "Pop backtrack" << std::endl;
-//        mStateHistory.pop_back();
-//        // Load the state to be restored;
-//        if( mStateHistory.empty() )
-//        {
-//            // std::cout << "Restore the base state" << std::endl;
-//            mBasis = GiNaCRA::Buchberger<GBSettings::Order>();
-//
-//        }
-//        else
-//        {
+		for(int i = 0; i< nrOfBacktracks; ++i) {
+			mStateHistory.pop_back();
+		}
+		
+        // Load the state to be restored;
+        if( mStateHistory.empty() )
+        {
+            // std::cout << "Restore the base state" << std::endl;
+            mBasis = GiNaCRA::Buchberger<GBSettings::Order>();
+        }
+        else
+        {
 //			//  std::cout << "Restore from history" << std::endl;
-//            mBasis = mStateHistory.back().getBasis();
-//
-//        }
-//		
-//		//mInequalities.popBacktrackPoint();
-//		//std::cout << " New basis: ";
-//		//mBasis.getGbIdeal().print();
-//		//std::cout << std::endl;
-//        super::popBacktrackPoint();
-//		
-//    }
+           mBasis = mStateHistory.back().getBasis();
+        }
+		mInequalities.popBacktrackPoint();
+		//std::cout << " New basis: ";
+		//mBasis.getGbIdeal().print();
+		//std::cout << std::endl;
+
+    }
 
     /**
      * Saves the current state if it is a savepoint (backtrackpoint) so it can be restored later
