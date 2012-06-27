@@ -35,6 +35,9 @@
 #include "Manager.h"
 #include <limits.h>
 
+/// Flag activating some informative and not exaggerated output about module calls.
+//#define MODULE_VERBOSE
+
 using namespace std;
 
 namespace smtrat
@@ -50,7 +53,7 @@ namespace smtrat
         mAllBackends(),
         mPassedFormulaOrigins(),
         mDeductions(),
-        mLastPassedSubformula( mpPassedFormula->begin() ),
+        mFirstSubformulaToPass( mpPassedFormula->end() ),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() )
     {}
 
@@ -218,6 +221,10 @@ namespace smtrat
     	assert( mpReceivedFormula->size() != UINT_MAX );
         mpPassedFormula->addSubformula( _formula );
         mPassedFormulaOrigins[_formula] = _origins;
+        if( mFirstSubformulaToPass == mpPassedFormula->end() )
+        {
+            mFirstSubformulaToPass = mpPassedFormula->last();
+        }
     }
 
 	/**
@@ -233,6 +240,10 @@ namespace smtrat
         originals.push_back( set<const Formula*>() );
 		originals.front().insert( _origin );
 		mPassedFormulaOrigins[_formula] = originals;
+        if( mFirstSubformulaToPass == mpPassedFormula->end() )
+        {
+            mFirstSubformulaToPass = mpPassedFormula->last();
+        }
 	}
 
     /**
@@ -451,18 +462,18 @@ namespace smtrat
 
         mUsedBackends = mpManager->getBackends( mpPassedFormula, this );
 
-        if( mLastPassedSubformula != mpPassedFormula->end() )
+        if( mFirstSubformulaToPass != mpPassedFormula->end() )
         {
-            ++mLastPassedSubformula;
             for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
             {
-                for( Formula::const_iterator subformula = mLastPassedSubformula;
+                for( Formula::const_iterator subformula = mFirstSubformulaToPass;
                      subformula != mpPassedFormula->end(); ++subformula )
                 {
                     (*module)->assertSubformula( subformula );
                 }
             }
         }
+        mFirstSubformulaToPass = mpPassedFormula->end();
         Answer result = Unknown;
         /*
          * Run the backend solver sequentially until the first answers true or false.
@@ -475,25 +486,47 @@ namespace smtrat
             switch( (**module).type() )
             {
             case MT_SimplifierModule:
+            {
                 moduleName = "Simplifier";
                 break;
+            }
             case MT_GroebnerModule:
+            {
                 moduleName = "Groebner";
                 break;
+            }
             case MT_CADModule:
+            {
                 moduleName = "CAD";
                 break;
+            }
             case MT_VSModule:
+            {
                 moduleName = "VS";
                 break;
+            }
             case MT_PreProModule:
+            {
                 moduleName = "Preprocessor";
                 break;
-            default:
+            }
+            case MT_SATModule:
+            {
+                moduleName = "SAT";
                 break;
             }
+            case MT_CNFerModule:
+            {
+                moduleName = "CNF transformer";
+                break;
+            }
+            default:
+            {
+                break;
+            }
+            }
             cout << endl << "Call to module " << moduleName << endl;
-            (**tsmodule).print( cout, " ");
+            (**module).print( cout, " ");
             #endif
             result = (*module)->isConsistent();
             (*module)->receivedFormulaChecked();

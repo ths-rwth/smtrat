@@ -1359,7 +1359,7 @@ NextClause:
                     #endif
                     #ifdef DEBUG_SATMODULE
                     cout << "{ ";
-                    for( Formula::const_iterator subformula = passedFormulaBegin(); subformula != passedFormulaEnd(); ++subformula )
+                    for( Formula::const_iterator subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
                     {
                         cout << (*subformula)->constraint().toString() << " ";
                     }
@@ -1447,6 +1447,12 @@ NextClause:
                                         set<const Formula*, formulaCmpB> sortedConstraints = set<const Formula*, formulaCmpB>();
                                         for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                                         {
+                                            if( (*subformula)->getType() != REALCONSTRAINT )
+                                            {
+                                                cout << (*subformula) << endl;
+                                                (*subformula)->print();
+                                                cout << endl;
+                                            }
 											assert((*subformula)->getType() == REALCONSTRAINT);
                                             sortedConstraints.insert( *subformula );
                                         }

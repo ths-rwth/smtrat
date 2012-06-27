@@ -77,7 +77,7 @@ namespace smtrat
             /// Stores the deductions this module or its backends made.
             std::vector< TheoryDeduction > mDeductions;
             ///
-            Formula::const_iterator mLastPassedSubformula;
+            Formula::const_iterator mFirstSubformulaToPass;
             Formula::const_iterator mFirstUncheckedReceivedSubformula;
 
         public:

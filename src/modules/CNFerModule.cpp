@@ -82,9 +82,6 @@ namespace smtrat
      */
     Answer CNFerModule::isConsistent()
     {
-
-//cout << endl << "isConsistent of " << this << " having type " << type() << endl;
-//print();
         Formula::const_iterator receivedSubformula = firstUncheckedReceivedSubformula();
         while( receivedSubformula != mpReceivedFormula->end() )
         {
@@ -111,27 +108,12 @@ namespace smtrat
             }
             ++receivedSubformula;
         }
-//print();
 		Answer a = runBackends();
 
         if( a == False )
         {
             getInfeasibleSubsets();
         }
-//cout << "Result:   ";
-//if( a == True )
-//{
-//	cout << "True" << endl;
-//}
-//else if( a == Unknown )
-//{
-//	cout << "Unknown" << endl;
-//}
-//else if( a == False )
-//{
-//	cout << "False" << endl;
-//	printInfeasibleSubsets( cout, "          " );
-//}
         return a;
     }
 
