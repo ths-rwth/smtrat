@@ -225,7 +225,7 @@ namespace smtrat
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
         {
             mFirstSubformulaToPass = mpPassedFormula->last();
-        }
+		}
     }
 
 	/**
@@ -244,6 +244,7 @@ namespace smtrat
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
         {
             mFirstSubformulaToPass = mpPassedFormula->last();
+			
         }
 	}
 
@@ -388,6 +389,7 @@ namespace smtrat
                 mInfeasibleSubsets = getInfeasibleSubsets( **backend );
                 return;
             }
+			++backend;
         }
     }
 
@@ -470,7 +472,7 @@ namespace smtrat
                 for( Formula::const_iterator subformula = mFirstSubformulaToPass;
                      subformula != mpPassedFormula->end(); ++subformula )
                 {
-                    (*module)->assertSubformula( subformula );
+	                (*module)->assertSubformula( subformula );
                 }
             }
         }
