@@ -218,6 +218,7 @@ namespace smtrat
 		Answer ans = runBackends();
 		if(ans == False) {
 			 getInfeasibleSubsets();
+			 print();
 			 assert(!mInfeasibleSubsets.empty());
 		//	 printInfeasibleSubsets();
 		}
