@@ -263,14 +263,37 @@ namespace smtrat
             {
                 assert( isBooleanCombination() );
                 assert( !mpSubformulas->empty() );
-                return --mpSubformulas->end();
+				iterator it = mpSubformulas->begin();
+				iterator result = mpSubformulas->begin();
+				while(result != mpSubformulas->end()) {
+					++it;
+					if(it == mpSubformulas->end()) {
+						break;
+					}
+					++result;
+				}
+				assert(result != mpSubformulas->end());
+				assert(result == --mpSubformulas->end());
+				return result;
             }
 
             const_iterator last() const
             {
                 assert( isBooleanCombination() );
                 assert( !mpSubformulas->empty() );
-                return --mpSubformulas->end();
+                const_iterator it = mpSubformulas->begin();
+				const_iterator result = mpSubformulas->begin();
+				while(result != mpSubformulas->end()) {
+					++it;
+					if(it == mpSubformulas->end()) {
+						break;
+					}
+					++result;
+				}
+				assert(result != mpSubformulas->end());
+				assert(result == --mpSubformulas->end());
+                
+				return result;
             }
 
             // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
