@@ -96,9 +96,9 @@ namespace smtrat
      *
      * @param _subformula The sub formula of the received formula to remove.
      */
-    void Module::removeSubformula( Formula::const_iterator _subformula )
+    void Module::removeSubformula( Formula::const_iterator _receivedSubformula )
     {
-        if( mFirstUncheckedReceivedSubformula == _subformula )
+		if( mFirstUncheckedReceivedSubformula == _receivedSubformula )
         {
             ++mFirstUncheckedReceivedSubformula;
         }
@@ -106,22 +106,22 @@ namespace smtrat
          * Check if the constraint to delete is an original constraint of constraints in the vector
          * of passed constraints.
          */
-        for( Formula::iterator subformula = mpPassedFormula->begin();
-                subformula != mpPassedFormula->end(); ++subformula )
+        for( Formula::iterator passedSubformula = mpPassedFormula->begin();
+                passedSubformula != mpPassedFormula->end();  )
         {
             /*
              * Remove the received formula from the set of origins.
              */
-            vec_set_const_pFormula& formulaOrigins = mPassedFormulaOrigins[*subformula];
+            vec_set_const_pFormula& formulaOrigins = mPassedFormulaOrigins[*passedSubformula];
             vec_set_const_pFormula::iterator formulaOrigin = formulaOrigins.begin();
             while( formulaOrigin != formulaOrigins.end() )
             {
-                /*
+				/*
                  * If the received formula is in the set of origins, erase it.
                  */
-                if( formulaOrigin->erase( *_subformula ) != 0 )
+				if( formulaOrigin->find( *_receivedSubformula ) != formulaOrigin->end() )
                 {
-                    // Erase the changed set.
+				   // Erase the changed set.
                     formulaOrigin = formulaOrigins.erase( formulaOrigin );
                 }
                 else
@@ -129,13 +129,14 @@ namespace smtrat
                     ++formulaOrigin;
                 }
             }
+			
             if( formulaOrigins.empty() )
             {
-                removeSubformulaFromPassedFormula( subformula++ );
+                passedSubformula = removeSubformulaFromPassedFormula( passedSubformula );
             }
             else
             {
-                ++subformula;
+                ++passedSubformula;
             }
         }
         /*
@@ -147,7 +148,7 @@ namespace smtrat
             set< const Formula* >::iterator infSubformula = infSubSet->begin();
             while( infSubformula != infSubSet->end() )
             {
-                if( *infSubformula == *_subformula )
+                if( *infSubformula == *_receivedSubformula )
                 {
                     break;
                 }
