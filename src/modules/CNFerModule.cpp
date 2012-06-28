@@ -218,7 +218,7 @@ namespace smtrat
 		        		phis.push_back( currentFormula->pruneBack() );
 		        	}
                     unsigned formulasToAssertSizeBefore = _formulasToAssert.size();
-                    Formula::iterator lastPassedSubformula = mpPassedFormula->last();
+                    Formula::iterator lastPassedSubformula = ( mpPassedFormula->empty() ? mpPassedFormula->end() : mpPassedFormula->last() );
 		        	while( !phis.empty() )
 		        	{
 		        		Formula* currentSubformula = phis.back();
