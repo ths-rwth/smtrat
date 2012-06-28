@@ -29,8 +29,8 @@ namespace smtrat {
 		typedef GiNaCRA::BaseReductor<Order> Reductor;
 		
 		static const bool passGB = true;
-		static const bool getReasonsForInfeasibility = true;
-		static const bool passWithMinimalReasons = true;
+		static const bool getReasonsForInfeasibility = false;
+		static const bool passWithMinimalReasons = false;
 		static const bool checkInequalities = false;
 		static const pass_inequalities passInequalities = AS_RECEIVED;
 		static const bool checkInequalitiesForTrivialSumOfSquares = true;

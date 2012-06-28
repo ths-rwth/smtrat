@@ -88,7 +88,7 @@ namespace smtrat
 		typedef GBSettings::Reductor Reductor;
 
 	public:
-		InequalitiesRow(GroebnerModule*, const Formula* const received, unsigned btpoint) ;
+		InequalitiesRow(GroebnerModule*, Formula::const_iterator received, unsigned btpoint) ;
 
 		Answer reduceWithGb(const Ideal& gb, unsigned btpoint);
 
@@ -96,7 +96,7 @@ namespace smtrat
 
 		void print(std::ostream& os = std::cout ) const;
 	protected:
-		const Formula* receivedFormulaEntry;
+		Formula::const_iterator receivedFormulaEntry;
 		Constraint_Relation relation;
 		Formula::const_iterator passedFormulaEntry;
 		std::list<std::pair<unsigned,Polynomial> > reductions;
@@ -114,13 +114,15 @@ namespace smtrat
 	public:
 		InequalitiesTable(GroebnerModule*  module);
 
-		void InsertReceivedFormula(const Formula* const received );
+		void InsertReceivedFormula(Formula::const_iterator received );
 
 		void pushBacktrackPoint() ;
 
 		void popBacktrackPoint() ;
 
 		void reduceWRTGroebnerBasis(const Ideal& gb);
+		
+		void removeInequality(Formula::const_iterator _formula);
 
 		void print(std::ostream& os= std::cout) const;
 

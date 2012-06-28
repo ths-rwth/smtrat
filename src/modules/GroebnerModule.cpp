@@ -58,13 +58,14 @@ namespace smtrat
 		assert(Settings::passInequalities != FULL_REDUCED_ONLYNEW); // not supported yet!
         mModuleType = MT_GroebnerModule;
 		mPopCausesRecalc = false;
+		pushBacktrackPoint(mpReceivedFormula->end());
     }
 
     GroebnerModule::~GroebnerModule(){}
 
     bool GroebnerModule::assertSubformula( Formula::const_iterator _formula )
     {
-        assert( (*_formula)->getType() == REALCONSTRAINT );
+		assert( (*_formula)->getType() == REALCONSTRAINT );
         Module::assertSubformula( _formula ); 
 		
 		const Constraint& constraint = (*_formula)->constraint();
@@ -83,18 +84,19 @@ namespace smtrat
 
         //only equalities should be added to the gb
         if( constraint.relation() == CR_EQ )
-        {
+		{
 			pushBacktrackPoint(_formula);
+		    mBasis.addPolynomial( Polynomial( constraint.lhs() ) );
+			saveState();
+			
 			if(!Settings::passGB)
 			{
 				addReceivedSubformulaToPassedFormula( _formula );
 			}
-		    mBasis.addPolynomial( Polynomial( constraint.lhs() ) );
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
 		{
 			addReceivedSubformulaToPassedFormula( _formula );
-			//mInequalities.InsertReceivedFormula( _formula );
 		}
 
 
@@ -103,128 +105,121 @@ namespace smtrat
 
     Answer GroebnerModule::isConsistent()
     {
-		Answer answer = specialCaseConsistencyCheck();
-        if( answer != Unknown )
-        {
-            return answer;
-        }
-
+	
         if(!mBasis.inputEmpty()) {
-			//first, we interreduce the input!
+//			//first, we interreduce the input!
 			mBasis.reduceInput();
 		}
-	    //If no equalities are added, we do not know anything 
+		print();
+//	    //If no equalities are added, we do not know anything 
 		if( !mBasis.inputEmpty() || (mPopCausesRecalc && mBasis.nrOriginalConstraints() > 0) )
         {
-
 			mPopCausesRecalc = false;
 		   //now, we calculate the groebner basis
 			mBasis.calculate();
-
+			
+			mBasis.getGbIdeal().print();
 			
             Polynomial witness;
-			#ifdef USE_NSS
-			// On linear systems, all solutions lie in Q. So we do not have to check for a solution.
-			if( !mBasis.isConstant() && !mBasis.getGbIdeal().isLinear())  
-            {
-                // Lets search for a witness. We only have to do this if the gb is non-constant.
-				
-				std::set<unsigned> variables;
-				std::set<unsigned> superfluous = mBasis.getGbIdeal().getSuperfluousVariables();
-				//std::cout << "nr of sup variables: " << superfluous.size();
-				std::set_difference(mVariablesInEqualities.begin(), mVariablesInEqualities.end(),
-						superfluous.begin(),  superfluous.end(),
-						std::inserter( variables, variables.end() ));
-
-						
-				//std::cout << "reduced nr variables from " << mVariablesInEqualities.size() << " to " << variables.size() << std::endl;
-				unsigned vars = variables.size();
-                // We currently only try with a low nr of variables.
-                if( vars < Settings::SDPupperBoundNrVariables )
-                {
-					std::cout << "Run SDP" << std::endl;
-					
-                    GroebnerToSDP<Settings::Order> sdp( mBasis.getGbIdeal(), MonomialIterator( variables, Settings::maxSDPdegree ) );
-                    witness = sdp.findWitness();
-				}
-            }
-            // We have found an infeasible subset. Generate it.
-            if( mBasis.isConstant() || !witness.isZero() )
-			#else
-			if(mBasis.isConstant())
-			#endif
-			{
-                mInfeasibleSubsets.push_back( set<const Formula*>() );
-                // The equalities we used for the basis-computation are the infeasible subset
-				if( mBasis.isConstant() ) {
-					witness = mBasis.getGb().front();
-				}
-				GiNaCRA::BitVector::const_iterator origIt = witness.getOrigins().getBitVector().begin();
-
-				for( Formula::const_iterator it = mpReceivedFormula->begin(); it != mpReceivedFormula->end(); ++it )
-                {
-					assert((*it)->getType() == REALCONSTRAINT);
-                    if( (*it)->constraint().relation() == CR_EQ )
-                    {
-						if(Settings::getReasonsForInfeasibility) {
-							if (origIt.get()) {
-								mInfeasibleSubsets.back().insert( *it );
-							}
-							origIt++;
-						} else {
-							mInfeasibleSubsets.back().insert(*it);
-						}
-                    }
-                }
-
-
-                return False;
-            }
-
-            saveState();
-
-            // We do not know, but we want to present our simplified constraints to other modules.
-            // We therefore add the equalities
-          
-		//	mInequalities.print();
-		//	print();
-		//	mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
-		//	printReceivedFormula();
-		//	mInequalities.print();
-
-            //remove the former GB from subformulas and if enabled check the inequalities
-			// We might add some Formulas, these do not have to be treated again.
-			
-			if(Settings::passGB) {
-//				unsigned nrOfFormulasInPassed = mpP();
-//				for( unsigned i = 0; i < nrOfFormulasInPassed; )
-//				{
-//					assert(passedFormulaAt(i)->getType() == REALCONSTRAINT);
-//					if( passedFormulaAt( i )->constraint().relation() == CR_EQ )
-//					{
-//						super::removeSubformulaFromPassedFormula( i );
-//						--nrOfFormulasInPassed;
-//					}
-//					else
-//					{
-//						i++;
-//					}
+//			#ifdef USE_NSS
+//			// On linear systems, all solutions lie in Q. So we do not have to check for a solution.
+//			if( !mBasis.isConstant() && !mBasis.getGbIdeal().isLinear())  
+//            {
+//                // Lets search for a witness. We only have to do this if the gb is non-constant.
+//				
+//				std::set<unsigned> variables;
+//				std::set<unsigned> superfluous = mBasis.getGbIdeal().getSuperfluousVariables();
+//				//std::cout << "nr of sup variables: " << superfluous.size();
+//				std::set_difference(mVariablesInEqualities.begin(), mVariablesInEqualities.end(),
+//						superfluous.begin(),  superfluous.end(),
+//						std::inserter( variables, variables.end() ));
+//
+//						
+//				//std::cout << "reduced nr variables from " << mVariablesInEqualities.size() << " to " << variables.size() << std::endl;
+//				unsigned vars = variables.size();
+//                // We currently only try with a low nr of variables.
+//                if( vars < Settings::SDPupperBoundNrVariables )
+//                {
+//					std::cout << "Run SDP" << std::endl;
+//					
+//                    GroebnerToSDP<Settings::Order> sdp( mBasis.getGbIdeal(), MonomialIterator( variables, Settings::maxSDPdegree ) );
+//                    witness = sdp.findWitness();
 //				}
-//		
-			
-
-				if(!mInfeasibleSubsets.empty()) {
-					assert(false);
-					return False;
+//            }
+//            // We have found an infeasible subset. Generate it.
+//            if( mBasis.isConstant() || !witness.isZero() )
+//			#else
+//			if(mBasis.isConstant())
+//////			#endif
+//			{
+//				std::cout << "Infeasible" << std::endl;
+//                mInfeasibleSubsets.push_back( set<const Formula*>() );
+////                // The equalities we used for the basis-computation are the infeasible subset
+////				if( mBasis.isConstant() ) {
+////					witness = mBasis.getGb().front();
+////				}
+////				GiNaCRA::BitVector::const_iterator origIt = witness.getOrigins().getBitVector().begin();
+//				auto it = mBacktrackPoints.begin();
+//				for(++it ; it != mBacktrackPoints.end(); ++it )
+//				{
+//					std::cout << **it << std::endl;
+//					assert((**it)->getType() == REALCONSTRAINT);
+//                    assert((**it)->constraint().relation() == CR_EQ );
+////                    
+////					if(Settings::getReasonsForInfeasibility) {
+////						if (origIt.get()) {
+////							mInfeasibleSubsets.back().insert( **it );
+////						}
+////						origIt++;
+////					} else {
+//						mInfeasibleSubsets.back().insert(**it);
+////					}
+//                }
+////
+//				print();
+//                return False;
+//            }
+////
+            saveState();
+			//printStateHistory();
+//            // We do not know, but we want to present our simplified constraints to other modules.
+//            // We therefore add the equalities
+//          
+//		//	mInequalities.print();
+//		//	print();
+//		//	mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
+//		//	printReceivedFormula();
+//		//	mInequalities.print();
+//
+//            //remove the former GB from subformulas and if enabled check the inequalities
+//			// We might add some Formulas, these do not have to be treated again.
+//			
+			if(Settings::passGB) {
+				for( Formula::iterator i = mpPassedFormula->begin(); i != mpPassedFormula->end();  )
+				{
+					assert((*i)->getType() == REALCONSTRAINT);
+					if( ( *i )->constraint().relation() == CR_EQ )
+					{
+						i = super::removeSubformulaFromPassedFormula( i );
+					}
+					else
+					{
+						++i;
+					}
 				}
 
 				passGB();
 			}
         }
+		else {
+			std::cout  << "Groebner has nothing to do" << std::endl;
+		}
 		//print();
 		Answer ans = runBackends();
 		if(ans == False) {
 			 getInfeasibleSubsets();
+			 assert(!mInfeasibleSubsets.empty());
+		//	 printInfeasibleSubsets();
 		}
         //std::cout << "Backend result:" << ans << std::endl;
 		
@@ -232,12 +227,17 @@ namespace smtrat
     }
 
 	void GroebnerModule::removeSubformula( Formula::const_iterator _formula ) {
+		std::cout << "remove " << *_formula << std::endl;
+	//	print();
 		if((*_formula)->constraint().relation() == CR_EQ) {
 			popBacktrackPoint(_formula);
 		} else {
-			//mInequalities.re
+//			if(Settings::checkInequalities) {
+//				mInequalities.removeInequality(_formula);
+//			}
 		}
-		
+		super::removeSubformula( _formula );
+	//	print();
 	}
 	
     /**
@@ -245,13 +245,21 @@ namespace smtrat
      */
     void GroebnerModule::pushBacktrackPoint(Formula::const_iterator btpoint)
     {
-//		//std::cout << "Push backtrackpoint" << std::endl;
-		saveState();
-		
+		assert( mBacktrackPoints.empty() || (*btpoint)->getType() == REALCONSTRAINT);
+		assert(mBacktrackPoints.size() == mStateHistory.size());
+		std::cout << "Push backtrackpoint " << *btpoint << std::endl;
+		if(!mBacktrackPoints.empty())
+		{
+			saveState();
+		}
 		mBacktrackPoints.push_back(btpoint);
         mStateHistory.push_back( GroebnerModuleState( mBasis ) );
-//		//printStateHistory();
-		mInequalities.pushBacktrackPoint();
+		assert(mBacktrackPoints.size() == mStateHistory.size());
+		//printStateHistory();
+		//if(Settings::checkInequalities) {
+		//	mInequalities.pushBacktrackPoint();
+		//}
+	//	std::cout << "pushed btp" << std::endl;
 	}
 
     /**
@@ -259,33 +267,54 @@ namespace smtrat
      */
     void GroebnerModule::popBacktrackPoint(Formula::const_iterator btpoint)
     {
+		assert(mBacktrackPoints.size() == mStateHistory.size());
+		assert(!mBacktrackPoints.empty());
 		mPopCausesRecalc = true;
 		unsigned nrOfBacktracks = 1;
-		
-		while(mBacktrackPoints[mBacktrackPoints.size()-nrOfBacktracks] != btpoint) {
+		std::cout << "Backtrack to " << *btpoint << std::endl;
+		print();
+		printStateHistory();
+		while(!mBacktrackPoints.empty()) {
+			//std::cout << "Pop backtrack " << *(mBacktrackPoints.back()) << std::endl;
+			if(mBacktrackPoints.back() == btpoint) {
+				mBacktrackPoints.pop_back();
+				break;
+			}
 			++nrOfBacktracks;
+			mBacktrackPoints.pop_back();
 		}
-//		//std::cout << "Pop backtrack" << std::endl;
+		
 		for(unsigned i = 0; i< nrOfBacktracks; ++i) {
 			assert(!mStateHistory.empty());
 			mStateHistory.pop_back();
 		}
+		assert(mBacktrackPoints.size() == mStateHistory.size());
 		
-        // Load the state to be restored;
-        if( mStateHistory.empty() )
-        {
-            // std::cout << "Restore the base state" << std::endl;
-            mBasis = GiNaCRA::Buchberger<GBSettings::Order>();
-        }
-        else
-        {
-//			//  std::cout << "Restore from history" << std::endl;
-           mBasis = mStateHistory.back().getBasis();
-        }
-		mInequalities.popBacktrackPoint();
-		//std::cout << " New basis: ";
-		//mBasis.getGbIdeal().print();
-		//std::cout << std::endl;
+		
+		assert(!mStateHistory.empty());
+
+		// Load the state to be restored;
+        mBasis = mStateHistory.back().getBasis();
+//        
+//		if(Settings::checkInequalities) {
+	//		mInequalities.popBacktrackPoint();
+	//	}
+		
+		//We should not add this one again.
+		btpoint++;
+		//Add all others
+		for(Formula::const_iterator it = btpoint; it != mpReceivedFormula->end(); ++it) {
+			assert( (*it)->getType() == REALCONSTRAINT);
+			if((*it)->constraint().relation() == CR_EQ) {
+				pushBacktrackPoint(it);
+				mBasis.addPolynomial(Polynomial((*it)->constraint().lhs()));
+				// and save them
+				saveState();
+			}
+		}
+		std::cout << " New basis: ";
+		mBasis.getGbIdeal().print();
+		std::cout << std::endl;
 
     }
 
@@ -295,19 +324,17 @@ namespace smtrat
      */
     bool GroebnerModule::saveState()
     {
-        //If nothing new was added, we just update our state!
-//        if( !mBackTrackPoints.empty() && lastBacktrackpointsEnd() == (signed)receivedFormulaSize() - 1 )
-//        {
-//         //   std::cout << "We update our state!" << std::endl;
-//            mStateHistory.pop_back();
-//            mStateHistory.push_back( GroebnerModuleState( mBasis ) );
-//            return true;
-//        }
-//		
-        return false;
+		assert(mStateHistory.size() == mBacktrackPoints.size());
+		std::cout << "We update our state!" << std::endl;
+		mStateHistory.pop_back();
+		mStateHistory.push_back( GroebnerModuleState( mBasis ) );
+		std::cout << "Saved a state" << std::endl;
+		//printStateHistory();
+		return true;
     }
 
 	void GroebnerModule::passGB() {
+		assert(Settings::passGB);
 		vec_set_const_pFormula originals;
 		originals.push_back( set<const Formula*>() );
 
@@ -368,10 +395,10 @@ namespace smtrat
 	
 	
 	
-	InequalitiesRow::InequalitiesRow(GroebnerModule* module, const Formula* const received, unsigned btpoint) :
-	receivedFormulaEntry(received), relation(received->constraint().relation()), passedFormulaEntry(), mModule(module)
+	InequalitiesRow::InequalitiesRow(GroebnerModule* module, Formula::const_iterator received, unsigned btpoint) :
+	receivedFormulaEntry(received), relation((*received)->constraint().relation()), passedFormulaEntry(), mModule(module)
 	{
-		reductions.push_back(std::pair<unsigned, Polynomial>(btpoint, Polynomial(received->constraint().lhs()) ) );
+		reductions.push_back(std::pair<unsigned, Polynomial>(btpoint, Polynomial((*received)->constraint().lhs()) ) );
 		
 	}
 
@@ -392,7 +419,7 @@ namespace smtrat
 			}
 			std::vector<std::set<const Formula*> > originals;
 			originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
-			originals.front().insert(receivedFormulaEntry);
+			originals.front().insert(*receivedFormulaEntry);
 //			passedFormulaEntry = mModule->addSubformulaToPassedFormula(Formula::newConstraint(reduced.toEx(), relation), originals );
 			
 		}
@@ -406,14 +433,14 @@ namespace smtrat
 			passedFormulaEntry = mModule->mpPassedFormula->end();
 			std::vector<std::set<const Formula*> > originals;
 			originals.push_back(mModule->generateReasons(reductions.back().second.getOrigins().getBitVector()));
-			originals.front().insert(receivedFormulaEntry);
-//			mModule->addSubformulaToPassedFormula(&passedFormulaEntry, originals );
+			originals.front().insert(*receivedFormulaEntry);
+			mModule->addSubformulaToPassedFormula(*receivedFormulaEntry, originals );
 		}
 		return true;
 	}
 
 	void InequalitiesRow::print(std::ostream& os) const {
-		os << receivedFormulaEntry << " " << relationToString(relation) << " 0 %%% ";
+		os << *receivedFormulaEntry << " " << relationToString(relation) << " 0 %%% ";
 		for( auto it = reductions.begin(); it != reductions.end(); ++it ) {
 			os << it->second << "(" << it->first << ") ";
 		}
@@ -426,7 +453,7 @@ namespace smtrat
 		
 	}
 
-	void InequalitiesTable::InsertReceivedFormula(const Formula* received ) {
+	void InequalitiesTable::InsertReceivedFormula(Formula::const_iterator received ) {
 		assert(mReducedInequalities.size() == mNrInequalitiesForBtPoints.back());
 		mReducedInequalities.push_back(InequalitiesRow(mModule, received, mNrInequalitiesForBtPoints.size() -1 ) );
 		mNrInequalitiesForBtPoints.back() = mNrInequalitiesForBtPoints.back() + 1;
