@@ -225,6 +225,12 @@ namespace smtrat
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
         {
             mFirstSubformulaToPass = mpPassedFormula->last();
+			bool found = false;
+			for(auto it = mpPassedFormula->begin(); it != mpPassedFormula->end(); ++it) {
+				if(mFirstSubformulaToPass == it) found = true;
+			}
+			assert(found);
+            
 		}
     }
 
@@ -244,7 +250,11 @@ namespace smtrat
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
         {
             mFirstSubformulaToPass = mpPassedFormula->last();
-			
+			bool found = false;
+			for(auto it = mpPassedFormula->begin(); it != mpPassedFormula->end(); ++it) {
+				if(mFirstSubformulaToPass == it) found = true;
+			}
+			assert(found);        
         }
 	}
 
@@ -464,9 +474,14 @@ namespace smtrat
         passedFormulaCannotBeSolved();
 
         mUsedBackends = mpManager->getBackends( mpPassedFormula, this );
-
+		
         if( mFirstSubformulaToPass != mpPassedFormula->end() )
         {
+			bool found = false;
+			for(auto it = mpPassedFormula->begin(); it != mpPassedFormula->end(); ++it) {
+				if(mFirstSubformulaToPass == it) found = true;
+			}
+			assert(found);
             for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
             {
                 for( Formula::const_iterator subformula = mFirstSubformulaToPass;
@@ -566,6 +581,14 @@ namespace smtrat
     {
        	assert( _subformula != mpPassedFormula->end() );
 
+		
+		if(_subformula == mFirstSubformulaToPass) {
+			//std::cout << "FIRST MOVED " << *mFirstSubformulaToPass << std::endl;
+			//print();
+			mFirstSubformulaToPass++;
+			//std::cout << "FIRST NOW " << *mFirstSubformulaToPass << std::endl;
+			
+		}
         /*
          * Delete the sub formula from the passed formula.
          */
@@ -629,6 +652,7 @@ namespace smtrat
     Formula::iterator Module::pruneSubformulaFromPassedFormula( Formula::iterator _subformula )
     {
        	assert( _subformula != mpPassedFormula->end() );
+		
 
         /*
          * Delete the sub formula from the passed formula.
