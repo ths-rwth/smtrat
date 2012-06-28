@@ -96,11 +96,13 @@ namespace smtrat
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
 		{
-			addReceivedSubformulaToPassedFormula( _formula );
+			if(Settings::passInequalities == AS_RECEIVED) {
+				addReceivedSubformulaToPassedFormula( _formula );
+			}
+			mInequalities.InsertReceivedFormula(_formula);
 		}
 
-
-        return true;
+		return true;
     }
 
     Answer GroebnerModule::isConsistent()
@@ -110,7 +112,7 @@ namespace smtrat
 //			//first, we interreduce the input!
 			mBasis.reduceInput();
 		}
-		print();
+		
 //	    //If no equalities are added, we do not know anything 
 		if( !mBasis.inputEmpty() || (mPopCausesRecalc && mBasis.nrOriginalConstraints() > 0) )
         {
@@ -118,79 +120,71 @@ namespace smtrat
 		   //now, we calculate the groebner basis
 			mBasis.calculate();
 			
-			mBasis.getGbIdeal().print();
 			
             Polynomial witness;
-//			#ifdef USE_NSS
-//			// On linear systems, all solutions lie in Q. So we do not have to check for a solution.
-//			if( !mBasis.isConstant() && !mBasis.getGbIdeal().isLinear())  
-//            {
-//                // Lets search for a witness. We only have to do this if the gb is non-constant.
-//				
-//				std::set<unsigned> variables;
-//				std::set<unsigned> superfluous = mBasis.getGbIdeal().getSuperfluousVariables();
-//				//std::cout << "nr of sup variables: " << superfluous.size();
-//				std::set_difference(mVariablesInEqualities.begin(), mVariablesInEqualities.end(),
-//						superfluous.begin(),  superfluous.end(),
-//						std::inserter( variables, variables.end() ));
-//
-//						
-//				//std::cout << "reduced nr variables from " << mVariablesInEqualities.size() << " to " << variables.size() << std::endl;
-//				unsigned vars = variables.size();
-//                // We currently only try with a low nr of variables.
-//                if( vars < Settings::SDPupperBoundNrVariables )
-//                {
-//					std::cout << "Run SDP" << std::endl;
-//					
-//                    GroebnerToSDP<Settings::Order> sdp( mBasis.getGbIdeal(), MonomialIterator( variables, Settings::maxSDPdegree ) );
-//                    witness = sdp.findWitness();
-//				}
-//            }
-//            // We have found an infeasible subset. Generate it.
-//            if( mBasis.isConstant() || !witness.isZero() )
-//			#else
-//			if(mBasis.isConstant())
-//////			#endif
-//			{
-//				std::cout << "Infeasible" << std::endl;
-//                mInfeasibleSubsets.push_back( set<const Formula*>() );
-////                // The equalities we used for the basis-computation are the infeasible subset
-////				if( mBasis.isConstant() ) {
-////					witness = mBasis.getGb().front();
-////				}
-////				GiNaCRA::BitVector::const_iterator origIt = witness.getOrigins().getBitVector().begin();
-//				auto it = mBacktrackPoints.begin();
-//				for(++it ; it != mBacktrackPoints.end(); ++it )
-//				{
-//					std::cout << **it << std::endl;
-//					assert((**it)->getType() == REALCONSTRAINT);
-//                    assert((**it)->constraint().relation() == CR_EQ );
-////                    
-////					if(Settings::getReasonsForInfeasibility) {
-////						if (origIt.get()) {
-////							mInfeasibleSubsets.back().insert( **it );
-////						}
-////						origIt++;
-////					} else {
-//						mInfeasibleSubsets.back().insert(**it);
-////					}
-//                }
-////
-//				print();
-//                return False;
-//            }
-////
+			#ifdef USE_NSS
+			// On linear systems, all solutions lie in Q. So we do not have to check for a solution.
+			if( !mBasis.isConstant() && !mBasis.getGbIdeal().isLinear())  
+            {
+                // Lets search for a witness. We only have to do this if the gb is non-constant.
+				
+				std::set<unsigned> variables;
+				std::set<unsigned> superfluous = mBasis.getGbIdeal().getSuperfluousVariables();
+				//std::cout << "nr of sup variables: " << superfluous.size();
+				std::set_difference(mVariablesInEqualities.begin(), mVariablesInEqualities.end(),
+						superfluous.begin(),  superfluous.end(),
+						std::inserter( variables, variables.end() ));
+
+						
+				//std::cout << "reduced nr variables from " << mVariablesInEqualities.size() << " to " << variables.size() << std::endl;
+				unsigned vars = variables.size();
+                // We currently only try with a low nr of variables.
+                if( vars < Settings::SDPupperBoundNrVariables )
+                {
+					std::cout << "Run SDP" << std::endl;
+					
+                    GroebnerToSDP<Settings::Order> sdp( mBasis.getGbIdeal(), MonomialIterator( variables, Settings::maxSDPdegree ) );
+                    witness = sdp.findWitness();
+				}
+            }
+            // We have found an infeasible subset. Generate it.
+            if( mBasis.isConstant() || !witness.isZero() )
+			#else
+			if(mBasis.isConstant())
+			#endif
+			{
+		        mInfeasibleSubsets.push_back( set<const Formula*>() );
+                // The equalities we used for the basis-computation are the infeasible subset
+				if( mBasis.isConstant() ) {
+					witness = mBasis.getGb().front();
+				}
+				GiNaCRA::BitVector::const_iterator origIt = witness.getOrigins().getBitVector().begin();
+				auto it = mBacktrackPoints.begin();
+				for(++it ; it != mBacktrackPoints.end(); ++it )
+				{
+					assert((**it)->getType() == REALCONSTRAINT);
+                    assert((**it)->constraint().relation() == CR_EQ );
+//                    
+					if(Settings::getReasonsForInfeasibility) {
+						if (origIt.get()) {
+							mInfeasibleSubsets.back().insert( **it );
+						}
+						origIt++;
+					} else {
+						mInfeasibleSubsets.back().insert(**it);
+					}
+                }
+				
+                return False;
+            }
             saveState();
-			//printStateHistory();
 //            // We do not know, but we want to present our simplified constraints to other modules.
 //            // We therefore add the equalities
-//          
-//		//	mInequalities.print();
-//		//	print();
-//		//	mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
-//		//	printReceivedFormula();
-//		//	mInequalities.print();
-//
+			if(Settings::checkInequalities) {
+				mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
+			}
+			
+			
 //            //remove the former GB from subformulas and if enabled check the inequalities
 //			// We might add some Formulas, these do not have to be treated again.
 //			
@@ -207,18 +201,15 @@ namespace smtrat
 						++i;
 					}
 				}
-
 				passGB();
 			}
         }
-		else {
-			std::cout  << "Groebner has nothing to do" << std::endl;
-		}
+		
 		//print();
 		Answer ans = runBackends();
 		if(ans == False) {
 			 getInfeasibleSubsets();
-			 print();
+			 
 			 assert(!mInfeasibleSubsets.empty());
 		//	 printInfeasibleSubsets();
 		}
@@ -228,14 +219,13 @@ namespace smtrat
     }
 
 	void GroebnerModule::removeSubformula( Formula::const_iterator _formula ) {
-		std::cout << "remove " << *_formula << std::endl;
-	//	print();
+		
 		if((*_formula)->constraint().relation() == CR_EQ) {
 			popBacktrackPoint(_formula);
 		} else {
-//			if(Settings::checkInequalities) {
-//				mInequalities.removeInequality(_formula);
-//			}
+			if(Settings::checkInequalities) {
+				mInequalities.removeInequality(_formula);
+			}
 		}
 		super::removeSubformula( _formula );
 	//	print();
@@ -246,9 +236,10 @@ namespace smtrat
      */
     void GroebnerModule::pushBacktrackPoint(Formula::const_iterator btpoint)
     {
+		
 		assert( mBacktrackPoints.empty() || (*btpoint)->getType() == REALCONSTRAINT);
 		assert(mBacktrackPoints.size() == mStateHistory.size());
-		std::cout << "Push backtrackpoint " << *btpoint << std::endl;
+		//std::cout << "Push backtrackpoint " << *btpoint << std::endl;
 		if(!mBacktrackPoints.empty())
 		{
 			saveState();
@@ -256,6 +247,7 @@ namespace smtrat
 		mBacktrackPoints.push_back(btpoint);
         mStateHistory.push_back( GroebnerModuleState( mBasis ) );
 		assert(mBacktrackPoints.size() == mStateHistory.size());
+		
 		//printStateHistory();
 		//if(Settings::checkInequalities) {
 		//	mInequalities.pushBacktrackPoint();
@@ -268,13 +260,12 @@ namespace smtrat
      */
     void GroebnerModule::popBacktrackPoint(Formula::const_iterator btpoint)
     {
+		assert(validityCheck());
 		assert(mBacktrackPoints.size() == mStateHistory.size());
 		assert(!mBacktrackPoints.empty());
 		mPopCausesRecalc = true;
 		unsigned nrOfBacktracks = 1;
-		std::cout << "Backtrack to " << *btpoint << std::endl;
-		print();
-		printStateHistory();
+	//	std::cout << "Backtrack to " << *btpoint << std::endl;
 		while(!mBacktrackPoints.empty()) {
 			//std::cout << "Pop backtrack " << *(mBacktrackPoints.back()) << std::endl;
 			if(mBacktrackPoints.back() == btpoint) {
@@ -296,6 +287,7 @@ namespace smtrat
 
 		// Load the state to be restored;
         mBasis = mStateHistory.back().getBasis();
+		assert(mBasis.nrOriginalConstraints() == mBacktrackPoints.size()-1);
 //        
 //		if(Settings::checkInequalities) {
 	//		mInequalities.popBacktrackPoint();
@@ -313,9 +305,9 @@ namespace smtrat
 				saveState();
 			}
 		}
-		std::cout << " New basis: ";
-		mBasis.getGbIdeal().print();
-		std::cout << std::endl;
+		
+		assert(mBasis.nrOriginalConstraints() == mBacktrackPoints.size()-1);
+		
 
     }
 
@@ -325,12 +317,12 @@ namespace smtrat
      */
     bool GroebnerModule::saveState()
     {
+		//printStateHistory();
 		assert(mStateHistory.size() == mBacktrackPoints.size());
-		std::cout << "We update our state!" << std::endl;
 		mStateHistory.pop_back();
 		mStateHistory.push_back( GroebnerModuleState( mBasis ) );
-		std::cout << "Saved a state" << std::endl;
 		//printStateHistory();
+		
 		return true;
     }
 
@@ -384,10 +376,33 @@ namespace smtrat
 	void GroebnerModule::printStateHistory()
 	{
 		std::cout <<"[";
+		auto btp = mBacktrackPoints.begin();
 		for(auto it =  mStateHistory.begin(); it != mStateHistory.end(); ++it)  {
-			it->getBasis().getGbIdeal().print(); std::cout << ","<<std::endl;
+			std::cout << **btp << ": ";
+			it->getBasis().getGbIdeal().print(); 
+			std::cout << ","<<std::endl;
+			btp++;
 		}
 		std::cout << "]" << std::endl;
+	}
+	
+	bool GroebnerModule::validityCheck() {
+		auto btp = mBacktrackPoints.begin();
+		++btp;
+		for(auto it = mpReceivedFormula->begin(); it != mpReceivedFormula->end(); ++it) {
+			if((*it)->constraint().relation() == CR_EQ) {
+				
+				if (it != *btp) {
+					print();
+					printStateHistory();
+					std::cout << *it << " != "<< **btp << std::endl;
+						return false;
+					
+				}
+				++btp;
+			}
+		}
+		return true;
 	}
 	
 	void GroebnerModule::removeSubformulaFromPassedFormula(const Formula& _formula) {
