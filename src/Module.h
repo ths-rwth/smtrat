@@ -79,6 +79,8 @@ namespace smtrat
             ///
             Formula::const_iterator mFirstSubformulaToPass;
             Formula::const_iterator mFirstUncheckedReceivedSubformula;
+			
+			bool checkFirstSubformulaToPassValidity() const;
 
         public:
             Module( Manager* const, const Formula* const );
