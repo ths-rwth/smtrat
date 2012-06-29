@@ -1396,7 +1396,7 @@ NextClause:
                     #ifdef DEBUG_SATMODULE
                     cout << "#" << numberOfTheoryCalls << "  ";
                     #else
-                    cout << "\r" << numberOfTheoryCalls << "    ";
+                    cout << "\r" << numberOfTheoryCalls << "    (" << (progressEstimate() * 100) << "%)";
 					std::cout.flush();
                     #endif
                     #endif

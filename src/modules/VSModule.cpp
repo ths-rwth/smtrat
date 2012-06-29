@@ -84,6 +84,7 @@ namespace smtrat
      */
     bool VSModule::assertSubformula( Formula::const_iterator _subformula )
     {
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
     	assert( (*_subformula)->getType() == REALCONSTRAINT );
 		Module::assertSubformula( _subformula );
         if( debugmethods )
@@ -158,6 +159,8 @@ namespace smtrat
      */
     Answer VSModule::isConsistent()
     {
+//        printReceivedFormula();
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
         if( debugmethods )
         {
             cout << __func__ << endl;
@@ -174,6 +177,9 @@ namespace smtrat
             }
         }
         mFreshConstraintReceived = false;
+        #ifndef VS_INCREMENTAL
+        reset();
+        #endif
         if( mpReceivedFormula->empty() )
         {
             return True;
@@ -185,9 +191,6 @@ namespace smtrat
             assert( !mInfeasibleSubsets.back().empty() );
             return False;
         }
-        #ifndef VS_INCREMENTAL
-        reset();
-        #endif
 
         while( !mpRanking->empty() )
         {
@@ -1434,6 +1437,7 @@ namespace smtrat
      */
     void VSModule::updateInfeasibleSubset()
     {
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
         if( debugmethods )
         {
             cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
@@ -1519,6 +1523,7 @@ namespace smtrat
      */
     void VSModule::reset()
     {
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
         if( debugmethods )
         {
             cout << __func__ << endl;
@@ -1592,7 +1597,7 @@ namespace smtrat
                 }
                 else if( isConstraintConsistent == 0 )
                 {
-                    mInfeasibleSubsets.clear();
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
                     mInfeasibleSubsets.push_back( set< const Formula* >() );
                     mInfeasibleSubsets.back().insert( *cons );
                     mInconsistentConstraintAdded = true;

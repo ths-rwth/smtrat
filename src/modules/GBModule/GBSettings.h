@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   GBSettings.h
  * Author: square
  *
@@ -20,14 +20,14 @@ namespace smtrat {
 	 * FULL_REDUCED_ONLYNEW: Do only a full reduce on the newly added received inequalities.
 	 */
 	enum pass_inequalities { AS_RECEIVED, FULL_REDUCED, REDUCED, REDUCED_ONLYSTRICT, FULL_REDUCED_ONLYNEW };
-	
-	
+
+
 	struct GBSettings {
 		typedef GiNaCRA::GradedLexicgraphic Order;
 		typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
 		typedef GiNaCRA::MultivariateIdeal<Order> MultivariateIdeal;
 		typedef GiNaCRA::BaseReductor<Order> Reductor;
-		
+
 		static const bool passGB = true;
 		static const bool getReasonsForInfeasibility = true;
 		static const bool passWithMinimalReasons = true;
