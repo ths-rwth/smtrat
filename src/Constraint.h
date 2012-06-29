@@ -52,9 +52,7 @@ namespace smtrat
     {
         CR_EQ = 0, CR_NEQ = 1, CR_LESS = 2, CR_GREATER = 3, CR_LEQ = 4, CR_GEQ = 5
     };
-	
-	std::string relationToString(const Constraint_Relation rel); 
-		
+
     struct strCmp
     {
         bool operator ()( std::string s1, std::string s2 ) const
@@ -72,14 +70,24 @@ namespace smtrat
      */
     class Constraint
     {
+        private:
+            /**
+             * Members.
+             */
+            GiNaC::ex*           pLhs;
+            VS_MultiRootLessLhs* pMultiRootLessLhs;
+            GiNaC::symtab        mVariables;
+            Constraint_Relation  mRelation;
+            /// Unique id of this constraint. If the id is zero it means, that this constraint has no unique id.
+            unsigned             mID;
         public:
 
-            /*
+            /**
              * Constructors:
              */
             Constraint();
-            Constraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& );
-            Constraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation&, const GiNaC::symtab& );
+            Constraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab&, unsigned = 0 );
+            Constraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation&, const GiNaC::symtab&, unsigned = 0 );
             Constraint( const Constraint& _constraint );
 
             /*
@@ -120,6 +128,11 @@ namespace smtrat
                 return mRelation;
             }
 
+            unsigned id() const
+            {
+                return mID;
+            }
+
             static void normalize( GiNaC::ex& _exp )
             {
                 #ifdef VS_USE_GINAC_NORMAL
@@ -147,7 +160,7 @@ namespace smtrat
             signed degree( const std::string& ) const;
             signed highestDegree() const;
             bool isLinear() const;
-            std::vector< GiNaC::ex > linearAndConstantCoefficients() const;
+            std::map< const std::string, GiNaC::numeric, strCmp > linearAndConstantCoefficients() const;
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
 
             // Data access methods (read and write).
@@ -162,23 +175,12 @@ namespace smtrat
 
             // Printing methods.
             std::string toString() const;
-            void print( std::ostream& _out = std::cout) const;
-            void print2( std::ostream& _out = std::cout ) const;
+            void print( std::ostream& _out ) const;
+            void print2( std::ostream& _out ) const;
 
             //
             static signed compare( const Constraint&, const Constraint& );
             static bool mergeConstraints( Constraint&, const Constraint& );
-			
-		
-        private:
-
-            /*
-             * Attributes:
-             */
-            GiNaC::ex*           pLhs;
-            VS_MultiRootLessLhs* pMultiRootLessLhs;
-            GiNaC::symtab        mVariables;
-            Constraint_Relation  mRelation;
 
     };
 

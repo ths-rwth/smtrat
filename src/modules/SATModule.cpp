@@ -209,9 +209,7 @@ namespace smtrat
         learntsize_adjust_confl = learntsize_adjust_start_confl;
         learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
 
-        cout << "bla" << endl;
         lbool result = search();
-        cout << "bla2" << endl;
         if( result == l_True )
         {
             // Extend & copy model:

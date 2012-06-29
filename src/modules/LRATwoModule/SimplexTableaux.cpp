@@ -262,19 +262,19 @@ namespace smtrat {
         bool SimplexTableaux::inform(const Constraint * const constraint,
 			BoundMap *boundMap) {
 		GiNaC::symtab variables = constraint->variables();
-		vector<ex> coefficients = constraint->linearAndConstantCoefficients();
-		assert( variables.size() > 0);
-		if (variables.size() > 1) {
-			if (constraint->relation() != CR_NEQ) {
-				inform(constraint, variables, coefficients, boundMap);
-			}
-		} else {
-			numeric coefficientOfVar = ex_to<numeric>(coefficients[0]);
-			numeric constant = ex_to<numeric>(coefficients[1]);
-			ex variable = variables.begin()->second;
-			boundMap->addBound(variable, constraint, coefficientOfVar, constant,
-					constraint->relation());
-		}
+//		vector<ex> coefficients = constraint->linearAndConstantCoefficients();
+//		assert( variables.size() > 0);
+//		if (variables.size() > 1) {
+//			if (constraint->relation() != CR_NEQ) {
+//				inform(constraint, variables, coefficients, boundMap);
+//			}
+//		} else {
+//			numeric coefficientOfVar = ex_to<numeric>(coefficients[0]);
+//			numeric constant = ex_to<numeric>(coefficients[1]);
+//			ex variable = variables.begin()->second;
+//			boundMap->addBound(variable, constraint, coefficientOfVar, constant,
+//					constraint->relation());
+//		}
 		return true;
 	}
 

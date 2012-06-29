@@ -107,10 +107,12 @@ namespace smtrat
             mInfeasibleSubsets.push_back( set< const Formula* >() );
             mInfeasibleSubsets.back().insert( receivedFormulaBack() );
             mInconsistentConstraintAdded = true;
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
             return false;
         }
         case 1:
         {
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
             return true;
         }
         case 2:
@@ -136,6 +138,7 @@ namespace smtrat
 
             insertDTinRanking( mpStateTree );
             mFreshConstraintReceived = true;
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
             return true;
         }
         default:
@@ -177,6 +180,9 @@ namespace smtrat
         }
         if( mInconsistentConstraintAdded )
         {
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
+            assert( !mInfeasibleSubsets.empty() );
+            assert( !mInfeasibleSubsets.back().empty() );
             return False;
         }
         #ifndef VS_INCREMENTAL
@@ -1492,6 +1498,8 @@ namespace smtrat
                 }
             }
         }
+        assert( !mInfeasibleSubsets.empty() );
+        assert( !mInfeasibleSubsets.back().empty() );
 #else
         /*
          * Set the infeasible subset to the set of all received constraints.
@@ -1584,6 +1592,9 @@ namespace smtrat
                 }
                 else if( isConstraintConsistent == 0 )
                 {
+                    mInfeasibleSubsets.clear();
+                    mInfeasibleSubsets.push_back( set< const Formula* >() );
+                    mInfeasibleSubsets.back().insert( *cons );
                     mInconsistentConstraintAdded = true;
                 }
             }

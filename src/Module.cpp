@@ -129,7 +129,7 @@ namespace smtrat
                     ++formulaOrigin;
                 }
             }
-			
+
             if( formulaOrigins.empty() )
             {
                 passedSubformula = removeSubformulaFromPassedFormula( passedSubformula );
@@ -244,7 +244,7 @@ namespace smtrat
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
         {
             mFirstSubformulaToPass = mpPassedFormula->last();
-			
+
         }
 	}
 

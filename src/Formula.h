@@ -234,6 +234,12 @@ namespace smtrat
                 return mpSubformulas->begin();
             }
 
+            iterator end()
+            {
+                assert( isBooleanCombination() );
+                return mpSubformulas->end();
+            }
+
             const_iterator end() const
             {
                 assert( isBooleanCombination() );
@@ -251,6 +257,12 @@ namespace smtrat
             {
                 assert( isBooleanCombination() );
                 return mpSubformulas->rbegin();
+            }
+
+            reverse_iterator rend()
+            {
+                assert( isBooleanCombination() );
+                return mpSubformulas->rend();
             }
 
             const_reverse_iterator rend() const
@@ -292,7 +304,7 @@ namespace smtrat
 				}
 				assert(result != mpSubformulas->end());
 				assert(result == --mpSubformulas->end());
-                
+
 				return result;
             }
 
