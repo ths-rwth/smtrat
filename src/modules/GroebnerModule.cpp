@@ -431,9 +431,9 @@ namespace smtrat
 	}
 
 	void InequalitiesTable::popBacktrackPoint() {
+		assert(mBtnumber > 0);
 		--mBtnumber;
 		for(auto it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) {
-			std::tuple<unsigned, unsigned, unsigned> t;
 			std::list<CellEntry>::iterator listEnd = std::get<2>(it->second).end();
 			for(std::list<CellEntry>::iterator jt = std::get<2>(it->second).begin(); jt != listEnd; ++jt) {
 				if(jt->first > mBtnumber )
@@ -482,6 +482,14 @@ namespace smtrat
 	}
 
 	void InequalitiesTable::print(std::ostream& os) const {
+		std::cout << "Bt: " << mBtnumber << std::endl;
+		for(auto it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) {
+			std::list<CellEntry>::const_iterator listEnd = std::get<2>(it->second).end();
+			std::cout << *(it->first) << " -> " << *(std::get<0>(it->second)) << std::endl;
+			for(std::list<CellEntry>::const_iterator jt = std::get<2>(it->second).begin(); jt != listEnd; ++jt) {
+				std::cout << "\t(" << jt->first << ") "<< jt->second << std::endl;
+			}
+		}
 	}
 
 }    // namespace smtrat
