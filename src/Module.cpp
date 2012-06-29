@@ -225,6 +225,8 @@ namespace smtrat
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
         {
             mFirstSubformulaToPass = mpPassedFormula->last();
+			assert(checkFirstSubformulaToPassValidity());
+            
 		}
     }
 
@@ -244,7 +246,8 @@ namespace smtrat
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
         {
             mFirstSubformulaToPass = mpPassedFormula->last();
-
+			
+			assert(checkFirstSubformulaToPassValidity());        
         }
 	}
 
@@ -464,9 +467,11 @@ namespace smtrat
         passedFormulaCannotBeSolved();
 
         mUsedBackends = mpManager->getBackends( mpPassedFormula, this );
-
+		
         if( mFirstSubformulaToPass != mpPassedFormula->end() )
         {
+			
+			assert(checkFirstSubformulaToPassValidity());
             for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
             {
                 for( Formula::const_iterator subformula = mFirstSubformulaToPass;
@@ -565,7 +570,9 @@ namespace smtrat
     Formula::iterator Module::removeSubformulaFromPassedFormula( Formula::iterator _subformula )
     {
        	assert( _subformula != mpPassedFormula->end() );
-
+		if(_subformula == mFirstSubformulaToPass) {
+			mFirstSubformulaToPass++;
+		}
         /*
          * Delete the sub formula from the passed formula.
          */
@@ -629,6 +636,7 @@ namespace smtrat
     Formula::iterator Module::pruneSubformulaFromPassedFormula( Formula::iterator _subformula )
     {
        	assert( _subformula != mpPassedFormula->end() );
+		
 
         /*
          * Delete the sub formula from the passed formula.
@@ -676,6 +684,12 @@ namespace smtrat
         }
     }
 
+	bool Module::checkFirstSubformulaToPassValidity() const {
+		for(auto it = mpPassedFormula->begin(); it != mpPassedFormula->end(); ++it) {
+			if(mFirstSubformulaToPass == it) return true;
+		}
+		return false;
+	}
     /**
      * Prints everything relevant of the solver.
      *

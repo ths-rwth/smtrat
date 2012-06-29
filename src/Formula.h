@@ -275,17 +275,7 @@ namespace smtrat
             {
                 assert( isBooleanCombination() );
                 assert( !mpSubformulas->empty() );
-				iterator it = mpSubformulas->begin();
-				iterator result = mpSubformulas->begin();
-				while(result != mpSubformulas->end()) {
-					++it;
-					if(it == mpSubformulas->end()) {
-						break;
-					}
-					++result;
-				}
-				assert(result != mpSubformulas->end());
-				assert(result == --mpSubformulas->end());
+				iterator result = --mpSubformulas->end();
 				return result;
             }
 
@@ -293,18 +283,7 @@ namespace smtrat
             {
                 assert( isBooleanCombination() );
                 assert( !mpSubformulas->empty() );
-                const_iterator it = mpSubformulas->begin();
-				const_iterator result = mpSubformulas->begin();
-				while(result != mpSubformulas->end()) {
-					++it;
-					if(it == mpSubformulas->end()) {
-						break;
-					}
-					++result;
-				}
-				assert(result != mpSubformulas->end());
-				assert(result == --mpSubformulas->end());
-
+				const_iterator result = --mpSubformulas->end();
 				return result;
             }
 

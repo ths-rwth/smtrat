@@ -182,6 +182,7 @@ namespace smtrat
 			void passGB();
 
 			void removeSubformulaFromPassedFormula(const Formula&);
+			bool validityCheck();
         private:
             typedef Module super;
 
