@@ -413,60 +413,6 @@ namespace smtrat
 	}
 	
 	
-	
-//	InequalitiesRow::InequalitiesRow(GroebnerModule* module, Formula::const_iterator received) :
-//	receivedFormulaEntry(received), relation((*received)->constraint().relation()), passedFormulaEntry(), mModule(module)
-//	{
-//		reductions.push_back(std::pair<unsigned, Polynomial>(0, Polynomial((*received)->constraint().lhs()) ) );
-//		
-//	}
-//
-//	/**
-//		* Reduce the inequality further with the current gb.
-//		* @param gb
-//		* @param btpoint
-//		* @return 
-//		*/
-//	Answer InequalitiesRow::reduceWithGb(const Ideal& gb, unsigned btpoint) {
-//		Reductor reductor(gb, reductions.back().second);
-//		Polynomial reduced = reductor.fullReduce();
-//		if (reductor.reductionOccured()) {
-//			reductions.push_back(std::pair<unsigned,Polynomial>(btpoint, reduced));
-//			if((*passedFormulaEntry)->getType() != TTRUE) {
-//				(*passedFormulaEntry)->print();
-////				mModule->removeSubformulaFromPassedFormula(passedFormulaEntry);
-//			}
-//			std::vector<std::set<const Formula*> > originals;
-//			originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
-//			originals.front().insert(*receivedFormulaEntry);
-////			passedFormulaEntry = mModule->addSubformulaToPassedFormula(Formula::newConstraint(reduced.toEx(), relation), originals );
-//			
-//		}
-//
-//		return True;
-//	}
-//
-//	bool InequalitiesRow::popBacktrackPoint(unsigned btp) {
-//		if(btp == reductions.back().first) {
-//			reductions.pop_back();
-//			passedFormulaEntry = mModule->mpPassedFormula->end();
-//			std::vector<std::set<const Formula*> > originals;
-//			originals.push_back(mModule->generateReasons(reductions.back().second.getOrigins().getBitVector()));
-//			originals.front().insert(*receivedFormulaEntry);
-//			mModule->addSubformulaToPassedFormula(*receivedFormulaEntry, originals );
-//		}
-//		return true;
-//	}
-//
-//	void InequalitiesRow::print(std::ostream& os) const {
-//		os << *receivedFormulaEntry << " " << relationToString(relation) << " 0 %%% ";
-//		for( auto it = reductions.begin(); it != reductions.end(); ++it ) {
-//			os << it->second << "(" << it->first << ") ";
-//		}
-//
-//	}
-//
-
 	InequalitiesTable::InequalitiesTable(GroebnerModule* module) : mModule(module)
 	{
 		
