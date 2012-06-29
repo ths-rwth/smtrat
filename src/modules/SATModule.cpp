@@ -52,6 +52,7 @@
 //#define DEBUG_SATMODULE
 #define SATMODULE_WITH_CALL_NUMBER
 //#define SAT_MODULE_THEORY_PROPAGATION
+#define WITH_PROGRESS_ESTIMATION
 
 using namespace std;
 using namespace Minisat;
@@ -1601,8 +1602,11 @@ NextClause:
             }
             #ifdef SATMODULE_WITH_CALL_NUMBER
             #ifndef DEBUG_SATMODULE
-//            cout << "\r" << numberOfTheoryCalls << setw(15) << (progressEstimate() * 100) << "%";
+            #ifdef WITH_PROGRESS_ESTIMATION
+            cout << "\r" << numberOfTheoryCalls << setw(15) << (progressEstimate() * 100) << "%";
+            #else
             cout << "\r" << numberOfTheoryCalls;
+            #endif
             cout.flush();
             #endif
             #endif
