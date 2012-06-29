@@ -31,8 +31,8 @@ namespace smtrat {
 		static const bool passGB = true;
 		static const bool getReasonsForInfeasibility = true;
 		static const bool passWithMinimalReasons = true;
-		static const bool checkInequalities = false;
-		static const pass_inequalities passInequalities = AS_RECEIVED;
+		static const bool checkInequalities = true;
+		static const pass_inequalities passInequalities = FULL_REDUCED;
 		static const bool checkInequalitiesForTrivialSumOfSquares = true;
 		static const bool checkEqualitiesForTrivialSumOfSquares = true;
 

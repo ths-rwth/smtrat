@@ -94,7 +94,7 @@ namespace smtrat
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
 		{
-			if(!Settings::checkInequalities || Settings::passInequalities == AS_RECEIVED) {
+			if(!Settings::checkInequalities) {
 				addReceivedSubformulaToPassedFormula( _formula );
 			} else {
 				mInequalities.InsertReceivedFormula(_formula);
@@ -183,7 +183,8 @@ namespace smtrat
 			if(Settings::checkInequalities) {
 				mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
 			}
-			
+			//print();
+			//mInequalities.print();
 			
 //            //remove the former GB from subformulas and if enabled check the inequalities
 //			// We might add some Formulas, these do not have to be treated again.
@@ -294,7 +295,7 @@ namespace smtrat
 		assert(mBasis.nrOriginalConstraints() == mBacktrackPoints.size()-1);
   
 		if(Settings::checkInequalities) {
-			mInequalities.popBacktrackPoint();
+			mInequalities.popBacktrackPoint(nrOfBacktracks);
 		}
 		
 		//We should not add this one again (it is the end)
@@ -415,7 +416,7 @@ namespace smtrat
 	
 	InequalitiesTable::InequalitiesTable(GroebnerModule* module) : mModule(module)
 	{
-		
+		mBtnumber = 0;
 	}
 
 	void InequalitiesTable::InsertReceivedFormula(Formula::const_iterator received ) {
@@ -430,15 +431,23 @@ namespace smtrat
 		++mBtnumber;
 	}
 
-	void InequalitiesTable::popBacktrackPoint() {
-		--mBtnumber;
+	void InequalitiesTable::popBacktrackPoint(unsigned nrOfBacktracks) {
+		assert(mBtnumber >= nrOfBacktracks );
+		mBtnumber -= nrOfBacktracks;
 		for(auto it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) {
-			std::tuple<unsigned, unsigned, unsigned> t;
 			std::list<CellEntry>::iterator listEnd = std::get<2>(it->second).end();
 			for(std::list<CellEntry>::iterator jt = std::get<2>(it->second).begin(); jt != listEnd; ++jt) {
 				if(jt->first > mBtnumber )
 				{
 					std::get<2>(it->second).erase(jt, listEnd);
+					if(GBSettings::passInequalities == FULL_REDUCED) {
+						mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
+						std::vector<std::set<const Formula*> > originals;
+						originals.push_back(mModule->generateReasons(std::get<2>(it->second).back().second.getOrigins().getBitVector()));
+						originals.front().insert(*(it->first));
+						mModule->addSubformulaToPassedFormula(new Formula(Formula::newConstraint(std::get<2>(it->second).back().second.toEx(), std::get<1>(it->second))), originals);
+						std::get<0>(it->second) = mModule->mpPassedFormula->last();
+					}
 					break;
 				}
  			}
@@ -452,13 +461,18 @@ namespace smtrat
 			GiNaCRA::BaseReductor<GBSettings::Order> reductor(gb, p);
 			Polynomial reduced = reductor.fullReduce();
 			if(reductor.reductionOccured()) {
-				mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
+				if(GBSettings::passInequalities == FULL_REDUCED) {
+					mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
+				}
 				std::get<2>(it->second).push_back(CellEntry(mBtnumber, reduced) );
-				std::vector<std::set<const Formula*> > originals;
-				originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
-				originals.front().insert(*(it->first));
-				mModule->addSubformulaToPassedFormula(new Formula(Formula::newConstraint(reduced.toEx(), std::get<1>(it->second))), originals);
-				std::get<0>(it->second) = mModule->mpPassedFormula->last();
+				if(GBSettings::passInequalities == FULL_REDUCED) {
+					std::vector<std::set<const Formula*> > originals;
+					originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
+					originals.front().insert(*(it->first));
+				
+					mModule->addSubformulaToPassedFormula(new Formula(Formula::newConstraint(reduced.toEx(), std::get<1>(it->second))), originals);
+					std::get<0>(it->second) = mModule->mpPassedFormula->last();
+				}
 			}
 			
 		}
@@ -469,6 +483,14 @@ namespace smtrat
 	}
 
 	void InequalitiesTable::print(std::ostream& os) const {
+		std::cout << "Bt: " << mBtnumber << std::endl;
+		for(auto it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) {
+			std::list<CellEntry>::const_iterator listEnd = std::get<2>(it->second).end();
+			std::cout << *(it->first) << " -> " << *(std::get<0>(it->second)) << std::endl;
+			for(std::list<CellEntry>::const_iterator jt = std::get<2>(it->second).begin(); jt != listEnd; ++jt) {
+				std::cout << "\t(" << jt->first << ") "<< jt->second << std::endl;
+			}
+		}
 	}
 
 }    // namespace smtrat
