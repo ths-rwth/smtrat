@@ -104,7 +104,7 @@ namespace smtrat
 
 		void pushBacktrackPoint();
 
-		void popBacktrackPoint();
+		void popBacktrackPoint(unsigned nrBacktracks);
 
 		void reduceWRTGroebnerBasis(const Ideal& gb);
 		

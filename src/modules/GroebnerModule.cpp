@@ -294,7 +294,7 @@ namespace smtrat
 		assert(mBasis.nrOriginalConstraints() == mBacktrackPoints.size()-1);
   
 		if(Settings::checkInequalities) {
-			mInequalities.popBacktrackPoint();
+			mInequalities.popBacktrackPoint(nrOfBacktracks);
 		}
 		
 		//We should not add this one again (it is the end)
@@ -430,9 +430,9 @@ namespace smtrat
 		++mBtnumber;
 	}
 
-	void InequalitiesTable::popBacktrackPoint() {
-		assert(mBtnumber > 0);
-		--mBtnumber;
+	void InequalitiesTable::popBacktrackPoint(unsigned nrOfBacktracks) {
+		assert(mBtnumber >= nrOfBacktracks );
+		mBtnumber -= nrOfBacktracks;
 		for(auto it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) {
 			std::list<CellEntry>::iterator listEnd = std::get<2>(it->second).end();
 			for(std::list<CellEntry>::iterator jt = std::get<2>(it->second).begin(); jt != listEnd; ++jt) {
