@@ -149,6 +149,16 @@ namespace smtrat
                 {}
             };
 
+            struct formulaCmpB
+            {
+                bool operator ()( const Formula* const _formulaA, const Formula* const _formulaB ) const
+                {
+                    assert(_formulaA->getType() == REALCONSTRAINT);
+                    assert(_formulaB->getType() == REALCONSTRAINT);
+                    return (_formulaA->constraint() < _formulaB->constraint());
+                }
+            };
+
             /**
              * Members:
              */
@@ -357,7 +367,7 @@ namespace smtrat
             int nVars() const;
             int nFreeVars() const;
 
-            // Resource contraints:
+            // Resource constraints:
             //
             void setConfBudget( int64_t x );
             void setPropBudget( int64_t x );
@@ -367,7 +377,7 @@ namespace smtrat
             // Clear interrupt indicator flag.
             void clearInterrupt();
 
-            // Memory managment:
+            // Memory management:
             //
             virtual void garbageCollect();
             void checkGarbage( double gf );
@@ -397,6 +407,8 @@ namespace smtrat
             void analyzeFinal( Minisat::Lit p, Minisat::vec<Minisat::Lit>& out_conflict );
             // (helper method for 'analyze()')
             bool litRedundant( Minisat::Lit p, uint32_t abstract_levels );
+            //
+            Minisat::CRef learnTheoryReason( const std::set<const Formula*>& );
             // Search for a given number of conflicts.
             Minisat::lbool search( int nof_conflicts = 100 );
             // Main solve method (assumptions given in 'assumptions').
