@@ -19,7 +19,7 @@ namespace smtrat {
 	 * REDUCED_ONLYSTRICT: Pass the nonstrict inequalities reduced, the others unchanged
 	 * FULL_REDUCED_ONLYNEW: Do only a full reduce on the newly added received inequalities.
 	 */
-	enum pass_inequalities { AS_RECEIVED, FULL_REDUCED, REDUCED, REDUCED_ONLYSTRICT, FULL_REDUCED_ONLYNEW };
+	enum pass_inequalities { AS_RECEIVED, FULL_REDUCED, REDUCED, FULL_REDUCED_ONLYNEW };
 
 
 	struct GBSettings {
@@ -33,6 +33,8 @@ namespace smtrat {
 		static const bool passWithMinimalReasons = true;
 		static const bool checkInequalities = true;
 		static const pass_inequalities passInequalities = FULL_REDUCED;
+		static const bool returnAfterFirstInfeasibleSubset = true;
+		static const unsigned setCheckInequalitiesToBeginAfter = 0;
 		static const bool checkInequalitiesForTrivialSumOfSquares = true;
 		static const bool checkEqualitiesForTrivialSumOfSquares = true;
 

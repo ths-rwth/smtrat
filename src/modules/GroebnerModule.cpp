@@ -107,7 +107,7 @@ namespace smtrat
 
     Answer GroebnerModule::isConsistent()
     {
-	
+		assert(mInfeasibleSubsets.empty());
         if(!mBasis.inputEmpty()) {
 //			//first, we interreduce the input!
 			mBasis.reduceInput();
@@ -181,7 +181,10 @@ namespace smtrat
 //            // We do not know, but we want to present our simplified constraints to other modules.
 //            // We therefore add the equalities
 			if(Settings::checkInequalities) {
-				mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
+				Answer ans = mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
+				if(ans != Unknown) {
+					return ans; 
+				}
 			}
 			//print();
 			//mInequalities.print();
@@ -417,6 +420,7 @@ namespace smtrat
 	InequalitiesTable::InequalitiesTable(GroebnerModule* module) : mModule(module)
 	{
 		mBtnumber = 0;
+		mNewConstraints = mReducedInequalities.begin();
 	}
 
 	void InequalitiesTable::InsertReceivedFormula(Formula::const_iterator received ) {
@@ -429,6 +433,11 @@ namespace smtrat
 
 	void InequalitiesTable::pushBacktrackPoint() {
 		++mBtnumber;
+		if(GBSettings::setCheckInequalitiesToBeginAfter > 1) {
+			if(mLastRestart + GBSettings::setCheckInequalitiesToBeginAfter == mBtnumber) {
+				mNewConstraints = mReducedInequalities.begin();
+			}
+		}
 	}
 
 	void InequalitiesTable::popBacktrackPoint(unsigned nrOfBacktracks) {
@@ -454,32 +463,70 @@ namespace smtrat
 		}
 	}
 
-	void InequalitiesTable::reduceWRTGroebnerBasis(const Ideal& gb) {
+	Answer InequalitiesTable::reduceWRTGroebnerBasis(const Ideal& gb) {
 		for(auto it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) 
 		{
 			Polynomial p = std::get<2>(it->second).back().second;
 			GiNaCRA::BaseReductor<GBSettings::Order> reductor(gb, p);
 			Polynomial reduced = reductor.fullReduce();
+			
 			if(reductor.reductionOccured()) {
-				if(GBSettings::passInequalities == FULL_REDUCED) {
-					mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
-				}
-				std::get<2>(it->second).push_back(CellEntry(mBtnumber, reduced) );
-				if(GBSettings::passInequalities == FULL_REDUCED) {
-					std::vector<std::set<const Formula*> > originals;
-					originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
-					originals.front().insert(*(it->first));
-				
-					mModule->addSubformulaToPassedFormula(new Formula(Formula::newConstraint(reduced.toEx(), std::get<1>(it->second))), originals);
-					std::get<0>(it->second) = mModule->mpPassedFormula->last();
+				// check for inconsistent constraints
+				if( ( reduced.isZero() && constraintRelationIsStrict(std::get<1>(it->second)) ) ||
+						( reduced.isConstant() && !constraintRelationIsStrict(std::get<1>(it->second)) ) ) {
+					std::set<const Formula*> infeasibleSubset(mModule->generateReasons(reduced.getOrigins().getBitVector()));
+					infeasibleSubset.insert(*(it->first));
+					
+					mModule->mInfeasibleSubsets.push_back(infeasibleSubset);
+					if(GBSettings::returnAfterFirstInfeasibleSubset) {
+					//	mModule->print();
+						return False;
+					}
+				} 
+				// check for consistent / superfluous constraints
+//				else if (reduced.isZero() && !constraintRelationIsStrict(std::get<1>(it->second)) || 
+//					reduced.isConstant() && constraintRelationIsStrict(std::get<1>(it->second)))
+//				{
+//
+//				}
+				else
+				{
+					if(GBSettings::passInequalities == FULL_REDUCED) 
+					{
+						mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
+					}
+					std::get<2>(it->second).push_back(CellEntry(mBtnumber, reduced) );
+					if(GBSettings::passInequalities == FULL_REDUCED) 
+					{
+						std::vector<std::set<const Formula*> > originals;
+						originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
+						originals.front().insert(*(it->first));
+
+						mModule->addSubformulaToPassedFormula(new Formula(Formula::newConstraint(reduced.toEx(), std::get<1>(it->second))), originals);
+						std::get<0>(it->second) = mModule->mpPassedFormula->last();
+					}
 				}
 			}
 			
 		}
+		if(!GBSettings::returnAfterFirstInfeasibleSubset) {
+			if(mModule->mInfeasibleSubsets.empty()) {
+				return Unknown;
+			} else {
+				return False;
+			}
+		} else {
+			return Unknown;
+		}
+		
 	}
 	
 	void InequalitiesTable::removeInequality(Formula::const_iterator _formula) {
 		mReducedInequalities.erase(_formula);
+		if(mNewConstraints != mReducedInequalities.end() && _formula == mNewConstraints->first) 
+		{
+			++mNewConstraints;
+		}
 	}
 
 	void InequalitiesTable::print(std::ostream& os) const {

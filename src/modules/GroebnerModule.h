@@ -106,7 +106,7 @@ namespace smtrat
 
 		void popBacktrackPoint(unsigned nrBacktracks);
 
-		void reduceWRTGroebnerBasis(const Ideal& gb);
+		Answer reduceWRTGroebnerBasis(const Ideal& gb);
 		
 		void removeInequality(Formula::const_iterator _formula);
 
@@ -116,6 +116,9 @@ namespace smtrat
 		
 		unsigned mBtnumber;
 		GroebnerModule*  mModule;
+		
+		Rows::iterator mNewConstraints;
+		unsigned mLastRestart;
 	};
 
 
