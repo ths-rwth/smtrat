@@ -49,7 +49,7 @@
 
 #include "SATModule.h"
 
-//#define DEBUG_SATMODULE
+#define DEBUG_SATMODULE
 #define SATMODULE_WITH_CALL_NUMBER
 //#define SAT_MODULE_THEORY_PROPAGATION
 //#define WITH_PROGRESS_ESTIMATION
@@ -1325,6 +1325,11 @@ NextClause:
         return true;
     }
 
+    /**
+     *
+     * @param _theoryReason
+     * @return
+     */
     CRef SATModule::learnTheoryReason( const set<const Formula*>& _theoryReason )
     {
         assert( !_theoryReason.empty() );
@@ -1556,6 +1561,10 @@ NextClause:
                                             bestInfeasibleSubset = infsubset;
                                         }
                                     }
+                                    #ifdef DEBUG_SATMODULE
+                                    (*backend)->printInfeasibleSubsets();
+                                    cout << "### { ";
+                                    #endif
                                     confl = learnTheoryReason( *bestInfeasibleSubset );
                                     #else
                                     int conflictSize = mpPassedFormula->size();
