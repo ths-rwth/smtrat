@@ -210,6 +210,11 @@ namespace smtrat
         learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
 
         lbool result = search();
+
+        #ifdef SATMODULE_WITH_CALL_NUMBER
+        cout << endl << endl;
+        #endif
+
         if( result == l_True )
         {
             // Extend & copy model:
@@ -1395,9 +1400,6 @@ NextClause:
                     ++numberOfTheoryCalls;
                     #ifdef DEBUG_SATMODULE
                     cout << "#" << numberOfTheoryCalls << "  ";
-                    #else
-                    cout << "\r" << numberOfTheoryCalls << "    (" << (progressEstimate() * 100) << "%)";
-					std::cout.flush();
                     #endif
                     #endif
                     #ifdef DEBUG_SATMODULE
@@ -1524,7 +1526,7 @@ NextClause:
                                         {
                                             #ifdef DEBUG_SATMODULE
                                             cout << "###" << endl << "### Do not store theory lemma" << endl;
-                                            cout << "### Learnt clause = ";
+                                            cout << "### Learned clause = ";
                                             #endif
 
                                             if( learnt_clause.size() < sizeOfSmallestLearntClause )
@@ -1597,6 +1599,13 @@ NextClause:
                     }
                 }
             }
+            #ifdef SATMODULE_WITH_CALL_NUMBER
+            #ifndef DEBUG_SATMODULE
+//            cout << "\r" << numberOfTheoryCalls << setw(15) << (progressEstimate() * 100) << "%";
+            cout << "\r" << numberOfTheoryCalls;
+            cout.flush();
+            #endif
+            #endif
 
             if( confl != CRef_Undef )
             {
