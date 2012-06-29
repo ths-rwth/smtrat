@@ -94,7 +94,7 @@ namespace smtrat
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
 		{
-			if(!Settings::checkInequalities || Settings::passInequalities == AS_RECEIVED) {
+			if(!Settings::checkInequalities) {
 				addReceivedSubformulaToPassedFormula( _formula );
 			} else {
 				mInequalities.InsertReceivedFormula(_formula);
@@ -440,7 +440,12 @@ namespace smtrat
 				{
 					std::get<2>(it->second).erase(jt, listEnd);
 					if(GBSettings::passInequalities == FULL_REDUCED) {
-
+						mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
+						std::vector<std::set<const Formula*> > originals;
+						originals.push_back(mModule->generateReasons(std::get<2>(it->second).back().second.getOrigins().getBitVector()));
+						originals.front().insert(*(it->first));
+						mModule->addSubformulaToPassedFormula(new Formula(Formula::newConstraint(std::get<2>(it->second).back().second.toEx(), std::get<1>(it->second))), originals);
+						std::get<0>(it->second) = mModule->mpPassedFormula->last();
 					}
 					break;
 				}
@@ -459,10 +464,11 @@ namespace smtrat
 					mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
 				}
 				std::get<2>(it->second).push_back(CellEntry(mBtnumber, reduced) );
-				std::vector<std::set<const Formula*> > originals;
-				originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
-				originals.front().insert(*(it->first));
 				if(GBSettings::passInequalities == FULL_REDUCED) {
+					std::vector<std::set<const Formula*> > originals;
+					originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
+					originals.front().insert(*(it->first));
+				
 					mModule->addSubformulaToPassedFormula(new Formula(Formula::newConstraint(reduced.toEx(), std::get<1>(it->second))), originals);
 					std::get<0>(it->second) = mModule->mpPassedFormula->last();
 				}
