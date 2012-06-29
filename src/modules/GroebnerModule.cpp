@@ -415,7 +415,7 @@ namespace smtrat
 	
 	InequalitiesTable::InequalitiesTable(GroebnerModule* module) : mModule(module)
 	{
-		
+		mBtnumber = 0;
 	}
 
 	void InequalitiesTable::InsertReceivedFormula(Formula::const_iterator received ) {
@@ -439,6 +439,9 @@ namespace smtrat
 				if(jt->first > mBtnumber )
 				{
 					std::get<2>(it->second).erase(jt, listEnd);
+					if(GBSettings::passInequalities == FULL_REDUCED) {
+
+					}
 					break;
 				}
  			}
@@ -452,13 +455,17 @@ namespace smtrat
 			GiNaCRA::BaseReductor<GBSettings::Order> reductor(gb, p);
 			Polynomial reduced = reductor.fullReduce();
 			if(reductor.reductionOccured()) {
-				mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
+				if(GBSettings::passInequalities == FULL_REDUCED) {
+					mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
+				}
 				std::get<2>(it->second).push_back(CellEntry(mBtnumber, reduced) );
 				std::vector<std::set<const Formula*> > originals;
 				originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
 				originals.front().insert(*(it->first));
-				mModule->addSubformulaToPassedFormula(new Formula(Formula::newConstraint(reduced.toEx(), std::get<1>(it->second))), originals);
-				std::get<0>(it->second) = mModule->mpPassedFormula->last();
+				if(GBSettings::passInequalities == FULL_REDUCED) {
+					mModule->addSubformulaToPassedFormula(new Formula(Formula::newConstraint(reduced.toEx(), std::get<1>(it->second))), originals);
+					std::get<0>(it->second) = mModule->mpPassedFormula->last();
+				}
 			}
 			
 		}
