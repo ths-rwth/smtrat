@@ -36,33 +36,6 @@ namespace smtrat
     using namespace std;
     using namespace GiNaC;
 
-	
-	std::string relationToString(const Constraint_Relation rel) {
-		switch( rel )
-        {
-        case CR_EQ:
-			return "=";
-            break;
-        case CR_NEQ:
-            return "<>";
-            break;
-        case CR_LESS:
-            return "<";
-            break;
-        case CR_GREATER:
-            return ">";
-            break;
-        case CR_LEQ:
-            return "<=";
-            break;
-        case CR_GEQ:
-            return ">=";
-            break;
-        default:
-            return "~";
-        }
-	}
-	
     /**
      * Constructors:
      */
@@ -73,9 +46,10 @@ namespace smtrat
         pMultiRootLessLhs = NULL;
         mRelation         = CR_EQ;
         mVariables        = symtab();
+        mID               = 0;
     }
 
-    Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _vars )
+    Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _vars, unsigned _id )
     {
         pLhs              = new ex( _lhs );
         normalize( rLhs() );
@@ -89,12 +63,13 @@ namespace smtrat
         		mVariables.insert( *var );
         	}
         }
+        mID               = _id;
 #ifdef TS_CONSTRAINT_SIMPLIFIER
         simplify();
 #endif
     }
 
-    Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _vars )
+    Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _vars, unsigned _id )
     {
         pLhs              = new ex( _lhs - _rhs );
         normalize( rLhs() );
@@ -108,6 +83,7 @@ namespace smtrat
         		mVariables.insert( *var );
         	}
         }
+        mID               = _id;
 #ifdef TS_CONSTRAINT_SIMPLIFIER
         simplify();
 #endif
@@ -119,6 +95,7 @@ namespace smtrat
         pMultiRootLessLhs = NULL;
         mRelation         = Constraint_Relation( _constraint.relation() );
         mVariables        = symtab( _constraint.variables() );
+        mID               = _constraint.id();
     }
 
     /**
@@ -627,18 +604,122 @@ namespace smtrat
      *
      * @return The linear coefficients of each variable and their common constant part.
      */
-	vector< ex > Constraint::linearAndConstantCoefficients() const
+	map< const string, numeric, strCmp > Constraint::linearAndConstantCoefficients() const
 	{
-		vector< ex > result = vector< ex >();
-		ex constantPart = lhs();
-		for( symtab::const_iterator var = variables().begin(); var != variables().end(); ++var )
+        cout << toString() << endl;
+        ex linearterm = lhs().expand();
+        assert( is_exactly_a<mul>( linearterm ) || is_exactly_a<symbol>( linearterm )
+                || is_exactly_a<numeric>( linearterm ) || is_exactly_a<add>( linearterm ) );
+        map< const string, numeric, strCmp > result = map< const string, numeric, strCmp >();
+        result[""] = 0;
+        if( is_exactly_a<add>( linearterm ) )
         {
-        	result.push_back( ex( constantPart.coeff( ex( var->second ), 1 ) ) );
-            constantPart = ex( constantPart.coeff( ex( var->second ), 0 ) );
+            for( GiNaC::const_iterator summand = linearterm.begin(); summand != linearterm.end(); ++summand )
+            {
+                assert( is_exactly_a<mul>( *summand ) || is_exactly_a<symbol>( *summand ) || is_exactly_a<numeric>( *summand ) );
+                if( is_exactly_a<mul>( *summand ) )
+                {
+                    string symbolName = "";
+                    numeric coefficient = 1;
+                    bool symbolFound = false;
+                    bool coeffFound = false;
+                    for( GiNaC::const_iterator factor = summand->begin(); factor != summand->end(); ++factor )
+                    {
+                        assert( is_exactly_a<symbol>( *factor ) ||  is_exactly_a<numeric>( *factor ) );
+                        if( is_exactly_a<symbol>( *factor ) )
+                        {
+                            stringstream out;
+                            out << *factor;
+                            symbolName = out.str();
+                            symbolFound = true;
+                        }
+                        else if( is_exactly_a<numeric>( *factor ) )
+                        {
+                            coefficient *= ex_to<numeric>( *factor );
+                            coeffFound = true;
+                        }
+                        if( symbolFound && coeffFound ) break; // Workaround, as it appears that GiNaC allows a product of infinitely many factors ..
+                    }
+                    map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+                    if( iter == result.end() )
+                    {
+                        result.insert( pair< const string, numeric >( symbolName, coefficient ) );
+                    }
+                    else
+                    {
+                        iter->second += coefficient;
+                    }
+                }
+                else if( is_exactly_a<symbol>( *summand ) )
+                {
+                    stringstream out;
+                    out << *summand;
+                    string symbolName = out.str();
+                    map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+                    if( iter == result.end() )
+                    {
+                        result.insert( pair< const string, numeric >( symbolName, numeric( 1 ) ) );
+                    }
+                    else
+                    {
+                        iter->second += 1;
+                    }
+                }
+                else if( is_exactly_a<numeric>( *summand ) )
+                {
+                    result[""] += ex_to<numeric>( *summand );
+                }
+            }
         }
-        result.push_back( constantPart );
+        else if( is_exactly_a<mul>( linearterm ) )
+        {
+            string symbolName = "";
+            numeric coefficient = 1;
+            for( GiNaC::const_iterator factor = linearterm.begin(); factor != linearterm.end(); ++factor )
+            {
+                assert( is_exactly_a<symbol>( *factor ) ||  is_exactly_a<numeric>( *factor ) );
+                if( is_exactly_a<symbol>( *factor ) )
+                {
+                    stringstream out;
+                    out << *factor;
+                    symbolName = out.str();
+                }
+                else if( is_exactly_a<numeric>( *factor ) )
+                {
+                    coefficient *= ex_to<numeric>( *factor );
+                }
+            }
+            map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+            if( iter == result.end() )
+            {
+                result.insert( pair< const string, numeric >( symbolName, coefficient ) );
+            }
+            else
+            {
+                iter->second += coefficient;
+            }
+        }
+        else if( is_exactly_a<symbol>( linearterm ) )
+        {
+            stringstream out;
+            out << linearterm;
+            string symbolName = out.str();
+            map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+            if( iter == result.end() )
+            {
+                result.insert( pair< const string, numeric >( symbolName, numeric( 1 ) ) );
+            }
+            else
+            {
+                iter->second += 1;
+            }
+        }
+        else if( is_exactly_a<numeric>( linearterm ) )
+        {
+            result[""] += ex_to<numeric>( linearterm );
+        }
         return result;
-	}
+    }
 
     /**
      * Compares whether the two expressions are the same.
@@ -805,6 +886,10 @@ namespace smtrat
      */
     bool Constraint::operator <( const Constraint& _constraint ) const
     {
+        if( mID > 0 && _constraint.id() > 0 )
+        {
+            return mID < _constraint.id();
+        }
         if( relation() < _constraint.relation() )
         {
             return true;
@@ -834,6 +919,10 @@ namespace smtrat
      */
     bool Constraint::operator ==( const Constraint& _constraint ) const
     {
+        if( mID > 0 && _constraint.id() > 0 )
+        {
+            return mID == _constraint.id();
+        }
         if( relation() == _constraint.relation() )
         {
             if( lhs() == _constraint.lhs() )
@@ -878,7 +967,29 @@ namespace smtrat
         ostringstream sstream;
         sstream << lhs();
         result += sstream.str();
-		result += relationToString(relation());
+        switch( relation() )
+        {
+        case CR_EQ:
+            result += "=";
+            break;
+        case CR_NEQ:
+            result += "<>";
+            break;
+        case CR_LESS:
+            result += "<";
+            break;
+        case CR_GREATER:
+            result += ">";
+            break;
+        case CR_LEQ:
+            result += "<=";
+            break;
+        case CR_GEQ:
+            result += ">=";
+            break;
+        default:
+            result += "~";
+        }
         result += "0";
         return result;
     }
@@ -891,7 +1002,29 @@ namespace smtrat
     void Constraint::print( ostream& _out ) const
     {
         _out << lhs();
-		_out << relationToString(relation());
+        switch( relation() )
+        {
+        case CR_EQ:
+            _out << "=";
+            break;
+        case CR_NEQ:
+            _out << "<>";
+            break;
+        case CR_LESS:
+            _out << "<";
+            break;
+        case CR_GREATER:
+            _out << ">";
+            break;
+        case CR_LEQ:
+            _out << "<=";
+            break;
+        case CR_GEQ:
+            _out << ">=";
+            break;
+        default:
+            _out << "~";
+        }
         _out << "0";
     }
 
@@ -903,7 +1036,29 @@ namespace smtrat
     void Constraint::print2( ostream& _out ) const
     {
         _out << lhs();
-		_out << relationToString(relation());
+        switch( relation() )
+        {
+        case CR_EQ:
+            _out << "=";
+            break;
+        case CR_NEQ:
+            _out << "!=";
+            break;
+        case CR_LESS:
+            _out << "<";
+            break;
+        case CR_GREATER:
+            _out << ">";
+            break;
+        case CR_LEQ:
+            _out << "<=";
+            break;
+        case CR_GEQ:
+            _out << ">=";
+            break;
+        default:
+            _out << "~";
+        }
         _out << "0";
     }
 

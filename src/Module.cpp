@@ -129,7 +129,7 @@ namespace smtrat
                     ++formulaOrigin;
                 }
             }
-			
+
             if( formulaOrigins.empty() )
             {
                 passedSubformula = removeSubformulaFromPassedFormula( passedSubformula );

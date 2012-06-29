@@ -210,7 +210,6 @@ namespace smtrat
         learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
 
         lbool result = search();
-
         if( result == l_True )
         {
             // Extend & copy model:
@@ -262,6 +261,9 @@ namespace smtrat
         {
             case OR:
             {
+                assert( _formula->size() > 1 );
+                unsigned numberOfPositivLiterals = 0;
+                bool consistsOfRealConstraints = true;
                 vec<Lit> clauseLits;
                 for( Formula::const_iterator subformula = _formula->begin(); subformula != _formula->end(); ++subformula )
                 {
@@ -269,6 +271,7 @@ namespace smtrat
                     {
                         case REALCONSTRAINT:
                         {
+                            ++numberOfPositivLiterals;
                             if( (*subformula)->constraint().relation() == CR_NEQ )
                             {
                                 const Constraint& constraint = (*subformula)->constraint();
@@ -290,32 +293,60 @@ namespace smtrat
                         case NOT:
                         {
                             const Formula& subsubformula = *(*subformula)->back();
-                            if( subsubformula.getType() == REALCONSTRAINT && subsubformula.constraint().relation() == CR_NEQ )
+                            switch( subsubformula.getType() )
                             {
-                                Formula subsubformula = Formula( Formula::newConstraint( subsubformula.constraint().lhs(), CR_EQ ) );
-                                clauseLits.push( getLiteral( subsubformula, _formula ) );
-                            }
-                            else if( subsubformula.getType() == REALCONSTRAINT && subsubformula.constraint().relation() == CR_EQ )
-                            {
-                                const Constraint& constraint = subsubformula.constraint();
-                                Formula subsubformulaA = Formula( Formula::newConstraint( constraint.lhs(), CR_LESS ) );
-                                Formula subsubformulaB = Formula( Formula::newConstraint( constraint.lhs(), CR_GREATER ) );
+                                case REALCONSTRAINT:
+                                {
+                                    if( subsubformula.getType() == REALCONSTRAINT && subsubformula.constraint().relation() == CR_NEQ )
+                                    {
+                                        Formula subsubformula = Formula( Formula::newConstraint( subsubformula.constraint().lhs(), CR_EQ ) );
+                                        clauseLits.push( getLiteral( subsubformula, _formula ) );
+                                    }
+                                    else if( subsubformula.getType() == REALCONSTRAINT && subsubformula.constraint().relation() == CR_EQ )
+                                    {
+                                        const Constraint& constraint = subsubformula.constraint();
+                                        Formula subsubformulaA = Formula( Formula::newConstraint( constraint.lhs(), CR_LESS ) );
+                                        Formula subsubformulaB = Formula( Formula::newConstraint( constraint.lhs(), CR_GREATER ) );
 
-                                Lit litA = getLiteral( subsubformulaA, _formula );
-                                Lit litB = getLiteral( subsubformulaB, _formula );
-                                clauseLits.push( litA );
-                                clauseLits.push( litB );
-                                addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
-                            }
-                            else
-                            {
-                                Lit literal = getLiteral( subsubformula, _formula );
-                                clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
+                                        Lit litA = getLiteral( subsubformulaA, _formula );
+                                        Lit litB = getLiteral( subsubformulaB, _formula );
+                                        clauseLits.push( litA );
+                                        clauseLits.push( litB );
+                                        addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                                    }
+                                    else
+                                    {
+                                        Lit literal = getLiteral( subsubformula, _formula );
+                                        clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
+                                    }
+                                    break;
+                                }
+                                case BOOL:
+                                {
+                                    consistsOfRealConstraints = false;
+                                    Lit literal = getLiteral( subsubformula, _formula );
+                                    clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
+                                    break;
+                                }
+                                case TTRUE:
+                                {
+                                    break;
+                                }
+                                case FFALSE:
+                                {
+                                    return True;
+                                }
+                                default:
+                                {
+                                    cerr << "Unexpected type of formula! Expected a literal." << endl;
+                                    assert( false );
+                                }
                             }
                             break;
                         }
                         case BOOL:
                         {
+                            consistsOfRealConstraints = false;
                             clauseLits.push( getLiteral( **subformula, _formula ) );
                             break;
                         }
@@ -333,6 +364,14 @@ namespace smtrat
                             assert( false );
                         }
                     }
+                }
+                /*
+                 * If the clause is of the form (~c_1 or .. or ~c_n or c), where c_1, ..., c_n, c are constraints,
+                 * add
+                 */
+                if( consistsOfRealConstraints && numberOfPositivLiterals == 1 )
+                {
+
                 }
                 addClause( clauseLits );
                 return Unknown;
@@ -452,7 +491,7 @@ namespace smtrat
                 }
                 else
                 {
-                    Var var                                = newVar();
+                    Var var                               = newVar();
                     mBooleanVarMap[_formula.identifier()] = var;
                     return mkLit( var, false );
                 }
@@ -503,14 +542,15 @@ namespace smtrat
                     Var invConstrBoolean     = newVar();
 
                     Lit negNormConstrAuxLit = mkLit( normConstrAuxBoolean, true );
-                    Lit negInvConstrAuxLit = mkLit( invConstrAuxBoolean, true );
+                    Lit negInvConstrAuxLit  = mkLit( invConstrAuxBoolean, true );
 
                     // Add the clause  (or (not normConstrAuxBoolean) normConstrBoolean)
                     addClause( negNormConstrAuxLit, mkLit( normConstrBoolean, false ) );
                     // Add the clause  (or (not InvConstrAuxBoolean) InvConstrBoolean)
                     addClause( negInvConstrAuxLit, mkLit( invConstrBoolean, false ) );
-                    // Add the clause (xor normConstrAuxBoolean InvConstrAuxBoolean) in cnf.
+                    // Add the clause (or normConstrAuxBoolean InvConstrAuxBoolean)
                     addClause( mkLit( normConstrAuxBoolean, false ), mkLit( invConstrAuxBoolean, false ) );
+                    // Add the clause (or (not normConstrAuxBoolean) (not InvConstrAuxBoolean))
 //                    addClause( negNormConstrAuxLit, negInvConstrAuxLit );
 
                     /*
@@ -624,7 +664,6 @@ namespace smtrat
             }
             ++posInAssigns;
         }
-
         /*
          * Remove the constraints from the constraints to check, which are already in the passed formula
          * and remove the sub formulas (constraints) in the passed formula, which do not occur in the
@@ -643,7 +682,6 @@ namespace smtrat
                 ++subformula;
             }
         }
-
         /*
          * Add the the remaining constraints to add to the passed formula.
          */
@@ -697,6 +735,11 @@ namespace smtrat
      */
     bool SATModule::addClause_( vec<Lit>& ps )
     {
+       /*
+        * If the clause is of the form (~c_1 or .. or ~c_n or c), where c_1, ..., c_n, c are constraints,
+        * add
+        */
+
         // assert( decisionLevel() == 0 ); // Commented, as we already allow to add clauses belatedly
         if( !ok )
             return false;
