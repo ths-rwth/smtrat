@@ -183,7 +183,8 @@ namespace smtrat
 			if(Settings::checkInequalities) {
 				mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
 			}
-			
+			//print();
+			//mInequalities.print();
 			
 //            //remove the former GB from subformulas and if enabled check the inequalities
 //			// We might add some Formulas, these do not have to be treated again.
