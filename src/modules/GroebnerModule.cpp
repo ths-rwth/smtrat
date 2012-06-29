@@ -28,10 +28,8 @@
  *
  * @version 2012-03-20
  */
-#include <set>
 #include "GroebnerModule.h"
 
-#include "../Manager.h"
 #include "NSSModule/definitions.h"
 #ifdef USE_NSS
 #include "NSSModule/GroebnerToSDP.h"
@@ -96,10 +94,12 @@ namespace smtrat
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
 		{
-			if(Settings::passInequalities == AS_RECEIVED) {
+			if(!Settings::checkInequalities || Settings::passInequalities == AS_RECEIVED) {
 				addReceivedSubformulaToPassedFormula( _formula );
+			} else {
+				mInequalities.InsertReceivedFormula(_formula);
 			}
-			mInequalities.InsertReceivedFormula(_formula);
+			
 		}
 
 		return true;
@@ -249,9 +249,9 @@ namespace smtrat
 		assert(mBacktrackPoints.size() == mStateHistory.size());
 		
 		//printStateHistory();
-		//if(Settings::checkInequalities) {
-		//	mInequalities.pushBacktrackPoint();
-		//}
+		if(Settings::checkInequalities) {
+			mInequalities.pushBacktrackPoint();
+		}
 	//	std::cout << "pushed btp" << std::endl;
 	}
 
@@ -263,9 +263,13 @@ namespace smtrat
 		assert(validityCheck());
 		assert(mBacktrackPoints.size() == mStateHistory.size());
 		assert(!mBacktrackPoints.empty());
+		
+		// We have to do a consistency check
 		mPopCausesRecalc = true;
+		
+		//We first count how far we have to backtrack.
 		unsigned nrOfBacktracks = 1;
-	//	std::cout << "Backtrack to " << *btpoint << std::endl;
+	//	std::cout << "Backtrack to " << *btpoint << st::endl;
 		while(!mBacktrackPoints.empty()) {
 			//std::cout << "Pop backtrack " << *(mBacktrackPoints.back()) << std::endl;
 			if(mBacktrackPoints.back() == btpoint) {
@@ -288,12 +292,12 @@ namespace smtrat
 		// Load the state to be restored;
         mBasis = mStateHistory.back().getBasis();
 		assert(mBasis.nrOriginalConstraints() == mBacktrackPoints.size()-1);
-//        
-//		if(Settings::checkInequalities) {
-	//		mInequalities.popBacktrackPoint();
-	//	}
+  
+		if(Settings::checkInequalities) {
+			mInequalities.popBacktrackPoint();
+		}
 		
-		//We should not add this one again.
+		//We should not add this one again (it is the end)
 		btpoint++;
 		//Add all others
 		for(Formula::const_iterator it = btpoint; it != mpReceivedFormula->end(); ++it) {
@@ -305,15 +309,14 @@ namespace smtrat
 				saveState();
 			}
 		}
-		
 		assert(mBasis.nrOriginalConstraints() == mBacktrackPoints.size()-1);
 		
 
     }
 
     /**
-     * Saves the current state if it is a savepoint (backtrackpoint) so it can be restored later
-     * @return Was the current state a savepoint
+     * Saves the current state  so it can be restored later
+     * @
      */
     bool GroebnerModule::saveState()
     {
@@ -405,64 +408,64 @@ namespace smtrat
 		return true;
 	}
 	
-	void GroebnerModule::removeSubformulaFromPassedFormula(const Formula& _formula) {
-		super::removeSubformulaFromPassedFormula(&_formula);
+	void GroebnerModule::removeSubformulaFromPassedFormula(Formula::iterator _formula) {
+		super::removeSubformulaFromPassedFormula(_formula);
 	}
 	
 	
 	
-	InequalitiesRow::InequalitiesRow(GroebnerModule* module, Formula::const_iterator received, unsigned btpoint) :
-	receivedFormulaEntry(received), relation((*received)->constraint().relation()), passedFormulaEntry(), mModule(module)
-	{
-		reductions.push_back(std::pair<unsigned, Polynomial>(btpoint, Polynomial((*received)->constraint().lhs()) ) );
-		
-	}
-
-	/**
-		* Reduce the inequality further with the current gb.
-		* @param gb
-		* @param btpoint
-		* @return 
-		*/
-	Answer InequalitiesRow::reduceWithGb(const Ideal& gb, unsigned btpoint) {
-		Reductor reductor(gb, reductions.back().second);
-		Polynomial reduced = reductor.fullReduce();
-		if (reductor.reductionOccured()) {
-			reductions.push_back(std::pair<unsigned,Polynomial>(btpoint, reduced));
-			if((*passedFormulaEntry)->getType() != TTRUE) {
-				(*passedFormulaEntry)->print();
-//				mModule->removeSubformulaFromPassedFormula(passedFormulaEntry);
-			}
-			std::vector<std::set<const Formula*> > originals;
-			originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
-			originals.front().insert(*receivedFormulaEntry);
-//			passedFormulaEntry = mModule->addSubformulaToPassedFormula(Formula::newConstraint(reduced.toEx(), relation), originals );
-			
-		}
-
-		return True;
-	}
-
-	bool InequalitiesRow::popBacktrackPoint(unsigned btp) {
-		if(btp == reductions.back().first) {
-			reductions.pop_back();
-			passedFormulaEntry = mModule->mpPassedFormula->end();
-			std::vector<std::set<const Formula*> > originals;
-			originals.push_back(mModule->generateReasons(reductions.back().second.getOrigins().getBitVector()));
-			originals.front().insert(*receivedFormulaEntry);
-			mModule->addSubformulaToPassedFormula(*receivedFormulaEntry, originals );
-		}
-		return true;
-	}
-
-	void InequalitiesRow::print(std::ostream& os) const {
-		os << *receivedFormulaEntry << " " << relationToString(relation) << " 0 %%% ";
-		for( auto it = reductions.begin(); it != reductions.end(); ++it ) {
-			os << it->second << "(" << it->first << ") ";
-		}
-
-	}
-
+//	InequalitiesRow::InequalitiesRow(GroebnerModule* module, Formula::const_iterator received) :
+//	receivedFormulaEntry(received), relation((*received)->constraint().relation()), passedFormulaEntry(), mModule(module)
+//	{
+//		reductions.push_back(std::pair<unsigned, Polynomial>(0, Polynomial((*received)->constraint().lhs()) ) );
+//		
+//	}
+//
+//	/**
+//		* Reduce the inequality further with the current gb.
+//		* @param gb
+//		* @param btpoint
+//		* @return 
+//		*/
+//	Answer InequalitiesRow::reduceWithGb(const Ideal& gb, unsigned btpoint) {
+//		Reductor reductor(gb, reductions.back().second);
+//		Polynomial reduced = reductor.fullReduce();
+//		if (reductor.reductionOccured()) {
+//			reductions.push_back(std::pair<unsigned,Polynomial>(btpoint, reduced));
+//			if((*passedFormulaEntry)->getType() != TTRUE) {
+//				(*passedFormulaEntry)->print();
+////				mModule->removeSubformulaFromPassedFormula(passedFormulaEntry);
+//			}
+//			std::vector<std::set<const Formula*> > originals;
+//			originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
+//			originals.front().insert(*receivedFormulaEntry);
+////			passedFormulaEntry = mModule->addSubformulaToPassedFormula(Formula::newConstraint(reduced.toEx(), relation), originals );
+//			
+//		}
+//
+//		return True;
+//	}
+//
+//	bool InequalitiesRow::popBacktrackPoint(unsigned btp) {
+//		if(btp == reductions.back().first) {
+//			reductions.pop_back();
+//			passedFormulaEntry = mModule->mpPassedFormula->end();
+//			std::vector<std::set<const Formula*> > originals;
+//			originals.push_back(mModule->generateReasons(reductions.back().second.getOrigins().getBitVector()));
+//			originals.front().insert(*receivedFormulaEntry);
+//			mModule->addSubformulaToPassedFormula(*receivedFormulaEntry, originals );
+//		}
+//		return true;
+//	}
+//
+//	void InequalitiesRow::print(std::ostream& os) const {
+//		os << *receivedFormulaEntry << " " << relationToString(relation) << " 0 %%% ";
+//		for( auto it = reductions.begin(); it != reductions.end(); ++it ) {
+//			os << it->second << "(" << it->first << ") ";
+//		}
+//
+//	}
+//
 
 	InequalitiesTable::InequalitiesTable(GroebnerModule* module) : mModule(module)
 	{
@@ -470,52 +473,56 @@ namespace smtrat
 	}
 
 	void InequalitiesTable::InsertReceivedFormula(Formula::const_iterator received ) {
-		assert(mReducedInequalities.size() == mNrInequalitiesForBtPoints.back());
-		mReducedInequalities.push_back(InequalitiesRow(mModule, received, mNrInequalitiesForBtPoints.size() -1 ) );
-		mNrInequalitiesForBtPoints.back() = mNrInequalitiesForBtPoints.back() + 1;
 		mModule->addReceivedSubformulaToPassedFormula(received);
-		
-		assert(mNrInequalitiesForBtPoints.back() == mReducedInequalities.size() );
+		// We assume that the just added formula is the last one.
+		const Formula::iterator passedEntry =mModule->mpPassedFormula->last();
+		// And we add a row to our table
+		mReducedInequalities.insert(Row (received, RowEntry( passedEntry,(*received)->constraint().relation() ,std::list<CellEntry>(1, CellEntry(0, Polynomial((*received)->constraint().lhs())) ))));
 	}
 
 	void InequalitiesTable::pushBacktrackPoint() {
-		if(mNrInequalitiesForBtPoints.empty()) {
-			mNrInequalitiesForBtPoints.push_back(0);
-		} else {
-			mNrInequalitiesForBtPoints.push_back(mNrInequalitiesForBtPoints.back());
-		}
-
+		++mBtnumber;
 	}
 
 	void InequalitiesTable::popBacktrackPoint() {
-		
-		mNrInequalitiesForBtPoints.pop_back();
-		size_t btpoint =  mNrInequalitiesForBtPoints.size() -1;
-		for(std::list<InequalitiesRow>::iterator it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) {
-			it->popBacktrackPoint(btpoint);
+		--mBtnumber;
+		for(auto it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) {
+			std::tuple<unsigned, unsigned, unsigned> t;
+			std::list<CellEntry>::iterator listEnd = std::get<2>(it->second).end();
+			for(std::list<CellEntry>::iterator jt = std::get<2>(it->second).begin(); jt != listEnd; ++jt) {
+				if(jt->first > mBtnumber )
+				{
+					std::get<2>(it->second).erase(jt, listEnd);
+					break;
+				}
+ 			}
 		}
-
-		assert(mReducedInequalities.size() == mNrInequalitiesForBtPoints.back());
-
 	}
 
 	void InequalitiesTable::reduceWRTGroebnerBasis(const Ideal& gb) {
-		size_t btpoint = mNrInequalitiesForBtPoints.size() -1;
-		for(std::list<InequalitiesRow>::iterator it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) 
+		for(auto it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) 
 		{
-			it->reduceWithGb(gb, btpoint);
+			Polynomial p = std::get<2>(it->second).back().second;
+			GiNaCRA::BaseReductor<GBSettings::Order> reductor(gb, p);
+			Polynomial reduced = reductor.fullReduce();
+			if(reductor.reductionOccured()) {
+				mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
+				std::get<2>(it->second).push_back(CellEntry(mBtnumber, reduced) );
+				std::vector<std::set<const Formula*> > originals;
+				originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
+				originals.front().insert(*(it->first));
+				mModule->addSubformulaToPassedFormula(new Formula(Formula::newConstraint(reduced.toEx(), std::get<1>(it->second))), originals);
+				std::get<0>(it->second) = mModule->mpPassedFormula->last();
+			}
+			
 		}
+	}
+	
+	void InequalitiesTable::removeInequality(Formula::const_iterator _formula) {
+		mReducedInequalities.erase(_formula);
 	}
 
 	void InequalitiesTable::print(std::ostream& os) const {
-		unsigned i = 0;
-		for(auto it = mNrInequalitiesForBtPoints.begin(); it != mNrInequalitiesForBtPoints.end(); ++it ) {
-			std::cout << "Backtrackpoint #" << i++ << " " << *it << std::endl;
-		}
-		for(auto it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it ) {
-			it->print(os);
-			std::cout << std::endl;
-		}
 	}
 
 }    // namespace smtrat

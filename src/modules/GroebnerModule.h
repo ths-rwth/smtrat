@@ -41,7 +41,7 @@
 #ifndef SMTRAT_GROEBNERMODULE_H
 #define SMTRAT_GROEBNERMODULE_H
 
-#include <ginac/ginac.h>
+
 #include <ginacra/ginacra.h>
 
 //#include <ginacra/mr/MultivariateIdeal.h>
@@ -79,31 +79,13 @@ namespace smtrat
 
 	class GroebnerModule;
 
-	/**
-	 * A row in the InequalitiesTable. A row basically represents an inequality.
-	 */
-	class InequalitiesRow {
-		typedef GBSettings::Polynomial Polynomial;
-		typedef GBSettings::MultivariateIdeal Ideal;
-		typedef GBSettings::Reductor Reductor;
 
-	public:
-		InequalitiesRow(GroebnerModule*, Formula::const_iterator received, unsigned btpoint) ;
-
-		Answer reduceWithGb(const Ideal& gb, unsigned btpoint);
-
-		bool popBacktrackPoint(unsigned btp);
-
-		void print(std::ostream& os = std::cout ) const;
-	protected:
-		Formula::const_iterator receivedFormulaEntry;
-		Constraint_Relation relation;
-		Formula::const_iterator passedFormulaEntry;
-		std::list<std::pair<unsigned,Polynomial> > reductions;
-		GroebnerModule* mModule;
+	struct FormulaConstraintCompare {
+		bool operator()(const Formula::const_iterator& c1, const Formula::const_iterator& c2) const {
+			return ((*c1)->constraint() < (*c2)->constraint());
+		}
 	};
-
-
+	
 	/**
 	 * A table of all inequalities and how they are reduced.
 	 */
@@ -111,14 +93,18 @@ namespace smtrat
 
 		typedef GBSettings::Polynomial Polynomial;
 		typedef GBSettings::MultivariateIdeal Ideal;
+		typedef std::pair<unsigned, Polynomial> CellEntry;
+		typedef std::tuple<Formula::iterator, Constraint_Relation ,std::list<CellEntry> > RowEntry;
+		typedef std::map<Formula::const_iterator, RowEntry, FormulaConstraintCompare > Rows;
+		typedef std::pair<Formula::const_iterator, RowEntry > Row;
 	public:
 		InequalitiesTable(GroebnerModule*  module);
 
 		void InsertReceivedFormula(Formula::const_iterator received );
 
-		void pushBacktrackPoint() ;
+		void pushBacktrackPoint();
 
-		void popBacktrackPoint() ;
+		void popBacktrackPoint();
 
 		void reduceWRTGroebnerBasis(const Ideal& gb);
 		
@@ -126,10 +112,9 @@ namespace smtrat
 
 		void print(std::ostream& os= std::cout) const;
 
-		std::list<size_t> mNrInequalitiesForBtPoints;
-		std::list<InequalitiesRow> mReducedInequalities;
-
-
+		Rows mReducedInequalities;
+		
+		unsigned mBtnumber;
 		GroebnerModule*  mModule;
 	};
 
@@ -144,8 +129,7 @@ namespace smtrat
 		typedef GBSettings Settings;
 
 		friend class InequalitiesTable;
-		friend class InequalitiesRow;
-
+		
         public:
             typedef Settings::Order              Order;
             typedef Settings::Polynomial		 Polynomial;
@@ -181,7 +165,7 @@ namespace smtrat
 			std::set<const Formula*> generateReasons(const GiNaCRA::BitVector& reasons);
 			void passGB();
 
-			void removeSubformulaFromPassedFormula(const Formula&);
+			void removeSubformulaFromPassedFormula(Formula::iterator _formula);
 			bool validityCheck();
         private:
             typedef Module super;
