@@ -53,14 +53,7 @@ namespace smtrat
         CR_EQ = 0, CR_NEQ = 1, CR_LESS = 2, CR_GREATER = 3, CR_LEQ = 4, CR_GEQ = 5
     };
 
-	/**
-	 * true if 0 -rel- 0 yields false
-     * @param The relation
-     * @return 
-     */
-	bool constraintRelationIsStrict(Constraint_Relation rel) {
-		return (rel == CR_NEQ || rel == CR_LESS || rel == CR_GREATER);
-	}
+	bool constraintRelationIsStrict(Constraint_Relation rel); 
 	
     struct strCmp
     {

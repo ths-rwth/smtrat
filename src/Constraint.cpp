@@ -36,6 +36,16 @@ namespace smtrat
     using namespace std;
     using namespace GiNaC;
 
+	
+	/**
+	 * true if 0 -rel- 0 yields false
+     * @param The relation
+     * @return 
+     */
+	bool constraintRelationIsStrict(Constraint_Relation rel) {
+		return (rel == CR_NEQ || rel == CR_LESS || rel == CR_GREATER);
+	}
+	
     /**
      * Constructors:
      */
