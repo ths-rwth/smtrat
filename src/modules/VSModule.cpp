@@ -106,7 +106,7 @@ namespace smtrat
             mIDCounter = 0;
             mInfeasibleSubsets.clear();
             mInfeasibleSubsets.push_back( set< const Formula* >() );
-            mInfeasibleSubsets.back().insert( receivedFormulaBack() );
+            mInfeasibleSubsets.back().insert( mpReceivedFormula->back() );
             mInconsistentConstraintAdded = true;
 //cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
             return false;

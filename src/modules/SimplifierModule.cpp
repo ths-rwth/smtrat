@@ -80,7 +80,7 @@ namespace smtrat
             {
                 mInfeasibleSubsets.clear();
                 mInfeasibleSubsets.push_back( set<const Formula*>() );
-                mInfeasibleSubsets.back().insert( receivedFormulaBack() );
+                mInfeasibleSubsets.back().insert( mpReceivedFormula->back() );
                 mInconsistentConstraintAdded = true;
                 return false;
             }
@@ -349,12 +349,12 @@ namespace smtrat
             /*
              * Delete the redundant constraints of the vector of constraints to simplify.
              */
-            Formula::const_iterator passedSubformula = mpPassedFormula->begin();
+            Formula::iterator passedSubformula = mpPassedFormula->begin();
             while( passedSubformula != mpPassedFormula->end() )
             {
                 if( redundantFormulaSet.find( *passedSubformula ) != redundantFormulaSet.end() )
                 {
-                    removeSubformulaFromPassedFormula( *passedSubformula );
+                    removeSubformulaFromPassedFormula( passedSubformula );
                 }
                 else
                 {
@@ -380,7 +380,7 @@ namespace smtrat
             /*
              * Only one constraint received.
              */
-            switch( receivedFormulaBack()->constraint().isConsistent() )
+            switch( mpReceivedFormula->back()->constraint().isConsistent() )
             {
                 case 0:
                 {

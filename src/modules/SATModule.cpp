@@ -52,6 +52,8 @@
 //#define DEBUG_SATMODULE
 #define SATMODULE_WITH_CALL_NUMBER
 //#define SAT_MODULE_THEORY_PROPAGATION
+//#define WITH_PROGRESS_ESTIMATION
+#define STORE_ONLY_ONE_REASON
 
 using namespace std;
 using namespace Minisat;
@@ -1323,15 +1325,79 @@ NextClause:
         return true;
     }
 
-    struct formulaCmpB
+    CRef SATModule::learnTheoryReason( const set<const Formula*>& _theoryReason )
     {
-        bool operator ()( const Formula* const _formulaA, const Formula* const _formulaB ) const
+        assert( !_theoryReason.empty() );
+        CRef result;
+        vec<Lit> learnt_clause;
+        // Sort the constraints in a unique way.
+        set<const Formula*, formulaCmpB> sortedConstraints = set<const Formula*, formulaCmpB>();
+        for( set<const Formula*>::const_iterator subformula = _theoryReason.begin(); subformula != _theoryReason.end(); ++subformula )
         {
-			assert(_formulaA->getType() == REALCONSTRAINT);
-			assert(_formulaB->getType() == REALCONSTRAINT);
-            return (_formulaA->constraint() < _formulaB->constraint());
+            if( (*subformula)->getType() != REALCONSTRAINT )
+            {
+                cout << (*subformula) << endl;
+                (*subformula)->print();
+                cout << endl;
+            }
+            assert((*subformula)->getType() == REALCONSTRAINT);
+            sortedConstraints.insert( *subformula );
         }
-    };
+        // Add the according literals to the conflict clause.
+        for( set<const Formula*, formulaCmpB>::const_iterator subformula = sortedConstraints.begin();
+            subformula != sortedConstraints.end();
+            ++subformula )
+        {
+            #ifdef DEBUG_SATMODULE
+            if( subformula != sortedConstraints.begin() )
+            {
+                cout << ", ";
+            }
+            (*subformula)->print();
+            #endif
+            Lit lit = getLiteral( **subformula );
+            learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
+        }
+        #ifdef DEBUG_SATMODULE
+        cout << " }";
+        cout << endl;
+        #endif
+
+        // Do not store theory lemma
+        if( learnt_clause.size() == 1 )
+        {
+            #ifdef DEBUG_SATMODULE
+            cout << "###" << endl << "### Do not store theory lemma" << endl;
+            cout << "### Learned clause = ";
+            #endif
+
+            result = ca.alloc( learnt_clause, true );
+
+            #ifdef DEBUG_SATMODULE
+            printClause( cout, ca[result] );
+            cout << endl << "###" << endl;
+            #endif
+        }
+        // Learn theory lemma
+        else
+        {
+            #ifdef DEBUG_SATMODULE
+            cout << "###" << endl << "### Learn theory lemma" << endl;
+            cout << "### Conflict clause (" << learnt_clause.size() << ") = ";
+            #endif
+
+            result = ca.alloc( learnt_clause, true );
+            learnts.push( result );
+            attachClause( result );
+            claBumpActivity( ca[result] );
+
+            #ifdef DEBUG_SATMODULE
+            printClause( cout, ca[result] );
+            cout << endl << "###" << endl;
+            #endif
+        }
+        return result;
+    }
 
     /**
      * search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
@@ -1480,7 +1546,19 @@ NextClause:
                             {
                                 if( !(*backend)->rInfeasibleSubsets().empty() )
                                 {
-                                    int sizeOfSmallestLearntClause = mpPassedFormula->size() + 1;
+                                    #ifdef STORE_ONLY_ONE_REASON
+                                    vec_set_const_pFormula::const_iterator bestInfeasibleSubset = (*backend)->rInfeasibleSubsets().begin();
+                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
+                                            infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
+                                    {
+                                        if( bestInfeasibleSubset->size() > infsubset->size() )
+                                        {
+                                            bestInfeasibleSubset = infsubset;
+                                        }
+                                    }
+                                    confl = learnTheoryReason( *bestInfeasibleSubset );
+                                    #else
+                                    int conflictSize = mpPassedFormula->size();
                                     for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
                                             infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
                                     {
@@ -1488,92 +1566,14 @@ NextClause:
                                         (*backend)->printInfeasibleSubsets();
                                         cout << "### { ";
                                         #endif
-                                        // Sort the constraints in a unique way.
-                                        set<const Formula*, formulaCmpB> sortedConstraints = set<const Formula*, formulaCmpB>();
-                                        for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
+                                        CRef tmpConfl = learnTheoryReason( *infsubset );
+                                        if( ca[tmpConfl].size() < conflictSize )
                                         {
-                                            if( (*subformula)->getType() != REALCONSTRAINT )
-                                            {
-                                                cout << (*subformula) << endl;
-                                                (*subformula)->print();
-                                                cout << endl;
-                                            }
-											assert((*subformula)->getType() == REALCONSTRAINT);
-                                            sortedConstraints.insert( *subformula );
-                                        }
-                                        // Add the according literals to the conflict clause.
-                                        for( set<const Formula*, formulaCmpB>::const_iterator subformula = sortedConstraints.begin();
-                                            subformula != sortedConstraints.end();
-                                            ++subformula )
-                                        {
-                                            #ifdef DEBUG_SATMODULE
-                                            if( subformula != sortedConstraints.begin() )
-                                            {
-                                                cout << ", ";
-                                            }
-                                            (*subformula)->print();
-                                            #endif
-                                            Lit lit = getLiteral( **subformula );
-                                            learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
-                                        }
-                                        #ifdef DEBUG_SATMODULE
-                                        cout << " }";
-                                        cout << endl;
-                                        #endif
-
-                                        // Do not store theory lemma
-                                        if( learnt_clause.size() == 1 )
-                                        {
-                                            #ifdef DEBUG_SATMODULE
-                                            cout << "###" << endl << "### Do not store theory lemma" << endl;
-                                            cout << "### Learned clause = ";
-                                            #endif
-
-                                            if( learnt_clause.size() < sizeOfSmallestLearntClause )
-                                            {
-                                                confl = ca.alloc( learnt_clause, true );
-                                                sizeOfSmallestLearntClause = learnt_clause.size();
-                                            }
-                                            else
-                                            {
-                                                ca.alloc( learnt_clause, true );
-                                            }
-
-                                            #ifdef DEBUG_SATMODULE
-                                            printClause( cout, ca[confl] );
-                                            cout << endl << "###" << endl;
-                                            #endif
-                                        }
-                                        // Learn theory lemma
-                                        else
-                                        {
-                                            #ifdef DEBUG_SATMODULE
-                                            cout << "###" << endl << "### Learn theory lemma" << endl;
-                                            cout << "### Conflict clause (" << learnt_clause.size() << ") = ";
-                                            #endif
-
-                                            if( learnt_clause.size() < sizeOfSmallestLearntClause )
-                                            {
-                                                confl = ca.alloc( learnt_clause, true );
-                                                learnts.push( confl );
-                                                attachClause( confl );
-                                                claBumpActivity( ca[confl] );
-                                                sizeOfSmallestLearntClause = learnt_clause.size();
-                                            }
-                                            else
-                                            {
-                                                CRef conflTmp = ca.alloc( learnt_clause, true );
-                                                learnts.push( conflTmp );
-                                                attachClause( conflTmp );
-                                                claBumpActivity( ca[conflTmp] );
-                                            }
-
-                                            #ifdef DEBUG_SATMODULE
-                                            printClause( cout, ca[confl] );
-                                            cout << endl << "###" << endl;
-                                            #endif
+                                            confl = tmpConfl;
+                                            conflictSize = ca[tmpConfl].size();
                                         }
                                     }
+                                    #endif
                                     break;
                                 }
                                 ++backend;
@@ -1601,8 +1601,11 @@ NextClause:
             }
             #ifdef SATMODULE_WITH_CALL_NUMBER
             #ifndef DEBUG_SATMODULE
-//            cout << "\r" << numberOfTheoryCalls << setw(15) << (progressEstimate() * 100) << "%";
+            #ifdef WITH_PROGRESS_ESTIMATION
+            cout << "\r" << numberOfTheoryCalls << setw(15) << (progressEstimate() * 100) << "%";
+            #else
             cout << "\r" << numberOfTheoryCalls;
+            #endif
             cout.flush();
             #endif
             #endif

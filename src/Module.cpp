@@ -166,56 +166,18 @@ namespace smtrat
     }
 
     /**
-     * Add the formula, which has the given entry in the vector of the received formulas, to the
-     * vector of passed formulas. Furthermore, a map entry, mapping from the constraints in the
-     * vector of passed formulas to its original constraints in the vector of the received
-     * formulas, is generated.
      *
-     * @param _positionInReceivedFormula    The position of the formula to add to the vector of
-     *                                      of passed formulas in the vector of received
-     *                                      formulas.
-     *
-     * @return  true,   if the vector of the received formulas contains the given position and the
-     *                  corresponding formula is not yet a member of the vector of passed
-     *                  formulas;
-     *          false,  otherwise.
-	 *
-	 * TODO efficiency after formula change..
+     * @param _subformula
      */
     void Module::addReceivedSubformulaToPassedFormula( Formula::const_iterator _subformula )
     {
-        addReceivedSubformulaToPassedFormula( *_subformula );
+		addSubformulaToPassedFormula( new Formula( **_subformula ), *_subformula );
     }
 
-	/**
-     * Add the formula, which has the given entry in the vector of the received formulas, to the
-     * vector of passed formulas. Furthermore, a map entry, mapping from the constraints in the
-     * vector of passed formulas to its original constraints in the vector of the received
-     * formulas, is generated.
-     *
-     * @param _subformula    The formula to add to the vector of
-     *                                      of passed formulas in the vector of received
-     *                                      formulas.
-     *
-     */
-	void Module::addReceivedSubformulaToPassedFormula( const Formula* _subformula )
-	{
-		addSubformulaToPassedFormula( new Formula( *_subformula ), _subformula );
-	}
-
     /**
-     * Add the constraint, which has the given entry in the vector of received constraints, to the
-     * vector of passed constraint. Furthermore, a map entry, mapping from the constraint in the
-     * vector of passed constraints to its original constraint in the vector of the received
-     * constraints, is generated.
      *
-     * @param _constraint   The position of the constraint to add to the vector of
-     *                      of passed constraints in the vector of received
-     *                      constraints.
-     *
-     * @return  true,   if the vector of the received constraint contains the given position and the
-     *                  corresponding constraint is not yet a member of the vector of passed constraints;
-     *          false,  otherwise.
+     * @param _formula
+     * @param _origins
      */
     void Module::addSubformulaToPassedFormula( Formula* _formula, vec_set_const_pFormula& _origins )
     {
@@ -226,14 +188,14 @@ namespace smtrat
         {
             mFirstSubformulaToPass = mpPassedFormula->last();
 			assert(checkFirstSubformulaToPassValidity());
-            
+
 		}
     }
 
 	/**
-	 * Adds a formula to the passed sub formula, with only one origin
-     * @param _formula The new passed sub formula
-	 * @param _origin A pointer to the original (received) sub formula.
+     *
+     * @param _formula
+     * @param _origin
      */
 	void Module::addSubformulaToPassedFormula( Formula* _formula, const Formula* _origin )
 	{
@@ -246,58 +208,14 @@ namespace smtrat
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
         {
             mFirstSubformulaToPass = mpPassedFormula->last();
-			
-			assert(checkFirstSubformulaToPassValidity());        
+
+			assert(checkFirstSubformulaToPassValidity());
         }
 	}
 
     /**
      *
      * @param _formula
-     * @return
-     */
-    Formula::const_iterator Module::getPositionOfReceivedFormula( const Formula* const _formula ) const
-    {
-    	/*
-    	 * Find the position of the subFormula to remove in the passed formula.
-    	 */
-        Formula::const_iterator subFormula = mpReceivedFormula->begin();
-       	while( subFormula != mpReceivedFormula->end() )
-       	{
-       		if( _formula == *subFormula )
-       		{
-       			break;
-       		}
-       		++subFormula;
-       	}
-       	return subFormula;
-    }
-
-    /**
-     *
-     * @param _formula
-     * @return
-     */
-    Formula::iterator Module::getPositionOfPassedFormula( const Formula* const _formula )
-    {
-    	/*
-    	 * Find the position of the subFormula to remove in the passed formula.
-    	 */
-        Formula::iterator subFormula = mpPassedFormula->begin();
-       	while( subFormula != mpPassedFormula->end() )
-       	{
-       		if( _formula == *subFormula )
-       		{
-                break;
-       		}
-       		++subFormula;
-       	}
-       	return subFormula;
-    }
-
-    /**
-     *
-     * @param _pos
      * @param _origins
      */
     void Module::setOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins )
@@ -319,17 +237,9 @@ namespace smtrat
 	}
 
     /**
-     * Gets the original constraints of _constraint, which are in the vector of the received constraints, of
-     * the given constraint, which is in the vector of the passed constraints.
      *
-     * Note, that in a set of a original constraints all constraints together created the constraint
-     * and in two sets, both are responsible for, respectively.
-     *
-     * @param   _constraint The constraint to which sets of original constraints are added.
-     * @param   _origins    The result.
-     *
-     * @return  true,   if original constraints for this constraint exist;
-     *          false,  otherwise.
+     * @param _subformula
+     * @param _origins
      */
     void Module::getOrigins( const Formula* const _subformula, vec_set_const_pFormula& _origins ) const
     {
@@ -367,7 +277,8 @@ namespace smtrat
     }
 
     /**
-     * Provides some special case checks which can be executed at the start
+     * Provides some special case checks which can be executed at the start.
+     *
      * @return
      */
     Answer Module::specialCaseConsistencyCheck() const
@@ -456,7 +367,7 @@ namespace smtrat
     }
 
     /**
-     * Runs the backend solvers on the passed conditions.
+     * Runs the backend solvers on the passed formula.
      *
      * @return  TS_True,    if the passed formula is consistent;
      *          TS_False,   if the passed formula is inconsistent;
@@ -467,10 +378,10 @@ namespace smtrat
         passedFormulaCannotBeSolved();
 
         mUsedBackends = mpManager->getBackends( mpPassedFormula, this );
-		
+
         if( mFirstSubformulaToPass != mpPassedFormula->end() )
         {
-			
+
 			assert(checkFirstSubformulaToPassValidity());
             for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
             {
@@ -547,25 +458,9 @@ namespace smtrat
     }
 
     /**
-     * Removes a constraint from the vector of passed constraints.
      *
-     * @param _constraint The constraint to remove from the vector of passed constraints.
-     *
-     * @return  true,   if _constraint is a member of the vector of passed constraints;
-     *          false,  otherwise.
-     */
-    void Module::removeSubformulaFromPassedFormula( const Formula* _formula )
-    {
-       	removeSubformulaFromPassedFormula( getPositionOfPassedFormula( _formula ) );
-    }
-
-    /**
-     * Removes a constraint from the vector of passed constraints.
-     *
-     * @param _pos The position of the constraint to remove from the vector of passed constraints.
-     *
-     * @return  true,   if _constraint is a member of the vector of passed constraints;
-     *          false,  otherwise.
+     * @param _subformula
+     * @return
      */
     Formula::iterator Module::removeSubformulaFromPassedFormula( Formula::iterator _subformula )
     {
@@ -586,57 +481,14 @@ namespace smtrat
     }
 
     /**
-     * Removes a constraint from the vector of passed constraints.
      *
-     * @param _constraint The constraint to remove from the vector of passed constraints.
-     *
-     * @return  true,   if _constraint is a member of the vector of passed constraints;
-     *          false,  otherwise.
-     */
-    void Module::pruneSubformulaFromPassedFormula( const Formula* _formula )
-    {
-       	pruneSubformulaFromPassedFormula( getPositionOfPassedFormula( _formula ) );
-    }
-
-    /**
-     * Removes a constraint from the vector of passed constraints.
-     *
-     * @param _pos The position of the constraint to remove from the vector of passed constraints.
-     *
-     * @return  true,   if _constraint is a member of the vector of passed constraints;
-     *          false,  otherwise.
-     */
-    Formula* Module::pruneSubformulaFromPassedFormula( unsigned _posOfSubformula )
-    {
-       	assert( _posOfSubformula < mpPassedFormula->size() );
-
-        /*
-         * Delete the sub formula from the passed formula.
-         */
-        unsigned pos = 0;
-        Formula::iterator subformula = mpPassedFormula->begin();
-        while( pos <= _posOfSubformula )
-        {
-            ++subformula;
-            ++pos;
-        }
-        Formula* result = *subformula;
-        pruneSubformulaFromPassedFormula( subformula );
-        return result;
-    }
-
-    /**
-     * Removes a constraint from the vector of passed constraints.
-     *
-     * @param _pos The position of the constraint to remove from the vector of passed constraints.
-     *
-     * @return  true,   if _constraint is a member of the vector of passed constraints;
-     *          false,  otherwise.
+     * @param _subformula
+     * @return
      */
     Formula::iterator Module::pruneSubformulaFromPassedFormula( Formula::iterator _subformula )
     {
        	assert( _subformula != mpPassedFormula->end() );
-		
+
 
         /*
          * Delete the sub formula from the passed formula.
@@ -650,6 +502,9 @@ namespace smtrat
         return mpPassedFormula->prune( _subformula );
     }
 
+    /**
+     *
+     */
     void Module::updateDeductions()
     {
         for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
@@ -684,16 +539,27 @@ namespace smtrat
         }
     }
 
-	bool Module::checkFirstSubformulaToPassValidity() const {
-		for(auto it = mpPassedFormula->begin(); it != mpPassedFormula->end(); ++it) {
-			if(mFirstSubformulaToPass == it) return true;
+    /**
+     *
+     * @return
+     */
+	bool Module::checkFirstSubformulaToPassValidity() const
+    {
+		for( auto it = mpPassedFormula->begin(); it != mpPassedFormula->end(); ++it )
+        {
+			if( mFirstSubformulaToPass == it )
+            {
+                return true;
+            }
 		}
 		return false;
 	}
+
     /**
      * Prints everything relevant of the solver.
      *
      * @param _out  The output stream where the answer should be printed.
+     * @param _initiation   The line initiation.
      */
     void Module::print( ostream& _out, const string _initiation ) const
     {
@@ -788,4 +654,3 @@ namespace smtrat
     }
 
 }    // namespace smtrat
-

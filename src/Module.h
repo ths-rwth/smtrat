@@ -50,7 +50,7 @@ namespace smtrat
     class Manager;
 
 	typedef std::vector< std::set< const Formula* > > vec_set_const_pFormula;
-	typedef std::map< const Formula*, vec_set_const_pFormula > 	  FormulaOrigins;
+	typedef std::map< const Formula*, vec_set_const_pFormula > FormulaOrigins;
     typedef std::pair< std::set< const Formula* >, const Constraint* > TheoryDeduction;
     /**
      * A base class for all kind of theory solving methods.
@@ -58,11 +58,13 @@ namespace smtrat
     class Module
     {
         protected:
-            /// Stores the infeasible subsets
+            /// stores the infeasible subsets
             vec_set_const_pFormula  mInfeasibleSubsets;
-            /// A reference to the manager
+            /// a reference to the manager
             Manager* const          mpManager;
+            ///
             ModuleType              mModuleType;
+            ///
             fastConstraintSet       mConstraintsToInform;
             /// formula passed to this module
             const Formula*          mpReceivedFormula;
@@ -70,16 +72,19 @@ namespace smtrat
             Formula*              	mpPassedFormula;
 
         private:
+            ///
             std::vector< Module* > mUsedBackends;
+            ///
             std::vector< Module* > mAllBackends;
-            /// for each passed formula index its original subformulas in mpReceivedFormula
-            FormulaOrigins  		mPassedFormulaOrigins;
-            /// Stores the deductions this module or its backends made.
+            /// for each passed formula index its original sub formulas in mpReceivedFormula
+            FormulaOrigins     mPassedFormulaOrigins;
+            /// stores the deductions this module or its backends made.
             std::vector< TheoryDeduction > mDeductions;
             ///
             Formula::const_iterator mFirstSubformulaToPass;
+            ///
             Formula::const_iterator mFirstUncheckedReceivedSubformula;
-			
+
 			bool checkFirstSubformulaToPassValidity() const;
 
         public:
@@ -132,22 +137,6 @@ namespace smtrat
                 return mInfeasibleSubsets;
             }
 
-            inline const Formula* const receivedFormulaBack() const
-            {
-                return mpReceivedFormula->back();
-            }
-
-            inline const Formula* const receivedFormulaAt( unsigned _pos ) const
-            {
-				unsigned posNr = 0;
-				Formula::const_iterator pos = mpReceivedFormula->begin();
-				while(posNr < _pos )  {
-					++pos;
-					++posNr;
-				}
-                return *pos;
-            }
-
             inline void passedFormulaCannotBeSolved()
             {
                 mpPassedFormula->notSolvableBy( type() );
@@ -196,35 +185,26 @@ namespace smtrat
 
         //SMT
         protected:
-            bool            addReceivedSubformulaToPassedFormula( unsigned );
-			void			addReceivedSubformulaToPassedFormula( const Formula* );
-			void			addReceivedSubformulaToPassedFormula( Formula::const_iterator );
-
-            void			addSubformulaToPassedFormula( Formula*, vec_set_const_pFormula& );
-			void			addSubformulaToPassedFormula( Formula* _formula, const Formula* _origin );
-
-            Formula::const_iterator getPositionOfReceivedFormula( const Formula* const ) const;
-            Formula::iterator getPositionOfPassedFormula( const Formula* const );
-            void            setOrigins( const Formula* const, vec_set_const_pFormula& );
-			const std::set<const Formula*>& getOrigins( Formula::const_iterator ) const;
-            void            getOrigins( const Formula* const , vec_set_const_pFormula& ) const;
-            vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
-            Answer          specialCaseConsistencyCheck() const;
-            void            getInfeasibleSubsets( );
-            vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
-            const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
-            Answer          runBackends();
-            void            removeSubformulaFromPassedFormula( const Formula* );
+			void	addReceivedSubformulaToPassedFormula( Formula::const_iterator );
+            void	addSubformulaToPassedFormula( Formula*, vec_set_const_pFormula& );
+			void	addSubformulaToPassedFormula( Formula* _formula, const Formula* _origin );
+            void    setOrigins( const Formula* const, vec_set_const_pFormula& );
+            void    getOrigins( const Formula* const , vec_set_const_pFormula& ) const;
+            Answer  specialCaseConsistencyCheck() const;
+            void    getInfeasibleSubsets();
+            Answer  runBackends();
             Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator );
-            void            pruneSubformulaFromPassedFormula( const Formula* );
-            Formula*        pruneSubformulaFromPassedFormula( unsigned );
             Formula::iterator pruneSubformulaFromPassedFormula( Formula::iterator );
+            vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
+            vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
+            const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
+			const std::set<const Formula*>& getOrigins( Formula::const_iterator ) const;
 
         private:
             void updateDeductions();
 
 		//Printing
-	public:
+        public:
             void printWithBackends( std::ostream& = std::cout, const std::string = "***" ) const;
             void print( std::ostream& = std::cout, const std::string = "***" ) const;
             void printReceivedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
