@@ -163,6 +163,10 @@ namespace smtrat
                 ++infSubSet;
             }
         }
+        /*
+         * Clear the deductions.
+         */
+        mDeductions.clear();
     }
 
     /**

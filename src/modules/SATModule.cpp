@@ -50,7 +50,8 @@
 #include "SATModule.h"
 
 //#define DEBUG_SATMODULE
-#define SATMODULE_WITH_CALL_NUMBER
+#define DEBUG_SATMODULE_THEORY_PROPAGATION
+//#define SATMODULE_WITH_CALL_NUMBER
 #define SAT_MODULE_THEORY_PROPAGATION
 //#define WITH_PROGRESS_ESTIMATION
 //#define STORE_ONLY_ONE_REASON
@@ -700,7 +701,9 @@ namespace smtrat
      */
     void SATModule::simplifyByLearnedTheoryDeductions( ConstraintOriginMap& _toSimplify ) const
     {
-//        cout << __func__ << ": " << _toSimplify.size() << " -> ";
+        #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
+        cout << __func__ << ": " << _toSimplify.size() << " -> ";
+        #endif
         /*
          * Collect the constraints, which have an entire premise in the constraints to simplify.
          * TODO: Collect the iterator instead of the elements. Leads to a faster erase operation
@@ -747,7 +750,9 @@ namespace smtrat
         {
             _toSimplify.erase( *constraint );
         }
-//        cout << _toSimplify.size() << endl;
+        #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
+        cout << _toSimplify.size() << endl;
+        #endif
     }
 
     //=================================================================================================
@@ -788,58 +793,6 @@ namespace smtrat
      */
     bool SATModule::addClause_( vec<Lit>& ps )
     {
-       /*
-        * If the clause is of the form (~c_1 or .. or ~c_n or c), where c_1, ..., c_n, c are constraints,
-        * add this clause as a learned theory deduction.
-        */
-        if( ps.size() > 1 )
-        {
-            bool isTheoryDeduction = true;
-            const Formula* conclusion = NULL;
-            set< const Formula* > premise = set< const Formula* >();
-            for( int i = 0; i < ps.size(); ++i )
-            {
-                BooleanConstraintMap::iterator iter = mBooleanConstraintMap.find( var( ps[i] ) + 1 );
-                if( iter == mBooleanConstraintMap.end() )
-                {
-                    isTheoryDeduction = false;
-                    break;
-                }
-                else
-                {
-                    if( sign( ps[i] ) )
-                    {
-                        premise.insert( iter->second.first );
-                    }
-                    else
-                    {
-                        if( conclusion == NULL )
-                        {
-                            conclusion = iter->second.first;
-                        }
-                        else
-                        {
-                            isTheoryDeduction = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            if( isTheoryDeduction && conclusion != NULL )
-            {
-                mLearnedDeductions[conclusion].push_back( premise );
-//                cout << "Learn:  ( ";
-//                for( set< const Formula* >::const_iterator iter = premise.begin();
-//                    iter != premise.end(); ++iter )
-//                {
-//                    cout << (*iter)->constraint().toString() << " ";
-//                }
-//                cout << ")  ->  ";
-//                conclusion->print();
-//                cout << "    " << mLearnedDeductions[conclusion].size() << ". premise" << endl;
-            }
-        }
-
         // assert( decisionLevel() == 0 ); // Commented, as we already allow to add clauses belatedly
         if( !ok )
             return false;
@@ -879,7 +832,59 @@ namespace smtrat
      */
     void SATModule::attachClause( CRef cr )
     {
-        const Clause& c = ca[cr];
+       const Clause& c = ca[cr];
+       /*
+        * If the clause is of the form (~c_1 or .. or ~c_n or c), where c_1, ..., c_n, c are constraints,
+        * add this clause as a learned theory deduction.
+        */
+        if( c.size() > 1 )
+        {
+            bool isTheoryDeduction = true;
+            const Formula* conclusion = NULL;
+            set< const Formula* > premise = set< const Formula* >();
+            for( int i = 0; i < c.size(); ++i )
+            {
+                BooleanConstraintMap::iterator iter = mBooleanConstraintMap.find( var( c[i] ) + 1 );
+                if( iter == mBooleanConstraintMap.end() )
+                {
+                    isTheoryDeduction = false;
+                    break;
+                }
+                else
+                {
+                    if( sign( c[i] ) )
+                    {
+                        premise.insert( iter->second.first );
+                    }
+                    else
+                    {
+                        if( conclusion == NULL )
+                        {
+                            conclusion = iter->second.first;
+                        }
+                        else
+                        {
+                            isTheoryDeduction = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            if( isTheoryDeduction && conclusion != NULL )
+            {
+                mLearnedDeductions[conclusion].push_back( premise );
+                #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
+                cout << "Learn:  ( ";
+                for( set< const Formula* >::const_iterator iter = premise.begin();
+                    iter != premise.end(); ++iter )
+                {
+                    cout << (*iter)->constraint().toString() << " ";
+                }
+                cout << ")  ->  " << conclusion->constraint().toString();
+                cout << "    " << mLearnedDeductions[conclusion].size() << ". premise" << endl;
+                #endif
+            }
+        }
         assert( c.size() > 1 );
         watches[~c[0]].push( Watcher( cr, c[1] ) );
         watches[~c[1]].push( Watcher( cr, c[0] ) );
@@ -1592,7 +1597,9 @@ NextClause:
                                 for( vector< TheoryDeduction >::const_iterator tDeduction = (*backend)->deductions().begin();
                                      tDeduction != (*backend)->deductions().end(); ++tDeduction )
                                 {
-//                                    cout << "Learn a deduction!" << endl;
+                                    #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
+                                    cout << "Learned a theory deduction from a backend module!" << endl;
+                                    #endif
                                     /*
                                      * Add the clause (premise -> conclusion).
                                      */
