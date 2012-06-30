@@ -79,7 +79,7 @@ namespace smtrat
     {
         Module::assertSubformula( _subformula );
         addReceivedSubformulaToPassedFormula( _subformula );
-        (*_subformula)->FormulaToConstraints( mReceivedConstraints );
+        (*_subformula)->getConstraints( mReceivedConstraints );
         while( mReceivedConstraints.size() > mConstraintOrigins.size() )
         {
             mConstraintOrigins.push_back( *_subformula );

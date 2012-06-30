@@ -77,7 +77,7 @@ namespace smtrat
             ///
             std::vector< Module* > mAllBackends;
             /// for each passed formula index its original sub formulas in mpReceivedFormula
-            FormulaOrigins     mPassedFormulaOrigins;
+            FormulaOrigins     mPassedformulaOrigins;
             /// stores the deductions this module or its backends made.
             std::vector< TheoryDeduction > mDeductions;
             ///
@@ -187,7 +187,7 @@ namespace smtrat
         protected:
 			void	addReceivedSubformulaToPassedFormula( Formula::const_iterator );
             void	addSubformulaToPassedFormula( Formula*, vec_set_const_pFormula& );
-			void	addSubformulaToPassedFormula( Formula* _formula, const Formula* _origin );
+			void	addSubformulaToPassedFormula( Formula*, const Formula* );
             void    setOrigins( const Formula* const, vec_set_const_pFormula& );
             void    getOrigins( const Formula* const , vec_set_const_pFormula& ) const;
             Answer  specialCaseConsistencyCheck() const;

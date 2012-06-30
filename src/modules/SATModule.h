@@ -70,24 +70,19 @@ namespace smtrat
             /*
              * Type definitions:
              */
-            struct constraintCompare
+            struct formulaCmp
             {
-                bool operator ()( const Constraint& pConsA, const Constraint& pConsB ) const
+                bool operator ()( const Formula* const _formulaA, const Formula* const _formulaB ) const
                 {
-                    if( pConsA.relation() < pConsB.relation() )
-                    {
-                        return true;
-                    }
-                    else if( pConsA.relation() == pConsB.relation() )
-                    {
-                        return GiNaC::ex_is_less()( pConsA.lhs(), pConsB.lhs() );
-                    }
-                    return false;
+                    assert(_formulaA->getType() == REALCONSTRAINT);
+                    assert(_formulaB->getType() == REALCONSTRAINT);
+                    return (_formulaA->constraint() < _formulaB->constraint());
                 }
             };
-            typedef std::map<const Constraint* const, Minisat::Lit>                     ConstraintLiteralMap;
-            typedef std::map<const std::string, Minisat::Var>                           BooleanVarMap;
-            typedef std::map<const Minisat::Var, std::pair<Formula*, const Formula*> >  BooleanConstraintMap;
+            typedef std::map<const Constraint* const, Minisat::Lit>                        ConstraintLiteralMap;
+            typedef std::map<const std::string, Minisat::Var>                              BooleanVarMap;
+            typedef std::map<const Minisat::Var, std::pair<Formula*, const Formula*> >     BooleanConstraintMap;
+            typedef std::map<const Formula*, const Formula*, formulaCmp>                   ConstraintOriginMap;
             /*
              * Helper structures:
              */
@@ -149,31 +144,9 @@ namespace smtrat
                 {}
             };
 
-            struct formulaCmpB
-            {
-                bool operator ()( const Formula* const _formulaA, const Formula* const _formulaB ) const
-                {
-                    assert(_formulaA->getType() == REALCONSTRAINT);
-                    assert(_formulaB->getType() == REALCONSTRAINT);
-                    return (_formulaA->constraint() < _formulaB->constraint());
-                }
-            };
-
             /**
              * Members:
              */
-            ConstraintLiteralMap  mConstraintLiteralMap;
-            BooleanVarMap         mBooleanVarMap;
-            BooleanConstraintMap  mBooleanConstraintMap;
-            std::vector<unsigned> mBacktrackpointInSatSolver;
-
-            // Extra results: (read-only member variable)
-            //
-            // If problem is satisfiable, this vector contains the model (if any).
-            Minisat::vec<Minisat::lbool> model;
-            // If problem is unsatisfiable (possibly under assumptions),
-            // this vector represent the final conflict clause expressed in the assumptions.
-            Minisat::vec<Minisat::Lit>   conflict;
 
 
             // Mode of operation:
@@ -270,6 +243,20 @@ namespace smtrat
             int64_t conflict_budget;    // -1 means no budget.
             int64_t propagation_budget; // -1 means no budget.
             bool    asynch_interrupt;
+
+            ConstraintLiteralMap  mConstraintLiteralMap;
+            BooleanVarMap         mBooleanVarMap;
+            BooleanConstraintMap  mBooleanConstraintMap;
+            std::vector<unsigned> mBacktrackpointInSatSolver;
+            FormulaOrigins        mLearnedDeductions;
+
+            // Extra results: (read-only member variable)
+            //
+            // If problem is satisfiable, this vector contains the model (if any).
+            Minisat::vec<Minisat::lbool> model;
+            // If problem is unsatisfiable (possibly under assumptions),
+            // this vector represent the final conflict clause expressed in the assumptions.
+            Minisat::vec<Minisat::Lit>   conflict;
 
         public:
 
@@ -481,6 +468,7 @@ namespace smtrat
             Answer addClauseToSatSolver( const Formula* );
             Minisat::Lit getLiteral( const Formula&, const Formula* = NULL );
             bool adaptPassedFormula();
+            void simplifyByLearnedTheoryDeductions( ConstraintOriginMap& ) const;
     };
 
     //=================================================================================================
@@ -621,7 +609,7 @@ namespace smtrat
         return assigns[x];
     }
 
-    inline Minisat::lbool SATModule::value( Minisat::Lit p ) const
+        inline Minisat::lbool SATModule::value( Minisat::Lit p ) const
     {
         return assigns[Minisat::var( p )] ^ Minisat::sign( p );
     }

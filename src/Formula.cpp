@@ -755,7 +755,7 @@ namespace smtrat
     	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
     }
 
-    void Formula::FormulaToConstraints( vector<const Constraint* >& _const) const
+    void Formula::getConstraints( vector<const Constraint* >& _const) const
     {
         if( mType == REALCONSTRAINT )
         {
@@ -767,7 +767,7 @@ namespace smtrat
                         subFormula != mpSubformulas->end();
                         ++subFormula )
            {
-               (*subFormula)->FormulaToConstraints( _const );
+               (*subFormula)->getConstraints( _const );
            }
         }
     }

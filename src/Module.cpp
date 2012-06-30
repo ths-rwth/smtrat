@@ -51,7 +51,7 @@ namespace smtrat
         mpPassedFormula( new Formula( AND ) ),
         mUsedBackends(),
         mAllBackends(),
-        mPassedFormulaOrigins(),
+        mPassedformulaOrigins(),
         mDeductions(),
         mFirstSubformulaToPass( mpPassedFormula->end() ),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() )
@@ -112,7 +112,7 @@ namespace smtrat
             /*
              * Remove the received formula from the set of origins.
              */
-            vec_set_const_pFormula& formulaOrigins = mPassedFormulaOrigins[*passedSubformula];
+            vec_set_const_pFormula& formulaOrigins = mPassedformulaOrigins[*passedSubformula];
             vec_set_const_pFormula::iterator formulaOrigin = formulaOrigins.begin();
             while( formulaOrigin != formulaOrigins.end() )
             {
@@ -183,7 +183,7 @@ namespace smtrat
     {
     	assert( mpReceivedFormula->size() != UINT_MAX );
         mpPassedFormula->addSubformula( _formula );
-        mPassedFormulaOrigins[_formula] = _origins;
+        mPassedformulaOrigins[_formula] = _origins;
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
         {
             mFirstSubformulaToPass = mpPassedFormula->last();
@@ -204,7 +204,7 @@ namespace smtrat
 		vec_set_const_pFormula originals;
         originals.push_back( set<const Formula*>() );
 		originals.front().insert( _origin );
-		mPassedFormulaOrigins[_formula] = originals;
+		mPassedformulaOrigins[_formula] = originals;
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
         {
             mFirstSubformulaToPass = mpPassedFormula->last();
@@ -220,7 +220,7 @@ namespace smtrat
      */
     void Module::setOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins )
     {
-        mPassedFormulaOrigins[_formula] = _origins;
+        mPassedformulaOrigins[_formula] = _origins;
     }
 
     /**
@@ -230,8 +230,8 @@ namespace smtrat
      */
 	const std::set<const Formula*>& Module::getOrigins( Formula::const_iterator _subformula ) const
 	{
-		FormulaOrigins::const_iterator origins = mPassedFormulaOrigins.find( *_subformula );
-        assert( origins != mPassedFormulaOrigins.end() );
+		FormulaOrigins::const_iterator origins = mPassedformulaOrigins.find( *_subformula );
+        assert( origins != mPassedformulaOrigins.end() );
 		assert( origins->second.size() == 1 );
 		return origins->second.front();
 	}
@@ -243,8 +243,8 @@ namespace smtrat
      */
     void Module::getOrigins( const Formula* const _subformula, vec_set_const_pFormula& _origins ) const
     {
-		FormulaOrigins::const_iterator origins = mPassedFormulaOrigins.find( _subformula );
-        assert( origins != mPassedFormulaOrigins.end() );
+		FormulaOrigins::const_iterator origins = mPassedformulaOrigins.find( _subformula );
+        assert( origins != mPassedformulaOrigins.end() );
         _origins = origins->second;
     }
 
@@ -476,7 +476,7 @@ namespace smtrat
         {
             (*module)->removeSubformula( _subformula );
         }
-		mPassedFormulaOrigins.erase( *_subformula );
+		mPassedformulaOrigins.erase( *_subformula );
         return mpPassedFormula->erase( _subformula );
     }
 
@@ -498,7 +498,7 @@ namespace smtrat
         {
             (*module)->removeSubformula( _subformula );
         }
-		mPassedFormulaOrigins.erase( *_subformula );
+		mPassedformulaOrigins.erase( *_subformula );
         return mpPassedFormula->prune( _subformula );
     }
 
@@ -519,8 +519,8 @@ namespace smtrat
                 vec_set_const_pFormula deductionsToAdd = vec_set_const_pFormula();
                 deductionsToAdd.push_back( set< const Formula* >() );
 
-                for( FormulaOrigins::const_iterator origins = mPassedFormulaOrigins.begin();
-                     origins != mPassedFormulaOrigins.end(); ++origins )
+                for( FormulaOrigins::const_iterator origins = mPassedformulaOrigins.begin();
+                     origins != mPassedformulaOrigins.end(); ++origins )
                 {
                     vec_set_const_pFormula tmpContainer = vec_set_const_pFormula();
                     tmpContainer.swap( deductionsToAdd );
@@ -608,8 +608,8 @@ namespace smtrat
         for( Formula::const_iterator passedSubformula = mpPassedFormula->begin();
              passedSubformula != mpPassedFormula->end(); ++passedSubformula )
         {
-            FormulaOrigins::const_iterator formulaOrigins = mPassedFormulaOrigins.find( *passedSubformula );
-        	assert( formulaOrigins != mPassedFormulaOrigins.end() );
+            FormulaOrigins::const_iterator formulaOrigins = mPassedformulaOrigins.find( *passedSubformula );
+        	assert( formulaOrigins != mPassedformulaOrigins.end() );
             _out << endl << _initiation << "  [" << *passedSubformula << "]" << " from " << "(";
 	        for( vec_set_const_pFormula::const_iterator oSubformulas = formulaOrigins->second.begin();
                  oSubformulas != formulaOrigins->second.end(); ++oSubformulas )

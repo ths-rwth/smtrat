@@ -49,11 +49,11 @@
 
 #include "SATModule.h"
 
-#define DEBUG_SATMODULE
+//#define DEBUG_SATMODULE
 #define SATMODULE_WITH_CALL_NUMBER
-//#define SAT_MODULE_THEORY_PROPAGATION
+#define SAT_MODULE_THEORY_PROPAGATION
 //#define WITH_PROGRESS_ESTIMATION
-#define STORE_ONLY_ONE_REASON
+//#define STORE_ONLY_ONE_REASON
 
 using namespace std;
 using namespace Minisat;
@@ -139,13 +139,14 @@ namespace smtrat
         ,
         conflict_budget( -1 ),
         propagation_budget( -1 ),
-        asynch_interrupt( false )
+        asynch_interrupt( false ),
+        mConstraintLiteralMap(),
+        mBooleanVarMap(),
+        mBooleanConstraintMap(),
+        mBacktrackpointInSatSolver(),
+        mLearnedDeductions()
     {
-        this->mModuleType          = MT_SATModule;
-        mConstraintLiteralMap      = ConstraintLiteralMap();
-        mBooleanVarMap             = BooleanVarMap();
-        mBooleanConstraintMap      = BooleanConstraintMap();
-        mBacktrackpointInSatSolver = vector<CRef>();
+        this->mModuleType = MT_SATModule;
     }
 
     /**
@@ -629,16 +630,6 @@ namespace smtrat
         }
     }
 
-    struct formulaCmp
-    {
-        bool operator ()( const Formula* const _formulaA, const Formula* const _formulaB ) const
-        {
-            const Constraint& constraintA = _formulaA->constraint();
-            const Constraint& constraintB = _formulaB->constraint();
-            return constraintA < constraintB;
-        }
-    };
-
     /**
      * Adapts the passed formula according to the current assignment within the SAT solver.
      *
@@ -651,8 +642,8 @@ namespace smtrat
         /*
          * Collect the constraints to check.
          */
-        map<const Formula*, const Formula*, formulaCmp> constraintsToCheck = map<const Formula*, const Formula*, formulaCmp>();
-        signed                                          posInAssigns       = 0;
+        ConstraintOriginMap constraintsToCheck = ConstraintOriginMap();
+        signed              posInAssigns       = 0;
         while( posInAssigns < assigns.size() )
         {
             lbool assignment = assigns[posInAssigns];
@@ -671,6 +662,7 @@ namespace smtrat
             }
             ++posInAssigns;
         }
+        simplifyByLearnedTheoryDeductions( constraintsToCheck );
         /*
          * Remove the constraints from the constraints to check, which are already in the passed formula
          * and remove the sub formulas (constraints) in the passed formula, which do not occur in the
@@ -692,16 +684,70 @@ namespace smtrat
         /*
          * Add the the remaining constraints to add to the passed formula.
          */
-        for( map<const Formula*, const Formula*, formulaCmp>::iterator iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
+        for( ConstraintOriginMap::iterator iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
         {
             changedPassedFormula = true;
-            vec_set_const_pFormula origins = vec_set_const_pFormula();
-            set<const Formula*> origin = set<const Formula*>();
-            origin.insert( iter->second );
-            origins.push_back( origin );
-            addSubformulaToPassedFormula( new Formula( *iter->first ), origins );
+            // we must create a new formula here, as the first element of the given
+            // pair is constant and must be constant in order to be used in a set/map as key
+            addSubformulaToPassedFormula( new Formula( iter->first->pConstraint() ), iter->second );
         }
         return changedPassedFormula;
+    }
+
+    /**
+     *
+     * @param _toSimplify
+     */
+    void SATModule::simplifyByLearnedTheoryDeductions( ConstraintOriginMap& _toSimplify ) const
+    {
+//        cout << __func__ << ": " << _toSimplify.size() << " -> ";
+        /*
+         * Collect the constraints, which have an entire premise in the constraints to simplify.
+         * TODO: Collect the iterator instead of the elements. Leads to a faster erase operation
+         *       in the second part of this method, but maybe causing problems as we store
+         *       iterators of a map in that we erase.
+         */
+        set< const Formula* > redundantConstraints = set< const Formula* >();
+        for( ConstraintOriginMap::const_iterator constraint = _toSimplify.begin();
+             constraint != _toSimplify.end(); ++constraint )
+        {
+            FormulaOrigins::const_iterator iter = mLearnedDeductions.find( constraint->first );
+            if( iter != mLearnedDeductions.end() )
+            {
+                vec_set_const_pFormula::const_iterator premises = iter->second.begin();
+                while( premises != iter->second.end() )
+                {
+                    set< const Formula* >::const_iterator constraint = premises->begin();
+                    while( constraint != premises->end() )
+                    {
+
+                        if( _toSimplify.find( *constraint ) == _toSimplify.end() )
+                        {
+                            break;
+                        }
+                        ++constraint;
+                    }
+                    if( constraint == premises->end() )
+                    {
+                        break;
+                    }
+                    ++premises;
+                }
+                if( premises != iter->second.end() )
+                {
+                    redundantConstraints.insert( constraint->first );
+                }
+            }
+        }
+        /*
+         * Erase the redundant constraints of the constraints to simplify.
+         */
+        for( set< const Formula* >::const_iterator constraint = redundantConstraints.begin();
+             constraint != redundantConstraints.end(); ++constraint )
+        {
+            _toSimplify.erase( *constraint );
+        }
+//        cout << _toSimplify.size() << endl;
     }
 
     //=================================================================================================
@@ -744,8 +790,55 @@ namespace smtrat
     {
        /*
         * If the clause is of the form (~c_1 or .. or ~c_n or c), where c_1, ..., c_n, c are constraints,
-        * add
+        * add this clause as a learned theory deduction.
         */
+        if( ps.size() > 1 )
+        {
+            bool isTheoryDeduction = true;
+            const Formula* conclusion = NULL;
+            set< const Formula* > premise = set< const Formula* >();
+            for( int i = 0; i < ps.size(); ++i )
+            {
+                BooleanConstraintMap::iterator iter = mBooleanConstraintMap.find( var( ps[i] ) + 1 );
+                if( iter == mBooleanConstraintMap.end() )
+                {
+                    isTheoryDeduction = false;
+                    break;
+                }
+                else
+                {
+                    if( sign( ps[i] ) )
+                    {
+                        premise.insert( iter->second.first );
+                    }
+                    else
+                    {
+                        if( conclusion == NULL )
+                        {
+                            conclusion = iter->second.first;
+                        }
+                        else
+                        {
+                            isTheoryDeduction = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            if( isTheoryDeduction && conclusion != NULL )
+            {
+                mLearnedDeductions[conclusion].push_back( premise );
+//                cout << "Learn:  ( ";
+//                for( set< const Formula* >::const_iterator iter = premise.begin();
+//                    iter != premise.end(); ++iter )
+//                {
+//                    cout << (*iter)->constraint().toString() << " ";
+//                }
+//                cout << ")  ->  ";
+//                conclusion->print();
+//                cout << "    " << mLearnedDeductions[conclusion].size() << ". premise" << endl;
+            }
+        }
 
         // assert( decisionLevel() == 0 ); // Commented, as we already allow to add clauses belatedly
         if( !ok )
@@ -1336,7 +1429,7 @@ NextClause:
         CRef result;
         vec<Lit> learnt_clause;
         // Sort the constraints in a unique way.
-        set<const Formula*, formulaCmpB> sortedConstraints = set<const Formula*, formulaCmpB>();
+        set<const Formula*, formulaCmp> sortedConstraints = set<const Formula*, formulaCmp>();
         for( set<const Formula*>::const_iterator subformula = _theoryReason.begin(); subformula != _theoryReason.end(); ++subformula )
         {
             if( (*subformula)->getType() != REALCONSTRAINT )
@@ -1349,7 +1442,7 @@ NextClause:
             sortedConstraints.insert( *subformula );
         }
         // Add the according literals to the conflict clause.
-        for( set<const Formula*, formulaCmpB>::const_iterator subformula = sortedConstraints.begin();
+        for( set<const Formula*, formulaCmp>::const_iterator subformula = sortedConstraints.begin();
             subformula != sortedConstraints.end();
             ++subformula )
         {
@@ -1494,44 +1587,34 @@ NextClause:
                             while( backend != usedBackends().end() )
                             {
                                 /*
-                                 * Find a backend which provides deductions.
+                                 * Learn the deductions.
                                  */
-                                if( !(*backend)->deductions().empty() )
+                                for( vector< TheoryDeduction >::const_iterator tDeduction = (*backend)->deductions().begin();
+                                     tDeduction != (*backend)->deductions().end(); ++tDeduction )
                                 {
+//                                    cout << "Learn a deduction!" << endl;
                                     /*
-                                     * Generate the clause (~b_1 or .. or ~b_n) where b_i corresponds to the
-                                     * auxiliary Boolean representing the i-th constraints added to the backend.
+                                     * Add the clause (premise -> conclusion).
                                      */
-                                    for( Formula::const_iterator subformula = passedFormulaBegin();
-                                        subformula != passedFormulaEnd();
+                                    for( set< const Formula* >::const_iterator subformula = tDeduction->first.begin();
+                                        subformula != tDeduction->first.end();
                                         ++subformula )
                                     {
                                         Lit lit = getLiteral( **subformula );
                                         learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
                                     }
-                                    // For all constraints we can deduce.
-                                    for( vector<const Constraint*>::const_iterator constraint = (*backend)->deductions().begin();
-                                            constraint != (*backend)->deductions().end(); ++constraint )
-                                    {
-                                        /*
-                                         * Learn the clause (~b_1 or .. or ~b_n or b) where b corresponds to the
-                                         * Boolean (not auxiliary) representing the constraint.
-                                         */
-                                        ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( *constraint );
-                                        if( constraintLiteralPair != mConstraintLiteralMap.end() )
-                                        {
-                                            learnt_clause.push( mkLit( var( constraintLiteralPair->second )+1, false ) );
+                                    ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( tDeduction->second );
+                                    assert( constraintLiteralPair != mConstraintLiteralMap.end() );
+                                    learnt_clause.push( constraintLiteralPair->second );
 
-                                            CRef clause = ca.alloc( learnt_clause, true );
-                                            learnts.push( clause );
-                                            attachClause( clause );
-                                            claBumpActivity( ca[clause] );
-                                            learnt_clause.pop();
-                                        }
-                                    }
+                                    CRef clause = ca.alloc( learnt_clause, true );
+                                    learnts.push( clause );
+                                    attachClause( clause );
+                                    claBumpActivity( ca[clause] );
                                     learnt_clause.clear();
                                     break;
                                 }
+                                (*backend)->clearDeductions();
                                 ++backend;
                             }
                             #endif
