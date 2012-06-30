@@ -50,8 +50,8 @@
 #include "SATModule.h"
 
 //#define DEBUG_SATMODULE
-#define DEBUG_SATMODULE_THEORY_PROPAGATION
-//#define SATMODULE_WITH_CALL_NUMBER
+//#define DEBUG_SATMODULE_THEORY_PROPAGATION
+#define SATMODULE_WITH_CALL_NUMBER
 #define SAT_MODULE_THEORY_PROPAGATION
 //#define WITH_PROGRESS_ESTIMATION
 //#define STORE_ONLY_ONE_REASON
@@ -819,7 +819,7 @@ namespace smtrat
         {
             CRef cr = ca.alloc( ps, false );
             clauses.push( cr );
-            attachClause( cr );
+            attachClause( cr, true );
         }
 
         return true;
@@ -830,14 +830,14 @@ namespace smtrat
      *
      * @param cr
      */
-    void SATModule::attachClause( CRef cr )
+    void SATModule::attachClause( CRef cr, bool _tp )
     {
        const Clause& c = ca[cr];
        /*
         * If the clause is of the form (~c_1 or .. or ~c_n or c), where c_1, ..., c_n, c are constraints,
         * add this clause as a learned theory deduction.
         */
-        if( c.size() > 1 )
+        if( c.size() > 1 && _tp )
         {
             bool isTheoryDeduction = true;
             const Formula* conclusion = NULL;
@@ -1616,7 +1616,7 @@ NextClause:
 
                                     CRef clause = ca.alloc( learnt_clause, true );
                                     learnts.push( clause );
-                                    attachClause( clause );
+                                    attachClause( clause, true );
                                     claBumpActivity( ca[clause] );
                                     learnt_clause.clear();
                                     break;

@@ -422,7 +422,7 @@ namespace smtrat
             // Operations on clauses:
             //
             // Attach a clause to watcher lists.
-            void attachClause( Minisat::CRef cr );
+            void attachClause( Minisat::CRef cr, bool = false );
             // Detach a clause to watcher lists.
             void detachClause( Minisat::CRef cr, bool strict = false );
             // Detach and free a clause.
