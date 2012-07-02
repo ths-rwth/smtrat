@@ -168,7 +168,6 @@ namespace smtrat
             //
             static signed compare( const Constraint&, const Constraint& );
             static bool mergeConstraints( Constraint&, const Constraint& );
-            static bool combineConstraints( const Constraint&, const Constraint&, const Constraint&);
 			
 		
         private:
