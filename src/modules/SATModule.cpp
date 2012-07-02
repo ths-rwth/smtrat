@@ -54,7 +54,7 @@
 #define SATMODULE_WITH_CALL_NUMBER
 #define SAT_MODULE_THEORY_PROPAGATION
 //#define WITH_PROGRESS_ESTIMATION
-//#define STORE_ONLY_ONE_REASON
+#define STORE_ONLY_ONE_REASON
 
 using namespace std;
 using namespace Minisat;

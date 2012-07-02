@@ -428,6 +428,117 @@ namespace smtrat
     const Constraint* SimplifierModule::combine( const Constraint& _constraintA, const Constraint& _constraintB ) const
     {
 
+//        ex linearterm = lhs().expand();
+//        assert( is_exactly_a<mul>( linearterm ) || is_exactly_a<symbol>( linearterm )
+//                || is_exactly_a<numeric>( linearterm ) || is_exactly_a<add>( linearterm ) );
+//        map< const string, numeric, strCmp > result = map< const string, numeric, strCmp >();
+//        result[""] = 0;
+//        if( is_exactly_a<add>( linearterm ) )
+//        {
+//            for( GiNaC::const_iterator summand = linearterm.begin(); summand != linearterm.end(); ++summand )
+//            {
+//                assert( is_exactly_a<mul>( *summand ) || is_exactly_a<symbol>( *summand ) || is_exactly_a<numeric>( *summand ) );
+//                if( is_exactly_a<mul>( *summand ) )
+//                {
+//                    string symbolName = "";
+//                    numeric coefficient = 1;
+//                    bool symbolFound = false;
+//                    bool coeffFound = false;
+//                    for( GiNaC::const_iterator factor = summand->begin(); factor != summand->end(); ++factor )
+//                    {
+//                        assert( is_exactly_a<symbol>( *factor ) ||  is_exactly_a<numeric>( *factor ) );
+//                        if( is_exactly_a<symbol>( *factor ) )
+//                        {
+//                            stringstream out;
+//                            out << *factor;
+//                            symbolName = out.str();
+//                            symbolFound = true;
+//                        }
+//                        else if( is_exactly_a<numeric>( *factor ) )
+//                        {
+//                            coefficient *= ex_to<numeric>( *factor );
+//                            coeffFound = true;
+//                        }
+//                        if( symbolFound && coeffFound ) break; // Workaround, as it appears that GiNaC allows a product of infinitely many factors ..
+//                    }
+//                    map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+//                    if( iter == result.end() )
+//                    {
+//                        result.insert( pair< const string, numeric >( symbolName, coefficient ) );
+//                    }
+//                    else
+//                    {
+//                        iter->second += coefficient;
+//                    }
+//                }
+//                else if( is_exactly_a<symbol>( *summand ) )
+//                {
+//                    stringstream out;
+//                    out << *summand;
+//                    string symbolName = out.str();
+//                    map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+//                    if( iter == result.end() )
+//                    {
+//                        result.insert( pair< const string, numeric >( symbolName, numeric( 1 ) ) );
+//                    }
+//                    else
+//                    {
+//                        iter->second += 1;
+//                    }
+//                }
+//                else if( is_exactly_a<numeric>( *summand ) )
+//                {
+//                    result[""] += ex_to<numeric>( *summand );
+//                }
+//            }
+//        }
+//        else if( is_exactly_a<mul>( linearterm ) )
+//        {
+//            string symbolName = "";
+//            numeric coefficient = 1;
+//            for( GiNaC::const_iterator factor = linearterm.begin(); factor != linearterm.end(); ++factor )
+//            {
+//                assert( is_exactly_a<symbol>( *factor ) ||  is_exactly_a<numeric>( *factor ) );
+//                if( is_exactly_a<symbol>( *factor ) )
+//                {
+//                    stringstream out;
+//                    out << *factor;
+//                    symbolName = out.str();
+//                }
+//                else if( is_exactly_a<numeric>( *factor ) )
+//                {
+//                    coefficient *= ex_to<numeric>( *factor );
+//                }
+//            }
+//            map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+//            if( iter == result.end() )
+//            {
+//                result.insert( pair< const string, numeric >( symbolName, coefficient ) );
+//            }
+//            else
+//            {
+//                iter->second += coefficient;
+//            }
+//        }
+//        else if( is_exactly_a<symbol>( linearterm ) )
+//        {
+//            stringstream out;
+//            out << linearterm;
+//            string symbolName = out.str();
+//            map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+//            if( iter == result.end() )
+//            {
+//                result.insert( pair< const string, numeric >( symbolName, numeric( 1 ) ) );
+//            }
+//            else
+//            {
+//                iter->second += 1;
+//            }
+//        }
+//        else if( is_exactly_a<numeric>( linearterm ) )
+//        {
+//            result[""] += ex_to<numeric>( linearterm );
+//        }
         return NULL;
     }
 
