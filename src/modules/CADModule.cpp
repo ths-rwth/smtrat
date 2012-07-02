@@ -100,9 +100,10 @@ namespace smtrat
             for( vec_set_const_pFormula::const_iterator i = infeasibleSubsets.begin(); i != infeasibleSubsets.end(); ++i )
                 mInfeasibleSubsets.push_back( *i );
             #ifdef MODULE_VERBOSE
-            //            cout << "#Samples: " << mCAD.samples().size() << endl;
-            //            cout << "Result: false" << endl;
-            //            printInfeasibleSubsets();
+                cout << endl << "#Samples: " << mCAD.samples().size() << endl;
+                cout << "Result: false" << endl;
+                printInfeasibleSubsets();
+                cout << "Performance gain: " << (mpReceivedFormula->size() - mInfeasibleSubsets.front().size()) << endl;
             #endif
             mSatisfiable = false;
             return false;

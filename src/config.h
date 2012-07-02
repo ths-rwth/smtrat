@@ -7,7 +7,7 @@
 
 /* #undef USE_NSS */
 #define USE_GINACRA
-#define USE_GB
-/* #undef USE_CAD */
+/* #undef USE_GB */
+#define USE_CAD
 
 #endif

@@ -449,7 +449,7 @@ namespace smtrat
             }
             }
             cout << endl << "Call to module " << moduleName << endl;
-            (**module).print( cout, " ");
+//            (**module).print( cout, " ");
             #endif
             result = (*module)->isConsistent();
             (*module)->receivedFormulaChecked();
