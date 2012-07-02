@@ -30,6 +30,7 @@
 //#define VS_DEBUG
 
 #include "Constraint.h"
+#include "ConstraintPool.h"
 
 namespace smtrat
 {
@@ -1999,5 +2000,741 @@ namespace smtrat
         }
     }
 
+    
+    /**
+     * Checks for redundant constraint order.
+     * 
+     * @param _constraintA  The first constraint to merge.
+     * @param _constraintB  The second constraint to merge.
+     * @param _conjconstraint The third constraint to merge.
+     * 
+     *
+     * @return  true,   if (( _constraintA or _constraintB ) and _conditionconstraint) is a tautology:
+     *                          
+     *                  p>c  or p<=d     and c<=d
+     *                  p>=c or p<=d     and c<=d
+     *                  p>c  or p<d      and c<d
+     *                  p=c  or p!=d     and c=d
+     *                  p<c  or p!=d     and c>d
+     *                  p>c  or p!=d     and c<d
+     *                  p<=c or p!=d     and c>=d
+     *                  p>=c or p!=d     and c<=d
+     *
+     *          false,  otherwise.
+     */
+    bool Constraint::combineConstraints( const Constraint& _constraintA, const Constraint& _constraintB, const Constraint& _conditionconstraint )
+    {
+        symtab::const_iterator var1 = _constraintA.variables().begin();
+        symtab::const_iterator var2 = _constraintB.variables().begin();
+        symtab::const_iterator var3 = _conditionconstraint.variables().begin();
+        // Checks if the three constraints are paarwise different from each other
+        while( var1 != _constraintA.variables().end() && var2 != _constraintB.variables().end() )
+        {
+            if( strcmp( var1->first.c_str(), var2->first.c_str() ) == 0 )
+            {
+                var1++;
+                var2++;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        var1 = _constraintA.variables().begin();
+        var2 = _constraintB.variables().begin();
+        while( var1 != _constraintA.variables().end() && var3 != _conditionconstraint.variables().end() )
+        {
+            if( strcmp( var1->first.c_str(), var3->first.c_str() ) == 0 )
+            {
+                var1++;
+                var3++;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        var1 = _constraintA.variables().begin();
+        var3 = _conditionconstraint.variables().begin();
+        while( var2 != _constraintB.variables().end() && var3 != _conditionconstraint.variables().end() )
+        {
+            if( strcmp( var2->first.c_str(), var3->first.c_str() ) == 0 )
+            {
+                var2++;
+                var3++;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        // If all constraints are different check if disjunction is redundant
+        switch( _constraintA.relation() )
+        {
+        case CR_EQ:
+        {
+            if( _constraintB.relation() == CR_NEQ )
+            {
+                if( _conditionconstraint.relation() == CR_EQ )
+                {
+                    // Case: ( p = c or p != d ) and c = d
+                    ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                    normalize( result );
+                    if( result == 0 ) return true;
+                    result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                    normalize( result );
+                    if( result == 0 ) return true;
+                    result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                    normalize( result );
+                    if( result == 0 ) return true;
+                    result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                    normalize( result );
+                    if( result == 0 ) return true;
+                }
+            }
+            return false;
+        }
+        case CR_NEQ:
+        {
+            switch( _constraintB.relation() )
+            {
+            case CR_EQ:
+            {
+                if( _conditionconstraint.relation() == CR_EQ )
+                {
+                    // Case: ( p != c or p = d ) and c = d
+                    ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                    normalize( result );
+                    if( result == 0 ) return true;
+                    result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                    normalize( result );
+                    if( result == 0 ) return true;
+                    result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                    normalize( result );
+                    if( result == 0 ) return true;
+                    result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                    normalize( result );
+                    if( result == 0 ) return true;
+                }
+                return false;  
+            }
+            case CR_LESS:
+            {
+                    // Case: ( p != d or p < c ) and c > d
+                    // or      ( p != d or p < c ) and c < d
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LESS:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }   
+                    case CR_GREATER:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_GREATER:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LESS:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }   
+                    case CR_GREATER:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default: 
+                        return false;
+                }
+            }
+            case CR_LEQ:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true; 
+                        result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_GEQ:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            default:
+                return false;
+            }
+        }
+        case CR_LESS:
+        {
+            switch( _constraintB.relation() )
+            {
+            case CR_NEQ:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LESS:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GREATER:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_LESS:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LESS:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GREATER:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_GREATER:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LESS:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GREATER:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_LEQ:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_GEQ:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            default:
+                return false;
+            }
+        }
+        case CR_GREATER:
+        {
+            switch( _constraintB.relation() )
+            {
+            case CR_NEQ:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LESS:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GREATER:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_LESS:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LESS:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GREATER:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_GREATER:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LESS:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GREATER:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_LEQ:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_GEQ:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs()+ _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            default:
+                return false;
+            }
+        }
+        case CR_LEQ:
+        {
+            switch( _constraintB.relation() )
+            {
+            case CR_NEQ:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_LESS:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_GREATER:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_LEQ:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_GEQ:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            default:
+                return false;
+            }
+        }
+        case CR_GEQ:
+        {
+            switch( _constraintB.relation() )
+            {
+            case CR_NEQ:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_LESS:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_GREATER:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_LEQ:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case CR_GEQ:
+            {
+                switch( _conditionconstraint.relation() )
+                {
+                    case CR_LEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    case CR_GEQ:
+                    {
+                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                        normalize( result );
+                        if( result == 0 ) return true;
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            default:
+                return false;
+            }
+        }
+        default:
+            return false;
+        }
+    }    
 }    // namespace smtrat
 
