@@ -59,6 +59,7 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
+            const Constraint* combine( const Constraint&, const Constraint& ) const;
 
         private:
 

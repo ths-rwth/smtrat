@@ -419,5 +419,17 @@ namespace smtrat
         Module::removeSubformula( _subformula );
     }
 
+    /**
+     *
+     * @param _constraintA
+     * @param _constraintB
+     * @return
+     */
+    const Constraint* SimplifierModule::combine( const Constraint& _constraintA, const Constraint& _constraintB ) const
+    {
+
+        return NULL;
+    }
+
 }    // namespace smtrat
 

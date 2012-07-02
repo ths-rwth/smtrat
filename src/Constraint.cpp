@@ -335,7 +335,6 @@ namespace smtrat
      */
 	map< const string, numeric, strCmp > Constraint::linearAndConstantCoefficients() const
 	{
-        cout << toString() << endl;
         ex linearterm = lhs().expand();
         assert( is_exactly_a<mul>( linearterm ) || is_exactly_a<symbol>( linearterm )
                 || is_exactly_a<numeric>( linearterm ) || is_exactly_a<add>( linearterm ) );
@@ -1897,17 +1896,17 @@ namespace smtrat
         }
     }
 
-    
+
     /**
      * Checks for redundant constraint order.
-     * 
+     *
      * @param _constraintA  The first constraint to merge.
      * @param _constraintB  The second constraint to merge.
      * @param _conjconstraint The third constraint to merge.
-     * 
+     *
      *
      * @return  true,   if (( _constraintA or _constraintB ) and _conditionconstraint) is a tautology:
-     *                          
+     *
      *                  p>c  or p<=d     and c<=d
      *                  p>=c or p<=d     and c<=d
      *                  p>c  or p<d      and c<d
@@ -2013,7 +2012,7 @@ namespace smtrat
                     normalize( result );
                     if( result == 0 ) return true;
                 }
-                return false;  
+                return false;
             }
             case CR_LESS:
             {
@@ -2030,7 +2029,7 @@ namespace smtrat
                         normalize( result );
                         if( result == 0 ) return true;
                         return false;
-                    }   
+                    }
                     case CR_GREATER:
                     {
                         ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
@@ -2058,7 +2057,7 @@ namespace smtrat
                         normalize( result );
                         if( result == 0 ) return true;
                         return false;
-                    }   
+                    }
                     case CR_GREATER:
                     {
                         ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
@@ -2069,7 +2068,7 @@ namespace smtrat
                         if( result == 0 ) return true;
                         return false;
                     }
-                    default: 
+                    default:
                         return false;
                 }
             }
@@ -2091,7 +2090,7 @@ namespace smtrat
                     {
                         ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
                         normalize( result );
-                        if( result == 0 ) return true; 
+                        if( result == 0 ) return true;
                         result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
                         normalize( result );
                         if( result == 0 ) return true;
@@ -2632,6 +2631,6 @@ namespace smtrat
         default:
             return false;
         }
-    }    
+    }
 }    // namespace smtrat
 

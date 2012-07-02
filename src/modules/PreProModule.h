@@ -59,29 +59,29 @@ namespace smtrat
             void addLearningClauses();
             void proceedSubstitution();
             void simplifyConstraints();
-            std::pair< const Formula*, const Formula* > isCandidateforSubstitution( const Formula* const ) const;
-            bool substituteConstraint( const Formula* const, std::pair< std::pair< std::string, bool >,
+            std::pair< const Formula*, const Formula* > isCandidateforSubstitution( Formula::const_iterator ) const;
+            Formula::iterator substituteConstraint( Formula::iterator, std::pair< std::pair< std::string, bool >,
                     std::pair< std::pair<GiNaC::symtab, GiNaC::symtab>, std::pair< GiNaC::ex, GiNaC::ex> > >,
                     vec_set_const_pFormula );
-            void popBacktrackPoint();
             void pushBacktrackPoint();
+            void removeSubformula( Formula::const_iterator );
 
         private:
-            
+
             // Members for AddLearningClauses()
             bool                        mFreshConstraintReceived;
             std::vector<const Constraint*>   mReceivedConstraints;
             std::vector<const Formula*>      mConstraintOrigins;
             std::vector< std::pair< std::pair< bool, unsigned >, std::pair< unsigned, unsigned > > >  mConstraintBacktrackPoints;
-            
+
             // Members for proceedSubstitution()
             bool                        mNewFormulaReceived;
             unsigned                    mNumberOfComparedConstraints;
-            unsigned                    mNumberOfCheckedFormulas;
+            Formula::iterator     mLastCheckedFormula;
             std::vector< vec_set_const_pFormula >                               mSubstitutionOrigins;
             std::map< std::string, unsigned >                                   mNumberOfVariables;
             std::vector< std::pair< std::pair< std::string, bool >, std::pair< std::pair<GiNaC::symtab, GiNaC::symtab>, std::pair< GiNaC::ex, GiNaC::ex> > > >    mSubstitutions;
-            
+
     };
 
 }    // namespace smtrat
