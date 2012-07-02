@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   GBSettings.h
  * Author: square
  *
@@ -19,20 +19,28 @@ namespace smtrat {
 	 * REDUCED_ONLYSTRICT: Pass the nonstrict inequalities reduced, the others unchanged
 	 * FULL_REDUCED_ONLYNEW: Do only a full reduce on the newly added received inequalities.
 	 */
-	enum pass_inequalities { AS_RECEIVED, FULL_REDUCED, REDUCED, REDUCED_ONLYSTRICT, FULL_REDUCED_ONLYNEW };
+	enum pass_inequalities { AS_RECEIVED, FULL_REDUCED, FULL_REDUCED_ONLYNEW };
+
+	enum after_firstInfeasibleSubset { RETURN_DIRECTLY, PROCEED_INFEASIBLEANDDEDUCTION, PROCEED_ALLINEQUALITIES };
 	
+	enum theory_deductions { NONE, ONLY_INEQUALITIES, ALL };
 	
+	enum check_inequalities { ALWAYS, AFTER_NEW_GB, NEVER };
+
 	struct GBSettings {
 		typedef GiNaCRA::GradedLexicgraphic Order;
 		typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
 		typedef GiNaCRA::MultivariateIdeal<Order> MultivariateIdeal;
 		typedef GiNaCRA::BaseReductor<Order> Reductor;
-		
+
 		static const bool passGB = true;
 		static const bool getReasonsForInfeasibility = true;
 		static const bool passWithMinimalReasons = true;
-		static const bool checkInequalities = false;
-		static const pass_inequalities passInequalities = AS_RECEIVED;
+		static const check_inequalities checkInequalities = AFTER_NEW_GB;
+		static const pass_inequalities passInequalities = FULL_REDUCED;
+		static const after_firstInfeasibleSubset withInfeasibleSubset = PROCEED_ALLINEQUALITIES;
+		static const theory_deductions addTheoryDeductions = ONLY_INEQUALITIES;
+		static const unsigned setCheckInequalitiesToBeginAfter = 0;
 		static const bool checkInequalitiesForTrivialSumOfSquares = true;
 		static const bool checkEqualitiesForTrivialSumOfSquares = true;
 

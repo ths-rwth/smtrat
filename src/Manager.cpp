@@ -77,7 +77,6 @@ namespace smtrat
 #endif
         addModuleType( MT_SATModule, new StandardModuleFactory<SATModule>() );
         addModuleType( MT_PreProModule, new StandardModuleFactory<PreProModule>() );
-        addModuleType( MT_PreProCNFModule, new StandardModuleFactory<PreProCNFModule>() );
         addModuleType( MT_CNFerModule, new StandardModuleFactory<CNFerModule>() );
         addModuleType( MT_LRAOneModule, new StandardModuleFactory<LRAOneModule>() );
         addModuleType( MT_LRATwoModule, new StandardModuleFactory<LRATwoModule>() );

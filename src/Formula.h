@@ -234,6 +234,12 @@ namespace smtrat
                 return mpSubformulas->begin();
             }
 
+            iterator end()
+            {
+                assert( isBooleanCombination() );
+                return mpSubformulas->end();
+            }
+
             const_iterator end() const
             {
                 assert( isBooleanCombination() );
@@ -253,17 +259,32 @@ namespace smtrat
                 return mpSubformulas->rbegin();
             }
 
+            reverse_iterator rend()
+            {
+                assert( isBooleanCombination() );
+                return mpSubformulas->rend();
+            }
+
             const_reverse_iterator rend() const
             {
                 assert( isBooleanCombination() );
                 return mpSubformulas->rend();
             }
 
+            iterator last()
+            {
+                assert( isBooleanCombination() );
+                assert( !mpSubformulas->empty() );
+				iterator result = --mpSubformulas->end();
+				return result;
+            }
+
             const_iterator last() const
             {
                 assert( isBooleanCombination() );
                 assert( !mpSubformulas->empty() );
-                return --mpSubformulas->end();
+				const_iterator result = --mpSubformulas->end();
+				return result;
             }
 
             // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
@@ -423,7 +444,7 @@ namespace smtrat
             void notSolvableBy( ModuleType );
             void print( std::ostream& = std::cout, const std::string = "", bool = false ) const;
             void printPropositions( std::ostream& = std::cout, const std::string = "" ) const;
-            void FormulaToConstraints( std::vector<const Constraint*>& ) const;
+            void getConstraints( std::vector<const Constraint*>& ) const;
 
         private:
 

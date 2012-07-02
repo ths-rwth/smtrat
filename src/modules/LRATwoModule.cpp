@@ -77,81 +77,81 @@ namespace smtrat
      * @return  true,   if the constraint and all previously added constraints are consistent;
      *          false,  if the added constraint or one of the previously added ones is inconsistent.
      */
-    bool LRATwoModule::assertSubFormula( const Formula* const _formula )
+    bool LRATwoModule::assertSubformula(  Formula::const_iterator _subformula )
     {
-        assert( _formula->getType() == REALCONSTRAINT );
-        Module::assertSubFormula( _formula );
-        const Constraint* constraint = _formula->pConstraint();
-    	//TODO remove all previously added constraints!
-    	// or is this the point were backtracking hits sense?
-    	try {
-    		for (map<const Constraint*, Bound*>::const_iterator it=this->boundMap.begin(); it != this->boundMap.end(); ++it) {
-    			const Constraint* first = it->first;
-    			if ((first->relation() == constraint->relation()) && (first->lhs().is_equal(constraint->lhs()))){
-    				Bound* newActiveBound = it->second;
-    				newActiveBound->activate();
-    				//preparation for assert-function to tighten bounds
-    				vector<pair<const Constraint*, Bound*>> actives = this->boundMap.getActives();
-    				vector<pair<const Constraint*, Bound*>>::const_iterator it;
-    				for ( it=actives.begin() ; it < actives.end(); it++ ) {
-    					const Constraint* first = it->first;
-    					if (first->lhs().is_equal(constraint->lhs())){
-    						//now decide whether the newly activated constraint _constraint asserts an upper/lower/strict... bound
-    						//and call the corresponding assert method
-    						switch( constraint->relation() )
-    						{
-    						//TODO is it->second->getBound() possible? since we dont know whether it is an upper or lower or equal bound, we call the getBound method from fatherclass Bound!
-    						//is that legal?!
-    						case CR_EQ: // =
-    						{
-    							if(!(newActiveBound->getBound() == it->second->getBound())) {
-    								return false;
-    							}
-    							break;
-    						}
-    						case CR_NEQ: // <>
-    						{
-    							// should never get here.... I think
-    							// assert(false); // have to deactivate this if debugging with examples using <>
-    							break;
-    						}
-    						case CR_LESS: // <
-    						{
-    							// assertStrictLower(_constraint, it->first, it->second, newActiveBound->getBound());
-    							//then check in assert whether it->first is upper, lower, equal and cmp the Bounds of the newly added constraint
-    							//_constraint (that would be newActiveBound->getBound()) to it->second->getBound() accordingly
-    							break;
-    						}
-    						case CR_GREATER: // >
-    						{
-    							// assertStrictUpper(_constraint, it->first, newActiveBound, it->second, this->boundMap);
-    							break;
-    						}
-    						case CR_LEQ: // <=
-    						{
-    							// assertLower(_constraint, it->first, newActiveBound, it->second, this->boundMap);
-    							break;
-    						}
-    						case CR_GEQ: // >=
-    						{
-    							// assertUpper(_constraint, it->first, newActiveBound, it->second, this->boundMap);
-    							break;
-    						}
-    						default:
-    						{
-    							break;
-    						}
-    						}
-    					}
-    				}
-    				break;
-    			}
-    		}
-
-    	} catch ( ... ) {
-    		return false;
-    	}
-//    	return (isConsistent() == True);
+        assert( (*_subformula)->getType() == REALCONSTRAINT );
+        Module::assertSubformula( _subformula );
+//        const Constraint* constraint = (*_subformula)->pConstraint();
+//    	//TODO remove all previously added constraints!
+//    	// or is this the point were backtracking hits sense?
+//    	try {
+//    		for (map<const Constraint*, Bound*>::const_iterator it=this->boundMap.begin(); it != this->boundMap.end(); ++it) {
+//    			const Constraint* first = it->first;
+//    			if ((first->relation() == constraint->relation()) && (first->lhs().is_equal(constraint->lhs()))){
+//    				Bound* newActiveBound = it->second;
+//    				newActiveBound->activate();
+//    				//preparation for assert-function to tighten bounds
+//    				vector<pair<const Constraint*, Bound*>> actives = this->boundMap.getActives();
+//    				vector<pair<const Constraint*, Bound*>>::const_iterator it;
+//    				for ( it=actives.begin() ; it < actives.end(); it++ ) {
+//    					const Constraint* first = it->first;
+//    					if (first->lhs().is_equal(constraint->lhs())){
+//    						//now decide whether the newly activated constraint _constraint asserts an upper/lower/strict... bound
+//    						//and call the corresponding assert method
+//    						switch( constraint->relation() )
+//    						{
+//    						//TODO is it->second->getBound() possible? since we dont know whether it is an upper or lower or equal bound, we call the getBound method from fatherclass Bound!
+//    						//is that legal?!
+//    						case CR_EQ: // =
+//    						{
+//    							if(!(newActiveBound->getBound() == it->second->getBound())) {
+//    								return false;
+//    							}
+//    							break;
+//    						}
+//    						case CR_NEQ: // <>
+//    						{
+//    							// should never get here.... I think
+//    							// assert(false); // have to deactivate this if debugging with examples using <>
+//    							break;
+//    						}
+//    						case CR_LESS: // <
+//    						{
+//    							// assertStrictLower(_constraint, it->first, it->second, newActiveBound->getBound());
+//    							//then check in assert whether it->first is upper, lower, equal and cmp the Bounds of the newly added constraint
+//    							//_constraint (that would be newActiveBound->getBound()) to it->second->getBound() accordingly
+//    							break;
+//    						}
+//    						case CR_GREATER: // >
+//    						{
+//    							// assertStrictUpper(_constraint, it->first, newActiveBound, it->second, this->boundMap);
+//    							break;
+//    						}
+//    						case CR_LEQ: // <=
+//    						{
+//    							// assertLower(_constraint, it->first, newActiveBound, it->second, this->boundMap);
+//    							break;
+//    						}
+//    						case CR_GEQ: // >=
+//    						{
+//    							// assertUpper(_constraint, it->first, newActiveBound, it->second, this->boundMap);
+//    							break;
+//    						}
+//    						default:
+//    						{
+//    							break;
+//    						}
+//    						}
+//    					}
+//    				}
+//    				break;
+//    			}
+//    		}
+//
+//    	} catch ( ... ) {
+//    		return false;
+//    	}
+////    	return (isConsistent() == True);
     	return true;
     }
 
@@ -176,23 +176,32 @@ namespace smtrat
     	}
     	return True;
     }
+//
+//    /**
+//     * Pops the last backtrackpoint, from the stack of backtrackpoints.
+//     */
+//    void LRATwoModule::popBacktrackPoint()
+//    {
+//        Module::popBacktrackPoint();
+//    }
+//
+//    /**
+//     * Pushes a backtrackpoint, to the stack of backtrackpoints.
+//     */
+//    void LRATwoModule::pushBacktrackPoint()
+//    {
+//        Module::pushBacktrackPoint();
+//    }
 
     /**
-     * Pops the last backtrackpoint, from the stack of backtrackpoints.
+     * Removes a everything related to a sub formula of the received formula.
+     *
+     * @param _subformula The sub formula of the received formula to remove.
      */
-    void LRATwoModule::popBacktrackPoint()
+    void LRATwoModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        Module::popBacktrackPoint();
+        Module::removeSubformula( _subformula );
     }
-
-    /**
-     * Pushes a backtrackpoint, to the stack of backtrackpoints.
-     */
-    void LRATwoModule::pushBacktrackPoint()
-    {
-        Module::pushBacktrackPoint();
-    }
-
 }    // namespace smtrat
 
 

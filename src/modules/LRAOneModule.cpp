@@ -69,10 +69,10 @@ namespace smtrat
      * @return  true,   if the constraint and all previously added constraints are consistent;
      *          false,  if the added constraint or one of the previously added ones is inconsistent.
      */
-    bool LRAOneModule::assertSubFormula( const Formula* const _formula )
+    bool LRAOneModule::assertSubformula( Formula::const_iterator _subformula )
     {
-        assert( _formula->getType() == REALCONSTRAINT );
-        Module::assertSubFormula( _formula );
+        assert( (*_subformula)->getType() == REALCONSTRAINT );
+        Module::assertSubformula( _subformula );
         return true;
     }
 
@@ -87,21 +87,31 @@ namespace smtrat
     {
         return True;
     }
+//
+//    /**
+//     * Pops the last backtrackpoint, from the stack of backtrackpoints.
+//     */
+//    void LRAOneModule::popBacktrackPoint()
+//    {
+//        Module::popBacktrackPoint();
+//    }
+//
+//    /**
+//     * Pushes a backtrackpoint, to the stack of backtrackpoints.
+//     */
+//    void LRAOneModule::pushBacktrackPoint()
+//    {
+//        Module::pushBacktrackPoint();
+//    }
 
     /**
-     * Pops the last backtrackpoint, from the stack of backtrackpoints.
+     * Removes a everything related to a sub formula of the received formula.
+     *
+     * @param _subformula The sub formula of the received formula to remove.
      */
-    void LRAOneModule::popBacktrackPoint()
+    void LRAOneModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        Module::popBacktrackPoint();
-    }
-
-    /**
-     * Pushes a backtrackpoint, to the stack of backtrackpoints.
-     */
-    void LRAOneModule::pushBacktrackPoint()
-    {
-        Module::pushBacktrackPoint();
+        Module::removeSubformula( _subformula );
     }
 
 }    // namespace smtrat

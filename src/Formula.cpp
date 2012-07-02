@@ -348,10 +348,10 @@ namespace smtrat
     void Formula::erase( unsigned _position )
 	{
 		assert( isBooleanCombination() );
-		assert( _position < size() );
-		iterator subFormula = begin();
+		assert( _position < mpSubformulas->size() );
+		iterator subFormula = mpSubformulas->begin();
 		unsigned pos = 0;
-		while( subFormula != end() )
+		while( subFormula != mpSubformulas->end() )
 		{
 			if( pos == _position )
 			{
@@ -360,14 +360,14 @@ namespace smtrat
             ++subFormula;
 			++pos;
 		}
-        erase( subFormula );
+        mpSubformulas->erase( subFormula );
 	}
 
 	void Formula::erase( const Formula* _formula )
 	{
 		assert( isBooleanCombination() );
-		iterator subFormula = begin();
-		while( subFormula != end() )
+		iterator subFormula = mpSubformulas->begin();
+		while( subFormula != mpSubformulas->end() )
 		{
 			if( *subFormula == _formula )
 			{
@@ -375,15 +375,15 @@ namespace smtrat
 			}
             ++subFormula;
 		}
-        erase( subFormula );
+        mpSubformulas->erase( subFormula );
 	}
 
 	Formula::iterator Formula::erase( Formula::iterator _subformula )
 	{
 		assert( isBooleanCombination() );
-        assert( _subformula != end() );
+        assert( _subformula != mpSubformulas->end() );
         Formula* pSubFormula = *_subformula;
-        iterator result = erase( _subformula );
+        iterator result = mpSubformulas->erase( _subformula );
         delete pSubFormula;
         mPropositionsUptodate = false;
         return result;
@@ -392,10 +392,10 @@ namespace smtrat
 	Formula* Formula::pruneBack()
 	{
 		assert( isBooleanCombination() );
-        assert( !empty() );
-        Formula* result = back();
+        assert( !mpSubformulas->empty() );
+        Formula* result = mpSubformulas->back();
 		result->resetFather();
-		pop_back();
+		mpSubformulas->pop_back();
         mPropositionsUptodate = false;
         return result;
 	}
@@ -403,15 +403,15 @@ namespace smtrat
     Formula* Formula::prune( unsigned _position )
 	{
 		assert( isBooleanCombination() );
-		assert( _position < size() );
-		iterator subFormula = begin();
+		assert( _position < mpSubformulas->size() );
+		iterator subFormula = mpSubformulas->begin();
 		unsigned pos = 0;
-		while( subFormula != end() )
+		while( subFormula != mpSubformulas->end() )
 		{
 			if( pos == _position )
 			{
 				Formula* pSubFormula = *subFormula;
-				erase( subFormula );
+				mpSubformulas->erase( subFormula );
                 mPropositionsUptodate = false;
 				return pSubFormula;
                 break;
@@ -425,7 +425,7 @@ namespace smtrat
     Formula::iterator Formula::prune( Formula::iterator _subformula )
 	{
 		assert( isBooleanCombination() );
-        assert(_subformula != end() );
+        assert(_subformula != mpSubformulas->end() );
         mPropositionsUptodate = false;
         return mpSubformulas->erase( _subformula );
 	}
@@ -433,10 +433,10 @@ namespace smtrat
 	void Formula::clear()
 	{
 		assert( isBooleanCombination() );
-		while( !empty() )
+		while( !mpSubformulas->empty() )
 		{
-			Formula* pSubForm = back();
-			pop_back();
+			Formula* pSubForm = mpSubformulas->back();
+			mpSubformulas->pop_back();
 			delete pSubForm;
 		}
         mPropositionsUptodate = false;
@@ -755,7 +755,7 @@ namespace smtrat
     	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
     }
 
-    void Formula::FormulaToConstraints( vector<const Constraint* >& _const) const
+    void Formula::getConstraints( vector<const Constraint* >& _const) const
     {
         if( mType == REALCONSTRAINT )
         {
@@ -767,7 +767,7 @@ namespace smtrat
                         subFormula != mpSubformulas->end();
                         ++subFormula )
            {
-               (*subFormula)->FormulaToConstraints( _const );
+               (*subFormula)->getConstraints( _const );
            }
         }
     }

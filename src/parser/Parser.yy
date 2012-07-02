@@ -100,7 +100,7 @@
 %token AND OR NOT IFF XOR IMPLIES LET
 %token TRUE FALSE
 %token FORMULA
-%token ASSERT SETLOGIC QFNRA
+%token ASSERT SETLOGIC QFNRA QFLRA
 %token EXIT
 %token DECLAREFUN
 %token OB
@@ -559,6 +559,10 @@ bind :
 
 logic :
 		QFNRA
+	{
+	}
+    |
+		QFLRA
 	{
 	}
 	|	SYM

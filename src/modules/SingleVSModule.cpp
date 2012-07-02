@@ -79,10 +79,10 @@ namespace smtrat
      * @return  false,  if it can decide that the subformula is inconsistent;
      *          true,   otherwise.
      */
-    bool SingleVSModule::assertSubFormula( const Formula* const _formula )
+    bool SingleVSModule::assertSubformula( Formula::const_iterator _subformula )
     {
-        assert( _formula->getType() == REALCONSTRAINT );
-        Module::assertSubFormula( _formula );
+        assert( (*_subformula)->getType() == REALCONSTRAINT );
+        Module::assertSubformula( _subformula );
         return true;
     }
 
@@ -105,20 +105,12 @@ namespace smtrat
     }
 
     /**
-     * Pops the last backtrackpoint, from the stack of backtrackpoints.
+     * Removes a everything related to a sub formula of the received formula.
+     *
+     * @param _subformula The sub formula of the received formula to remove.
      */
-    void SingleVSModule::popBacktrackPoint()
+    void SingleVSModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        Module::popBacktrackPoint();
-        mNumberOfConsideredConstraints = (lastBacktrackpointsEnd() < 0 ? 0 : lastBacktrackpointsEnd());
+        Module::removeSubformula( _subformula );
     }
-
-    /**
-     * Pushes a backtrackpoint, to the stack of backtrackpoints.
-     */
-    void SingleVSModule::pushBacktrackPoint()
-    {
-        Module::pushBacktrackPoint();
-    }
-
 }    // namespace smtrat

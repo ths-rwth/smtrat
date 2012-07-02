@@ -64,7 +64,6 @@ namespace smtrat
 
             bool                    mFreshConstraintReceived;
             bool                    mInconsistentConstraintAdded;
-            Formula::const_iterator mFirstNotComparedConstraint;
             GiNaC::symtab           mAllVariables;
 
     };

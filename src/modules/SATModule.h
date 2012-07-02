@@ -70,26 +70,22 @@ namespace smtrat
             /*
              * Type definitions:
              */
-            struct constraintCompare
+            struct formulaCmp
             {
-                bool operator ()( const Constraint& pConsA, const Constraint& pConsB ) const
+                bool operator ()( const Formula* const _formulaA, const Formula* const _formulaB ) const
                 {
-                    if( pConsA.relation() < pConsB.relation() )
-                    {
-                        return true;
-                    }
-                    else if( pConsA.relation() == pConsB.relation() )
-                    {
-                        return GiNaC::ex_is_less()( pConsA.lhs(), pConsB.lhs() );
-                    }
-                    return false;
+                    assert(_formulaA->getType() == REALCONSTRAINT);
+                    assert(_formulaB->getType() == REALCONSTRAINT);
+                    return (_formulaA->constraint() < _formulaB->constraint());
                 }
             };
-            typedef std::map<const Constraint* const, Minisat::Lit>                     ConstraintLiteralMap;
-            typedef std::map<const std::string, Minisat::Var>                           BooleanVarMap;
-            typedef std::map<const Minisat::Var, std::pair<Formula*, const Formula*> >  BooleanConstraintMap;
-            // Helper structures:
-            //
+            typedef std::map<const Constraint* const, Minisat::Lit>                        ConstraintLiteralMap;
+            typedef std::map<const std::string, Minisat::Var>                              BooleanVarMap;
+            typedef std::map<const Minisat::Var, std::pair<Formula*, const Formula*> >     BooleanConstraintMap;
+            typedef std::map<const Formula*, const Formula*, formulaCmp>                   ConstraintOriginMap;
+            /*
+             * Helper structures:
+             */
             struct VarData
             {
                 Minisat::CRef reason;
@@ -151,16 +147,7 @@ namespace smtrat
             /**
              * Members:
              */
-            ConstraintLiteralMap  mConstraintLiteralMap;
-            BooleanVarMap         mBooleanVarMap;
-            BooleanConstraintMap  mBooleanConstraintMap;
-            std::vector<unsigned> mBacktrackpointInSatSolver;
 
-            // Extra results: (read-only member variable)
-            //
-            Minisat::vec<Minisat::lbool> model;    // If problem is satisfiable, this vector contains the model (if any).
-            Minisat::vec<Minisat::Lit>   conflict;    // If problem is unsatisfiable (possibly under assumptions),
-            // this vector represent the final conflict clause expressed in the assumptions.
 
             // Mode of operation:
             //
@@ -170,16 +157,24 @@ namespace smtrat
             double random_var_freq;
             double random_seed;
             bool   luby_restart;
-            int    ccmin_mode;    // Controls conflict clause minimization (0=none, 1=basic, 2=deep).
-            int    phase_saving;    // Controls the level of phase saving (0=none, 1=limited, 2=full).
-            bool   rnd_pol;    // Use random polarities for branching heuristics.
-            bool   rnd_init_act;    // Initialize variable activities with a small random value.
-            double garbage_frac;    // The fraction of wasted memory allowed before a garbage collection is triggered.
-
-            int    restart_first;    // The initial restart limit.                                                                (default 100)
-            double restart_inc;    // The factor with which the restart limit is multiplied in each restart.                    (default 1.5)
-            double learntsize_factor;    // The intitial limit for learnt clauses is a factor of the original clauses.                (default 1 / 3)
-            double learntsize_inc;    // The limit for learnt clauses is multiplied with this factor each restart.                 (default 1.1)
+            // Controls conflict clause minimization (0=none, 1=basic, 2=deep).
+            int    ccmin_mode;
+            // Controls the level of phase saving (0=none, 1=limited, 2=full).
+            int    phase_saving;
+            // Use random polarities for branching heuristics.
+            bool   rnd_pol;
+            // Initialize variable activities with a small random value.
+            bool   rnd_init_act;
+            // The fraction of wasted memory allowed before a garbage collection is triggered.
+            double garbage_frac;
+            // The initial restart limit. (default 100)
+            int    restart_first;
+            // The factor with which the restart limit is multiplied in each restart. (default 1.5)
+            double restart_inc;
+            // The initial limit for learned clauses is a factor of the original clauses.(default 1 / 3)
+            double learntsize_factor;
+            // The limit for learned clauses is multiplied with this factor each restart.(default 1.1)
+            double learntsize_inc;
 
             int    learntsize_adjust_start_confl;
             double learntsize_adjust_inc;
@@ -191,32 +186,50 @@ namespace smtrat
 
             // Solver state:
             //
-            bool                                                                   ok;    // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
-            Minisat::vec<Minisat::CRef>                                            clauses;    // List of problem clauses.
-            Minisat::vec<Minisat::CRef>                                            learnts;    // List of learnt clauses.
-            double                                                                 cla_inc;    // Amount to bump next clause with.
-            Minisat::vec<double>                                                   activity;    // A heuristic measurement of the activity of a variable.
-            double                                                                 var_inc;    // Amount to bump next variable with.
-            Minisat::OccLists<Minisat::Lit, Minisat::vec<Watcher>, WatcherDeleted> watches;    // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-            Minisat::vec<Minisat::lbool> assigns;    // The current assignments.
-            Minisat::vec<char>           polarity;    // The preferred polarity of each variable.
-            Minisat::vec<char>           decision;    // Declares if a variable is eligible for selection in the decision heuristic.
-            Minisat::vec<Minisat::Lit>   trail;    // Assignment stack; stores all assigments made in the order they were made.
-            Minisat::vec<int>            trail_lim;    // Separator indices for different decision levels in 'trail'.
-            Minisat::vec<VarData>        vardata;    // Stores reason and level for each variable.
-            int                          qhead;    // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
-            int                          simpDB_assigns;    // Number of top-level assignments since last execution of 'simplify()'.
-            int64_t                      simpDB_props;    // Remaining number of propagations that must be made before next execution of 'simplify()'.
-            Minisat::vec<Minisat::Lit>   assumptions;    // Current set of assumptions provided to solve by the user.
-            Minisat::Heap<VarOrderLt>    order_heap;    // A priority queue of variables ordered with respect to the variable activity.
-            double                       progress_estimate;    // Set by 'search()'.
-            bool                         remove_satisfied;    // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
-
+            // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
+            bool                         ok;
+            // List of problem clauses.
+            Minisat::vec<Minisat::CRef>  clauses;
+            // List of learned clauses.
+            Minisat::vec<Minisat::CRef>  learnts;
+            // Amount to bump next clause with.
+            double                       cla_inc;
+            // A heuristic measurement of the activity of a variable.
+            Minisat::vec<double>         activity;
+            // Amount to bump next variable with.
+            double                       var_inc;
+            // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
+            Minisat::OccLists<Minisat::Lit, Minisat::vec<Watcher>, WatcherDeleted> watches;
+            // The current assignments.
+            Minisat::vec<Minisat::lbool> assigns;
+            // The preferred polarity of each variable.
+            Minisat::vec<char>           polarity;
+            // Declares if a variable is eligible for selection in the decision heuristic.
+            Minisat::vec<char>           decision;
+            // Assignment stack; stores all assignments made in the order they were made.
+            Minisat::vec<Minisat::Lit>   trail;
+            // Separator indices for different decision levels in 'trail'.
+            Minisat::vec<int>            trail_lim;
+            // Stores reason and level for each variable.
+            Minisat::vec<VarData>        vardata;
+            // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
+            int                          qhead;
+            // Number of top-level assignments since last execution of 'simplify()'.
+            int                          simpDB_assigns;
+            // Remaining number of propagations that must be made before next execution of 'simplify()'.
+            int64_t                      simpDB_props;
+            // Current set of assumptions provided to solve by the user.
+            Minisat::vec<Minisat::Lit>   assumptions;
+            // A priority queue of variables ordered with respect to the variable activity.
+            Minisat::Heap<VarOrderLt>    order_heap;
+            // Set by 'search()'.
+            double                       progress_estimate;
+            // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
+            bool                         remove_satisfied;
             Minisat::ClauseAllocator     ca;
 
             // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
-            // used, exept 'seen' wich is used in several places.
-            //
+            // used, except 'seen' whsich is used in several places.
             Minisat::vec<char>         seen;
             Minisat::vec<Minisat::Lit> analyze_stack;
             Minisat::vec<Minisat::Lit> analyze_toclear;
@@ -226,11 +239,24 @@ namespace smtrat
             double                     learntsize_adjust_confl;
             int                        learntsize_adjust_cnt;
 
-            // Resource contraints:
-            //
+            // Resource constraints:
             int64_t conflict_budget;    // -1 means no budget.
-            int64_t propagation_budget;    // -1 means no budget.
+            int64_t propagation_budget; // -1 means no budget.
             bool    asynch_interrupt;
+
+            ConstraintLiteralMap  mConstraintLiteralMap;
+            BooleanVarMap         mBooleanVarMap;
+            BooleanConstraintMap  mBooleanConstraintMap;
+            std::vector<unsigned> mBacktrackpointInSatSolver;
+            FormulaOrigins        mLearnedDeductions;
+
+            // Extra results: (read-only member variable)
+            //
+            // If problem is satisfiable, this vector contains the model (if any).
+            Minisat::vec<Minisat::lbool> model;
+            // If problem is unsatisfiable (possibly under assumptions),
+            // this vector represent the final conflict clause expressed in the assumptions.
+            Minisat::vec<Minisat::Lit>   conflict;
 
         public:
 
@@ -249,10 +275,9 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool assertSubFormula( const Formula* const );
+            bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
-            void popBacktrackPoint();
-            void pushBacktrackPoint();
+            void removeSubformula( Formula::const_iterator );
 
             // Printing.
             void print( std::ostream& = std::cout, const std::string = "***" ) const;
@@ -267,53 +292,79 @@ namespace smtrat
         private:
             // Problem specification:
             //
-            Minisat::Var newVar( bool polarity = true, bool dvar = true );    // Add a new variable with parameters specifying variable mode.
-
-            bool addClause( const Minisat::vec<Minisat::Lit>& ps );    // Add a clause to the solver.
-            bool addEmptyClause();    // Add the empty clause, making the solver contradictory.
-            bool addClause( Minisat::Lit p );    // Add a unit clause to the solver.
-            bool addClause( Minisat::Lit p, Minisat::Lit q );    // Add a binary clause to the solver.
-            bool addClause( Minisat::Lit p, Minisat::Lit q, Minisat::Lit r );    // Add a ternary clause to the solver.
-            bool addClause_( Minisat::vec<Minisat::Lit>& ps );    // Add a clause to the solver without making superflous internal copy. Will
+            // Add a new variable with parameters specifying variable mode.
+            Minisat::Var newVar( bool polarity = true, bool dvar = true );
+            // Add a clause to the solver.
+            bool addClause( const Minisat::vec<Minisat::Lit>& ps );
+            // Add the empty clause, making the solver contradictory.
+            bool addEmptyClause();
+            // Add a unit clause to the solver.
+            bool addClause( Minisat::Lit p );
+            // Add a binary clause to the solver.
+            bool addClause( Minisat::Lit p, Minisat::Lit q );
+            // Add a ternary clause to the solver.
+            bool addClause( Minisat::Lit p, Minisat::Lit q, Minisat::Lit r );
+            // Add a clause to the solver without making superfluous internal copy. Will
+            bool addClause_( Minisat::vec<Minisat::Lit>& ps );
             // change the passed vector 'ps'.
 
             // Solving:
             //
-            bool simplify();    // Removes already satisfied clauses.
-            bool solve( const Minisat::vec<Minisat::Lit>& assumps );    // Search for a model that respects a given set of assumptions.
-            Minisat::lbool solveLimited( const Minisat::vec<Minisat::Lit>& assumps );    // Search for a model that respects a given set of assumptions (With resource constraints).
-            bool solve();    // Search without assumptions.
-            bool solve( Minisat::Lit p );    // Search for a model that respects a single assumption.
-            bool solve( Minisat::Lit p, Minisat::Lit q );    // Search for a model that respects two assumptions.
-            bool solve( Minisat::Lit p, Minisat::Lit q, Minisat::Lit r );    // Search for a model that respects three assumptions.
-            bool okay() const;    // FALSE means solver is in a conflicting state
+            // Removes already satisfied clauses.
+            bool simplify();
+            // Search for a model that respects a given set of assumptions.
+            bool solve( const Minisat::vec<Minisat::Lit>& assumps );
+            // Search for a model that respects a given set of assumptions (With resource constraints).
+            Minisat::lbool solveLimited( const Minisat::vec<Minisat::Lit>& assumps );
+            // Search without assumptions.
+            bool solve();
+            // Search for a model that respects a single assumption.
+            bool solve( Minisat::Lit p );
+            // Search for a model that respects two assumptions.
+            bool solve( Minisat::Lit p, Minisat::Lit q );
+            // Search for a model that respects three assumptions.
+            bool solve( Minisat::Lit p, Minisat::Lit q, Minisat::Lit r );
+            // FALSE means solver is in a conflicting state
+            bool okay() const;
 
             // Variable mode:
             //
-            void setPolarity( Minisat::Var v, bool b );    // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
-            void setDecisionVar( Minisat::Var v, bool b );    // Declare if a variable should be eligible for selection in the decision heuristic.
+            // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
+            void setPolarity( Minisat::Var v, bool b );
+            // Declare if a variable should be eligible for selection in the decision heuristic.
+            void setDecisionVar( Minisat::Var v, bool b );
 
             // Read state:
             //
-            Minisat::lbool value( Minisat::Var x ) const;    // The current value of a variable.
-            Minisat::lbool value( Minisat::Lit p ) const;    // The current value of a literal.
-            Minisat::lbool modelValue( Minisat::Var x ) const;    // The value of a variable in the last model. The last call to solve must have been satisfiable.
-            Minisat::lbool modelValue( Minisat::Lit p ) const;    // The value of a literal in the last model. The last call to solve must have been satisfiable.
-            int nAssigns() const;    // The current number of assigned literals.
-            int nClauses() const;    // The current number of original clauses.
-            int nLearnts() const;    // The current number of learnt clauses.
-            int nVars() const;    // The current number of variables.
+            // The current value of a variable.
+            Minisat::lbool value( Minisat::Var x ) const;
+            // The current value of a literal.
+            Minisat::lbool value( Minisat::Lit p ) const;
+            // The value of a variable in the last model. The last call to solve must have been satisfiable.
+            Minisat::lbool modelValue( Minisat::Var x ) const;
+            // The value of a literal in the last model. The last call to solve must have been satisfiable.
+            Minisat::lbool modelValue( Minisat::Lit p ) const;
+            // The current number of assigned literals.
+            int nAssigns() const;
+            // The current number of original clauses.
+            int nClauses() const;
+            // The current number of learned clauses.
+            int nLearnts() const;
+            // The current number of variables.
+            int nVars() const;
             int nFreeVars() const;
 
-            // Resource contraints:
+            // Resource constraints:
             //
             void setConfBudget( int64_t x );
             void setPropBudget( int64_t x );
             void budgetOff();
-            void interrupt();    // Trigger a (potentially asynchronous) interruption of the solver.
-            void clearInterrupt();    // Clear interrupt indicator flag.
+            // Trigger a (potentially asynchronous) interruption of the solver.
+            void interrupt();
+            // Clear interrupt indicator flag.
+            void clearInterrupt();
 
-            // Memory managment:
+            // Memory management:
             //
             virtual void garbageCollect();
             void checkGarbage( double gf );
@@ -323,48 +374,77 @@ namespace smtrat
 
             // Main internal methods:
             //
-            void insertVarOrder( Minisat::Var x );    // Insert a variable in the decision order priority queue.
-            Minisat::Lit pickBranchLit();    // Return the next decision variable.
-            void newDecisionLevel();    // Begins a new decision level.
-            void uncheckedEnqueue( Minisat::Lit p, Minisat::CRef from = Minisat::CRef_Undef );    // Enqueue a literal. Assumes value of literal is undefined.
-            bool enqueue( Minisat::Lit p, Minisat::CRef from = Minisat::CRef_Undef );    // Test if fact 'p' contradicts current state, enqueue otherwise.
-            Minisat::CRef propagate();    // Perform unit propagation. Returns possibly conflicting clause.
-            void cancelUntil( int level );    // Backtrack until a certain level.
-            void analyze( Minisat::CRef confl, Minisat::vec<Minisat::Lit>& out_learnt, int& out_btlevel );    // (bt = backtrack)
-            void analyzeFinal( Minisat::Lit p, Minisat::vec<Minisat::Lit>& out_conflict );    // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
-            bool litRedundant( Minisat::Lit p, uint32_t abstract_levels );    // (helper method for 'analyze()')
-            Minisat::lbool search( int nof_conflicts = 100 );    // Search for a given number of conflicts.
-            Minisat::lbool solve_();    // Main solve method (assumptions given in 'assumptions').
-            void reduceDB();    // Reduce the set of learnt clauses.
-            void removeSatisfied( Minisat::vec<Minisat::CRef>& cs );    // Shrink 'cs' to contain only non-satisfied clauses.
+            // Insert a variable in the decision order priority queue.
+            void insertVarOrder( Minisat::Var x );
+            // Return the next decision variable.
+            Minisat::Lit pickBranchLit();
+            // Begins a new decision level.
+            void newDecisionLevel();
+            // Enqueue a literal. Assumes value of literal is undefined.
+            void uncheckedEnqueue( Minisat::Lit p, Minisat::CRef from = Minisat::CRef_Undef );
+            // Test if fact 'p' contradicts current state, enqueue otherwise.
+            bool enqueue( Minisat::Lit p, Minisat::CRef from = Minisat::CRef_Undef );
+            // Perform unit propagation. Returns possibly conflicting clause.
+            Minisat::CRef propagate();
+            // Backtrack until a certain level.
+            void cancelUntil( int level );
+            // (bt = backtrack)
+            void analyze( Minisat::CRef confl, Minisat::vec<Minisat::Lit>& out_learnt, int& out_btlevel );
+            // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
+            void analyzeFinal( Minisat::Lit p, Minisat::vec<Minisat::Lit>& out_conflict );
+            // (helper method for 'analyze()')
+            bool litRedundant( Minisat::Lit p, uint32_t abstract_levels );
+            //
+            Minisat::CRef learnTheoryReason( const std::set<const Formula*>& );
+            // Search for a given number of conflicts.
+            Minisat::lbool search( int nof_conflicts = 100 );
+            // Main solve method (assumptions given in 'assumptions').
+            Minisat::lbool solve_();
+            // Reduce the set of learned clauses.
+            void reduceDB();
+            // Shrink 'cs' to contain only non-satisfied clauses.
+            void removeSatisfied( Minisat::vec<Minisat::CRef>& cs );
             void rebuildOrderHeap();
 
             // Maintaining Variable/Clause activity:
             //
-            void varDecayActivity();    // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
-            void varBumpActivity( Minisat::Var v, double inc );    // Increase a variable with the current 'bump' value.
-            void varBumpActivity( Minisat::Var v );    // Increase a variable with the current 'bump' value.
-            void claDecayActivity();    // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
-            void claBumpActivity( Minisat::Clause& c );    // Increase a clause with the current 'bump' value.
+            // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
+            void varDecayActivity();
+            // Increase a variable with the current 'bump' value.
+            void varBumpActivity( Minisat::Var v, double inc );
+            // Increase a variable with the current 'bump' value.
+            void varBumpActivity( Minisat::Var v );
+            // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
+            void claDecayActivity();
+            // Increase a clause with the current 'bump' value.
+            void claBumpActivity( Minisat::Clause& c );
 
             // Operations on clauses:
             //
-            void attachClause( Minisat::CRef cr );    // Attach a clause to watcher lists.
-            void detachClause( Minisat::CRef cr, bool strict = false );    // Detach a clause to watcher lists.
-            void removeClause( Minisat::CRef cr );    // Detach and free a clause.
-            bool locked( const Minisat::Clause& c ) const;    // Returns TRUE if a clause is a reason for some implication in the current state.
-            bool satisfied( const Minisat::Clause& c ) const;    // Returns TRUE if a clause is satisfied in the current state.
+            // Attach a clause to watcher lists.
+            void attachClause( Minisat::CRef cr, bool = false );
+            // Detach a clause to watcher lists.
+            void detachClause( Minisat::CRef cr, bool strict = false );
+            // Detach and free a clause.
+            void removeClause( Minisat::CRef cr );
+            // Returns TRUE if a clause is a reason for some implication in the current state.
+            bool locked( const Minisat::Clause& c ) const;
+            // Returns TRUE if a clause is satisfied in the current state.
+            bool satisfied( const Minisat::Clause& c ) const;
 
             static Minisat::Var mapVar( Minisat::Var, Minisat::vec<Minisat::Var>&, Minisat::Var& );
             void relocAll( Minisat::ClauseAllocator& to );
 
             // Misc:
             //
-            int decisionLevel() const;    // Gives the current decisionlevel.
-            uint32_t abstractLevel( Minisat::Var x ) const;    // Used to represent an abstraction of sets of decision levels.
+            // Gives the current decision level.
+            int decisionLevel() const;
+            // Used to represent an abstraction of sets of decision levels.
+            uint32_t abstractLevel( Minisat::Var x ) const;
             Minisat::CRef reason( Minisat::Var x ) const;
             int level( Minisat::Var x ) const;
-            double progressEstimate() const;    // DELETE THIS ?? IT'S NOT VERY USEFUL ...
+            // DELETE THIS ?? IT'S NOT VERY USEFUL ...
+            double progressEstimate() const;
             bool withinBudget() const;
 
             // Static helpers:
@@ -388,6 +468,7 @@ namespace smtrat
             Answer addClauseToSatSolver( const Formula* );
             Minisat::Lit getLiteral( const Formula&, const Formula* = NULL );
             bool adaptPassedFormula();
+            void simplifyByLearnedTheoryDeductions( ConstraintOriginMap& ) const;
     };
 
     //=================================================================================================
@@ -528,7 +609,7 @@ namespace smtrat
         return assigns[x];
     }
 
-    inline Minisat::lbool SATModule::value( Minisat::Lit p ) const
+        inline Minisat::lbool SATModule::value( Minisat::Lit p ) const
     {
         return assigns[Minisat::var( p )] ^ Minisat::sign( p );
     }
