@@ -49,24 +49,25 @@ using GiNaC::POSITIVE_SIGN;
 using GiNaC::NEGATIVE_SIGN;
 using GiNaC::ex_to;
 using GiNaC::is_exactly_a;
+
 using namespace std;
 
 namespace smtrat
 {
     CADModule::CADModule( Manager* const _tsManager, const Formula* const _formula ):
         Module( _tsManager, _formula ),
-        mCAD( ),
-        mConstraints( ),
-        mConstraintsMap( ),
+        mCAD(),
+        mConstraints(),
+        mConstraintsMap(),
         mSatisfiable( true )
     {
         mModuleType = MT_CADModule;
-        mInfeasibleSubsets.clear(); // initially everything is satisfied
-//        vector<symbol> variables = vector<symbol>();
-//        for( register GiNaC::symtab::const_iterator sym = mpTSManager->allVariables().begin(); sym != mpTSManager->allVariables().end(); ++sym )
-//            variables.push_back( ex_to<symbol>( sym->second ));
-//        GiNaCRA::CADSettings setting = GiNaCRA::CADSettings::getSettings( );
-//        mCAD = CAD( EliminationSet(), variables, setting );
+        mInfeasibleSubsets.clear();    // initially everything is satisfied
+        //        vector<symbol> variables = vector<symbol>();
+        //        for( register GiNaC::symtab::const_iterator sym = mpTSManager->allVariables().begin(); sym != mpTSManager->allVariables().end(); ++sym )
+        //            variables.push_back( ex_to<symbol>( sym->second ));
+        //        GiNaCRA::CADSettings setting = GiNaCRA::CADSettings::getSettings( );
+        //        mCAD = CAD( EliminationSet(), variables, setting );
     }
 
     CADModule::~CADModule(){}
@@ -76,31 +77,32 @@ namespace smtrat
         assert( (*_subformula)->getType() == REALCONSTRAINT );
         Module::assertSubformula( _subformula );
         vector<symbol> variables = vector<symbol>();
-        for( register GiNaC::symtab::const_iterator sym = (*_subformula)->constraint().variables().begin(); sym != (*_subformula)->constraint().variables().end(); ++sym )
-            variables.push_back( ex_to<symbol>( sym->second ));
-//        addReceivedSubformulaToPassedFormula( receivedFormulaSize() - 1 ); // passed formula not needed since module does not call backends
+        for( register GiNaC::symtab::const_iterator sym = (*_subformula)->constraint().variables().begin();
+                sym != (*_subformula)->constraint().variables().end(); ++sym )
+            variables.push_back( ex_to<symbol>( sym->second ) );
+        //        addReceivedSubformulaToPassedFormula( receivedFormulaSize() - 1 ); // passed formula not needed since module does not call backends
         // add the polynomial to the cad
         mCAD.addPolynomial( GiNaCRA::UnivariatePolynomial( (*_subformula)->constraint().lhs(), variables.front(), false ), variables );    // false: disable input checks
         // add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
         if( mConstraintsMap.find( (*_subformula)->pConstraint() ) != mConstraintsMap.end() )
-            return mSatisfiable; // constraint already considered
+            return mSatisfiable;    // constraint already considered
         mConstraints.push_back( convertConstraint( (*_subformula)->constraint() ) );
-        mConstraintsMap[ (*_subformula)->pConstraint() ] = mConstraints.size() - 1;
+        mConstraintsMap[(*_subformula)->pConstraint()] = mConstraints.size() - 1;
         // check whether unsatisfiability was determined before and no constrained was removed so far
         if( !mSatisfiable )
             return false;
         // check the extended constraints for satisfiability
         GiNaCRA::RealAlgebraicPoint r;
-        ConflictGraph conflictGraph;        
-        if( !mCAD.check( mConstraints, r, conflictGraph ))
+        ConflictGraph               conflictGraph;
+        if( !mCAD.check( mConstraints, r, conflictGraph ) )
         {
             vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets( conflictGraph );
             for( vec_set_const_pFormula::const_iterator i = infeasibleSubsets.begin(); i != infeasibleSubsets.end(); ++i )
                 mInfeasibleSubsets.push_back( *i );
             #ifdef MODULE_VERBOSE
-//            cout << "#Samples: " << mCAD.samples().size() << endl;
-//            cout << "Result: false" << endl;
-//            printInfeasibleSubsets();
+            //            cout << "#Samples: " << mCAD.samples().size() << endl;
+            //            cout << "Result: false" << endl;
+            //            printInfeasibleSubsets();
             #endif
             mSatisfiable = false;
             return false;
@@ -112,14 +114,14 @@ namespace smtrat
     Answer CADModule::isConsistent()
     {
         #ifdef MODULE_VERBOSE
-//        cout << "Check constraint set " << endl;
-//        for( auto k = mConstraints.begin(); k != mConstraints.end(); ++k )
-//            cout << " " << *k << endl;
-//        vector<symbol> variables = mCAD.variables();
-//        cout << "over the variables " << endl;
-//        for( auto k = variables.begin(); k != variables.end(); ++k )
-//            cout << " " << *k << endl;
-//        cout << "Result: " << mSatisfiable << endl;
+        //        cout << "Check constraint set " << endl;
+        //        for( auto k = mConstraints.begin(); k != mConstraints.end(); ++k )
+        //            cout << " " << *k << endl;
+        //        vector<symbol> variables = mCAD.variables();
+        //        cout << "over the variables " << endl;
+        //        for( auto k = variables.begin(); k != variables.end(); ++k )
+        //            cout << " " << *k << endl;
+        //        cout << "Result: " << mSatisfiable << endl;
         #endif
         if( mSatisfiable )
             return True;
@@ -132,8 +134,8 @@ namespace smtrat
         try
         {
             std::unordered_map<const Constraint*, unsigned>::iterator constraintIt = mConstraintsMap.find( (*_subformula)->pConstraint() );
-            assert( constraintIt != mConstraintsMap.end() ); // the constraint to be removed should have been asserted before!
-            GiNaCRA::Constraint constraint = mConstraints[ constraintIt->second ];
+            assert( constraintIt != mConstraintsMap.end() );    // the constraint to be removed should have been asserted before!
+            GiNaCRA::Constraint constraint = mConstraints[constraintIt->second];
             // reduce the CAD object
             mCAD.removePolynomial( GiNaCRA::UnivariatePolynomial( constraint.polynomial(), constraint.variables().front(), false ) );    // false: disable input checks
             // remove the constraint from the list of constraints, ant the appropriate entries in mConstraintsMap
@@ -145,7 +147,7 @@ namespace smtrat
         }
         catch( std::out_of_range )
         {
-            assert( false ); // the constraint to be removed should have been put to mConstraints before
+            assert( false );    // the constraint to be removed should have been put to mConstraints before
             return;
         }
     }
@@ -166,9 +168,9 @@ namespace smtrat
         for( GiNaC::symtab::const_iterator i = c.variables().begin(); i != c.variables().end(); ++i )
         {
             assert( is_exactly_a<symbol>( i->second ) );
-            variables.push_back( ex_to<symbol>( i->second ));
+            variables.push_back( ex_to<symbol>( i->second ) );
         }
-        sign signForConstraint    = ZERO_SIGN;
+        sign signForConstraint = ZERO_SIGN;
         bool cadConstraintNegated = false;
         switch( c.relation() )
         {
@@ -210,7 +212,7 @@ namespace smtrat
         }
         return GiNaCRA::Constraint( Polynomial( c.lhs() ), signForConstraint, variables, cadConstraintNegated );
     }
-    
+
     vec_set_const_pFormula CADModule::extractMinimalInfeasibleSubsets( const ConflictGraph& conflictGraph )
     {
         // create list of vertices sorted by descending degree
@@ -234,17 +236,17 @@ namespace smtrat
             }
         }
         // collect constraints according to the vertex cover
-        vec_set_const_pFormula mis = vec_set_const_pFormula( 1, std::set<const Formula*>( ) );    // the last constraint is assumed to be always in the MIS
+        vec_set_const_pFormula mis = vec_set_const_pFormula( 1, std::set<const Formula*>() );    // the last constraint is assumed to be always in the MIS
         mis.front().insert( getConstraintAt( mConstraints.size() - 1 ) );    // the last constraint is assumed to be always in the MIS
         for( ConflictGraph::vertex_iterator v = vertexCover.begin(); v != vertexCover.end(); ++v )
             mis.front().insert( getConstraintAt( *v ) );
         return mis;
     }
-    
+
     const Formula* CADModule::getConstraintAt( unsigned index )
     {
         for( std::unordered_map<const Constraint*, unsigned>::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
-        { // find the input constraint matching the last element of the infeasible subset
+        {    // find the input constraint matching the last element of the infeasible subset
             if( i->second == index )
             {
                 for( Formula::const_iterator j = mpReceivedFormula->begin(); j != mpReceivedFormula->end(); ++j )
@@ -252,7 +254,7 @@ namespace smtrat
                         return *j;
             }
         }
-        assert( false ); // The given index should not match an input constraint!
+        assert( false );    // The given index should not match an input constraint!
     }
 }    // namespace smtrat
 

@@ -28,7 +28,7 @@
  */
 
 #ifndef SINGLEVSMODULE_H
-#define	SINGLEVSMODULE_H
+#define SINGLEVSMODULE_H
 
 #include "../Module.h"
 #include "SingleVSModule/Substitute.h"
@@ -38,26 +38,29 @@ namespace smtrat
     class SingleVSModule:
         public Module
     {
-    	private:
+        private:
+
             /**
              * Typedefs:
              */
             // A pair of a test candidate and a conflict.
-            typedef std::pair< const vs::SqrtEx, vec_set_const_pFormula > TCCPair;
+            typedef std::pair<const vs::SqrtEx, vec_set_const_pFormula> TCCPair;
             // The ranking of the test candidates.
-            typedef std::map< const unsigned, TCCPair* > TCRanking;
+            typedef std::map<const unsigned, TCCPair*> TCRanking;
+
             /**
              * Members:
              */
-            unsigned mNumberOfConsideredConstraints;
+            unsigned      mNumberOfConsideredConstraints;
             GiNaC::symbol mSubstitutionVariable;
-            TCRanking mTCRanking;
+            TCRanking     mTCRanking;
+
         public:
 
             /**
              * Constructors:
              */
-            SingleVSModule( Manager* const _tsManager, const Formula* const _formula  );
+            SingleVSModule( Manager* const _tsManager, const Formula* const _formula );
 
             /**
              * Destructor:
@@ -75,6 +78,7 @@ namespace smtrat
             void removeSubformula( Formula::const_iterator );
 
         private:
+
             /**
              * Methods:
              */
@@ -82,6 +86,4 @@ namespace smtrat
 
 }    // namespace smtrat
 
-
-#endif	/* SINGLEVSMODULE_H */
-
+#endif   /* SINGLEVSMODULE_H */

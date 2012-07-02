@@ -19,6 +19,7 @@
  *
  */
 
+
 #include "ConstraintPool.h"
 
 using namespace std;
@@ -153,7 +154,7 @@ namespace smtrat
          * lefthand side of the constraint.
          */
         parser reader( mAllVariables );
-        ex     lhs, rhs;
+        ex lhs, rhs;
         string lhsString = expression.substr( 0, opPos );
         string rhsString = expression.substr( opPos + opSize );
         try
@@ -170,8 +171,8 @@ namespace smtrat
          * Collect the new variables in the constraint:
          */
         mAllVariables.insert( reader.get_syms().begin(), reader.get_syms().end() );
-        Constraint* constraint = new Constraint( lhs, rhs, relation, mAllVariables, mIdAllocator );
-        std::pair< fastConstraintSet::iterator, bool > iterBoolPair = mAllConstraints.insert( constraint );
+        Constraint*                                  constraint   = new Constraint( lhs, rhs, relation, mAllVariables, mIdAllocator );
+        std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
         if( !iterBoolPair.second )
         {
             delete constraint;
@@ -290,3 +291,4 @@ namespace smtrat
     }
 
 }    // namespace smtrat
+

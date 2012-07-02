@@ -28,6 +28,7 @@
  *
  * @since 2012-01-18, 3:22 PM
  */
+
 #include "Manager.h"
 #include "modules/Modules.h"
 
@@ -35,6 +36,7 @@
 #include <cln/cln.h>
 
 using namespace std;
+
 using GiNaC::ex;
 using GiNaC::numeric;
 using GiNaC::symbol;
@@ -47,7 +49,7 @@ namespace smtrat
 
     Manager::Manager( Formula* _inputFormula ):
         mpPassedFormula( _inputFormula ),
-        mGeneratedModules( vector<Module*>( 1, new Module( this, mpPassedFormula ))),
+        mGeneratedModules( vector<Module*>( 1, new Module( this, mpPassedFormula ) ) ),
         mBackendsOfModules( map<const Module* const , vector<Module*> >() ),
         mpPrimaryBackend( mGeneratedModules.back() ),
         mBackTrackPoints( vector<unsigned>() )
@@ -56,9 +58,7 @@ namespace smtrat
         mpModulFactories = new map<const ModuleType, ModuleFactory*>();
 
         // inform it about all constraints
-        for( fcs_const_iterator constraint = Formula::mConstraintPool.begin();
-                constraint != Formula::mConstraintPool.end();
-                ++constraint )
+        for( fcs_const_iterator constraint = Formula::mConstraintPool.begin(); constraint != Formula::mConstraintPool.end(); ++constraint )
         {
             mpPrimaryBackend->inform( *constraint );
         }
@@ -67,14 +67,14 @@ namespace smtrat
          * Add all existing modules.
          */
         addModuleType( MT_SimplifierModule, new StandardModuleFactory<SimplifierModule>() );
-#ifdef USE_GB
+        #ifdef USE_GB
         addModuleType( MT_GroebnerModule, new StandardModuleFactory<GroebnerModule>() );
-#endif
+        #endif
         addModuleType( MT_VSModule, new StandardModuleFactory<VSModule>() );
-#ifdef USE_CAD
-//        addModuleType( MT_UnivariateCADModule, new StandardModuleFactory<UnivariateCADModule>() );
+        #ifdef USE_CAD
+        //        addModuleType( MT_UnivariateCADModule, new StandardModuleFactory<UnivariateCADModule>() );
         addModuleType( MT_CADModule, new StandardModuleFactory<CADModule>() );
-#endif
+        #endif
         addModuleType( MT_SATModule, new StandardModuleFactory<SATModule>() );
         addModuleType( MT_PreProModule, new StandardModuleFactory<PreProModule>() );
         addModuleType( MT_CNFerModule, new StandardModuleFactory<CNFerModule>() );
@@ -127,14 +127,14 @@ namespace smtrat
         return Formula::newConstraint( _constraint, _infix, true )->isConsistent();
     }
 
-	/**
+    /**
      * Pops a backtrack point from the stack of backtrackpoints. Furthermore, it provokes popBacktrackPoint
      * in all so far created modules.
      */
-	void Manager::popBacktrackPoint()
-	{
+    void Manager::popBacktrackPoint()
+    {
         assert( !mBackTrackPoints.empty() );
-        unsigned pos = 0;
+        unsigned          pos        = 0;
         Formula::iterator subformula = mpPassedFormula->begin();
         while( pos <= mBackTrackPoints.back() )
         {
@@ -146,7 +146,7 @@ namespace smtrat
             subformula = mpPassedFormula->erase( subformula );
         }
         mBackTrackPoints.pop_back();
-	}
+    }
 
     /**
      * Adds a constraint to the module of this manager. The constraint is in form of a string
@@ -187,7 +187,7 @@ namespace smtrat
         {
             assert( !infSubSet->empty() );
             infeasibleSubsets.push_back( vector<unsigned>() );
-            for( set< const Formula* >::const_iterator infSubFormula = infSubSet->begin(); infSubFormula != infSubSet->end(); ++infSubFormula )
+            for( set<const Formula*>::const_iterator infSubFormula = infSubSet->begin(); infSubFormula != infSubSet->end(); ++infSubFormula )
             {
                 unsigned infSubFormulaPos = 0;
                 for( Formula::const_iterator subFormula = mpPrimaryBackend->rReceivedFormula().begin();
@@ -243,8 +243,7 @@ namespace smtrat
                 backends.push_back( pBackend );
                 // inform it about all constraints
                 for( fcs_const_iterator constraint = _requiredBy->constraintsToInform().begin();
-                     constraint != _requiredBy->constraintsToInform().end();
-                     ++constraint )
+                        constraint != _requiredBy->constraintsToInform().end(); ++constraint )
                 {
                     pBackend->inform( *constraint );
                 }

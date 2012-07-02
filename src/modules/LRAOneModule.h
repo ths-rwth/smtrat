@@ -29,7 +29,7 @@
  */
 
 #ifndef LRAONEMODULE_H
-#define	LRAONEMODULE_H
+#define LRAONEMODULE_H
 
 #include "../Module.h"
 
@@ -38,16 +38,18 @@ namespace smtrat
     class LRAOneModule:
         public Module
     {
-    	private:
+        private:
+
             /**
              * Members:
              */
+
         public:
 
             /**
              * Constructors:
              */
-            LRAOneModule( Manager* const _tsManager, const Formula* const _formula  );
+            LRAOneModule( Manager* const _tsManager, const Formula* const _formula );
 
             /**
              * Destructor:
@@ -65,6 +67,7 @@ namespace smtrat
             void removeSubformula( Formula::const_iterator );
 
         private:
+
             /**
              * Methods:
              */
@@ -72,6 +75,4 @@ namespace smtrat
 
 }    // namespace smtrat
 
-
-#endif	/* LRAONEMODULE_H */
-
+#endif   /* LRAONEMODULE_H */

@@ -19,6 +19,7 @@
  *
  */
 
+
 /*
  * File:   Condition.h
  * @author Florian Corzilius
@@ -27,7 +28,7 @@
  */
 
 #ifndef CONDITION_H
-#define	CONDITION_H
+#define CONDITION_H
 
 #include <bitset>
 #include <assert.h>
@@ -36,33 +37,42 @@ static const unsigned CONDITION_SIZE = 64;
 
 namespace smtrat
 {
-    class Condition: public std::bitset<CONDITION_SIZE>
+    class Condition:
+        public std:: bitset<CONDITION_SIZE>
     {
-        public :
-        Condition() : std::bitset<CONDITION_SIZE>() {};
-        Condition( const std::bitset<CONDITION_SIZE>& _bisset ) : std::bitset<CONDITION_SIZE>( _bisset ) {};
-        Condition( unsigned i ) : std::bitset<CONDITION_SIZE>()
-        {
-            assert( i < CONDITION_SIZE );
-            (*this)[i] = 1;
-        };
+        public:
+            Condition():
+                std::bitset<CONDITION_SIZE>()
+            {}
+            ;
+            Condition( const std::bitset<CONDITION_SIZE>& _bisset ):
+                std::bitset<CONDITION_SIZE>( _bisset )
+            {}
+            ;
+            Condition( unsigned i ):
+                std::bitset<CONDITION_SIZE>()
+            {
+                assert( i < CONDITION_SIZE );
+                (*this)[i] = 1;
+            }
+            ;
 
-        /**
-         * Check whether the bits of this condition are always set if the corresponding bit
-         * of the given condition is set.
-         *
-         * @param _condition The condition to compare with.
-         * @return  true,   if all bits of this condition are always set if the corresponding bit
-         *                  of the given condition is set;
-         *          false,  otherwise.
-         */
-        bool operator <=( const Condition& _condition ) const
-        {
-            return (*this & (~_condition)).none();
-        }
+            /**
+             * Check whether the bits of this condition are always set if the corresponding bit
+             * of the given condition is set.
+             *
+             * @param _condition The condition to compare with.
+             * @return  true,   if all bits of this condition are always set if the corresponding bit
+             *                  of the given condition is set;
+             *          false,  otherwise.
+             */
+            bool operator <=( const Condition& _condition ) const
+            {
+                return (*this & (~_condition)).none();
+            }
     };
 
-    static const Condition  PROP_TRUE = Condition();
+    static const Condition PROP_TRUE = Condition();
 
     //Propositions which hold, if they hold for each subformula of a formula including itself (0-15)
     static const Condition PROP_IS_IN_NNF                       = Condition( 0 );
@@ -100,7 +110,7 @@ namespace smtrat
     static const Condition PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE         = Condition( 56 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE        = Condition( 57 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE        = Condition( 58 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE        = Condition( 59 );
+    static const Condition PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE      = Condition( 59 );
     static const Condition SOLVABLE_CONDITIONS                          = PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE | PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE
                                                  | PROP_CANNOT_BE_SOLVED_BY_VSMODULE | PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE
                                                  | PROP_CANNOT_BE_SOLVED_BY_CADMODULE | PROP_CANNOT_BE_SOLVED_BY_SATMODULE
@@ -108,7 +118,6 @@ namespace smtrat
                                                  | PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE | PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE
                                                  | PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE | PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE
                                                  | PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE;
-}     // namespace smtrat
+}    // namespace smtrat
 
-#endif	/* CONDITION_H */
-
+#endif   /* CONDITION_H */

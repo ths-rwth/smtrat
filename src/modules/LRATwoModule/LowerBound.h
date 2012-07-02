@@ -10,17 +10,19 @@
 
 #include "Bound.h"
 
-namespace smtrat {
+namespace smtrat
+{
+    class LowerBound:
+        public Bound
+    {
+        public:
+            LowerBound();
+            LowerBound( Real bound );
+            virtual ~LowerBound();
 
-class LowerBound : public Bound {
-public:
-	LowerBound();
-	LowerBound(Real bound);
-	virtual ~LowerBound();
+            string toString();
+            bool checkBound( Real alpha, Real beta );
+    };
 
-	string toString();
-	bool checkBound(Real alpha, Real beta);
-};
-
-} /* namespace smtrat */
+}    /* namespace smtrat */
 #endif /* LOWERBOUND_H_ */

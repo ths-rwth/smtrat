@@ -45,12 +45,16 @@ namespace svs
     smtrat::Formula* substituteNormalSqrtLess( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex& );
     smtrat::Formula* substituteNormalSqrtLeq( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex& );
     smtrat::Formula* substitutePlusEps( const smtrat::Constraint*, const GiNaC::symbol&, const vs::SqrtEx& );
-    smtrat::Formula* substituteEpsGradients( const smtrat::Constraint*, const GiNaC::symbol&, const vs::SqrtEx&, const smtrat::Constraint_Relation, const smtrat::Constraint_Relation );
+    smtrat::Formula* substituteEpsGradients( const smtrat::Constraint*,
+                                             const GiNaC::symbol&,
+                                             const vs::SqrtEx&,
+                                             const smtrat::Constraint_Relation,
+                                             const smtrat::Constraint_Relation );
     smtrat::Formula* substituteMinusInf( const smtrat::Constraint*, const GiNaC::symbol&, const vs::SqrtEx& );
     smtrat::Formula* substituteInfLessGreater( const smtrat::Constraint&, const GiNaC::symbol&, const vs::SqrtEx& );
     smtrat::Formula* substituteTrivialCase( const smtrat::Constraint&, const GiNaC::symbol&, const vs::SqrtEx& );
     smtrat::Formula* substituteNotTrivialCase( const smtrat::Constraint&, const GiNaC::symbol&, const vs::SqrtEx& );
-#ifdef VS_CUBIC_CASE
+    #ifdef VS_CUBIC_CASE
     void substituteCubicRoot( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteCubicRootInLinear( const smtrat::Constraint&,
                                       const Substitution&,
@@ -93,7 +97,7 @@ namespace svs
                                                const Substitution&,
                                                DisjunctionOfConstraintConjunctions&,
                                                const GiNaC::symtab& );
-#endif
+    #endif
 
 }    // end namspace vs
 

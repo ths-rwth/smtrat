@@ -14,6 +14,7 @@
 #include "EqualBound.h"
 #include "../../Constraint.h"
 #include <sstream>
+
 using std::map;
 using std::vector;
 using std::pair;
@@ -23,56 +24,59 @@ using GiNaC::numeric;
 
 namespace smtrat
 {
+    struct constraintCmp
+    {
+        bool operator ()( const smtrat::Constraint* const pConstraintA, const smtrat::Constraint* const pConstraintB ) const
+        {
+            bool sameRelation        = pConstraintA->relation() == pConstraintB->relation();
+            bool sameLhs             = pConstraintA->lhs().is_equal( pConstraintB->lhs() );
+            bool differentConstraint = !sameRelation ||!sameLhs;
+            return differentConstraint;
+        }
+    };
 
-	struct constraintCmp
-	{
-		bool operator ()( const smtrat::Constraint* const pConstraintA, const smtrat::Constraint* const pConstraintB ) const
-		{
-			bool sameRelation = pConstraintA->relation() == pConstraintB->relation();
-			bool sameLhs = pConstraintA->lhs().is_equal(pConstraintB->lhs());
-			bool differentConstraint = !sameRelation || !sameLhs;
-			return differentConstraint;
-		}
-	};
+    class BoundMap:
+        public map<const Constraint*, Bound*, constraintCmp>
+    {
+        public:
 
-	class BoundMap:
-		public map<const Constraint*, Bound*, constraintCmp>
-		{
-			public:
+            BoundMap();
+            virtual ~BoundMap();
+            void addBound( const ex variable, const Constraint* constraint, numeric coefficient, numeric constant, Constraint_Relation relation );
+            string toString();
 
-				BoundMap();
-				virtual ~BoundMap();
-				void addBound(const ex variable, const Constraint* constraint, numeric coefficient, numeric constant, Constraint_Relation relation);
-				string toString();
-				map<const Constraint*, const ex, constraintCmp> getConstraintToVarMap() {
-					return this->constraintToVarMap;
-				}
-				string constraintToVarMapAsString();
+            map<const Constraint*, const ex, constraintCmp> getConstraintToVarMap()
+            {
+                return this->constraintToVarMap;
+            }
 
-				map<const ex, const Constraint*> getVarToConstraintMap() {
-					return this->varToConstraintMap;
-				}
-				string varToConstraintMapAsString();
+            string constraintToVarMapAsString();
 
-				vector<pair<const Constraint*, Bound*>> getActives() {
-					return this->actives;
-				}
+            map<const ex, const Constraint*> getVarToConstraintMap()
+            {
+                return this->varToConstraintMap;
+            }
 
-				//bool assertUpper(const ex variable, Real upperCandidate, BetaMap *betaMap, SimplexTableaux *tab);
-				//bool assertLower(const ex variable, Real lowerCandidate, BetaMap *betaMap, SimplexTableaux *tab);
+            string varToConstraintMapAsString();
 
+            vector<pair<const Constraint*, Bound*> > getActives()
+            {
+                return this->actives;
+            }
 
-			private:
-				typedef map<const Constraint*, const ex, constraintCmp> ConstraintToVarMap;
-				ConstraintToVarMap constraintToVarMap;
-				typedef map<const ex, const Constraint*> VarToConstraintMap;
-				VarToConstraintMap varToConstraintMap;
+            //bool assertUpper(const ex variable, Real upperCandidate, BetaMap *betaMap, SimplexTableaux *tab);
+            //bool assertLower(const ex variable, Real lowerCandidate, BetaMap *betaMap, SimplexTableaux *tab);
 
-				typedef vector<pair<const Constraint*, Bound*>> Actives;
-				Actives actives;
-		};
+        private:
+            typedef map<const Constraint*, const ex, constraintCmp> ConstraintToVarMap;
+            ConstraintToVarMap                                      constraintToVarMap;
+            typedef map<const ex, const Constraint*>                VarToConstraintMap;
+            VarToConstraintMap                                      varToConstraintMap;
+
+            typedef vector<pair<const Constraint*, Bound*> >        Actives;
+            Actives                                                 actives;
+    };
 
 }
-
 
 #endif /* BOUNDMAP_H_ */

@@ -19,6 +19,7 @@
  *
  */
 
+
 /*
  * File:   CNFTransformerModule.h
  * Author: Florian Corzilius
@@ -37,11 +38,14 @@ namespace smtrat
         public Module
     {
         private:
+
             /**
              * Members.
              */
             Formula::const_iterator mFirstNotCheckedFormula;
+
         public:
+
             /**
              * Constructor and destructor.
              */
@@ -60,12 +64,13 @@ namespace smtrat
             void removeSubformula( Formula::const_iterator );
 
         private:
+
             /**
              * Methods:
              */
-            bool assertClauses( std::vector< Formula* >&, vec_set_const_pFormula& );
+            bool assertClauses( std::vector<Formula*>&, vec_set_const_pFormula& );
             Formula* resolveNegation( Formula* ) const;
-            void printSolverState( const std::vector< Formula* >& ) const;
+            void printSolverState( const std::vector<Formula*>& ) const;
     };
 
 }    // namespace smtrat

@@ -31,31 +31,31 @@
 
 namespace smtrat
 {
-    static bool caseOne ( Condition _condition )
+    static bool caseOne( Condition _condition )
     {
         return PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE <= _condition;
     }
-    
-    static bool caseTwo ( Condition _condition )
+
+    static bool caseTwo( Condition _condition )
     {
         return true;
     }
-    
-    static bool caseThree ( Condition _condition )
+
+    static bool caseThree( Condition _condition )
     {
         return PROP_CANNOT_BE_SOLVED_BY_SATMODULE <= _condition;
     }
-    
-    static bool caseFour ( Condition _condition )
+
+    static bool caseFour( Condition _condition )
     {
         return PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE <= _condition;
     }
-    
-    static bool caseFive ( Condition _condition )
+
+    static bool caseFive( Condition _condition )
     {
         return PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE <= _condition;
     }
-    
+
     NRATSolver_CADonly::NRATSolver_CADonly( Formula* _inputFormula ):
         Manager( _inputFormula )
     {

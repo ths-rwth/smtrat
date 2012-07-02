@@ -49,16 +49,18 @@ namespace smtrat
     class Formula
     {
         private:
+
             /**
              *  Members.
              */
 
             /// A unique ID within the formula containing this formula.
-            double        mActivity;
+            double mActivity;
             /// The type of this formula.
-            Type          mType;
+            Type mType;
             /// All real valued variables used within this formula (and its subformulas).
             GiNaC::symtab mRealValuedVars;
+
             /// The content of this formula.
             union
             {
@@ -100,9 +102,9 @@ namespace smtrat
             /**
              * Type definitions.
              */
-            typedef std::list<Formula*>::iterator iterator;
-            typedef std::list<Formula*>::reverse_iterator reverse_iterator;
-            typedef std::list<Formula*>::const_iterator const_iterator;
+            typedef std::list<Formula*>::iterator               iterator;
+            typedef std::list<Formula*>::reverse_iterator       reverse_iterator;
+            typedef std::list<Formula*>::const_iterator         const_iterator;
             typedef std::list<Formula*>::const_reverse_iterator const_reverse_iterator;
 
             /**
@@ -275,43 +277,45 @@ namespace smtrat
             {
                 assert( isBooleanCombination() );
                 assert( !mpSubformulas->empty() );
-				iterator result = --mpSubformulas->end();
-				return result;
+                iterator result = --mpSubformulas->end();
+                return result;
             }
 
             const_iterator last() const
             {
                 assert( isBooleanCombination() );
                 assert( !mpSubformulas->empty() );
-				const_iterator result = --mpSubformulas->end();
-				return result;
+                const_iterator result = --mpSubformulas->end();
+                return result;
             }
 
             // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
-            const Formula* at(  unsigned _pos ) const
+            const Formula* at( unsigned _pos ) const
             {
                 assert( isBooleanCombination() );
                 assert( mpSubformulas->size() > _pos );
-                unsigned posNr = 0;
-				Formula::const_iterator pos = begin();
-				while(posNr < _pos )  {
-					++pos;
-					++posNr;
-				}
+                unsigned                posNr = 0;
+                Formula::const_iterator pos   = begin();
+                while( posNr < _pos )
+                {
+                    ++pos;
+                    ++posNr;
+                }
                 return *pos;
 
-			}
+            }
 
             const Formula& rAt( unsigned _pos ) const
             {
                 assert( isBooleanCombination() );
                 assert( mpSubformulas->size() > _pos );
-				unsigned posNr = 0;
-				Formula::const_iterator pos = begin();
-				while(posNr < _pos )  {
-					++pos;
-					++posNr;
-				}
+                unsigned                posNr = 0;
+                Formula::const_iterator pos   = begin();
+                while( posNr < _pos )
+                {
+                    ++pos;
+                    ++posNr;
+                }
                 return **pos;
 
             }
@@ -383,12 +387,12 @@ namespace smtrat
 
             bool isAtom() const
             {
-                return ( mType == REALCONSTRAINT || mType == BOOL || mType == FFALSE || mType == TTRUE );
+                return (mType == REALCONSTRAINT || mType == BOOL || mType == FFALSE || mType == TTRUE);
             }
 
             bool isBooleanCombination() const
             {
-                return ( mType == AND || mType == OR || mType == NOT || mType == IMPLIES || mType == IFF || mType == XOR );
+                return (mType == AND || mType == OR || mType == NOT || mType == IMPLIES || mType == IFF || mType == XOR);
             }
 
             bool contains( const Formula* const _formula ) const
@@ -400,26 +404,25 @@ namespace smtrat
                 return false;
             }
 
-            bool contains( const std::vector< const Formula* >& _formulas ) const
+            bool contains( const std::vector<const Formula*>& _formulas ) const
             {
-                std::set< const Formula* > subformulas = std::set< const Formula* >();
-                for( std::vector< const Formula* >::const_iterator subformula = _formulas.begin();
-                     subformula != _formulas.end(); ++subformula )
+                std::set<const Formula*> subformulas = std::set<const Formula*>();
+                for( std::vector<const Formula*>::const_iterator subformula = _formulas.begin(); subformula != _formulas.end(); ++subformula )
                 {
                     subformulas.insert( *subformula );
                 }
                 return contains( subformulas );
             }
 
-            bool contains( const std::set< const Formula* >& _formulas ) const
+            bool contains( const std::set<const Formula*>& _formulas ) const
             {
-                std::set< const Formula* > subformulas = std::set< const Formula* >();
+                std::set<const Formula*> subformulas = std::set<const Formula*>();
                 for( const_iterator subformula = begin(); subformula != end(); ++subformula )
                 {
                     subformulas.insert( *subformula );
                 }
-                std::set< const Formula* >::iterator subformula = subformulas.begin();
-                std::set< const Formula* >::iterator iter = _formulas.begin();
+                std::set<const Formula*>::iterator subformula = subformulas.begin();
+                std::set<const Formula*>::iterator iter       = _formulas.begin();
                 while( subformula != subformulas.end() && iter != _formulas.end() )
                 {
                     subformula = subformulas.insert( subformula, *iter );

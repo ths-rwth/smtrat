@@ -108,13 +108,13 @@ namespace vs
             {
                 #ifdef VS_USE_GINAC_NORMAL
                 #ifdef VS_USE_GINAC_EXPAND
-                _exp    = _exp.expand().normal();
+                _exp = _exp.expand().normal();
                 #else
-                _exp    = _exp.normal();
+                _exp = _exp.normal();
                 #endif
                 #else
                 #ifdef VS_USE_GINAC_EXPAND
-                _exp    = _exp.expand();
+                _exp = _exp.expand();
                 #endif
                 #endif
             }

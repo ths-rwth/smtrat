@@ -36,12 +36,16 @@
 #include "SimplifierModule.h"
 
 #ifdef USE_GB
+
 #include "GroebnerModule.h"
+
 #endif
 
 #ifdef USE_CAD
 //#include "UnivariateCADModule.h"
+
 #include "CADModule.h"
+
 #endif
 
 #include "SATModule.h"
@@ -55,4 +59,5 @@
 #include "StandardModuleFactory.h"
 
 #endif   // SMTRAT_MODULES_H
+
 

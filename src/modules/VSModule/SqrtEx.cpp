@@ -56,7 +56,7 @@ namespace vs
     SqrtEx::SqrtEx( const GiNaC::ex& _constantPart, const GiNaC::ex& _factor, const GiNaC::ex& _denominator, const GiNaC::ex& _radicand )
     {
         assert( _denominator != 0 );
-        assert( !_radicand.info( info_flags::rational ) || _radicand.info( info_flags::nonnegative ));
+        assert( !_radicand.info( info_flags::rational ) || _radicand.info( info_flags::nonnegative ) );
         mpConstantPart = new ex( _constantPart );
         if( _radicand == 0 )
         {
@@ -110,15 +110,15 @@ namespace vs
      */
     bool SqrtEx::hasVariable( const ex& _variable ) const
     {
-        if( constantPart().has( _variable ))
+        if( constantPart().has( _variable ) )
         {
             return true;
         }
-        else if( factor().has( _variable ))
+        else if( factor().has( _variable ) )
         {
             return true;
         }
-        else if( radicand().has( _variable ))
+        else if( radicand().has( _variable ) )
         {
             return true;
         }
@@ -302,9 +302,9 @@ namespace vs
      */
     SqrtEx subBySqrtEx( const ex& _ex, const ex& _var, const SqrtEx& _subTerm )
     {
-#ifdef VS_DEBUG_METHODS
+        #ifdef VS_DEBUG_METHODS
         cout << "subBySqrtEx" << endl;
-#endif
+        #endif
 
         /*
          * We have to calculate the result of the substitution:

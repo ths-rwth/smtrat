@@ -58,7 +58,7 @@ namespace smtrat
             /// all generated instances of modules
             std::vector<Module*> mGeneratedModules;
             /// a mapping of each module to its backends
-            std::map<const Module* const, std::vector<Module*> > mBackendsOfModules;
+            std::map<const Module* const , std::vector<Module*> > mBackendsOfModules;
             /// the primary backends
             Module* mpPrimaryBackend;
             /// the backtrack points
@@ -91,7 +91,7 @@ namespace smtrat
 
             void addModuleType( const ModuleType _moduleType, ModuleFactory* _factory )
             {
-                mpModulFactories->insert( std::pair<const ModuleType, ModuleFactory*>( _moduleType, _factory ));
+                mpModulFactories->insert( std::pair<const ModuleType, ModuleFactory*>( _moduleType, _factory ) );
             }
 
             Strategy& strategy()
@@ -101,13 +101,13 @@ namespace smtrat
 
             std::vector<Module*> getAllBackends( Module* _module )
             {
-            	return mBackendsOfModules[_module];
+                return mBackendsOfModules[_module];
             }
 
             unsigned uniqueModuleNumber( const Module* const _module )
             {
-                unsigned result = 0;
-                std::vector< Module* >::const_iterator moduleIter = mGeneratedModules.begin();
+                unsigned                             result     = 0;
+                std::vector<Module*>::const_iterator moduleIter = mGeneratedModules.begin();
                 while( moduleIter != mGeneratedModules.end() )
                 {
                     if( *moduleIter == _module )

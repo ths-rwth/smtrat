@@ -43,17 +43,17 @@ namespace smtrat
         {
             mExps.push_back( 0 );
         }
-		mTerms.push_back(mExps);
+        mTerms.push_back( mExps );
     }
 
     MonomialIterator::~MonomialIterator(){}
 
     void MonomialIterator::fillExps( std::set<unsigned>::const_iterator firstVar, unsigned degsLeft )
     {
-		assert(firstVar != mNrVars.end());
-		unsigned varNr = *firstVar;
-		assert(varNr < mExps.size());
-		
+        assert( firstVar != mNrVars.end() );
+        unsigned varNr = *firstVar;
+        assert( varNr < mExps.size() );
+
         if( ++firstVar == mNrVars.end() )
         {
             mExps[varNr] = degsLeft;
@@ -67,15 +67,15 @@ namespace smtrat
         }
     }
 
-//    void MonomialIterator::test( unsigned deg )
-//    {
-//        std::ostream_iterator<unsigned> out_it( std::cout, ", " );
-//        fillExps( 0, deg );
-//        //for(std::list<std::vector<unsigned> >::const_iterator it = mTerms.begin(); it != mTerms.end(); ++it) {
-//        //  std::copy(it->begin(), it->end(), out_it);
-//        //  std::cout << std::endl;
-//        //}
-//    }
+    //    void MonomialIterator::test( unsigned deg )
+    //    {
+    //        std::ostream_iterator<unsigned> out_it( std::cout, ", " );
+    //        fillExps( 0, deg );
+    //        //for(std::list<std::vector<unsigned> >::const_iterator it = mTerms.begin(); it != mTerms.end(); ++it) {
+    //        //  std::copy(it->begin(), it->end(), out_it);
+    //        //  std::cout << std::endl;
+    //        //}
+    //    }
 
     Term MonomialIterator::next()
     {

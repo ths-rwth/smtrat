@@ -114,20 +114,20 @@ namespace smtrat
             typedef std::map<std::pair<unsigned, unsigned>, vs::State*, unsignedIntPairCmp> ValuationMap;
             typedef std::pair<vs::Substitution, vs::StateVector>                            ChildrenGroup;
             typedef std::vector<ChildrenGroup>                                              ChildrenGroups;
-            typedef std::map< const Constraint* const, vs::Condition* > 					ConstraintConditionMap;
+            typedef std::map<const Constraint* const , vs::Condition*>                      ConstraintConditionMap;
 
             /*
              * Attributes:
              */
-            bool                    debug;
-            bool                    debugmethods;
-            bool                    mInconsistentConstraintAdded;
-            bool                    mFreshConstraintReceived;
-            unsigned                mIDCounter;
-            vs::State*              mpStateTree;
-            ValuationMap*           mpRanking;
-            ConstraintConditionMap 	mReceivedConstraintsAsConditions;
-            GiNaC::symtab           mAllVariables;
+            bool                   debug;
+            bool                   debugmethods;
+            bool                   mInconsistentConstraintAdded;
+            bool                   mFreshConstraintReceived;
+            unsigned               mIDCounter;
+            vs::State*             mpStateTree;
+            ValuationMap*          mpRanking;
+            ConstraintConditionMap mReceivedConstraintsAsConditions;
+            GiNaC::symtab          mAllVariables;
 
             /*
              * Methods:

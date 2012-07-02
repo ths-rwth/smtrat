@@ -26,7 +26,9 @@
  * Created on April 5th, 2012, 3:22 PM
  */
 
+
 #include "LRAOneModule.h"
+
 using namespace std;
 
 namespace smtrat
@@ -43,22 +45,20 @@ namespace smtrat
     /**
      * Destructor:
      */
-    LRAOneModule::~LRAOneModule()
-    {
-    }
+    LRAOneModule::~LRAOneModule(){}
 
     /**
      * Methods:
      */
 
-	/**
+    /**
      * Informs about a new constraints.
      * @param c A new constraint
      *
      */
     bool LRAOneModule::inform( const Constraint* const _constraint )
     {
-    	return true;
+        return true;
     }
 
     /**
@@ -87,22 +87,22 @@ namespace smtrat
     {
         return True;
     }
-//
-//    /**
-//     * Pops the last backtrackpoint, from the stack of backtrackpoints.
-//     */
-//    void LRAOneModule::popBacktrackPoint()
-//    {
-//        Module::popBacktrackPoint();
-//    }
-//
-//    /**
-//     * Pushes a backtrackpoint, to the stack of backtrackpoints.
-//     */
-//    void LRAOneModule::pushBacktrackPoint()
-//    {
-//        Module::pushBacktrackPoint();
-//    }
+    //
+    //    /**
+    //     * Pops the last backtrackpoint, from the stack of backtrackpoints.
+    //     */
+    //    void LRAOneModule::popBacktrackPoint()
+    //    {
+    //        Module::popBacktrackPoint();
+    //    }
+    //
+    //    /**
+    //     * Pushes a backtrackpoint, to the stack of backtrackpoints.
+    //     */
+    //    void LRAOneModule::pushBacktrackPoint()
+    //    {
+    //        Module::pushBacktrackPoint();
+    //    }
 
     /**
      * Removes a everything related to a sub formula of the received formula.
@@ -115,3 +115,4 @@ namespace smtrat
     }
 
 }    // namespace smtrat
+

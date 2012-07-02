@@ -9,35 +9,35 @@
 #define BOUND_H_
 
 #include "Real.h"
+
 using std::string;
 
 namespace smtrat
 {
-	class Bound
-		{
-		public:
-//			Bound();
-//			Bound(Real bound);
-			virtual ~Bound();
+    class Bound
+    {
+        public:
+            //          Bound();
+            //          Bound(Real bound);
+            virtual ~Bound();
 
-			Real getBound();
+            Real getBound();
 
-			void setBound(Real bound);
+            void setBound( Real bound );
 
-			void activate();
+            void activate();
 
-			void deactivate();
+            void deactivate();
 
-			bool isActive();
+            bool isActive();
 
-			virtual string toString() = 0;
-			virtual bool checkBound(Real alpha, Real beta) = 0;
+            virtual string toString() = 0;
+            virtual bool checkBound( Real alpha, Real beta ) = 0;
 
-		protected:
-			bool activated;
-			Real bound;
-	};
+        protected:
+            bool activated;
+            Real bound;
+    };
 }
-
 
 #endif /* BOUND_H_ */

@@ -41,7 +41,6 @@
 #ifndef SMTRAT_GROEBNERMODULE_H
 #define SMTRAT_GROEBNERMODULE_H
 
-
 #include <ginacra/ginacra.h>
 
 //#include <ginacra/mr/MultivariateIdeal.h>
@@ -52,7 +51,6 @@
 
 namespace smtrat
 {
-
     /**
      * A class to save the current state of a GroebnerModule.
      * Needed for backtracking-support
@@ -74,53 +72,54 @@ namespace smtrat
         protected:
             ///The state of the basis
             const GiNaCRA::Buchberger<GBSettings::Order> mBasis;
-			const std::vector<unsigned> mVariablesInEqualities;
+            const std::vector<unsigned>                  mVariablesInEqualities;
     };
 
-	class GroebnerModule;
+    class GroebnerModule;
 
+    struct FormulaConstraintCompare
+    {
+        bool operator ()( const Formula::const_iterator& c1, const Formula::const_iterator& c2 ) const
+        {
+            return ((*c1)->constraint() < (*c2)->constraint());
+        }
+    };
 
-	struct FormulaConstraintCompare {
-		bool operator()(const Formula::const_iterator& c1, const Formula::const_iterator& c2) const {
-			return ((*c1)->constraint() < (*c2)->constraint());
-		}
-	};
-	
-	/**
-	 * A table of all inequalities and how they are reduced.
-	 */
-	class InequalitiesTable {
+    /**
+     * A table of all inequalities and how they are reduced.
+     */
+    class InequalitiesTable
+    {
+        typedef GBSettings::Polynomial                                                    Polynomial;
+        typedef GBSettings::MultivariateIdeal                                             Ideal;
+        typedef std::pair<unsigned, Polynomial>                                           CellEntry;
+        typedef std::tuple<Formula::iterator, Constraint_Relation, std::list<CellEntry> > RowEntry;
+        typedef std::map<Formula::const_iterator, RowEntry, FormulaConstraintCompare>     Rows;
+        typedef std::pair<Formula::const_iterator, RowEntry>                              Row;
 
-		typedef GBSettings::Polynomial Polynomial;
-		typedef GBSettings::MultivariateIdeal Ideal;
-		typedef std::pair<unsigned, Polynomial> CellEntry;
-		typedef std::tuple<Formula::iterator, Constraint_Relation ,std::list<CellEntry> > RowEntry;
-		typedef std::map<Formula::const_iterator, RowEntry, FormulaConstraintCompare > Rows;
-		typedef std::pair<Formula::const_iterator, RowEntry > Row;
-	public:
-		InequalitiesTable(GroebnerModule*  module);
+        public:
+            InequalitiesTable( GroebnerModule* module );
 
-		void InsertReceivedFormula(Formula::const_iterator received );
+            void InsertReceivedFormula( Formula::const_iterator received );
 
-		void pushBacktrackPoint();
+            void pushBacktrackPoint();
 
-		void popBacktrackPoint(unsigned nrBacktracks);
+            void popBacktrackPoint( unsigned nrBacktracks );
 
-		Answer reduceWRTGroebnerBasis(const Ideal& gb);
-		
-		void removeInequality(Formula::const_iterator _formula);
+            Answer reduceWRTGroebnerBasis( const Ideal& gb );
 
-		void print(std::ostream& os= std::cout) const;
+            void removeInequality( Formula::const_iterator _formula );
 
-		Rows mReducedInequalities;
-		
-		unsigned mBtnumber;
-		GroebnerModule*  mModule;
-		
-		Rows::iterator mNewConstraints;
-		unsigned mLastRestart;
-	};
+            void print( std::ostream& os = std::cout ) const;
 
+            Rows            mReducedInequalities;
+
+            unsigned        mBtnumber;
+            GroebnerModule* mModule;
+
+            Rows::iterator  mNewConstraints;
+            unsigned        mLastRestart;
+    };
 
     /**
      * A solver module based on Groebner basis
@@ -129,56 +128,54 @@ namespace smtrat
     class GroebnerModule:
         public Module
     {
-		typedef GBSettings Settings;
+        typedef GBSettings Settings;
 
-		friend class InequalitiesTable;
-		
+        friend class InequalitiesTable;
+
         public:
-            typedef Settings::Order              Order;
-            typedef Settings::Polynomial		 Polynomial;
+            typedef Settings::Order      Order;
+            typedef Settings::Polynomial Polynomial;
 
             GroebnerModule( Manager* const , const Formula* const );
             virtual ~GroebnerModule();
 
-			bool assertSubformula( Formula::const_iterator _formula );
+            bool assertSubformula( Formula::const_iterator _formula );
             virtual Answer isConsistent();
-			void removeSubformula( Formula::const_iterator _formula );
-			void printStateHistory();
+            void removeSubformula( Formula::const_iterator _formula );
+            void printStateHistory();
 
         protected:
-			//TODO just take the last one from the state history?
+            //TODO just take the last one from the state history?
             /// The current Groebner basis
             GiNaCRA::Buchberger<Settings::Order> mBasis;
             /// A list of variables to help define the simplified constraints
             GiNaC::symtab mListOfVariables;
             /// Saves the relevant history to support backtracking
-            std::list<GroebnerModuleState> mStateHistory;
+            std::list<GroebnerModuleState>       mStateHistory;
 
-			InequalitiesTable mInequalities;
+            InequalitiesTable                    mInequalities;
 
-			std::set<unsigned> mVariablesInEqualities;
-			
-			std::vector<Formula::const_iterator> mBacktrackPoints;
-			
-			bool mPopCausesRecalc;
-		
-			void pushBacktrackPoint(Formula::const_iterator btpoint);
-			void popBacktrackPoint(Formula::const_iterator btpoint);
+            std::set<unsigned>                   mVariablesInEqualities;
+
+            std::vector<Formula::const_iterator> mBacktrackPoints;
+
+            bool                                 mPopCausesRecalc;
+
+            void pushBacktrackPoint( Formula::const_iterator btpoint );
+            void popBacktrackPoint( Formula::const_iterator btpoint );
             bool saveState();
-			std::set<const Formula*> generateReasons(const GiNaCRA::BitVector& reasons);
-			void passGB();
+            std::set<const Formula*> generateReasons( const GiNaCRA::BitVector& reasons );
+            void passGB();
 
-			void removeSubformulaFromPassedFormula(Formula::iterator _formula);
-			bool validityCheck();
+            void removeSubformulaFromPassedFormula( Formula::iterator _formula );
+            bool validityCheck();
+
         private:
-            typedef Module super;
+            typedef Module    super;
 
-
-			static const bool gatherStatistics = false;
+            static const bool gatherStatistics = false;
 
     };
-
-
 
 }    // namespace smtrat
 #endif   /** GROEBNERMODULE_H */

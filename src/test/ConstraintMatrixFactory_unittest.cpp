@@ -66,7 +66,6 @@ void ConstraintMatrixFactory_unittest::testMethod()
     Cholesky chol( sol );
     CPPUNIT_ASSERT( chol.Solve() );
 
-	
-	ConstraintMatrixFactory  fact(2);
-	
+    ConstraintMatrixFactory fact( 2 );
+
 }

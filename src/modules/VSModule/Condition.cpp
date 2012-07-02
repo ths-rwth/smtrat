@@ -139,14 +139,14 @@ namespace vs
             vector<ex> coeffs = vector<ex>();
             if( _forElimination )
             {
-                for( int i = 0; i <= mpConstraint->multiRootLessLhs( ex_to<symbol>(var->second) ).degree( ex( var->second ) ); ++i )
+                for( int i = 0; i <= mpConstraint->multiRootLessLhs( ex_to<symbol>( var->second ) ).degree( ex( var->second ) ); ++i )
                 {
-                    coeffs.push_back( ex( mpConstraint->multiRootLessLhs( ex_to<symbol>(var->second) ).coeff( ex( var->second ), i ) ) );
+                    coeffs.push_back( ex( mpConstraint->multiRootLessLhs( ex_to<symbol>( var->second ) ).coeff( ex( var->second ), i ) ) );
                 }
             }
             else
             {
-                mpConstraint->getCoefficients( ex_to<symbol>(var->second), coeffs );
+                mpConstraint->getCoefficients( ex_to<symbol>( var->second ), coeffs );
             }
 
             /*
@@ -173,8 +173,8 @@ namespace vs
                 case smtrat::CR_NEQ:
                     relationSymbolWeight += 1;
                     break;
-            default:
-                return 0;
+                default:
+                    return 0;
             }
 
             /*
@@ -189,7 +189,7 @@ namespace vs
 
             if( degree <= 1 )
             {
-                if( coeffs.at( coeffs.size() - 1 ).info( info_flags::rational ))
+                if( coeffs.at( coeffs.size() - 1 ).info( info_flags::rational ) )
                 {
                     lCoeffWeight += 3;
                 }
@@ -200,11 +200,11 @@ namespace vs
             }
             else if( degree == 2 )
             {
-                if( coeffs.at( coeffs.size() - 1 ).info( info_flags::rational ) && coeffs.at( coeffs.size() - 2 ).info( info_flags::rational ))
+                if( coeffs.at( coeffs.size() - 1 ).info( info_flags::rational ) && coeffs.at( coeffs.size() - 2 ).info( info_flags::rational ) )
                 {
                     lCoeffWeight += 3;
                 }
-                else if( coeffs.at( coeffs.size() - 1 ).info( info_flags::rational ))
+                else if( coeffs.at( coeffs.size() - 1 ).info( info_flags::rational ) )
                 {
                     lCoeffWeight += 2;
                 }
@@ -295,7 +295,7 @@ namespace vs
          * constraint) is constant.
          */
         symtab::const_iterator bestVar                                   = var;
-        bool                         bestVariableLeadingCoefficientHasVariable = false;
+        bool                   bestVariableLeadingCoefficientHasVariable = false;
         for( symtab::const_iterator var2 = mpConstraint->variables().begin(); var2 != mpConstraint->variables().end(); ++var2 )
         {
             if( mpConstraint->lhs().lcoeff( ex( var->second ) ).has( ex( var2->second ) ) )
@@ -334,7 +334,8 @@ namespace vs
              * If both are not constant or both are constant, take the first variable (alphabetically
              * order)
              */
-            else if( bestVariableLeadingCoefficientHasVariable && mpConstraint->lhs().degree( bestVar->second ) == mpConstraint->lhs().degree( ex( var->second ) ) )
+            else if( bestVariableLeadingCoefficientHasVariable
+                     && mpConstraint->lhs().degree( bestVar->second ) == mpConstraint->lhs().degree( ex( var->second ) ) )
             {
                 symtab::const_iterator var2 = mpConstraint->variables().begin();
                 while( var2 != mpConstraint->variables().end() )
@@ -359,7 +360,7 @@ namespace vs
          * than the fact, that the variable has a constant leading coefficient.
          */
         unsigned variableQuality = 0;
-        unsigned degree          = static_cast< unsigned >( mpConstraint->lhs().degree( ex( bestVar->second ) ) );
+        unsigned degree          = static_cast<unsigned>(mpConstraint->lhs().degree( ex( bestVar->second ) ));
         if( mpConstraint->relation() == smtrat::CR_EQ )
         {
             variableQuality = 1000 * degree;

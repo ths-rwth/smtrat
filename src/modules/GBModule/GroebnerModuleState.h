@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   GroebnerModuleState.h
  * Author: square
  *
@@ -6,9 +6,7 @@
  */
 
 #ifndef GROEBNERMODULESTATE_H
-#define	GROEBNERMODULESTATE_H
+#define GROEBNERMODULESTATE_H
 
-
-
-#endif	/* GROEBNERMODULESTATE_H */
+#endif   /* GROEBNERMODULESTATE_H */
 

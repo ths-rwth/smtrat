@@ -46,6 +46,7 @@ namespace smtrat
 
     class Strategy;
     typedef bool (*conditionEvaluation)( Condition );
+
     typedef std::pair<conditionEvaluation, std::set<ModuleType> > ModuleStrategyCase;
 
     /**
