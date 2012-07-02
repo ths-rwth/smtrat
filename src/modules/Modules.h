@@ -26,7 +26,7 @@
  * @author Ulrich Loup
  * @author Sebastian Junges
  * @since 2012-01-18
- * @version 2012-02-04
+ * @version 2012-07-02
  */
 
 #ifndef SMTRAT_MODULES_H
@@ -40,7 +40,7 @@
 #endif
 
 #ifdef USE_CAD
-#include "UnivariateCADModule.h"
+//#include "UnivariateCADModule.h"
 #include "CADModule.h"
 #endif
 

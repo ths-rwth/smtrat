@@ -26,7 +26,7 @@
  * @author Ulrich Loup
  * @author Sebastian Junges
  * @since 2012-01-18
- * @version 2012-06-18
+ * @version 2012-07-02
  */
 
 #ifndef SMTRAT_MODULE_H
@@ -91,7 +91,7 @@ namespace smtrat
             Module( Manager* const, const Formula* const );
             virtual ~Module();
 
-            //Main interfaces
+            // Main interfaces
             virtual bool inform( const Constraint* const _constraint )
             {
                 mConstraintsToInform.insert( _constraint );
@@ -111,7 +111,7 @@ namespace smtrat
 
             virtual void removeSubformula( Formula::const_iterator );
 
-            //Accessors
+            // Accessors
             inline const Formula* const pReceivedFormula() const
             {
                 return mpReceivedFormula;

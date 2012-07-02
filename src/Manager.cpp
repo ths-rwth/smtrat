@@ -26,7 +26,7 @@
  * @author Ulrich Loup
  * @author Sebastian Junges
  *
- * Created on January 18, 2012, 3:22 PM
+ * @since 2012-01-18, 3:22 PM
  */
 #include "Manager.h"
 #include "modules/Modules.h"
@@ -72,7 +72,7 @@ namespace smtrat
 #endif
         addModuleType( MT_VSModule, new StandardModuleFactory<VSModule>() );
 #ifdef USE_CAD
-        addModuleType( MT_UnivariateCADModule, new StandardModuleFactory<UnivariateCADModule>() );
+//        addModuleType( MT_UnivariateCADModule, new StandardModuleFactory<UnivariateCADModule>() );
         addModuleType( MT_CADModule, new StandardModuleFactory<CADModule>() );
 #endif
         addModuleType( MT_SATModule, new StandardModuleFactory<SATModule>() );

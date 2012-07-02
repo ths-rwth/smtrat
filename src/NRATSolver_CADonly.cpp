@@ -31,23 +31,38 @@
 
 namespace smtrat
 {
-//    static bool caseOne ( Condition _condition )
-//    {
-//        return PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE <= _condition;
-//    }
+    static bool caseOne ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE <= _condition;
+    }
+    
     static bool caseTwo ( Condition _condition )
     {
         return true;
     }
-
+    
+    static bool caseThree ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_SATMODULE <= _condition;
+    }
+    
+    static bool caseFour ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE <= _condition;
+    }
+    
+    static bool caseFive ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE <= _condition;
+    }
+    
     NRATSolver_CADonly::NRATSolver_CADonly( Formula* _inputFormula ):
         Manager( _inputFormula )
     {
-        //        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE, MT_CADModule );
-        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SATMODULE, MT_CADModule );
-        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE, MT_SATModule );
-        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE, MT_CNFerModule );
-        strategy().addModuleType( PROP_TRUE, MT_PreProModule );
+        strategy().addModuleType( caseThree, MT_CADModule );
+        strategy().addModuleType( caseFour, MT_SATModule );
+        strategy().addModuleType( caseFive, MT_CNFerModule );
+        strategy().addModuleType( caseTwo, MT_PreProModule );
     }
 
     NRATSolver_CADonly::~NRATSolver_CADonly(){}

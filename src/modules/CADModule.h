@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-02-04
- * @version 2012-05-21
+ * @version 2012-07-02
  *
  */
 #ifndef SMTRAT_CADMODULE_H
@@ -45,7 +45,7 @@ namespace smtrat
      *
      * @author Ulrich Loup
      * @since 2012-02-04
-     * @version 2012-04-09
+     * @version 2012-07-02
      *
      */
     class CADModule:
@@ -53,20 +53,26 @@ namespace smtrat
     {
         /// representation of the solution space containing all data relevant for CAD computations
         GiNaCRA::CAD mCAD;
-        /// the GiNaCRA constraints corresponding to received constraints
+        /// the GiNaCRA constraints
         vector<GiNaCRA::Constraint> mConstraints;
+        /// the GiNaCRA constraints' indices assigned to the received constraints
+        std::unordered_map<const Constraint*, unsigned> mConstraintsMap;
+        /// flag storing global satisfiability status
+        bool mSatisfiable;
 
         public:
             CADModule( Manager* const _tsmanager, const Formula* const );
 
             virtual ~CADModule();
 
-            virtual bool assertSubFormula( const Formula* const );
+            virtual bool assertSubformula( Formula::const_iterator _subformula );
+            virtual void removeSubformula( Formula::const_iterator _subformula );
             virtual Answer isConsistent();
-            virtual void popBacktrackPoint();
 
         private:
             const GiNaCRA::Constraint convertConstraint( const Constraint& );
+            vec_set_const_pFormula extractMinimalInfeasibleSubsets( const GiNaCRA::ConflictGraph& conflictGraph );
+            const Formula* getConstraintAt( unsigned index );
     };
 
 }    // namespace smtrat
