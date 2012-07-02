@@ -293,7 +293,7 @@ namespace smtrat
             // Problem specification:
             //
             // Add a new variable with parameters specifying variable mode.
-            Minisat::Var newVar( bool polarity = true, bool dvar = true );
+            Minisat::Var newVar( bool polarity = true, bool dvar = true, double = 0 );
             // Add a clause to the solver.
             bool addClause( const Minisat::vec<Minisat::Lit>& ps );
             // Add the empty clause, making the solver contradictory.
@@ -422,7 +422,7 @@ namespace smtrat
             // Operations on clauses:
             //
             // Attach a clause to watcher lists.
-            void attachClause( Minisat::CRef cr, bool = false );
+            void attachClause( Minisat::CRef cr );
             // Detach a clause to watcher lists.
             void detachClause( Minisat::CRef cr, bool strict = false );
             // Detach and free a clause.
@@ -469,6 +469,7 @@ namespace smtrat
             Minisat::Lit getLiteral( const Formula&, const Formula* = NULL );
             bool adaptPassedFormula();
             void simplifyByLearnedTheoryDeductions( ConstraintOriginMap& ) const;
+            void addTheoryDeduction( Minisat::vec<Minisat::Lit>& );
     };
 
     //=================================================================================================

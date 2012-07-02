@@ -50,7 +50,7 @@
 #include "SATModule.h"
 
 //#define DEBUG_SATMODULE
-//#define DEBUG_SATMODULE_THEORY_PROPAGATION
+#define DEBUG_SATMODULE_THEORY_PROPAGATION
 #define SATMODULE_WITH_CALL_NUMBER
 #define SAT_MODULE_THEORY_PROPAGATION
 //#define WITH_PROGRESS_ESTIMATION
@@ -214,6 +214,7 @@ namespace smtrat
         learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
 
         lbool result = search();
+//        printBooleanConstraintMap();
 
         #ifdef SATMODULE_WITH_CALL_NUMBER
         cout << endl << endl;
@@ -500,7 +501,7 @@ namespace smtrat
                 }
                 else
                 {
-                    Var var                               = newVar();
+                    Var var                               = newVar( _formula.activity() );
                     mBooleanVarMap[_formula.identifier()] = var;
                     return mkLit( var, false );
                 }
@@ -545,9 +546,9 @@ namespace smtrat
                      * Add the constraint and its negation, both using either the relation
                      * symbol = or <=, to the map (normal form). A new Boolean variable gets generated.
                      */
-                    Var normConstrAuxBoolean = newVar();
+                    Var normConstrAuxBoolean = newVar( _formula.activity() );
                     Var normConstrBoolean    = newVar();
-                    Var invConstrAuxBoolean  = newVar();
+                    Var invConstrAuxBoolean  = newVar( _formula.activity() );
                     Var invConstrBoolean     = newVar();
 
                     Lit negNormConstrAuxLit = mkLit( normConstrAuxBoolean, true );
@@ -755,96 +756,20 @@ namespace smtrat
         #endif
     }
 
-    //=================================================================================================
-    // Minor methods:
-
-    /**
-     * Creates a new SAT variable in the solver. If 'decision' is cleared, variable will not be
-     * used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
-     *
-     * @param sign
-     * @param dvar
-     *
-     * @return
-     */
-    Var SATModule::newVar( bool sign, bool dvar )
+    void SATModule::addTheoryDeduction( vec<Lit>& _clause )
     {
-        int v = nVars();
-        watches.init( mkLit( v, false ) );
-        watches.init( mkLit( v, true ) );
-        assigns.push( l_Undef );
-        vardata.push( mkVarData( CRef_Undef, 0 ) );
-        activity .push(0);
-//        activity.push( rnd_init_act ? drand( random_seed ) * 0.00001 : 0 );
-        seen.push( 0 );
-        polarity.push( sign );
-        decision.push();
-        trail.capacity( v + 1 );
-        setDecisionVar( v, dvar );
-        return v;
-    }
-
-    /**
-     * Description.
-     *
-     * @param ps
-     *
-     * @return
-     */
-    bool SATModule::addClause_( vec<Lit>& ps )
-    {
-        // assert( decisionLevel() == 0 ); // Commented, as we already allow to add clauses belatedly
-        if( !ok )
-            return false;
-
-        // Check if clause is satisfied and remove false/duplicate literals:
-        sort( ps );
-        Lit p;
-        int i, j;
-        for( i = j = 0, p = lit_Undef; i < ps.size(); i++ )
-            if( value( ps[i] ) == l_True || ps[i] == ~p )
-                return true;
-            else if( value( ps[i] ) != l_False && ps[i] != p )
-                ps[j++] = p = ps[i];
-        ps.shrink( i - j );
-
-        if( ps.size() == 0 )
-            return ok = false;
-        else if( ps.size() == 1 )
-        {
-            uncheckedEnqueue( ps[0] );
-            return ok = (propagate() == CRef_Undef);
-        }
-        else
-        {
-            CRef cr = ca.alloc( ps, false );
-            clauses.push( cr );
-            attachClause( cr, true );
-        }
-
-        return true;
-    }
-
-    /**
-     * Description.
-     *
-     * @param cr
-     */
-    void SATModule::attachClause( CRef cr, bool _tp )
-    {
-       const Clause& c = ca[cr];
        /*
         * If the clause is of the form (~c_1 or .. or ~c_n or c), where c_1, ..., c_n, c are constraints,
         * add this clause as a learned theory deduction.
         */
-        if( c.size() > 1 && _tp )
+        if( _clause.size() > 1 )
         {
             bool isTheoryDeduction = true;
             const Formula* conclusion = NULL;
             set< const Formula* > premise = set< const Formula* >();
-            for( int i = 0; i < c.size(); ++i )
+            for( int i = 0; i < _clause.size(); ++i )
             {
-                BooleanConstraintMap::iterator iter = mBooleanConstraintMap.find( var( c[i] ) + 1 );
+                BooleanConstraintMap::iterator iter = mBooleanConstraintMap.find( var( _clause[i] ) + 1 );
                 if( iter == mBooleanConstraintMap.end() )
                 {
                     isTheoryDeduction = false;
@@ -852,7 +777,7 @@ namespace smtrat
                 }
                 else
                 {
-                    if( sign( c[i] ) )
+                    if( sign( _clause[i] ) )
                     {
                         premise.insert( iter->second.first );
                     }
@@ -885,6 +810,87 @@ namespace smtrat
                 #endif
             }
         }
+    }
+
+    //=================================================================================================
+    // Minor methods:
+
+    /**
+     * Creates a new SAT variable in the solver. If 'decision' is cleared, variable will not be
+     * used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
+     *
+     * @param sign
+     * @param dvar
+     *
+     * @return
+     */
+    Var SATModule::newVar( bool sign, bool dvar, double _activity )
+    {
+        int v = nVars();
+        watches.init( mkLit( v, false ) );
+        watches.init( mkLit( v, true ) );
+        assigns.push( l_Undef );
+        vardata.push( mkVarData( CRef_Undef, 0 ) );
+        activity .push( _activity );
+//        activity.push( rnd_init_act ? drand( random_seed ) * 0.00001 : 0 );
+        seen.push( 0 );
+        polarity.push( sign );
+        decision.push();
+        trail.capacity( v + 1 );
+        setDecisionVar( v, dvar );
+        return v;
+    }
+
+    /**
+     * Description.
+     *
+     * @param ps
+     *
+     * @return
+     */
+    bool SATModule::addClause_( vec<Lit>& ps )
+    {
+        addTheoryDeduction( ps );
+        // assert( decisionLevel() == 0 ); // Commented, as we already allow to add clauses belatedly
+        if( !ok )
+            return false;
+
+        // Check if clause is satisfied and remove false/duplicate literals:
+        sort( ps );
+        Lit p;
+        int i, j;
+        for( i = j = 0, p = lit_Undef; i < ps.size(); i++ )
+            if( value( ps[i] ) == l_True || ps[i] == ~p )
+                return true;
+            else if( value( ps[i] ) != l_False && ps[i] != p )
+                ps[j++] = p = ps[i];
+        ps.shrink( i - j );
+
+        if( ps.size() == 0 )
+            return ok = false;
+        else if( ps.size() == 1 )
+        {
+            uncheckedEnqueue( ps[0] );
+            return ok = (propagate() == CRef_Undef);
+        }
+        else
+        {
+            CRef cr = ca.alloc( ps, false );
+            clauses.push( cr );
+            attachClause( cr );
+        }
+
+        return true;
+    }
+
+    /**
+     * Description.
+     *
+     * @param cr
+     */
+    void SATModule::attachClause( CRef cr )
+    {
+        const Clause& c = ca[cr];
         assert( c.size() > 1 );
         watches[~c[0]].push( Watcher( cr, c[1] ) );
         watches[~c[1]].push( Watcher( cr, c[0] ) );
@@ -1579,6 +1585,13 @@ NextClause:
                     }
                     cout << "}" << endl;
                     #endif
+                    cout << "### Check the constraints: ";
+                    cout << "{ ";
+                    for( Formula::const_iterator subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
+                    {
+                        cout << (*subformula)->constraint().toString() << " ";
+                    }
+                    cout << "}" << endl << endl;
                     switch( runBackends() )
                     {
                         case True:
@@ -1614,9 +1627,11 @@ NextClause:
                                     assert( constraintLiteralPair != mConstraintLiteralMap.end() );
                                     learnt_clause.push( constraintLiteralPair->second );
 
+                                    addTheoryDeduction( learnt_clause );
+
                                     CRef clause = ca.alloc( learnt_clause, true );
                                     learnts.push( clause );
-                                    attachClause( clause, true );
+                                    attachClause( clause );
                                     claBumpActivity( ca[clause] );
                                     learnt_clause.clear();
                                     break;
@@ -2077,7 +2092,8 @@ NextClause:
         _out << _init << " BooleanConstraintMap" << endl;
         for( BooleanConstraintMap::const_iterator bcPair = mBooleanConstraintMap.begin(); bcPair != mBooleanConstraintMap.end(); ++bcPair )
         {
-            _out << _init << "   " << bcPair->first + 1 << "  ->  " << bcPair->second.first->constraint().toString() << endl;
+            _out << _init << "   " << bcPair->first + 1 << "  ->  " << bcPair->second.first->constraint();
+            _out << "  (" << setw(7) << activity[bcPair->first + 1] << ") " << endl;
         }
     }
 

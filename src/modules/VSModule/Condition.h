@@ -135,6 +135,9 @@ namespace vs
                 return *mpOriginalConditions;
             }
 
+            unsigned valuate( const std::string, const unsigned, const bool );
+            bool bestVariable( std::string& ) const;
+            unsigned bestVariable2( std::string& ) const;
             bool operator ==( const Condition& ) const;
             bool operator <( const Condition& ) const;
             void print( std::ostream& ) const;
