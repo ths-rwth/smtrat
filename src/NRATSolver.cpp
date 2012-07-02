@@ -76,9 +76,9 @@ namespace smtrat
 		#endif
 //		strategy().addModuleType( caseFour, MT_SATModule );
 //        strategy().addModuleType( caseSix, MT_CNFerModule );
-		strategy().addModuleType( caseFour, MT_SATModule );
-        strategy().addModuleType( caseFive, MT_CNFerModule );
-        strategy().addModuleType( caseSix, MT_PreProModule );
+		strategy().addModuleType( caseFive, MT_SATModule );
+        strategy().addModuleType( caseFour, MT_PreProModule );
+        strategy().addModuleType( caseSix, MT_CNFerModule );
     }
 
     NRATSolver::~NRATSolver() {}
