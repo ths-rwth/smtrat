@@ -255,7 +255,7 @@ namespace smtrat
                         return *j;
             }
         }
-        assert( false );    // The given index should not match an input constraint!
+        assert( false );    // The given index should match an input constraint!
     }
 }    // namespace smtrat
 

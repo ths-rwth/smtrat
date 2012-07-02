@@ -56,10 +56,16 @@ namespace smtrat
         return PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE <= _condition;
     }
 
+    static bool caseSix( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_VSMODULE <= _condition;
+    }
+
     NRATSolver_CADonly::NRATSolver_CADonly( Formula* _inputFormula ):
         Manager( _inputFormula )
     {
-        strategy().addModuleType( caseThree, MT_CADModule );
+        strategy().addModuleType( caseSix, MT_CADModule );
+        strategy().addModuleType( caseThree, MT_VSModule );
         strategy().addModuleType( caseFour, MT_SATModule );
         strategy().addModuleType( caseFive, MT_CNFerModule );
         strategy().addModuleType( caseTwo, MT_PreProModule );
