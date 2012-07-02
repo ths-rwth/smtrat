@@ -50,7 +50,7 @@
 #include "SATModule.h"
 
 //#define DEBUG_SATMODULE
-#define DEBUG_SATMODULE_THEORY_PROPAGATION
+//#define DEBUG_SATMODULE_THEORY_PROPAGATION
 #define SATMODULE_WITH_CALL_NUMBER
 #define SAT_MODULE_THEORY_PROPAGATION
 //#define WITH_PROGRESS_ESTIMATION
@@ -1585,13 +1585,6 @@ NextClause:
                     }
                     cout << "}" << endl;
                     #endif
-                    cout << "### Check the constraints: ";
-                    cout << "{ ";
-                    for( Formula::const_iterator subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
-                    {
-                        cout << (*subformula)->constraint().toString() << " ";
-                    }
-                    cout << "}" << endl << endl;
                     switch( runBackends() )
                     {
                         case True:
