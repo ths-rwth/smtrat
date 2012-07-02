@@ -31,6 +31,15 @@
 
 namespace smtrat
 {
+//    static bool caseOne ( Condition _condition )
+//    {
+//        return PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE <= _condition;
+//    }
+    static bool caseTwo ( Condition _condition )
+    {
+        return true;
+    }
+
     NRATSolver_CADonly::NRATSolver_CADonly( Formula* _inputFormula ):
         Manager( _inputFormula )
     {

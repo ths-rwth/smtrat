@@ -28,10 +28,13 @@
  */
 
 #include "VSModule.h"
+#include <set>
 
 using namespace std;
 using namespace GiNaC;
 using namespace vs;
+
+#define VS_ASSIGNMENT_DEBUG
 
 namespace smtrat
 {
@@ -79,21 +82,23 @@ namespace smtrat
     /**
      * @param _constraint The constraint to add to the already added constraints.
      */
-    bool VSModule::assertSubFormula( const Formula* const _formula )
+    bool VSModule::assertSubformula( Formula::const_iterator _subformula )
     {
-    	assert( _formula->getType() == REALCONSTRAINT );
-		Module::assertSubFormula( _formula );
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
+    	assert( (*_subformula)->getType() == REALCONSTRAINT );
+		Module::assertSubformula( _subformula );
         if( debugmethods )
         {
             cout << __func__ << endl;
         }
 
-        vs::Condition* condition = new vs::Condition( _formula->constraint() );
-        mReceivedConstraintsAsConditions[_formula->pConstraint()] = condition;
+        const Constraint* constraint = (*_subformula)->pConstraint();
+        vs::Condition* condition = new vs::Condition( *constraint );
+        mReceivedConstraintsAsConditions[constraint] = condition;
         /*
          * Clear the ranking.
          */
-        switch( _formula->constraint().isConsistent() )
+        switch( constraint->isConsistent() )
         {
         case 0:
         {
@@ -101,20 +106,22 @@ namespace smtrat
             mIDCounter = 0;
             mInfeasibleSubsets.clear();
             mInfeasibleSubsets.push_back( set< const Formula* >() );
-            mInfeasibleSubsets.back().insert( receivedFormulaBack() );
+            mInfeasibleSubsets.back().insert( mpReceivedFormula->back() );
             mInconsistentConstraintAdded = true;
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
             return false;
         }
         case 1:
         {
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
             return true;
         }
         case 2:
         {
             eraseDTsOfRanking( *mpStateTree );
             mIDCounter = 0;
-            symtab::const_iterator var = _formula->constraint().variables().begin();
-            while( var != _formula->constraint().variables().end() )
+            symtab::const_iterator var = constraint->variables().begin();
+            while( var != constraint->variables().end() )
             {
                 mAllVariables.insert( pair<const string, symbol>( var->first, ex_to<symbol>( var->second ) ) );
                 var++;
@@ -125,13 +132,14 @@ namespace smtrat
             vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
             DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
             ConditionVector condVector                   = ConditionVector();
-            condVector.push_back( new vs::Condition( _formula->constraint(), false, oConds, 0 ));
+            condVector.push_back( new vs::Condition( *constraint, false, oConds, 0 ));
             subResult.push_back( condVector );
             subResults.push_back( subResult );
             mpStateTree->addSubstitutionResults( subResults );
 
             insertDTinRanking( mpStateTree );
             mFreshConstraintReceived = true;
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
             return true;
         }
         default:
@@ -151,6 +159,8 @@ namespace smtrat
      */
     Answer VSModule::isConsistent()
     {
+//        printReceivedFormula();
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
         if( debugmethods )
         {
             cout << __func__ << endl;
@@ -159,7 +169,6 @@ namespace smtrat
         {
             if( mInfeasibleSubsets.empty() )
             {
-                //printAnswer( cout );
                 return True;
             }
             else
@@ -168,17 +177,20 @@ namespace smtrat
             }
         }
         mFreshConstraintReceived = false;
-        if( receivedFormulaEmpty() )
+        #ifndef VS_INCREMENTAL
+        reset();
+        #endif
+        if( mpReceivedFormula->empty() )
         {
             return True;
         }
         if( mInconsistentConstraintAdded )
         {
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
+            assert( !mInfeasibleSubsets.empty() );
+            assert( !mInfeasibleSubsets.back().empty() );
             return False;
         }
-#ifndef VS_INCREMENTAL
-        reset();
-#endif
 
         while( !mpRanking->empty() )
         {
@@ -351,7 +363,6 @@ namespace smtrat
                                     {
                                         printAll( cout );
                                     }
-                                    //printAnswer( cout );
                                     return True;
                                 }
                             }
@@ -450,62 +461,93 @@ namespace smtrat
                                     {
                                         cout << "*** No elimination. (Too high degree)" << endl;
                                     }
-#ifdef VS_DELAY_BACKEND_CALL
+                                    #ifdef VS_DELAY_BACKEND_CALL
                                     if( (*currentState).toHighDegree() )
                                     {
-#endif
+                                    #endif
 
                                         /*
                                          * If we need to involve a complete approach.
                                          */
-#ifdef VS_WITH_BACKEND
-                                        switch( runBackendSolvers( currentState ))
+                                        #ifdef VS_WITH_BACKEND
+                                        switch( runBackendSolvers( currentState ) )
                                         {
-                                        case True:
-                                        {
-                                            currentState->rToHighDegree() = true;
-                                            //printAnswer( cout );
-                                            return True;
-                                        }
-                                        case False:
-                                        {
-                                            currentState->rToHighDegree() = true;
-                                            break;
-                                        }
-                                        case Unknown:
-                                        {
-                                            if( !currentState->rToHighDegree() )
+                                            case True:
                                             {
                                                 currentState->rToHighDegree() = true;
-                                                insertDTinRanking( currentState );
+                                                //printAnswer( cout );
+
+                                                State * unfinishedAncestor;
+                                                if( currentState->unfinishedAncestor( unfinishedAncestor ))
+                                                {
+                                                    /*
+                                                    * Go back to this ancestor and refine.
+                                                    */
+                                                    eraseDTsOfRanking( *unfinishedAncestor );
+                                                    unfinishedAncestor->extendSubResultCombination();
+                                                    unfinishedAncestor->rStateType() = COMBINE_SUBRESULTS;
+                                                    if( unfinishedAncestor->refreshConditions() )
+                                                    {
+                                                        insertDTinRanking( unfinishedAncestor );
+                                                    }
+                                                    else
+                                                    {
+                                                        insertDTsinRanking( unfinishedAncestor );
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    /*
+                                                    * Solution.
+                                                    */
+                                                    if( debug )
+                                                    {
+                                                        printAll( cout );
+                                                    }
+                                                    return True;
+                                                }
                                                 break;
                                             }
-                                            else
+                                            case False:
                                             {
+                                                currentState->rToHighDegree() = true;
+                                                break;
+                                            }
+                                            case Unknown:
+                                            {
+                                                if( !currentState->rToHighDegree() )
+                                                {
+                                                    currentState->rToHighDegree() = true;
+                                                    insertDTinRanking( currentState );
+                                                    break;
+                                                }
+                                                else
+                                                {
+                                                    return Unknown;
+                                                }
+                                            }
+                                            default:
+                                            {
+                                                cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
                                                 return Unknown;
                                             }
                                         }
-                                        default:
-                                        {
-                                            cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
-                                            return Unknown;
-                                        }
-                                        }
-#else
+                                        #else
                                         currentState->printAlone( "   ", cout );
                                         cout << "###" << endl;
                                         cout << "###                  Unknown!" << endl;
                                         cout << "###" << endl;
+                                        mDeductions.clear();
                                         return Unknown;
-#endif
-#ifdef VS_DELAY_BACKEND_CALL
+                                        #endif
+                                    #ifdef VS_DELAY_BACKEND_CALL
                                     }
                                     else
                                     {
                                         currentState->rToHighDegree() = true;
                                         insertDTinRanking( currentState );
                                     }
-#endif
+                                    #endif
                                 }
                             }
                             else
@@ -531,15 +573,16 @@ namespace smtrat
     }
 
     /**
-     * Backtracks until the last backtrack point.
+     * Removes a everything related to a sub formula of the received formula.
+     *
+     * @param _subformula The sub formula of the received formula to remove.
      */
-    void VSModule::popBacktrackPoint()
+    void VSModule::removeSubformula( Formula::const_iterator _subformula )
     {
         if( debugmethods )
         {
             cout << __func__ << endl;
         }
-        assert( !mBackTrackPoints.empty() );
 
 #ifdef VS_BACKTRACKING
         eraseDTsOfRanking( *mpStateTree );
@@ -550,14 +593,11 @@ namespace smtrat
         assert( mpStateTree->substitutionResults().back().size() == 1 );
         assert( receivedFormulaSize() == mpStateTree->substitutionResults().back().back().first.size() );
 #endif
-		Module::popBacktrackPoint();
-		signed uRFS = receivedFormulaSize();
-        for( signed pos = lastBacktrackpointsEnd()+1; pos < uRFS; ++pos )
-        {
-            vs::Condition* pCondition = mReceivedConstraintsAsConditions[receivedFormulaAt( pos )->pConstraint()];
-            mReceivedConstraintsAsConditions.erase( receivedFormulaAt( pos )->pConstraint() );
-            delete pCondition;
-        }
+        const Constraint* constraint = (*_subformula)->pConstraint();
+        vs::Condition* pCondition = mReceivedConstraintsAsConditions[constraint];
+        mReceivedConstraintsAsConditions.erase( constraint );
+        delete pCondition;
+		Module::removeSubformula( _subformula );
 #ifdef VS_BACKTRACKING
 		bool firstConstraintToRemoveFound = false;
 		for( ConditionVector::iterator cond = mpStateTree->rSubstitutionResults().back().back().first.begin();
@@ -694,13 +734,14 @@ namespace smtrat
         {
             ex derivate            = lhs.diff( sym, 1 );
             ex gcdOfLhsAndDerivate = gcd( lhs, derivate );
-            gcdOfLhsAndDerivate    = gcdOfLhsAndDerivate.expand().normal();
+            Constraint::normalize( gcdOfLhsAndDerivate );
             if( gcdOfLhsAndDerivate != 1 )
             {
                 ex quotient;
-                if( divide( lhs, gcdOfLhsAndDerivate, quotient ))
+                if( gcdOfLhsAndDerivate != 0 && divide( lhs, gcdOfLhsAndDerivate, quotient ))
                 {
-                    lhs = quotient.expand().normal();
+                    Constraint::normalize( quotient );
+                    lhs = quotient;
                 }
             }
         }
@@ -708,7 +749,7 @@ namespace smtrat
         vector<ex> coeffs = vector<ex>();
         for( signed i = 0; i <= lhs.degree( ex( sym ) ); ++i )
         {
-            coeffs.push_back( ex( lhs.expand().coeff( ex( sym ), i )));
+            coeffs.push_back( ex( lhs.coeff( ex( sym ), i )));
         }
 
         ConditionSet oConditions = ConditionSet();
@@ -762,12 +803,7 @@ namespace smtrat
         case 3:
         {
             ex radicand = ex( pow( coeffs.at( 1 ), 2 ) - 4 * coeffs.at( 2 ) * coeffs.at( 0 ));
-#ifdef VS_USE_GINAC_EXPAND
-            radicand    = radicand.expand();
-#endif
-#ifdef VS_USE_GINAC_NORMAL
-            radicand    = radicand.normal();
-#endif
+            Constraint::normalize( radicand );
 
             /*
              * Create state ({a==0, b!=0} + oldConditions,
@@ -1401,6 +1437,7 @@ namespace smtrat
      */
     void VSModule::updateInfeasibleSubset()
     {
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
         if( debugmethods )
         {
             cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
@@ -1426,40 +1463,26 @@ namespace smtrat
             }
         }
         allMinimumCoveringSets( confSets, minCoverSets );
+        assert( !minCoverSets.empty() );
+
         /*
-         * Get the smallest infeasible subset.
+         * Change the globally stored infeasible subset to the smaller one.
          */
-        ConditionSetSet::const_iterator smallestMinCoverSet = minCoverSets.begin();
-
-        if( smallestMinCoverSet != minCoverSets.end() )
+        mInfeasibleSubsets.clear();
+        mInfeasibleSubsets.push_back( set< const Formula* >() );
+        for( ConditionSetSet::const_iterator minCoverSet = minCoverSets.begin();
+             minCoverSet != minCoverSets.end();
+             ++minCoverSet )
         {
-            ConditionSetSet::const_iterator minCoverSet = minCoverSets.begin();
-            minCoverSet++;
-            while( minCoverSet != minCoverSets.end() )
-            {
-                /*
-                 * The infeasible subset is smaller than the globally stored one.
-                 */
-                if( (*minCoverSet).size() < (*smallestMinCoverSet).size() )
-                {
-                    smallestMinCoverSet = minCoverSet;
-                }
-                minCoverSet++;
-            }
-
-            /*
-             * Change the globally stored infeasible subset to the smaller one.
-             */
-            mInfeasibleSubsets.clear();
-            mInfeasibleSubsets.push_back( set< const Formula* >() );
-            for( ConditionSet::const_iterator cond = (*smallestMinCoverSet).begin(); cond != (*smallestMinCoverSet).end(); ++cond )
+            assert( !minCoverSet->empty() );
+            for( ConditionSet::const_iterator cond = minCoverSet->begin(); cond != minCoverSet->end(); ++cond )
             {
                 for( ConditionSet::const_iterator oCond = (**cond).originalConditions().begin();
-                	 oCond != (**cond).originalConditions().end();
-                     ++oCond )
+                        oCond != (**cond).originalConditions().end();
+                        ++oCond )
                 {
-                    Formula::const_iterator receivedConstraint = receivedFormulaBegin();
-                    while( receivedConstraint != receivedFormulaEnd() )
+                    Formula::const_iterator receivedConstraint = mpReceivedFormula->begin();
+                    while( receivedConstraint != mpReceivedFormula->end() )
                     {
                         if( (**oCond).constraint() == (*receivedConstraint)->constraint() )
                         {
@@ -1468,7 +1491,7 @@ namespace smtrat
                         receivedConstraint++;
                     }
 
-                    if( receivedConstraint == receivedFormulaEnd() )
+                    if( receivedConstraint == mpReceivedFormula->end() )
                     {
                         cout << "BLA1" << endl;
                         printAll( cout );
@@ -1479,19 +1502,8 @@ namespace smtrat
                 }
             }
         }
-        else
-        {
-            /*
-             * Set the infeasible subset to the set of all received constraints.
-             */
-            mInfeasibleSubsets.push_back( set< const Formula* >() );
-            for( Formula::const_iterator cons = receivedFormulaBegin();
-            	 cons != receivedFormulaEnd();
-            	 ++cons )
-            {
-            	mInfeasibleSubsets.back().insert( *cons );
-            }
-        }
+        assert( !mInfeasibleSubsets.empty() );
+        assert( !mInfeasibleSubsets.back().empty() );
 #else
         /*
          * Set the infeasible subset to the set of all received constraints.
@@ -1511,6 +1523,7 @@ namespace smtrat
      */
     void VSModule::reset()
     {
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
         if( debugmethods )
         {
             cout << __func__ << endl;
@@ -1540,8 +1553,8 @@ namespace smtrat
             delete pRecCond;
         }
 
-        Formula::const_iterator          cons = receivedFormulaBegin();
-        while( cons != receivedFormulaEnd() )
+        Formula::const_iterator          cons = mpReceivedFormula->begin();
+        while( cons != mpReceivedFormula->end() )
         {
 			vs::Condition* condition = new vs::Condition( (*cons)->constraint() );
 			mReceivedConstraintsAsConditions[(*cons)->pConstraint()] = condition;
@@ -1584,12 +1597,189 @@ namespace smtrat
                 }
                 else if( isConstraintConsistent == 0 )
                 {
+//cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
+                    mInfeasibleSubsets.push_back( set< const Formula* >() );
+                    mInfeasibleSubsets.back().insert( *cons );
                     mInconsistentConstraintAdded = true;
                 }
             }
             cons++;
         }
     }
+
+    #ifdef VS_USE_DEDUCTIONS
+    /**
+     * Updates the deductions.
+     */
+    void VSModule::updateDeductions()
+    {
+        if( !mFreshConstraintReceived )
+        {
+            mDeductions.clear();
+            if( mInfeasibleSubsets.empty() )
+            {
+                vector<pair<string, numeric> > assignment = getNumericAssignment();
+                lst substitutionList = lst();
+                for( vector<pair<string, numeric> >::const_iterator assign = assignment.begin();
+                    assign != assignment.end();
+                    ++assign )
+                {
+                    substitutionList.append( mAllVariables[assign->first] == assign->second );
+                }
+                for( fcs_const_iterator constraint = mConstraintsToInform.begin();
+                    constraint != mConstraintsToInform.end();
+                    ++constraint )
+                {
+                    ex tmpLhs = (*constraint)->lhs().subs( substitutionList );
+                    Constraint tmpConstraint = Constraint( tmpLhs, (*constraint)->relation(), (*constraint)->variables() );
+                    if( tmpConstraint.isConsistent() == 1 )
+                    {
+                        mDeductions.push_back( *constraint );
+                    }
+                }
+            }
+        }
+    }
+    #endif
+
+    /**
+     * Gets a symbolic assignment, if an assignment exists and the consistency check determined
+     * the satisfiability of the given set of constraints.
+     *
+     * @return A symbolic assignment.
+     */
+    vector<pair<string, pair<Substitution_Type, ex> > > VSModule::getSymbolicAssignment() const
+    {
+        assert( !mFreshConstraintReceived && mInfeasibleSubsets.empty() );
+        vector<pair<string, pair<Substitution_Type, ex> > > result = vector<pair<string, pair<Substitution_Type, ex> > >();
+        vector<pair<string, pair<Substitution_Type, ex> > > resultTmp = vector<pair<string, pair<Substitution_Type, ex> > >();
+        symtab uncheckedVariables = mAllVariables;
+        const State* currentState = mpRanking->begin()->second;
+        while( !currentState->isRoot() )
+        {
+            const Substitution& sub = currentState->substitution();
+            uncheckedVariables.erase( sub.variable() );
+            pair<Substitution_Type, ex> symValue = pair<Substitution_Type, ex>( sub.type(), sub.term().expression() );
+            pair<string, pair<Substitution_Type, ex> > symVarValuePair = pair<string, pair<Substitution_Type, ex> >( sub.variable(), symValue );
+            resultTmp.push_back( symVarValuePair );
+            currentState = (*currentState).pFather();
+        }
+        for( symtab::const_iterator var = uncheckedVariables.begin(); var != uncheckedVariables.end(); ++var )
+        {
+            pair<Substitution_Type, ex> symValue = pair<Substitution_Type, ex>( ST_NORMAL, 0 );
+            pair<string, pair<Substitution_Type, ex> > symVarValuePair = pair<string, pair<Substitution_Type, ex> >( var->first, symValue );
+            result.push_back( symVarValuePair );
+        }
+        result.insert( result.end(), resultTmp.begin(), resultTmp.end() );
+        return result;
+    }
+
+    #ifdef VS_USE_DEDUCTIONS
+    /**
+     * Gets a numeric assignment, if an assignment exists and the consistency check determined
+     * the satisfiability of the given set of constraints.
+     *
+     * @return A numeric assignment.
+     */
+    vector<pair<string, numeric> > VSModule::getNumericAssignment( const unsigned _refinementParameter ) const
+    {
+        #ifdef VS_ASSIGNMENT_DEBUG
+        cout << __func__ << "(" << _refinementParameter << ") :" << __LINE__ << endl;
+        #endif
+        assert( !mFreshConstraintReceived && mInfeasibleSubsets.empty() );
+        vector<pair<string, numeric> > result = vector<pair<string, numeric> >();
+        vector<pair<string, ex> > resultTmp = vector<pair<string, ex> >();
+        vector< Constraint > constraintsA = vector< Constraint >();
+        for( Formula::const_iterator subformula = receivedFormulaBegin();
+            subformula != receivedFormulaEnd();
+            ++subformula )
+        {
+            constraintsA.push_back( (*subformula)->constraint() );
+        }
+        vector<pair<string, pair<Substitution_Type, ex> > > symbolicAssignment = getSymbolicAssignment();
+        unsigned counter = 0;
+        symtab vars = mAllVariables;
+        for( vector<pair<string, pair<Substitution_Type, ex> > >::iterator symAssign = symbolicAssignment.begin();
+            symAssign != symbolicAssignment.end();
+            ++symAssign )
+        {
+            #ifdef VS_ASSIGNMENT_DEBUG
+            cout << "constraints: " << endl;
+            for( vector< Constraint >::const_iterator cons = constraintsA.begin();
+                 cons != constraintsA.end();
+                 ++cons )
+            {
+                cout << "    " << cons->toString() << endl;
+            }
+            cout << "symAssign: " << endl;
+            for( vector<pair<string, pair<Substitution_Type, ex> > >::const_iterator iter = symbolicAssignment.begin();
+                    iter != symbolicAssignment.end();
+                    ++iter )
+            {
+                cout << "    " << iter->first << "  ->  ( " << iter->second.first << " , " << iter->second.second << " )" << endl;
+            }
+            #endif
+//            assert( is_a<numeric>( symAssign->second.second ) );
+
+            Substitution_Type currentSubsType = symAssign->second.first;
+            string currentVarName = symAssign->first;
+            symtab::const_iterator var = mAllVariables.find(symAssign->first);
+            assert( var != mAllVariables.end() );
+            const ex currentVar = var->second;
+            ex currentAssignValue = symAssign->second.second;
+            if( currentSubsType == ST_PLUS_EPSILON )
+            {
+                std::stringstream out;
+                out << "eps_" << counter++;
+                symbol eps(out.str());
+                currentAssignValue += eps;
+                vars[out.str()] = eps;
+            }
+            else if( currentSubsType == ST_MINUS_INFINITY )
+            {
+                std::stringstream out;
+                out << "inf_" << counter++;
+                symbol inf(out.str());
+                currentAssignValue -= inf;
+                vars[out.str()] = inf;
+            }
+
+            resultTmp.push_back( pair<string, ex>( currentVarName, currentAssignValue ) );
+            pair<string, ex>& numAssign = resultTmp.back();
+            #ifdef VS_ASSIGNMENT_DEBUG
+            cout << numAssign.first << "  ->  " << numAssign.second << endl;
+            #endif
+
+            vector<Constraint> tmpConstraints = vector<Constraint>();
+            vector<Constraint>::const_iterator constraint = constraintsA.begin();
+            while( constraint != constraintsA.end() )
+            {
+                ex tmpLhs = constraint->lhs().subs( currentVar == numAssign.second );
+                Constraint tmpConstraint = Constraint( tmpLhs, constraint->relation(), vars );
+                unsigned consistent = tmpConstraint.isConsistent();
+                assert( consistent != 0 );
+                if( consistent == 2 )
+                {
+                    tmpConstraints.push_back( tmpConstraint );
+                }
+                ++constraint;
+            }
+            constraintsA.clear();
+            constraintsA.insert( constraintsA.end(), tmpConstraints.begin(), tmpConstraints.end() );
+
+            for( vector<pair<string, pair<Substitution_Type, ex> > >::iterator symAssignTmp = symAssign;
+                    symAssignTmp != symbolicAssignment.end();
+                    ++symAssignTmp )
+            {
+                symAssignTmp->second.second = symAssignTmp->second.second.subs( currentVar == numAssign.second );
+            }
+        }
+        #ifdef VS_ASSIGNMENT_DEBUG
+        cout << __func__ << ":" << __LINE__ << endl;
+        #endif
+        return result;
+    }
+    #endif
 
     /**
      * Finds all minimum covering sets of a vector of sets of sets. A minimum covering set
@@ -1716,6 +1906,55 @@ namespace smtrat
     }
 
     /**
+     * Adapts the passed formula according to the current assignment within the SAT solver.
+     *
+     * @return  true,   if the passed formula has been changed;
+     *          false,  otherwise.
+     */
+    bool VSModule::adaptPassedFormula( const State& _state )
+    {
+        bool changedPassedFormula = false;
+        /*
+         * Collect the constraints to check.
+         */
+        set< Constraint > constraintsToCheck = set< Constraint >();
+        for( ConditionVector::const_iterator cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
+        {
+            constraintsToCheck.insert( (**cond).constraint() );
+        }
+
+        /*
+         * Remove the constraints from the constraints to check, which are already in the passed formula
+         * and remove the sub formulas (constraints) in the passed formula, which do not occur in the
+         * constraints to add.
+         */
+        Formula::iterator subformula = mpPassedFormula->begin();
+        while( subformula != mpPassedFormula->end() )
+        {
+            if( constraintsToCheck.erase( (*subformula)->constraint() ) == 0 )
+            {
+                subformula = removeSubformulaFromPassedFormula( subformula );
+                changedPassedFormula = true;
+            }
+            else
+            {
+                ++subformula;
+            }
+        }
+
+        /*
+         * Add the the remaining constraints to add to the passed formula.
+         */
+        for( set< Constraint >::iterator iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
+        {
+            changedPassedFormula = true;
+            vec_set_const_pFormula origins = vec_set_const_pFormula();
+            addSubformulaToPassedFormula( new smtrat::Formula( smtrat::Formula::newConstraint( iter->lhs(), iter->relation() ) ), origins );
+        }
+        return changedPassedFormula;
+    }
+
+    /**
      * Run the backend solvers on the conditions of the given state.
      *
      * @param _state    The state to check the conditions of.
@@ -1733,77 +1972,58 @@ namespace smtrat
         /*
          * Run the backends on the constraint of the state.
          */
-        for( unsigned pos = 0; pos < passedFormulaSize(); ++pos )
-        {
-            removeSubformulaFromPassedFormula( pos );
-        }
-        for( ConditionVector::const_iterator cond = _state->conditions().begin(); cond != _state->conditions().end(); ++cond )
-        {
-            vec_set_const_pFormula origins = vec_set_const_pFormula();
-            addSubformulaToPassedFormula( new Formula( (**cond).pConstraint() ), origins );
-        }
+        adaptPassedFormula( *_state );
 
         switch( runBackends() )
         {
             case True:
             {
-                State * unfinishedAncestor;
-                if( _state->unfinishedAncestor( unfinishedAncestor ))
-                {
-                    /*
-                     * Go back to this ancestor and refine.
-                     */
-                    eraseDTsOfRanking( *unfinishedAncestor );
-                    unfinishedAncestor->extendSubResultCombination();
-                    unfinishedAncestor->rStateType() = COMBINE_SUBRESULTS;
-                    if( unfinishedAncestor->refreshConditions() )
-                    {
-                        insertDTinRanking( unfinishedAncestor );
-                    }
-                    else
-                    {
-                        insertDTsinRanking( unfinishedAncestor );
-                    }
-                }
                 return True;
             }
             case False:
             {
                 /*
-                 * Get the conflict sets formed by the infeasible subsets in the backend.
-                 */
+                * Get the conflict sets formed by the infeasible subsets in the backend.
+                */
                 ConditionSetSet conflictSet = ConditionSetSet();
-                for( vec_set_const_pFormula::const_iterator infSubSet = mInfeasibleSubsets.begin();
-                     infSubSet != mInfeasibleSubsets.end();
-                     ++infSubSet )
+                vector<Module*>::const_iterator backend = usedBackends().begin();
+                while( backend != usedBackends().end() )
                 {
-                    ConditionSet conflict = ConditionSet();
-                    for( set< const Formula* >::const_iterator subformula = infSubSet->begin(); subformula != infSubSet->end(); ++subformula )
+                    if( !(*backend)->rInfeasibleSubsets().empty() )
                     {
-                        for( ConditionVector::const_iterator cond = _state->conditions().begin(); cond != _state->conditions().end(); ++cond )
+                        for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
+                                infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
                         {
-                            if( (*cond)->pConstraint() == (*subformula)->pConstraint() )
+                            ConditionSet conflict = ConditionSet();
+                            for( set< const Formula* >::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                             {
-                                conflict.insert( *cond );
-                                break;
+                                for( ConditionVector::const_iterator cond = _state->conditions().begin(); cond != _state->conditions().end(); ++cond )
+                                {
+                                    if( (*cond)->constraint() == (*subformula)->constraint() )
+                                    {
+                                        conflict.insert( *cond );
+                                        break;
+                                    }
+                                }
                             }
+                            conflictSet.insert( conflict );
                         }
+                        break;
                     }
-                    conflictSet.insert( conflict );
                 }
                 _state->addConflictSet( NULL, conflictSet );
                 eraseDTsOfRanking( *_state );
 
                 /*
-                 * If the considered state is the root, update the found infeasible subset as infeasible subset.
-                 */
+                * If the considered state is the root, update the found infeasible subset as infeasible subset.
+                */
                 if( _state->isRoot() )
                 {
                     updateInfeasibleSubset();
                 }
                 /*
-                 * If the considered state is not the root, pass the infeasible subset to the father.
-                 */
+                * If the considered state is not the root, pass the infeasible subset to the father.
+                */
                 else
                 {
                     if( _state->passConflictToFather() )

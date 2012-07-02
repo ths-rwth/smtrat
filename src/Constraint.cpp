@@ -36,22 +36,33 @@ namespace smtrat
     using namespace std;
     using namespace GiNaC;
 
+	
+	/**
+	 * true if 0 -rel- 0 yields false
+     * @param The relation
+     * @return 
+     */
+	bool constraintRelationIsStrict(Constraint_Relation rel) {
+		return (rel == CR_NEQ || rel == CR_LESS || rel == CR_GREATER);
+	}
+	
     /**
      * Constructors:
      */
     Constraint::Constraint()
     {
         pLhs              = new ex( 0 );
-        rLhs()            = rLhs().expand().normal();
+        normalize( rLhs() );
         pMultiRootLessLhs = NULL;
         mRelation         = CR_EQ;
         mVariables        = symtab();
+        mID               = 0;
     }
 
-    Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _vars )
+    Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _vars, unsigned _id )
     {
         pLhs              = new ex( _lhs );
-        rLhs()            = rLhs().expand().normal();
+        normalize( rLhs() );
         pMultiRootLessLhs = NULL;
         mRelation         = Constraint_Relation( _cr );
         mVariables        = symtab();
@@ -62,15 +73,16 @@ namespace smtrat
         		mVariables.insert( *var );
         	}
         }
+        mID               = _id;
 #ifdef TS_CONSTRAINT_SIMPLIFIER
         simplify();
 #endif
     }
 
-    Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _vars )
+    Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _vars, unsigned _id )
     {
         pLhs              = new ex( _lhs - _rhs );
-        rLhs()            = rLhs().expand().normal();
+        normalize( rLhs() );
         pMultiRootLessLhs = NULL;
         mRelation         = Constraint_Relation( _cr );
         mVariables        = symtab();
@@ -81,6 +93,7 @@ namespace smtrat
         		mVariables.insert( *var );
         	}
         }
+        mID               = _id;
 #ifdef TS_CONSTRAINT_SIMPLIFIER
         simplify();
 #endif
@@ -92,6 +105,7 @@ namespace smtrat
         pMultiRootLessLhs = NULL;
         mRelation         = Constraint_Relation( _constraint.relation() );
         mVariables        = symtab( _constraint.variables() );
+        mID               = _constraint.id();
     }
 
     /**
@@ -543,7 +557,7 @@ namespace smtrat
     {
         for( int i = 0; i <= lhs().degree( ex( _variable ) ); ++i )
         {
-            _coefficients.push_back( ex( lhs().expand().coeff( ex( _variable ), i )));
+            _coefficients.push_back( ex( lhs().coeff( ex( _variable ), i )));
         }
     }
 
@@ -600,18 +614,122 @@ namespace smtrat
      *
      * @return The linear coefficients of each variable and their common constant part.
      */
-	vector< ex > Constraint::linearAndConstantCoefficients() const
+	map< const string, numeric, strCmp > Constraint::linearAndConstantCoefficients() const
 	{
-		vector< ex > result = vector< ex >();
-		ex constantPart = lhs();
-		for( symtab::const_iterator var = variables().begin(); var != variables().end(); ++var )
+        cout << toString() << endl;
+        ex linearterm = lhs().expand();
+        assert( is_exactly_a<mul>( linearterm ) || is_exactly_a<symbol>( linearterm )
+                || is_exactly_a<numeric>( linearterm ) || is_exactly_a<add>( linearterm ) );
+        map< const string, numeric, strCmp > result = map< const string, numeric, strCmp >();
+        result[""] = 0;
+        if( is_exactly_a<add>( linearterm ) )
         {
-        	result.push_back( ex( constantPart.expand().coeff( ex( var->second ), 1 ) ) );
-            constantPart = ex( constantPart.coeff( ex( var->second ), 0 ) );
+            for( GiNaC::const_iterator summand = linearterm.begin(); summand != linearterm.end(); ++summand )
+            {
+                assert( is_exactly_a<mul>( *summand ) || is_exactly_a<symbol>( *summand ) || is_exactly_a<numeric>( *summand ) );
+                if( is_exactly_a<mul>( *summand ) )
+                {
+                    string symbolName = "";
+                    numeric coefficient = 1;
+                    bool symbolFound = false;
+                    bool coeffFound = false;
+                    for( GiNaC::const_iterator factor = summand->begin(); factor != summand->end(); ++factor )
+                    {
+                        assert( is_exactly_a<symbol>( *factor ) ||  is_exactly_a<numeric>( *factor ) );
+                        if( is_exactly_a<symbol>( *factor ) )
+                        {
+                            stringstream out;
+                            out << *factor;
+                            symbolName = out.str();
+                            symbolFound = true;
+                        }
+                        else if( is_exactly_a<numeric>( *factor ) )
+                        {
+                            coefficient *= ex_to<numeric>( *factor );
+                            coeffFound = true;
+                        }
+                        if( symbolFound && coeffFound ) break; // Workaround, as it appears that GiNaC allows a product of infinitely many factors ..
+                    }
+                    map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+                    if( iter == result.end() )
+                    {
+                        result.insert( pair< const string, numeric >( symbolName, coefficient ) );
+                    }
+                    else
+                    {
+                        iter->second += coefficient;
+                    }
+                }
+                else if( is_exactly_a<symbol>( *summand ) )
+                {
+                    stringstream out;
+                    out << *summand;
+                    string symbolName = out.str();
+                    map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+                    if( iter == result.end() )
+                    {
+                        result.insert( pair< const string, numeric >( symbolName, numeric( 1 ) ) );
+                    }
+                    else
+                    {
+                        iter->second += 1;
+                    }
+                }
+                else if( is_exactly_a<numeric>( *summand ) )
+                {
+                    result[""] += ex_to<numeric>( *summand );
+                }
+            }
         }
-        result.push_back( constantPart );
+        else if( is_exactly_a<mul>( linearterm ) )
+        {
+            string symbolName = "";
+            numeric coefficient = 1;
+            for( GiNaC::const_iterator factor = linearterm.begin(); factor != linearterm.end(); ++factor )
+            {
+                assert( is_exactly_a<symbol>( *factor ) ||  is_exactly_a<numeric>( *factor ) );
+                if( is_exactly_a<symbol>( *factor ) )
+                {
+                    stringstream out;
+                    out << *factor;
+                    symbolName = out.str();
+                }
+                else if( is_exactly_a<numeric>( *factor ) )
+                {
+                    coefficient *= ex_to<numeric>( *factor );
+                }
+            }
+            map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+            if( iter == result.end() )
+            {
+                result.insert( pair< const string, numeric >( symbolName, coefficient ) );
+            }
+            else
+            {
+                iter->second += coefficient;
+            }
+        }
+        else if( is_exactly_a<symbol>( linearterm ) )
+        {
+            stringstream out;
+            out << linearterm;
+            string symbolName = out.str();
+            map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+            if( iter == result.end() )
+            {
+                result.insert( pair< const string, numeric >( symbolName, numeric( 1 ) ) );
+            }
+            else
+            {
+                iter->second += 1;
+            }
+        }
+        else if( is_exactly_a<numeric>( linearterm ) )
+        {
+            result[""] += ex_to<numeric>( linearterm );
+        }
         return result;
-	}
+    }
 
     /**
      * Compares whether the two expressions are the same.
@@ -742,17 +860,18 @@ namespace smtrat
 
         ex derivate            = lhs().diff( _variable, 1 );
         ex gcdOfLhsAndDerivate = gcd( lhs(), derivate );
-        gcdOfLhsAndDerivate    = gcdOfLhsAndDerivate.expand().normal();
+        normalize( gcdOfLhsAndDerivate );
         ex quotient;
-        if( divide( lhs(), gcdOfLhsAndDerivate, quotient ))
+        if( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, quotient ))
         {
+            normalize( quotient );
             if( pMultiRootLessLhs != NULL )
             {
-                pMultiRootLessLhs->second = quotient.expand().normal();
+                pMultiRootLessLhs->second = quotient;
             }
             else
             {
-                pMultiRootLessLhs = new VS_MultiRootLessLhs( ex( _variable ), quotient.expand().normal() );
+                pMultiRootLessLhs = new VS_MultiRootLessLhs( ex( _variable ), quotient );
             }
         }
         else
@@ -777,6 +896,10 @@ namespace smtrat
      */
     bool Constraint::operator <( const Constraint& _constraint ) const
     {
+        if( mID > 0 && _constraint.id() > 0 )
+        {
+            return mID < _constraint.id();
+        }
         if( relation() < _constraint.relation() )
         {
             return true;
@@ -806,6 +929,10 @@ namespace smtrat
      */
     bool Constraint::operator ==( const Constraint& _constraint ) const
     {
+        if( mID > 0 && _constraint.id() > 0 )
+        {
+            return mID == _constraint.id();
+        }
         if( relation() == _constraint.relation() )
         {
             if( lhs() == _constraint.lhs() )
@@ -1009,13 +1136,13 @@ namespace smtrat
                 case CR_EQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                         return 2;
                     if( result1.info( info_flags::rational ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return 2;
                     if( result2.info( info_flags::rational ))
@@ -1025,13 +1152,13 @@ namespace smtrat
                 case CR_NEQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                         return -2;
                     if( result1.info( info_flags::rational ))
                         return -1;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return -2;
                     if( result2.info( info_flags::rational ))
@@ -1041,13 +1168,13 @@ namespace smtrat
                 case CR_LESS:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::negative ))
                         return -1;
                     if( result1.info( info_flags::nonnegative ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::negative ))
                         return -1;
                     if( result2.info( info_flags::nonnegative ))
@@ -1057,13 +1184,13 @@ namespace smtrat
                 case CR_GREATER:
                 {
                     ex result1 = -1 * (lhsA - lhsB);
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::negative ))
                         return -1;
                     if( result1.info( info_flags::nonnegative ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return -2;
                     if( result2.info( info_flags::negative ))
@@ -1075,13 +1202,13 @@ namespace smtrat
                 case CR_LEQ:
                 {
                     ex result1 = -1 * (lhsA - lhsB);
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::nonnegative ))
                         return -1;
                     if( result1.info( info_flags::negative ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return -1;
                     if( result2.info( info_flags::negative ))
@@ -1093,13 +1220,13 @@ namespace smtrat
                 case CR_GEQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::nonnegative ))
                         return -1;
                     if( result1.info( info_flags::negative ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::negative ))
                         return -2;
                     if( result2.info( info_flags::nonnegative ))
@@ -1117,13 +1244,13 @@ namespace smtrat
                 case CR_EQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                         return -2;
                     if( result1.info( info_flags::rational ))
                         return 1;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return -2;
                     if( result2.info( info_flags::rational ))
@@ -1133,11 +1260,11 @@ namespace smtrat
                 case CR_NEQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                         return 2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return 2;
                     return 0;
@@ -1145,11 +1272,11 @@ namespace smtrat
                 case CR_LESS:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::nonnegative ))
                         return 1;
                     ex result2 = -1 * (lhsA + lhsB);
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::nonnegative ))
                         return 1;
                     return 0;
@@ -1157,11 +1284,11 @@ namespace smtrat
                 case CR_GREATER:
                 {
                     ex result1 = -1 * (lhsA - lhsB);
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::nonnegative ))
                         return 1;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::nonnegative ))
                         return 1;
                     return 0;
@@ -1169,13 +1296,13 @@ namespace smtrat
                 case CR_LEQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                         return -3;
                     if( result1.info( info_flags::positive ))
                         return 1;
                     ex result2 = -1 * (lhsA + lhsB);
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return -3;
                     if( result2.info( info_flags::positive ))
@@ -1185,13 +1312,13 @@ namespace smtrat
                 case CR_GEQ:
                 {
                     ex result1 = -1 * (lhsA - lhsB);
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                         return -3;
                     if( result1.info( info_flags::positive ))
                         return 1;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return -3;
                     if( result2.info( info_flags::positive ))
@@ -1209,13 +1336,13 @@ namespace smtrat
                 case CR_EQ:
                 {
                     ex result1 = -1 * (lhsA - lhsB);
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::negative ))
                         return 1;
                     if( result1.info( info_flags::nonnegative ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::negative ))
                         return 1;
                     if( result2.info( info_flags::nonnegative ))
@@ -1225,11 +1352,11 @@ namespace smtrat
                 case CR_NEQ:
                 {
                     ex result1 = -1 * (lhsA - lhsB);
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::nonnegative ))
                         return -1;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::nonnegative ))
                         return -1;
                     return 0;
@@ -1237,7 +1364,7 @@ namespace smtrat
                 case CR_LESS:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                         return 2;
                     if( result1.info( info_flags::negative ))
@@ -1245,7 +1372,7 @@ namespace smtrat
                     if( result1.info( info_flags::positive ))
                         return 1;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::nonnegative ))
                         return -2;
                     return 0;
@@ -1253,11 +1380,11 @@ namespace smtrat
                 case CR_GREATER:
                 {
                     ex result1 = -1 * (lhsA - lhsB);
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::nonnegative ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return 2;
                     if( result2.info( info_flags::positive ))
@@ -1269,13 +1396,13 @@ namespace smtrat
                 case CR_LEQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::positive ))
                         return 1;
                     if( result1.info( info_flags::rational ))
                         return -1;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::nonnegative ))
                         return -2;
                     return 0;
@@ -1283,11 +1410,11 @@ namespace smtrat
                 case CR_GEQ:
                 {
                     ex result1 = -1 * (lhsA - lhsB);
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::nonnegative ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::nonnegative ))
                         return -1;
                     if( result2.info( info_flags::negative ))
@@ -1305,13 +1432,13 @@ namespace smtrat
                 case CR_EQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::negative ))
                         return 1;
                     if( result1.info( info_flags::nonnegative ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return -2;
                     if( result2.info( info_flags::negative ))
@@ -1323,11 +1450,11 @@ namespace smtrat
                 case CR_NEQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::nonnegative ))
                         return -1;
                     ex result2 = -1 * (lhsA + lhsB);
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::nonnegative ))
                         return -1;
                     return 0;
@@ -1335,11 +1462,11 @@ namespace smtrat
                 case CR_LESS:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::nonnegative ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return 2;
                     if( result2.info( info_flags::positive ))
@@ -1351,7 +1478,7 @@ namespace smtrat
                 case CR_GREATER:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                         return 2;
                     if( result1.info( info_flags::negative ))
@@ -1359,7 +1486,7 @@ namespace smtrat
                     if( result1.info( info_flags::positive ))
                         return -1;
                     ex result2 = -1 * (lhsA + lhsB);
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::nonnegative ))
                         return -2;
                     return 0;
@@ -1367,11 +1494,11 @@ namespace smtrat
                 case CR_LEQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::nonnegative ))
                         return -2;
                     ex result2 = -1 * (lhsA + lhsB);
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::nonnegative ))
                         return -1;
                     if( result2.info( info_flags::negative ))
@@ -1381,13 +1508,13 @@ namespace smtrat
                 case CR_GEQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::negative ))
                         return 1;
                     if( result1.info( info_flags::rational ))
                         return -1;
                     ex result2 = -1 * (lhsA + lhsB);
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::nonnegative ))
                         return -2;
                     return 0;
@@ -1403,13 +1530,13 @@ namespace smtrat
                 case CR_EQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::nonnegative ))
                         return 1;
                     if( result1.info( info_flags::negative ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return 1;
                     if( result2.info( info_flags::negative ))
@@ -1421,13 +1548,13 @@ namespace smtrat
                 case CR_NEQ:
                 {
                     ex result1 = -1 * (lhsA - lhsB);
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                         return -3;
                     if( result1.info( info_flags::positive ))
                         return -1;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return -3;
                     if( result2.info( info_flags::positive ))
@@ -1437,13 +1564,13 @@ namespace smtrat
                 case CR_LESS:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::negative ))
                         return -1;
                     if( result1.info( info_flags::rational ))
                         return 1;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::nonnegative ))
                         return -2;
                     return 0;
@@ -1451,11 +1578,11 @@ namespace smtrat
                 case CR_GREATER:
                 {
                     ex result1 = -1 * (lhsA - lhsB);
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::nonnegative ))
                         return -2;
                     ex result2 = -1 * (lhsA + lhsB);
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::nonnegative ))
                         return 1;
                     if( result2.info( info_flags::negative ))
@@ -1465,7 +1592,7 @@ namespace smtrat
                 case CR_LEQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                         return 2;
                     if( result1.info( info_flags::negative ))
@@ -1473,7 +1600,7 @@ namespace smtrat
                     if( result1.info( info_flags::positive ))
                         return 1;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return -3;
                     if( result2.info( info_flags::positive ))
@@ -1483,13 +1610,13 @@ namespace smtrat
                 case CR_GEQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                         return -3;
                     if( result1.info( info_flags::negative ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return 2;
                     if( result2.info( info_flags::positive ))
@@ -1509,13 +1636,13 @@ namespace smtrat
                 case CR_EQ:
                 {
                     ex result1 = -1 * (lhsA - lhsB);
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::nonnegative ))
                         return 1;
                     if( result1.info( info_flags::negative ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::negative ))
                         return -2;
                     if( result2.info( info_flags::nonnegative ))
@@ -1525,13 +1652,13 @@ namespace smtrat
                 case CR_NEQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                         return -3;
                     if( result1.info( info_flags::positive ))
                         return -1;
                     ex result2 = -1 * (lhsA + lhsB);
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return -3;
                     if( result2.info( info_flags::positive ))
@@ -1541,11 +1668,11 @@ namespace smtrat
                 case CR_LESS:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::nonnegative ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::nonnegative ))
                         return 1;
                     if( result2.info( info_flags::negative ))
@@ -1555,13 +1682,13 @@ namespace smtrat
                 case CR_GREATER:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1.info( info_flags::positive ))
                         return -1;
                     if( result1.info( info_flags::rational ))
                         return 1;
                     ex result2 = -1 * (lhsA + lhsB);
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2.info( info_flags::nonnegative ))
                         return -2;
                     return 0;
@@ -1569,13 +1696,13 @@ namespace smtrat
                 case CR_LEQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                         return -3;
                     if( result1.info( info_flags::positive ))
                         return -2;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return 2;
                     if( result2.info( info_flags::positive ))
@@ -1587,7 +1714,7 @@ namespace smtrat
                 case CR_GEQ:
                 {
                     ex result1 = lhsA - lhsB;
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                         return 2;
                     if( result1.info( info_flags::negative ))
@@ -1595,7 +1722,7 @@ namespace smtrat
                     if( result1.info( info_flags::positive ))
                         return -1;
                     ex result2 = lhsA + lhsB;
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                         return -3;
                     if( result2.info( info_flags::negative ))
@@ -1658,14 +1785,14 @@ namespace smtrat
                 case CR_NEQ:
                 {
                     ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         _constraintA.rLhs() = 0;
                         return true;
                     }
                     ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                     {
                         _constraintA.rLhs() = 0;
@@ -1676,14 +1803,14 @@ namespace smtrat
                 case CR_LESS:
                 {
                     ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         _constraintA.rRelation() = CR_LEQ;
                         return true;
                     }
                     ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                     {
                         _constraintA.rRelation() = CR_LEQ;
@@ -1694,14 +1821,14 @@ namespace smtrat
                 case CR_GREATER:
                 {
                     ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         _constraintA.rRelation() = CR_GEQ;
                         return true;
                     }
                     ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                     {
                         _constraintA.rRelation() = CR_GEQ;
@@ -1712,14 +1839,14 @@ namespace smtrat
                 case CR_LEQ:
                 {
                     ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         _constraintA.rRelation() = CR_LEQ;
                         return true;
                     }
                     ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                     {
                         _constraintA.rRelation() = CR_LEQ;
@@ -1730,14 +1857,14 @@ namespace smtrat
                 case CR_GEQ:
                 {
                     ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         _constraintA.rRelation() = CR_GEQ;
                         return true;
                     }
                     ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                     {
                         _constraintA.rRelation() = CR_GEQ;
@@ -1756,14 +1883,14 @@ namespace smtrat
                 case CR_EQ:
                 {
                     ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         _constraintA.rLhs() = 1;
                         return true;
                     }
                     ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                     {
                         _constraintA.rLhs() = 1;
@@ -1778,13 +1905,13 @@ namespace smtrat
                 case CR_LESS:
                 {
                     ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         return true;
                     }
                     ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                     {
                         return true;
@@ -1794,13 +1921,13 @@ namespace smtrat
                 case CR_GREATER:
                 {
                     ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         return true;
                     }
                     ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                     {
                         return true;
@@ -1826,14 +1953,14 @@ namespace smtrat
                 case CR_EQ:
                 {
                     ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         _constraintA.rRelation() = CR_LEQ;
                         return true;
                     }
                     ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                     {
                         _constraintA.rRelation() = CR_LEQ;
@@ -1848,7 +1975,7 @@ namespace smtrat
                 case CR_LESS:
                 {
                     ex result1 = _constraintA.lhs() + _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         _constraintA.rRelation() = CR_NEQ;
@@ -1859,7 +1986,7 @@ namespace smtrat
                 case CR_GREATER:
                 {
                     ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         _constraintA.rRelation() = CR_NEQ;
@@ -1886,14 +2013,14 @@ namespace smtrat
                 case CR_EQ:
                 {
                     ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         _constraintA.rRelation() = CR_GEQ;
                         return true;
                     }
                     ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                     {
                         _constraintA.rRelation() = CR_GEQ;
@@ -1908,7 +2035,7 @@ namespace smtrat
                 case CR_LESS:
                 {
                     ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         _constraintA.rRelation() = CR_NEQ;
@@ -1919,7 +2046,7 @@ namespace smtrat
                 case CR_GREATER:
                 {
                     ex result1 = _constraintA.lhs() + _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         _constraintA.rRelation() = CR_NEQ;
@@ -1946,13 +2073,13 @@ namespace smtrat
                 case CR_EQ:
                 {
                     ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         return true;
                     }
                     ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                     {
                         return true;
@@ -1990,13 +2117,13 @@ namespace smtrat
                 case CR_EQ:
                 {
                     ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    result1    = result1.expand().normal();
+                    normalize( result1 );
                     if( result1 == 0 )
                     {
                         return true;
                     }
                     ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    result2    = result2.expand().normal();
+                    normalize( result2 );
                     if( result2 == 0 )
                     {
                         return true;

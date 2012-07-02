@@ -45,6 +45,8 @@ namespace smtrat
 {
     class ConstraintMatrixFactory
     {
+		typedef GiNaCRA::GradedLexicgraphic Order;
+		typedef MultivariatePolynomialMR<Order, GiNaCRA::MultivariatePolynomialConfigurationNoOrigins> Polynomial;
         public:
             ConstraintMatrixFactory( int problemSize );
             virtual ~ConstraintMatrixFactory();
@@ -65,14 +67,18 @@ namespace smtrat
             std::vector<SparseMatrix> exportMatrices() const;
             DenseMatrix exportLinEqSys() const;
 
-            unsigned getProblemSize()
+            unsigned getProblemSize() const
             {
                 return mProblemSize;
             }
+			
+			void extendProblemSize(unsigned newSize);
+			void incrementProblemSize();
+			
 
         private:
             unsigned                                             mProblemSize;
-            map<Term, SparseMatrix, GiNaCRA::GradedLexicgraphic> constraints;
+            map<Term, SparseMatrix, Order> constraints;
 
     };
 

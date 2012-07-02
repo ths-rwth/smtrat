@@ -27,36 +27,41 @@
 
 namespace smtrat
 {
+    struct constraintEqual
+    {
+        bool operator ()( const Constraint* const _constraintA, const Constraint* const _constraintB ) const
+        {
+            if( _constraintA->relation() == _constraintB->relation() )
+            {
+                return _constraintA->lhs().is_equal( _constraintB->lhs() );
+            }
+            return false;
+        }
+    };
+
+    struct constraintHash
+    {
+        size_t operator ()( const Constraint* const _constraint ) const
+        {
+            return _constraint->lhs().gethash() * 6 + _constraint->relation();
+        }
+    };
+
+    typedef std::unordered_set<const Constraint*, constraintHash, constraintEqual> fastConstraintSet;
+    typedef std::unordered_set< const Constraint*, constraintHash, constraintEqual>::const_iterator fcs_const_iterator;
+
     class ConstraintPool
     {
         private:
-
-            struct constraintEqual
-            {
-                bool operator ()( const Constraint* const _constraintA, const Constraint* const _constraintB ) const
-                {
-                    if( _constraintA->relation() == _constraintB->relation() )
-                    {
-                        return _constraintA->lhs().is_equal( _constraintB->lhs() );
-                    }
-                    return false;
-                }
-            };
-
-            struct constraintHash
-            {
-                size_t operator ()( const Constraint* const _constraint ) const
-                {
-                    return _constraint->lhs().gethash() * 6 + _constraint->relation();
-                }
-            };
 
             // Members:
 
             /// the symbol table containing the variables of all constraints
             GiNaC::symtab mAllVariables;
             /// for each string representation its constraint (considering all constraints of which the manager has already been informed)
-            std::unordered_set< const Constraint*, constraintHash, constraintEqual> mAllConstraints;
+            fastConstraintSet mAllConstraints;
+            /// id allocator
+            unsigned mIdAllocator;
 
             // Methods:
 
@@ -74,16 +79,16 @@ namespace smtrat
 
         public:
 
-            ConstraintPool( unsigned _capacity = 1000 )
+            ConstraintPool( unsigned _capacity = 10000 )
             {
                 mAllVariables = GiNaC::symtab();
-                mAllConstraints = std::unordered_set< const Constraint*, constraintHash, constraintEqual>();
+                mAllConstraints = fastConstraintSet();
                 mAllConstraints.reserve( _capacity );
+                mIdAllocator = 1;
             }
 
             virtual ~ConstraintPool()
             {
-//                std::cout << "Number of created constraints:  " << mAllConstraints.size() << std::endl;
                 while( !mAllConstraints.empty() )
                 {
                     const Constraint* pCons = *mAllConstraints.begin();
@@ -92,21 +97,56 @@ namespace smtrat
                 }
             }
 
-            const Constraint* newConstraint()
+            fcs_const_iterator begin() const
             {
-                return *mAllConstraints.insert( new Constraint() ).first;
+                return mAllConstraints.begin();
+            }
+
+            fcs_const_iterator end() const
+            {
+                return mAllConstraints.end();
+            }
+
+            unsigned size() const
+            {
+                return mAllConstraints.size();
+            }
+
+            const GiNaC::symtab& variables() const
+            {
+                return mAllVariables;
             }
 
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel )
             {
                 assert( hasNoOtherVariables( _lhs ) );
-                return *mAllConstraints.insert( new Constraint( _lhs, _rel, mAllVariables ) ).first;
+                Constraint* constraint = new Constraint( _lhs, _rel, mAllVariables, mIdAllocator );
+                std::pair< fastConstraintSet::iterator, bool > iterBoolPair = mAllConstraints.insert( constraint );
+                if( !iterBoolPair.second )
+                {
+                    delete constraint;
+                }
+                else
+                {
+                    ++mIdAllocator;
+                }
+                return *iterBoolPair.first;
             }
 
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation _rel )
             {
                 assert( hasNoOtherVariables( _lhs ) &&  hasNoOtherVariables( _rhs ) );
-                return *mAllConstraints.insert( new Constraint( _lhs, _rhs, _rel, mAllVariables ) ).first;
+                Constraint* constraint = new Constraint( _lhs, _rhs, _rel, mAllVariables, mIdAllocator );
+                std::pair< fastConstraintSet::iterator, bool > iterBoolPair = mAllConstraints.insert( constraint );
+                if( !iterBoolPair.second )
+                {
+                    delete constraint;
+                }
+                else
+                {
+                    ++mIdAllocator;
+                }
+                return *iterBoolPair.first;
             }
 
             const Constraint* newConstraint( const std::string& _stringrep, const bool = true, const bool = true );

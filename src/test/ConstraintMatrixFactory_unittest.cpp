@@ -58,12 +58,15 @@ void ConstraintMatrixFactory_unittest::testMethod()
     std::cout << "result=" << result << std::endl;
     CPPUNIT_ASSERT( result == 0 );
 
-    fac.exportLinEqSys().print();
-    std::cout << "--------------------" << std::endl;
+    //fac.exportLinEqSys().print();
+    //std::cout << "--------------------" << std::endl;
     FindExactSolution fes( *solution, fac.exportLinEqSys(), 0.01 );
-    fes.print();
+    //fes.print();
     DenseMatrix sol = fes.getSolutionMatrix( 3 );
     Cholesky chol( sol );
     CPPUNIT_ASSERT( chol.Solve() );
 
+	
+	ConstraintMatrixFactory  fact(2);
+	
 }

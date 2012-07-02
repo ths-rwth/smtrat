@@ -34,6 +34,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <map>
 
 /** The smtrat namespace is used to encapsulate the three parser classes
  * smtrat::Parser, smtrat::Scanner and smtrat::Driver */
@@ -105,6 +106,10 @@ namespace smtrat
             class Formula* formulaRoot;
 
             std::set<std::string> collectedBooleans;
+
+            std::map<std::string, std::string> collectedBooleanAuxilliaries;
+
+            std::map<std::string, std::string> collectedRealAuxilliaries;
     };
 
 }    // namespace smtrat

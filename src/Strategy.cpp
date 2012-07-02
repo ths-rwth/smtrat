@@ -58,7 +58,7 @@ namespace smtrat
      * not a backend according to the strategy to the given formula, this method returns NULL.
      *
      * @param formula       The formula to be considered.
-     * @param moduleType    The modultype of the modul for which we want to get a strategy.
+     * @param moduleType    The module type of the module for which we want to get a strategy.
      *
      * @return  A pointer to the strategy for the module of the given module type.
      */
@@ -73,7 +73,7 @@ namespace smtrat
             /*
              * The first strategy case fulfilled specifies the types of the backends to return.
              */
-            if( (formula->getPropositions() | (~moduleStrategyCase->first)) == ~PROP_TRUE )
+            if( moduleStrategyCase->first( formula->getPropositions() ) )
             {
                 return moduleStrategyCase;
             }
@@ -92,19 +92,19 @@ namespace smtrat
      * @return  true,   if an element was inserted;
      *          false,  otherwise.
      */
-    bool Strategy::addModuleType( Condition condition, ModuleType moduletype )
+    bool Strategy::addModuleType( conditionEvaluation _function, ModuleType moduletype )
     {
         vector<ModuleStrategyCase>::iterator modStratPair = mStrategy.begin();
         while( modStratPair != mStrategy.end() )
         {
-            if( modStratPair->first == condition )
+            if( modStratPair->first == _function )
             {
                 return modStratPair->second.insert( moduletype ).second;
             }
             ++modStratPair;
         }
         set<ModuleType> moduleTypes = set<ModuleType>();
-        ModuleStrategyCase moduleStrategyCase = ModuleStrategyCase( condition, moduleTypes );
+        ModuleStrategyCase moduleStrategyCase = ModuleStrategyCase( _function, moduleTypes );
         mStrategy.push_back( moduleStrategyCase );
         mStrategy.back().second.insert( moduletype );
         return true;
@@ -118,12 +118,12 @@ namespace smtrat
      * @return  true,   if an element was removed;
      *          false,  otherwise.
      */
-    bool Strategy::removeCase( const Condition condition )
+    bool Strategy::removeCase( conditionEvaluation _function )
     {
         vector<ModuleStrategyCase>::iterator modStratPair = mStrategy.begin();
         while( modStratPair != mStrategy.end() )
         {
-            if( modStratPair->first == condition )
+            if( modStratPair->first == _function )
             {
                 mStrategy.erase( modStratPair );
                 return true;
@@ -142,12 +142,12 @@ namespace smtrat
      * @return  true,   if an element was removed;
      *          false,  otherwise.
      */
-    bool Strategy::removeModuleType( const Condition condition, ModuleType moduleType )
+    bool Strategy::removeModuleType( conditionEvaluation _function, ModuleType moduleType )
     {
         vector<ModuleStrategyCase>::iterator modStratPair = mStrategy.begin();
         while( modStratPair != mStrategy.end() )
         {
-            if( modStratPair->first == condition )
+            if( modStratPair->first == _function )
             {
                 return modStratPair->second.erase( moduleType ) == 1;
             }

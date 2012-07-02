@@ -45,6 +45,7 @@ using GiNaC::ZERO_SIGN;
 using GiNaC::POSITIVE_SIGN;
 using GiNaC::NEGATIVE_SIGN;
 using GiNaC::ex_to;
+using namespace std;
 
 namespace smtrat
 {
@@ -81,14 +82,15 @@ namespace smtrat
 
     Answer CADModule::isConsistent()
     {
-        cout << "Check constraint set " << endl;
-
-        for( auto k = mConstraints.begin(); k != mConstraints.end(); ++k )
-            cout << " " << *k << endl;
-        vector<symbol> variables = mCAD.variables();
-        cout << "over the variables " << endl;
-        for( auto k = variables.begin(); k != variables.end(); ++k )
-            cout << " " << *k << endl;
+        #ifdef MODULE_VERBOSE
+//        cout << "Check constraint set " << endl;
+//        for( auto k = mConstraints.begin(); k != mConstraints.end(); ++k )
+//            cout << " " << *k << endl;
+//        vector<symbol> variables = mCAD.variables();
+//        cout << "over the variables " << endl;
+//        for( auto k = variables.begin(); k != variables.end(); ++k )
+//            cout << " " << *k << endl;
+        #endif
         RealAlgebraicPoint r;
         if( !mCAD.check( mConstraints, r ))
         {
@@ -101,12 +103,16 @@ namespace smtrat
             for( Formula::const_iterator cons = receivedFormulaBegin(); cons != receivedFormulaEnd(); ++cons )
                 infeasibleSubset.insert( *cons );
             mInfeasibleSubsets.push_back( infeasibleSubset );
-            cout << "#Samples: " << mCAD.samples().size() << endl;
-            cout << "Result: false" << endl;
-            printInfeasibleSubsets();
+            #ifdef MODULE_VERBOSE
+//            cout << "#Samples: " << mCAD.samples().size() << endl;
+//            cout << "Result: false" << endl;
+//            printInfeasibleSubsets();
+            #endif
             return False;
         }
-        cout << "Result: true" << endl;
+        #ifdef MODULE_VERBOSE
+//        cout << "Result: true" << endl;
+        #endif
         return True;
     }
 
@@ -116,7 +122,14 @@ namespace smtrat
         Module::popBacktrackPoint();
         
         signed upperBound = receivedFormulaSize();
+        assert( lastBacktrackpointsEnd() < upperBound );
         // remove each constraint in the backtracked range from the local constraint list, and remove the respective polynomials from the CAD
+
+        /* Just remove all polynomials corresponding to constraints which were removed for sure.
+         *
+         */
+
+
         for( signed pos = lastBacktrackpointsEnd() + 1; pos < upperBound; ++pos )
         {
             GiNaCRA::Constraint                   constraint     = convertConstraint( *receivedFormulaAt( pos )->pConstraint() );
@@ -143,12 +156,15 @@ namespace smtrat
      * @param c constraint of the SMT-RAT
      * @return constraint of GiNaCRA
      */
-    const GiNaCRA::Constraint CADModule::convertConstraint( const Constraint& c )
+    const GiNaCRA::Constraint CADModule::convertConstraint( const smtrat::Constraint& c )
     {
-        //        // convert the constraints variables
-        //        vector<symbol> variables = vector<symbol>();
-        //        for( register GiNaC::symtab::const_iterator i = c.variables().begin(); i != c.variables().end(); ++i )
-        //            variables.push_back( ex_to<symbol>( i->second ));
+        // convert the constraints variable
+        vector<symbol> variables = vector<symbol>();
+        for( register GiNaC::symtab::const_iterator i = c.variables().begin(); i != c.variables().end(); ++i )
+        {
+            assert( is_exactly_a<symbol>( i->second ) );
+            variables.push_back( ex_to<symbol>( i->second ));
+        }
         register sign signForConstraint    = ZERO_SIGN;
         register bool cadConstraintNegated = false;
         switch( c.relation() )
@@ -189,7 +205,7 @@ namespace smtrat
                 assert( false == true );
             }
         }
-        return GiNaCRA::Constraint( Polynomial( c.lhs() ), signForConstraint, mCAD.variables(), cadConstraintNegated );
+        return GiNaCRA::Constraint( Polynomial( c.lhs() ), signForConstraint, variables, cadConstraintNegated );
     }
 
 }    // namespace smtrat

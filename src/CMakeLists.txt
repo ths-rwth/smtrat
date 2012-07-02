@@ -24,6 +24,7 @@ set(lib_core_headers
     Manager.h
     Answer.h
     Module.h
+    Condition.h
     Formula.h
     Strategy.h
     ModuleFactory.h
@@ -40,9 +41,11 @@ set(lib_modules_headers
     modules/VSModule.h
     modules/SATModule.h
     modules/LRAModule.h
+    modules/LRAOneModule.h
+    modules/LRATwoModule.h
     modules/PreProModule.h
-    modules/PreProCNFModule.h
     modules/CNFerModule.h
+    modules/SingleVSModule.h
 )
 
 set(lib_modules_src
@@ -50,12 +53,16 @@ set(lib_modules_src
     modules/VSModule.cpp
     modules/SATModule.cpp
     modules/LRAModule.cpp
+    modules/LRAOneModule.cpp
+    modules/LRATwoModule.cpp
     modules/PreProModule.cpp
-    modules/PreProCNFModule.cpp
     modules/CNFerModule.cpp
+    modules/SingleVSModule.cpp
 )
 
 if(USE_GB)
+	set(lib_module_GBModule_headers modules/GBModule/InequalitiesTable.h modules/GBModule/GBSettings.h)
+
 	set(lib_modules_headers ${lib_modules_headers} modules/GroebnerModule.h)
 	set(lib_modules_src ${lib_modules_src}  modules/GroebnerModule.cpp)
 endif()
@@ -82,6 +89,14 @@ set(lib_VSModule_src
     modules/VSModule/Substitution.cpp
 )
 
+set(lib_SingleVSModule_headers
+    modules/SingleVSModule/Substitute.h
+)
+
+set(lib_SingleVSModule_src
+    modules/SingleVSModule/Substitute.cpp
+)
+
 set(lib_SATModule_headers
 	modules/SATModule/Alg.h
 	modules/SATModule/Alloc.h
@@ -93,15 +108,11 @@ set(lib_SATModule_headers
 	modules/SATModule/Vec.h
 	modules/SATModule/XAlloc.h
 	modules/SATModule/Options.h
-	modules/SATModule/ParseUtils.h
-	modules/SATModule/System.h
-	modules/SATModule/Dimacs.h
 	modules/SATModule/SolverTypes.h
 )
 
 set(lib_SATModule_src
 	modules/SATModule/Options.cpp
-	modules/SATModule/System.cpp
 )
 
 set(lib_LRAModule_headers
@@ -120,6 +131,28 @@ set(lib_LRAModule_src
 	modules/LRAModule/LARow.cpp
 	modules/LRAModule/LAVar.cpp
 	modules/LRAModule/LRASolverA.cpp
+)
+
+set(lib_LRATwoModule_headers
+    modules/LRATwoModule/BetaMap.h
+    modules/LRATwoModule/Bound.h
+    modules/LRATwoModule/BoundMap.h
+    modules/LRATwoModule/EqualBound.h
+    modules/LRATwoModule/LowerBound.h
+    modules/LRATwoModule/Real.h
+    modules/LRATwoModule/SimplexTableaux.h
+    modules/LRATwoModule/UpperBound.h
+)
+
+set(lib_LRATwoModule_src
+    modules/LRATwoModule/BetaMap.cpp
+    modules/LRATwoModule/Bound.cpp
+    modules/LRATwoModule/BoundMap.cpp
+    modules/LRATwoModule/EqualBound.cpp
+    modules/LRATwoModule/LowerBound.cpp
+    modules/LRATwoModule/Real.cpp
+    modules/LRATwoModule/SimplexTableaux.cpp
+    modules/LRATwoModule/UpperBound.cpp
 )
 
 if(USE_NSS)
@@ -181,11 +214,18 @@ set(lib_${PROJECT_NAME}_SRCS
 	${lib_SATModule_src}
 	${lib_LRAModule_headers}
 	${lib_LRAModule_src}
+	${lib_LRAOneModule_headers}
+	${lib_LRAOneModule_src}
+	${lib_LRATwoModule_headers}
+	${lib_LRATwoModule_src}
+	${lib_GBModule_headers}
 	${lib_NSSModule_headers}
 	${lib_NSSModule_src}
 	${lib_SDP_headers}
 	${lib_SDP_src}
 	${lib_LinAlg}
+    ${lib_SingleVSModule_headers}
+    ${lib_SingleVSModule_src}
 )
 
 set(STATICLIB "SHARED")
@@ -206,7 +246,7 @@ if(USE_NSS)
 
 	#Csdp should be automatically compiled whenever we compile smtrat
 	add_dependencies(csdp csdp_lib)
-	SET( libraries ${libraries} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}  csdp ) 
+	SET( libraries ${libraries} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}  csdp )
 endif()
 
 # Other libraries that are used by the project library should go here.
@@ -234,6 +274,9 @@ install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/module
 install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/modules/VSModule)
 install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/modules/SATModule)
 install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRAModule)
+install( FILES ${lib_LRAOneModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRAOneModule)
+install( FILES ${lib_LRATwoModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRATwoModule)
+install( FILES ${lib_SingleVSModule_headers} DESTINATION include/${PROJECT_NAME}/modules/SingleVSModule)
 
 if(CppUnit_FOUND)
 add_subdirectory(test)

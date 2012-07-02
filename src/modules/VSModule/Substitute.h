@@ -34,9 +34,6 @@
 //#define VS_DEBUG_SUBSTITUTION
 //#define VS_DEBUG_CALCULATIONS
 
-#define VS_USE_GINAC_EXPAND
-#define VS_USE_GINAC_NORMAL
-
 #include "Substitution.h"
 #include "Tools.h"
 #include <cmath>
@@ -154,7 +151,6 @@ namespace vs
                                                const GiNaC::symtab& );
 #endif
 
-    SqrtEx subBySqrtEx( const GiNaC::ex&, const GiNaC::ex&, const SqrtEx& );
     void simplify( DisjunctionOfConstraintConjunctions& );
 
 }    // end namspace vs

@@ -6,13 +6,7 @@
         <df name="CMakeFiles">
           <df name="CMakeTmp">
             <df name="CMakeFiles">
-              <df name="cmTryCompileExec2180019092.dir">
-              </df>
-              <df name="cmTryCompileExec2570617695.dir">
-              </df>
-              <df name="cmTryCompileExec2759061716.dir">
-              </df>
-              <df name="cmTryCompileExec584741141.dir">
+              <df name="cmTryCompileExec.dir">
               </df>
             </df>
           </df>
@@ -25,18 +19,8 @@
           <df name="csdp_lib.dir">
           </df>
         </df>
-        <df name="doxygen-conf">
-          <df name="CMakeFiles">
-            <df name="doc.dir">
-            </df>
-            <df name="doxygen-doc.dir">
-            </df>
-          </df>
-        </df>
         <df name="manual">
           <df name="CMakeFiles">
-            <df name="manual.dir">
-            </df>
           </df>
         </df>
         <df name="src">
@@ -75,18 +59,12 @@
                 </df>
               </df>
             </df>
+            <in>Parser.tab.cc</in>
             <in>Parser.tab.hh</in>
+            <in>lex.smtrat.cc</in>
             <in>location.hh</in>
             <in>position.hh</in>
             <in>stack.hh</in>
-          </df>
-          <df name="test">
-            <df name="CMakeFiles">
-              <df name="check.dir">
-              </df>
-              <df name="check_smtrat.dir">
-              </df>
-            </df>
           </df>
           <in>libsmtrat.so.0.2.1</in>
         </df>
@@ -95,8 +73,6 @@
       <df name="cmake">
       </df>
       <df name="doxygen-conf">
-      </df>
-      <df name="examples">
       </df>
       <df name="external">
         <df name="csdp">
@@ -269,6 +245,7 @@
           <in>Driver.cc</in>
           <in>Driver.h</in>
           <in>Scanner.h</in>
+          <in>exprtest.cc</in>
         </df>
         <df name="test">
           <in>CSDP_unittest.cpp</in>
@@ -301,8 +278,6 @@
         <in>Answer.h</in>
         <in>Constraint.cpp</in>
         <in>Constraint.h</in>
-        <in>ConstraintPool.cpp</in>
-        <in>ConstraintPool.h</in>
         <in>Formula.cpp</in>
         <in>Formula.h</in>
         <in>Manager.cpp</in>
@@ -319,8 +294,6 @@
         <in>Strategy.h</in>
         <in>smtrat.h</in>
         <in>smtratSolver.cpp</in>
-      </df>
-      <df name="utilities">
       </df>
     </df>
     <logicalFolder name="ExternalFiles"
@@ -347,12 +320,12 @@
           <buildCommandWorkingDir>build</buildCommandWorkingDir>
           <buildCommand>${MAKE} -f Makefile</buildCommand>
           <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
-          <executablePath>build/smtratSolver</executablePath>
+          <executablePath></executablePath>
         </makeTool>
       </makefileType>
-      <item path="build/src/config.h" ex="true" tool="3" flavor="0">
+      <item path="build/config.h" ex="true" tool="3" flavor="0">
       </item>
-      <item path="build/src/parser/Parser.tab.cc" ex="false" tool="1" flavor="0">
+      <folder path="smtrat/build">
         <ccTool>
           <incDir>
             <pElem>src/parser</pElem>
@@ -360,16 +333,7 @@
             <pElem>src</pElem>
           </incDir>
         </ccTool>
-      </item>
-      <item path="build/src/parser/lex.smtrat.cc" ex="false" tool="1" flavor="0">
-        <ccTool>
-          <incDir>
-            <pElem>src/parser</pElem>
-            <pElem>build/src/parser</pElem>
-            <pElem>src</pElem>
-          </incDir>
-        </ccTool>
-      </item>
+      </folder>
       <folder path="smtrat/src/modules">
         <ccTool>
           <incDir>
@@ -400,16 +364,6 @@
         </ccTool>
       </folder>
       <item path="src/Constraint.cpp" ex="false" tool="1" flavor="0">
-        <ccTool>
-          <incDir>
-            <pElem>build/src</pElem>
-          </incDir>
-          <preprocessorList>
-            <Elem>lib_smtrat_EXPORTS</Elem>
-          </preprocessorList>
-        </ccTool>
-      </item>
-      <item path="src/ConstraintPool.cpp" ex="false" tool="1" flavor="0">
         <ccTool>
           <incDir>
             <pElem>build/src</pElem>
@@ -478,9 +432,71 @@
           </preprocessorList>
         </ccTool>
       </item>
+      <item path="src/modules/CADModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/CNFerModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/GroebnerModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/LRAModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/LRAModule/Delta.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/LRAModule/LAArray.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/LRAModule/LAColumn.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/LRAModule/LARow.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/LRAModule/LAVar.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/LRAModule/LRASolverA.cpp"
+            ex="false"
+            tool="1"
+            flavor="0">
+      </item>
+      <item path="src/modules/NSSModule/ConstraintMatrixFactory.cpp"
+            ex="false"
+            tool="1"
+            flavor="0">
+      </item>
+      <item path="src/modules/NSSModule/MonomialIterator.cpp"
+            ex="false"
+            tool="1"
+            flavor="0">
+      </item>
+      <item path="src/modules/PreProCNFModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/PreProModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/SATModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
       <item path="src/modules/SATModule/Dimacs.h" ex="true" tool="3" flavor="0">
       </item>
+      <item path="src/modules/SATModule/Options.cpp" ex="false" tool="1" flavor="0">
+      </item>
       <item path="src/modules/SATModule/Queue.h" ex="true" tool="3" flavor="0">
+      </item>
+      <item path="src/modules/SATModule/System.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/SimplifierModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/UnivariateCADModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/VSModule.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/VSModule/Condition.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/VSModule/SqrtEx.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/VSModule/State.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/VSModule/Substitute.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/modules/VSModule/Substitution.cpp"
+            ex="false"
+            tool="1"
+            flavor="0">
       </item>
       <item path="src/smtratSolver.cpp" ex="false" tool="1" flavor="0">
         <ccTool>
@@ -491,13 +507,22 @@
           </incDir>
         </ccTool>
       </item>
+      <item path="src/test/CSDP_unittest.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/test/ConstraintMatrixFactory_unittest.cpp"
+            ex="false"
+            tool="1"
+            flavor="0">
+      </item>
+      <item path="src/test/DenseMatrix_unittest.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/test/GroebnerToSDP_unittest.cpp" ex="false" tool="1" flavor="0">
+      </item>
       <item path="src/test/test.cpp" ex="false" tool="1" flavor="0">
-        <ccTool>
-          <incDir>
-            <pElem>build/src/test</pElem>
-            <pElem>src</pElem>
-          </incDir>
-        </ccTool>
+      </item>
+      <item path="src/utilities/SDP/CSDPFacade.cpp" ex="false" tool="1" flavor="0">
+      </item>
+      <item path="src/utilities/SDP/SparseMatrix.cpp" ex="false" tool="1" flavor="0">
       </item>
     </conf>
   </confs>

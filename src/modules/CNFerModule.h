@@ -40,9 +40,7 @@ namespace smtrat
             /**
              * Members.
              */
-            bool mFixedTheModuleID;
-            unsigned mModuleID;
-            std::vector< unsigned > mAuxVarCounterHistory;
+            Formula::const_iterator mFirstNotCheckedFormula;
         public:
             /**
              * Constructor and destructor.
@@ -56,30 +54,10 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool assertSubFormula( const Formula* const );
+            bool assertSubformula( Formula::const_iterator );
+            bool inform( const Constraint* const );
             Answer isConsistent();
-            void pushBacktrackPoint();
-            void popBacktrackPoint();
-
-
-            /**
-             * Generates a fresh Boolean variable and returns its identifier.
-             *
-             * @return The identifier of a fresh Boolean variable.
-             */
-            std::string getFreeBooleanIdentifier()
-            {
-                // TODO: A name which definitely does not already appear in the formula.
-                assert( !mAuxVarCounterHistory.empty() );
-                if( !mFixedTheModuleID )
-                {
-                    mModuleID = mpTSManager->uniqueModuleNumber( this );
-                    mFixedTheModuleID = true;
-                }
-                std::stringstream out;
-                out << "h_" << mModuleID << "_" << mAuxVarCounterHistory.back()++;
-                return out.str();
-            }
+            void removeSubformula( Formula::const_iterator );
 
         private:
             /**

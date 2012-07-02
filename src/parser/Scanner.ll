@@ -90,9 +90,10 @@ typedef smtrat::Parser::token_type token_type;
 
 [ \t\n]             { }
 "set-logic"         { return token::SETLOGIC; }
-"set-info"          {return token::SETINFO; }
-"check-sat"         {return token::CHECKSAT; }
+"set-info"          { return token::SETINFO; }
+"check-sat"         { return token::CHECKSAT; }
 "QF_NRA"            { return token::QFNRA; }
+"QF_LRA"            { return token::QFLRA; }
 ";".*\n             { }
 "assert"            { return token::ASSERT; }
 "declare-fun"       { return token::DECLAREFUN; }
@@ -111,6 +112,7 @@ typedef smtrat::Parser::token_type token_type;
 "not"	            { return token::NOT; }
 "iff"               { return token::IFF; }
 "xor"               { return token::XOR; }
+"let"               { return token::LET; }
 "true"              { return token::TRUE; }
 "false"             { return token::FALSE; }
 "Bool"              { return token::BOOL; }
@@ -128,13 +130,25 @@ typedef smtrat::Parser::token_type token_type;
 							yylval->sval = new std::string (yytext);
 							return token::SYM;
 						}
+\?[a-zA-Z][a-zA-Z_0-9]* 	{
+							yylval->sval = new std::string (yytext);
+							return token::AUXSYM;
+						}
 \:[a-zA-Z0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\/]+      { yylval->sval = new std::string (yytext);
                                                   return token::KEY; }
 
-[a-zA-Z0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\:\|\"\/]*     { yylval->sval = new std::string (yytext);
+[a-zA-Z0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\:\"\/]*     { yylval->sval = new std::string (yytext);
                                                   return token::EMAIL; }
 [(]            { return token::OB; }
 [)]            { return token::CB; }
+
+\|		{ BEGIN(start_source); }
+<start_source>{
+  [^\|\n]       {  }
+  \n            {  }
+  \|            { BEGIN(INITIAL); return token::SYM; }
+}
+
  /*** END EXAMPLE - Change the smtrat lexer rules above ***/
 
 %% /*** Additional Code ***/

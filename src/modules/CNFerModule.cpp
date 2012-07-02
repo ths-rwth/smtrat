@@ -29,15 +29,15 @@
 #include "../Manager.h"
 #include "CNFerModule.h"
 
+using namespace std;
+
 namespace smtrat
 {
     CNFerModule::CNFerModule( Manager* const _tsManager, const Formula* const _formula ):
-        Module( _tsManager, _formula )
+        Module( _tsManager, _formula ),
+            mFirstNotCheckedFormula( )
     {
         this->mModuleType = MT_CNFerModule;
-        mFixedTheModuleID = false;
-        mModuleID = 0;
-        mAuxVarCounterHistory = vector< unsigned >();
     }
 
     CNFerModule::~CNFerModule()
@@ -49,6 +49,16 @@ namespace smtrat
      * Methods:
      */
 
+	/**
+     * Informs about a new constraints.
+     * @param c A new constraint
+     *
+     */
+    bool CNFerModule::inform( const Constraint* const _constraint )
+    {
+    	return true;
+    }
+
     /**
      * Adds a constraint to this module.
      *
@@ -57,9 +67,9 @@ namespace smtrat
      * @return  true,   if the constraint and all previously added constraints are consistent;
      *          false,  if the added constraint or one of the previously added ones is inconsistent.
      */
-    bool CNFerModule::assertSubFormula( const Formula* const _formula )
+    bool CNFerModule::assertSubformula( Formula::const_iterator _subformula )
     {
-		Module::assertSubFormula( _formula );
+		Module::assertSubformula( _subformula );
         return true;
     }
 
@@ -72,14 +82,12 @@ namespace smtrat
      */
     Answer CNFerModule::isConsistent()
     {
-
-//cout << endl << "isConsistent of " << this << " having type " << type() << endl;
-//print();
-        for( unsigned pos = mBackTrackPoints.back(); pos < receivedFormulaSize(); ++pos )
-    	{
-            const Formula* currentFormulaToAdd = receivedFormulaAt( pos );
+        Formula::const_iterator receivedSubformula = firstUncheckedReceivedSubformula();
+        while( receivedSubformula != mpReceivedFormula->end() )
+        {
+            const Formula* currentFormulaToAdd = *receivedSubformula;
             /*
-             * Create the origins containting only the currently considered formula of
+             * Create the origins containing only the currently considered formula of
              * the received formula.
              */
             vec_set_const_pFormula origins = vec_set_const_pFormula();
@@ -98,54 +106,25 @@ namespace smtrat
                  */
                 return False;
             }
+            ++receivedSubformula;
         }
-//print();
 		Answer a = runBackends();
 
         if( a == False )
         {
             getInfeasibleSubsets();
         }
-//cout << "Result:   ";
-//if( a == True )
-//{
-//	cout << "True" << endl;
-//}
-//else if( a == Unknown )
-//{
-//	cout << "Unknown" << endl;
-//}
-//else if( a == False )
-//{
-//	cout << "False" << endl;
-//	printInfeasibleSubsets( cout, "          " );
-//}
         return a;
     }
 
     /**
-     * Pushes a backtrackpoint to the stack of backtrackpoints.
+     * Removes a everything related to a sub formula of the received formula.
+     *
+     * @param _subformula The sub formula of the received formula to remove.
      */
-    void CNFerModule::pushBacktrackPoint()
+    void CNFerModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        Module::pushBacktrackPoint();
-        if( mAuxVarCounterHistory.empty() )
-        {
-            mAuxVarCounterHistory.push_back( 0 );
-        }
-        else
-        {
-            mAuxVarCounterHistory.push_back( mAuxVarCounterHistory.back() );
-        }
-    }
-
-    /**
-     * Pops the last backtrackpoint, from the stack of backtrackpoints.
-     */
-    void CNFerModule::popBacktrackPoint()
-    {
-        mAuxVarCounterHistory.pop_back();
-        Module::popBacktrackPoint();
+        Module::removeSubformula( _subformula );
     }
 
     /**
@@ -239,7 +218,7 @@ namespace smtrat
 		        		phis.push_back( currentFormula->pruneBack() );
 		        	}
                     unsigned formulasToAssertSizeBefore = _formulasToAssert.size();
-                    unsigned passedFormulaSizeBefore = passedFormulaSize();
+                    Formula::iterator lastPassedSubformula = ( mpPassedFormula->empty() ? mpPassedFormula->end() : mpPassedFormula->last() );
 		        	while( !phis.empty() )
 		        	{
 		        		Formula* currentSubformula = phis.back();
@@ -261,15 +240,20 @@ namespace smtrat
                             // remove the entire considered disjunction and everything which has been created by considering it
                             case TTRUE:
                             {
+                                if( lastPassedSubformula == mpPassedFormula->end() )
+                                {
+                                    break;
+                                }
+                                ++lastPassedSubformula;
                                 while( _formulasToAssert.size() > formulasToAssertSizeBefore )
                                 {
                                     Formula* formulaToDelete = _formulasToAssert.back();
                                     _formulasToAssert.pop_back();
                                     delete formulaToDelete;
                                 }
-                                while( passedFormulaSize() > passedFormulaSizeBefore )
+                                while( lastPassedSubformula != mpPassedFormula->end() )
                                 {
-                                    removeSubformulaFromPassedFormula( passedFormulaSize() - 1 );
+                                    lastPassedSubformula = removeSubformulaFromPassedFormula( lastPassedSubformula );
                                 }
                                 while( !phis.empty() )
                                 {
@@ -308,7 +292,7 @@ namespace smtrat
                             // (and phi_i1 .. phi_ik) -> h_i, where (or (not h_i) phi_i1) .. (or (not h_i) phi_ik) is added to the queue
                             case AND:
                             {
-                            	Formula* hi = new Formula( getFreeBooleanIdentifier() );
+                            	Formula* hi = new Formula( Formula::getAuxiliaryBoolean() );
                             	while( !currentSubformula->empty() )
                             	{
                             		Formula* formulaToAssert = new Formula( OR );
@@ -348,8 +332,8 @@ namespace smtrat
                             case IFF:
                             {
 						    	assert( currentSubformula->back()->size() == 2 );
-                            	Formula* h_i1 = new Formula( getFreeBooleanIdentifier() );
-                            	Formula* h_i2 = new Formula( getFreeBooleanIdentifier() );
+                            	Formula* h_i1 = new Formula( Formula::getAuxiliaryBoolean() );
+                            	Formula* h_i2 = new Formula( Formula::getAuxiliaryBoolean() );
 						        Formula* rhs_i = currentSubformula->pruneBack();
 						        Formula* lhs_i = currentSubformula->pruneBack();
 						        delete currentSubformula;
@@ -382,8 +366,8 @@ namespace smtrat
                             case XOR:
                             {
 						    	assert( currentSubformula->back()->size() == 2 );
-                            	Formula* h_i1 = new Formula( getFreeBooleanIdentifier() );
-                            	Formula* h_i2 = new Formula( getFreeBooleanIdentifier() );
+                            	Formula* h_i1 = new Formula( Formula::getAuxiliaryBoolean() );
+                            	Formula* h_i2 = new Formula( Formula::getAuxiliaryBoolean() );
 						        Formula* rhs_i = currentSubformula->pruneBack();
 						        Formula* lhs_i = currentSubformula->pruneBack();
 						        delete currentSubformula;
@@ -448,8 +432,8 @@ namespace smtrat
                     Formula* lhs = currentFormula->pruneBack();
                     delete currentFormula;
                     // Add (or h1 h2) to the passed formula, where h1 and h2 are fresh Boolean variables.
-                    Formula* h1 = new Formula( getFreeBooleanIdentifier() );
-                    Formula* h2 = new Formula( getFreeBooleanIdentifier() );
+                    Formula* h1 = new Formula( Formula::getAuxiliaryBoolean() );
+                    Formula* h2 = new Formula( Formula::getAuxiliaryBoolean() );
                     Formula* clause = new Formula( OR );
                     clause->addSubformula( h1 );
                     clause->addSubformula( h2 );
@@ -490,8 +474,8 @@ namespace smtrat
                     Formula* lhs = currentFormula->pruneBack();
                     delete currentFormula;
                     // Add (or h1 h2) to the passed formula, where h1 and h2 are fresh Boolean variables.
-                    Formula* h1 = new Formula( getFreeBooleanIdentifier() );
-                    Formula* h2 = new Formula( getFreeBooleanIdentifier() );
+                    Formula* h1 = new Formula( Formula::getAuxiliaryBoolean() );
+                    Formula* h2 = new Formula( Formula::getAuxiliaryBoolean() );
                     Formula* clause = new Formula( OR );
                     clause->addSubformula( h1 );
                     clause->addSubformula( h2 );
@@ -701,7 +685,7 @@ namespace smtrat
     		cout << endl;
     	}
     	cout << "]" << endl;
-    	printPassedFormulaAlone( cout, "", true );
+    	printPassedFormula( cout, "" );
     	cout << endl << endl;
     }
 }    // namespace smtrat

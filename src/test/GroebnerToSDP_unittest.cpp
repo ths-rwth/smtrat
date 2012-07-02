@@ -30,11 +30,18 @@ void GroebnerToSDP_unittest::tearDown(){}
 
 void GroebnerToSDP_unittest::testIterator()
 {
-    MonomialIterator mit( 4 );
+	std::set<unsigned> vars;
+	vars.insert(0);
+	vars.insert(1);
+	vars.insert(3);
+	vars.insert(4);
+	
+    MonomialIterator mit( vars );
     //std::cout << "4.3" << std::endl;
     //mit.test(3);
 
-    MonomialIterator mit2( 3 );
+	vars.erase(1);
+    MonomialIterator mit2( vars );
     //std::cout << "3.3" << std::endl;
     //mit2.test(3);
 
@@ -62,8 +69,28 @@ void GroebnerToSDP_unittest::testMethod()
     id1.addGenerator( g2 );
     id1.addGenerator( g3 );
 
-    GroebnerToSDP<Lexicographic> gsdp( id1, MonomialIterator( 6 ) );
+	std::set<unsigned> vars;
+	for(unsigned i = 0; i<6; ++i) {
+		vars.insert(i);
+	}
+    GroebnerToSDP<Lexicographic> gsdp( id1, MonomialIterator( vars ) );
 
-    std::cout << gsdp.findWitness();
+   // std::cout << gsdp.findWitness();
 
+	std::cout << "TEST AAA" << std::endl;
+	MultivariatePolynomialMR<GradedLexicgraphic> h1(b - c - 1);
+	MultivariatePolynomialMR<GradedLexicgraphic> h2(a - 1);
+	
+	MultivariateIdeal<GradedLexicgraphic> id2(h1,h2);
+	vars.clear();
+	for(unsigned i = 0; i<3; ++i) {
+		vars.insert(i);
+	}
+	
+    GroebnerToSDP<GradedLexicgraphic> hsdp( id2, MonomialIterator( vars ) );
+
+    std::cout << hsdp.findWitness();
+
+	
+	std::cout << "TEST AAA END" << std::endl;
 }

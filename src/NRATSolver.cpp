@@ -26,38 +26,59 @@
  */
 
 #include "NRATSolver.h"
+#ifdef USE_GB
+#include <ginacra/settings.h>
+#endif
 
 namespace smtrat
 {
+    static bool caseOne ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_VSMODULE <= _condition;
+    }
+    #ifdef USE_GB
+    static bool caseTwo ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE <= _condition;
+    }
+    #endif
+    static bool caseThree ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_SATMODULE <= _condition;
+    }
+    static bool caseFour ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE <= _condition;
+    }
+    static bool caseFive ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE <= _condition;
+    }
+    static bool caseSix ( Condition _condition )
+    {
+        return !(PROP_CANNOT_BE_SOLVED_BY_VSMODULE <= _condition);
+    }
+
     NRATSolver::NRATSolver( Formula* _inputFormula ) : Manager( _inputFormula )
     {
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE, MT_VSModule );
-//        strategy().addModuleType( PROP_TRUE, MT_SimplifierModule );
-
-//        strategy().addModuleType( PROP_TRUE, MT_SATModule );
-//
-
-/*
-        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE, MT_VSModule );
-        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SATMODULE, MT_SimplifierModule );
-*/
-        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_VSMODULE, MT_CADModule );
-        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SATMODULE, MT_VSModule );
-        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE, MT_SATModule );
-        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE, MT_CNFerModule );
-        strategy().addModuleType( PROP_TRUE, MT_PreProModule );
-//        strategy().addModuleType( PROP_TRUE, MT_CNFerModule );
-
-        //        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE, MT_CADModule );
-
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE, MT_CADModule );
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_VSMODULE, MT_UnivariateCADModule );
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_VSMODULE, MT_CADModule );
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE, MT_VSModule );
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE, MT_VSModule );
-//        strategy().addModuleType( PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE, MT_GroebnerModule );
-//        strategy().addModuleType( PROP_TRUE, MT_SimplifierModule );
-//        strategy().addModuleType( PROP_TRUE, MT_CADModule );
+		#ifdef USE_GB
+        GiNaCRA::MultivariatePolynomialSettings::InitializeGiNaCRAMultivariateMR();
+		#endif
+		#ifdef USE_CAD
+		strategy().addModuleType( caseOne, MT_CADModule );
+//        strategy().addModuleType( caseThree, MT_CADModule );
+		#endif
+		#ifdef USE_GB
+		strategy().addModuleType( caseTwo, MT_VSModule );
+		strategy().addModuleType( caseThree, MT_GroebnerModule);
+		#else
+		strategy().addModuleType( caseThree, MT_VSModule );
+		#endif
+//		strategy().addModuleType( caseFour, MT_SATModule );
+//        strategy().addModuleType( caseSix, MT_CNFerModule );
+		strategy().addModuleType( caseFour, MT_SATModule );
+        strategy().addModuleType( caseFive, MT_CNFerModule );
+        strategy().addModuleType( caseSix, MT_PreProModule );
     }
 
     NRATSolver::~NRATSolver() {}

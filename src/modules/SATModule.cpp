@@ -47,13 +47,14 @@
  * Created on January 18, 2012, 3:51 PM
  */
 
-#include "../NRATSolver.h"
 #include "SATModule.h"
-#include <math.h>
-#include "SATModule/Sort.h"
 
 //#define DEBUG_SATMODULE
+//#define DEBUG_SATMODULE_THEORY_PROPAGATION
 #define SATMODULE_WITH_CALL_NUMBER
+#define SAT_MODULE_THEORY_PROPAGATION
+//#define WITH_PROGRESS_ESTIMATION
+//#define STORE_ONLY_ONE_REASON
 
 using namespace std;
 using namespace Minisat;
@@ -139,13 +140,14 @@ namespace smtrat
         ,
         conflict_budget( -1 ),
         propagation_budget( -1 ),
-        asynch_interrupt( false )
+        asynch_interrupt( false ),
+        mConstraintLiteralMap(),
+        mBooleanVarMap(),
+        mBooleanConstraintMap(),
+        mBacktrackpointInSatSolver(),
+        mLearnedDeductions()
     {
-        this->mModuleType          = MT_SATModule;
-        mConstraintLiteralMap      = ConstraintLiteralMap();
-        mBooleanVarMap             = BooleanVarMap();
-        mBooleanConstraintMap      = BooleanConstraintMap();
-        mBacktrackpointInSatSolver = vector<CRef>();
+        this->mModuleType = MT_SATModule;
     }
 
     /**
@@ -165,24 +167,27 @@ namespace smtrat
      * @return  true,   if the constraint and all previously added constraints are consistent;
      *          false,  if the added constraint or one of the previously added ones is inconsistent.
      */
-    bool SATModule::assertSubFormula( const Formula* const _formula )
+    bool SATModule::assertSubformula( Formula::const_iterator _subformula )
     {
 
-        assert( (_formula->proposition() | ~PROP_IS_A_CLAUSE) == ~PROP_TRUE );
-        Module::assertSubFormula( _formula );
+        assert( ((*_subformula)->proposition() | ~PROP_IS_A_CLAUSE) == ~PROP_TRUE );
+        Module::assertSubformula( _subformula );
 
-        addClauseToSatSolver( _formula );
+        addClauseToSatSolver( *_subformula );
 
         return true;
     }
 
     /**
-     * Pushes a backtrack point to the stack of backtrack points.
+     * Removes a everything related to a sub formula of the received formula.
+     *
+     * @param _subformula The sub formula of the received formula to remove.
      */
-    void SATModule::pushBacktrackPoint()
+    void SATModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        Module::pushBacktrackPoint();
-        mBacktrackpointInSatSolver.push_back( clauses.size() );
+        Module::removeSubformula( _subformula );
+
+        // TODO: something
     }
 
     /**
@@ -194,40 +199,62 @@ namespace smtrat
      */
     Answer SATModule::isConsistent()
     {
-        if( solve() )
+        budgetOff();
+        assumptions.clear();
+
+        model.clear();
+        conflict.clear();
+        if( !ok )
+            return False;
+
+        solves++;
+
+        max_learnts             = nClauses() * learntsize_factor;
+        learntsize_adjust_confl = learntsize_adjust_start_confl;
+        learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
+
+        lbool result = search();
+
+        #ifdef SATMODULE_WITH_CALL_NUMBER
+        cout << endl << endl;
+        #endif
+
+        if( result == l_True )
+        {
+            // Extend & copy model:
+            model.growTo( nVars() );
+            for( int i = 0; i < nVars(); i++ )
+                model[i] = value( i );
+        }
+        else if( result == l_False && conflict.size() == 0 )
+            ok = false;
+
+        cancelUntil( 0 );
+
+        if( result == l_True )
         {
             return True;
         }
-        else
+        else if( result == l_False )
         {
             mInfeasibleSubsets.clear();
 
             /*
-             * Set the infeasible subset to the set of all received constraints.
-             */
+            * Set the infeasible subset to the set of all received constraints.
+            */
             set<const Formula*> infeasibleSubset = set<const Formula*>();
-            for( Formula::const_iterator subformula = receivedFormulaBegin();
-                 subformula != receivedFormulaEnd(); ++subformula )
+            for( Formula::const_iterator subformula = mpReceivedFormula->begin();
+                 subformula != mpReceivedFormula->end(); ++subformula )
             {
                 infeasibleSubset.insert( *subformula );
             }
             mInfeasibleSubsets.push_back( infeasibleSubset );
             return False;
         }
-    }
-
-    /**
-     * Pops the last backtrack point, from the stack of backtrack points.
-     */
-    void SATModule::popBacktrackPoint()
-    {
-        for( unsigned level = clauses.size() - 1; level >= mBacktrackpointInSatSolver.back(); --level )
+        else
         {
-            removeClause( clauses[level] );
+            return Unknown;
         }
-        mBacktrackpointInSatSolver.pop_back();
-
-        Module::popBacktrackPoint();
     }
 
     /**
@@ -243,25 +270,93 @@ namespace smtrat
         {
             case OR:
             {
+                assert( _formula->size() > 1 );
+                unsigned numberOfPositivLiterals = 0;
+                bool consistsOfRealConstraints = true;
                 vec<Lit> clauseLits;
-                for( Formula::const_iterator subFormula = _formula->begin(); subFormula != _formula->end(); ++subFormula )
+                for( Formula::const_iterator subformula = _formula->begin(); subformula != _formula->end(); ++subformula )
                 {
-                    switch( (*subFormula)->getType() )
+                    switch( (*subformula)->getType() )
                     {
                         case REALCONSTRAINT:
                         {
-                            clauseLits.push( getLiteral( *subFormula, _formula ) );
+                            ++numberOfPositivLiterals;
+                            if( (*subformula)->constraint().relation() == CR_NEQ )
+                            {
+                                const Constraint& constraint = (*subformula)->constraint();
+                                Formula subformulaA = Formula( Formula::newConstraint( constraint.lhs(), CR_LESS ) );
+                                Formula subformulaB = Formula( Formula::newConstraint( constraint.lhs(), CR_GREATER ) );
+
+                                Lit litA = getLiteral( subformulaA, _formula );
+                                Lit litB = getLiteral( subformulaB, _formula );
+                                clauseLits.push( litA );
+                                clauseLits.push( litB );
+                                addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                            }
+                            else
+                            {
+                                clauseLits.push( getLiteral( **subformula, _formula ) );
+                            }
                             break;
                         }
                         case NOT:
                         {
-                            Lit literal = getLiteral( (*subFormula)->back(), _formula );
-                            clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
+                            const Formula& subsubformula = *(*subformula)->back();
+                            switch( subsubformula.getType() )
+                            {
+                                case REALCONSTRAINT:
+                                {
+                                    if( subsubformula.getType() == REALCONSTRAINT && subsubformula.constraint().relation() == CR_NEQ )
+                                    {
+                                        Formula subsubformula = Formula( Formula::newConstraint( subsubformula.constraint().lhs(), CR_EQ ) );
+                                        clauseLits.push( getLiteral( subsubformula, _formula ) );
+                                    }
+                                    else if( subsubformula.getType() == REALCONSTRAINT && subsubformula.constraint().relation() == CR_EQ )
+                                    {
+                                        const Constraint& constraint = subsubformula.constraint();
+                                        Formula subsubformulaA = Formula( Formula::newConstraint( constraint.lhs(), CR_LESS ) );
+                                        Formula subsubformulaB = Formula( Formula::newConstraint( constraint.lhs(), CR_GREATER ) );
+
+                                        Lit litA = getLiteral( subsubformulaA, _formula );
+                                        Lit litB = getLiteral( subsubformulaB, _formula );
+                                        clauseLits.push( litA );
+                                        clauseLits.push( litB );
+                                        addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                                    }
+                                    else
+                                    {
+                                        Lit literal = getLiteral( subsubformula, _formula );
+                                        clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
+                                    }
+                                    break;
+                                }
+                                case BOOL:
+                                {
+                                    consistsOfRealConstraints = false;
+                                    Lit literal = getLiteral( subsubformula, _formula );
+                                    clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
+                                    break;
+                                }
+                                case TTRUE:
+                                {
+                                    break;
+                                }
+                                case FFALSE:
+                                {
+                                    return True;
+                                }
+                                default:
+                                {
+                                    cerr << "Unexpected type of formula! Expected a literal." << endl;
+                                    assert( false );
+                                }
+                            }
                             break;
                         }
                         case BOOL:
                         {
-                            clauseLits.push( getLiteral( *subFormula, _formula ) );
+                            consistsOfRealConstraints = false;
+                            clauseLits.push( getLiteral( **subformula, _formula ) );
                             break;
                         }
                         case TTRUE:
@@ -279,24 +374,64 @@ namespace smtrat
                         }
                     }
                 }
+                /*
+                 * If the clause is of the form (~c_1 or .. or ~c_n or c), where c_1, ..., c_n, c are constraints,
+                 * add
+                 */
+                if( consistsOfRealConstraints && numberOfPositivLiterals == 1 )
+                {
+
+                }
                 addClause( clauseLits );
                 return Unknown;
             }
             case REALCONSTRAINT:
             {
-                addClause( getLiteral( _formula, _formula ) );
+                if( _formula->constraint().relation() == CR_NEQ )
+                {
+                    const Constraint& constraint = _formula->constraint();
+                    Formula subformulaA = Formula( Formula::newConstraint( constraint.lhs(), CR_LESS ) );
+                    Formula subformulaB = Formula( Formula::newConstraint( constraint.lhs(), CR_GREATER ) );
+
+                    Lit litA = getLiteral( subformulaA, _formula );
+                    Lit litB = getLiteral( subformulaA, _formula );
+                    addClause( litA, litB );
+                    addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                }
+                else
+                {
+                    addClause( getLiteral( *_formula, _formula ) );
+                }
                 return Unknown;
             }
             case NOT:
             {
-                vec<Lit>       clauseLits;
-                const Formula* subformula = _formula->back();
-                switch( subformula->getType() )
+                const Formula& subformula = *_formula->back();
+                switch( subformula.getType() )
                 {
                     case REALCONSTRAINT:
                     {
-                        Lit literal = getLiteral( subformula, _formula );
-                        addClause( mkLit( var( literal ), !sign( literal ) ) );
+                        if( subformula.constraint().relation() == CR_EQ )
+                        {
+                            const Constraint& constraint = subformula.constraint();
+                            Formula subsubformulaA = Formula( Formula::newConstraint( constraint.lhs(), CR_LESS ) );
+                            Formula subsubformulaB = Formula( Formula::newConstraint( constraint.lhs(), CR_GREATER ) );
+
+                            Lit litA = getLiteral( subsubformulaA, _formula );
+                            Lit litB = getLiteral( subsubformulaB, _formula );
+                            addClause( litA, litB );
+                            addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                        }
+                        else if( subformula.constraint().relation() == CR_NEQ )
+                        {
+                            Formula subsubformula = Formula( Formula::newConstraint( subformula.constraint().lhs(), CR_EQ ) );
+                            addClause( getLiteral( subsubformula, _formula ) );
+                        }
+                        else
+                        {
+                            Lit literal = getLiteral( subformula, _formula );
+                            addClause( mkLit( var( literal ), !sign( literal ) ) );
+                        }
                         return Unknown;
                     }
                     case BOOL:
@@ -324,7 +459,7 @@ namespace smtrat
             }
             case BOOL:
             {
-                addClause( getLiteral( _formula, _formula ) );
+                addClause( getLiteral( *_formula, _formula ) );
                 return Unknown;
             }
             case TTRUE:
@@ -351,27 +486,28 @@ namespace smtrat
      * @param _origin
      * @return
      */
-    Lit SATModule::getLiteral( const Formula* _formula, const Formula* _origin )
+    Lit SATModule::getLiteral( const Formula& _formula, const Formula* _origin )
     {
-        switch( _formula->getType() )
+        assert( _formula.getType() != REALCONSTRAINT || _formula.constraint().relation() != CR_NEQ );
+        switch( _formula.getType() )
         {
             case BOOL:
             {
-                BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find( _formula->identifier() );
+                BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find( _formula.identifier() );
                 if( booleanVarPair != mBooleanVarMap.end() )
                 {
                     return mkLit( booleanVarPair->second, false );
                 }
                 else
                 {
-                    Var var                                = newVar();
-                    mBooleanVarMap[_formula->identifier()] = var;
+                    Var var                               = newVar();
+                    mBooleanVarMap[_formula.identifier()] = var;
                     return mkLit( var, false );
                 }
             }
             case REALCONSTRAINT:
             {
-                const Constraint& constraint = _formula->constraint();
+                const Constraint& constraint = _formula.constraint();
                 // Bring the constraint to normal form, i.e. just using the relations =, !=, <= and >
                 Constraint_Relation rel = constraint.relation();
                 GiNaC::ex sign = 1;
@@ -395,6 +531,7 @@ namespace smtrat
                     }
                 }
                 const Constraint* normalizedConstraint = Formula::newConstraint( sign * constraint.lhs(), rel );
+                mConstraintsToInform.insert( normalizedConstraint );
                 ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( normalizedConstraint );
                 if( constraintLiteralPair != mConstraintLiteralMap.end() )
                 {
@@ -413,10 +550,17 @@ namespace smtrat
                     Var invConstrAuxBoolean  = newVar();
                     Var invConstrBoolean     = newVar();
 
+                    Lit negNormConstrAuxLit = mkLit( normConstrAuxBoolean, true );
+                    Lit negInvConstrAuxLit  = mkLit( invConstrAuxBoolean, true );
+
                     // Add the clause  (or (not normConstrAuxBoolean) normConstrBoolean)
-                    addClause( mkLit( normConstrAuxBoolean, true ), mkLit( normConstrBoolean, false ) );
+                    addClause( negNormConstrAuxLit, mkLit( normConstrBoolean, false ) );
                     // Add the clause  (or (not InvConstrAuxBoolean) InvConstrBoolean)
-                    addClause( mkLit( invConstrAuxBoolean, true ), mkLit( invConstrBoolean, false ) );
+                    addClause( negInvConstrAuxLit, mkLit( invConstrBoolean, false ) );
+                    // Add the clause (or normConstrAuxBoolean InvConstrAuxBoolean)
+                    addClause( mkLit( normConstrAuxBoolean, false ), mkLit( invConstrAuxBoolean, false ) );
+                    // Add the clause (or (not normConstrAuxBoolean) (not InvConstrAuxBoolean))
+//                    addClause( negNormConstrAuxLit, negInvConstrAuxLit );
 
                     /*
                      * Map the literals to the corresponding constraints.
@@ -427,18 +571,6 @@ namespace smtrat
                         {
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = mkLit( normConstrAuxBoolean, false );
-                            const Constraint* invertedConstraint        = Formula::newConstraint( constraint.lhs(), CR_NEQ );
-                            mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
-                            mConstraintLiteralMap[invertedConstraint]   = mkLit( invConstrAuxBoolean, false );
-                            break;
-                        }
-                        case CR_NEQ:
-                        {
-                            const Constraint* invertedConstraint        = Formula::newConstraint( constraint.lhs(), CR_EQ );
-                            mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
-                            mConstraintLiteralMap[invertedConstraint]   = mkLit( normConstrAuxBoolean, false );
-                            mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
-                            mConstraintLiteralMap[normalizedConstraint] = mkLit( invConstrAuxBoolean, false );
                             break;
                         }
                         case CR_LEQ:
@@ -446,6 +578,7 @@ namespace smtrat
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = mkLit( normConstrAuxBoolean, false );
                             const Constraint* invertedConstraint        = Formula::newConstraint( -constraint.lhs(), CR_LESS );
+                            mConstraintsToInform.insert( invertedConstraint );
                             mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint]   = mkLit( invConstrAuxBoolean, false );
                             break;
@@ -455,6 +588,7 @@ namespace smtrat
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
                             mConstraintLiteralMap[normalizedConstraint] = mkLit( normConstrAuxBoolean, false );
                             const Constraint* invertedConstraint        = Formula::newConstraint( constraint.lhs(), CR_LESS );
+                            mConstraintsToInform.insert( invertedConstraint );
                             mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint]   = mkLit( invConstrAuxBoolean, false );
                             break;
@@ -462,6 +596,7 @@ namespace smtrat
                         case CR_LESS:
                         {
                             const Constraint* invertedConstraint        = Formula::newConstraint( -constraint.lhs(), CR_LEQ );
+                            mConstraintsToInform.insert( invertedConstraint );
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint]   = mkLit( normConstrAuxBoolean, false );
                             mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
@@ -471,6 +606,7 @@ namespace smtrat
                         case CR_GREATER:
                         {
                             const Constraint* invertedConstraint        = Formula::newConstraint( constraint.lhs(), CR_LEQ );
+                            mConstraintsToInform.insert( invertedConstraint );
                             mBooleanConstraintMap[normConstrBoolean]    = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
                             mConstraintLiteralMap[invertedConstraint]   = mkLit( normConstrAuxBoolean, false );
                             mBooleanConstraintMap[invConstrBoolean]     = pair<Formula*, const Formula*>( new Formula( normalizedConstraint ), _origin );
@@ -490,38 +626,25 @@ namespace smtrat
             {
                 cerr << "Unexpected type of formula!" << endl;
                 assert( false );
+                return mkLit( newVar(), false );
             }
         }
     }
 
-    struct formulaCmp
-    {
-        bool operator ()( const Formula* const _formulaA, const Formula* const _formulaB ) const
-        {
-            const Constraint& constraintA = _formulaA->constraint();
-            const Constraint& constraintB = _formulaB->constraint();
-            if( constraintA.relation() < constraintB.relation() )
-            {
-                return true;
-            }
-            else if( constraintA.relation() == constraintB.relation() )
-            {
-                return GiNaC::ex_is_less()( constraintA.lhs(), constraintB.lhs() );
-            }
-            return false;
-        }
-    };
-
     /**
      * Adapts the passed formula according to the current assignment within the SAT solver.
+     *
+     * @return  true,   if the passed formula has been changed;
+     *          false,  otherwise.
      */
-    void SATModule::adaptPassedFormula()
+    bool SATModule::adaptPassedFormula()
     {
+        bool changedPassedFormula = false;
         /*
          * Collect the constraints to check.
          */
-        map<const Formula*, const Formula*, formulaCmp> constraintsToCheck = map<const Formula*, const Formula*, formulaCmp>();
-        signed                                          posInAssigns       = 0;
+        ConstraintOriginMap constraintsToCheck = ConstraintOriginMap();
+        signed              posInAssigns       = 0;
         while( posInAssigns < assigns.size() )
         {
             lbool assignment = assigns[posInAssigns];
@@ -540,36 +663,96 @@ namespace smtrat
             }
             ++posInAssigns;
         }
-
+        simplifyByLearnedTheoryDeductions( constraintsToCheck );
         /*
          * Remove the constraints from the constraints to check, which are already in the passed formula
-         * and remove the subformulas (constraints) in the passed formula, which do not occur in the
+         * and remove the sub formulas (constraints) in the passed formula, which do not occur in the
          * constraints to add.
          */
-        unsigned pos = 0;
-        while( pos < passedFormulaSize() )
+        Formula::iterator subformula = mpPassedFormula->begin();
+        while( subformula != mpPassedFormula->end() )
         {
-            if( constraintsToCheck.erase( passedFormulaAt( pos ) ) == 0 )
+            if( constraintsToCheck.erase( *subformula ) == 0 )
             {
-                removeSubformulaFromPassedFormula( pos );
+                subformula = removeSubformulaFromPassedFormula( subformula );
+                changedPassedFormula = true;
             }
             else
             {
-                ++pos;
+                ++subformula;
             }
         }
-
         /*
          * Add the the remaining constraints to add to the passed formula.
          */
-        for( map<const Formula*, const Formula*, formulaCmp>::iterator iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
+        for( ConstraintOriginMap::iterator iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
         {
-            vec_set_const_pFormula origins = vec_set_const_pFormula();
-            set<const Formula*> origin = set<const Formula*>();
-            origin.insert( iter->second );
-            origins.push_back( origin );
-            addSubformulaToPassedFormula( new Formula( *iter->first ), origins );
+            changedPassedFormula = true;
+            // we must create a new formula here, as the first element of the given
+            // pair is constant and must be constant in order to be used in a set/map as key
+            addSubformulaToPassedFormula( new Formula( iter->first->pConstraint() ), iter->second );
         }
+        return changedPassedFormula;
+    }
+
+    /**
+     *
+     * @param _toSimplify
+     */
+    void SATModule::simplifyByLearnedTheoryDeductions( ConstraintOriginMap& _toSimplify ) const
+    {
+        #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
+        cout << __func__ << ": " << _toSimplify.size() << " -> ";
+        #endif
+        /*
+         * Collect the constraints, which have an entire premise in the constraints to simplify.
+         * TODO: Collect the iterator instead of the elements. Leads to a faster erase operation
+         *       in the second part of this method, but maybe causing problems as we store
+         *       iterators of a map in that we erase.
+         */
+        set< const Formula* > redundantConstraints = set< const Formula* >();
+        for( ConstraintOriginMap::const_iterator constraint = _toSimplify.begin();
+             constraint != _toSimplify.end(); ++constraint )
+        {
+            FormulaOrigins::const_iterator iter = mLearnedDeductions.find( constraint->first );
+            if( iter != mLearnedDeductions.end() )
+            {
+                vec_set_const_pFormula::const_iterator premises = iter->second.begin();
+                while( premises != iter->second.end() )
+                {
+                    set< const Formula* >::const_iterator constraint = premises->begin();
+                    while( constraint != premises->end() )
+                    {
+
+                        if( _toSimplify.find( *constraint ) == _toSimplify.end() )
+                        {
+                            break;
+                        }
+                        ++constraint;
+                    }
+                    if( constraint == premises->end() )
+                    {
+                        break;
+                    }
+                    ++premises;
+                }
+                if( premises != iter->second.end() )
+                {
+                    redundantConstraints.insert( constraint->first );
+                }
+            }
+        }
+        /*
+         * Erase the redundant constraints of the constraints to simplify.
+         */
+        for( set< const Formula* >::const_iterator constraint = redundantConstraints.begin();
+             constraint != redundantConstraints.end(); ++constraint )
+        {
+            _toSimplify.erase( *constraint );
+        }
+        #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
+        cout << _toSimplify.size() << endl;
+        #endif
     }
 
     //=================================================================================================
@@ -591,8 +774,8 @@ namespace smtrat
         watches.init( mkLit( v, true ) );
         assigns.push( l_Undef );
         vardata.push( mkVarData( CRef_Undef, 0 ) );
-        //activity .push(0);
-        activity.push( rnd_init_act ? drand( random_seed ) * 0.00001 : 0 );
+        activity .push(0);
+//        activity.push( rnd_init_act ? drand( random_seed ) * 0.00001 : 0 );
         seen.push( 0 );
         polarity.push( sign );
         decision.push();
@@ -636,7 +819,7 @@ namespace smtrat
         {
             CRef cr = ca.alloc( ps, false );
             clauses.push( cr );
-            attachClause( cr );
+            attachClause( cr, true );
         }
 
         return true;
@@ -647,9 +830,61 @@ namespace smtrat
      *
      * @param cr
      */
-    void SATModule::attachClause( CRef cr )
+    void SATModule::attachClause( CRef cr, bool _tp )
     {
-        const Clause& c = ca[cr];
+       const Clause& c = ca[cr];
+       /*
+        * If the clause is of the form (~c_1 or .. or ~c_n or c), where c_1, ..., c_n, c are constraints,
+        * add this clause as a learned theory deduction.
+        */
+        if( c.size() > 1 && _tp )
+        {
+            bool isTheoryDeduction = true;
+            const Formula* conclusion = NULL;
+            set< const Formula* > premise = set< const Formula* >();
+            for( int i = 0; i < c.size(); ++i )
+            {
+                BooleanConstraintMap::iterator iter = mBooleanConstraintMap.find( var( c[i] ) + 1 );
+                if( iter == mBooleanConstraintMap.end() )
+                {
+                    isTheoryDeduction = false;
+                    break;
+                }
+                else
+                {
+                    if( sign( c[i] ) )
+                    {
+                        premise.insert( iter->second.first );
+                    }
+                    else
+                    {
+                        if( conclusion == NULL )
+                        {
+                            conclusion = iter->second.first;
+                        }
+                        else
+                        {
+                            isTheoryDeduction = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            if( isTheoryDeduction && conclusion != NULL )
+            {
+                mLearnedDeductions[conclusion].push_back( premise );
+                #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
+                cout << "Learn:  ( ";
+                for( set< const Formula* >::const_iterator iter = premise.begin();
+                    iter != premise.end(); ++iter )
+                {
+                    cout << (*iter)->constraint().toString() << " ";
+                }
+                cout << ")  ->  " << conclusion->constraint().toString();
+                cout << "    " << mLearnedDeductions[conclusion].size() << ". premise" << endl;
+                #endif
+            }
+        }
         assert( c.size() > 1 );
         watches[~c[0]].push( Watcher( cr, c[1] ) );
         watches[~c[1]].push( Watcher( cr, c[0] ) );
@@ -1188,13 +1423,84 @@ NextClause:
         return true;
     }
 
-    struct formulaCmpB
+    /**
+     *
+     * @param _theoryReason
+     * @return
+     */
+    CRef SATModule::learnTheoryReason( const set<const Formula*>& _theoryReason )
     {
-        bool operator ()( const Formula* const _formulaA, const Formula* const _formulaB ) const
+        assert( !_theoryReason.empty() );
+        CRef result;
+        vec<Lit> learnt_clause;
+        // Sort the constraints in a unique way.
+        set<const Formula*, formulaCmp> sortedConstraints = set<const Formula*, formulaCmp>();
+        for( set<const Formula*>::const_iterator subformula = _theoryReason.begin(); subformula != _theoryReason.end(); ++subformula )
         {
-            return (_formulaA->constraint() < _formulaB->constraint());
+            if( (*subformula)->getType() != REALCONSTRAINT )
+            {
+                cout << (*subformula) << endl;
+                (*subformula)->print();
+                cout << endl;
+            }
+            assert((*subformula)->getType() == REALCONSTRAINT);
+            sortedConstraints.insert( *subformula );
         }
-    };
+        // Add the according literals to the conflict clause.
+        for( set<const Formula*, formulaCmp>::const_iterator subformula = sortedConstraints.begin();
+            subformula != sortedConstraints.end();
+            ++subformula )
+        {
+            #ifdef DEBUG_SATMODULE
+            if( subformula != sortedConstraints.begin() )
+            {
+                cout << ", ";
+            }
+            (*subformula)->print();
+            #endif
+            Lit lit = getLiteral( **subformula );
+            learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
+        }
+        #ifdef DEBUG_SATMODULE
+        cout << " }";
+        cout << endl;
+        #endif
+
+        // Do not store theory lemma
+        if( learnt_clause.size() == 1 )
+        {
+            #ifdef DEBUG_SATMODULE
+            cout << "###" << endl << "### Do not store theory lemma" << endl;
+            cout << "### Learned clause = ";
+            #endif
+
+            result = ca.alloc( learnt_clause, true );
+
+            #ifdef DEBUG_SATMODULE
+            printClause( cout, ca[result] );
+            cout << endl << "###" << endl;
+            #endif
+        }
+        // Learn theory lemma
+        else
+        {
+            #ifdef DEBUG_SATMODULE
+            cout << "###" << endl << "### Learn theory lemma" << endl;
+            cout << "### Conflict clause (" << learnt_clause.size() << ") = ";
+            #endif
+
+            result = ca.alloc( learnt_clause, true );
+            learnts.push( result );
+            attachClause( result );
+            claBumpActivity( ca[result] );
+
+            #ifdef DEBUG_SATMODULE
+            printClause( cout, ca[result] );
+            cout << endl << "###" << endl;
+            #endif
+        }
+        return result;
+    }
 
     /**
      * search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
@@ -1216,7 +1522,9 @@ NextClause:
     {
         #ifdef DEBUG_SATMODULE
         cout << "### search( " << nof_conflicts << " )" << endl << "###" << endl;
-        printClauses( cout, "### " );
+        printClauses( clauses, "Clauses", cout, "### " );
+        cout << "###" << endl;
+        printClauses( learnts, "Learnts", cout, "### " );
         cout << "###" << endl;
         printBooleanConstraintMap( cout, "###" );
         cout << "###" << endl;
@@ -1229,8 +1537,10 @@ NextClause:
         vec<Lit> learnt_clause;
         starts++;
         #ifdef SATMODULE_WITH_CALL_NUMBER
-        unsigned theorycalls = 0;
+        unsigned numberOfTheoryCalls = 0;
+        #ifndef DEBUG_SATMODULE
         cout << endl << "Number of theory calls:" << endl << endl;
+        #endif
         #endif
 
         for( ; ; )
@@ -1239,135 +1549,165 @@ NextClause:
 
             if( confl == CRef_Undef )
             {
-                #ifdef SATMODULE_WITH_CALL_NUMBER
-                cout << "\r" << theorycalls << "    ";
-                theorycalls++;
-                #endif
-                #ifdef DEBUG_SATMODULE
-                cout << "######################################################################" << endl;
-                cout << "###" << endl;
-                printClauses( cout, "### " );
-                cout << "###" << endl;
-                printCurrentAssignment( cout, "### " );
-                cout << "### " << endl;
-                printDecisions( cout, "### " );
-                cout << "### " << endl;
-                cout << "### Check the constraints: ";
-                #endif
-
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
-                adaptPassedFormula();
-                switch( runBackends() )
+                if( adaptPassedFormula() )
                 {
-                    case True:
+                    #ifdef DEBUG_SATMODULE
+                    cout << "######################################################################" << endl;
+                    cout << "###" << endl;
+                    printClauses( clauses, "Clauses", cout, "### " );
+                    cout << "###" << endl;
+                    printClauses( learnts, "Learnts", cout, "### " );
+                    cout << "###" << endl;
+                    printCurrentAssignment( cout, "### " );
+                    cout << "### " << endl;
+                    printDecisions( cout, "### " );
+                    cout << "### " << endl;
+                    cout << "### Check the constraints: ";
+                    #endif
+                    #ifdef SATMODULE_WITH_CALL_NUMBER
+                    ++numberOfTheoryCalls;
+                    #ifdef DEBUG_SATMODULE
+                    cout << "#" << numberOfTheoryCalls << "  ";
+                    #endif
+                    #endif
+                    #ifdef DEBUG_SATMODULE
+                    cout << "{ ";
+                    for( Formula::const_iterator subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
                     {
-                        #ifdef DEBUG_SATMODULE
-                        cout << "True!" << endl;
-                        #endif
-                        break;
+                        cout << (*subformula)->constraint().toString() << " ";
                     }
-                    case False:
+                    cout << "}" << endl;
+                    #endif
+                    switch( runBackends() )
                     {
-                        #ifdef DEBUG_SATMODULE
-                        cout << "False!" << endl;
-                        #endif
-                        learnt_clause.clear();
-                        vector<Module*>::const_iterator backend = usedBackends().begin();
-                        while( backend != usedBackends().end() )
+                        case True:
                         {
-                            if( !(*backend)->rInfeasibleSubsets().empty() )
+                            #ifdef SAT_MODULE_THEORY_PROPAGATION
+                            /*
+                             * Theory propagation.
+                             */
+                            learnt_clause.clear();
+                            vector<Module*>::const_iterator backend = usedBackends().begin();
+                            while( backend != usedBackends().end() )
                             {
-                                for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
-                                        infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
+                                /*
+                                 * Learn the deductions.
+                                 */
+                                for( vector< TheoryDeduction >::const_iterator tDeduction = (*backend)->deductions().begin();
+                                     tDeduction != (*backend)->deductions().end(); ++tDeduction )
                                 {
-                                    #ifdef DEBUG_SATMODULE
-                                    cout << "### { ";
+                                    #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
+                                    cout << "Learned a theory deduction from a backend module!" << endl;
                                     #endif
-                                    // Sort the constraints in a unique way.
-                                    set<const Formula*, formulaCmpB> sortedConstraints = set<const Formula*, formulaCmpB>();
-                                    for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
+                                    /*
+                                     * Add the clause (premise -> conclusion).
+                                     */
+                                    for( set< const Formula* >::const_iterator subformula = tDeduction->first.begin();
+                                        subformula != tDeduction->first.end();
+                                        ++subformula )
                                     {
-                                        sortedConstraints.insert( *subformula );
-                                    }
-                                    // Add the according literals to the conflict clause.
-                                    for( set<const Formula*, formulaCmpB>::const_iterator subformula = sortedConstraints.begin();
-                                         subformula != sortedConstraints.end();
-                                         ++subformula )
-                                    {
-                                        #ifdef DEBUG_SATMODULE
-                                        if( subformula != sortedConstraints.begin() )
-                                        {
-                                            cout << ", ";
-                                        }
-                                        (*subformula)->print();
-                                        #endif
-                                        Lit lit = getLiteral( *subformula );
+                                        Lit lit = getLiteral( **subformula );
                                         learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
                                     }
-                                    #ifdef DEBUG_SATMODULE
-                                    cout << " }";
-                                    cout << endl;
-                                    #endif
-                                    break;    // TODO: Add all infeasible subsets as conflicting clauses.
+                                    ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( tDeduction->second );
+                                    assert( constraintLiteralPair != mConstraintLiteralMap.end() );
+                                    learnt_clause.push( constraintLiteralPair->second );
+
+                                    CRef clause = ca.alloc( learnt_clause, true );
+                                    learnts.push( clause );
+                                    attachClause( clause, true );
+                                    claBumpActivity( ca[clause] );
+                                    learnt_clause.clear();
+                                    break;
                                 }
-                                break;
+                                (*backend)->clearDeductions();
+                                ++backend;
                             }
-                            ++backend;
+                            #endif
+                            #ifdef DEBUG_SATMODULE
+                            cout << "### Result: True!" << endl;
+                            #endif
+                            break;
                         }
-                        assert( backend != usedBackends().end() );
-
-                        // Do not store theory lemma
-                        if( learnt_clause.size() == 1 )
+                        case False:
                         {
                             #ifdef DEBUG_SATMODULE
-                            cout << "###" << endl << "### Do not store theory lemma" << endl;
-                            cout << "### Learnt clause = ";
+                            cout << "### Result: False!" << endl;
                             #endif
+                            learnt_clause.clear();
+                            vector<Module*>::const_iterator backend = usedBackends().begin();
+                            while( backend != usedBackends().end() )
+                            {
+                                if( !(*backend)->rInfeasibleSubsets().empty() )
+                                {
+                                    #ifdef STORE_ONLY_ONE_REASON
+                                    vec_set_const_pFormula::const_iterator bestInfeasibleSubset = (*backend)->rInfeasibleSubsets().begin();
+                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
+                                            infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
+                                    {
+                                        if( bestInfeasibleSubset->size() > infsubset->size() )
+                                        {
+                                            bestInfeasibleSubset = infsubset;
+                                        }
+                                    }
+                                    #ifdef DEBUG_SATMODULE
+                                    (*backend)->printInfeasibleSubsets();
+                                    cout << "### { ";
+                                    #endif
+                                    confl = learnTheoryReason( *bestInfeasibleSubset );
+                                    #else
+                                    int conflictSize = mpPassedFormula->size();
+                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
+                                            infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
+                                    {
+                                        #ifdef DEBUG_SATMODULE
+                                        (*backend)->printInfeasibleSubsets();
+                                        cout << "### { ";
+                                        #endif
+                                        CRef tmpConfl = learnTheoryReason( *infsubset );
+                                        if( ca[tmpConfl].size() < conflictSize )
+                                        {
+                                            confl = tmpConfl;
+                                            conflictSize = ca[tmpConfl].size();
+                                        }
+                                    }
+                                    #endif
+                                    break;
+                                }
+                                ++backend;
+                            }
+                            assert( backend != usedBackends().end() );
 
-                            confl = ca.alloc( learnt_clause, true );
-
-                            #ifdef DEBUG_SATMODULE
-                            printClause( cout, ca[confl] );
-                            cout << endl << "###" << endl;
-                            #endif
+                            break;
                         }
-                        // Learn theory lemma
-                        else
+                        case Unknown:
                         {
                             #ifdef DEBUG_SATMODULE
-                            cout << "###" << endl << "### Learn theory lemma" << endl;
-                            cout << "### Conflict clause (" << learnt_clause.size() << ") = ";
+                            cout << "### Result: Unknown!" << endl;
+                            cout << "Warning! Unknown as answer in SAT solver." << endl;
                             #endif
-
-                            confl = ca.alloc( learnt_clause, true );
-                            learnts.push( confl );
-                            attachClause( confl );
-                            claBumpActivity( ca[confl] );
-
-                            #ifdef DEBUG_SATMODULE
-                            printClause( cout, ca[confl] );
-                            cout << endl << "###" << endl;
-                            #endif
+                            return l_Undef;
                         }
-
-                        break;
-                    }
-                    case Unknown:
-                    {
-                        #ifdef DEBUG_SATMODULE
-                        cout << "### Result: Unknown!" << endl;
-                        cout << "Warning! Unknown as answer in SAT solver." << endl;
-                        #endif
-                        return l_Undef;
-                    }
-                    default:
-                    {
-                        cerr << "Unexpected output!" << endl;
-                        assert( false );
-                        return l_Undef;
+                        default:
+                        {
+                            cerr << "Unexpected output!" << endl;
+                            assert( false );
+                            return l_Undef;
+                        }
                     }
                 }
             }
+            #ifdef SATMODULE_WITH_CALL_NUMBER
+            #ifndef DEBUG_SATMODULE
+            #ifdef WITH_PROGRESS_ESTIMATION
+            cout << "\r" << numberOfTheoryCalls << setw(15) << (progressEstimate() * 100) << "%";
+            #else
+            cout << "\r" << numberOfTheoryCalls;
+            #endif
+            cout.flush();
+            #endif
+            #endif
 
             if( confl != CRef_Undef )
             {
@@ -1769,11 +2109,13 @@ NextClause:
             }
 
         for( int i = 0; i < c.size(); i++ )
-            //                _out << " " << ( sign( c[i] ) ? "-" : "" ) << ( mapVar( var( c[i] ), map, max ) + 1 );
-            _out << " " << (sign( c[i] ) ? "-" : "") << var( c[i] ) + 1;
+        {
+            signed tmp = (sign( c[i] ) ? -1 : 1) * var( c[i] ) + 1;
+            _out << setw(6) << tmp;
+        }
 
         if( satisfied( c ) )
-            cout << "   is satisfied";
+            cout << "      ok";
     }
 
     /**
@@ -1788,11 +2130,13 @@ NextClause:
     void SATModule::printClauses( ostream& _out, Clause& c, vec<Var>& map, Var& max )
     {
         for( int i = 0; i < c.size(); i++ )
-            //                _out << " " << ( sign( c[i] ) ? "-" : "" ) << ( mapVar( var( c[i] ), map, max ) + 1 );
-            _out << " " << (sign( c[i] ) ? "-" : "") << var( c[i] ) + 1;
+        {
+            signed tmp = (sign( c[i] ) ? -1 : 1) * var( c[i] ) + 1;
+            _out << setw(6) << tmp;
+        }
 
         if( satisfied( c ) )
-            cout << "   is satisfied";
+            cout << "      ok";
     }
 
     /**
@@ -1801,9 +2145,9 @@ NextClause:
      * @param _out  The output stream where the answer should be printed.
      * @param _init The line initiation.
      */
-    void SATModule::printClauses( ostream& _out, const string _init )
+    void SATModule::printClauses( const vec<CRef>& _clauses, const string _name, ostream& _out, const string _init )
     {
-        _out << _init << " Clauses:" << endl;
+        _out << _init << " " << _name << ":" << endl;
         // Handle case when solver is in contradictory state:
         if( !ok )
         {
@@ -1819,14 +2163,14 @@ NextClause:
         // Cannot use removeClauses here because it is not safe
         // to deallocate them at this point. Could be improved.
         int cnt = 0;
-        for( int i = 0; i < clauses.size(); i++ )
-            if( !satisfied( ca[clauses[i]] ) )
+        for( int i = 0; i < _clauses.size(); i++ )
+            if( !satisfied( ca[_clauses[i]] ) )
                 cnt++;
 
-        for( int i = 0; i < clauses.size(); i++ )
-            if( !satisfied( ca[clauses[i]] ) )
+        for( int i = 0; i < _clauses.size(); i++ )
+            if( !satisfied( ca[_clauses[i]] ) )
             {
-                Clause& c = ca[clauses[i]];
+                Clause& c = ca[_clauses[i]];
                 for( int j = 0; j < c.size(); j++ )
                     if( value( c[j] ) != l_False )
                         mapVar( var( c[j] ), map, max );
@@ -1843,10 +2187,10 @@ NextClause:
             _out << _init << "  " << (sign( assumptions[i] ) ? "-" : "") << (mapVar( var( assumptions[i] ), map, max ) + 1) << endl;
         }
 
-        for( int i = 0; i < clauses.size(); i++ )
+        for( int i = 0; i < _clauses.size(); i++ )
         {
             _out << _init << " ";
-            printClauses( _out, ca[clauses[i]], map, max );
+            printClauses( _out, ca[_clauses[i]], map, max );
             _out << endl;
         }
 
@@ -1869,7 +2213,8 @@ NextClause:
             {
                 _out <<  _init << "               ";
             }
-            _out << pos << " -> ";
+            _out << setw(5) << pos;
+            _out << "  (" << setw(7) << activity[pos] << ") " << " -> ";
             if( assigns[pos] == l_True )
             {
                 _out << "l_True";
@@ -1920,11 +2265,8 @@ NextClause:
             {
                 _out << _init << "             ";
             }
-            if( sign( trail[pos] ) )
-            {
-                _out << "-";
-            }
-            _out << var( trail[pos] ) << " @ " << level << endl;
+            signed tmp = (sign( trail[pos] ) ? -1 : 1) * var( trail[pos] ) + 1;
+            _out << setw(6) << tmp << " @ " << level << endl;
         }
     }
 }    // namespace smtrat

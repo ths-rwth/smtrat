@@ -31,6 +31,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "location.hh"
+
 #include "Driver.h"
 #include "Scanner.h"
 
@@ -40,7 +42,9 @@ namespace smtrat
         trace_scanning( false ),
         trace_parsing( false ),
         formulaRoot( _formulaRoot ),
-        collectedBooleans( std::set<std::string>() )
+        collectedBooleans( std::set<std::string>() ),
+        collectedBooleanAuxilliaries( std::map<std::string, std::string>() ),
+        collectedRealAuxilliaries( std::map<std::string, std::string>() )
     {}
 
     bool Driver::parse_stream( std::istream& in, const std::string& sname )

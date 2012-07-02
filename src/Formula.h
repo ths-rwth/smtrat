@@ -33,13 +33,11 @@
 #define SMTRAT_FORMULA_H
 
 #include <vector>
-#include <bitset>
 #include <string.h>
 #include <string>
+#include "Condition.h"
 #include "ModuleType.h"
 #include "ConstraintPool.h"
-
-using namespace std;
 
 namespace smtrat
 {
@@ -47,50 +45,6 @@ namespace smtrat
     {
         AND, OR, NOT, IFF, XOR, IMPLIES, BOOL, REALCONSTRAINT, TTRUE, FFALSE
     };
-
-    typedef std::bitset<64> Condition;
-
-    static const Condition  PROP_TRUE = Condition();
-
-    //Propositions which hold, if they hold for each subformula of a formula including itself (0-15)
-    static const Condition PROP_IS_IN_NNF                       = Condition().set( 0, 1 );
-    static const Condition PROP_IS_IN_CNF                       = Condition().set( 1, 1 ) | PROP_IS_IN_NNF;
-    static const Condition PROP_IS_PURE_CONJUNCTION             = Condition().set( 2, 1 ) | PROP_IS_IN_CNF;
-    static const Condition PROP_IS_A_CLAUSE                     = Condition().set( 3, 1 ) | PROP_IS_IN_CNF;
-    static const Condition PROP_IS_A_LITERAL                    = Condition().set( 4, 1 ) | PROP_IS_A_CLAUSE | PROP_IS_PURE_CONJUNCTION;
-    static const Condition PROP_IS_AN_ATOM                      = Condition().set( 5, 1 ) | PROP_IS_A_LITERAL;
-    static const Condition PROP_VARIABLE_DEGREE_LESS_THAN_FIVE  = Condition().set( 6, 1 );
-    static const Condition PROP_VARIABLE_DEGREE_LESS_THAN_FOUR  = Condition().set( 7, 1 ) | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
-    static const Condition PROP_VARIABLE_DEGREE_LESS_THAN_THREE = Condition().set( 8, 1 ) | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR;
-    static const Condition STRONG_CONDITIONS                    = PROP_IS_AN_ATOM | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-
-    //Propositions which hold, if they hold in at least one subformula (16-31)
-    static const Condition PROP_CONTAINS_EQUATION                = Condition().set( 16, 1 );
-    static const Condition PROP_CONTAINS_INEQUALITY              = Condition().set( 17, 1 );
-    static const Condition PROP_CONTAINS_STRICT_INEQUALITY       = Condition().set( 18, 1 ) | PROP_CONTAINS_INEQUALITY;
-    static const Condition PROP_CONTAINS_LINEAR_POLYNOMIAL       = Condition().set( 19, 1 );
-    static const Condition PROP_CONTAINS_NONLINEAR_POLYNOMIAL    = Condition().set( 20, 1 );
-    static const Condition PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL = Condition().set( 21, 1 );
-    static const Condition WEAK_CONDITIONS                       = PROP_CONTAINS_EQUATION | PROP_CONTAINS_INEQUALITY | PROP_CONTAINS_STRICT_INEQUALITY
-                                             | PROP_CONTAINS_LINEAR_POLYNOMIAL | PROP_CONTAINS_LINEAR_POLYNOMIAL | PROP_CONTAINS_NONLINEAR_POLYNOMIAL
-                                             | PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL;
-
-    //Propositions indicating that a solver cannot solve the formula
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE    = Condition().set( 48, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE      = Condition().set( 49, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_VSMODULE            = Condition().set( 50, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE = Condition().set( 51, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_CADMODULE           = Condition().set( 52, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_SATMODULE           = Condition().set( 53, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_LRAMODULE           = Condition().set( 54, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE        = Condition().set( 55, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE     = Condition().set( 57, 1 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE         = Condition().set( 56, 1 );
-    static const Condition SOLVABLE_CONDITIONS                          = PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE | PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_VSMODULE | PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_CADMODULE | PROP_CANNOT_BE_SOLVED_BY_SATMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_LRAMODULE | PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE | PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE;
 
     class Formula
     {
@@ -100,7 +54,7 @@ namespace smtrat
              */
 
             /// A unique ID within the formula containing this formula.
-            unsigned      mId;
+            double        mActivity;
             /// The type of this formula.
             Type          mType;
             /// All real valued variables used within this formula (and its subformulas).
@@ -108,9 +62,9 @@ namespace smtrat
             /// The content of this formula.
             union
             {
-                std::vector<Formula*>* mpSubformulas;
-                const Constraint*      mpConstraint;
-                const std::string*     mpIdentifier;
+                std::list<Formula*>* mpSubformulas;
+                const Constraint*    mpConstraint;
+                const std::string*   mpIdentifier;
             };
             /// The formula which contains this formula as subformula.
             Formula* mpFather;
@@ -123,6 +77,14 @@ namespace smtrat
 
             /// A pool to manage all generated constraints.
             static ConstraintPool mConstraintPool;
+            /// The prefix for any auxiliary Boolean defined in this formula.
+            static const std::string mAuxiliaryBooleanNamePrefix;
+            /// A counter for the auxiliary Booleans defined in this formula.
+            static unsigned mAuxiliaryBooleanCounter;
+            /// The prefix for any auxiliary Boolean defined in this formula.
+            static const std::string mAuxiliaryRealNamePrefix;
+            /// A counter for the auxiliary Booleans defined in this formula.
+            static unsigned mAuxiliaryRealCounter;
 
             /**
              *  Constructors and destructor.
@@ -132,20 +94,29 @@ namespace smtrat
             Formula( const std::string& );
             Formula( const Constraint* _constraint );
             Formula( const Formula& );
+
             ~Formula();
 
             /**
              * Type definitions.
              */
-            typedef std::vector<Formula*>::const_iterator         const_iterator;
-            typedef std::vector<Formula*>::const_reverse_iterator const_reverse_iterator;
+            typedef std::list<Formula*>::iterator iterator;
+            typedef std::list<Formula*>::reverse_iterator reverse_iterator;
+            typedef std::list<Formula*>::const_iterator const_iterator;
+            typedef std::list<Formula*>::const_reverse_iterator const_reverse_iterator;
 
             /**
              * Accessors:
              */
-            unsigned id() const
+
+            double activity() const
             {
-                return mId;
+                return mActivity;
+            }
+
+            void setActivity( double _activity )
+            {
+                mActivity = _activity;
             }
 
             Type getType() const
@@ -174,15 +145,15 @@ namespace smtrat
                 return mRealValuedVars;
             }
 
-            std::vector<Formula*>* const pSubformulas()
+            std::list<Formula*>* const pSubformulas()
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 return mpSubformulas;
             }
 
-            const std::vector<Formula*>& subformulas() const
+            const std::list<Formula*>& subformulas() const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 return *mpSubformulas;
             }
 
@@ -253,61 +224,115 @@ namespace smtrat
             // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
             const_iterator begin() const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 return mpSubformulas->begin();
+            }
+
+            iterator begin()
+            {
+                assert( isBooleanCombination() );
+                return mpSubformulas->begin();
+            }
+
+            iterator end()
+            {
+                assert( isBooleanCombination() );
+                return mpSubformulas->end();
             }
 
             const_iterator end() const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 return mpSubformulas->end();
             }
 
-            // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
+            // Important: Only the last sub formula is allowed to be changed. This ensures the right assignment of the ID.
             const_reverse_iterator rbegin() const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 return mpSubformulas->rbegin();
+            }
+
+            reverse_iterator rbegin()
+            {
+                assert( isBooleanCombination() );
+                return mpSubformulas->rbegin();
+            }
+
+            reverse_iterator rend()
+            {
+                assert( isBooleanCombination() );
+                return mpSubformulas->rend();
             }
 
             const_reverse_iterator rend() const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 return mpSubformulas->rend();
             }
 
-            // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
-            const Formula* at( unsigned _pos ) const
+            iterator last()
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
-                assert( mpSubformulas->size() > _pos );
-                return mpSubformulas->at( _pos );
+                assert( isBooleanCombination() );
+                assert( !mpSubformulas->empty() );
+				iterator result = --mpSubformulas->end();
+				return result;
             }
+
+            const_iterator last() const
+            {
+                assert( isBooleanCombination() );
+                assert( !mpSubformulas->empty() );
+				const_iterator result = --mpSubformulas->end();
+				return result;
+            }
+
+            // Important: Only the last subformula is allowed to be changed. This ensures the right assignment of the ID.
+            const Formula* at(  unsigned _pos ) const
+            {
+                assert( isBooleanCombination() );
+                assert( mpSubformulas->size() > _pos );
+                unsigned posNr = 0;
+				Formula::const_iterator pos = begin();
+				while(posNr < _pos )  {
+					++pos;
+					++posNr;
+				}
+                return *pos;
+
+			}
 
             const Formula& rAt( unsigned _pos ) const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 assert( mpSubformulas->size() > _pos );
-                return *mpSubformulas->at( _pos );
+				unsigned posNr = 0;
+				Formula::const_iterator pos = begin();
+				while(posNr < _pos )  {
+					++pos;
+					++posNr;
+				}
+                return **pos;
+
             }
 
             Formula* back()
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 assert( !mpSubformulas->empty() );
                 return mpSubformulas->back();
             }
 
             const Formula* back() const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 assert( !mpSubformulas->empty() );
                 return mpSubformulas->back();
             }
 
             const Formula& rBack() const
             {
-                assert( mType != BOOL && mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE );
+                assert( isBooleanCombination() );
                 assert( !mpSubformulas->empty() );
                 return *mpSubformulas->back();
             }
@@ -332,22 +357,94 @@ namespace smtrat
                 return mConstraintPool.newVariable( _name );
             }
 
+            /**
+             * Generates a fresh real variable and returns its identifier.
+             *
+             * @return The identifier of a fresh real variable.
+             */
+            static std::string getAuxiliaryReal()
+            {
+                std::stringstream out;
+                out << mAuxiliaryRealNamePrefix << mAuxiliaryRealCounter++;
+                return out.str();
+            }
+
+            /**
+             * Generates a fresh Boolean variable and returns its identifier.
+             *
+             * @return The identifier of a fresh Boolean variable.
+             */
+            static std::string getAuxiliaryBoolean()
+            {
+                std::stringstream out;
+                out << mAuxiliaryBooleanNamePrefix << mAuxiliaryBooleanCounter++;
+                return out.str();
+            }
+
+            bool isAtom() const
+            {
+                return ( mType == REALCONSTRAINT || mType == BOOL || mType == FFALSE || mType == TTRUE );
+            }
+
+            bool isBooleanCombination() const
+            {
+                return ( mType == AND || mType == OR || mType == NOT || mType == IMPLIES || mType == IFF || mType == XOR );
+            }
+
+            bool contains( const Formula* const _formula ) const
+            {
+                if( isBooleanCombination() )
+                {
+                    return (std::find( mpSubformulas->begin(), mpSubformulas->end(), _formula ) != mpSubformulas->end());
+                }
+                return false;
+            }
+
+            bool contains( const std::vector< const Formula* >& _formulas ) const
+            {
+                std::set< const Formula* > subformulas = std::set< const Formula* >();
+                for( std::vector< const Formula* >::const_iterator subformula = _formulas.begin();
+                     subformula != _formulas.end(); ++subformula )
+                {
+                    subformulas.insert( *subformula );
+                }
+                return contains( subformulas );
+            }
+
+            bool contains( const std::set< const Formula* >& _formulas ) const
+            {
+                std::set< const Formula* > subformulas = std::set< const Formula* >();
+                for( const_iterator subformula = begin(); subformula != end(); ++subformula )
+                {
+                    subformulas.insert( *subformula );
+                }
+                std::set< const Formula* >::iterator subformula = subformulas.begin();
+                std::set< const Formula* >::iterator iter = _formulas.begin();
+                while( subformula != subformulas.end() && iter != _formulas.end() )
+                {
+                    subformula = subformulas.insert( subformula, *iter );
+                    ++iter;
+                }
+                return (iter == _formulas.end());
+            }
+
             Condition getPropositions();
-            unsigned getMaxID() const;
-            void updateID();
             void setFather( Formula* );
             void addSubformula( Formula* );
             void addSubformula( const Constraint* );
             void pop_back();
             void erase( unsigned );
             void erase( const Formula* );
+            iterator erase( iterator );
+
             Formula* pruneBack();
             Formula* prune( unsigned );
+            iterator prune( iterator );
             void clear();
             void notSolvableBy( ModuleType );
-            void print( ostream& = std::cout, const string = "", bool = false ) const;
-            void printPropositions( ostream& = std::cout, const string = "" ) const;
-            void FormulaToConstraints( vector<const Constraint*>& ) const;
+            void print( std::ostream& = std::cout, const std::string = "", bool = false ) const;
+            void printPropositions( std::ostream& = std::cout, const std::string = "" ) const;
+            void getConstraints( std::vector<const Constraint*>& ) const;
 
         private:
 
