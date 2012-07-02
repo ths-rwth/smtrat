@@ -567,7 +567,7 @@ logic :
 	}
 	|	SYM
 	{
-		std::string errstr = std::string( "The only supported logic is QF_NRA!");
+		std::string errstr = std::string( "SMT-RAT does not support " + *$1 + "!");
 		error( yyloc, errstr );
 	}
 	;

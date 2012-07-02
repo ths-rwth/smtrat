@@ -53,8 +53,9 @@ namespace smtrat
         CR_EQ = 0, CR_NEQ = 1, CR_LESS = 2, CR_GREATER = 3, CR_LEQ = 4, CR_GEQ = 5
     };
 
-	bool constraintRelationIsStrict(Constraint_Relation rel); 
-	
+	bool constraintRelationIsStrict(Constraint_Relation rel);
+	std::string relationToString(const Constraint_Relation rel);
+
     struct strCmp
     {
         bool operator ()( std::string s1, std::string s2 ) const
@@ -73,24 +74,24 @@ namespace smtrat
     class Constraint
     {
         private:
-            /**
-             * Members.
+
+            /*
+             * Attributes:
              */
             GiNaC::ex*           pLhs;
             VS_MultiRootLessLhs* pMultiRootLessLhs;
             GiNaC::symtab        mVariables;
             Constraint_Relation  mRelation;
-            /// Unique id of this constraint. If the id is zero it means, that this constraint has no unique id.
             unsigned             mID;
         public:
 
-            /**
+            /*
              * Constructors:
              */
             Constraint();
             Constraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab&, unsigned = 0 );
             Constraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation&, const GiNaC::symtab&, unsigned = 0 );
-            Constraint( const Constraint& _constraint );
+            Constraint( const Constraint& );
 
             /*
              * Destructor:
@@ -125,7 +126,7 @@ namespace smtrat
                 return mRelation;
             }
 
-            const Constraint_Relation relation() const
+            Constraint_Relation relation() const
             {
                 return mRelation;
             }
@@ -151,14 +152,11 @@ namespace smtrat
             }
 
             // Data access methods (read only).
-            bool variable( const std::string& _variableName, GiNaC::symbol& _variable ) const;
-            bool hasVariable( const std::string& _varName ) const;
+            bool variable( const std::string&, GiNaC::symbol& ) const;
+            bool hasVariable( const std::string& ) const;
             unsigned isConsistent() const;
-            unsigned valuate( const std::string _consideredVariable, const unsigned _maxNumberOfVars, const bool );
-            bool bestVariable( std::string& _bestVariable ) const;
-            unsigned bestVariable2( std::string& _bestVariable ) const;
-            bool hasFinitelyManySolutionsIn( const std::string& _variableName ) const;
-            void getCoefficients( const GiNaC::symbol& _variable, std::vector<GiNaC::ex>& _coefficients ) const;
+            bool hasFinitelyManySolutionsIn( const std::string& ) const;
+            void getCoefficients( const GiNaC::symbol&, std::vector<GiNaC::ex>& ) const;
             signed degree( const std::string& ) const;
             signed highestDegree() const;
             bool isLinear() const;
@@ -171,19 +169,20 @@ namespace smtrat
             // Operators.
             bool operator <( const Constraint& ) const;
             bool operator ==( const Constraint& ) const;
+            friend std::ostream& operator <<( std::ostream&, const Constraint& );
 
             // Manipulating methods.
             void simplify();
 
             // Printing methods.
             std::string toString() const;
-            void print( std::ostream& _out ) const;
-            void print2( std::ostream& _out ) const;
+            void print( std::ostream& _out = std::cout) const;
+            void print2( std::ostream& _out = std::cout ) const;
 
             //
             static signed compare( const Constraint&, const Constraint& );
             static bool mergeConstraints( Constraint&, const Constraint& );
-
+            static bool combineConstraints( const Constraint&, const Constraint&, const Constraint& );
     };
 
     typedef std::vector<const Constraint*>                                vec_const_pConstraint;

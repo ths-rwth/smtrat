@@ -1246,8 +1246,8 @@ namespace smtrat
                                     ConditionSet::iterator oCond = (**child).rSubstitution().rOriginalConditions().begin();
                                     while( !worseConditionFound && oCond != (**child).substitution().originalConditions().end() )
                                     {
-                                        if( (**cond).rConstraint().valuate( _currentState->index(), mAllVariables.size(), true )
-                                                > (**oCond).rConstraint().valuate( _currentState->index(), mAllVariables.size(), true ))
+                                        if( (**cond).valuate( _currentState->index(), mAllVariables.size(), true )
+                                                > (**oCond).valuate( _currentState->index(), mAllVariables.size(), true ))
                                         {
                                             newTestCandidatesGenerated = true;
                                             if( debug )

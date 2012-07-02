@@ -441,7 +441,7 @@ namespace vs
              */
             _bestCondition = *cond;
             ++cond;
-            unsigned bestConditionValuation    = _bestCondition->rConstraint().valuate( index(), _numberOfAllVariables, true );
+            unsigned bestConditionValuation    = _bestCondition->valuate( index(), _numberOfAllVariables, true );
             unsigned currentConditionValuation = 0;
             while( cond != conditions().end() )
             {
@@ -450,11 +450,11 @@ namespace vs
                     if( (*_bestCondition).flag() )
                     {
                         _bestCondition         = *cond;
-                        bestConditionValuation = _bestCondition->rConstraint().valuate( index(), _numberOfAllVariables, true );
+                        bestConditionValuation = _bestCondition->valuate( index(), _numberOfAllVariables, true );
                     }
                     else
                     {
-                        currentConditionValuation = (**cond).rConstraint().valuate( index(), _numberOfAllVariables, true );
+                        currentConditionValuation = (**cond).valuate( index(), _numberOfAllVariables, true );
                         if( currentConditionValuation > bestConditionValuation )
                         {
                             _bestCondition         = *cond;
@@ -1437,7 +1437,7 @@ namespace vs
              */
             for( map<string, multiset<unsigned, unsignedGreater> >::iterator var = varVals.begin(); var != varVals.end(); ++var )
             {
-                unsigned varInConsVal = (**cond).rConstraint().valuate( var->first, _allVariables.size(), true );
+                unsigned varInConsVal = (**cond).valuate( var->first, _allVariables.size(), true );
                 if( varInConsVal != 0 )
                 {
                     varVals.at( var->first ).insert( varInConsVal );

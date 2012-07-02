@@ -56,15 +56,31 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             bool inform( const Constraint* const );
             Answer isConsistent();
+            void addLearningClauses();
+            void proceedSubstitution();
+            void simplifyConstraints();
+            std::pair< const Formula*, const Formula* > isCandidateforSubstitution( Formula::const_iterator ) const;
+            Formula::iterator substituteConstraint( Formula::iterator, std::pair< std::pair< std::string, bool >,
+                    std::pair< std::pair<GiNaC::symtab, GiNaC::symtab>, std::pair< GiNaC::ex, GiNaC::ex> > >,
+                    vec_set_const_pFormula );
+            void pushBacktrackPoint();
             void removeSubformula( Formula::const_iterator );
 
         private:
 
+            // Members for AddLearningClauses()
             bool                        mFreshConstraintReceived;
-            unsigned                    mNumberOfComparedConstraints;
             std::vector<const Constraint*>   mReceivedConstraints;
             std::vector<const Formula*>      mConstraintOrigins;
             std::vector< std::pair< std::pair< bool, unsigned >, std::pair< unsigned, unsigned > > >  mConstraintBacktrackPoints;
+
+            // Members for proceedSubstitution()
+            bool                        mNewFormulaReceived;
+            unsigned                    mNumberOfComparedConstraints;
+            Formula::iterator     mLastCheckedFormula;
+            std::vector< vec_set_const_pFormula >                               mSubstitutionOrigins;
+            std::map< std::string, unsigned >                                   mNumberOfVariables;
+            std::vector< std::pair< std::pair< std::string, bool >, std::pair< std::pair<GiNaC::symtab, GiNaC::symtab>, std::pair< GiNaC::ex, GiNaC::ex> > > >    mSubstitutions;
 
     };
 
