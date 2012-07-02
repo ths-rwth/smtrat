@@ -54,6 +54,7 @@ namespace smtrat
     };
 
 	bool constraintRelationIsStrict(Constraint_Relation rel);
+	std::string relationToString(const Constraint_Relation rel);
 
     struct strCmp
     {
@@ -73,18 +74,18 @@ namespace smtrat
     class Constraint
     {
         private:
-            /**
-             * Members.
+
+            /*
+             * Attributes:
              */
             GiNaC::ex*           pLhs;
             VS_MultiRootLessLhs* pMultiRootLessLhs;
             GiNaC::symtab        mVariables;
             Constraint_Relation  mRelation;
-            /// Unique id of this constraint. If the id is zero it means, that this constraint has no unique id.
             unsigned             mID;
         public:
 
-            /**
+            /*
              * Constructors:
              */
             Constraint();
@@ -125,7 +126,7 @@ namespace smtrat
                 return mRelation;
             }
 
-            const Constraint_Relation relation() const
+            Constraint_Relation relation() const
             {
                 return mRelation;
             }
@@ -175,12 +176,13 @@ namespace smtrat
 
             // Printing methods.
             std::string toString() const;
-            void print( std::ostream& ) const;
-            void print2( std::ostream& ) const;
+            void print( std::ostream& _out = std::cout) const;
+            void print2( std::ostream& _out = std::cout ) const;
 
             //
             static signed compare( const Constraint&, const Constraint& );
             static bool mergeConstraints( Constraint&, const Constraint& );
+            bool combineConstraints( const Constraint&, const Constraint&, const Constraint& );
     };
 
     typedef std::vector<const Constraint*>                                vec_const_pConstraint;
