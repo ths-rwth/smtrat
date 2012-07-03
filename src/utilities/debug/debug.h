@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   debug.h
  * Author: square
  *
@@ -6,7 +6,7 @@
  */
 
 #ifndef DEBUG_H
-#define	DEBUG_H
+#define DEBUG_H
 
 #include <iostream>
 
@@ -19,5 +19,5 @@
 #define print_debug(mess,lvl) ;
 #endif
 
-#endif	/* DEBUG_H */
+#endif   /* DEBUG_H */
 

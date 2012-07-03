@@ -10,17 +10,19 @@
 
 #include "Bound.h"
 
-namespace smtrat {
+namespace smtrat
+{
+    class EqualBound:
+        public Bound
+    {
+        public:
+            EqualBound();
+            EqualBound( Real bound );
+            virtual ~EqualBound();
 
-class EqualBound : public Bound {
-public:
-	EqualBound();
-	EqualBound(Real bound);
-	virtual ~EqualBound();
+            string toString();
+            bool checkBound( Real alpha, Real beta );
+    };
 
-	string toString();
-	bool checkBound(Real alpha, Real beta);
-};
-
-} /* namespace smtrat */
+}    /* namespace smtrat */
 #endif /* EQUALBOUND_H_ */

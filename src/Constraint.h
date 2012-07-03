@@ -53,8 +53,8 @@ namespace smtrat
         CR_EQ = 0, CR_NEQ = 1, CR_LESS = 2, CR_GREATER = 3, CR_LEQ = 4, CR_GEQ = 5
     };
 
-	bool constraintRelationIsStrict(Constraint_Relation rel);
-	std::string relationToString(const Constraint_Relation rel);
+    bool constraintRelationIsStrict( Constraint_Relation rel );
+    std::string relationToString( const Constraint_Relation rel );
 
     struct strCmp
     {
@@ -63,7 +63,7 @@ namespace smtrat
             return strcmp( s1.c_str(), s2.c_str() ) < 0;
         }
     };
-    typedef std::pair<GiNaC::ex, GiNaC::ex>   VS_MultiRootLessLhs;
+    typedef std::pair<GiNaC::ex, GiNaC::ex> VS_MultiRootLessLhs;
 
     /**
      * Class to create a constraint object.
@@ -83,6 +83,7 @@ namespace smtrat
             GiNaC::symtab        mVariables;
             Constraint_Relation  mRelation;
             unsigned             mID;
+
         public:
 
             /*
@@ -140,13 +141,13 @@ namespace smtrat
             {
                 #ifdef VS_USE_GINAC_NORMAL
                 #ifdef VS_USE_GINAC_EXPAND
-                _exp    = _exp.expand().normal();
+                _exp = _exp.expand().normal();
                 #else
-                _exp    = _exp.normal();
+                _exp = _exp.normal();
                 #endif
                 #else
                 #ifdef VS_USE_GINAC_EXPAND
-                _exp    = _exp.expand();
+                _exp = _exp.expand();
                 #endif
                 #endif
             }
@@ -160,7 +161,7 @@ namespace smtrat
             signed degree( const std::string& ) const;
             signed highestDegree() const;
             bool isLinear() const;
-            std::map< const std::string, GiNaC::numeric, strCmp > linearAndConstantCoefficients() const;
+            std::map<const std::string, GiNaC::numeric, strCmp> linearAndConstantCoefficients() const;
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
 
             // Data access methods (read and write).
@@ -176,7 +177,7 @@ namespace smtrat
 
             // Printing methods.
             std::string toString() const;
-            void print( std::ostream& _out = std::cout) const;
+            void print( std::ostream& _out = std::cout ) const;
             void print2( std::ostream& _out = std::cout ) const;
 
             //

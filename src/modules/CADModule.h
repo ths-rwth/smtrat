@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-02-04
- * @version 2012-05-21
+ * @version 2012-07-03
  *
  */
 #ifndef SMTRAT_CADMODULE_H
@@ -39,34 +39,56 @@
 
 namespace smtrat
 {
+    /// Hash function for use of Formula::const_iterator in unordered data structures
+    struct FormulaIteratorHasher
+    {
+        size_t operator ()( Formula::const_iterator i ) const
+        {
+            return (*i)->pConstraint()->id();
+        }
+    };
+    
     /**
      * Module invoking a CAD solver of the GiNaCRA library. The solver is only used with univariate polynomials.
      * If a polynomial with more than one variable is added, this module passes it on.
      *
      * @author Ulrich Loup
      * @since 2012-02-04
-     * @version 2012-04-09
+     * @version 2012-07-02
      *
      */
     class CADModule:
         public Module
     {
+        typedef std::unordered_map<Formula::const_iterator, unsigned, FormulaIteratorHasher> ConstraintIndexMap;
+        
+        ////////////////
+        // ATTRIBUTES //
+        ////////////////
+        
         /// representation of the solution space containing all data relevant for CAD computations
         GiNaCRA::CAD mCAD;
-        /// the GiNaCRA constraints corresponding to received constraints
+        /// the GiNaCRA constraints
         vector<GiNaCRA::Constraint> mConstraints;
+        /// the GiNaCRA constraints' indices assigned to the received constraints
+        ConstraintIndexMap mConstraintsMap;
+        /// flag storing global satisfiability status
+        bool mSatisfiable;
 
         public:
             CADModule( Manager* const _tsmanager, const Formula* const );
 
             virtual ~CADModule();
 
-            virtual bool assertSubFormula( const Formula* const );
+            virtual bool assertSubformula( Formula::const_iterator _subformula );
+            virtual void removeSubformula( Formula::const_iterator _subformula );
             virtual Answer isConsistent();
-            virtual void popBacktrackPoint();
 
         private:
-            const GiNaCRA::Constraint convertConstraint( const Constraint& );
+            inline const GiNaCRA::Constraint convertConstraint( const Constraint& );
+            inline vec_set_const_pFormula extractMinimalInfeasibleSubsets( const GiNaCRA::ConflictGraph& conflictGraph );
+            inline const Formula* getConstraintAt( unsigned index );
+            inline void updateConstraintMap( unsigned index, bool decrement = true );
     };
 
 }    // namespace smtrat

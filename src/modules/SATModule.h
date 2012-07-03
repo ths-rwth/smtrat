@@ -74,15 +74,16 @@ namespace smtrat
             {
                 bool operator ()( const Formula* const _formulaA, const Formula* const _formulaB ) const
                 {
-                    assert(_formulaA->getType() == REALCONSTRAINT);
-                    assert(_formulaB->getType() == REALCONSTRAINT);
+                    assert( _formulaA->getType() == REALCONSTRAINT );
+                    assert( _formulaB->getType() == REALCONSTRAINT );
                     return (_formulaA->constraint() < _formulaB->constraint());
                 }
             };
-            typedef std::map<const Constraint* const, Minisat::Lit>                        ConstraintLiteralMap;
-            typedef std::map<const std::string, Minisat::Var>                              BooleanVarMap;
-            typedef std::map<const Minisat::Var, std::pair<Formula*, const Formula*> >     BooleanConstraintMap;
-            typedef std::map<const Formula*, const Formula*, formulaCmp>                   ConstraintOriginMap;
+            typedef std::map<const Constraint* const , Minisat::Lit>                   ConstraintLiteralMap;
+            typedef std::map<const std::string, Minisat::Var>                          BooleanVarMap;
+            typedef std::map<const Minisat::Var, std::pair<Formula*, const Formula*> > BooleanConstraintMap;
+            typedef std::map<const Formula*, const Formula*, formulaCmp>               ConstraintOriginMap;
+
             /*
              * Helper structures:
              */
@@ -148,7 +149,6 @@ namespace smtrat
              * Members:
              */
 
-
             // Mode of operation:
             //
             int    verbosity;
@@ -158,17 +158,17 @@ namespace smtrat
             double random_seed;
             bool   luby_restart;
             // Controls conflict clause minimization (0=none, 1=basic, 2=deep).
-            int    ccmin_mode;
+            int ccmin_mode;
             // Controls the level of phase saving (0=none, 1=limited, 2=full).
-            int    phase_saving;
+            int phase_saving;
             // Use random polarities for branching heuristics.
-            bool   rnd_pol;
+            bool rnd_pol;
             // Initialize variable activities with a small random value.
-            bool   rnd_init_act;
+            bool rnd_init_act;
             // The fraction of wasted memory allowed before a garbage collection is triggered.
             double garbage_frac;
             // The initial restart limit. (default 100)
-            int    restart_first;
+            int restart_first;
             // The factor with which the restart limit is multiplied in each restart. (default 1.5)
             double restart_inc;
             // The initial limit for learned clauses is a factor of the original clauses.(default 1 / 3)
@@ -187,46 +187,46 @@ namespace smtrat
             // Solver state:
             //
             // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
-            bool                         ok;
+            bool ok;
             // List of problem clauses.
-            Minisat::vec<Minisat::CRef>  clauses;
+            Minisat::vec<Minisat::CRef> clauses;
             // List of learned clauses.
-            Minisat::vec<Minisat::CRef>  learnts;
+            Minisat::vec<Minisat::CRef> learnts;
             // Amount to bump next clause with.
-            double                       cla_inc;
+            double cla_inc;
             // A heuristic measurement of the activity of a variable.
-            Minisat::vec<double>         activity;
+            Minisat::vec<double> activity;
             // Amount to bump next variable with.
-            double                       var_inc;
+            double var_inc;
             // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
             Minisat::OccLists<Minisat::Lit, Minisat::vec<Watcher>, WatcherDeleted> watches;
             // The current assignments.
             Minisat::vec<Minisat::lbool> assigns;
             // The preferred polarity of each variable.
-            Minisat::vec<char>           polarity;
+            Minisat::vec<char> polarity;
             // Declares if a variable is eligible for selection in the decision heuristic.
-            Minisat::vec<char>           decision;
+            Minisat::vec<char> decision;
             // Assignment stack; stores all assignments made in the order they were made.
-            Minisat::vec<Minisat::Lit>   trail;
+            Minisat::vec<Minisat::Lit> trail;
             // Separator indices for different decision levels in 'trail'.
-            Minisat::vec<int>            trail_lim;
+            Minisat::vec<int> trail_lim;
             // Stores reason and level for each variable.
-            Minisat::vec<VarData>        vardata;
+            Minisat::vec<VarData> vardata;
             // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
-            int                          qhead;
+            int qhead;
             // Number of top-level assignments since last execution of 'simplify()'.
-            int                          simpDB_assigns;
+            int simpDB_assigns;
             // Remaining number of propagations that must be made before next execution of 'simplify()'.
-            int64_t                      simpDB_props;
+            int64_t simpDB_props;
             // Current set of assumptions provided to solve by the user.
-            Minisat::vec<Minisat::Lit>   assumptions;
+            Minisat::vec<Minisat::Lit> assumptions;
             // A priority queue of variables ordered with respect to the variable activity.
-            Minisat::Heap<VarOrderLt>    order_heap;
+            Minisat::Heap<VarOrderLt> order_heap;
             // Set by 'search()'.
-            double                       progress_estimate;
+            double progress_estimate;
             // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
-            bool                         remove_satisfied;
-            Minisat::ClauseAllocator     ca;
+            bool                     remove_satisfied;
+            Minisat::ClauseAllocator ca;
 
             // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
             // used, except 'seen' whsich is used in several places.
@@ -240,9 +240,9 @@ namespace smtrat
             int                        learntsize_adjust_cnt;
 
             // Resource constraints:
-            int64_t conflict_budget;    // -1 means no budget.
-            int64_t propagation_budget; // -1 means no budget.
-            bool    asynch_interrupt;
+            int64_t               conflict_budget;    // -1 means no budget.
+            int64_t               propagation_budget;    // -1 means no budget.
+            bool                  asynch_interrupt;
 
             ConstraintLiteralMap  mConstraintLiteralMap;
             BooleanVarMap         mBooleanVarMap;
@@ -256,7 +256,7 @@ namespace smtrat
             Minisat::vec<Minisat::lbool> model;
             // If problem is unsatisfiable (possibly under assumptions),
             // this vector represent the final conflict clause expressed in the assumptions.
-            Minisat::vec<Minisat::Lit>   conflict;
+            Minisat::vec<Minisat::Lit> conflict;
 
         public:
 
@@ -610,7 +610,7 @@ namespace smtrat
         return assigns[x];
     }
 
-        inline Minisat::lbool SATModule::value( Minisat::Lit p ) const
+    inline Minisat::lbool SATModule::value( Minisat::Lit p ) const
     {
         return assigns[Minisat::var( p )] ^ Minisat::sign( p );
     }

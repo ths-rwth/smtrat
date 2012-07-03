@@ -26,35 +26,43 @@
  */
 
 #include "NRATSolver.h"
+
 #ifdef USE_GB
+
 #include <ginacra/settings.h>
+
 #endif
 
 namespace smtrat
 {
-    static bool caseOne ( Condition _condition )
+    static bool caseOne( Condition _condition )
     {
         return PROP_CANNOT_BE_SOLVED_BY_VSMODULE <= _condition;
     }
+
     #ifdef USE_GB
-    static bool caseTwo ( Condition _condition )
+    static bool caseTwo( Condition _condition )
     {
         return PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE <= _condition;
     }
     #endif
-    static bool caseThree ( Condition _condition )
+
+    static bool caseThree( Condition _condition )
     {
         return PROP_CANNOT_BE_SOLVED_BY_SATMODULE <= _condition;
     }
-    static bool caseFour ( Condition _condition )
+
+    static bool caseFour( Condition _condition )
     {
         return PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE <= _condition;
     }
-    static bool caseFive ( Condition _condition )
+
+    static bool caseFive( Condition _condition )
     {
         return PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE <= _condition;
     }
-    static bool caseSix ( Condition _condition )
+
+    static bool caseSix( Condition _condition )
     {
         return true;
     }
@@ -67,9 +75,10 @@ namespace smtrat
         return PROP_CANNOT_BE_SOLVED_BY_FOURIERMOTZKINSIMPLIFIER <= _condition;
     }
 
-    NRATSolver::NRATSolver( Formula* _inputFormula ) : Manager( _inputFormula )
+    NRATSolver::NRATSolver( Formula* _inputFormula ):
+        Manager( _inputFormula )
     {
-		#ifdef USE_GB
+        #ifdef USE_GB
         GiNaCRA::MultivariatePolynomialSettings::InitializeGiNaCRAMultivariateMR();
 		#endif
 		#ifdef USE_CAD
@@ -89,6 +98,7 @@ namespace smtrat
         strategy().addModuleType( caseSix, MT_CNFerModule );
     }
 
-    NRATSolver::~NRATSolver() {}
+    NRATSolver::~NRATSolver(){}
 
 }    // namespace smtrat
+

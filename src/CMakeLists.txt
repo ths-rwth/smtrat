@@ -70,8 +70,8 @@ if(USE_GB)
 endif()
 
 if(USE_CAD)
-	set(lib_modules_headers ${lib_modules_headers} modules/UnivariateCADModule.h modules/CADModule.h)
-	set(lib_modules_src ${lib_modules_src}  modules/UnivariateCADModule.cpp modules/CADModule.cpp)
+	set(lib_modules_headers ${lib_modules_headers} modules/CADModule.h)
+	set(lib_modules_src ${lib_modules_src}  modules/CADModule.cpp)
 endif()
 
 set(lib_VSModule_headers

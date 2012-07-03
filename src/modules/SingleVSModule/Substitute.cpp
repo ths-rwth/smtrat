@@ -79,6 +79,7 @@ namespace svs
                 if( fmod( lhs.degree( ex( _variable ) ), 2.0 ) != 0.0 )
                 {
                     Formula* result = new Formula( OR );
+
                     /*
                      * Add conjunction (s>0 and q </>/<=/>= 0) to the substitution result.
                      */
@@ -201,6 +202,7 @@ namespace svs
         Formula* result = new Formula( OR );
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
         Constraint::normalize( lhs );
+
         /*
          * Add conjunction (q=0 and r=0) to the substitution result.
          */
@@ -208,6 +210,7 @@ namespace svs
         resultBackA->addSubformula( Formula::newConstraint( _q, CR_EQ ) );
         resultBackA->addSubformula( Formula::newConstraint( _r, CR_EQ ) );
         result->addSubformula( resultBackA );
+
         /*
          * Add conjunction (q=0 and radicand=0) to the substitution result.
          */
@@ -215,6 +218,7 @@ namespace svs
         resultBackB->addSubformula( Formula::newConstraint( _q, CR_EQ ) );
         resultBackB->addSubformula( Formula::newConstraint( _radicand, CR_EQ ) );
         result->addSubformula( resultBackB );
+
         /*
          * Add conjunction (q<0 and r>0 and q^2-r^2*radicand=0) to the substitution result.
          */
@@ -223,6 +227,7 @@ namespace svs
         resultBackC->addSubformula( Formula::newConstraint( _r, CR_GREATER ) );
         resultBackC->addSubformula( Formula::newConstraint( lhs, CR_EQ ) );
         result->addSubformula( resultBackC );
+
         /*
          * Add conjunction (q>0 and r<0 and q^2-r^2*radicand=0) to the substitution result.
          */
@@ -251,6 +256,7 @@ namespace svs
         Formula* result = new Formula( OR );
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
         Constraint::normalize( lhs );
+
         /*
          * Add conjunction (q>0 and r>0) to the substitution result.
          */
@@ -258,6 +264,7 @@ namespace svs
         resultBackA->addSubformula( Formula::newConstraint( _q, CR_GREATER ) );
         resultBackA->addSubformula( Formula::newConstraint( _r, CR_GREATER ) );
         result->addSubformula( resultBackA );
+
         /*
          * Add conjunction (q<0 and r<0) to the substitution result.
          */
@@ -265,6 +272,7 @@ namespace svs
         resultBackB->addSubformula( Formula::newConstraint( _q, CR_LESS ) );
         resultBackB->addSubformula( Formula::newConstraint( _r, CR_LESS ) );
         result->addSubformula( resultBackB );
+
         /*
          * Add conjunction (q^2-r^2*radicand!=0) to the substitution result.
          */
@@ -290,6 +298,7 @@ namespace svs
         Formula* result = new Formula( OR );
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
         Constraint::normalize( lhs );
+
         /*
          * Add conjunction (q<0 and s>0 and q^2-r^2*radicand>0) to the substitution result.
          */
@@ -298,6 +307,7 @@ namespace svs
         resultBackA->addSubformula( Formula::newConstraint( _s, CR_GREATER ) );
         resultBackA->addSubformula( Formula::newConstraint( lhs, CR_GREATER ) );
         result->addSubformula( resultBackA );
+
         /*
          * Add conjunction (q>0 and s<0 and q^2-r^2*radicand>0) to the substitution result.
          */
@@ -306,6 +316,7 @@ namespace svs
         resultBackB->addSubformula( Formula::newConstraint( _s, CR_LESS ) );
         resultBackB->addSubformula( Formula::newConstraint( lhs, CR_GREATER ) );
         result->addSubformula( resultBackB );
+
         /*
          * Add conjunction (r>0 and s<0 and q^2-r^2*radicand<0) to the substitution result.
          */
@@ -314,6 +325,7 @@ namespace svs
         resultBackC->addSubformula( Formula::newConstraint( _s, CR_LESS ) );
         resultBackC->addSubformula( Formula::newConstraint( lhs, CR_LESS ) );
         result->addSubformula( resultBackC );
+
         /*
          * Add conjunction (r<0 and s>0 and q^2-r^2*radicand<0) to the substitution result.
          */
@@ -322,6 +334,7 @@ namespace svs
         resultBackD->addSubformula( Formula::newConstraint( _s, CR_GREATER ) );
         resultBackD->addSubformula( Formula::newConstraint( lhs, CR_LESS ) );
         result->addSubformula( resultBackD );
+
         /*
          * Add conjunction (r>=0 and q<0 and s>0) to the substitution result.
          */
@@ -330,6 +343,7 @@ namespace svs
         resultBackE->addSubformula( Formula::newConstraint( _q, CR_GREATER ) );
         resultBackE->addSubformula( Formula::newConstraint( _s, CR_LESS ) );
         result->addSubformula( resultBackE );
+
         /*
          * Add conjunction (r<=0 and q>0 and s<0) to the substitution result.
          */
@@ -359,6 +373,7 @@ namespace svs
         Formula* result = new Formula( OR );
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
         Constraint::normalize( lhs );
+
         /*
          * Add conjunction (q<0 and s>0 and q^2-r^2*radicand>=0) to the substitution result.
          */
@@ -367,6 +382,7 @@ namespace svs
         resultBackA->addSubformula( Formula::newConstraint( _s, CR_GREATER ) );
         resultBackA->addSubformula( Formula::newConstraint( lhs, CR_GEQ ) );
         result->addSubformula( resultBackA );
+
         /*
          * Add conjunction (q>0 and s<0 and q^2-r^2*radicand>=0) to the substitution result.
          */
@@ -375,6 +391,7 @@ namespace svs
         resultBackB->addSubformula( Formula::newConstraint( _s, CR_LESS ) );
         resultBackB->addSubformula( Formula::newConstraint( lhs, CR_GEQ ) );
         result->addSubformula( resultBackB );
+
         /*
          * Add conjunction (r>0 and s<0 and q^2-r^2*radicand<=0) to the substitution result.
          */
@@ -383,6 +400,7 @@ namespace svs
         resultBackC->addSubformula( Formula::newConstraint( _s, CR_LESS ) );
         resultBackC->addSubformula( Formula::newConstraint( lhs, CR_LEQ ) );
         result->addSubformula( resultBackC );
+
         /*
          * Add conjunction (r<0 and s>0 and q^2-r^2*radicand<=0) to the substitution result.
          */
@@ -391,6 +409,7 @@ namespace svs
         resultBackD->addSubformula( Formula::newConstraint( _s, CR_GREATER ) );
         resultBackD->addSubformula( Formula::newConstraint( lhs, CR_LEQ ) );
         result->addSubformula( resultBackD );
+
         /*
          * Add conjunction (r=0 and q=0) to the substitution result.
          */
@@ -398,6 +417,7 @@ namespace svs
         resultBackE->addSubformula( Formula::newConstraint( _r, CR_EQ ) );
         resultBackE->addSubformula( Formula::newConstraint( _q, CR_EQ ) );
         result->addSubformula( resultBackE );
+
         /*
          * Add conjunction (radicand=0 and q=0) to the substitution result.
          */
@@ -480,9 +500,14 @@ namespace svs
      * @param _relation1    The relation symbol, which compares a even derivative with zero.
      * @param _relation2    The relation symbol, which compares a odd derivative with zero.
      */
-    Formula* substituteEpsGradients( const Constraint* _constraint, const symbol& _variable, const vs::SqrtEx& _subterm, const Constraint_Relation _relation1, const Constraint_Relation _relation2 )
+    Formula* substituteEpsGradients( const Constraint* _constraint,
+                                     const symbol& _variable,
+                                     const vs::SqrtEx& _subterm,
+                                     const Constraint_Relation _relation1,
+                                     const Constraint_Relation _relation2 )
     {
         Formula* result = new Formula( AND );
+
         /*
          * Add (f(x)~0)[x -> t] to the result.
          */
@@ -499,9 +524,9 @@ namespace svs
         Formula* resultBack = new Formula( OR );
         ex derivative = _constraint->lhs();
         const Constraint* currentConstraint = Formula::newConstraint( derivative, CR_EQ );
-        bool isAOddDerivation = true;
-        vector<string> auxBooleans = vector<string>();
-        signed i = derivative.degree( ex( _variable ) );
+        bool              isAOddDerivation  = true;
+        vector<string>    auxBooleans       = vector<string>();
+        signed            i                 = derivative.degree( ex( _variable ) );
         while( i >= 0 )
         {
             /*
@@ -515,12 +540,11 @@ namespace svs
             Formula* resultBackBack = new Formula( AND );
             string currentAuxBoolean = Formula::getAuxiliaryBoolean();
             auxBooleans.push_back( currentAuxBoolean );
-            for( vector<string>::const_iterator auxBoolean = auxBooleans.begin();
-                 auxBoolean != auxBooleans.end();
-                 ++auxBoolean )
+            for( vector<string>::const_iterator auxBoolean = auxBooleans.begin(); auxBoolean != auxBooleans.end(); ++auxBoolean )
             {
                 resultBackBack->addSubformula( new Formula( *auxBoolean ) );
             }
+
             /*
              * Add a constraint, which has the just formed derivate as left hand side and the
              * relation corresponding to the number of the derivate.
@@ -538,7 +562,7 @@ namespace svs
             /*
              * Add the disjunction ( ~h_k or (f^i(x)=0)[x -> t] ) to the result.
              */
-            Formula* resultBackB = new Formula( OR );
+            Formula* resultBackB      = new Formula( OR );
             Formula* resultBackBFirst = new Formula( NOT );
             resultBackBFirst->addSubformula( new Formula( currentAuxBoolean ) );
             resultBackB->addSubformula( resultBackBFirst );
@@ -549,7 +573,7 @@ namespace svs
             if( i >= 0 )
             {
                 currentConstraint = Formula::newConstraint( derivative, CR_EQ );
-                isAOddDerivation = !isAOddDerivation;
+                isAOddDerivation  = !isAOddDerivation;
             }
         }
         result->addSubformula( resultBack );
@@ -631,7 +655,7 @@ namespace svs
         assert( coefficients.size() > 0 );
         for( unsigned i = coefficients.size(); i > 0; --i )
         {
-            assert( !coefficients.at( i - 1 ).has( _variable ));
+            assert( !coefficients.at( i - 1 ).has( _variable ) );
 
             /*
              * Add conjunction (a_n=0 and ... and a_i~0) to the substitution result.
@@ -687,7 +711,7 @@ namespace svs
 
         for( unsigned i = 0; i < coefficients.size(); i++ )
         {
-            assert( !coefficients.at( i ).has( _variable ));
+            assert( !coefficients.at( i ).has( _variable ) );
 
             result->addSubformula( Formula::newConstraint( coefficients.at( i ), CR_EQ ) );
         }
@@ -711,14 +735,14 @@ namespace svs
          */
         assert( _constraint.relation() == CR_NEQ );
 
-        Formula* result = new Formula( OR );
+        Formula*   result = new Formula( OR );
 
         vector<ex> coefficients;
         _constraint.getCoefficients( _variable, coefficients );
 
         for( unsigned i = 0; i < coefficients.size(); i++ )
         {
-            assert( !coefficients.at( i ).has( _variable ));
+            assert( !coefficients.at( i ).has( _variable ) );
 
             /*
              * Add (a_i!=0) to the disjunction.
@@ -728,7 +752,7 @@ namespace svs
         return result;
     }
 
-#ifdef VS_CUBIC_CASE
+    #ifdef VS_CUBIC_CASE
 
     /**
      * Applies the given substitution to the given constraint. Note, that the test candidates
@@ -744,7 +768,7 @@ namespace svs
                               DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
         symbol sym;
-        if( _constraint.variable( _substitution.variable(), sym ))
+        if( _constraint.variable( _substitution.variable(), sym ) )
         {
             /*
              * Get the variables of the constraint merged with those of the substitution.
@@ -819,13 +843,13 @@ namespace svs
         vector<ex> coeffs = vector<ex>();
         for( int i = 0; i <= _g.degree( _variable ); ++i )
         {
-            coeffs.push_back( ex( _g.coeff( _variable, i )));
+            coeffs.push_back( ex( _g.coeff( _variable, i ) ) );
         }
 
         /*
          * Leading coefficient is not zero.
          */
-        vs::SqrtEx zeroOfG            = vs::SqrtEx( coeffs.at( 0 ), 0, coeffs.at( 1 ), 0 );
+        vs::SqrtEx zeroOfG = vs::SqrtEx( coeffs.at( 0 ), 0, coeffs.at( 1 ), 0 );
         Substitution subByZeroOfG = Substitution( _substitution.variable(), zeroOfG, ST_NORMAL, _variables, _substitution.originalConditions() );
 
         _substitutionResults.push_back( TS_ConstraintConjunction() );
@@ -854,14 +878,10 @@ namespace svs
                 else
                 {
                     _substitutionResults.push_back( TS_ConstraintConjunction() );
-                    resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().denominator(),
-                                                                                   CR_NEQ ) );
-                    resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().radicand(),
-                                                                                   CR_GEQ ) );
-                    resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().denominator(),
-                                                                                   CR_NEQ ) );
-                    resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().radicand(),
-                                                                                   CR_GEQ ) );
+                    resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().denominator(), CR_NEQ ) );
+                    resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().radicand(), CR_GEQ ) );
+                    resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().denominator(), CR_NEQ ) );
+                    resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().radicand(), CR_GEQ ) );
 
                     Substitution_Type subType = ST_NORMAL;
                     if( plusEpsilon )
@@ -898,14 +918,10 @@ namespace svs
                 else
                 {
                     _substitutionResults.push_back( TS_ConstraintConjunction() );
-                    resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().denominator(),
-                                                                                   CR_NEQ ) );
-                    resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().radicand(),
-                                                                                   CR_GEQ ) );
-                    resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().denominator(),
-                                                                                   CR_NEQ ) );
-                    resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().radicand(),
-                                                                                   CR_GEQ ) );
+                    resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().denominator(), CR_NEQ ) );
+                    resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().radicand(), CR_GEQ ) );
+                    resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().denominator(), CR_NEQ ) );
+                    resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().radicand(), CR_GEQ ) );
 
                     Substitution_Type subType = ST_NORMAL;
                     if( plusEpsilon )
@@ -951,9 +967,9 @@ namespace svs
         vector<ex> coeffs = vector<ex>();
         for( int i = 0; i <= _g.degree( _variable ); ++i )
         {
-            coeffs.push_back( ex( _g.coeff( _variable, i )));
+            coeffs.push_back( ex( _g.coeff( _variable, i ) ) );
         }
-        ex radicand = ex( pow( coeffs.at( 1 ), 2 ) - 4 * coeffs.at( 2 ) * coeffs.at( 0 ));
+        ex radicand = ex( pow( coeffs.at( 1 ), 2 ) - 4 * coeffs.at( 2 ) * coeffs.at( 0 ) );
         Constraint::normalize( radicand );
 
         /*
@@ -963,10 +979,10 @@ namespace svs
          */
         vs::SqrtEx firstZeroOfG = vs::SqrtEx( -coeffs.at( 1 ), 1, 2 * coeffs.at( 2 ), radicand );
         Substitution
-        subByFirstZeroOfG   = Substitution( _substitution.variable(), firstZeroOfG, ST_NORMAL, _variables, _substitution.originalConditions() );
+        subByFirstZeroOfG = Substitution( _substitution.variable(), firstZeroOfG, ST_NORMAL, _variables, _substitution.originalConditions() );
         vs::SqrtEx secondZeroOfG = vs::SqrtEx( -coeffs.at( 1 ), -1, 2 * coeffs.at( 2 ), radicand );
         Substitution
-        subBySecondZeroOfG   = Substitution( _substitution.variable(), secondZeroOfG, ST_NORMAL, _variables, _substitution.originalConditions() );
+        subBySecondZeroOfG = Substitution( _substitution.variable(), secondZeroOfG, ST_NORMAL, _variables, _substitution.originalConditions() );
 
         _substitutionResults.push_back( TS_ConstraintConjunction() );
         resultBack->addSubformula( Formula::newConstraint( coeffs.at( 2 ), CR_NEQ ) );
@@ -987,8 +1003,7 @@ namespace svs
                     substituteNormal( constraint, subBySecondZeroOfG, _substitutionResults );
                 }
 
-                if( _constraint.relation() == CR_GEQ || _constraint.relation() == CR_GREATER
-                        || _constraint.relation() == CR_NEQ )
+                if( _constraint.relation() == CR_GEQ || _constraint.relation() == CR_GREATER || _constraint.relation() == CR_NEQ )
                 {
                     if( singleCubicRoot )
                     {
@@ -1001,14 +1016,10 @@ namespace svs
                     else
                     {
                         _substitutionResults.push_back( TS_ConstraintConjunction() );
-                        resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().denominator(),
-                                                                                       CR_NEQ ) );
-                        resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().radicand(),
-                                                                                       CR_GEQ ) );
-                        resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().denominator(),
-                                                                                       CR_NEQ ) );
-                        resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().radicand(),
-                                                                                       CR_GEQ ) );
+                        resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().denominator(), CR_NEQ ) );
+                        resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().radicand(), CR_GEQ ) );
+                        resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().denominator(), CR_NEQ ) );
+                        resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().radicand(), CR_GEQ ) );
 
                         Substitution_Type subType = ST_NORMAL;
                         if( plusEpsilon )
@@ -1033,8 +1044,7 @@ namespace svs
                     }
                 }
 
-                if( _constraint.relation() == CR_LEQ || _constraint.relation() == CR_LESS
-                        || _constraint.relation() == CR_NEQ )
+                if( _constraint.relation() == CR_LEQ || _constraint.relation() == CR_LESS || _constraint.relation() == CR_NEQ )
                 {
                     if( singleCubicRoot )
                     {
@@ -1043,14 +1053,10 @@ namespace svs
                     else
                     {
                         _substitutionResults.push_back( TS_ConstraintConjunction() );
-                        resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().denominator(),
-                                                                                       CR_NEQ ) );
-                        resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().radicand(),
-                                                                                       CR_GEQ ) );
-                        resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().denominator(),
-                                                                                       CR_NEQ ) );
-                        resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().radicand(),
-                                                                                       CR_GEQ ) );
+                        resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().denominator(), CR_NEQ ) );
+                        resultBack->addSubformula( Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().radicand(), CR_GEQ ) );
+                        resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().denominator(), CR_NEQ ) );
+                        resultBack->addSubformula( Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().radicand(), CR_GEQ ) );
 
                         Substitution_Type subType = ST_NORMAL;
                         if( plusEpsilon )
@@ -1444,7 +1450,7 @@ namespace svs
             substitutionResultsVector.pop_back();
         }
     }
-#endif
+    #endif
 
 }    // end namspace vs
 

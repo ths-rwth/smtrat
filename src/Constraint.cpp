@@ -37,19 +37,20 @@ using namespace GiNaC;
 
 namespace smtrat
 {
-	/**
-	 * true if 0 -rel- 0 yields false
+    /**
+     * true if 0 -rel- 0 yields false
      * @param The relation
      * @return
      */
-	bool constraintRelationIsStrict(Constraint_Relation rel) {
-		return (rel == CR_NEQ || rel == CR_LESS || rel == CR_GREATER);
-	}
+    bool constraintRelationIsStrict( Constraint_Relation rel )
+    {
+        return (rel == CR_NEQ || rel == CR_LESS || rel == CR_GREATER);
+    }
 
     /**
      * Constructors:
      */
-    Constraint::Constraint() :
+    Constraint::Constraint():
         pLhs( new ex( 0 ) ),
         pMultiRootLessLhs( NULL ),
         mVariables(),
@@ -59,7 +60,7 @@ namespace smtrat
         normalize( rLhs() );
     }
 
-    Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _vars, unsigned _id ) :
+    Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _vars, unsigned _id ):
         pLhs( new ex( _lhs ) ),
         pMultiRootLessLhs( NULL ),
         mVariables(),
@@ -69,17 +70,17 @@ namespace smtrat
         normalize( rLhs() );
         for( symtab::const_iterator var = _vars.begin(); var != _vars.end(); ++var )
         {
-        	if( pLhs->has( var->second ) )
-        	{
-        		mVariables.insert( *var );
-        	}
+            if( pLhs->has( var->second ) )
+            {
+                mVariables.insert( *var );
+            }
         }
         #ifdef TS_CONSTRAINT_SIMPLIFIER
         simplify();
         #endif
     }
 
-    Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _vars, unsigned _id ) :
+    Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _vars, unsigned _id ):
         pLhs( new ex( _lhs - _rhs ) ),
         pMultiRootLessLhs( NULL ),
         mVariables(),
@@ -88,17 +89,17 @@ namespace smtrat
     {
         for( symtab::const_iterator var = _vars.begin(); var != _vars.end(); ++var )
         {
-        	if( pLhs->has( var->second ) )
-        	{
-        		mVariables.insert( *var );
-        	}
+            if( pLhs->has( var->second ) )
+            {
+                mVariables.insert( *var );
+            }
         }
         #ifdef TS_CONSTRAINT_SIMPLIFIER
         simplify();
         #endif
     }
 
-    Constraint::Constraint( const Constraint& _constraint ) :
+    Constraint::Constraint( const Constraint& _constraint ):
         pLhs( new ex( _constraint.lhs() ) ),
         pMultiRootLessLhs( NULL ),
         mVariables( _constraint.variables() ),
@@ -131,7 +132,7 @@ namespace smtrat
         symtab::const_iterator var = variables().find( _variableName );
         if( var != variables().end() )
         {
-            _variable = ex_to< symbol >(var->second );
+            _variable = ex_to<symbol>( var->second );
             return true;
         }
         else
@@ -177,44 +178,44 @@ namespace smtrat
         {
             switch( relation() )
             {
-            case CR_EQ:
-            {
-                if( lhs() == 0 )
-                    result = 1;
-                break;
-            }
-            case CR_NEQ:
-            {
-                if( lhs() != 0 )
-                    result = 1;
-                break;
-            }
-            case CR_LESS:
-            {
-                if( lhs() < 0 )
-                    result = 1;
-                break;
-            }
-            case CR_GREATER:
-            {
-                if( lhs() > 0 )
-                    result = 1;
-                break;
-            }
-            case CR_LEQ:
-            {
-                if( lhs() <= 0 )
-                    result = 1;
-                break;
-            }
-            case CR_GEQ:
-            {
-                if( lhs() >= 0 )
-                    result = 1;
-                break;
-            }
-            default:
-                cout << "Error in isConsistent: unexpected relation symbol." << endl;
+                case CR_EQ:
+                {
+                    if( lhs() == 0 )
+                        result = 1;
+                    break;
+                }
+                case CR_NEQ:
+                {
+                    if( lhs() != 0 )
+                        result = 1;
+                    break;
+                }
+                case CR_LESS:
+                {
+                    if( lhs() < 0 )
+                        result = 1;
+                    break;
+                }
+                case CR_GREATER:
+                {
+                    if( lhs() > 0 )
+                        result = 1;
+                    break;
+                }
+                case CR_LEQ:
+                {
+                    if( lhs() <= 0 )
+                        result = 1;
+                    break;
+                }
+                case CR_GEQ:
+                {
+                    if( lhs() >= 0 )
+                        result = 1;
+                    break;
+                }
+                default:
+                    cout << "Error in isConsistent: unexpected relation symbol." << endl;
             }
         }
         else
@@ -245,12 +246,12 @@ namespace smtrat
             if( var != variables().end() )
             {
                 vector<ex> coeffs = vector<ex>();
-                getCoefficients( ex_to<symbol>(var->second), coeffs );
+                getCoefficients( ex_to<symbol>( var->second ), coeffs );
                 signed i = coeffs.size() - 1;
 
                 for( ; i > 0; --i )
                 {
-                    if( !coeffs.at( i ).info( info_flags::rational ))
+                    if( !coeffs.at( i ).info( info_flags::rational ) )
                     {
                         return false;
                     }
@@ -276,7 +277,7 @@ namespace smtrat
     {
         for( int i = 0; i <= lhs().degree( ex( _variable ) ); ++i )
         {
-            _coefficients.push_back( ex( lhs().coeff( ex( _variable ), i )));
+            _coefficients.push_back( ex( lhs().coeff( ex( _variable ), i ) ) );
         }
     }
 
@@ -288,7 +289,7 @@ namespace smtrat
     signed Constraint::degree( const std::string& _variableName ) const
     {
         symbol sym;
-        if( variable( _variableName, sym ))
+        if( variable( _variableName, sym ) )
         {
             return lhs().degree( ex( sym ) );
         }
@@ -322,7 +323,7 @@ namespace smtrat
         {
             if( lhs().degree( ex( var->second ) ) > 1 )
             {
-            	return false;
+                return false;
             }
         }
         return true;
@@ -333,12 +334,12 @@ namespace smtrat
      *
      * @return The linear coefficients of each variable and their common constant part.
      */
-	map< const string, numeric, strCmp > Constraint::linearAndConstantCoefficients() const
-	{
+    map<const string, numeric, strCmp> Constraint::linearAndConstantCoefficients() const
+    {
         ex linearterm = lhs().expand();
-        assert( is_exactly_a<mul>( linearterm ) || is_exactly_a<symbol>( linearterm )
-                || is_exactly_a<numeric>( linearterm ) || is_exactly_a<add>( linearterm ) );
-        map< const string, numeric, strCmp > result = map< const string, numeric, strCmp >();
+        assert( is_exactly_a<mul>( linearterm ) || is_exactly_a<symbol>( linearterm ) || is_exactly_a<numeric>( linearterm )
+                || is_exactly_a<add>( linearterm ) );
+        map<const string, numeric, strCmp> result = map<const string, numeric, strCmp>();
         result[""] = 0;
         if( is_exactly_a<add>( linearterm ) )
         {
@@ -347,31 +348,32 @@ namespace smtrat
                 assert( is_exactly_a<mul>( *summand ) || is_exactly_a<symbol>( *summand ) || is_exactly_a<numeric>( *summand ) );
                 if( is_exactly_a<mul>( *summand ) )
                 {
-                    string symbolName = "";
+                    string symbolName   = "";
                     numeric coefficient = 1;
                     bool symbolFound = false;
-                    bool coeffFound = false;
+                    bool coeffFound  = false;
                     for( GiNaC::const_iterator factor = summand->begin(); factor != summand->end(); ++factor )
                     {
-                        assert( is_exactly_a<symbol>( *factor ) ||  is_exactly_a<numeric>( *factor ) );
+                        assert( is_exactly_a<symbol>( *factor ) || is_exactly_a<numeric>( *factor ) );
                         if( is_exactly_a<symbol>( *factor ) )
                         {
                             stringstream out;
                             out << *factor;
-                            symbolName = out.str();
+                            symbolName  = out.str();
                             symbolFound = true;
                         }
                         else if( is_exactly_a<numeric>( *factor ) )
                         {
                             coefficient *= ex_to<numeric>( *factor );
-                            coeffFound = true;
+                            coeffFound  = true;
                         }
-                        if( symbolFound && coeffFound ) break; // Workaround, as it appears that GiNaC allows a product of infinitely many factors ..
+                        if( symbolFound && coeffFound )
+                            break;    // Workaround, as it appears that GiNaC allows a product of infinitely many factors ..
                     }
-                    map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+                    map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
                     if( iter == result.end() )
                     {
-                        result.insert( pair< const string, numeric >( symbolName, coefficient ) );
+                        result.insert( pair<const string, numeric>( symbolName, coefficient ) );
                     }
                     else
                     {
@@ -383,10 +385,10 @@ namespace smtrat
                     stringstream out;
                     out << *summand;
                     string symbolName = out.str();
-                    map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+                    map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
                     if( iter == result.end() )
                     {
-                        result.insert( pair< const string, numeric >( symbolName, numeric( 1 ) ) );
+                        result.insert( pair<const string, numeric>( symbolName, numeric( 1 ) ) );
                     }
                     else
                     {
@@ -401,11 +403,11 @@ namespace smtrat
         }
         else if( is_exactly_a<mul>( linearterm ) )
         {
-            string symbolName = "";
+            string symbolName   = "";
             numeric coefficient = 1;
             for( GiNaC::const_iterator factor = linearterm.begin(); factor != linearterm.end(); ++factor )
             {
-                assert( is_exactly_a<symbol>( *factor ) ||  is_exactly_a<numeric>( *factor ) );
+                assert( is_exactly_a<symbol>( *factor ) || is_exactly_a<numeric>( *factor ) );
                 if( is_exactly_a<symbol>( *factor ) )
                 {
                     stringstream out;
@@ -417,10 +419,10 @@ namespace smtrat
                     coefficient *= ex_to<numeric>( *factor );
                 }
             }
-            map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+            map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
             if( iter == result.end() )
             {
-                result.insert( pair< const string, numeric >( symbolName, coefficient ) );
+                result.insert( pair<const string, numeric>( symbolName, coefficient ) );
             }
             else
             {
@@ -432,10 +434,10 @@ namespace smtrat
             stringstream out;
             out << linearterm;
             string symbolName = out.str();
-            map< const string, numeric, strCmp >::iterator iter = result.find( symbolName );
+            map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
             if( iter == result.end() )
             {
-                result.insert( pair< const string, numeric >( symbolName, numeric( 1 ) ) );
+                result.insert( pair<const string, numeric>( symbolName, numeric( 1 ) ) );
             }
             else
             {
@@ -496,7 +498,7 @@ namespace smtrat
                     for( int i = degreeA; i >= 0; --i )
                     {
                         symtab remVarsA = symtab( varA, _varsA.end() );
-                        ex ithCoeffA          = _expressionA.coeff( currentVar, i );
+                        ex ithCoeffA    = _expressionA.coeff( currentVar, i );
                         symtab::iterator var = remVarsA.begin();
                         while( var != remVarsA.end() )
                         {
@@ -504,24 +506,24 @@ namespace smtrat
                             {
                                 remVarsA.erase( var++ );
                             }
-			    			else
-							{
-                            	var++;
-							}
+                            else
+                            {
+                                var++;
+                            }
                         }
-                        symtab remVarsB =symtab( varB, _varsB.end() );
-                        ex ithCoeffB          = _expressionB.coeff( currentVar, i );
-                        var                   = remVarsB.begin();
+                        symtab remVarsB = symtab( varB, _varsB.end() );
+                        ex ithCoeffB    = _expressionB.coeff( currentVar, i );
+                        var             = remVarsB.begin();
                         while( var != remVarsB.end() )
                         {
                             if( !ithCoeffB.has( ex( var->second ) ) )
                             {
                                 remVarsB.erase( var++ );
                             }
-			    			else
-							{
-                            	var++;
-							}
+                            else
+                            {
+                                var++;
+                            }
                         }
                         int coeffCompResult = exCompare( ithCoeffA, remVarsA, ithCoeffB, remVarsB );
                         if( coeffCompResult < 0 )
@@ -580,7 +582,7 @@ namespace smtrat
         ex gcdOfLhsAndDerivate = gcd( lhs(), derivate );
         normalize( gcdOfLhsAndDerivate );
         ex quotient;
-        if( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, quotient ))
+        if( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, quotient ) )
         {
             normalize( quotient );
             if( pMultiRootLessLhs != NULL )
@@ -691,7 +693,7 @@ namespace smtrat
         {
             ex un, con, prim;
             lhs().unitcontprim( ex( variables().begin()->second ), un, con, prim );
-            if( con.info( info_flags::rational ))
+            if( con.info( info_flags::rational ) )
             {
                 rLhs() = prim * un;
             }
@@ -711,26 +713,26 @@ namespace smtrat
         result += sstream.str();
         switch( relation() )
         {
-        case CR_EQ:
-            result += "=";
-            break;
-        case CR_NEQ:
-            result += "<>";
-            break;
-        case CR_LESS:
-            result += "<";
-            break;
-        case CR_GREATER:
-            result += ">";
-            break;
-        case CR_LEQ:
-            result += "<=";
-            break;
-        case CR_GEQ:
-            result += ">=";
-            break;
-        default:
-            result += "~";
+            case CR_EQ:
+                result += "=";
+                break;
+            case CR_NEQ:
+                result += "<>";
+                break;
+            case CR_LESS:
+                result += "<";
+                break;
+            case CR_GREATER:
+                result += ">";
+                break;
+            case CR_LEQ:
+                result += "<=";
+                break;
+            case CR_GEQ:
+                result += ">=";
+                break;
+            default:
+                result += "~";
         }
         result += "0";
         return result;
@@ -746,26 +748,26 @@ namespace smtrat
         _out << lhs();
         switch( relation() )
         {
-        case CR_EQ:
-            _out << "=";
-            break;
-        case CR_NEQ:
-            _out << "<>";
-            break;
-        case CR_LESS:
-            _out << "<";
-            break;
-        case CR_GREATER:
-            _out << ">";
-            break;
-        case CR_LEQ:
-            _out << "<=";
-            break;
-        case CR_GEQ:
-            _out << ">=";
-            break;
-        default:
-            _out << "~";
+            case CR_EQ:
+                _out << "=";
+                break;
+            case CR_NEQ:
+                _out << "<>";
+                break;
+            case CR_LESS:
+                _out << "<";
+                break;
+            case CR_GREATER:
+                _out << ">";
+                break;
+            case CR_LEQ:
+                _out << "<=";
+                break;
+            case CR_GEQ:
+                _out << ">=";
+                break;
+            default:
+                _out << "~";
         }
         _out << "0";
     }
@@ -780,26 +782,26 @@ namespace smtrat
         _out << lhs();
         switch( relation() )
         {
-        case CR_EQ:
-            _out << "=";
-            break;
-        case CR_NEQ:
-            _out << "!=";
-            break;
-        case CR_LESS:
-            _out << "<";
-            break;
-        case CR_GREATER:
-            _out << ">";
-            break;
-        case CR_LEQ:
-            _out << "<=";
-            break;
-        case CR_GEQ:
-            _out << ">=";
-            break;
-        default:
-            _out << "~";
+            case CR_EQ:
+                _out << "=";
+                break;
+            case CR_NEQ:
+                _out << "!=";
+                break;
+            case CR_LESS:
+                _out << "<";
+                break;
+            case CR_GREATER:
+                _out << ">";
+                break;
+            case CR_LEQ:
+                _out << "<=";
+                break;
+            case CR_GEQ:
+                _out << ">=";
+                break;
+            default:
+                _out << "~";
         }
         _out << "0";
     }
@@ -836,9 +838,9 @@ namespace smtrat
             ex lcoeffB = _constraintB.lhs().lcoeff( ex( _constraintB.variables().begin()->second ) );
             ex lhsA    = _constraintA.lhs();
             ex lhsB    = _constraintB.lhs();
-            if( lcoeffA.info( info_flags::rational ) && lcoeffB.info( info_flags::rational ))
+            if( lcoeffA.info( info_flags::rational ) && lcoeffB.info( info_flags::rational ) )
             {
-                if( lcoeffB.info( info_flags::positive ))
+                if( lcoeffB.info( info_flags::positive ) )
                 {
                     lhsA = lhsA * lcoeffB;
                 }
@@ -846,7 +848,7 @@ namespace smtrat
                 {
                     lhsA = lhsA * (-1) * lcoeffB;
                 }
-                if( lcoeffA.info( info_flags::positive ))
+                if( lcoeffA.info( info_flags::positive ) )
                 {
                     lhsB = lhsB * lcoeffA;
                 }
@@ -855,618 +857,618 @@ namespace smtrat
                     lhsB = lhsB * (-1) * lcoeffA;
                 }
             }
-            else if( lcoeffA.info( info_flags::rational ) || lcoeffB.info( info_flags::rational ))
+            else if( lcoeffA.info( info_flags::rational ) || lcoeffB.info( info_flags::rational ) )
             {
                 return 0;
             }
             switch( _constraintB.relation() )
             {
-            case CR_EQ:
-            {
-                switch( _constraintA.relation() )
-                {
                 case CR_EQ:
                 {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1 == 0 )
-                        return 2;
-                    if( result1.info( info_flags::rational ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return 2;
-                    if( result2.info( info_flags::rational ))
-                        return -2;
-                    return 0;
+                    switch( _constraintA.relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1 == 0 )
+                                return 2;
+                            if( result1.info( info_flags::rational ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return 2;
+                            if( result2.info( info_flags::rational ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_NEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1 == 0 )
+                                return -2;
+                            if( result1.info( info_flags::rational ) )
+                                return -1;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return -2;
+                            if( result2.info( info_flags::rational ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1.info( info_flags::negative ) )
+                                return -1;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2.info( info_flags::negative ) )
+                                return -1;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            normalize( result1 );
+                            if( result1.info( info_flags::negative ) )
+                                return -1;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return -2;
+                            if( result2.info( info_flags::negative ) )
+                                return -2;
+                            if( result2.info( info_flags::positive ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_LEQ:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            normalize( result1 );
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -1;
+                            if( result1.info( info_flags::negative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return -1;
+                            if( result2.info( info_flags::negative ) )
+                                return -1;
+                            if( result2.info( info_flags::positive ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_GEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -1;
+                            if( result1.info( info_flags::negative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2.info( info_flags::negative ) )
+                                return -2;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -1;
+                            return 0;
+                        }
+                        default:
+                            return false;
+                    }
                 }
                 case CR_NEQ:
                 {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1 == 0 )
-                        return -2;
-                    if( result1.info( info_flags::rational ))
-                        return -1;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return -2;
-                    if( result2.info( info_flags::rational ))
-                        return -1;
-                    return 0;
+                    switch( _constraintA.relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1 == 0 )
+                                return -2;
+                            if( result1.info( info_flags::rational ) )
+                                return 1;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return -2;
+                            if( result2.info( info_flags::rational ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_NEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1 == 0 )
+                                return 2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return 2;
+                            return 0;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1.info( info_flags::nonnegative ) )
+                                return 1;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            normalize( result2 );
+                            if( result2.info( info_flags::nonnegative ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            normalize( result1 );
+                            if( result1.info( info_flags::nonnegative ) )
+                                return 1;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2.info( info_flags::nonnegative ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_LEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1 == 0 )
+                                return -3;
+                            if( result1.info( info_flags::positive ) )
+                                return 1;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return -3;
+                            if( result2.info( info_flags::positive ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_GEQ:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            normalize( result1 );
+                            if( result1 == 0 )
+                                return -3;
+                            if( result1.info( info_flags::positive ) )
+                                return 1;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return -3;
+                            if( result2.info( info_flags::positive ) )
+                                return 1;
+                            return 0;
+                        }
+                        default:
+                            return 0;
+                    }
                 }
                 case CR_LESS:
                 {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1.info( info_flags::negative ))
-                        return -1;
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2.info( info_flags::negative ))
-                        return -1;
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
+                    switch( _constraintA.relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            normalize( result1 );
+                            if( result1.info( info_flags::negative ) )
+                                return 1;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2.info( info_flags::negative ) )
+                                return 1;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_NEQ:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            normalize( result1 );
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -1;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1 == 0 )
+                                return 2;
+                            if( result1.info( info_flags::negative ) )
+                                return -1;
+                            if( result1.info( info_flags::positive ) )
+                                return 1;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            normalize( result1 );
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return 2;
+                            if( result2.info( info_flags::positive ) )
+                                return -1;
+                            if( result2.info( info_flags::negative ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_LEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1.info( info_flags::positive ) )
+                                return 1;
+                            if( result1.info( info_flags::rational ) )
+                                return -1;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_GEQ:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            normalize( result1 );
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -1;
+                            if( result2.info( info_flags::negative ) )
+                                return 1;
+                            return 0;
+                        }
+                        default:
+                            return 0;
+                    }
                 }
                 case CR_GREATER:
                 {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    normalize( result1 );
-                    if( result1.info( info_flags::negative ))
-                        return -1;
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return -2;
-                    if( result2.info( info_flags::negative ))
-                        return -2;
-                    if( result2.info( info_flags::positive ))
-                        return -1;
-                    return 0;
+                    switch( _constraintA.relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1.info( info_flags::negative ) )
+                                return 1;
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return -2;
+                            if( result2.info( info_flags::negative ) )
+                                return -2;
+                            if( result2.info( info_flags::positive ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_NEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -1;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            normalize( result2 );
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return 2;
+                            if( result2.info( info_flags::positive ) )
+                                return 1;
+                            if( result2.info( info_flags::negative ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1 == 0 )
+                                return 2;
+                            if( result1.info( info_flags::negative ) )
+                                return 1;
+                            if( result1.info( info_flags::positive ) )
+                                return -1;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            normalize( result2 );
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_LEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            normalize( result2 );
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -1;
+                            if( result2.info( info_flags::negative ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_GEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1.info( info_flags::negative ) )
+                                return 1;
+                            if( result1.info( info_flags::rational ) )
+                                return -1;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            normalize( result2 );
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        default:
+                            return 0;
+                    }
                 }
                 case CR_LEQ:
                 {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    normalize( result1 );
-                    if( result1.info( info_flags::nonnegative ))
-                        return -1;
-                    if( result1.info( info_flags::negative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return -1;
-                    if( result2.info( info_flags::negative ))
-                        return -1;
-                    if( result2.info( info_flags::positive ))
-                        return -2;
-                    return 0;
+                    switch( _constraintA.relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1.info( info_flags::nonnegative ) )
+                                return 1;
+                            if( result1.info( info_flags::negative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return 1;
+                            if( result2.info( info_flags::negative ) )
+                                return 1;
+                            if( result2.info( info_flags::positive ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_NEQ:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            normalize( result1 );
+                            if( result1 == 0 )
+                                return -3;
+                            if( result1.info( info_flags::positive ) )
+                                return -1;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return -3;
+                            if( result2.info( info_flags::positive ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1.info( info_flags::negative ) )
+                                return -1;
+                            if( result1.info( info_flags::rational ) )
+                                return 1;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            normalize( result1 );
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            normalize( result2 );
+                            if( result2.info( info_flags::nonnegative ) )
+                                return 1;
+                            if( result2.info( info_flags::negative ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_LEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1 == 0 )
+                                return 2;
+                            if( result1.info( info_flags::negative ) )
+                                return -1;
+                            if( result1.info( info_flags::positive ) )
+                                return 1;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return -3;
+                            if( result2.info( info_flags::positive ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_GEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1 == 0 )
+                                return -3;
+                            if( result1.info( info_flags::negative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return 2;
+                            if( result2.info( info_flags::positive ) )
+                                return -1;
+                            if( result2.info( info_flags::negative ) )
+                                return 1;
+                            return 0;
+                        }
+                        default:
+                            return 0;
+                    }
                 }
                 case CR_GEQ:
                 {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1.info( info_flags::nonnegative ))
-                        return -1;
-                    if( result1.info( info_flags::negative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2.info( info_flags::negative ))
-                        return -2;
-                    if( result2.info( info_flags::nonnegative ))
-                        return -1;
-                    return 0;
-                }
-                default:
-                    return false;
-                }
-            }
-            case CR_NEQ:
-            {
-                switch( _constraintA.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1 == 0 )
-                        return -2;
-                    if( result1.info( info_flags::rational ))
-                        return 1;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return -2;
-                    if( result2.info( info_flags::rational ))
-                        return 1;
-                    return 0;
-                }
-                case CR_NEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1 == 0 )
-                        return 2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return 2;
-                    return 0;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1.info( info_flags::nonnegative ))
-                        return 1;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    normalize( result2 );
-                    if( result2.info( info_flags::nonnegative ))
-                        return 1;
-                    return 0;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    normalize( result1 );
-                    if( result1.info( info_flags::nonnegative ))
-                        return 1;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2.info( info_flags::nonnegative ))
-                        return 1;
-                    return 0;
-                }
-                case CR_LEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1 == 0 )
-                        return -3;
-                    if( result1.info( info_flags::positive ))
-                        return 1;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return -3;
-                    if( result2.info( info_flags::positive ))
-                        return 1;
-                    return 0;
-                }
-                case CR_GEQ:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    normalize( result1 );
-                    if( result1 == 0 )
-                        return -3;
-                    if( result1.info( info_flags::positive ))
-                        return 1;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return -3;
-                    if( result2.info( info_flags::positive ))
-                        return 1;
-                    return 0;
+                    switch( _constraintA.relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            ex result1 = -1 * (lhsA - lhsB);
+                            normalize( result1 );
+                            if( result1.info( info_flags::nonnegative ) )
+                                return 1;
+                            if( result1.info( info_flags::negative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2.info( info_flags::negative ) )
+                                return -2;
+                            if( result2.info( info_flags::nonnegative ) )
+                                return 1;
+                            return 0;
+                        }
+                        case CR_NEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1 == 0 )
+                                return -3;
+                            if( result1.info( info_flags::positive ) )
+                                return -1;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return -3;
+                            if( result2.info( info_flags::positive ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1.info( info_flags::nonnegative ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2.info( info_flags::nonnegative ) )
+                                return 1;
+                            if( result2.info( info_flags::negative ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1.info( info_flags::positive ) )
+                                return -1;
+                            if( result1.info( info_flags::rational ) )
+                                return 1;
+                            ex result2 = -1 * (lhsA + lhsB);
+                            normalize( result2 );
+                            if( result2.info( info_flags::nonnegative ) )
+                                return -2;
+                            return 0;
+                        }
+                        case CR_LEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1 == 0 )
+                                return -3;
+                            if( result1.info( info_flags::positive ) )
+                                return -2;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return 2;
+                            if( result2.info( info_flags::positive ) )
+                                return 1;
+                            if( result2.info( info_flags::negative ) )
+                                return -1;
+                            return 0;
+                        }
+                        case CR_GEQ:
+                        {
+                            ex result1 = lhsA - lhsB;
+                            normalize( result1 );
+                            if( result1 == 0 )
+                                return 2;
+                            if( result1.info( info_flags::negative ) )
+                                return 1;
+                            if( result1.info( info_flags::positive ) )
+                                return -1;
+                            ex result2 = lhsA + lhsB;
+                            normalize( result2 );
+                            if( result2 == 0 )
+                                return -3;
+                            if( result2.info( info_flags::negative ) )
+                                return -2;
+                            return 0;
+                        }
+                        default:
+                            return 0;
+                    }
                 }
                 default:
                     return 0;
-                }
-            }
-            case CR_LESS:
-            {
-                switch( _constraintA.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    normalize( result1 );
-                    if( result1.info( info_flags::negative ))
-                        return 1;
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2.info( info_flags::negative ))
-                        return 1;
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
-                }
-                case CR_NEQ:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    normalize( result1 );
-                    if( result1.info( info_flags::nonnegative ))
-                        return -1;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2.info( info_flags::nonnegative ))
-                        return -1;
-                    return 0;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1 == 0 )
-                        return 2;
-                    if( result1.info( info_flags::negative ))
-                        return -1;
-                    if( result1.info( info_flags::positive ))
-                        return 1;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    normalize( result1 );
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return 2;
-                    if( result2.info( info_flags::positive ))
-                        return -1;
-                    if( result2.info( info_flags::negative ))
-                        return 1;
-                    return 0;
-                }
-                case CR_LEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1.info( info_flags::positive ))
-                        return 1;
-                    if( result1.info( info_flags::rational ))
-                        return -1;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
-                }
-                case CR_GEQ:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    normalize( result1 );
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2.info( info_flags::nonnegative ))
-                        return -1;
-                    if( result2.info( info_flags::negative ))
-                        return 1;
-                    return 0;
-                }
-                default:
-                    return 0;
-                }
-            }
-            case CR_GREATER:
-            {
-                switch( _constraintA.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1.info( info_flags::negative ))
-                        return 1;
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return -2;
-                    if( result2.info( info_flags::negative ))
-                        return -2;
-                    if( result2.info( info_flags::positive ))
-                        return 1;
-                    return 0;
-                }
-                case CR_NEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1.info( info_flags::nonnegative ))
-                        return -1;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    normalize( result2 );
-                    if( result2.info( info_flags::nonnegative ))
-                        return -1;
-                    return 0;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return 2;
-                    if( result2.info( info_flags::positive ))
-                        return 1;
-                    if( result2.info( info_flags::negative ))
-                        return -1;
-                    return 0;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1 == 0 )
-                        return 2;
-                    if( result1.info( info_flags::negative ))
-                        return 1;
-                    if( result1.info( info_flags::positive ))
-                        return -1;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    normalize( result2 );
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
-                }
-                case CR_LEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    normalize( result2 );
-                    if( result2.info( info_flags::nonnegative ))
-                        return -1;
-                    if( result2.info( info_flags::negative ))
-                        return 1;
-                    return 0;
-                }
-                case CR_GEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1.info( info_flags::negative ))
-                        return 1;
-                    if( result1.info( info_flags::rational ))
-                        return -1;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    normalize( result2 );
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
-                }
-                default:
-                    return 0;
-                }
-            }
-            case CR_LEQ:
-            {
-                switch( _constraintA.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1.info( info_flags::nonnegative ))
-                        return 1;
-                    if( result1.info( info_flags::negative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return 1;
-                    if( result2.info( info_flags::negative ))
-                        return 1;
-                    if( result2.info( info_flags::positive ))
-                        return -2;
-                    return 0;
-                }
-                case CR_NEQ:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    normalize( result1 );
-                    if( result1 == 0 )
-                        return -3;
-                    if( result1.info( info_flags::positive ))
-                        return -1;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return -3;
-                    if( result2.info( info_flags::positive ))
-                        return -1;
-                    return 0;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1.info( info_flags::negative ))
-                        return -1;
-                    if( result1.info( info_flags::rational ))
-                        return 1;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    normalize( result1 );
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    normalize( result2 );
-                    if( result2.info( info_flags::nonnegative ))
-                        return 1;
-                    if( result2.info( info_flags::negative ))
-                        return -1;
-                    return 0;
-                }
-                case CR_LEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1 == 0 )
-                        return 2;
-                    if( result1.info( info_flags::negative ))
-                        return -1;
-                    if( result1.info( info_flags::positive ))
-                        return 1;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return -3;
-                    if( result2.info( info_flags::positive ))
-                        return -2;
-                    return 0;
-                }
-                case CR_GEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1 == 0 )
-                        return -3;
-                    if( result1.info( info_flags::negative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return 2;
-                    if( result2.info( info_flags::positive ))
-                        return -1;
-                    if( result2.info( info_flags::negative ))
-                        return 1;
-                    return 0;
-                }
-                default:
-                    return 0;
-                }
-            }
-            case CR_GEQ:
-            {
-                switch( _constraintA.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = -1 * (lhsA - lhsB);
-                    normalize( result1 );
-                    if( result1.info( info_flags::nonnegative ))
-                        return 1;
-                    if( result1.info( info_flags::negative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2.info( info_flags::negative ))
-                        return -2;
-                    if( result2.info( info_flags::nonnegative ))
-                        return 1;
-                    return 0;
-                }
-                case CR_NEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1 == 0 )
-                        return -3;
-                    if( result1.info( info_flags::positive ))
-                        return -1;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return -3;
-                    if( result2.info( info_flags::positive ))
-                        return -1;
-                    return 0;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1.info( info_flags::nonnegative ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2.info( info_flags::nonnegative ))
-                        return 1;
-                    if( result2.info( info_flags::negative ))
-                        return -1;
-                    return 0;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1.info( info_flags::positive ))
-                        return -1;
-                    if( result1.info( info_flags::rational ))
-                        return 1;
-                    ex result2 = -1 * (lhsA + lhsB);
-                    normalize( result2 );
-                    if( result2.info( info_flags::nonnegative ))
-                        return -2;
-                    return 0;
-                }
-                case CR_LEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1 == 0 )
-                        return -3;
-                    if( result1.info( info_flags::positive ))
-                        return -2;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return 2;
-                    if( result2.info( info_flags::positive ))
-                        return 1;
-                    if( result2.info( info_flags::negative ))
-                        return -1;
-                    return 0;
-                }
-                case CR_GEQ:
-                {
-                    ex result1 = lhsA - lhsB;
-                    normalize( result1 );
-                    if( result1 == 0 )
-                        return 2;
-                    if( result1.info( info_flags::negative ))
-                        return 1;
-                    if( result1.info( info_flags::positive ))
-                        return -1;
-                    ex result2 = lhsA + lhsB;
-                    normalize( result2 );
-                    if( result2 == 0 )
-                        return -3;
-                    if( result2.info( info_flags::negative ))
-                        return -2;
-                    return 0;
-                }
-                default:
-                    return 0;
-                }
-            }
-            default:
-                return 0;
             }
         }
         else
@@ -1506,388 +1508,388 @@ namespace smtrat
         {
             switch( _constraintA.relation() )
             {
-            case CR_EQ:
-            {
-                switch( _constraintB.relation() )
-                {
                 case CR_EQ:
                 {
-                    return false;
+                    switch( _constraintB.relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            return false;
+                        }
+                        case CR_NEQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rLhs() = 0;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            normalize( result2 );
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rLhs() = 0;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_LEQ;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            normalize( result2 );
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_LEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_GEQ;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            normalize( result2 );
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_GEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_LEQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_LEQ;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            normalize( result2 );
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_LEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_GEQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_GEQ;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            normalize( result2 );
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_GEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        default:
+                            return false;
+                    }
                 }
                 case CR_NEQ:
                 {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
+                    switch( _constraintB.relation() )
                     {
-                        _constraintA.rLhs() = 0;
-                        return true;
+                        case CR_EQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rLhs() = 1;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            normalize( result2 );
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rLhs() = 1;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_NEQ:
+                        {
+                            return false;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            normalize( result2 );
+                            if( result2 == 0 )
+                            {
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            normalize( result2 );
+                            if( result2 == 0 )
+                            {
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_LEQ:
+                        {
+                            return false;
+                        }
+                        case CR_GEQ:
+                        {
+                            return false;
+                        }
+                        default:
+                            return false;
                     }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    normalize( result2 );
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rLhs() = 0;
-                        return true;
-                    }
-                    return false;
                 }
                 case CR_LESS:
                 {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
+                    switch( _constraintB.relation() )
                     {
-                        _constraintA.rRelation() = CR_LEQ;
-                        return true;
+                        case CR_EQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_LEQ;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            normalize( result2 );
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_LEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_NEQ:
+                        {
+                            return false;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = _constraintA.lhs() + _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_NEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_NEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_LEQ:
+                        {
+                            return false;
+                        }
+                        case CR_GEQ:
+                        {
+                            return false;
+                        }
+                        default:
+                            return false;
                     }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    normalize( result2 );
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_LEQ;
-                        return true;
-                    }
-                    return false;
                 }
                 case CR_GREATER:
                 {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
+                    switch( _constraintB.relation() )
                     {
-                        _constraintA.rRelation() = CR_GEQ;
-                        return true;
+                        case CR_EQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_GEQ;
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            normalize( result2 );
+                            if( result2 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_GEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_NEQ:
+                        {
+                            return false;
+                        }
+                        case CR_LESS:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_NEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_GREATER:
+                        {
+                            ex result1 = _constraintA.lhs() + _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                _constraintA.rRelation() = CR_NEQ;
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_LEQ:
+                        {
+                            return false;
+                        }
+                        case CR_GEQ:
+                        {
+                            return false;
+                        }
+                        default:
+                            return false;
                     }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    normalize( result2 );
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_GEQ;
-                        return true;
-                    }
-                    return false;
                 }
                 case CR_LEQ:
                 {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
+                    switch( _constraintB.relation() )
                     {
-                        _constraintA.rRelation() = CR_LEQ;
-                        return true;
+                        case CR_EQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            normalize( result2 );
+                            if( result2 == 0 )
+                            {
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_NEQ:
+                        {
+                            return false;
+                        }
+                        case CR_LESS:
+                        {
+                            return false;
+                        }
+                        case CR_GREATER:
+                        {
+                            return false;
+                        }
+                        case CR_LEQ:
+                        {
+                            return false;
+                        }
+                        case CR_GEQ:
+                        {
+                            return false;
+                        }
+                        default:
+                            return false;
                     }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    normalize( result2 );
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_LEQ;
-                        return true;
-                    }
-                    return false;
                 }
                 case CR_GEQ:
                 {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
+                    switch( _constraintB.relation() )
                     {
-                        _constraintA.rRelation() = CR_GEQ;
-                        return true;
+                        case CR_EQ:
+                        {
+                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            normalize( result1 );
+                            if( result1 == 0 )
+                            {
+                                return true;
+                            }
+                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            normalize( result2 );
+                            if( result2 == 0 )
+                            {
+                                return true;
+                            }
+                            return false;
+                        }
+                        case CR_NEQ:
+                        {
+                            return false;
+                        }
+                        case CR_LESS:
+                        {
+                            return false;
+                        }
+                        case CR_GREATER:
+                        {
+                            return false;
+                        }
+                        case CR_LEQ:
+                        {
+                            return false;
+                        }
+                        case CR_GEQ:
+                        {
+                            return false;
+                        }
+                        default:
+                            return false;
                     }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    normalize( result2 );
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_GEQ;
-                        return true;
-                    }
-                    return false;
                 }
                 default:
                     return false;
-                }
-            }
-            case CR_NEQ:
-            {
-                switch( _constraintB.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
-                    {
-                        _constraintA.rLhs() = 1;
-                        return true;
-                    }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    normalize( result2 );
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rLhs() = 1;
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_NEQ:
-                {
-                    return false;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
-                    {
-                        return true;
-                    }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    normalize( result2 );
-                    if( result2 == 0 )
-                    {
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
-                    {
-                        return true;
-                    }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    normalize( result2 );
-                    if( result2 == 0 )
-                    {
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_LEQ:
-                {
-                    return false;
-                }
-                case CR_GEQ:
-                {
-                    return false;
-                }
-                default:
-                    return false;
-                }
-            }
-            case CR_LESS:
-            {
-                switch( _constraintB.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_LEQ;
-                        return true;
-                    }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    normalize( result2 );
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_LEQ;
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_NEQ:
-                {
-                    return false;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = _constraintA.lhs() + _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_NEQ;
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_NEQ;
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_LEQ:
-                {
-                    return false;
-                }
-                case CR_GEQ:
-                {
-                    return false;
-                }
-                default:
-                    return false;
-                }
-            }
-            case CR_GREATER:
-            {
-                switch( _constraintB.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_GEQ;
-                        return true;
-                    }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    normalize( result2 );
-                    if( result2 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_GEQ;
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_NEQ:
-                {
-                    return false;
-                }
-                case CR_LESS:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_NEQ;
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_GREATER:
-                {
-                    ex result1 = _constraintA.lhs() + _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
-                    {
-                        _constraintA.rRelation() = CR_NEQ;
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_LEQ:
-                {
-                    return false;
-                }
-                case CR_GEQ:
-                {
-                    return false;
-                }
-                default:
-                    return false;
-                }
-            }
-            case CR_LEQ:
-            {
-                switch( _constraintB.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
-                    {
-                        return true;
-                    }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    normalize( result2 );
-                    if( result2 == 0 )
-                    {
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_NEQ:
-                {
-                    return false;
-                }
-                case CR_LESS:
-                {
-                    return false;
-                }
-                case CR_GREATER:
-                {
-                    return false;
-                }
-                case CR_LEQ:
-                {
-                    return false;
-                }
-                case CR_GEQ:
-                {
-                    return false;
-                }
-                default:
-                    return false;
-                }
-            }
-            case CR_GEQ:
-            {
-                switch( _constraintB.relation() )
-                {
-                case CR_EQ:
-                {
-                    ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                    normalize( result1 );
-                    if( result1 == 0 )
-                    {
-                        return true;
-                    }
-                    ex result2 = _constraintA.lhs() + _constraintB.lhs();
-                    normalize( result2 );
-                    if( result2 == 0 )
-                    {
-                        return true;
-                    }
-                    return false;
-                }
-                case CR_NEQ:
-                {
-                    return false;
-                }
-                case CR_LESS:
-                {
-                    return false;
-                }
-                case CR_GREATER:
-                {
-                    return false;
-                }
-                case CR_LEQ:
-                {
-                    return false;
-                }
-                case CR_GEQ:
-                {
-                    return false;
-                }
-                default:
-                    return false;
-                }
-            }
-            default:
-                return false;
             }
         }
         else
@@ -1895,7 +1897,6 @@ namespace smtrat
             return false;
         }
     }
-
 
     /**
      * Checks for redundant constraint order.
@@ -1967,198 +1968,190 @@ namespace smtrat
         // If all constraints are different check if disjunction is redundant
         switch( _constraintA.relation() )
         {
-        case CR_EQ:
-        {
-            if( _constraintB.relation() == CR_NEQ )
-            {
-                if( _conditionconstraint.relation() == CR_EQ )
-                {
-                    // Case: ( p = c or p != d ) and c = d
-                    ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                    normalize( result );
-                    if( result == 0 ) return true;
-                    result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                    normalize( result );
-                    if( result == 0 ) return true;
-                    result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                    normalize( result );
-                    if( result == 0 ) return true;
-                    result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                    normalize( result );
-                    if( result == 0 ) return true;
-                }
-            }
-            return false;
-        }
-        case CR_NEQ:
-        {
-            switch( _constraintB.relation() )
-            {
             case CR_EQ:
             {
-                if( _conditionconstraint.relation() == CR_EQ )
+                if( _constraintB.relation() == CR_NEQ )
                 {
-                    // Case: ( p != c or p = d ) and c = d
-                    ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                    normalize( result );
-                    if( result == 0 ) return true;
-                    result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                    normalize( result );
-                    if( result == 0 ) return true;
-                    result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                    normalize( result );
-                    if( result == 0 ) return true;
-                    result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                    normalize( result );
-                    if( result == 0 ) return true;
-                }
-                return false;
-            }
-            case CR_LESS:
-            {
-                    // Case: ( p != d or p < c ) and c > d
-                    // or      ( p != d or p < c ) and c < d
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LESS:
+                    if( _conditionconstraint.relation() == CR_EQ )
                     {
+                        // Case: ( p = c or p != d ) and c = d
                         ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
                         normalize( result );
-                        if( result == 0 ) return true;
-                        result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GREATER:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
+                        if( result == 0 )
+                            return true;
                         result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
                         normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case CR_GREATER:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LESS:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
+                        if( result == 0 )
+                            return true;
                         result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
                         normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GREATER:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case CR_LEQ:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LEQ:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
+                        if( result == 0 )
+                            return true;
                         result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
                         normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
+                        if( result == 0 )
+                            return true;
                     }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
                 }
-            }
-            case CR_GEQ:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LEQ:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            default:
                 return false;
             }
-        }
-        case CR_LESS:
-        {
-            switch( _constraintB.relation() )
-            {
             case CR_NEQ:
             {
-                switch( _conditionconstraint.relation() )
+                switch( _constraintB.relation() )
                 {
+                    case CR_EQ:
+                    {
+                        if( _conditionconstraint.relation() == CR_EQ )
+                        {
+                            // Case: ( p != c or p = d ) and c = d
+                            ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                            normalize( result );
+                            if( result == 0 )
+                                return true;
+                            result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                            normalize( result );
+                            if( result == 0 )
+                                return true;
+                            result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                            normalize( result );
+                            if( result == 0 )
+                                return true;
+                            result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                            normalize( result );
+                            if( result == 0 )
+                                return true;
+                        }
+                        return false;
+                    }
                     case CR_LESS:
                     {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
+                        // Case: ( p != d or p < c ) and c > d
+                        // or      ( p != d or p < c ) and c < d
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LESS:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GREATER:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
                     }
                     case CR_GREATER:
                     {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LESS:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GREATER:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
+                    }
+                    case CR_LEQ:
+                    {
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
+                    }
+                    case CR_GEQ:
+                    {
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
                     }
                     default:
                         return false;
@@ -2166,21 +2159,135 @@ namespace smtrat
             }
             case CR_LESS:
             {
-                switch( _conditionconstraint.relation() )
+                switch( _constraintB.relation() )
                 {
+                    case CR_NEQ:
+                    {
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LESS:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GREATER:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
+                    }
                     case CR_LESS:
                     {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LESS:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GREATER:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
                     }
                     case CR_GREATER:
                     {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LESS:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GREATER:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
+                    }
+                    case CR_LEQ:
+                    {
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
+                    }
+                    case CR_GEQ:
+                    {
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
                     }
                     default:
                         return false;
@@ -2188,21 +2295,135 @@ namespace smtrat
             }
             case CR_GREATER:
             {
-                switch( _conditionconstraint.relation() )
+                switch( _constraintB.relation() )
                 {
+                    case CR_NEQ:
+                    {
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LESS:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GREATER:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
+                    }
                     case CR_LESS:
                     {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LESS:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GREATER:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
                     }
                     case CR_GREATER:
                     {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LESS:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GREATER:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
+                    }
+                    case CR_LEQ:
+                    {
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
+                    }
+                    case CR_GEQ:
+                    {
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
                     }
                     default:
                         return false;
@@ -2210,167 +2431,271 @@ namespace smtrat
             }
             case CR_LEQ:
             {
-                switch( _conditionconstraint.relation() )
+                switch( _constraintB.relation() )
                 {
-                    case CR_LEQ:
+                    case CR_NEQ:
                     {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
                     }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case CR_GEQ:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LEQ:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            default:
-                return false;
-            }
-        }
-        case CR_GREATER:
-        {
-            switch( _constraintB.relation() )
-            {
-            case CR_NEQ:
-            {
-                switch( _conditionconstraint.relation() )
-                {
                     case CR_LESS:
                     {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
                     }
                     case CR_GREATER:
                     {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
+                    }
+                    case CR_LEQ:
+                    {
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
+                    }
+                    case CR_GEQ:
+                    {
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
                     }
                     default:
                         return false;
                 }
             }
-            case CR_LESS:
+            case CR_GEQ:
             {
-                switch( _conditionconstraint.relation() )
+                switch( _constraintB.relation() )
                 {
+                    case CR_NEQ:
+                    {
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
+                    }
                     case CR_LESS:
                     {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
                     }
                     case CR_GREATER:
                     {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
                     }
-                    default:
-                        return false;
-                }
-            }
-            case CR_GREATER:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LESS:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GREATER:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case CR_LEQ:
-            {
-                switch( _conditionconstraint.relation() )
-                {
                     case CR_LEQ:
                     {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
                     }
                     case CR_GEQ:
                     {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case CR_GEQ:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LEQ:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs()+ _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
+                        switch( _conditionconstraint.relation() )
+                        {
+                            case CR_LEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            case CR_GEQ:
+                            {
+                                ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
+                                normalize( result );
+                                if( result == 0 )
+                                    return true;
+                                return false;
+                            }
+                            default:
+                                return false;
+                        }
                     }
                     default:
                         return false;
@@ -2378,258 +2703,6 @@ namespace smtrat
             }
             default:
                 return false;
-            }
-        }
-        case CR_LEQ:
-        {
-            switch( _constraintB.relation() )
-            {
-            case CR_NEQ:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LEQ:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case CR_LESS:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LEQ:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case CR_GREATER:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LEQ:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case CR_LEQ:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LEQ:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case CR_GEQ:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LEQ:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            default:
-                return false;
-            }
-        }
-        case CR_GEQ:
-        {
-            switch( _constraintB.relation() )
-            {
-            case CR_NEQ:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LEQ:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case CR_LESS:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LEQ:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case CR_GREATER:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LEQ:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case CR_LEQ:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LEQ:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs() - _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case CR_GEQ:
-            {
-                switch( _conditionconstraint.relation() )
-                {
-                    case CR_LEQ:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() + _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    case CR_GEQ:
-                    {
-                        ex result = _constraintA.lhs() + _constraintB.lhs() - _conditionconstraint.lhs();
-                        normalize( result );
-                        if( result == 0 ) return true;
-                        return false;
-                    }
-                    default:
-                        return false;
-                }
-            }
-            default:
-                return false;
-            }
-        }
-        default:
-            return false;
         }
     }
 }    // namespace smtrat

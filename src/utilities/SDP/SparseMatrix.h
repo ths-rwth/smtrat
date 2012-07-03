@@ -48,7 +48,7 @@ namespace smtrat
             void setZero( MatrixIndex cell );
             Rational get( int row, int col ) const;
             int getNrRows() const;
-			void extend( int nrRows, int nrCols);
+            void extend( int nrRows, int nrCols );
 
             int getCSDPFormatEntries( int* rowindices, int* colindices, double* values ) const;
 

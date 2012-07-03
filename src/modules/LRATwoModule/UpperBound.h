@@ -10,17 +10,19 @@
 
 #include "Bound.h"
 
-namespace smtrat {
+namespace smtrat
+{
+    class UpperBound:
+        public Bound
+    {
+        public:
+            UpperBound();
+            UpperBound( Real bound );
+            virtual ~UpperBound();
 
-class UpperBound : public Bound {
-public:
-	UpperBound();
-	UpperBound(Real bound);
-	virtual ~UpperBound();
+            string toString();
+            bool checkBound( Real alpha, Real beta );
+    };
 
-	string toString();
-	bool checkBound(Real alpha, Real beta);
-};
-
-} /* namespace smtrat */
+}    /* namespace smtrat */
 #endif /* UPPERBOUND_H_ */

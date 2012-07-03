@@ -19,11 +19,12 @@
  *
  */
 
+
 #include "Constraint.h"
 #include <unordered_set>
 
 #ifndef CONSTRAINTPOOL_H
-#define	CONSTRAINTPOOL_H
+#define CONSTRAINTPOOL_H
 
 namespace smtrat
 {
@@ -47,8 +48,8 @@ namespace smtrat
         }
     };
 
-    typedef std::unordered_set<const Constraint*, constraintHash, constraintEqual> fastConstraintSet;
-    typedef std::unordered_set< const Constraint*, constraintHash, constraintEqual>::const_iterator fcs_const_iterator;
+    typedef std::unordered_set<const Constraint*, constraintHash, constraintEqual>                 fastConstraintSet;
+    typedef std::unordered_set<const Constraint*, constraintHash, constraintEqual>::const_iterator fcs_const_iterator;
 
     class ConstraintPool
     {
@@ -81,7 +82,7 @@ namespace smtrat
 
             ConstraintPool( unsigned _capacity = 10000 )
             {
-                mAllVariables = GiNaC::symtab();
+                mAllVariables   = GiNaC::symtab();
                 mAllConstraints = fastConstraintSet();
                 mAllConstraints.reserve( _capacity );
                 mIdAllocator = 1;
@@ -120,8 +121,8 @@ namespace smtrat
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel )
             {
                 assert( hasNoOtherVariables( _lhs ) );
-                Constraint* constraint = new Constraint( _lhs, _rel, mAllVariables, mIdAllocator );
-                std::pair< fastConstraintSet::iterator, bool > iterBoolPair = mAllConstraints.insert( constraint );
+                Constraint*                                  constraint   = new Constraint( _lhs, _rel, mAllVariables, mIdAllocator );
+                std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
                 if( !iterBoolPair.second )
                 {
                     delete constraint;
@@ -135,9 +136,9 @@ namespace smtrat
 
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation _rel )
             {
-                assert( hasNoOtherVariables( _lhs ) &&  hasNoOtherVariables( _rhs ) );
-                Constraint* constraint = new Constraint( _lhs, _rhs, _rel, mAllVariables, mIdAllocator );
-                std::pair< fastConstraintSet::iterator, bool > iterBoolPair = mAllConstraints.insert( constraint );
+                assert( hasNoOtherVariables( _lhs ) && hasNoOtherVariables( _rhs ) );
+                Constraint*                                  constraint   = new Constraint( _lhs, _rhs, _rel, mAllVariables, mIdAllocator );
+                std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
                 if( !iterBoolPair.second )
                 {
                     delete constraint;
@@ -167,5 +168,4 @@ namespace smtrat
     };
 }    // namespace smtrat
 
-#endif	/* CONSTRAINTPOOL_H */
-
+#endif   /* CONSTRAINTPOOL_H */

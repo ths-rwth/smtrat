@@ -53,7 +53,7 @@ namespace smtrat
     {
         public:
             /// construct a new parser driver context
-            Driver( class Formula* );
+            Driver( class Formula * );
 
             /// enable debug output in the flex scanner
             bool trace_scanning;
@@ -99,13 +99,13 @@ namespace smtrat
 
             /** Pointer to the current lexer instance, this is used to connect the
              * parser to the scanner. It is used in the yylex macro. */
-            class Scanner* lexer;
+            class Scanner *lexer;
 
             /** Reference to the calculator context filled during parsing of the
              * expressions. */
-            class Formula* formulaRoot;
+            class Formula *formulaRoot;
 
-            std::set<std::string> collectedBooleans;
+            std::set<std::string>              collectedBooleans;
 
             std::map<std::string, std::string> collectedBooleanAuxilliaries;
 

@@ -41,19 +41,21 @@ namespace smtrat
     class LRATwoModule:
         public Module
     {
-    	private:
+        private:
+
             /**
              * Members:
              */
-        	SimplexTableaux simplexTableaux;
-        	BoundMap boundMap;
-        	BetaMap betaMap;
+            SimplexTableaux simplexTableaux;
+            BoundMap        boundMap;
+            BetaMap         betaMap;
+
         public:
 
             /**
              * Constructors:
              */
-            LRATwoModule( Manager* const _tsManager, const Formula* const _formula  );
+            LRATwoModule( Manager* const _tsManager, const Formula* const _formula );
 
             /**
              * Destructor:
@@ -71,6 +73,7 @@ namespace smtrat
             void removeSubformula( Formula::const_iterator );
 
         private:
+
             /**
              * Methods:
              */

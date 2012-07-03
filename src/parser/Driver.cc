@@ -38,7 +38,7 @@
 
 namespace smtrat
 {
-    Driver::Driver( class Formula* _formulaRoot ):
+    Driver::Driver( class Formula *_formulaRoot ):
         trace_scanning( false ),
         trace_parsing( false ),
         formulaRoot( _formulaRoot ),

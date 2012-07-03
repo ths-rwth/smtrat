@@ -28,6 +28,7 @@
  */
 
 #include "SingleVSModule.h"
+
 using namespace std;
 using namespace svs;
 
@@ -61,14 +62,14 @@ namespace smtrat
      * Methods:
      */
 
-	/**
+    /**
      * Informs about a new constraints.
      * @param c A new constraint
      *
      */
     bool SingleVSModule::inform( const Constraint* const _constraint )
     {
-    	return true;
+        return true;
     }
 
     /**
@@ -95,12 +96,12 @@ namespace smtrat
      */
     Answer SingleVSModule::isConsistent()
     {
-//        for( ; mNumberOfComparedConstraints < receivedFormulaSize(); ++mNumberOfComparedConstraints )
-//        {
-//            const Formula* receivedFormula = receivedFormulaAt( mNumberOfComparedConstraints );
-//            Formula* subresult =
-//            addReceivedSubformulaToPassedFormula( mNumberOfComparedConstraints );
-//        }
+        //        for( ; mNumberOfComparedConstraints < receivedFormulaSize(); ++mNumberOfComparedConstraints )
+        //        {
+        //            const Formula* receivedFormula = receivedFormulaAt( mNumberOfComparedConstraints );
+        //            Formula* subresult =
+        //            addReceivedSubformulaToPassedFormula( mNumberOfComparedConstraints );
+        //        }
         return True;
     }
 
@@ -114,3 +115,4 @@ namespace smtrat
         Module::removeSubformula( _subformula );
     }
 }    // namespace smtrat
+

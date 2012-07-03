@@ -96,176 +96,176 @@ namespace lra
             }
         }
 
-//        if( status != INIT )
-//        {
-//            // Treat the Enode as it is pushed on-the-fly
-//            //    status = INCREMENT;
-//            assert( status == SAT );
-//        }
-//        assert( _constraint->relation() == CR_LEQ || _constraint->relation() == CR_GEQ );    // TODO: Generalize it to arbitrary constraints, of course excluding NEQ.
-//
-//        vector<ex> coefficients = _constraint->linearAndConstantCoefficients();
-//        numeric constantPart = ex_to<numeric>( coefficients.back() );
-//
-//        bool revert = _constraint->relation() != CR_LEQ;
-//
-//        /*
-//         * If the constraint compares only a single variable with a constant.
-//         */
-//        if( coefficients.size() == 1 )
-//        {
-//            return (_constraint->isConsistent() == 0 ? True : False);
-//        }
-//        else if( coefficients.size() == 2 )
-//        {
-//            assert( _constraint->variables().size() == 1 );
-//
-//            if( ex_to<numeric>( coefficients.at( 0 ) ) < 0 )
-//            {
-//                revert = !revert;
-//            }
-//
-//            numeric * bound;
-//
-//            if( !numbers_pool.empty() )
-//            {
-//                bound = numbers_pool.back();
-//                numbers_pool.pop_back();
-//                *bound = numeric( ex_to<numeric>( coefficients.at( 1 ) ) / ex_to<numeric>( coefficients.at( 0 ) ) );
-//            }
-//            else
-//            {
-//                bound = new numeric( ex_to<numeric>( coefficients.at( 1 ) ) / ex_to<numeric>( coefficients.at( 0 ) ) );
-//            }
-//
-//            ExpressionLAVarMap::iterator exToLAVar = expressionLAVarMap.find( ex( _constraint->variables().begin()->second ) );
-//            if( exToLAVar != expressionLAVarMap.end() )
-//            {
-//                exToLAVar->second->setBounds( _constraint->lhs(), *bound );
-//                expressionLAVarMap[_constraint->lhs()]  = exToLAVar->second;
-//                expressionOriginMap[_constraint->lhs()] = _constraint;
-//            }
-//            else
-//            {
-//                LAVar* x = new LAVar( _constraint->lhs(), ex( _constraint->variables().begin()->second ), *bound, revert );
-//
-//                if( x->ID() >= static_cast<int>(columns.size()) )
-//                {
-//                    columns.resize( x->ID() + 1, NULL );
-//                }
-//                columns[x->ID()] = x;
-//
-//                expressionLAVarMap.insert( pair<const ex, LAVar*>( ex( _constraint->variables().begin()->second ), x ) );
-//                //          expressionOriginMap.insert( pair< const ex, const Constraint* >( *_constraint->variables().begin()->second, _constraint ) );
-//                expressionLAVarMap[_constraint->lhs()]  = x;
-//                expressionOriginMap[_constraint->lhs()] = _constraint;
-//            }
-//
-//            numbers_pool.push_back( bound );
-//        }
-//        else
-//        {
-//            ExpressionLAVarMap::iterator exToLAVar = expressionLAVarMap.find( ex( _constraint->variables().begin()->second ) );
-//            if( exToLAVar != expressionLAVarMap.end() )
-//            {
-//                exToLAVar->second->setBounds( _constraint->lhs(), ex_to<numeric>( coefficients.back() ) );
-//                expressionLAVarMap[_constraint->lhs()] = exToLAVar->second;
-//            }
-//            else
-//            {
-//                numeric * bound;
-//                if( !numbers_pool.empty() )
-//                {
-//                    bound = numbers_pool.back();
-//                    numbers_pool.pop_back();
-//                    *bound = numeric( ex_to<numeric>( coefficients.back() ) );
-//                }
-//                else
-//                {
-//                    bound = new numeric( ex_to<numeric>( coefficients.back() ) );
-//                }
-//                // introduce the slack variable with bounds on it
-//                LAVar* s = new LAVar( _constraint->lhs(), *bound, _constraint->lhs(), true );
-//                slack_vars.push_back( s );
-//
-//                numbers_pool.push_back( bound );
-//
-//                assert( s->basicID() != -1 );
-//
-//                if( s->ID() >= static_cast<int>(columns.size()) )
-//                {
-//                    columns.resize( s->ID() + 1, NULL );
-//                }
-//                columns[s->ID()] = s;
-//
-//                if( s->basicID() >= static_cast<int>(rows.size()) )
-//                {
-//                    rows.resize( s->basicID() + 1, NULL );
-//                }
-//                rows[s->basicID()] = s;
-//
-//                if( !numbers_pool.empty() )
-//                {
-//                    bound = numbers_pool.back();
-//                    numbers_pool.pop_back();
-//                    *bound = numeric( -1 );
-//                }
-//                else
-//                {
-//                    bound = new numeric( -1 );
-//                }
-//
-//                s->polynomial.add( s->ID(), 0, bound );
-//
-//                expressionLAVarMap.insert( pair<const ex, LAVar*>( _constraint->lhs(), s ) );
-//                expressionOriginMap.insert( pair<const ex, const Constraint*>( _constraint->lhs(), _constraint ) );
-//
-//                assert( coefficients.size() == _constraint->variables().size() + 1 );
-//
-//                symtab::const_iterator var = _constraint->variables().begin();
-//                for( unsigned i = 0; i < coefficients.size() - 1; ++i )
-//                {
-//                    if( !numbers_pool.empty() )
-//                    {
-//                        bound = numbers_pool.back();
-//                        numbers_pool.pop_back();
-//                        *bound = numeric( ex_to<numeric>( coefficients.at( i ) ) );
-//                    }
-//                    else
-//                    {
-//                        bound = new numeric( ex_to<numeric>( coefficients.at( i ) ) );
-//                    }
-//
-//                    ExpressionLAVarMap::iterator exToLAVar = expressionLAVarMap.find( ex( var->second ) );
-//                    if( exToLAVar != expressionLAVarMap.end() )
-//                    {
-//                        addVarToRow( s, exToLAVar->second, bound );
-//                    }
-//                    else
-//                    {
-//                        LAVar* x = new LAVar( ex( var->second ) );
-//                        slack_vars.push_back( x );
-//                        expressionLAVarMap.insert( pair<const ex, LAVar*>( ex( var->second ), x ) );
-//                        expressionOriginMap.insert( pair<const ex, const Constraint*>( ex( var->second ), _constraint ) );
-//
-//                        if( x->ID() >= static_cast<int>(columns.size()) )
-//                        {
-//                            columns.resize( x->ID() + 1, NULL );
-//                        }
-//                        columns[x->ID()] = x;
-//
-//                        x->binded_rows.add( s->basicID(), s->polynomial.add( x->ID(), x->binded_rows.free_pos(), bound ) );
-//                    }
-//                    ++var;
-//                    assert( s->basicID() != -1 );
-//                }
-//            }
-//        }
-//        print( cout );
-//        #if VERBOSE
-//        cout << "Informed of constraint " << _constraint->toString() << endl;
-//        //  cout << this << endl;
-//        #endif
+        //        if( status != INIT )
+        //        {
+        //            // Treat the Enode as it is pushed on-the-fly
+        //            //    status = INCREMENT;
+        //            assert( status == SAT );
+        //        }
+        //        assert( _constraint->relation() == CR_LEQ || _constraint->relation() == CR_GEQ );    // TODO: Generalize it to arbitrary constraints, of course excluding NEQ.
+        //
+        //        vector<ex> coefficients = _constraint->linearAndConstantCoefficients();
+        //        numeric constantPart = ex_to<numeric>( coefficients.back() );
+        //
+        //        bool revert = _constraint->relation() != CR_LEQ;
+        //
+        //        /*
+        //         * If the constraint compares only a single variable with a constant.
+        //         */
+        //        if( coefficients.size() == 1 )
+        //        {
+        //            return (_constraint->isConsistent() == 0 ? True : False);
+        //        }
+        //        else if( coefficients.size() == 2 )
+        //        {
+        //            assert( _constraint->variables().size() == 1 );
+        //
+        //            if( ex_to<numeric>( coefficients.at( 0 ) ) < 0 )
+        //            {
+        //                revert = !revert;
+        //            }
+        //
+        //            numeric * bound;
+        //
+        //            if( !numbers_pool.empty() )
+        //            {
+        //                bound = numbers_pool.back();
+        //                numbers_pool.pop_back();
+        //                *bound = numeric( ex_to<numeric>( coefficients.at( 1 ) ) / ex_to<numeric>( coefficients.at( 0 ) ) );
+        //            }
+        //            else
+        //            {
+        //                bound = new numeric( ex_to<numeric>( coefficients.at( 1 ) ) / ex_to<numeric>( coefficients.at( 0 ) ) );
+        //            }
+        //
+        //            ExpressionLAVarMap::iterator exToLAVar = expressionLAVarMap.find( ex( _constraint->variables().begin()->second ) );
+        //            if( exToLAVar != expressionLAVarMap.end() )
+        //            {
+        //                exToLAVar->second->setBounds( _constraint->lhs(), *bound );
+        //                expressionLAVarMap[_constraint->lhs()]  = exToLAVar->second;
+        //                expressionOriginMap[_constraint->lhs()] = _constraint;
+        //            }
+        //            else
+        //            {
+        //                LAVar* x = new LAVar( _constraint->lhs(), ex( _constraint->variables().begin()->second ), *bound, revert );
+        //
+        //                if( x->ID() >= static_cast<int>(columns.size()) )
+        //                {
+        //                    columns.resize( x->ID() + 1, NULL );
+        //                }
+        //                columns[x->ID()] = x;
+        //
+        //                expressionLAVarMap.insert( pair<const ex, LAVar*>( ex( _constraint->variables().begin()->second ), x ) );
+        //                //          expressionOriginMap.insert( pair< const ex, const Constraint* >( *_constraint->variables().begin()->second, _constraint ) );
+        //                expressionLAVarMap[_constraint->lhs()]  = x;
+        //                expressionOriginMap[_constraint->lhs()] = _constraint;
+        //            }
+        //
+        //            numbers_pool.push_back( bound );
+        //        }
+        //        else
+        //        {
+        //            ExpressionLAVarMap::iterator exToLAVar = expressionLAVarMap.find( ex( _constraint->variables().begin()->second ) );
+        //            if( exToLAVar != expressionLAVarMap.end() )
+        //            {
+        //                exToLAVar->second->setBounds( _constraint->lhs(), ex_to<numeric>( coefficients.back() ) );
+        //                expressionLAVarMap[_constraint->lhs()] = exToLAVar->second;
+        //            }
+        //            else
+        //            {
+        //                numeric * bound;
+        //                if( !numbers_pool.empty() )
+        //                {
+        //                    bound = numbers_pool.back();
+        //                    numbers_pool.pop_back();
+        //                    *bound = numeric( ex_to<numeric>( coefficients.back() ) );
+        //                }
+        //                else
+        //                {
+        //                    bound = new numeric( ex_to<numeric>( coefficients.back() ) );
+        //                }
+        //                // introduce the slack variable with bounds on it
+        //                LAVar* s = new LAVar( _constraint->lhs(), *bound, _constraint->lhs(), true );
+        //                slack_vars.push_back( s );
+        //
+        //                numbers_pool.push_back( bound );
+        //
+        //                assert( s->basicID() != -1 );
+        //
+        //                if( s->ID() >= static_cast<int>(columns.size()) )
+        //                {
+        //                    columns.resize( s->ID() + 1, NULL );
+        //                }
+        //                columns[s->ID()] = s;
+        //
+        //                if( s->basicID() >= static_cast<int>(rows.size()) )
+        //                {
+        //                    rows.resize( s->basicID() + 1, NULL );
+        //                }
+        //                rows[s->basicID()] = s;
+        //
+        //                if( !numbers_pool.empty() )
+        //                {
+        //                    bound = numbers_pool.back();
+        //                    numbers_pool.pop_back();
+        //                    *bound = numeric( -1 );
+        //                }
+        //                else
+        //                {
+        //                    bound = new numeric( -1 );
+        //                }
+        //
+        //                s->polynomial.add( s->ID(), 0, bound );
+        //
+        //                expressionLAVarMap.insert( pair<const ex, LAVar*>( _constraint->lhs(), s ) );
+        //                expressionOriginMap.insert( pair<const ex, const Constraint*>( _constraint->lhs(), _constraint ) );
+        //
+        //                assert( coefficients.size() == _constraint->variables().size() + 1 );
+        //
+        //                symtab::const_iterator var = _constraint->variables().begin();
+        //                for( unsigned i = 0; i < coefficients.size() - 1; ++i )
+        //                {
+        //                    if( !numbers_pool.empty() )
+        //                    {
+        //                        bound = numbers_pool.back();
+        //                        numbers_pool.pop_back();
+        //                        *bound = numeric( ex_to<numeric>( coefficients.at( i ) ) );
+        //                    }
+        //                    else
+        //                    {
+        //                        bound = new numeric( ex_to<numeric>( coefficients.at( i ) ) );
+        //                    }
+        //
+        //                    ExpressionLAVarMap::iterator exToLAVar = expressionLAVarMap.find( ex( var->second ) );
+        //                    if( exToLAVar != expressionLAVarMap.end() )
+        //                    {
+        //                        addVarToRow( s, exToLAVar->second, bound );
+        //                    }
+        //                    else
+        //                    {
+        //                        LAVar* x = new LAVar( ex( var->second ) );
+        //                        slack_vars.push_back( x );
+        //                        expressionLAVarMap.insert( pair<const ex, LAVar*>( ex( var->second ), x ) );
+        //                        expressionOriginMap.insert( pair<const ex, const Constraint*>( ex( var->second ), _constraint ) );
+        //
+        //                        if( x->ID() >= static_cast<int>(columns.size()) )
+        //                        {
+        //                            columns.resize( x->ID() + 1, NULL );
+        //                        }
+        //                        columns[x->ID()] = x;
+        //
+        //                        x->binded_rows.add( s->basicID(), s->polynomial.add( x->ID(), x->binded_rows.free_pos(), bound ) );
+        //                    }
+        //                    ++var;
+        //                    assert( s->basicID() != -1 );
+        //                }
+        //            }
+        //        }
+        //        print( cout );
+        //        #if VERBOSE
+        //        cout << "Informed of constraint " << _constraint->toString() << endl;
+        //        //  cout << this << endl;
+        //        #endif
         return Unknown;
     }
 

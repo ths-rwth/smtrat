@@ -26,7 +26,7 @@
  * @author Ulrich Loup
  * @author Sebastian Junges
  * @since 2012-01-18
- * @version 2012-02-04
+ * @version 2012-07-02
  */
 
 #ifndef SMTRAT_MODULES_H
@@ -37,12 +37,16 @@
 #include "FourierMotzkinSimplifier.h"
 
 #ifdef USE_GB
+
 #include "GroebnerModule.h"
+
 #endif
 
 #ifdef USE_CAD
-#include "UnivariateCADModule.h"
+//#include "UnivariateCADModule.h"
+
 #include "CADModule.h"
+
 #endif
 
 #include "SATModule.h"
@@ -56,4 +60,5 @@
 #include "StandardModuleFactory.h"
 
 #endif   // SMTRAT_MODULES_H
+
 
