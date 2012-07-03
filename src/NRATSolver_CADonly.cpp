@@ -66,6 +66,7 @@ namespace smtrat
     {
         strategy().addModuleType( caseSix, MT_CADModule );
         strategy().addModuleType( caseThree, MT_VSModule );
+//        strategy().addModuleType( caseThree, MT_CADModule );
         strategy().addModuleType( caseFour, MT_SATModule );
         strategy().addModuleType( caseFive, MT_CNFerModule );
         strategy().addModuleType( caseTwo, MT_PreProModule );

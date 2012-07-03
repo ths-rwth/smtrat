@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-02-04
- * @version 2012-07-02
+ * @version 2012-07-03
  *
  */
 #ifndef SMTRAT_CADMODULE_H
@@ -39,6 +39,15 @@
 
 namespace smtrat
 {
+    /// Hash function for use of Formula::const_iterator in unordered data structures
+    struct FormulaIteratorHasher
+    {
+        size_t operator ()( Formula::const_iterator i ) const
+        {
+            return (*i)->pConstraint()->id();
+        }
+    };
+    
     /**
      * Module invoking a CAD solver of the GiNaCRA library. The solver is only used with univariate polynomials.
      * If a polynomial with more than one variable is added, this module passes it on.
@@ -51,12 +60,18 @@ namespace smtrat
     class CADModule:
         public Module
     {
+        typedef std::unordered_map<Formula::const_iterator, unsigned, FormulaIteratorHasher> ConstraintIndexMap;
+        
+        ////////////////
+        // ATTRIBUTES //
+        ////////////////
+        
         /// representation of the solution space containing all data relevant for CAD computations
         GiNaCRA::CAD mCAD;
         /// the GiNaCRA constraints
         vector<GiNaCRA::Constraint> mConstraints;
         /// the GiNaCRA constraints' indices assigned to the received constraints
-        std::unordered_map<const Constraint*, unsigned> mConstraintsMap;
+        ConstraintIndexMap mConstraintsMap;
         /// flag storing global satisfiability status
         bool mSatisfiable;
 
@@ -70,9 +85,10 @@ namespace smtrat
             virtual Answer isConsistent();
 
         private:
-            const GiNaCRA::Constraint convertConstraint( const Constraint& );
-            vec_set_const_pFormula extractMinimalInfeasibleSubsets( const GiNaCRA::ConflictGraph& conflictGraph );
-            const Formula* getConstraintAt( unsigned index );
+            inline const GiNaCRA::Constraint convertConstraint( const Constraint& );
+            inline vec_set_const_pFormula extractMinimalInfeasibleSubsets( const GiNaCRA::ConflictGraph& conflictGraph );
+            inline const Formula* getConstraintAt( unsigned index );
+            inline void updateConstraintMap( unsigned index, bool decrement = true );
     };
 
 }    // namespace smtrat
