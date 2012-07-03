@@ -83,16 +83,16 @@ namespace smtrat
 		#endif
 		#ifdef USE_CAD
 		strategy().addModuleType( caseOne, MT_CADModule );
-//        strategy().addModuleType( caseSeven, MT_CADModule );
+//        strategy().addModuleType( caseThree, MT_CADModule );
 		#endif
 		#ifdef USE_GB
 		strategy().addModuleType( caseTwo, MT_VSModule );
-		strategy().addModuleType( caseSeven, MT_GroebnerModule);
+		strategy().addModuleType( caseThree, MT_GroebnerModule);
 		#else
-		strategy().addModuleType( caseEight, MT_VSModule );
+		strategy().addModuleType( caseThree, MT_VSModule );
 		#endif
 //		strategy().addModuleType( caseThree, MT_SmartSimplifier );
-		strategy().addModuleType( caseThree, MT_FourierMotzkinSimplifier );
+//		strategy().addModuleType( caseThree, MT_FourierMotzkinSimplifier );
 		strategy().addModuleType( caseFive, MT_SATModule );
         strategy().addModuleType( caseFour, MT_PreProModule );
         strategy().addModuleType( caseSix, MT_CNFerModule );
