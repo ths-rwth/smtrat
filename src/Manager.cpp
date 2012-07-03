@@ -66,7 +66,7 @@ namespace smtrat
         /*
          * Add all existing modules.
          */
-        addModuleType( MT_SimplifierModule, new StandardModuleFactory<SimplifierModule>() );
+        addModuleType( MT_SmartSimplifier, new StandardModuleFactory<SmartSimplifier>() );
 #ifdef USE_GB
         addModuleType( MT_GroebnerModule, new StandardModuleFactory<GroebnerModule>() );
 #endif
@@ -81,6 +81,7 @@ namespace smtrat
         addModuleType( MT_LRAOneModule, new StandardModuleFactory<LRAOneModule>() );
         addModuleType( MT_LRATwoModule, new StandardModuleFactory<LRATwoModule>() );
         addModuleType( MT_SingleVSModule, new StandardModuleFactory<SingleVSModule>() );
+        addModuleType( MT_FourierMotzkinSimplifier, new StandardModuleFactory<FourierMotzkinSimplifier>() );
     }
 
     /**

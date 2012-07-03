@@ -446,9 +446,9 @@ namespace smtrat
     {
         switch( _moduleType )
         {
-        case MT_SimplifierModule:
+        case MT_SmartSimplifier:
         {
-            mPropositions |= PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE;
+            mPropositions |= PROP_CANNOT_BE_SOLVED_BY_SMARTSIMPLIFIER;
             break;
         }
         case MT_GroebnerModule:
@@ -509,6 +509,11 @@ namespace smtrat
         case MT_SingleVSModule:
         {
             mPropositions |= PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE;
+            break;
+        }
+        case MT_FourierMotzkinSimplifier:
+        {
+            mPropositions |= PROP_CANNOT_BE_SOLVED_BY_FOURIERMOTZKINSIMPLIFIER;
             break;
         }
         default:
@@ -692,67 +697,6 @@ namespace smtrat
             printPropositions( _out, _init );
 */
         }
-    }
-
-    void Formula::printPropositions( ostream& _out, const string _init ) const
-    {
-        _out << _init << " Propositions are up to date?  " << ( mPropositionsUptodate ? "Yes." : "No." ) << endl;
-    	_out << _init << " PROP_IS_IN_NNF                               = ";
-    	_out << ( (~PROP_IS_IN_NNF | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_IS_IN_CNF                               = ";
-    	_out << ( (~PROP_IS_IN_CNF | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_IS_PURE_CONJUNCTION                     = ";
-    	_out << ( (~PROP_IS_PURE_CONJUNCTION | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_IS_A_CLAUSE                             = ";
-    	_out << ( (~PROP_IS_A_CLAUSE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_IS_A_LITERAL                            = ";
-    	_out << ( (~PROP_IS_A_LITERAL | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_IS_AN_ATOM                              = ";
-    	_out << ( (~PROP_IS_AN_ATOM | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_VARIABLE_DEGREE_LESS_THAN_FIVE          = ";
-    	_out << ( (~PROP_VARIABLE_DEGREE_LESS_THAN_FIVE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_VARIABLE_DEGREE_LESS_THAN_FOUR          = ";
-    	_out << ( (~PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_VARIABLE_DEGREE_LESS_THAN_THREE         = ";
-    	_out << ( (~PROP_VARIABLE_DEGREE_LESS_THAN_THREE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " STRONG_CONDITIONS                            = ";
-    	_out << ( (~STRONG_CONDITIONS | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CONTAINS_EQUATION                       = ";
-    	_out << ( (~PROP_CONTAINS_EQUATION | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CONTAINS_INEQUALITY                     = ";
-    	_out << ( (~PROP_CONTAINS_INEQUALITY | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CONTAINS_STRICT_INEQUALITY              = ";
-    	_out << ( (~PROP_CONTAINS_STRICT_INEQUALITY | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CONTAINS_LINEAR_POLYNOMIAL              = ";
-    	_out << ( (~PROP_CONTAINS_LINEAR_POLYNOMIAL | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CONTAINS_NONLINEAR_POLYNOMIAL           = ";
-    	_out << ( (~PROP_CONTAINS_NONLINEAR_POLYNOMIAL | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL        = ";
-    	_out << ( (~PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " WEAK_CONDITIONS                              = ";
-    	_out << ( (~WEAK_CONDITIONS | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE    = ";
-    	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE      = ";
-    	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_VSMODULE            = ";
-    	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_VSMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE = ";
-    	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_CADMODULE           = ";
-    	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_CADMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_SATMODULE           = ";
-    	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_SATMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_LRAMODULE           = ";
-    	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_LRAMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE           = ";
-    	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE           = ";
-    	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE        = ";
-    	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
-		_out << _init << " PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE         = ";
-    	_out << ( (~PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0" ) << endl;
     }
 
     void Formula::getConstraints( vector<const Constraint* >& _const) const

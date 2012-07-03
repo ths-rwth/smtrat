@@ -37,7 +37,7 @@ set(lib_core_headers
 set(lib_modules_headers
     modules/Modules.h
     modules/StandardModuleFactory.h
-    modules/SimplifierModule.h
+    modules/SmartSimplifier.h
     modules/VSModule.h
     modules/SATModule.h
     modules/LRAModule.h
@@ -46,10 +46,11 @@ set(lib_modules_headers
     modules/PreProModule.h
     modules/CNFerModule.h
     modules/SingleVSModule.h
+    modules/FourierMotzkinSimplifier.h
 )
 
 set(lib_modules_src
-    modules/SimplifierModule.cpp
+    modules/SmartSimplifier.cpp
     modules/VSModule.cpp
     modules/SATModule.cpp
     modules/LRAModule.cpp
@@ -58,6 +59,7 @@ set(lib_modules_src
     modules/PreProModule.cpp
     modules/CNFerModule.cpp
     modules/SingleVSModule.cpp
+    modules/FourierMotzkinSimplifier.cpp
 )
 
 if(USE_GB)

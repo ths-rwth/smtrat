@@ -42,8 +42,8 @@ namespace smtrat
         MT_NoModule,
         /// type of class Module
         MT_Module,
-        /// type of class SimplifierModule
-        MT_SimplifierModule,
+        /// type of class SmartSimplifier
+        MT_SmartSimplifier,
         /// type of class GroebnerModule
         MT_GroebnerModule,
         /// type of class VSModule
@@ -67,7 +67,9 @@ namespace smtrat
         /// type of class CNFTransformerModule
         MT_CNFerModule,
         /// type of class VSModule
-        MT_SingleVSModule
+        MT_SingleVSModule,
+        /// type of class SimplifierModule
+        MT_FourierMotzkinSimplifier
     };
 }    // namespace smtrat
 
