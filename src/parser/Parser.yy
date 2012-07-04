@@ -231,6 +231,9 @@ expr:
 	| 	OB relationSymbol term term CB
 	{
         const smtrat::Constraint* constraint = Formula::newConstraint( *$3 + *$2 + *$4 );
+        delete $2;
+        delete $3;
+        delete $4;
 		driver.formulaRoot->rRealValuedVars().insert( constraint->variables().begin(), constraint->variables().end() );
 		$$ = new smtrat::Formula( constraint );
 	}
@@ -245,6 +248,7 @@ expr:
         {
             $$ = new smtrat::Formula( *$1 );
         }
+        delete $1;
     }
 	|	AUXSYM
    	{
@@ -261,7 +265,10 @@ expr:
 		smtrat::Formula* formulaTmp = new smtrat::Formula( AND );
 		while( !$4->empty() )
 		{
-			formulaTmp->addSubformula( $4->back() );
+            if( $4->back() != NULL )
+            {
+                formulaTmp->addSubformula( $4->back() );
+            }
 			$4->pop_back();
 		}
 		delete $4;
@@ -360,7 +367,8 @@ term :
    			std::string errstr = std::string( "The variable " + *$1 + " is not defined in a let expression!");
   			error( yyloc, errstr );
    		}
-   		$$ = new std::string( iter->second );
+        delete $1;
+   		$$ = new std::string( "(" + iter->second + ")" );
    	}
     | 	NUM
    	{
@@ -376,6 +384,7 @@ termOp :
 		OB MINUS term CB
 	{
 		$$ = new std::string( "(-1)*(" + *$3 + ")" );
+        delete $3;
 	}
 	|	OB PLUS termlistPlus CB
 	{
@@ -392,6 +401,8 @@ termOp :
 	|	OB DIV term nums CB
 	{
 		$$ = new std::string( "(" + *$3 + "/" + *$4 + ")" );
+        delete $3;
+        delete $4;
 	}
 	;
 
@@ -459,6 +470,7 @@ nums :
 	| 	OB MINUS nums CB
 	{
 		$$ = new std::string( "(-1)*(" + *$3 + ")" );
+        delete $3;
 	}
 	| 	OB TIMES numlistTimes CB
 	{
@@ -467,6 +479,8 @@ nums :
 	| 	OB DIV nums nums CB
 	{
 		$$ = new std::string( "(" + *$3 + "/" + *$4 + ")" );
+        delete $3;
+        delete $4;
 	}
 	;
 
@@ -518,27 +532,32 @@ bindlist :
 bind :
 		OB AUXSYM term CB
 	{
+//        std::pair<std::map<std::string, std::string>::iterator, bool> ret
+//            = driver.collectedRealAuxilliaries.insert( std::pair<std::string, std::string>( *$2, smtrat::Formula::getAuxiliaryReal() ) );
         std::pair<std::map<std::string, std::string>::iterator, bool> ret
-            = driver.collectedRealAuxilliaries.insert( std::pair<std::string, std::string>( *$2, smtrat::Formula::getAuxiliaryReal() ) );
+            = driver.collectedRealAuxilliaries.insert( std::pair<std::string, std::string>( *$2, *$3 ) );
         if( !ret.second )
         {
             std::string errstr = std::string( "The same variable is used in several let expressions!" );
             error( yyloc, errstr );
         }
 
-		GiNaC::parser reader( driver.formulaRoot->rRealValuedVars() );
-		try
-		{
-			std::string s = ret.first->second;
-			reader( s );
-		}
-		catch( GiNaC::parse_error& err )
-		{
-			std::cerr << err.what() << std::endl;
-		}
-		driver.formulaRoot->rRealValuedVars().insert( reader.get_syms().begin(), reader.get_syms().end() );
-
-		$$ = new smtrat::Formula( Formula::newConstraint( ret.first->second + "=" + *$3 ) );
+//		GiNaC::parser reader( driver.formulaRoot->rRealValuedVars() );
+//		try
+//		{
+//			std::string s = ret.first->second;
+//			reader( s );
+//		}
+//		catch( GiNaC::parse_error& err )
+//		{
+//			std::cerr << err.what() << std::endl;
+//		}
+//		driver.formulaRoot->rRealValuedVars().insert( reader.get_syms().begin(), reader.get_syms().end() );
+//
+//		$$ = new smtrat::Formula( Formula::newConstraint( ret.first->second + "=" + *$3 ) );
+        delete $2;
+        delete $3;
+		$$ = NULL;
 	}
 	|	OB AUXSYM expr CB
 	{
@@ -553,6 +572,7 @@ bind :
 		smtrat::Formula* formulaTmp = new smtrat::Formula( IMPLIES );
         formulaTmp->addSubformula( new smtrat::Formula( ret.first->second ) );
         formulaTmp->addSubformula( $3 );
+        delete $2;
         $$ = formulaTmp;
 	}
 	;
@@ -569,6 +589,7 @@ logic :
 	{
 		std::string errstr = std::string( "SMT-RAT does not support " + *$1 + "!");
 		error( yyloc, errstr );
+        delete $1;
 	}
 	;
 
