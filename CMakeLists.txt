@@ -47,6 +47,9 @@ endif()
 
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -std=c++0x")
 
+if(${STATICLIB_SWITCH} STREQUAL "ON")
+ 	set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static" )
+endif()
 
 # information about the project
 set( PROJECT_FULLNAME "SMT-RAT")
