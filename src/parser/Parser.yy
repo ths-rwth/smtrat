@@ -111,6 +111,7 @@
 %token <sval> SYM
 %token <sval> AUXSYM
 %token <sval> NUM
+%token <sval> DEC
 %token <sval> KEY
 %token <sval> EMAIL
 
@@ -124,8 +125,10 @@
 %type  <sval> 	numlistMinus
 %type  <sval> 	numlistTimes
 %type  <fval> 	expr
+%type  <fval> 	bind
 %type  <sval>   keys
 %type  <vfval>  exprlist;
+%type  <vfval>  bindlist;
 %type  <sval>  	relationSymbol;
 %type  <eval>  	unaryOperator;
 %type  <eval>  	binaryOperator;
@@ -176,6 +179,10 @@ command:
             {
                 driver.status = 0;
             }
+            else if( $4->compare( "unknown" ) == 0 )
+            {
+                driver.status = -1;
+            }
             else
             {
                 std::string errstr = std::string( "Unknown status flag. Choose either sat or unsat!");
@@ -214,12 +221,6 @@ command:
   	}
 	|	OB EXIT CB
 	{
-        //while( !driver.collectedBooleanAuxilliaries.empty() )
-        //{
-        //    smtrat::Formula* toDelete = driver.collectedBooleanAuxilliaries.begin()->second;
-        //    driver.collectedBooleanAuxilliaries.erase( driver.collectedBooleanAuxilliaries.begin() );
-        //    delete toDelete;
-        //}
 	}
 	;
 
@@ -272,29 +273,35 @@ expr:
     }
 	|	AUXSYM
    	{
-        std::map<std::string, smtrat::Formula*>::iterator iter = driver.collectedBooleanAuxilliaries.find( *$1 );
-        //std::map<std::string, std::string>::iterator iter = driver.collectedBooleanAuxilliaries.find( *$1 );
+        std::map<std::string, std::string>::iterator iter = driver.collectedBooleanAuxilliaries.find( *$1 );
    		if( iter == driver.collectedBooleanAuxilliaries.end() )
    		{
    			std::string errstr = std::string( "The variable " + *$1 + " is not defined in a let expression!");
   			error( yyloc, errstr );
    		}
-   		$$ = new smtrat::Formula( *iter->second );
+   		$$ = new smtrat::Formula( iter->second );
    	}
     | OB LET OB bindlist CB expr CB
     {
-		//smtrat::Formula* formulaTmp = new smtrat::Formula( AND );
-		//while( !$4->empty() )
-		//{
-        //    if( $4->back() != NULL )
-        //    {
-        //        formulaTmp->addSubformula( $4->back() );
-        //    }
-		//	$4->pop_back();
-		//}
-		//delete $4;
-        //formulaTmp->addSubformula( $6 );
-        $$ = $6;
+        if( !$4->empty() )
+        {
+            smtrat::Formula* formulaTmp = new smtrat::Formula( AND );
+            while( !$4->empty() )
+            {
+                if( $4->back() != NULL )
+                {
+                    formulaTmp->addSubformula( $4->back() );
+                }
+                $4->pop_back();
+            }
+            delete $4;
+            formulaTmp->addSubformula( $6 );
+            $$ = formulaTmp;
+        }
+        else
+        {
+            $$ = $6;
+        }
     }
     | OB expr CB
     {
@@ -395,6 +402,21 @@ term :
    	{
         $$ = $1;
    	}
+    | 	DEC
+   	{
+        unsigned pos = $1->find('.');
+        if( pos != std::string::npos )
+        {
+            std::string* result = new std::string( "(" + $1->substr( 0, pos ) + $1->substr( pos+1, $1->size()-pos-1 ) );
+            *result += "/1" + std::string( $1->size()-pos-1, '0' ) + ")";
+            $$ = result;
+        }
+        else
+        {
+   			std::string errstr = std::string( "There should be a point in a decimal!");
+  			error( yyloc, errstr );
+        }
+   	}
     |  	termOp
     {
         $$ = $1;
@@ -480,6 +502,21 @@ nums :
    	{
         $$ = $1;
    	}
+    | 	DEC
+   	{
+        unsigned pos = $1->find('.');
+        if( pos != std::string::npos )
+        {
+            std::string* result = new std::string( "(" + $1->substr( 0, pos ) + $1->substr( pos+1, $1->size()-pos-1 ) );
+            *result += "/1" + std::string( $1->size()-pos-1, '0' ) + ")";
+            $$ = result;
+        }
+        else
+        {
+   			std::string errstr = std::string( "There should be a point in a decimal!");
+  			error( yyloc, errstr );
+        }
+   	}
     |	OB PLUS numlistPlus CB
 	{
     	$$ = $3;
@@ -541,20 +578,28 @@ numlistTimes :
 bindlist :
 		bind
 	{
-		//$$ = new std::vector< smtrat::Formula* >( 1, $1 );
+        if( $1 == NULL )
+        {
+            $$ = new std::vector< smtrat::Formula* >();
+        }
+        else
+        {
+            $$ = new std::vector< smtrat::Formula* >( 1, $1 );
+        }
 	}
 	|	bindlist bind
 	{
-		//$1->push_back( $2 );
-		//$$ = $1;
+        if( $2 != NULL )
+        {
+            $1->push_back( $2 );
+        }
+		$$ = $1;
 	}
     ;
 
 bind :
 		OB AUXSYM term CB
 	{
-//        std::pair<std::map<std::string, std::string>::iterator, bool> ret
-//            = driver.collectedRealAuxilliaries.insert( std::pair<std::string, std::string>( *$2, smtrat::Formula::getAuxiliaryReal() ) );
         std::pair<std::map<std::string, std::string>::iterator, bool> ret
             = driver.collectedRealAuxilliaries.insert( std::pair<std::string, std::string>( *$2, *$3 ) );
         if( !ret.second )
@@ -562,40 +607,25 @@ bind :
             std::string errstr = std::string( "The same variable is used in several let expressions!" );
             error( yyloc, errstr );
         }
-
-//		GiNaC::parser reader( driver.formulaRoot->rRealValuedVars() );
-//		try
-//		{
-//			std::string s = ret.first->second;
-//			reader( s );
-//		}
-//		catch( GiNaC::parse_error& err )
-//		{
-//			std::cerr << err.what() << std::endl;
-//		}
-//		driver.formulaRoot->rRealValuedVars().insert( reader.get_syms().begin(), reader.get_syms().end() );
-//
-//		$$ = new smtrat::Formula( Formula::newConstraint( ret.first->second + "=" + *$3 ) );
         delete $2;
         delete $3;
+        $$ = NULL;
 	}
 	|	OB AUXSYM expr CB
 	{
-        //std::pair<std::map<std::string, std::string>::iterator, bool> ret
-        //    = driver.collectedBooleanAuxilliaries.insert( std::pair<std::string, std::string>( *$2, smtrat::Formula::getAuxiliaryBoolean() ) );
-        std::pair<std::map<std::string, smtrat::Formula*>::iterator, bool> ret
-            = driver.collectedBooleanAuxilliaries.insert( std::pair<std::string, smtrat::Formula*>( *$2, $3 ) );
+        std::pair<std::map<std::string, std::string>::iterator, bool> ret
+            = driver.collectedBooleanAuxilliaries.insert( std::pair<std::string, std::string>( *$2, smtrat::Formula::getAuxiliaryBoolean() ) );
         if( !ret.second )
         {
             std::string errstr = std::string( "The same variable is used in several let expressions!" );
             error( yyloc, errstr );
         }
 
-		//smtrat::Formula* formulaTmp = new smtrat::Formula( IMPLIES );
-        //formulaTmp->addSubformula( new smtrat::Formula( ret.first->second ) );
-        //formulaTmp->addSubformula( $3 );
+		smtrat::Formula* formulaTmp = new smtrat::Formula( IMPLIES );
+        formulaTmp->addSubformula( new smtrat::Formula( ret.first->second ) );
+        formulaTmp->addSubformula( $3 );
         delete $2;
-        //$$ = formulaTmp;
+        $$ = formulaTmp;
 	}
 	;
 
@@ -628,7 +658,13 @@ keys :
 	|	NUM keys
 	{
 	}
+	|	DEC keys
+	{
+	}
 	|	NUM DB keys
+	{
+	}
+	|	DEC DB keys
 	{
 	}
 	|	SYM keys
@@ -638,6 +674,9 @@ keys :
 	{
 	}
 	|	NUM
+	{
+	}
+	|	DEC
 	{
 	}
 	|	SYM

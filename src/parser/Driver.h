@@ -109,7 +109,7 @@ namespace smtrat
 
             std::set<std::string>              collectedBooleans;
 
-            std::map<std::string, class Formula*> collectedBooleanAuxilliaries;
+            std::map<std::string, std::string> collectedBooleanAuxilliaries;
 
             std::map<std::string, std::string> collectedRealAuxilliaries;
 
