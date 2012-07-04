@@ -43,9 +43,14 @@ namespace smtrat
         trace_parsing( false ),
         formulaRoot( _formulaRoot ),
         collectedBooleans( std::set<std::string>() ),
-        collectedBooleanAuxilliaries( std::map<std::string, std::string>() ),
-        collectedRealAuxilliaries( std::map<std::string, std::string>() )
+        collectedBooleanAuxilliaries( std::map<std::string, class Formula* >() ),
+        collectedRealAuxilliaries( std::map<std::string, std::string>() ),
+        status( -1 )
     {}
+
+    Driver::~Driver()
+    {
+    }
 
     bool Driver::parse_stream( std::istream& in, const std::string& sname )
     {

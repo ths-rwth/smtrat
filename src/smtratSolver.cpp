@@ -69,12 +69,26 @@ int main( int argc, char* argv[] )
                 {
                     case smtrat::True:
                     {
-                        std::cout << "sat" << std::endl;
+                        if( driver.status == 0 )
+                        {
+                            std::cout << "error" << std::endl;
+                        }
+                        else
+                        {
+                            std::cout << "sat" << std::endl;
+                        }
                         break;
                     }
                     case smtrat::False:
                     {
-                        std::cout << "unsat" << std::endl;
+                        if( driver.status == 1 )
+                        {
+                            std::cout << "error" << std::endl;
+                        }
+                        else
+                        {
+                            std::cout << "unsat" << std::endl;
+                        }
                         break;
                     }
                     case smtrat::Unknown:
