@@ -25,8 +25,9 @@
  *
  * @author Safoura Rezapour Lakani
  * @author Florian Corzilius
+ * @author Ulrich Loup
  * @since 2012-03-19
- * @version 2012-03-19
+ * @version 2012-07-06
  */
 
 %{ /*** C/C++ Declarations ***/
@@ -123,7 +124,7 @@ typedef smtrat::Parser::token_type token_type;
                     yylval->sval = new std::string (yytext);
                     return token::NUM;
                 }
-[0-9]+\.0*[0-9]+    {
+[0-9]+(\.[0-9]*)?|\.[0-9]+  {
                         yylval->sval = new std::string (yytext);
                         return token::DEC;
                     }
