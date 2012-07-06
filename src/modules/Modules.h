@@ -33,7 +33,8 @@
 #define SMTRAT_MODULES_H
 
 #include "VSModule.h"
-#include "SimplifierModule.h"
+#include "SmartSimplifier.h"
+#include "FourierMotzkinSimplifier.h"
 
 #ifdef USE_GB
 

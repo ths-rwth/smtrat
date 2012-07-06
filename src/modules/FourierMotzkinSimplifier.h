@@ -21,35 +21,49 @@
 
 
 /**
- * @file SimpleModule.h
+ * @file FourierMotzkinSimplifier.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
- * @author Ulrich Loup
  *
  * @version 2012-02-10
  * Created on January 18, 2012, 3:51 PM
  */
 
-#ifndef SMTRAT_SIMPLEMODULE_H
-#define SMTRAT_SIMPLEMODULE_H
+#ifndef SMTRAT_FOURIERMOTZKINSIMPLIFIER_H
+#define SMTRAT_FOURIERMOTZKINSIMPLIFIER_H
 
 #include "../Module.h"
 
 namespace smtrat
 {
-    class SimplifierModule:
+    /**
+     * Type definitions.
+     */
+    typedef std::pair< GiNaC::numeric, GiNaC::numeric > NumPair;
+    typedef std::pair< GiNaC::ex, NumPair >             ExNumNumPair;
+    typedef std::pair< GiNaC::ex, GiNaC::numeric >      ExNumPair;
+
+    class FourierMotzkinSimplifier:
         public Module
     {
+        private:
+            /**
+             * Members.
+             */
+            bool          mFreshConstraintReceived;
+            bool          mInconsistentConstraintAdded;
+            GiNaC::symtab mAllVariables;
+
         public:
 
             /**
              * Constructors:
              */
-            SimplifierModule( Manager* const _tsManager, const Formula* const );
+            FourierMotzkinSimplifier( Manager* const _tsManager, const Formula* const );
 
             /**
              * Destructor:
              */
-            virtual ~SimplifierModule();
+            virtual ~FourierMotzkinSimplifier();
 
             /**
              * Methods:
@@ -59,16 +73,14 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
-            const Constraint* combine( const Constraint&, const Constraint& ) const;
 
-        private:
-
-            bool          mFreshConstraintReceived;
-            bool          mInconsistentConstraintAdded;
-            GiNaC::symtab mAllVariables;
+            // Other.
+            static const Constraint* combine( const Constraint&, const Constraint& );
+            static ExNumNumPair commonSummand( const GiNaC::ex& _expressionA, const GiNaC::ex& _expressionB );
+            static ExNumPair getNumericAndSymbolPart( const GiNaC::ex& _ex );
 
     };
 
 }    // namespace smtrat
 
-#endif   /* SIMPLEMODULE_H */
+#endif   /* SMTRAT_FOURIERMOTZKINSIMPLIFIER_H */

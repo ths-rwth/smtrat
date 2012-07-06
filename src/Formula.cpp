@@ -129,6 +129,10 @@ namespace smtrat
         }
     }
 
+    /**
+     *
+     * @return
+     */
     Condition Formula::getPropositions()
     {
         if( !mPropositionsUptodate )
@@ -238,12 +242,20 @@ namespace smtrat
         return mPropositions;
     }
 
+    /**
+     *
+     * @param _father
+     */
     void Formula::setFather( Formula* _father )
     {
         assert( mpFather == NULL );
         mpFather = _father;
     }
 
+    /**
+     *
+     * @param _formula
+     */
     void Formula::addSubformula( Formula* _formula )
     {
         assert( isBooleanCombination() );
@@ -294,6 +306,10 @@ namespace smtrat
         }
     }
 
+    /**
+     *
+     * @param _constraint
+     */
     void Formula::addSubformula( const Constraint* _constraint )
     {
         assert( isBooleanCombination() );
@@ -320,6 +336,9 @@ namespace smtrat
         }
     }
 
+    /**
+     *
+     */
     void Formula::pop_back()
     {
         assert( isBooleanCombination() );
@@ -329,6 +348,10 @@ namespace smtrat
         mPropositionsUptodate = false;
     }
 
+    /**
+     *
+     * @param _position
+     */
     void Formula::erase( unsigned _position )
     {
         assert( isBooleanCombination() );
@@ -347,6 +370,10 @@ namespace smtrat
         mpSubformulas->erase( subFormula );
     }
 
+    /**
+     *
+     * @param _formula
+     */
     void Formula::erase( const Formula* _formula )
     {
         assert( isBooleanCombination() );
@@ -362,6 +389,11 @@ namespace smtrat
         mpSubformulas->erase( subFormula );
     }
 
+    /**
+     *
+     * @param _subformula
+     * @return
+     */
     Formula::iterator Formula::erase( Formula::iterator _subformula )
     {
         assert( isBooleanCombination() );
@@ -373,6 +405,10 @@ namespace smtrat
         return result;
     }
 
+    /**
+     *
+     * @return
+     */
     Formula* Formula::pruneBack()
     {
         assert( isBooleanCombination() );
@@ -384,6 +420,11 @@ namespace smtrat
         return result;
     }
 
+    /**
+     *
+     * @param _position
+     * @return
+     */
     Formula* Formula::prune( unsigned _position )
     {
         assert( isBooleanCombination() );
@@ -406,6 +447,11 @@ namespace smtrat
         return NULL;
     }
 
+    /**
+     *
+     * @param _subformula
+     * @return
+     */
     Formula::iterator Formula::prune( Formula::iterator _subformula )
     {
         assert( isBooleanCombination() );
@@ -414,6 +460,9 @@ namespace smtrat
         return mpSubformulas->erase( _subformula );
     }
 
+    /**
+     *
+     */
     void Formula::clear()
     {
         assert( isBooleanCombination() );
@@ -426,13 +475,17 @@ namespace smtrat
         mPropositionsUptodate = false;
     }
 
+    /**
+     *
+     * @param _moduleType
+     */
     void Formula::notSolvableBy( ModuleType _moduleType )
     {
         switch( _moduleType )
         {
-            case MT_SimplifierModule:
+            case MT_SmartSimplifier:
             {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE;
+                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_SMARTSIMPLIFIER;
                 break;
             }
             case MT_GroebnerModule:
@@ -495,12 +548,21 @@ namespace smtrat
                 mPropositions |= PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE;
                 break;
             }
+            case MT_FourierMotzkinSimplifier:
+            {
+                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_FOURIERMOTZKINSIMPLIFIER;
+                break;
+            }
             default:
             {
             }
         }
     }
 
+    /**
+     *
+     * @param _constraint
+     */
     void Formula::addConstraintPropositions( const Constraint& _constraint )
     {
         switch( _constraint.highestDegree() )
@@ -580,6 +642,12 @@ namespace smtrat
         }
     }
 
+    /**
+     *
+     * @param _out
+     * @param _init
+     * @param _onOneLine
+     */
     void Formula::print( ostream& _out, const string _init, bool _onOneLine ) const
     {
         string oper = "";
@@ -672,74 +740,13 @@ namespace smtrat
         if( mpFather == NULL &&!_onOneLine )
         {
             _out << endl;
-
-            /*
-                        printPropositions( _out, _init );
-            */
         }
     }
 
-    void Formula::printPropositions( ostream& _out, const string _init ) const
-    {
-        _out << _init << " Propositions are up to date?  " << (mPropositionsUptodate ? "Yes." : "No.") << endl;
-        _out << _init << " PROP_IS_IN_NNF                               = ";
-        _out << ((~PROP_IS_IN_NNF | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_IS_IN_CNF                               = ";
-        _out << ((~PROP_IS_IN_CNF | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_IS_PURE_CONJUNCTION                     = ";
-        _out << ((~PROP_IS_PURE_CONJUNCTION | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_IS_A_CLAUSE                             = ";
-        _out << ((~PROP_IS_A_CLAUSE | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_IS_A_LITERAL                            = ";
-        _out << ((~PROP_IS_A_LITERAL | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_IS_AN_ATOM                              = ";
-        _out << ((~PROP_IS_AN_ATOM | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_VARIABLE_DEGREE_LESS_THAN_FIVE          = ";
-        _out << ((~PROP_VARIABLE_DEGREE_LESS_THAN_FIVE | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_VARIABLE_DEGREE_LESS_THAN_FOUR          = ";
-        _out << ((~PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_VARIABLE_DEGREE_LESS_THAN_THREE         = ";
-        _out << ((~PROP_VARIABLE_DEGREE_LESS_THAN_THREE | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " STRONG_CONDITIONS                            = ";
-        _out << ((~STRONG_CONDITIONS | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CONTAINS_EQUATION                       = ";
-        _out << ((~PROP_CONTAINS_EQUATION | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CONTAINS_INEQUALITY                     = ";
-        _out << ((~PROP_CONTAINS_INEQUALITY | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CONTAINS_STRICT_INEQUALITY              = ";
-        _out << ((~PROP_CONTAINS_STRICT_INEQUALITY | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CONTAINS_LINEAR_POLYNOMIAL              = ";
-        _out << ((~PROP_CONTAINS_LINEAR_POLYNOMIAL | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CONTAINS_NONLINEAR_POLYNOMIAL           = ";
-        _out << ((~PROP_CONTAINS_NONLINEAR_POLYNOMIAL | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL        = ";
-        _out << ((~PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " WEAK_CONDITIONS                              = ";
-        _out << ((~WEAK_CONDITIONS | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE    = ";
-        _out << ((~PROP_CANNOT_BE_SOLVED_BY_SIMPLIFIERMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE      = ";
-        _out << ((~PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CANNOT_BE_SOLVED_BY_VSMODULE            = ";
-        _out << ((~PROP_CANNOT_BE_SOLVED_BY_VSMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE = ";
-        _out << ((~PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CANNOT_BE_SOLVED_BY_CADMODULE           = ";
-        _out << ((~PROP_CANNOT_BE_SOLVED_BY_CADMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CANNOT_BE_SOLVED_BY_SATMODULE           = ";
-        _out << ((~PROP_CANNOT_BE_SOLVED_BY_SATMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CANNOT_BE_SOLVED_BY_LRAMODULE           = ";
-        _out << ((~PROP_CANNOT_BE_SOLVED_BY_LRAMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE           = ";
-        _out << ((~PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE           = ";
-        _out << ((~PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE        = ";
-        _out << ((~PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-        _out << _init << " PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE         = ";
-        _out << ((~PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE | mPropositions) == ~PROP_TRUE ? "1" : "0") << endl;
-    }
-
+    /**
+     *
+     * @param _const
+     */
     void Formula::getConstraints( vector<const Constraint*>& _const ) const
     {
         if( mType == REALCONSTRAINT )

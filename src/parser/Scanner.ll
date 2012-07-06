@@ -119,18 +119,19 @@ typedef smtrat::Parser::token_type token_type;
 "exit"              { return token::EXIT; }
 "Real"              { return token::REAL; }
 
-0|[1-9][0-9]*           {
-							//errno = 0;
-							//long n = strtol( yytext, NULL, 10 );
-							//yylval->ival = n;
-                                                        yylval->sval = new std::string (yytext);
-							return token::NUM;
-						}
+0|[1-9][0-9]*   {
+                    yylval->sval = new std::string (yytext);
+                    return token::NUM;
+                }
+[0-9]+\.0*[0-9]+    {
+                        yylval->sval = new std::string (yytext);
+                        return token::DEC;
+                    }
 [a-zA-Z][a-zA-Z_0-9]* 	{
 							yylval->sval = new std::string (yytext);
 							return token::SYM;
 						}
-\?[a-zA-Z][a-zA-Z_0-9]* 	{
+[\?\.][a-zA-Z][a-zA-Z_0-9]* 	{
 							yylval->sval = new std::string (yytext);
 							return token::AUXSYM;
 						}

@@ -64,7 +64,15 @@ namespace smtrat
 
     static bool caseSix( Condition _condition )
     {
-        return !(PROP_CANNOT_BE_SOLVED_BY_VSMODULE <= _condition);
+        return true;
+    }
+    static bool caseSeven ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_SMARTSIMPLIFIER <= _condition;
+    }
+    static bool caseEight ( Condition _condition )
+    {
+        return PROP_CANNOT_BE_SOLVED_BY_FOURIERMOTZKINSIMPLIFIER <= _condition;
     }
 
     NRATSolver::NRATSolver( Formula* _inputFormula ):
@@ -72,20 +80,20 @@ namespace smtrat
     {
         #ifdef USE_GB
         GiNaCRA::MultivariatePolynomialSettings::InitializeGiNaCRAMultivariateMR();
-        #endif
-        #ifdef USE_CAD
-        strategy().addModuleType( caseOne, MT_CADModule );
-        //        strategy().addModuleType( caseThree, MT_CADModule );
-        #endif
-        #ifdef USE_GB
-        strategy().addModuleType( caseTwo, MT_VSModule );
-        strategy().addModuleType( caseThree, MT_GroebnerModule );
-        #else
-        strategy().addModuleType( caseThree, MT_VSModule );
-        #endif
-        //      strategy().addModuleType( caseFour, MT_SATModule );
-        //        strategy().addModuleType( caseSix, MT_CNFerModule );
-        strategy().addModuleType( caseFive, MT_SATModule );
+		#endif
+		#ifdef USE_CAD
+		strategy().addModuleType( caseOne, MT_CADModule );
+//        strategy().addModuleType( caseThree, MT_CADModule );
+		#endif
+		#ifdef USE_GB
+		strategy().addModuleType( caseTwo, MT_VSModule );
+		strategy().addModuleType( caseThree, MT_GroebnerModule);
+		#else
+		strategy().addModuleType( caseThree, MT_VSModule );
+		#endif
+//		strategy().addModuleType( caseThree, MT_SmartSimplifier );
+//		strategy().addModuleType( caseThree, MT_FourierMotzkinSimplifier );
+		strategy().addModuleType( caseFive, MT_SATModule );
         strategy().addModuleType( caseFour, MT_PreProModule );
         strategy().addModuleType( caseSix, MT_CNFerModule );
     }

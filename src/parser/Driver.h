@@ -55,6 +55,8 @@ namespace smtrat
             /// construct a new parser driver context
             Driver( class Formula * );
 
+            ~Driver();
+
             /// enable debug output in the flex scanner
             bool trace_scanning;
 
@@ -110,6 +112,8 @@ namespace smtrat
             std::map<std::string, std::string> collectedBooleanAuxilliaries;
 
             std::map<std::string, std::string> collectedRealAuxilliaries;
+
+            int status;
     };
 
 }    // namespace smtrat

@@ -111,6 +111,7 @@
 %token <sval> SYM
 %token <sval> AUXSYM
 %token <sval> NUM
+%token <sval> DEC
 %token <sval> KEY
 %token <sval> EMAIL
 
@@ -124,9 +125,9 @@
 %type  <sval> 	numlistMinus
 %type  <sval> 	numlistTimes
 %type  <fval> 	expr
+%type  <fval> 	bind
 %type  <sval>   keys
 %type  <vfval>  exprlist;
-%type  <fval> 	bind;
 %type  <vfval>  bindlist;
 %type  <sval>  	relationSymbol;
 %type  <eval>  	unaryOperator;
@@ -168,6 +169,26 @@ command:
 	}
 	|	OB SETINFO KEY keys CB
 	{
+        if( $3->compare( ":status" ) == 0 )
+        {
+            if( $4->compare( "sat" ) == 0 )
+            {
+                driver.status = 1;
+            }
+            else if( $4->compare( "unsat" ) == 0 )
+            {
+                driver.status = 0;
+            }
+            else if( $4->compare( "unknown" ) == 0 )
+            {
+                driver.status = -1;
+            }
+            else
+            {
+                std::string errstr = std::string( "Unknown status flag. Choose either sat or unsat!");
+                error( yyloc, errstr );
+            }
+        }
 	}
 	|	OB SETINFO KEY CB
 	{
@@ -231,6 +252,9 @@ expr:
 	| 	OB relationSymbol term term CB
 	{
         const smtrat::Constraint* constraint = Formula::newConstraint( *$3 + *$2 + *$4 );
+        delete $2;
+        delete $3;
+        delete $4;
 		driver.formulaRoot->rRealValuedVars().insert( constraint->variables().begin(), constraint->variables().end() );
 		$$ = new smtrat::Formula( constraint );
 	}
@@ -245,6 +269,7 @@ expr:
         {
             $$ = new smtrat::Formula( *$1 );
         }
+        delete $1;
     }
 	|	AUXSYM
    	{
@@ -258,15 +283,25 @@ expr:
    	}
     | OB LET OB bindlist CB expr CB
     {
-		smtrat::Formula* formulaTmp = new smtrat::Formula( AND );
-		while( !$4->empty() )
-		{
-			formulaTmp->addSubformula( $4->back() );
-			$4->pop_back();
-		}
-		delete $4;
-        formulaTmp->addSubformula( $6 );
-        $$ = formulaTmp;
+        if( !$4->empty() )
+        {
+            smtrat::Formula* formulaTmp = new smtrat::Formula( AND );
+            while( !$4->empty() )
+            {
+                if( $4->back() != NULL )
+                {
+                    formulaTmp->addSubformula( $4->back() );
+                }
+                $4->pop_back();
+            }
+            delete $4;
+            formulaTmp->addSubformula( $6 );
+            $$ = formulaTmp;
+        }
+        else
+        {
+            $$ = $6;
+        }
     }
     | OB expr CB
     {
@@ -360,11 +395,27 @@ term :
    			std::string errstr = std::string( "The variable " + *$1 + " is not defined in a let expression!");
   			error( yyloc, errstr );
    		}
-   		$$ = new std::string( iter->second );
+        delete $1;
+   		$$ = new std::string( "(" + iter->second + ")" );
    	}
     | 	NUM
    	{
         $$ = $1;
+   	}
+    | 	DEC
+   	{
+        unsigned pos = $1->find('.');
+        if( pos != std::string::npos )
+        {
+            std::string* result = new std::string( "(" + $1->substr( 0, pos ) + $1->substr( pos+1, $1->size()-pos-1 ) );
+            *result += "/1" + std::string( $1->size()-pos-1, '0' ) + ")";
+            $$ = result;
+        }
+        else
+        {
+   			std::string errstr = std::string( "There should be a point in a decimal!");
+  			error( yyloc, errstr );
+        }
    	}
     |  	termOp
     {
@@ -376,6 +427,7 @@ termOp :
 		OB MINUS term CB
 	{
 		$$ = new std::string( "(-1)*(" + *$3 + ")" );
+        delete $3;
 	}
 	|	OB PLUS termlistPlus CB
 	{
@@ -392,6 +444,8 @@ termOp :
 	|	OB DIV term nums CB
 	{
 		$$ = new std::string( "(" + *$3 + "/" + *$4 + ")" );
+        delete $3;
+        delete $4;
 	}
 	;
 
@@ -448,6 +502,21 @@ nums :
    	{
         $$ = $1;
    	}
+    | 	DEC
+   	{
+        unsigned pos = $1->find('.');
+        if( pos != std::string::npos )
+        {
+            std::string* result = new std::string( "(" + $1->substr( 0, pos ) + $1->substr( pos+1, $1->size()-pos-1 ) );
+            *result += "/1" + std::string( $1->size()-pos-1, '0' ) + ")";
+            $$ = result;
+        }
+        else
+        {
+   			std::string errstr = std::string( "There should be a point in a decimal!");
+  			error( yyloc, errstr );
+        }
+   	}
     |	OB PLUS numlistPlus CB
 	{
     	$$ = $3;
@@ -459,6 +528,7 @@ nums :
 	| 	OB MINUS nums CB
 	{
 		$$ = new std::string( "(-1)*(" + *$3 + ")" );
+        delete $3;
 	}
 	| 	OB TIMES numlistTimes CB
 	{
@@ -467,6 +537,8 @@ nums :
 	| 	OB DIV nums nums CB
 	{
 		$$ = new std::string( "(" + *$3 + "/" + *$4 + ")" );
+        delete $3;
+        delete $4;
 	}
 	;
 
@@ -506,11 +578,21 @@ numlistTimes :
 bindlist :
 		bind
 	{
-		$$ = new std::vector< smtrat::Formula* >( 1, $1 );
+        if( $1 == NULL )
+        {
+            $$ = new std::vector< smtrat::Formula* >();
+        }
+        else
+        {
+            $$ = new std::vector< smtrat::Formula* >( 1, $1 );
+        }
 	}
 	|	bindlist bind
 	{
-		$1->push_back( $2 );
+        if( $2 != NULL )
+        {
+            $1->push_back( $2 );
+        }
 		$$ = $1;
 	}
     ;
@@ -519,26 +601,15 @@ bind :
 		OB AUXSYM term CB
 	{
         std::pair<std::map<std::string, std::string>::iterator, bool> ret
-            = driver.collectedRealAuxilliaries.insert( std::pair<std::string, std::string>( *$2, smtrat::Formula::getAuxiliaryReal() ) );
+            = driver.collectedRealAuxilliaries.insert( std::pair<std::string, std::string>( *$2, *$3 ) );
         if( !ret.second )
         {
             std::string errstr = std::string( "The same variable is used in several let expressions!" );
             error( yyloc, errstr );
         }
-
-		GiNaC::parser reader( driver.formulaRoot->rRealValuedVars() );
-		try
-		{
-			std::string s = ret.first->second;
-			reader( s );
-		}
-		catch( GiNaC::parse_error& err )
-		{
-			std::cerr << err.what() << std::endl;
-		}
-		driver.formulaRoot->rRealValuedVars().insert( reader.get_syms().begin(), reader.get_syms().end() );
-
-		$$ = new smtrat::Formula( Formula::newConstraint( ret.first->second + "=" + *$3 ) );
+        delete $2;
+        delete $3;
+        $$ = NULL;
 	}
 	|	OB AUXSYM expr CB
 	{
@@ -553,6 +624,7 @@ bind :
 		smtrat::Formula* formulaTmp = new smtrat::Formula( IMPLIES );
         formulaTmp->addSubformula( new smtrat::Formula( ret.first->second ) );
         formulaTmp->addSubformula( $3 );
+        delete $2;
         $$ = formulaTmp;
 	}
 	;
@@ -569,6 +641,7 @@ logic :
 	{
 		std::string errstr = std::string( "SMT-RAT does not support " + *$1 + "!");
 		error( yyloc, errstr );
+        delete $1;
 	}
 	;
 
@@ -585,7 +658,13 @@ keys :
 	|	NUM keys
 	{
 	}
+	|	DEC keys
+	{
+	}
 	|	NUM DB keys
+	{
+	}
+	|	DEC DB keys
 	{
 	}
 	|	SYM keys
@@ -595,6 +674,9 @@ keys :
 	{
 	}
 	|	NUM
+	{
+	}
+	|	DEC
 	{
 	}
 	|	SYM

@@ -446,7 +446,6 @@ namespace smtrat
             void clear();
             void notSolvableBy( ModuleType );
             void print( std::ostream& = std::cout, const std::string = "", bool = false ) const;
-            void printPropositions( std::ostream& = std::cout, const std::string = "" ) const;
             void getConstraints( std::vector<const Constraint*>& ) const;
 
         private:
