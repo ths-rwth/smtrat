@@ -234,21 +234,6 @@ if(${STATICLIB_SWITCH} STREQUAL "ON")
 endif()
 add_library(lib_${PROJECT_NAME} ${STATICLIB} ${lib_${PROJECT_NAME}_SRCS} )
 
-SET( libraries ${libraries}  ${cln_LIBRARIES} ${GINAC_LIBRARY} )
-
-if(USE_GINACRA)
-	SET( libraries ${libraries} ${GINACRA_LIBRARY} )
-endif()
-
-if(USE_NSS)
-	add_library(csdp UNKNOWN IMPORTED)
-	set_target_properties(csdp PROPERTIES IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/external/csdp/lib/libsdp.a")
-
-	#Csdp should be automatically compiled whenever we compile smtrat
-	add_dependencies(csdp csdp_lib)
-	SET( libraries ${libraries} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}  csdp )
-endif()
-
 # Other libraries that are used by the project library should go here.
 target_link_libraries( lib_${PROJECT_NAME} ${libraries} )
 
