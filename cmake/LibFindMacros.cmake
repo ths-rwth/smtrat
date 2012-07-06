@@ -10,7 +10,7 @@ macro (libfind_package PREFIX)
   if (${PREFIX}_FIND_REQUIRED)
     set (LIBFIND_PACKAGE_ARGS ${LIBFIND_PACKAGE_ARGS} REQUIRED)
   endif (${PREFIX}_FIND_REQUIRED)
-  find_package(${LIBFIND_PACKAGE_ARGS})
+  find_package( ${PREFIX} ${LIBFIND_PACKAGE_ARGS})
 endmacro (libfind_package)
 
 # CMake developers made the UsePkgConfig system deprecated in the same release (2.6)

@@ -8,7 +8,7 @@
 include(LibFindMacros)
 
 # Dependencies
-libfind_package(cln REQUIRED)
+#libfind_package(cln REQUIRED)
 
 # Use pkg-config to get hints about paths
 libfind_pkg_check_modules(CLN_PKGCONF cln)

@@ -77,6 +77,7 @@ if(USE_GINACRA)
 	find_package(GiNaCRA REQUIRED)
 endif()
 include( FindCLN )
+message( "${CLN_LIBRARY}" )
 # find gmp (which is necessary for CLN, at least when linking statically)
 include( FindGMP )
 
