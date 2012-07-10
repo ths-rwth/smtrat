@@ -8,7 +8,7 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2012-05-21                                         #
+# Version: 2012-07-07                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 set(lib_core_src
@@ -194,18 +194,11 @@ set(lib_Utilities
 set( lib_nratsolver_headers NRATSolver.h )
 set( lib_nratsolver_src NRATSolver.cpp )
 
-if(USE_CAD)
-set( lib_nratsolvercadonly_headers NRATSolver_CADonly.h )
-set( lib_nratsolvercadonly_src NRATSolver_CADonly.cpp )
-endif()
-
 add_subdirectory(${CMAKE_SOURCE_DIR}/src/parser)
 
 set(lib_${PROJECT_NAME}_SRCS
     ${lib_nratsolver_headers}
     ${lib_nratsolver_src}
-    ${lib_nratsolvercadonly_headers}
-    ${lib_nratsolvercadonly_src}
     ${lib_core_headers}
     ${lib_core_src}
     ${lib_modules_headers}
@@ -236,21 +229,6 @@ if(${STATICLIB_SWITCH} STREQUAL "ON")
 endif()
 add_library(lib_${PROJECT_NAME} ${STATICLIB} ${lib_${PROJECT_NAME}_SRCS} )
 
-SET( libraries ${libraries}  ${cln_LIBRARIES} ${GINAC_LIBRARY} )
-
-if(USE_GINACRA)
-	SET( libraries ${libraries} ${GINACRA_LIBRARY} )
-endif()
-
-if(USE_NSS)
-	add_library(csdp UNKNOWN IMPORTED)
-	set_target_properties(csdp PROPERTIES IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/external/csdp/lib/libsdp.a")
-
-	#Csdp should be automatically compiled whenever we compile smtrat
-	add_dependencies(csdp csdp_lib)
-	SET( libraries ${libraries} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}  csdp )
-endif()
-
 # Other libraries that are used by the project library should go here.
 target_link_libraries( lib_${PROJECT_NAME} ${libraries} )
 
@@ -271,7 +249,7 @@ install( TARGETS lib_${PROJECT_NAME} DESTINATION lib PERMISSIONS
     GROUP_READ GROUP_EXECUTE
     WORLD_READ WORLD_EXECUTE )
 
-install( FILES ${lib_core_headers} ${lib_nratsolver_headers} ${lib_nratsolvercadonly_headers} DESTINATION include/${PROJECT_NAME} )
+install( FILES ${lib_core_headers} ${lib_nratsolver_headers} DESTINATION include/${PROJECT_NAME} )
 install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/modules)
 install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/modules/VSModule)
 install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/modules/SATModule)

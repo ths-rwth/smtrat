@@ -8,7 +8,7 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2012-03-14                                         #
+# Version: 2012-07-06                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 include_directories( ${CMAKE_SOURCE_DIR}/src
@@ -46,4 +46,11 @@ add_dependencies( smtratSolver
 	)
 
 # Other libraries that are used by the project library should go here.
-target_link_libraries( smtratSolver lib_${PROJECT_NAME} )
+target_link_libraries( smtratSolver 
+		       lib_${PROJECT_NAME}
+		       ${libraries} )
+
+if(${STATICLIB_SWITCH} STREQUAL "ON")
+  set_target_properties( smtratSolver PROPERTIES LINK_SEARCH_END_STATIC TRUE )
+endif()
+

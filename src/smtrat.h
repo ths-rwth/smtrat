@@ -26,8 +26,8 @@
  * @author Sebastian Junges
  * @author Ulrich Loup
  * @author Florian Corzilius
- * @version 2012-02-12
- * @sinve 2012-01-19
+ * @since 2012-01-19
+ * @version 2012-07-07
  */
 
 /** @mainpage
@@ -44,7 +44,6 @@
 #include "ConstraintPool.h"
 #include "Manager.h"
 #include "NRATSolver.h"
-#include "NRATSolver_CADonly.h"
 #include "Module.h"
 #include "ModuleFactory.h"
 

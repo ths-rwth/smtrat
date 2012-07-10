@@ -8,48 +8,13 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2012-06-08                                         #
+# Version: 2012-07-06                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 # common settings
 # # # # # # # # #
 
 cmake_minimum_required (VERSION 2.8)
-
-option(USE_NSS "Compile the NSS Module")
-option(USE_GINACRA "Compile modules using GiNaCRA")
-option(USE_GB "Compile modules using GroebnerBasis")
-option(USE_CAD "Compile modules using CAD")
-
-if(NOT USE_GINACRA)
-	if(USE_GB)
-		message(WARNING, "GB is automatically switched off when GiNaCRA is not available")
-	endif()
-	SET(USE_GB FALSE)
-	if(USE_CAD)
-		message(WARNING, "CAD is automatically switched off when GiNaCRA is not available")
-	endif()
-	SET(USE_CAD FALSE)
-endif()
-
-if(NOT USE_GB)
-	if(USE_NSS)
-		message(WARNING, "NSS is automatically switched off when Groebner Basis are not used")
-	endif()
-	SET(USE_NSS FALSE)
-endif()
-
-if(USE_NSS)
-	project(smtrat CXX Fortran C)
-else()
-	project(smtrat CXX)
-endif()
-
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -std=c++0x")
-
-if(${STATICLIB_SWITCH} STREQUAL "ON")
- 	set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static" )
-endif()
 
 # information about the project
 set( PROJECT_FULLNAME "SMT-RAT")
@@ -64,14 +29,43 @@ set( smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 
 # options
 option( STATICLIB_SWITCH "Compile a statically linked version of the library." )
-
+option(USE_NSS "Compile the NSS Module")
+option(USE_GINACRA "Compile modules using GiNaCRA")
+option(USE_GB "Compile modules using GroebnerBasis")
+option(USE_CAD "Compile modules using CAD")
+if(NOT USE_GINACRA)
+	if(USE_GB)
+		message(WARNING, "GB is automatically switched off when GiNaCRA is not available")
+	endif()
+	SET(USE_GB FALSE)
+	if(USE_CAD)
+		message(WARNING, "CAD is automatically switched off when GiNaCRA is not available")
+	endif()
+	SET(USE_CAD FALSE)
+endif()
+if(NOT USE_GB)
+	if(USE_NSS)
+		message(WARNING, "NSS is automatically switched off when Groebner Basis are not used")
+	endif()
+	SET(USE_NSS FALSE)
+endif()
+if(USE_NSS)
+	project(smtrat CXX Fortran C)
+else()
+	project(smtrat CXX)
+endif()
 
 # path to find own modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-
 # path to put in the executables
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
+
+# general linker settings
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -std=c++0x")
+if(${STATICLIB_SWITCH} STREQUAL "ON")
+  set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static" )
+endif()
 
 # required libraries
 # # # # # # # # # # #
@@ -82,20 +76,10 @@ find_package(GiNaC REQUIRED)
 if(USE_GINACRA)
 	find_package(GiNaCRA REQUIRED)
 endif()
-
-
-# find CLN ..
-# TODO: we should write a find-module for this
-include(FindPkgConfig)
-pkg_check_modules(cln REQUIRED cln>=1.2.2)
-# On ELF systems (such as GNU/Linux) this prevents the infamous `error
-# while loading shared libraries: libfoo.so: cannot open shared object
-# file: no such file or directory'
-set(CMAKE_INSTALL_RPATH_USE_LINK_RPATH TRUE)
-list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${cln_LIBRARY_DIRS}" isSystemDir)
-if("${isSystemDir}" STREQUAL "-1")
-	set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:${cln_LIBRARY_DIRS}")
-endif()
+include( FindCLN )
+message( "${CLN_LIBRARY}" )
+# find gmp (which is necessary for CLN, at least when linking statically)
+include( FindGMP )
 
 # optional libraries
 # # # # # # # # # # #
@@ -106,10 +90,8 @@ find_package(Java) # for building the GUI
 find_package(Java COMPONENTS Development) # for building the GUI
 find_package(BISON) # for building the parser
 find_package(FLEX) # for building the parser
-
 # LAPACK and BLAS are both needed for successfull using CSDP
 # todo: maybe CLAPACK would also do?
-
 if(USE_NSS)
 	enable_language(Fortran)
 	find_package(LAPACK)
@@ -121,6 +103,21 @@ if(USE_NSS)
 		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/external/csdp
 	)
 endif()
+
+SET( libraries ${libraries} ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} )
+
+if(USE_GINACRA)
+        SET( libraries ${GINACRA_LIBRARY} ${libraries} )
+endif()
+if(USE_NSS)
+        add_library(csdp UNKNOWN IMPORTED)
+        set_target_properties(csdp PROPERTIES IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/external/csdp/lib/libsdp.a")
+
+        #Csdp should be automatically compiled whenever we compile smtrat
+        add_dependencies(csdp csdp_lib)
+        SET( libraries ${libraries} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} csdp )
+endif()
+
 
 # GUI settings
 # # # # # # # #

@@ -8,7 +8,7 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2012-03-21                                         #
+# Version: 2012-07-06                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 include_directories( "${PROJECT_SOURCE_DIR}/src" )
@@ -35,7 +35,7 @@ add_custom_target( check
 # link the libraries
 target_link_libraries( check_${PROJECT_NAME}
                        ${CPPUNIT_LIBRARIES}
-					 ${cln_LIBRARIES} ${GINAC_LIBRARY} ${GINACRA_LIBRARY} 
-                       ${PROJECT_NAME} )
+                       ${PROJECT_NAME}
+		       ${libraries} )
 
 
