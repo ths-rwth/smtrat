@@ -145,7 +145,8 @@ namespace smtrat
         mBooleanVarMap(),
         mBooleanConstraintMap(),
         mBacktrackpointInSatSolver(),
-        mLearnedDeductions()
+        mLearnedDeductions(),
+        mMaxSatAssigns()
     {
         this->mModuleType = MT_SATModule;
     }
@@ -1718,6 +1719,21 @@ NextClause:
 
             if( confl != CRef_Undef )
             {
+//                vec<Lit>() maxSatAssign = vec<Lit>();
+//                int level = 0;
+//                for( int pos = 0; pos < trail.size(); ++pos )
+//                {
+//                    if( pos == trail_lim[level] )
+//                    {
+//                        ++level;
+//                        if( level == trail_lim.size() - 1 )
+//                        {
+//                            break;
+//                        }
+//                    }
+//                    mMaxSatAssigns.back()
+//                }
+//                mMaxSatAssigns.push_back(  );
                 // CONFLICT
                 conflicts++;
                 conflictC++;

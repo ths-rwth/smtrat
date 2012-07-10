@@ -229,7 +229,7 @@ namespace smtrat
             Minisat::ClauseAllocator ca;
 
             // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
-            // used, except 'seen' whsich is used in several places.
+            // used, except 'seen' which is used in several places.
             Minisat::vec<char>         seen;
             Minisat::vec<Minisat::Lit> analyze_stack;
             Minisat::vec<Minisat::Lit> analyze_toclear;
@@ -257,6 +257,9 @@ namespace smtrat
             // If problem is unsatisfiable (possibly under assumptions),
             // this vector represent the final conflict clause expressed in the assumptions.
             Minisat::vec<Minisat::Lit> conflict;
+            // If problem is unsatisfiable (possibly under assumptions),
+            // this vector represent the final conflict clause expressed in the assumptions.
+            std::vector< Minisat::vec<Minisat::Lit> > mMaxSatAssigns;
 
         public:
 
