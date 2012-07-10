@@ -114,7 +114,7 @@ namespace smtrat
         if( mNewFormulaReceived )
         {
 //            simplifyConstraints();
-            addLearningClauses();
+//            addLearningClauses();
 //            proceedSubstitution();
 //            assignActivities( scale, weightOfVarDegrees, weightOfQuantities, weightOfRelationSymbols );
         }
@@ -211,12 +211,12 @@ namespace smtrat
     
     void PreProModule::simplifyConstraints()
     {
-        std::vector<const Constraint*> essentialConstraints;
-        for( Formula::const_iterator iterator = mpPassedFormula->begin(); iterator != mpPassedFormula->end(); ++iterator )
-        {
-            if( (*iterator)->getType() == REALCONSTRAINT )
-                (*iterator)->getConstraints( essentialConstraints );
-        }
+//        std::vector<const Constraint*> essentialConstraints;
+//        for( Formula::const_iterator iterator = mpPassedFormula->begin(); iterator != mpPassedFormula->end(); ++iterator )
+//        {
+//            if( (*iterator)->getType() == REALCONSTRAINT )
+//                (*iterator)->getConstraints( essentialConstraints );
+//        }
         Formula::iterator iterator = mpPassedFormula->begin();
         while(  iterator != mpPassedFormula->end() )
         {
@@ -248,10 +248,11 @@ namespace smtrat
                                 i = constraints.size();
                                 j = i;
                                 break;
-                            default: 
+                            default:  // Checks for Tautology --  requiers essential Constraints in the beginning of this function
+                                
                                 /*for( unsigned k = 0; k < essentialConstraints.size(); ++k )
                                 {
-                                    if( Constraint::isTautology( (*constraints.at( i )), (*constraints.at( j )), (*essentialConstraints.at( k )) ) )
+                                    if( Constraint::combineConstraints( (*constraints.at( i )), (*constraints.at( j )), (*essentialConstraints.at( k )) ) )
                                     {
                                         iterator = interfaceRemoveSubformulaFromPassedFormula( iterator );
                                         k = essentialConstraints.size();
