@@ -34,7 +34,7 @@
 using namespace std;
 using namespace GiNaC;
 
-//#define SIMPLIFY_CONSTRAINTS
+//#define SIMPLIFY_CLAUSES
 #define ADD_LEARNING_CLAUSES
 //#define ADD_NEGATED_LEARNING_CLAUSES
 //#define PROCEED_SUBSTITUTION
@@ -107,7 +107,10 @@ namespace smtrat
     bool PreProModule::assertSubformula( Formula::const_iterator _subformula )
     {
         addReceivedSubformulaToPassedFormula( _subformula );
-        mLastCheckedFormula = mpPassedFormula->pSubformulas()->begin();
+        if( mLastCheckedFormula == mpPassedFormula->pSubformulas()->end() )
+        {
+            mLastCheckedFormula = mpPassedFormula->pSubformulas()->begin();
+        }
         mNewFormulaReceived = true;
         return true;
     }
@@ -128,11 +131,17 @@ namespace smtrat
         if( mNewFormulaReceived )
         {
 
-#ifdef SIMPLIFY_CONSTRAINTS
-           simplifyConstraints();
+#ifdef SIMPLIFY_CLAUSES
+           simplifyClauses();
 #endif
 #ifdef ADD_LEARNING_CLAUSES
             addLearningClauses();
+#define ADD_LC
+#else
+#ifdef ADD_NEGATED_LEARNING_CLAUSES
+            addLearningClauses();
+#define ADD_LC
+#endif
 #endif
 #ifdef PROCEED_SUBSTITUTION
             proceedSubstitution();
@@ -155,6 +164,9 @@ namespace smtrat
         return a;
     }
 
+    /*
+     * Assigns Activities considering parameters to each Formula of Type REALCONSTRAINT
+     */
     void PreProModule::assignActivities(double _Scale, double _wDegree, double _wQuantities, double _wRelation)
     {
         //---------------------------------------------------------------------- Collect Constraints of Passed Formula
@@ -186,6 +198,10 @@ namespace smtrat
         assignActivitiesfromDatabase( mpPassedFormula, _wRelation, _Scale );
     }
 
+    /*
+     * Rekursively used help function which is user by assignActivities()
+     * Only use if mVariableActivities and mActivityConstraint is up to date
+    */
     double PreProModule::assignActivitiesfromDatabase( Formula* _Formula, double _wRelation, double _Scale)
     {
         double activity = 0;
@@ -239,7 +255,10 @@ namespace smtrat
         return 0;
     }
 
-    void PreProModule::simplifyConstraints()
+    /*
+     * Seach in each Clause of PassedFormula for unnecessary Constraints and removes them
+     */
+    void PreProModule::simplifyClauses()
     {
 //        std::vector<const Constraint*> essentialConstraints;
 //        for( Formula::const_iterator iterator = mpPassedFormula->begin(); iterator != mpPassedFormula->end(); ++iterator )
@@ -309,7 +328,7 @@ namespace smtrat
     }
 
     /*
-     * Removes new Formula where each Constraint with _ex and _lhs is filtered
+     * Returnes new Formula which is equal to _formula except that each Constraint with _ex and _lhs is filtered
      */
     Formula* PreProModule::removeConstraint(Formula* _formula, GiNaC::ex _lhs, Constraint_Relation _rel)
     {
@@ -364,7 +383,7 @@ namespace smtrat
     }
 
     /*
-     * Extracts Constraints out of _formula. Children of Fathers of type "NOT" are negated
+     * Extracts Constraints out of _formula. Children of Fathers of type "NOT" are negated!
      */
     void PreProModule::getConstraints( Formula* _formula, vector<const Constraint*>& _constraints, bool isnegated )
     {
@@ -389,9 +408,10 @@ namespace smtrat
             }
         }
     }
-/*
- *
- */
+    
+    /*
+     * Adds helpfull information about all Constraints to PassedFormula
+    */
     void PreProModule::addLearningClauses()
     {
         for( Formula::iterator i = mLastCheckedFormula; i != mpPassedFormula->end(); ++i )
@@ -409,7 +429,9 @@ namespace smtrat
             for( unsigned posConsB = 0; posConsB < posConsA; ++posConsB )
             {
                 const Constraint* tempConstraintB = mConstraints.at( posConsB );
+#ifdef ADD_LEARNING_CLAUSES
                 Formula* _tSubformula = NULL;
+#endif
 #ifdef ADD_NEGATED_LEARNING_CLAUSES
                 Formula* _tSubformula2 = NULL;
 #endif
@@ -417,12 +439,15 @@ namespace smtrat
                 {
                     case 1:             // not A or B
                     {
-                        _tSubformula = new Formula( OR );
+#ifdef ADD_LC
                         Formula* tmpFormula = new Formula( NOT );
+#endif
+#ifdef ADD_LEARNING_CLAUSES
+                        _tSubformula = new Formula( OR );
                         tmpFormula->addSubformula( tempConstraintA );
                         _tSubformula->addSubformula( tmpFormula );
                         _tSubformula->addSubformula( tempConstraintB );
-
+#endif
 #ifdef ADD_NEGATED_LEARNING_CLAUSES
                                         // inv(A) or not inv(B)
                         _tSubformula2 = new Formula( OR );
@@ -438,11 +463,15 @@ namespace smtrat
 
                     case -1:            // not B or A
                     {
-                        _tSubformula = new Formula( OR );
+#ifdef ADD_LC
                         Formula* tmpFormula = new Formula( NOT );
+#endif
+#ifdef ADD_LEARNING_CLAUSES
+                        _tSubformula = new Formula( OR );
                         tmpFormula->addSubformula( tempConstraintB );
                         _tSubformula->addSubformula( tmpFormula );
                         _tSubformula->addSubformula( tempConstraintA );
+#endif
 #ifdef ADD_NEGATED_LEARNING_CLAUSES
                                         // inv(B) or not inv(A)
                         _tSubformula2 = new Formula( OR );
@@ -457,6 +486,7 @@ namespace smtrat
                     }
                     case -2:            // not A or not B
                     {
+#ifdef ADD_LEARNING_CLAUSES
                         _tSubformula = new Formula( OR );
                         Formula* tmpFormulaA = new Formula( NOT );
                         tmpFormulaA->addSubformula( new Formula( tempConstraintA ) );
@@ -464,6 +494,7 @@ namespace smtrat
                         tmpFormulaB->addSubformula( new Formula( tempConstraintB ) );
                         _tSubformula->addSubformula( tmpFormulaA );
                         _tSubformula->addSubformula( tmpFormulaB );
+#endif
 #ifdef ADD_NEGATED_LEARNING_CLAUSES
                                         // inv(A) or inv(B)
                         _tSubformula2 = new Formula( OR );
@@ -479,22 +510,31 @@ namespace smtrat
                         break;
                     }
                 }
+                // Create Origins
+                vec_set_const_pFormula origins;
+                origins.push_back( mConstraintOrigins.at( posConsA ) );
+                origins.push_back( mConstraintOrigins.at( posConsB ) );
+#ifdef ADD_LEARNING_CLAUSES
                 if( _tSubformula != NULL )
                 {
-                    // Create Origins
-                    vec_set_const_pFormula origins;
-                    origins.push_back( mConstraintOrigins.at( posConsA ) );
-                    origins.push_back( mConstraintOrigins.at( posConsB ) );
                     // Add learned Subformula and Origins to PassedFormula
                     addSubformulaToPassedFormula( _tSubformula, origins );
-#ifdef ADD_NEGATED_LEARNING_CLAUSES
-                    addSubformulaToPassedFormula( _tSubformula2, origins );
-#endif
                 }
+#endif
+#ifdef ADD_NEGATED_LEARNING_CLAUSES
+                if( _tSubformula2 != NULL )
+                {
+                    // Add learned Subformula and Origins to PassedFormula
+                    addSubformulaToPassedFormula( _tSubformula2, origins );
+                }
+#endif
             }
         }
     }
 
+    /*
+     * Returns the inverted Constraint Relation of the Constraint _const 
+     */
     const Constraint_Relation PreProModule::getInvertedRelationSymbol( const Constraint* const _const )
     {
         switch( _const->relation() )
@@ -517,6 +557,10 @@ namespace smtrat
         }
     }
 
+    /*
+     * Substitutes Variables belonging to their number of Appeareance
+     * Only usable for Formulas which includes "xor"s
+     */
     void PreProModule::proceedSubstitution()
     {
         //--------------------------------------------------------------------------- Apply Old Substitutions on new Formulas
@@ -680,7 +724,7 @@ namespace smtrat
     }
 
     /**
-     * Checks form of _formula
+     * Checks form of _formula for Substitution
      * @return  pair< Formula*( Constraint ), Formula*( Bool ) >
      */
     pair<const Formula*, const Formula*> PreProModule::isCandidateforSubstitution( Formula::const_iterator _formula ) const
@@ -775,7 +819,14 @@ namespace smtrat
             const GiNaC::symtab var = (*it)->variables();
             for( std::map< std::string, GiNaC::ex>::const_iterator varit = var.begin(); varit != var.end(); ++varit )
             {
-                mVariableActivities[ *varit ] -= (*it)->degree((*varit).first)*weightOfVarDegrees + weightOfQuantities;
+                mVariableActivities[ *varit ] -= weightOfQuantities;
+                for( signed i = (*it)->lhs().ldegree((*varit).second); i <= (*it)->lhs().degree((*varit).second); ++i )
+                {
+                    if( (*it)->lhs().coeff( varit->second, i ) != 0 && i != 0 )
+                    {
+                        mVariableActivities[ *varit ] -= i*weightOfVarDegrees;
+                    }
+                }
             }
         }
         Formula::iterator _return = removeSubformulaFromPassedFormula( _formula );
@@ -787,14 +838,20 @@ namespace smtrat
     }
 
     /**
-     * Removes a everything related to a sub formula of the received formula.
+     * Removes everything related to a sub formula of the received formula.
      *
      * @param _subformula The sub formula of the received formula to remove.
      */
     void PreProModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        mpPassedFormula->empty();
+        // Delete whole PassedFormula
+        Formula::iterator it = mpPassedFormula->begin();
+        while(  it != pPassedFormula()->end() )
+        {
+            it = removeSubformulaFromPassedFormula( it );
+        }
         assert( mpPassedFormula->size() == 0 );
+        // Add whole receivedFormula to passedFormula
         for(Formula::const_iterator it = pReceivedFormula()->begin(); it != pReceivedFormula()->end(); ++ it )
         {
             if( it != _subformula )
@@ -802,12 +859,12 @@ namespace smtrat
                 addReceivedSubformulaToPassedFormula( _subformula );
             }
         }
+        // Redo whole Module on new Formula
         mLastCheckedFormula = mpPassedFormula->pSubformulas()->begin();
-
-#ifdef SIMPLIFY_CONSTRAINTS
-            simplifyConstraints();
+#ifdef SIMPLIFY_CLAUSES
+            simplifyClauses();
 #endif
-#ifdef ADD_LEARNING_CLAUSES
+#ifdef ADD_LC
             addLearningClauses();
 #endif
 #ifdef PROCEED_SUBSTITUTION
