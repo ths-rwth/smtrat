@@ -107,7 +107,10 @@ namespace smtrat
     bool PreProModule::assertSubformula( Formula::const_iterator _subformula )
     {
         addReceivedSubformulaToPassedFormula( _subformula );
-        mLastCheckedFormula = mpPassedFormula->pSubformulas()->begin();
+        if( mLastCheckedFormula == mpPassedFormula->pSubformulas()->end() )
+        {
+            mLastCheckedFormula = mpPassedFormula->pSubformulas()->begin();
+        }
         mNewFormulaReceived = true;
         return true;
     }
@@ -841,12 +844,14 @@ namespace smtrat
      */
     void PreProModule::removeSubformula( Formula::const_iterator _subformula )
     {
+        // Delete whole PassedFormula
         Formula::iterator it = mpPassedFormula->begin();
         while(  it != pPassedFormula()->end() )
         {
             it = removeSubformulaFromPassedFormula( it );
         }
         assert( mpPassedFormula->size() == 0 );
+        // Add whole receivedFormula to passedFormula
         for(Formula::const_iterator it = pReceivedFormula()->begin(); it != pReceivedFormula()->end(); ++ it )
         {
             if( it != _subformula )
@@ -854,8 +859,8 @@ namespace smtrat
                 addReceivedSubformulaToPassedFormula( _subformula );
             }
         }
+        // Redo whole Module on new Formula
         mLastCheckedFormula = mpPassedFormula->pSubformulas()->begin();
-
 #ifdef SIMPLIFY_CLAUSES
             simplifyClauses();
 #endif
