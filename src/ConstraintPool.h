@@ -121,7 +121,19 @@ namespace smtrat
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel )
             {
                 assert( hasNoOtherVariables( _lhs ) );
-                Constraint*                                  constraint   = new Constraint( _lhs, _rel, mIdAllocator );
+                Constraint* constraint;
+                if( _rel == CR_GREATER )
+                {
+                    constraint = new Constraint( -_lhs, CR_LESS, mIdAllocator );
+                }
+                else if( _rel == CR_GEQ )
+                {
+                    constraint = new Constraint( -_lhs, CR_LEQ, mIdAllocator );
+                }
+                else
+                {
+                    constraint = new Constraint( _lhs, _rel, mIdAllocator );
+                }
                 std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
                 if( !iterBoolPair.second )
                 {
@@ -137,7 +149,19 @@ namespace smtrat
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation _rel )
             {
                 assert( hasNoOtherVariables( _lhs ) && hasNoOtherVariables( _rhs ) );
-                Constraint*                                  constraint   = new Constraint( _lhs, _rhs, _rel, mIdAllocator );
+                Constraint* constraint;
+                if( _rel == CR_GREATER )
+                {
+                    constraint = new Constraint( -_lhs, -_rhs, CR_LESS, mIdAllocator );
+                }
+                else if( _rel == CR_GEQ )
+                {
+                    constraint = new Constraint( -_lhs, -_rhs, CR_LEQ, mIdAllocator );
+                }
+                else
+                {
+                    constraint = new Constraint( _lhs, _rhs, _rel, mIdAllocator );
+                }
                 std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
                 if( !iterBoolPair.second )
                 {

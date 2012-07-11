@@ -690,7 +690,7 @@ namespace smtrat
             }
             case REALCONSTRAINT:
             {
-                _out << _init << mpConstraint->toString();
+                _out << _init << *mpConstraint << " (" << mActivity << ")";
                 break;
             }
             case TTRUE:

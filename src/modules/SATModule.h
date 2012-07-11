@@ -259,7 +259,7 @@ namespace smtrat
             Minisat::vec<Minisat::Lit> conflict;
             // If problem is unsatisfiable (possibly under assumptions),
             // this vector represent the final conflict clause expressed in the assumptions.
-            std::vector< Minisat::vec<Minisat::Lit> > mMaxSatAssigns;
+            std::vector< std::vector<Minisat::Lit> > mMaxSatAssigns;
 
         public:
 
