@@ -59,7 +59,7 @@ namespace smtrat
             Answer isConsistent();
             void addLearningClauses();
             void proceedSubstitution();
-            void simplifyConstraints();
+            void simplifyClauses();
             void assignActivities( double, double, double, double );
             double assignActivitiesfromDatabase( Formula*, double, double );
             std::pair< const Formula*, const Formula* > isCandidateforSubstitution( Formula::const_iterator ) const;

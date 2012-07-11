@@ -34,7 +34,7 @@
 using namespace std;
 using namespace GiNaC;
 
-//#define SIMPLIFY_CONSTRAINTS
+//#define SIMPLIFY_CLAUSES
 #define ADD_LEARNING_CLAUSES
 //#define ADD_NEGATED_LEARNING_CLAUSES
 //#define PROCEED_SUBSTITUTION
@@ -128,11 +128,17 @@ namespace smtrat
         if( mNewFormulaReceived )
         {
 
-#ifdef SIMPLIFY_CONSTRAINTS
-           simplifyConstraints();
+#ifdef SIMPLIFY_CLAUSES
+           simplifyClauses();
 #endif
 #ifdef ADD_LEARNING_CLAUSES
             addLearningClauses();
+#define ADD_LC
+#else
+#ifdef ADD_NEGATED_LEARNING_CLAUSES
+            addLearningClauses();
+#define ADD_LC
+#endif
 #endif
 #ifdef PROCEED_SUBSTITUTION
             proceedSubstitution();
@@ -239,7 +245,7 @@ namespace smtrat
         return 0;
     }
 
-    void PreProModule::simplifyConstraints()
+    void PreProModule::simplifyClauses()
     {
 //        std::vector<const Constraint*> essentialConstraints;
 //        for( Formula::const_iterator iterator = mpPassedFormula->begin(); iterator != mpPassedFormula->end(); ++iterator )
@@ -409,7 +415,9 @@ namespace smtrat
             for( unsigned posConsB = 0; posConsB < posConsA; ++posConsB )
             {
                 const Constraint* tempConstraintB = mConstraints.at( posConsB );
+#ifdef ADD_LEARNING_CLAUSES
                 Formula* _tSubformula = NULL;
+#endif
 #ifdef ADD_NEGATED_LEARNING_CLAUSES
                 Formula* _tSubformula2 = NULL;
 #endif
@@ -417,12 +425,15 @@ namespace smtrat
                 {
                     case 1:             // not A or B
                     {
-                        _tSubformula = new Formula( OR );
+#ifdef ADD_LC
                         Formula* tmpFormula = new Formula( NOT );
+#endif
+#ifdef ADD_LEARNING_CLAUSES
+                        _tSubformula = new Formula( OR );
                         tmpFormula->addSubformula( tempConstraintA );
                         _tSubformula->addSubformula( tmpFormula );
                         _tSubformula->addSubformula( tempConstraintB );
-
+#endif
 #ifdef ADD_NEGATED_LEARNING_CLAUSES
                                         // inv(A) or not inv(B)
                         _tSubformula2 = new Formula( OR );
@@ -438,11 +449,15 @@ namespace smtrat
 
                     case -1:            // not B or A
                     {
-                        _tSubformula = new Formula( OR );
+#ifdef ADD_LC
                         Formula* tmpFormula = new Formula( NOT );
+#endif
+#ifdef ADD_LEARNING_CLAUSES
+                        _tSubformula = new Formula( OR );
                         tmpFormula->addSubformula( tempConstraintB );
                         _tSubformula->addSubformula( tmpFormula );
                         _tSubformula->addSubformula( tempConstraintA );
+#endif
 #ifdef ADD_NEGATED_LEARNING_CLAUSES
                                         // inv(B) or not inv(A)
                         _tSubformula2 = new Formula( OR );
@@ -457,6 +472,7 @@ namespace smtrat
                     }
                     case -2:            // not A or not B
                     {
+#ifdef ADD_LEARNING_CLAUSES
                         _tSubformula = new Formula( OR );
                         Formula* tmpFormulaA = new Formula( NOT );
                         tmpFormulaA->addSubformula( new Formula( tempConstraintA ) );
@@ -464,6 +480,7 @@ namespace smtrat
                         tmpFormulaB->addSubformula( new Formula( tempConstraintB ) );
                         _tSubformula->addSubformula( tmpFormulaA );
                         _tSubformula->addSubformula( tmpFormulaB );
+#endif
 #ifdef ADD_NEGATED_LEARNING_CLAUSES
                                         // inv(A) or inv(B)
                         _tSubformula2 = new Formula( OR );
@@ -479,18 +496,24 @@ namespace smtrat
                         break;
                     }
                 }
+                // Create Origins
+                vec_set_const_pFormula origins;
+                origins.push_back( mConstraintOrigins.at( posConsA ) );
+                origins.push_back( mConstraintOrigins.at( posConsB ) );
+#ifdef ADD_LEARNING_CLAUSES
                 if( _tSubformula != NULL )
                 {
-                    // Create Origins
-                    vec_set_const_pFormula origins;
-                    origins.push_back( mConstraintOrigins.at( posConsA ) );
-                    origins.push_back( mConstraintOrigins.at( posConsB ) );
                     // Add learned Subformula and Origins to PassedFormula
                     addSubformulaToPassedFormula( _tSubformula, origins );
-#ifdef ADD_NEGATED_LEARNING_CLAUSES
-                    addSubformulaToPassedFormula( _tSubformula2, origins );
-#endif
                 }
+#endif
+#ifdef ADD_NEGATED_LEARNING_CLAUSES
+                if( _tSubformula2 != NULL )
+                {
+                    // Add learned Subformula and Origins to PassedFormula
+                    addSubformulaToPassedFormula( _tSubformula2, origins );
+                }
+#endif
             }
         }
     }
@@ -804,8 +827,8 @@ namespace smtrat
         }
         mLastCheckedFormula = mpPassedFormula->pSubformulas()->begin();
 
-#ifdef SIMPLIFY_CONSTRAINTS
-            simplifyConstraints();
+#ifdef SIMPLIFY_CLAUSES
+            simplifyClauses();
 #endif
 #ifdef ADD_LEARNING_CLAUSES
             addLearningClauses();
