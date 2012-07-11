@@ -161,6 +161,9 @@ namespace smtrat
         return a;
     }
 
+    /*
+     * Assigns Activities considering parameters to each Formula of Type REALCONSTRAINT
+     */
     void PreProModule::assignActivities(double _Scale, double _wDegree, double _wQuantities, double _wRelation)
     {
         //---------------------------------------------------------------------- Collect Constraints of Passed Formula
@@ -192,6 +195,10 @@ namespace smtrat
         assignActivitiesfromDatabase( mpPassedFormula, _wRelation, _Scale );
     }
 
+    /*
+     * Rekursively used help function which is user by assignActivities()
+     * Only use if mVariableActivities and mActivityConstraint is up to date
+    */
     double PreProModule::assignActivitiesfromDatabase( Formula* _Formula, double _wRelation, double _Scale)
     {
         double activity = 0;
@@ -245,6 +252,9 @@ namespace smtrat
         return 0;
     }
 
+    /*
+     * Seach in each Clause of PassedFormula for unnecessary Constraints and removes them
+     */
     void PreProModule::simplifyClauses()
     {
 //        std::vector<const Constraint*> essentialConstraints;
@@ -315,7 +325,7 @@ namespace smtrat
     }
 
     /*
-     * Removes new Formula where each Constraint with _ex and _lhs is filtered
+     * Returnes new Formula which is equal to _formula except that each Constraint with _ex and _lhs is filtered
      */
     Formula* PreProModule::removeConstraint(Formula* _formula, GiNaC::ex _lhs, Constraint_Relation _rel)
     {
@@ -370,7 +380,7 @@ namespace smtrat
     }
 
     /*
-     * Extracts Constraints out of _formula. Children of Fathers of type "NOT" are negated
+     * Extracts Constraints out of _formula. Children of Fathers of type "NOT" are negated!
      */
     void PreProModule::getConstraints( Formula* _formula, vector<const Constraint*>& _constraints, bool isnegated )
     {
@@ -395,9 +405,10 @@ namespace smtrat
             }
         }
     }
-/*
- *
- */
+    
+    /*
+     * Adds helpfull information about all Constraints to PassedFormula
+    */
     void PreProModule::addLearningClauses()
     {
         for( Formula::iterator i = mLastCheckedFormula; i != mpPassedFormula->end(); ++i )
@@ -518,6 +529,9 @@ namespace smtrat
         }
     }
 
+    /*
+     * Returns the inverted Constraint Relation of the Constraint _const 
+     */
     const Constraint_Relation PreProModule::getInvertedRelationSymbol( const Constraint* const _const )
     {
         switch( _const->relation() )
@@ -540,6 +554,10 @@ namespace smtrat
         }
     }
 
+    /*
+     * Substitutes Variables belonging to their number of Appeareance
+     * Only usable for Formulas which includes "xor"s
+     */
     void PreProModule::proceedSubstitution()
     {
         //--------------------------------------------------------------------------- Apply Old Substitutions on new Formulas
@@ -703,7 +721,7 @@ namespace smtrat
     }
 
     /**
-     * Checks form of _formula
+     * Checks form of _formula for Substitution
      * @return  pair< Formula*( Constraint ), Formula*( Bool ) >
      */
     pair<const Formula*, const Formula*> PreProModule::isCandidateforSubstitution( Formula::const_iterator _formula ) const
@@ -798,7 +816,14 @@ namespace smtrat
             const GiNaC::symtab var = (*it)->variables();
             for( std::map< std::string, GiNaC::ex>::const_iterator varit = var.begin(); varit != var.end(); ++varit )
             {
-                mVariableActivities[ *varit ] -= (*it)->degree((*varit).first)*weightOfVarDegrees + weightOfQuantities;
+                mVariableActivities[ *varit ] -= weightOfQuantities;
+                for( signed i = (*it)->lhs().ldegree((*varit).second); i <= (*it)->lhs().degree((*varit).second); ++i )
+                {
+                    if( (*it)->lhs().coeff( varit->second, i ) != 0 && i != 0 )
+                    {
+                        mVariableActivities[ *varit ] -= i*weightOfVarDegrees;
+                    }
+                }
             }
         }
         Formula::iterator _return = removeSubformulaFromPassedFormula( _formula );
@@ -810,7 +835,7 @@ namespace smtrat
     }
 
     /**
-     * Removes a everything related to a sub formula of the received formula.
+     * Removes everything related to a sub formula of the received formula.
      *
      * @param _subformula The sub formula of the received formula to remove.
      */
@@ -830,7 +855,7 @@ namespace smtrat
 #ifdef SIMPLIFY_CLAUSES
             simplifyClauses();
 #endif
-#ifdef ADD_LEARNING_CLAUSES
+#ifdef ADD_LC
             addLearningClauses();
 #endif
 #ifdef PROCEED_SUBSTITUTION
