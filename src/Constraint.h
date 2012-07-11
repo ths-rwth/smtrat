@@ -90,8 +90,8 @@ namespace smtrat
              * Constructors:
              */
             Constraint();
-            Constraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab&, unsigned = 0 );
-            Constraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation&, const GiNaC::symtab&, unsigned = 0 );
+            Constraint( const GiNaC::ex&, const Constraint_Relation, unsigned = 0 );
+            Constraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation&, unsigned = 0 );
             Constraint( const Constraint& );
 
             /*
@@ -184,6 +184,8 @@ namespace smtrat
             static signed compare( const Constraint&, const Constraint& );
             static bool mergeConstraints( Constraint&, const Constraint& );
             static bool combineConstraints( const Constraint&, const Constraint&, const Constraint& );
+        private:
+            void getVariables( const GiNaC::ex&, GiNaC::symtab& );
     };
 
     typedef std::vector<const Constraint*>                                vec_const_pConstraint;

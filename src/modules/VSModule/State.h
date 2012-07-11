@@ -329,7 +329,6 @@ public:
 																				  const ConditionSet&	)										;
 	bool									addChild							( const GiNaC::ex& 			,
 																				  const smtrat::Constraint_Relation&,
-																	 			  const GiNaC::symtab&		,
 																				  const std::string& 		,
 																				  const GiNaC::ex&			,
 																				  const GiNaC::ex&			,
@@ -341,7 +340,6 @@ public:
 																				  const smtrat::Constraint_Relation&,
 																				  const GiNaC::ex& 			,
 																				  const smtrat::Constraint_Relation&,
-																 				  const GiNaC::symtab&		,
 																				  const std::string& 		,
 																				  const GiNaC::ex&			,
 																				  const GiNaC::ex&			,

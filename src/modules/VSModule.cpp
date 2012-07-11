@@ -775,8 +775,7 @@ namespace smtrat
                  * Create state ({b!=0} + oldConditions,
                  *                        [x -> -c/b]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 1 ), CR_NEQ, constraint.variables(), _eliminationVar, -coeffs.at( 0 ), 0, coeffs.at( 1 ),
-                                               0, subType, oConditions ) )
+                if( (*_currentState).addChild( coeffs.at( 1 ), CR_NEQ,_eliminationVar, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, oConditions ) )
                 {
                     if( constraint.relation() == CR_EQ )
                     {
@@ -809,8 +808,7 @@ namespace smtrat
                  * Create state ({a==0, b!=0} + oldConditions,
                  *                        [x -> -c/b]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_EQ, coeffs.at( 1 ), CR_NEQ, constraint.variables(), _eliminationVar,
-                                               -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, oConditions ) )
+                if( (*_currentState).addChild( coeffs.at( 2 ), CR_EQ, coeffs.at( 1 ), CR_NEQ, _eliminationVar, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, oConditions ) )
                 {
                     if( constraint.relation() == CR_EQ )
                     {
@@ -836,8 +834,7 @@ namespace smtrat
                  * Create state ({a!=0, b^2-4ac>=0} + oldConditions,
                  *                        [x -> (-b+sqrt(b^2-4ac))/2a]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, constraint.variables(), _eliminationVar, -coeffs.at( 1 ), 1,
-                                               2 * coeffs.at( 2 ), radicand, subType, oConditions ) )
+                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, -coeffs.at( 1 ), 1, 2 * coeffs.at( 2 ), radicand, subType, oConditions ) )
                 {
                     if( constraint.relation() == CR_EQ )
                     {
@@ -863,8 +860,7 @@ namespace smtrat
                  * Create state ({a!=0, b^2-4ac>0} + oldConditions,
                  *                        [x -> (-b-sqrt(b^2-4ac))/2a]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GREATER, constraint.variables(), _eliminationVar,
-                                               -coeffs.at( 1 ), -1, 2 * coeffs.at( 2 ), radicand, subType, oConditions ) )
+                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GREATER, _eliminationVar, -coeffs.at( 1 ), -1, 2 * coeffs.at( 2 ), radicand, subType, oConditions ) )
                 {
                     if( constraint.relation() == CR_EQ )
                     {

@@ -121,7 +121,7 @@ namespace smtrat
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel )
             {
                 assert( hasNoOtherVariables( _lhs ) );
-                Constraint*                                  constraint   = new Constraint( _lhs, _rel, mAllVariables, mIdAllocator );
+                Constraint*                                  constraint   = new Constraint( _lhs, _rel, mIdAllocator );
                 std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
                 if( !iterBoolPair.second )
                 {
@@ -137,7 +137,7 @@ namespace smtrat
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation _rel )
             {
                 assert( hasNoOtherVariables( _lhs ) && hasNoOtherVariables( _rhs ) );
-                Constraint*                                  constraint   = new Constraint( _lhs, _rhs, _rel, mAllVariables, mIdAllocator );
+                Constraint*                                  constraint   = new Constraint( _lhs, _rhs, _rel, mIdAllocator );
                 std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
                 if( !iterBoolPair.second )
                 {

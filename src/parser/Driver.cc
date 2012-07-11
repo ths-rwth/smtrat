@@ -43,7 +43,6 @@ namespace smtrat
         trace_parsing( false ),
         formulaRoot( _formulaRoot ),
         collectedBooleans( std::set<std::string>() ),
-        collectedBooleanAuxilliaries( std::map<std::string, std::string >() ),
         collectedRealAuxilliaries( std::map<std::string, std::string>() ),
         status( -1 )
     {}

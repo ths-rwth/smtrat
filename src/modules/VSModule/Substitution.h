@@ -52,6 +52,22 @@ namespace vs
 
     class Substitution
     {
+        private:
+
+            /**
+             * Members:
+             */
+            std::string*      mpVariable;
+            SqrtEx*           mpTerm;
+            #ifdef VS_CUBIC_CASE
+            GiNaC::ex*        mpMultiRootLessOcond;
+            SqrtEx*           mpFirstZeroOfDerivOfOCond;
+            SqrtEx*           mpSecondZeroOfDerivOfOCond;
+            #endif
+            GiNaC::symtab     mTermVariables;
+            Substitution_Type mType;
+            ConditionSet*     mpOriginalConditions;
+
         public:
 
             /**
@@ -59,15 +75,9 @@ namespace vs
              */
             Substitution();
             Substitution( const std::string&, const Substitution_Type&, const ConditionSet& );
-            Substitution( const std::string&, const SqrtEx&, const Substitution_Type&, const GiNaC::symtab&, const ConditionSet& );
+            Substitution( const std::string&, const SqrtEx&, const Substitution_Type&, const ConditionSet& );
             #ifdef VS_CUBIC_CASE
-            Substitution( const std::string&,
-                          const GiNaC::ex&,
-                          const SqrtEx&,
-                          const SqrtEx&,
-                          const Substitution_Type&,
-                          const GiNaC::symtab&,
-                          const ConditionSet& );
+            Substitution( const std::string&, const GiNaC::ex&, const SqrtEx&, const SqrtEx&, const Substitution_Type&, const ConditionSet& );
             #endif
             Substitution( const Substitution& );
 
@@ -142,22 +152,9 @@ namespace vs
             void print( std::ostream& ) const;
             std::string toString() const;
             std::string toString2() const;
-
         private:
+            void getVariables( const GiNaC::ex&, GiNaC::symtab& );
 
-            /**
-             * Attributes:
-             */
-            std::string*      mpVariable;
-            SqrtEx*           mpTerm;
-            #ifdef VS_CUBIC_CASE
-            GiNaC::ex*        mpMultiRootLessOcond;
-            SqrtEx*           mpFirstZeroOfDerivOfOCond;
-            SqrtEx*           mpSecondZeroOfDerivOfOCond;
-            #endif
-            GiNaC::symtab     mTermVariables;
-            Substitution_Type mType;
-            ConditionSet*     mpOriginalConditions;
     };
 
 }    // end namspace vs

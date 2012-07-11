@@ -109,7 +109,6 @@
 %token SETINFO
 %token CHECKSAT
 %token <sval> SYM
-%token <sval> AUXSYM
 %token <sval> NUM
 %token <sval> DEC
 %token <sval> KEY
@@ -271,16 +270,6 @@ expr:
         }
         delete $1;
     }
-	|	AUXSYM
-   	{
-        std::map<std::string, std::string>::iterator iter = driver.collectedBooleanAuxilliaries.find( *$1 );
-   		if( iter == driver.collectedBooleanAuxilliaries.end() )
-   		{
-   			std::string errstr = std::string( "The variable " + *$1 + " is not defined in a let expression!");
-  			error( yyloc, errstr );
-   		}
-   		$$ = new smtrat::Formula( iter->second );
-   	}
     | OB LET OB bindlist CB expr CB
     {
         if( !$4->empty() )
@@ -380,23 +369,21 @@ nnaryOperator :
 term :
 		SYM
    	{
-   		if( driver.formulaRoot->realValuedVars().find( *$1 ) == driver.formulaRoot->realValuedVars().end() )
-   		{
-   			std::string errstr = std::string( "The variable " + *$1 + " is not defined!");
-  			error( yyloc, errstr );
-   		}
-   		$$ = $1;
-   	}
-	|	AUXSYM
-   	{
         std::map<std::string, std::string>::iterator iter = driver.collectedRealAuxilliaries.find( *$1 );
    		if( iter == driver.collectedRealAuxilliaries.end() )
    		{
-   			std::string errstr = std::string( "The variable " + *$1 + " is not defined in a let expression!");
-  			error( yyloc, errstr );
+            if( driver.formulaRoot->realValuedVars().find( *$1 ) == driver.formulaRoot->realValuedVars().end() )
+            {
+                std::string errstr = std::string( "The variable " + *$1 + " is not defined!");
+                error( yyloc, errstr );
+            }
+            $$ = $1;
    		}
-        delete $1;
-   		$$ = new std::string( "(" + iter->second + ")" );
+        else
+        {
+            delete $1;
+            $$ = new std::string( "(" + iter->second + ")" );
+        }
    	}
     | 	NUM
    	{
@@ -598,7 +585,7 @@ bindlist :
     ;
 
 bind :
-		OB AUXSYM term CB
+		OB SYM term CB
 	{
         std::pair<std::map<std::string, std::string>::iterator, bool> ret
             = driver.collectedRealAuxilliaries.insert( std::pair<std::string, std::string>( *$2, *$3 ) );
@@ -611,18 +598,11 @@ bind :
         delete $3;
         $$ = NULL;
 	}
-	|	OB AUXSYM expr CB
+	|	OB SYM expr CB
 	{
-        std::pair<std::map<std::string, std::string>::iterator, bool> ret
-            = driver.collectedBooleanAuxilliaries.insert( std::pair<std::string, std::string>( *$2, smtrat::Formula::getAuxiliaryBoolean() ) );
-        if( !ret.second )
-        {
-            std::string errstr = std::string( "The same variable is used in several let expressions!" );
-            error( yyloc, errstr );
-        }
-
+        driver.collectedBooleans.insert( *$2 );
 		smtrat::Formula* formulaTmp = new smtrat::Formula( IMPLIES );
-        formulaTmp->addSubformula( new smtrat::Formula( ret.first->second ) );
+        formulaTmp->addSubformula( new smtrat::Formula( *$2 ) );
         formulaTmp->addSubformula( $3 );
         delete $2;
         $$ = formulaTmp;

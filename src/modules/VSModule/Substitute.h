@@ -62,43 +62,38 @@ namespace vs
                                  const GiNaC::ex&,
                                  const GiNaC::ex&,
                                  const GiNaC::ex&,
-                                 DisjunctionOfConstraintConjunctions&,
-                                 const GiNaC::symtab& );
+                                 DisjunctionOfConstraintConjunctions& );
     void substituteNormalSqrtNeq( const smtrat::Constraint&,
                                   const Substitution&,
                                   const GiNaC::ex&,
                                   const GiNaC::ex&,
                                   const GiNaC::ex&,
-                                  DisjunctionOfConstraintConjunctions&,
-                                  const GiNaC::symtab& );
+                                  DisjunctionOfConstraintConjunctions& );
     void substituteNormalSqrtLess( const smtrat::Constraint&,
                                    const Substitution&,
                                    const GiNaC::ex&,
                                    const GiNaC::ex&,
                                    const GiNaC::ex&,
                                    const GiNaC::ex&,
-                                   DisjunctionOfConstraintConjunctions&,
-                                   const GiNaC::symtab& );
+                                   DisjunctionOfConstraintConjunctions& );
     void substituteNormalSqrtLeq( const smtrat::Constraint&,
                                   const Substitution&,
                                   const GiNaC::ex&,
                                   const GiNaC::ex&,
                                   const GiNaC::ex&,
                                   const GiNaC::ex&,
-                                  DisjunctionOfConstraintConjunctions&,
-                                  const GiNaC::symtab& );
+                                  DisjunctionOfConstraintConjunctions& );
     void substitutePlusEps( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteEpsGradients( const smtrat::Constraint&,
                                  const Substitution&,
                                  const smtrat::Constraint_Relation,
                                  const smtrat::Constraint_Relation,
-                                 DisjunctionOfConstraintConjunctions&,
-                                 const GiNaC::symtab& );
+                                 DisjunctionOfConstraintConjunctions& );
     void substituteMinusInf( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void clear( DisjunctionOfConstraintConjunctions& );
-    void substituteInfLessGreater( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions&, const GiNaC::symtab& );
-    void substituteTrivialCase( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions&, const GiNaC::symtab& );
-    void substituteNotTrivialCase( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions&, const GiNaC::symtab& );
+    void substituteInfLessGreater( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    void substituteTrivialCase( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    void substituteNotTrivialCase( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
 
     #ifdef VS_CUBIC_CASE
     void substituteCubicRoot( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
@@ -107,33 +102,28 @@ namespace vs
                                       const GiNaC::ex&,
                                       const GiNaC::ex&,
                                       DisjunctionOfConstraintConjunctions&,
-                                      const GiNaC::ex&,
-                                      const GiNaC::symtab& );
+                                      const GiNaC::ex& );
     void substituteCubicRootInQuadratic( const smtrat::Constraint&,
                                          const Substitution&,
                                          const GiNaC::ex&,
                                          const GiNaC::ex&,
                                          DisjunctionOfConstraintConjunctions&,
-                                         const GiNaC::ex&,
-                                         const GiNaC::symtab& );
+                                         const GiNaC::ex& );
     void substituteSingleCubicRootInQuadraticGreaterZero( const GiNaC::ex&,
                                                           const Substitution&,
                                                           const Substitution&,
-                                                          DisjunctionOfConstraintConjunctions&,
-                                                          const GiNaC::symtab& );
+                                                          DisjunctionOfConstraintConjunctions& );
     void substituteSingleCubicRootInQuadraticLessZero( const GiNaC::ex&,
                                                        const Substitution&,
                                                        const Substitution&,
-                                                       DisjunctionOfConstraintConjunctions&,
-                                                       const GiNaC::symtab& );
+                                                       DisjunctionOfConstraintConjunctions& );
     void substituteTripleCubicRootInLinear( const GiNaC::ex&,
                                             const GiNaC::ex&,
                                             const bool,
                                             const Substitution&,
                                             const Substitution&,
                                             const Substitution&,
-                                            DisjunctionOfConstraintConjunctions&,
-                                            const GiNaC::symtab& );
+                                            DisjunctionOfConstraintConjunctions& );
     void substituteTripleCubicRootInQuadratic( const GiNaC::ex&,
                                                const GiNaC::ex&,
                                                const bool,
@@ -141,8 +131,7 @@ namespace vs
                                                const Substitution&,
                                                const Substitution&,
                                                const Substitution&,
-                                               DisjunctionOfConstraintConjunctions&,
-                                               const GiNaC::symtab& );
+                                               DisjunctionOfConstraintConjunctions& );
     #endif
 
     void simplify( DisjunctionOfConstraintConjunctions& );

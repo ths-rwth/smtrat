@@ -171,7 +171,7 @@ namespace smtrat
          * Collect the new variables in the constraint:
          */
         mAllVariables.insert( reader.get_syms().begin(), reader.get_syms().end() );
-        Constraint*                                  constraint   = new Constraint( lhs, rhs, relation, mAllVariables, mIdAllocator );
+        Constraint*                                  constraint   = new Constraint( lhs, rhs, relation, mIdAllocator );
         std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
         if( !iterBoolPair.second )
         {

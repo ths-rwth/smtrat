@@ -60,7 +60,7 @@ namespace smtrat
         normalize( rLhs() );
     }
 
-    Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _vars, unsigned _id ):
+    Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, unsigned _id ):
         pLhs( new ex( _lhs ) ),
         pMultiRootLessLhs( NULL ),
         mVariables(),
@@ -68,32 +68,21 @@ namespace smtrat
         mID( _id )
     {
         normalize( rLhs() );
-        for( symtab::const_iterator var = _vars.begin(); var != _vars.end(); ++var )
-        {
-            if( pLhs->has( var->second ) )
-            {
-                mVariables.insert( *var );
-            }
-        }
+        getVariables( rLhs(), mVariables );
         #ifdef TS_CONSTRAINT_SIMPLIFIER
         simplify();
         #endif
     }
 
-    Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _vars, unsigned _id ):
+    Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, unsigned _id ):
         pLhs( new ex( _lhs - _rhs ) ),
         pMultiRootLessLhs( NULL ),
         mVariables(),
         mRelation( _cr ),
         mID( _id )
     {
-        for( symtab::const_iterator var = _vars.begin(); var != _vars.end(); ++var )
-        {
-            if( pLhs->has( var->second ) )
-            {
-                mVariables.insert( *var );
-            }
-        }
+        normalize( rLhs() );
+        getVariables( rLhs(), mVariables );
         #ifdef TS_CONSTRAINT_SIMPLIFIER
         simplify();
         #endif
@@ -2703,6 +2692,23 @@ namespace smtrat
             }
             default:
                 return false;
+        }
+    }
+
+    void Constraint::getVariables( const ex& _term, symtab& _variables )
+    {
+        if( _term.nops() > 1 )
+        {
+            for( GiNaC::const_iterator subterm = _term.begin(); subterm != _term.end(); ++subterm )
+            {
+                getVariables( *subterm, _variables );
+            }
+        }
+        else if( is_exactly_a<symbol>( _term ) )
+        {
+            stringstream out;
+            out << _term;
+            _variables.insert( pair< string, symbol >( out.str(), ex_to<symbol>( _term ) ) );
         }
     }
 }    // namespace smtrat

@@ -2056,8 +2056,6 @@ namespace vs
      *                              used to eliminate the according variable.
      * @param _lhsCondition         The left hand side of the first condition.
      * @param _relationCondition    The relation symbol of the first condition.
-     * @param _constraintVariables  The variables of the constraint used to eliminate
-     *                              the according variable.
      * @param _eliminationVar       The variable, which was eliminated and now is
      *                              element of a substitution.
      * @param _subTermNum           The numerator of the term to which the variable is mapped.
@@ -2068,7 +2066,6 @@ namespace vs
      */
     bool State::addChild( const ex& _lhsCondition,
                           const smtrat::Constraint_Relation& _relationCondition,
-                          const symtab& _constraintVariables,
                           const string& _eliminationVar,
                           const ex& _subTermConstPart,
                           const ex& _subTermFactor,
@@ -2081,14 +2078,14 @@ namespace vs
         cout << __func__ << endl;
         #endif
         smtrat::Constraint * cons;
-        cons = new smtrat::Constraint( _lhsCondition, _relationCondition, _constraintVariables );
+        cons = new smtrat::Constraint( _lhsCondition, _relationCondition );
         unsigned isConsConsistent = (*cons).isConsistent();
         if( isConsConsistent != 0 )
         {
             SqrtEx * sqEx;
             sqEx = new SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand );
             Substitution * sub;
-            sub = new Substitution( _eliminationVar, *sqEx, _substitutionType, _constraintVariables, _oConditions );
+            sub = new Substitution( _eliminationVar, *sqEx, _substitutionType, _oConditions );
             if( !updateOCondsOfSubstitutions( *sub ) )
             {
                 State* state = new State( this, *sub );
@@ -2150,7 +2147,6 @@ namespace vs
                           const smtrat::Constraint_Relation& _relationCondition1,
                           const ex& _lhsCondition2,
                           const smtrat::Constraint_Relation& _relationCondition2,
-                          const symtab& _constraintVariables,
                           const string& _eliminationVar,
                           const ex& _subTermConstPart,
                           const ex& _subTermFactor,
@@ -2163,19 +2159,19 @@ namespace vs
         cout << __func__ << endl;
         #endif
         smtrat::Constraint * cons1;
-        cons1 = new smtrat::Constraint( _lhsCondition1, _relationCondition1, _constraintVariables );
+        cons1 = new smtrat::Constraint( _lhsCondition1, _relationCondition1 );
         unsigned isCons1Consistent = (*cons1).isConsistent();
         if( isCons1Consistent != 0 )
         {
             smtrat::Constraint * cons2;
-            cons2 = new smtrat::Constraint( _lhsCondition2, _relationCondition2, _constraintVariables );
+            cons2 = new smtrat::Constraint( _lhsCondition2, _relationCondition2 );
             unsigned isCons2Consistent = (*cons2).isConsistent();
             if( isCons2Consistent != 0 )
             {
                 SqrtEx * sqEx;
                 sqEx = new SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand );
                 Substitution * sub;
-                sub = new Substitution( _eliminationVar, *sqEx, _substitutionType, _constraintVariables, _oConditions );
+                sub = new Substitution( _eliminationVar, *sqEx, _substitutionType, _oConditions );
                 if( !updateOCondsOfSubstitutions( *sub ) )
                 {
                     State * state;

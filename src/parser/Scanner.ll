@@ -128,13 +128,9 @@ typedef smtrat::Parser::token_type token_type;
                         yylval->sval = new std::string (yytext);
                         return token::DEC;
                     }
-[a-zA-Z][a-zA-Z_0-9]* 	{
+[a-zA-Z~!@\$\%\^&\*_\-\+=\<\>\.\?\"\/][a-zA-Z_0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\:\"\/]* 	{
 							yylval->sval = new std::string (yytext);
 							return token::SYM;
-						}
-[\?\.][a-zA-Z][a-zA-Z_0-9]* 	{
-							yylval->sval = new std::string (yytext);
-							return token::AUXSYM;
 						}
 \:[a-zA-Z0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\/]+      { yylval->sval = new std::string (yytext);
                                                   return token::KEY; }
