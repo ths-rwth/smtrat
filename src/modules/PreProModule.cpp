@@ -841,7 +841,11 @@ namespace smtrat
      */
     void PreProModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        mpPassedFormula->empty();
+        Formula::iterator it = mpPassedFormula->begin();
+        while(  it != pPassedFormula()->end() )
+        {
+            it = removeSubformulaFromPassedFormula( it );
+        }
         assert( mpPassedFormula->size() == 0 );
         for(Formula::const_iterator it = pReceivedFormula()->begin(); it != pReceivedFormula()->end(); ++ it )
         {
