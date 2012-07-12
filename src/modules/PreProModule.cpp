@@ -422,19 +422,23 @@ namespace smtrat
                 mConstraintOrigins.push_back( getOrigins( i ) );
             }
         }
+        std::map<const Constraint*, unsigned> mUniqueConstraintsA = std::map<const Constraint*, unsigned>();
         for( unsigned posConsA = mNumberOfComparedConstraints; posConsA < mConstraints.size(); ++posConsA )
         {
+            if( mUniqueConstraintsA.find( mConstraints.at( posConsA ) ) != mUniqueConstraintsA.end() ) break;
+            else mUniqueConstraintsA[ mConstraints.at( posConsA ) ] += 0;
             const Constraint* tempConstraintA = mConstraints.at( posConsA );
             mNumberOfComparedConstraints++;
+            std::map<const Constraint*, unsigned> mUniqueConstraintsB = std::map<const Constraint*, unsigned>();
             for( unsigned posConsB = 0; posConsB < posConsA; ++posConsB )
             {
+                if( mUniqueConstraintsB.find( mConstraints.at( posConsB ) ) != mUniqueConstraintsB.end() ) break;
+                else mUniqueConstraintsB[ mConstraints.at( posConsB ) ] = 1;
                 const Constraint* tempConstraintB = mConstraints.at( posConsB );
-#ifdef ADD_LEARNING_CLAUSES
-                Formula* _tSubformula = NULL;
-#endif
-#ifdef ADD_NEGATED_LEARNING_CLAUSES
-                Formula* _tSubformula2 = NULL;
-#endif
+                // Create Origins
+                vec_set_const_pFormula origins;
+                origins.push_back( mConstraintOrigins.at( posConsA ) );
+                origins.push_back( mConstraintOrigins.at( posConsB ) );
                 switch( Constraint::compare( *tempConstraintA, *tempConstraintB ) )
                 {
                     case 1:             // not A or B
@@ -443,65 +447,205 @@ namespace smtrat
                         Formula* tmpFormula = new Formula( NOT );
 #endif
 #ifdef ADD_LEARNING_CLAUSES
-                        _tSubformula = new Formula( OR );
+                        Formula* _tSubformula = new Formula( OR );
                         tmpFormula->addSubformula( tempConstraintA );
                         _tSubformula->addSubformula( tmpFormula );
                         _tSubformula->addSubformula( tempConstraintB );
+                        addSubformulaToPassedFormula( _tSubformula, origins );
 #endif
 #ifdef ADD_NEGATED_LEARNING_CLAUSES
                                         // inv(A) or not inv(B)
-                        _tSubformula2 = new Formula( OR );
+                        Formula* _tSubformula2 = new Formula( OR );
                         tmpFormula = new Formula( NOT );
-                        const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), getInvertedRelationSymbol( tempConstraintA ) );
-                        const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), getInvertedRelationSymbol( tempConstraintB ) );
-                        tmpFormula->addSubformula( invConstraintB );
-                        _tSubformula2->addSubformula( invConstraintA );
-                        _tSubformula2->addSubformula( tmpFormula );
+                        Constraint_Relation crelA = getInvertedRelationSymbol( tempConstraintA );
+                        Constraint_Relation crelB = getInvertedRelationSymbol( tempConstraintB );
+                       if( crelA != CR_NEQ && crelB != CR_NEQ )
+                       {
+                            const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), crelA );
+                            const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), crelB );
+                            tmpFormula->addSubformula( invConstraintB );
+                            _tSubformula2->addSubformula( invConstraintA );
+                            _tSubformula2->addSubformula( tmpFormula );
+                       }else if( crelA == CR_NEQ && crelB == CR_NEQ )
+                       {
+                           const Constraint* invConstraintA1 = Formula::newConstraint( tempConstraintA->lhs(), CR_GREATER );
+                           const Constraint* invConstraintA2 = Formula::newConstraint( tempConstraintA->lhs(), CR_LESS );
+                           const Constraint* invConstraintB1 = Formula::newConstraint( tempConstraintB->lhs(), CR_GREATER );
+                           const Constraint* invConstraintB2 = Formula::newConstraint( tempConstraintB->lhs(), CR_LESS );
+                           // To keep passedformula in CNF 2nd Formula is required ( B1 or A1 or A2 ) and ( B2 or A1 or A1 )
+                           Formula* notFormulaB = new Formula( NOT );
+                           notFormulaB->addSubformula( invConstraintB1 );
+                           _tSubformula2->addSubformula( notFormulaB );
+                           _tSubformula2->addSubformula( invConstraintA1 );
+                           _tSubformula2->addSubformula( invConstraintA2 );
+                           addSubformulaToPassedFormula( _tSubformula2, origins );
+                           notFormulaB = new Formula( NOT );
+                           notFormulaB->addSubformula( invConstraintB2 );
+                           _tSubformula2->addSubformula( notFormulaB );
+                           _tSubformula2->addSubformula( invConstraintA1 );
+                           _tSubformula2->addSubformula( invConstraintA2 );
+                       }else if( crelA == CR_NEQ )
+                       {
+                           // Adds ( A1 or A2 or B )
+                           const Constraint* invConstraintA1 = Formula::newConstraint( tempConstraintA->lhs(), CR_GREATER );
+                           const Constraint* invConstraintA2 = Formula::newConstraint( tempConstraintA->lhs(), CR_LESS );
+                           const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), crelB );
+                           tmpFormula->addSubformula( invConstraintB );
+                           _tSubformula2->addSubformula( invConstraintA1 );
+                           _tSubformula2->addSubformula( invConstraintA2 );
+                           _tSubformula2->addSubformula( tmpFormula );
+                       }else if( crelB == CR_NEQ )
+                       {
+                           const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), crelA );
+                           const Constraint* invConstraintB1 = Formula::newConstraint( tempConstraintB->lhs(), CR_GREATER );
+                           const Constraint* invConstraintB2 = Formula::newConstraint( tempConstraintB->lhs(), CR_LESS );
+                           // To keep passedformula in CNF 2nd Formula is required ( A or B1 ) and ( A or B2 )
+                           Formula* notFormulaB = new Formula( NOT );
+                           notFormulaB->addSubformula( invConstraintB1 );
+                           _tSubformula2->addSubformula( notFormulaB );
+                           _tSubformula2->addSubformula( invConstraintA );
+                           addSubformulaToPassedFormula( _tSubformula2, origins );
+                           _tSubformula2 = new Formula( OR );
+                           notFormulaB = new Formula( NOT );
+                           notFormulaB->addSubformula( invConstraintB2 );
+                           _tSubformula2->addSubformula( notFormulaB );
+                           _tSubformula2->addSubformula( invConstraintA );
+                       }
+                       addSubformulaToPassedFormula( _tSubformula2, origins );
 #endif
-                        break;
+                       break;
                     }
-
                     case -1:            // not B or A
                     {
 #ifdef ADD_LC
                         Formula* tmpFormula = new Formula( NOT );
 #endif
 #ifdef ADD_LEARNING_CLAUSES
-                        _tSubformula = new Formula( OR );
+                        Formula* _tSubformula = new Formula( OR );
                         tmpFormula->addSubformula( tempConstraintB );
                         _tSubformula->addSubformula( tmpFormula );
                         _tSubformula->addSubformula( tempConstraintA );
+                        addSubformulaToPassedFormula( _tSubformula, origins );
 #endif
 #ifdef ADD_NEGATED_LEARNING_CLAUSES
                                         // inv(B) or not inv(A)
+                        Formula* _tSubformula2 = NULL;
                         _tSubformula2 = new Formula( OR );
                         tmpFormula = new Formula( NOT );
-                        const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), getInvertedRelationSymbol( tempConstraintA ) );
-                        const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), getInvertedRelationSymbol( tempConstraintB ) );
-                        tmpFormula->addSubformula( invConstraintA );
-                        _tSubformula2->addSubformula( tmpFormula );
-                        _tSubformula2->addSubformula( invConstraintB );
+                        Constraint_Relation crelA = getInvertedRelationSymbol( tempConstraintA );
+                        Constraint_Relation crelB = getInvertedRelationSymbol( tempConstraintB );
+                       if( crelA != CR_NEQ && crelB != CR_NEQ )
+                       {
+                           const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), crelA );
+                           const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), crelB );
+                           tmpFormula->addSubformula( invConstraintA );
+                           _tSubformula2->addSubformula( invConstraintB );
+                           _tSubformula2->addSubformula( tmpFormula );
+                       }
+                       else if( crelA == CR_NEQ && crelB == CR_NEQ )
+                       {
+                           const Constraint* invConstraintA1 = Formula::newConstraint( tempConstraintA->lhs(), CR_GREATER );
+                           const Constraint* invConstraintA2 = Formula::newConstraint( tempConstraintA->lhs(), CR_LESS );
+                           const Constraint* invConstraintB1 = Formula::newConstraint( tempConstraintB->lhs(), CR_GREATER );
+                           const Constraint* invConstraintB2 = Formula::newConstraint( tempConstraintB->lhs(), CR_LESS );
+                           // To keep passedformula in CNF 2nd Formula is required (A1 or B1 or B2) and (A2 or B1 or B2)
+                           Formula* notFormulaA = new Formula( NOT );
+                           notFormulaA->addSubformula( invConstraintA1 );
+                           _tSubformula2->addSubformula( notFormulaA );
+                           _tSubformula2->addSubformula( invConstraintB1 );
+                           _tSubformula2->addSubformula( invConstraintB2 );
+                           addSubformulaToPassedFormula( _tSubformula2, origins );
+                           _tSubformula2 = new Formula( OR );
+                           notFormulaA = new Formula( NOT );
+                           notFormulaA->addSubformula( invConstraintA2 );
+                           _tSubformula2->addSubformula( notFormulaA );
+                           _tSubformula2->addSubformula( invConstraintB1 );
+                           _tSubformula2->addSubformula( invConstraintB2 );
+                       }
+                       else if( crelA == CR_NEQ )
+                       {
+                           const Constraint* invConstraintA1 = Formula::newConstraint( tempConstraintA->lhs(), CR_GREATER );
+                           const Constraint* invConstraintA2 = Formula::newConstraint( tempConstraintA->lhs(), CR_LESS );
+                           const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), crelB );
+                           // To keep passedformula in CNF 2nd Formula is required (a1 or b) and (a2 or b)
+                           Formula* notFormulaA = new Formula( NOT );
+                           notFormulaA->addSubformula( invConstraintA1 );
+                           _tSubformula2->addSubformula( notFormulaA );
+                           _tSubformula2->addSubformula( invConstraintB );
+                           addSubformulaToPassedFormula( _tSubformula2, origins );
+                           _tSubformula2 = new Formula( OR );
+                           notFormulaA = new Formula( NOT );
+                           notFormulaA->addSubformula( invConstraintA2 );
+                           _tSubformula2->addSubformula( notFormulaA );
+                           _tSubformula2->addSubformula( invConstraintB );
+                       }else if( crelB == CR_NEQ )
+                       {   
+                           // Add ( a or b1 or b2 )
+                           const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), crelA );
+                           const Constraint* invConstraintB1 = Formula::newConstraint( tempConstraintB->lhs(), CR_GREATER );
+                           const Constraint* invConstraintB2 = Formula::newConstraint( tempConstraintB->lhs(), CR_LESS );
+                           tmpFormula->addSubformula( invConstraintA );
+                           _tSubformula2->addSubformula( tmpFormula );
+                           _tSubformula2->addSubformula( invConstraintB1 );
+                           _tSubformula2->addSubformula( invConstraintB2 );
+                       }
+                        addSubformulaToPassedFormula( _tSubformula2, origins );
+                       cout << "add" << endl;
 #endif
                         break;
                     }
                     case -2:            // not A or not B
                     {
 #ifdef ADD_LEARNING_CLAUSES
-                        _tSubformula = new Formula( OR );
+                        Formula* _tSubformula = new Formula( OR );
                         Formula* tmpFormulaA = new Formula( NOT );
                         tmpFormulaA->addSubformula( new Formula( tempConstraintA ) );
                         Formula* tmpFormulaB = new Formula( NOT );
                         tmpFormulaB->addSubformula( new Formula( tempConstraintB ) );
                         _tSubformula->addSubformula( tmpFormulaA );
                         _tSubformula->addSubformula( tmpFormulaB );
+                        addSubformulaToPassedFormula( _tSubformula, origins );
 #endif
 #ifdef ADD_NEGATED_LEARNING_CLAUSES
                                         // inv(A) or inv(B)
-                        _tSubformula2 = new Formula( OR );
-                        const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), getInvertedRelationSymbol( tempConstraintA ) );
-                        const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), getInvertedRelationSymbol( tempConstraintB ) );
-                        _tSubformula2->addSubformula( invConstraintA );
-                        _tSubformula2->addSubformula( invConstraintB );
+                        Formula* _tSubformula2 = new Formula( OR );
+                        Constraint_Relation crelA = getInvertedRelationSymbol( tempConstraintA );
+                        Constraint_Relation crelB = getInvertedRelationSymbol( tempConstraintB );
+                       if( crelA != CR_NEQ && crelB != CR_NEQ )
+                       {
+                           const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), crelA );
+                           const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), crelB );
+                           _tSubformula2->addSubformula( invConstraintA );
+                           _tSubformula2->addSubformula( invConstraintB );
+                       }else if( crelA == CR_NEQ && crelB == CR_NEQ )
+                       {
+                           const Constraint* invConstraintA1 = Formula::newConstraint( tempConstraintA->lhs(), CR_GREATER );
+                           const Constraint* invConstraintA2 = Formula::newConstraint( tempConstraintA->lhs(), CR_LESS );
+                           const Constraint* invConstraintB1 = Formula::newConstraint( tempConstraintB->lhs(), CR_GREATER );
+                           const Constraint* invConstraintB2 = Formula::newConstraint( tempConstraintB->lhs(), CR_LESS );
+                           _tSubformula2->addSubformula( invConstraintA1 );
+                           _tSubformula2->addSubformula( invConstraintA2 );
+                           _tSubformula2->addSubformula( invConstraintB1 );
+                           _tSubformula2->addSubformula( invConstraintB2 );
+                       }
+                       else if( crelA == CR_NEQ )
+                       {
+                           const Constraint* invConstraintA1 = Formula::newConstraint( tempConstraintA->lhs(), CR_GREATER );
+                           const Constraint* invConstraintA2 = Formula::newConstraint( tempConstraintA->lhs(), CR_LESS );
+                           const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), crelB );
+                           _tSubformula2->addSubformula( invConstraintA1 );
+                           _tSubformula2->addSubformula( invConstraintA2 );
+                           _tSubformula2->addSubformula( invConstraintB );
+                       }else if( crelB == CR_NEQ )
+                       {
+                           const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), crelA );
+                           const Constraint* invConstraintB1 = Formula::newConstraint( tempConstraintB->lhs(), CR_GREATER );
+                           const Constraint* invConstraintB2 = Formula::newConstraint( tempConstraintB->lhs(), CR_LESS );
+                           _tSubformula2->addSubformula( invConstraintA );
+                           _tSubformula2->addSubformula( invConstraintB1 );
+                           _tSubformula2->addSubformula( invConstraintB2 );
+                       }
+                       addSubformulaToPassedFormula( _tSubformula2, origins );
 #endif
                         break;
                     }
@@ -510,24 +654,6 @@ namespace smtrat
                         break;
                     }
                 }
-                // Create Origins
-                vec_set_const_pFormula origins;
-                origins.push_back( mConstraintOrigins.at( posConsA ) );
-                origins.push_back( mConstraintOrigins.at( posConsB ) );
-#ifdef ADD_LEARNING_CLAUSES
-                if( _tSubformula != NULL )
-                {
-                    // Add learned Subformula and Origins to PassedFormula
-                    addSubformulaToPassedFormula( _tSubformula, origins );
-                }
-#endif
-#ifdef ADD_NEGATED_LEARNING_CLAUSES
-                if( _tSubformula2 != NULL )
-                {
-                    // Add learned Subformula and Origins to PassedFormula
-                    addSubformulaToPassedFormula( _tSubformula2, origins );
-                }
-#endif
             }
         }
     }
