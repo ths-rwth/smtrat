@@ -39,50 +39,50 @@ namespace vs
      */
     Condition::Condition()
     {
-        mpConstraint         = new smtrat::Constraint();
+        mpConstraint         = smtrat::Formula::newConstraint( 0, smtrat::CR_EQ );
         mFlag                = false;
         mRecentlyAdded       = false;
         mpOriginalConditions = new ConditionSet();
         mValuation           = 0;
     }
 
-    Condition::Condition( const smtrat::Constraint& _constraint )
+    Condition::Condition( const smtrat::Constraint* _constraint )
     {
-        mpConstraint         = new smtrat::Constraint( _constraint );
+        mpConstraint         = _constraint;
         mFlag                = false;
         mRecentlyAdded       = false;
         mpOriginalConditions = new ConditionSet();
         mValuation           = 0;
     }
 
-    Condition::Condition( const smtrat::Constraint& _constraint, const unsigned _valuation )
+    Condition::Condition( const smtrat::Constraint* _constraint, const unsigned _valuation )
     {
-        mpConstraint         = new smtrat::Constraint( _constraint );
+        mpConstraint         = _constraint;
         mFlag                = false;
         mRecentlyAdded       = false;
         mpOriginalConditions = new ConditionSet();
         mValuation           = _valuation;
     }
 
-    Condition::Condition( const smtrat::Constraint& _constraint,
+    Condition::Condition( const smtrat::Constraint* _constraint,
                           const bool _flag,
                           const ConditionSet& _originalConditions,
                           const unsigned _valuation )
     {
-        mpConstraint         = new smtrat::Constraint( _constraint );
+        mpConstraint         = _constraint;
         mFlag                = _flag;
         mRecentlyAdded       = false;
         mpOriginalConditions = new ConditionSet( _originalConditions );
         mValuation           = _valuation;
     }
 
-    Condition::Condition( const smtrat::Constraint& _constraint,
+    Condition::Condition( const smtrat::Constraint* _constraint,
                           const bool _flag,
                           const ConditionSet& _originalConditions,
                           const unsigned _valuation,
                           const bool _recentlyAdded )
     {
-        mpConstraint         = new smtrat::Constraint( _constraint );
+        mpConstraint         = _constraint;
         mFlag                = _flag;
         mRecentlyAdded       = _recentlyAdded;
         mpOriginalConditions = new ConditionSet( _originalConditions );
@@ -91,7 +91,7 @@ namespace vs
 
     Condition::Condition( const Condition& _condition )
     {
-        mpConstraint         = new smtrat::Constraint( _condition.constraint() );
+        mpConstraint         = _condition.pConstraint();
         mFlag                = _condition.flag();
         mRecentlyAdded       = false;
         mpOriginalConditions = new ConditionSet( _condition.originalConditions() );
@@ -103,7 +103,6 @@ namespace vs
      */
     Condition::~Condition()
     {
-        delete mpConstraint;
         (*mpOriginalConditions).clear();
         delete mpOriginalConditions;
     }

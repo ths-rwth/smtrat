@@ -93,7 +93,7 @@ namespace smtrat
         }
 
         const Constraint* constraint = (*_subformula)->pConstraint();
-        vs::Condition*    condition  = new vs::Condition( *constraint );
+        vs::Condition*    condition  = new vs::Condition( constraint );
         mReceivedConstraintsAsConditions[constraint] = condition;
 
         /*
@@ -133,7 +133,7 @@ namespace smtrat
                 vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
                 DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
                 ConditionVector condVector                   = ConditionVector();
-                condVector.push_back( new vs::Condition( *constraint, false, oConds, 0 ) );
+                condVector.push_back( new vs::Condition( constraint, false, oConds, 0 ) );
                 subResult.push_back( condVector );
                 subResults.push_back( subResult );
                 mpStateTree->addSubstitutionResults( subResults );
@@ -446,7 +446,7 @@ namespace smtrat
                                     if( debug )
                                     {
                                         cout << "*** Eliminate " << currentState->index() << " in ";
-                                        currentCondition->rConstraint().print( cout );
+                                        currentCondition->constraint().print( cout );
                                         cout << " creates:" << endl;
                                     }
                                     if( eliminate( currentState, currentState->index(), currentCondition ) )
@@ -775,7 +775,28 @@ namespace smtrat
                  * Create state ({b!=0} + oldConditions,
                  *                        [x -> -c/b]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 1 ), CR_NEQ,_eliminationVar, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, oConditions ) )
+                if( (*_currentState).addChild( coeffs.at( 1 ), CR_LESS,_eliminationVar, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, oConditions ) )
+                {
+                    if( constraint.relation() == CR_EQ )
+                    {
+                        if( coeffs.at( 1 ).info( info_flags::rational ) )
+                        {
+                            _currentState->rChildren().back()->setOriginalCondition( _condition );
+                            generatedTestCandidateBeingASolution = true;
+                        }
+                    }
+
+                    /*
+                     * Add its valuation to the current ranking.
+                     */
+                    insertDTinRanking( (*_currentState).rChildren().back() );
+                    numberOfAddedChildren++;
+                    if( debug )
+                    {
+                        (*(*_currentState).rChildren().back()).print( "   ", cout );
+                    }
+                }
+                if( (*_currentState).addChild( coeffs.at( 1 ), CR_GREATER,_eliminationVar, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, oConditions ) )
                 {
                     if( constraint.relation() == CR_EQ )
                     {
@@ -808,7 +829,28 @@ namespace smtrat
                  * Create state ({a==0, b!=0} + oldConditions,
                  *                        [x -> -c/b]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_EQ, coeffs.at( 1 ), CR_NEQ, _eliminationVar, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, oConditions ) )
+                if( (*_currentState).addChild( coeffs.at( 2 ), CR_EQ, coeffs.at( 1 ), CR_LESS, _eliminationVar, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, oConditions ) )
+                {
+                    if( constraint.relation() == CR_EQ )
+                    {
+                        if( coeffs.at( 2 ).info( info_flags::rational ) && coeffs.at( 1 ).info( info_flags::rational ) )
+                        {
+                            _currentState->rChildren().back()->setOriginalCondition( _condition );
+                            generatedTestCandidateBeingASolution = true;
+                        }
+                    }
+
+                    /*
+                     * Add its valuation to the current ranking.
+                     */
+                    insertDTinRanking( (*_currentState).rChildren().back() );
+                    numberOfAddedChildren++;
+                    if( debug )
+                    {
+                        (*(*_currentState).rChildren().back()).print( "   ", cout );
+                    }
+                }
+                if( (*_currentState).addChild( coeffs.at( 2 ), CR_EQ, coeffs.at( 1 ), CR_GREATER, _eliminationVar, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, oConditions ) )
                 {
                     if( constraint.relation() == CR_EQ )
                     {
@@ -834,7 +876,28 @@ namespace smtrat
                  * Create state ({a!=0, b^2-4ac>=0} + oldConditions,
                  *                        [x -> (-b+sqrt(b^2-4ac))/2a]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, -coeffs.at( 1 ), 1, 2 * coeffs.at( 2 ), radicand, subType, oConditions ) )
+                if( (*_currentState).addChild( coeffs.at( 2 ), CR_LESS, radicand, CR_GEQ, _eliminationVar, -coeffs.at( 1 ), 1, 2 * coeffs.at( 2 ), radicand, subType, oConditions ) )
+                {
+                    if( constraint.relation() == CR_EQ )
+                    {
+                        if( coeffs.at( 2 ).info( info_flags::rational ) && radicand.info( info_flags::rational ) )
+                        {
+                            _currentState->rChildren().back()->setOriginalCondition( _condition );
+                            generatedTestCandidateBeingASolution = true;
+                        }
+                    }
+
+                    /*
+                     * Add its valuation to the current ranking.
+                     */
+                    insertDTinRanking( (*_currentState).rChildren().back() );
+                    numberOfAddedChildren++;
+                    if( debug )
+                    {
+                        (*(*_currentState).rChildren().back()).print( "   ", cout );
+                    }
+                }
+                if( (*_currentState).addChild( coeffs.at( 2 ), CR_GREATER, radicand, CR_GEQ, _eliminationVar, -coeffs.at( 1 ), 1, 2 * coeffs.at( 2 ), radicand, subType, oConditions ) )
                 {
                     if( constraint.relation() == CR_EQ )
                     {
@@ -860,7 +923,28 @@ namespace smtrat
                  * Create state ({a!=0, b^2-4ac>0} + oldConditions,
                  *                        [x -> (-b-sqrt(b^2-4ac))/2a]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GREATER, _eliminationVar, -coeffs.at( 1 ), -1, 2 * coeffs.at( 2 ), radicand, subType, oConditions ) )
+                if( (*_currentState).addChild( coeffs.at( 2 ), CR_LESS, radicand, CR_GREATER, _eliminationVar, -coeffs.at( 1 ), -1, 2 * coeffs.at( 2 ), radicand, subType, oConditions ) )
+                {
+                    if( constraint.relation() == CR_EQ )
+                    {
+                        if( coeffs.at( 2 ).info( info_flags::rational ) && radicand.info( info_flags::rational ) )
+                        {
+                            _currentState->rChildren().back()->setOriginalCondition( _condition );
+                            generatedTestCandidateBeingASolution = true;
+                        }
+                    }
+
+                    /*
+                     * Add its valuation to the current ranking.
+                     */
+                    insertDTinRanking( (*_currentState).rChildren().back() );
+                    numberOfAddedChildren++;
+                    if( debug )
+                    {
+                        (*(*_currentState).rChildren().back()).print( "   ", cout );
+                    }
+                }
+                if( (*_currentState).addChild( coeffs.at( 2 ), CR_GREATER, radicand, CR_GREATER, _eliminationVar, -coeffs.at( 1 ), -1, 2 * coeffs.at( 2 ), radicand, subType, oConditions ) )
                 {
                     if( constraint.relation() == CR_EQ )
                     {
@@ -994,13 +1078,13 @@ namespace smtrat
             /*
              * The constraint to substitute in.
              */
-            Constraint& currentConstraint = (**cond).rConstraint();
+            const Constraint* currentConstraint = (**cond).pConstraint();
 
             /*
              * Does the condition contain the variable to substitute.
              */
-            symtab::iterator var = currentConstraint.rVariables().find( substitutionVariable );
-            if( var == currentConstraint.variables().end() )
+            symtab::const_iterator var = currentConstraint->variables().find( substitutionVariable );
+            if( var == currentConstraint->variables().end() )
             {
                 if( !anySubstitutionFailed )
                 {
@@ -1009,7 +1093,7 @@ namespace smtrat
                      * add the condition to the vector of conditions we just add to the
                      * states we create.
                      */
-                    oldConditions.push_back( new vs::Condition( (**cond).constraint(), (**cond).valuation() ) );
+                    oldConditions.push_back( new vs::Condition( currentConstraint, (**cond).valuation() ) );
                     oldConditions.back()->rOriginalConditions().insert( *cond );
                 }
             }
@@ -1060,7 +1144,7 @@ namespace smtrat
                                  */
                                 if( (**cons).isConsistent() != 1 )
                                 {
-                                    currentConjunction.push_back( new vs::Condition( **cons, _currentState->treeDepth() ) );
+                                    currentConjunction.push_back( new vs::Condition( *cons, _currentState->treeDepth() ) );
                                     currentConjunction.back()->rOriginalConditions().insert( *cond );
                                 }
                             }
@@ -1079,16 +1163,6 @@ namespace smtrat
                         condSet.insert( _currentState->pOriginalCondition() );
                     }
                     conflictSet.insert( condSet );
-                }
-                while( !disjunctionOfConsConj.empty() )
-                {
-                    while( !disjunctionOfConsConj.back().empty() )
-                    {
-                        Constraint*& rpCons = disjunctionOfConsConj.back().back();
-                        disjunctionOfConsConj.back().pop_back();
-                        delete rpCons;
-                    }
-                    disjunctionOfConsConj.pop_back();
                 }
             }
         }
@@ -1548,7 +1622,7 @@ namespace smtrat
         Formula::const_iterator cons = mpReceivedFormula->begin();
         while( cons != mpReceivedFormula->end() )
         {
-            vs::Condition* condition = new vs::Condition( (*cons)->constraint() );
+            vs::Condition* condition = new vs::Condition( (*cons)->pConstraint() );
             mReceivedConstraintsAsConditions[(*cons)->pConstraint()] = condition;
 
             /*
@@ -1569,7 +1643,7 @@ namespace smtrat
                  */
                 if( isConstraintConsistent == 2 )
                 {
-                    //              mpStateTree->rConditions().push_back( new Condition( **cons, 0 ) );
+                    //              mpStateTree->rConditions().push_back( new Condition( *cons, 0 ) );
                     //              (*(mpStateTree->rConditions()).back()).rRecentlyAdded() = true;
                     //              mpStateTree->rConditions().back()->rOriginalConditions().insert( cond->second );
 
@@ -1579,7 +1653,7 @@ namespace smtrat
                     vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
                     DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
                     ConditionVector condVector                   = ConditionVector();
-                    condVector.push_back( new vs::Condition( (*cons)->constraint(), false, oConds, 0 ) );
+                    condVector.push_back( new vs::Condition( (*cons)->pConstraint(), false, oConds, 0 ) );
                     subResult.push_back( condVector );
                     subResults.push_back( subResult );
                     mpStateTree->addSubstitutionResults( subResults );
@@ -1983,13 +2057,24 @@ namespace smtrat
                             {
                                 for( ConditionVector::const_iterator cond = _state->conditions().begin(); cond != _state->conditions().end(); ++cond )
                                 {
+                                    cout << (*cond)->constraint() << "  " << (*cond)->constraint().id() << endl;
+                                    cout << (*subformula)->constraint() << "  " << (*subformula)->constraint().id() << endl;
                                     if( (*cond)->constraint() == (*subformula)->constraint() )
                                     {
+                                        cout << "True" << endl << endl;
                                         conflict.insert( *cond );
                                         break;
                                     }
+                                    cout << "False" << endl << endl;
                                 }
                             }
+                            if( conflict.empty() )
+                            {
+                                _state->printAlone( "", cout );
+                                print();
+                                (*backend)->print();
+                            }
+                            assert( !conflict.empty() );
                             conflictSet.insert( conflict );
                         }
                         break;

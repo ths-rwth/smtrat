@@ -31,6 +31,7 @@
 
 #include "Constraint.h"
 #include "ConstraintPool.h"
+#include "Formula.h"
 
 using namespace std;
 using namespace GiNaC;
@@ -52,7 +53,6 @@ namespace smtrat
      */
     Constraint::Constraint():
         pLhs( new ex( 0 ) ),
-        pMultiRootLessLhs( NULL ),
         mVariables(),
         mRelation( CR_EQ ),
         mID( 0 )
@@ -62,12 +62,15 @@ namespace smtrat
 
     Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, unsigned _id ):
         pLhs( new ex( _lhs ) ),
-        pMultiRootLessLhs( NULL ),
         mVariables(),
         mRelation( _cr ),
         mID( _id )
     {
         normalize( rLhs() );
+        if( rLhs().info( info_flags::rational ) )
+        {
+            mID = 0;
+        }
         getVariables( rLhs(), mVariables );
         #ifdef TS_CONSTRAINT_SIMPLIFIER
         simplify();
@@ -76,12 +79,15 @@ namespace smtrat
 
     Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, unsigned _id ):
         pLhs( new ex( _lhs - _rhs ) ),
-        pMultiRootLessLhs( NULL ),
         mVariables(),
         mRelation( _cr ),
         mID( _id )
     {
         normalize( rLhs() );
+        if( rLhs().info( info_flags::rational ) )
+        {
+            mID = 0;
+        }
         getVariables( rLhs(), mVariables );
         #ifdef TS_CONSTRAINT_SIMPLIFIER
         simplify();
@@ -90,7 +96,6 @@ namespace smtrat
 
     Constraint::Constraint( const Constraint& _constraint ):
         pLhs( new ex( _constraint.lhs() ) ),
-        pMultiRootLessLhs( NULL ),
         mVariables( _constraint.variables() ),
         mRelation( _constraint.relation() ),
         mID( _constraint.id() )
@@ -102,7 +107,6 @@ namespace smtrat
     Constraint::~Constraint()
     {
         delete pLhs;
-        delete pMultiRootLessLhs;
     }
 
     /**
@@ -553,20 +557,8 @@ namespace smtrat
         }
     }
 
-    ex& Constraint::multiRootLessLhs( const symbol& _variable )
+    ex Constraint::multiRootLessLhs( const symbol& _variable ) const
     {
-        if( pMultiRootLessLhs != NULL )
-        {
-            if( pMultiRootLessLhs->first == ex( _variable ) )
-            {
-                return pMultiRootLessLhs->second;
-            }
-            else
-            {
-                pMultiRootLessLhs->first = ex( _variable );
-            }
-        }
-
         ex derivate            = lhs().diff( _variable, 1 );
         ex gcdOfLhsAndDerivate = gcd( lhs(), derivate );
         normalize( gcdOfLhsAndDerivate );
@@ -574,27 +566,12 @@ namespace smtrat
         if( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, quotient ) )
         {
             normalize( quotient );
-            if( pMultiRootLessLhs != NULL )
-            {
-                pMultiRootLessLhs->second = quotient;
-            }
-            else
-            {
-                pMultiRootLessLhs = new VS_MultiRootLessLhs( ex( _variable ), quotient );
-            }
+            return quotient;
         }
         else
         {
-            if( pMultiRootLessLhs != NULL )
-            {
-                pMultiRootLessLhs->second = lhs();
-            }
-            else
-            {
-                pMultiRootLessLhs = new VS_MultiRootLessLhs( ex( _variable ), lhs() );
-            }
+            return lhs();
         }
-        return pMultiRootLessLhs->second;
     }
 
     /**
@@ -1473,15 +1450,13 @@ namespace smtrat
      * @param _constraintA  The first constraint to merge.
      * @param _constraintB  The second constraint to merge.
      *
-     * @return  true,   if we can merge the two constraints to one constraint, e.g.
-     *                  p<0 or p=0 -> p<=0;    p<0 or p>0 -> p!=0;   p<0 or p>=0 -> True ...
-     *          false,  otherwise.
+     * @return
      */
-    bool Constraint::mergeConstraints( Constraint& _constraintA, const Constraint& _constraintB )
+    const Constraint* Constraint::mergeConstraints( const Constraint* _constraintA, const Constraint* _constraintB )
     {
-        symtab::const_iterator var1 = _constraintA.variables().begin();
-        symtab::const_iterator var2 = _constraintB.variables().begin();
-        while( var1 != _constraintA.variables().end() && var2 != _constraintB.variables().end() )
+        symtab::const_iterator var1 = _constraintA->variables().begin();
+        symtab::const_iterator var2 = _constraintB->variables().begin();
+        while( var1 != _constraintA->variables().end() && var2 != _constraintB->variables().end() )
         {
             if( strcmp( var1->first.c_str(), var2->first.c_str() ) == 0 )
             {
@@ -1493,397 +1468,353 @@ namespace smtrat
                 break;
             }
         }
-        if( var1 == _constraintA.variables().end() && var2 == _constraintB.variables().end() )
+        if( var1 == _constraintA->variables().end() && var2 == _constraintB->variables().end() )
         {
-            switch( _constraintA.relation() )
+            switch( _constraintA->relation() )
             {
                 case CR_EQ:
                 {
-                    switch( _constraintB.relation() )
+                    switch( _constraintB->relation() )
                     {
                         case CR_EQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_NEQ:
                         {
-                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            ex result1 = _constraintA->lhs() - _constraintB->lhs();
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                _constraintA.rLhs() = 0;
-                                return true;
+                                return Formula::newConstraint( 0, CR_EQ );
                             }
-                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                _constraintA.rLhs() = 0;
-                                return true;
+                                return Formula::newConstraint( 0, CR_EQ );
                             }
-                            return false;
+                            return NULL;
                         }
                         case CR_LESS:
                         {
-                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            ex result1 = _constraintA->lhs() - _constraintB->lhs();
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                _constraintA.rRelation() = CR_LEQ;
-                                return true;
+                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
                             }
-                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                _constraintA.rRelation() = CR_LEQ;
-                                return true;
+                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
                             }
-                            return false;
+                            return NULL;
                         }
                         case CR_GREATER:
                         {
-                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            ex result1 = _constraintA->lhs() - _constraintB->lhs();
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                _constraintA.rRelation() = CR_GEQ;
-                                return true;
+                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
                             }
-                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                _constraintA.rRelation() = CR_GEQ;
-                                return true;
+                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
                             }
-                            return false;
+                            return NULL;
                         }
                         case CR_LEQ:
                         {
-                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            ex result1 = _constraintA->lhs() - _constraintB->lhs();
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                _constraintA.rRelation() = CR_LEQ;
-                                return true;
+                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
                             }
-                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                _constraintA.rRelation() = CR_LEQ;
-                                return true;
+                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
                             }
-                            return false;
+                            return NULL;
                         }
                         case CR_GEQ:
                         {
-                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            ex result1 = _constraintA->lhs() - _constraintB->lhs();
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                _constraintA.rRelation() = CR_GEQ;
-                                return true;
+                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
                             }
-                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                _constraintA.rRelation() = CR_GEQ;
-                                return true;
+                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
                             }
-                            return false;
+                            return NULL;
                         }
                         default:
-                            return false;
+                            return NULL;
                     }
                 }
                 case CR_NEQ:
                 {
-                    switch( _constraintB.relation() )
+                    switch( _constraintB->relation() )
                     {
                         case CR_EQ:
                         {
-                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            ex result1 = _constraintA->lhs() - _constraintB->lhs();
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                _constraintA.rLhs() = 1;
-                                return true;
+                                return Formula::newConstraint( 0, CR_EQ );
                             }
-                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                _constraintA.rLhs() = 1;
-                                return true;
+                                return Formula::newConstraint( 0, CR_EQ );
                             }
-                            return false;
+                            return NULL;
                         }
                         case CR_NEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_LESS:
                         {
-                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            ex result1 = _constraintA->lhs() - _constraintB->lhs();
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return true;
+                                return _constraintA;
                             }
-                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return true;
+                                return _constraintA;
                             }
-                            return false;
+                            return NULL;
                         }
                         case CR_GREATER:
                         {
-                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            ex result1 = _constraintA->lhs() - _constraintB->lhs();
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return true;
+                                return _constraintA;
                             }
-                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return true;
+                                return _constraintA;
                             }
-                            return false;
+                            return NULL;
                         }
                         case CR_LEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_GEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         default:
-                            return false;
+                            return NULL;
                     }
                 }
                 case CR_LESS:
                 {
-                    switch( _constraintB.relation() )
+                    switch( _constraintB->relation() )
                     {
                         case CR_EQ:
                         {
-                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            ex result1 = _constraintA->lhs() - _constraintB->lhs();
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                _constraintA.rRelation() = CR_LEQ;
-                                return true;
+                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
                             }
-                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                _constraintA.rRelation() = CR_LEQ;
-                                return true;
+                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
                             }
-                            return false;
+                            return NULL;
                         }
                         case CR_NEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_LESS:
                         {
-                            ex result1 = _constraintA.lhs() + _constraintB.lhs();
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                _constraintA.rRelation() = CR_NEQ;
-                                return true;
-                            }
-                            return false;
+                            return NULL;
                         }
                         case CR_GREATER:
                         {
-                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                _constraintA.rRelation() = CR_NEQ;
-                                return true;
-                            }
-                            return false;
+                            return NULL;
                         }
                         case CR_LEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_GEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         default:
-                            return false;
+                            return NULL;
                     }
                 }
                 case CR_GREATER:
                 {
-                    switch( _constraintB.relation() )
+                    switch( _constraintB->relation() )
                     {
                         case CR_EQ:
                         {
-                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            ex result1 = _constraintA->lhs() - _constraintB->lhs();
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                _constraintA.rRelation() = CR_GEQ;
-                                return true;
+                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
                             }
-                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                _constraintA.rRelation() = CR_GEQ;
-                                return true;
+                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
                             }
-                            return false;
+                            return NULL;
                         }
                         case CR_NEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_LESS:
                         {
-                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                _constraintA.rRelation() = CR_NEQ;
-                                return true;
-                            }
-                            return false;
+                            return NULL;
                         }
                         case CR_GREATER:
                         {
-                            ex result1 = _constraintA.lhs() + _constraintB.lhs();
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                _constraintA.rRelation() = CR_NEQ;
-                                return true;
-                            }
-                            return false;
+                            return NULL;
                         }
                         case CR_LEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_GEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         default:
-                            return false;
+                            return NULL;
                     }
                 }
                 case CR_LEQ:
                 {
-                    switch( _constraintB.relation() )
+                    switch( _constraintB->relation() )
                     {
                         case CR_EQ:
                         {
-                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            ex result1 = _constraintA->lhs() - _constraintB->lhs();
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return true;
+                                return _constraintA;
                             }
-                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return true;
+                                return _constraintA;
                             }
-                            return false;
+                            return NULL;
                         }
                         case CR_NEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_LESS:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_GREATER:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_LEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_GEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         default:
-                            return false;
+                            return NULL;
                     }
                 }
                 case CR_GEQ:
                 {
-                    switch( _constraintB.relation() )
+                    switch( _constraintB->relation() )
                     {
                         case CR_EQ:
                         {
-                            ex result1 = _constraintA.lhs() - _constraintB.lhs();
+                            ex result1 = _constraintA->lhs() - _constraintB->lhs();
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return true;
+                                return _constraintA;
                             }
-                            ex result2 = _constraintA.lhs() + _constraintB.lhs();
+                            ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return true;
+                                return _constraintA;
                             }
-                            return false;
+                            return NULL;
                         }
                         case CR_NEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_LESS:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_GREATER:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_LEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         case CR_GEQ:
                         {
-                            return false;
+                            return NULL;
                         }
                         default:
-                            return false;
+                            return NULL;
                     }
                 }
                 default:
-                    return false;
+                    return NULL;
             }
         }
         else
         {
-            return false;
+            return NULL;
         }
     }
 

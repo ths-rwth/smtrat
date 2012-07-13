@@ -200,6 +200,17 @@ command:
 		GiNaC::parser reader( driver.formulaRoot->rRealValuedVars() );
 		try
 		{
+            for( std::map< const std::string, const std::string >::const_iterator iter = driver.realsymbolpartsToReplace.begin();
+                 iter != driver.realsymbolpartsToReplace.end(); ++iter )
+            {
+                if( $3->find( iter->second ) != std::string::npos )
+                {
+                    std::string errstr = std::string( "The name of a real variable constains " + iter->second + ", which is already internally used!");
+                    error( yyloc, errstr );
+                    break;
+                }
+                *$3 = driver.replace( *$3, iter->first, iter->second );
+            }
 			std::string s = *$3;
 			reader( s );
 		}
@@ -372,6 +383,11 @@ term :
         std::map<std::string, std::string>::iterator iter = driver.collectedRealAuxilliaries.find( *$1 );
    		if( iter == driver.collectedRealAuxilliaries.end() )
    		{
+            for( std::map< const std::string, const std::string >::const_iterator iter = driver.realsymbolpartsToReplace.begin();
+                 iter != driver.realsymbolpartsToReplace.end(); ++iter )
+            {
+                *$1 = driver.replace( *$1, iter->first, iter->second );
+            }
             if( driver.formulaRoot->realValuedVars().find( *$1 ) == driver.formulaRoot->realValuedVars().end() )
             {
                 std::string errstr = std::string( "The variable " + *$1 + " is not defined!");

@@ -718,19 +718,19 @@ namespace vs
                                 || ((**cond1).constraint().relation() == smtrat::CR_LEQ && (**cond2).constraint().relation() == smtrat::CR_GEQ)
                                 || ((**cond1).constraint().relation() == smtrat::CR_LEQ && (**cond2).constraint().relation() == smtrat::CR_LEQ) )
                         {
-                            (**cond2).rConstraint().rRelation() = smtrat::CR_EQ;
+                            (**cond2).changeRelationTo( smtrat::CR_EQ );
                             (**cond2).rRecentlyAdded()          = true;
                         }
                         else if( ((**cond1).constraint().relation() == smtrat::CR_NEQ && (**cond2).constraint().relation() == smtrat::CR_GEQ)
                                  || ((**cond1).constraint().relation() == smtrat::CR_GEQ && (**cond2).constraint().relation() == smtrat::CR_NEQ) )
                         {
-                            (**cond2).rConstraint().rRelation() = smtrat::CR_GREATER;
+                            (**cond2).changeRelationTo( smtrat::CR_GREATER );
                             (**cond2).rRecentlyAdded()          = true;
                         }
                         else if( ((**cond1).constraint().relation() == smtrat::CR_NEQ && (**cond2).constraint().relation() == smtrat::CR_LEQ)
                                  || ((**cond1).constraint().relation() == smtrat::CR_LEQ && (**cond2).constraint().relation() == smtrat::CR_NEQ) )
                         {
-                            (**cond2).rConstraint().rRelation() = smtrat::CR_LESS;
+                            (**cond2).changeRelationTo( smtrat::CR_LESS );
                             (**cond2).rRecentlyAdded()          = true;
                         }
                         else
@@ -1357,7 +1357,7 @@ namespace vs
              */
             for( ConditionVector::const_iterator newCond = newCombination.begin(); newCond != newCombination.end(); ++newCond )
             {
-                addCondition( (**newCond).constraint(), (**newCond).originalConditions(), (**newCond).valuation(), true );
+                addCondition( (**newCond).pConstraint(), (**newCond).originalConditions(), (**newCond).valuation(), true );
             }
             while( !newCombination.empty() )
             {
@@ -1551,7 +1551,7 @@ namespace vs
      *
      * @sideeffect  The state can obtain a new condition.
      */
-    void State::addCondition( const smtrat::Constraint& _constraint,
+    void State::addCondition( const smtrat::Constraint* _constraint,
                               const ConditionSet& _originalConditions,
                               const unsigned _valutation,
                               const bool _recentlyAdded )
@@ -1564,7 +1564,7 @@ namespace vs
          * Check if the constraint is variable-free and consistent.
          * If so, discard it.
          */
-        unsigned constraintConsistency = _constraint.isConsistent();
+        unsigned constraintConsistency = _constraint->isConsistent();
 
         assert( constraintConsistency != 0 );
 
@@ -1599,7 +1599,7 @@ namespace vs
                 /*
                  * Does the constraint contain the variable to eliminate.
                  */
-                if( _constraint.variables().find( index() ) == _constraint.variables().end()
+                if( _constraint->variables().find( index() ) == _constraint->variables().end()
                         || constraintWithFinitlyManySolutionCandidatesInIndexExists )
                 {
                     rConditions().push_back( new Condition( _constraint, true, _originalConditions, _valutation, _recentlyAdded ) );
@@ -1721,7 +1721,7 @@ namespace vs
                                         {
                                             ConditionSet oConds = ConditionSet();
                                             oConds.insert( *oCond );
-                                            conditionsToAdd.push_back( new Condition( (**oCond).constraint(), false, oConds, (**cond).valuation() ) );
+                                            conditionsToAdd.push_back( new Condition( (**oCond).pConstraint(), false, oConds, (**cond).valuation() ) );
                                             ++oCond;
                                         }
                                         Condition* rpCond = *cond;
@@ -2077,8 +2077,7 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
         #endif
-        smtrat::Constraint * cons;
-        cons = new smtrat::Constraint( _lhsCondition, _relationCondition );
+        const smtrat::Constraint * cons = smtrat::Formula::newConstraint( _lhsCondition, _relationCondition );
         unsigned isConsConsistent = (*cons).isConsistent();
         if( isConsConsistent != 0 )
         {
@@ -2096,7 +2095,7 @@ namespace vs
                     subResults.push_back( DisjunctionOfConditionConjunctions() );
                     subResults.back().push_back( ConditionVector() );
 
-                    subResults.back().back().push_back( new Condition( *cons, false, _oConditions, (*state).treeDepth(), false ) );
+                    subResults.back().back().push_back( new Condition( cons, false, _oConditions, (*state).treeDepth(), false ) );
 
                     state->addSubstitutionResults( subResults );
                     state->rStateType() = SUBSTITUTION_TO_APPLY;
@@ -2105,20 +2104,17 @@ namespace vs
                 rChildren().push_back( state );
                 delete sqEx;
                 delete sub;
-                delete cons;
                 return true;
             }
             else
             {
                 delete sqEx;
                 delete sub;
-                delete cons;
                 return false;
             }
         }
         else
         {
-            delete cons;
             return false;
         }
     }
@@ -2141,7 +2137,7 @@ namespace vs
      * @param _subTermDenom         The denominator of the term to which the variable is mapped.
      * @param _substitutionType     The type of the substitution we create.
      *
-     * @return True, if a state was sucessfully added.
+     * @return True, if a state was successfully added.
      */
     bool State::addChild( const ex& _lhsCondition1,
                           const smtrat::Constraint_Relation& _relationCondition1,
@@ -2158,13 +2154,11 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
         #endif
-        smtrat::Constraint * cons1;
-        cons1 = new smtrat::Constraint( _lhsCondition1, _relationCondition1 );
+        const smtrat::Constraint* cons1 = smtrat::Formula::newConstraint( _lhsCondition1, _relationCondition1 );
         unsigned isCons1Consistent = (*cons1).isConsistent();
         if( isCons1Consistent != 0 )
         {
-            smtrat::Constraint * cons2;
-            cons2 = new smtrat::Constraint( _lhsCondition2, _relationCondition2 );
+            const smtrat::Constraint* cons2 = smtrat::Formula::newConstraint( _lhsCondition2, _relationCondition2 );
             unsigned isCons2Consistent = (*cons2).isConsistent();
             if( isCons2Consistent != 0 )
             {
@@ -2183,11 +2177,11 @@ namespace vs
 
                     if( isCons1Consistent != 1 )
                     {
-                        subResults.back().back().push_back( new Condition( *cons1, false, _oConditions, (*state).treeDepth(), false ) );
+                        subResults.back().back().push_back( new Condition( cons1, false, _oConditions, (*state).treeDepth(), false ) );
                     }
                     if( isCons2Consistent != 1 )
                     {
-                        subResults.back().back().push_back( new Condition( *cons2, false, _oConditions, (*state).treeDepth(), false ) );
+                        subResults.back().back().push_back( new Condition( cons2, false, _oConditions, (*state).treeDepth(), false ) );
                     }
                     if( !subResults.back().back().empty() )
                     {
@@ -2198,29 +2192,22 @@ namespace vs
                     rChildren().push_back( state );
                     delete sqEx;
                     delete sub;
-                    delete cons1;
-                    delete cons2;
                     return true;
                 }
                 else
                 {
                     delete sqEx;
                     delete sub;
-                    delete cons1;
-                    delete cons2;
                     return false;
                 }
             }
             else
             {
-                delete cons1;
-                delete cons2;
                 return false;
             }
         }
         else
         {
-            delete cons1;
             return false;
         }
     }

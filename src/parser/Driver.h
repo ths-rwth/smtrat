@@ -99,6 +99,8 @@ namespace smtrat
              * e.g. to a dialog box. */
             void error( const std::string& m );
 
+            static std::string replace( const std::string, const std::string, const std::string );
+
             /** Pointer to the current lexer instance, this is used to connect the
              * parser to the scanner. It is used in the yylex macro. */
             class Scanner *lexer;
@@ -112,6 +114,8 @@ namespace smtrat
             std::map<std::string, std::string> collectedRealAuxilliaries;
 
             int status;
+
+            std::map< const std::string, const std::string > realsymbolpartsToReplace;
     };
 
 }    // namespace smtrat

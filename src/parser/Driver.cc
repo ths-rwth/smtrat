@@ -44,8 +44,25 @@ namespace smtrat
         formulaRoot( _formulaRoot ),
         collectedBooleans( std::set<std::string>() ),
         collectedRealAuxilliaries( std::map<std::string, std::string>() ),
-        status( -1 )
-    {}
+        status( -1 ),
+        realsymbolpartsToReplace()
+    {
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "~", "__tilde__" ) );
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "!", "__exclamation__" ) );
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "@", "__at_sign__" ) );
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "$", "__dollar__" ) );
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "!", "__percent__" ) );
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "^", "__caret__" ) );
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "&", "__ampersand__" ) );
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "-", "__minus__" ) );
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "+", "__plus__" ) );
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "<", "__less__" ) );
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( ">", "__greater__" ) );
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( ".", "__dot__" ) );
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "?", "__question__" ) );
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "\"", "__quotation__" ) );
+        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "/", "__slash__" ) );
+    }
 
     Driver::~Driver()
     {
@@ -86,6 +103,20 @@ namespace smtrat
     void Driver::error( const std::string& m )
     {
         std::cerr << m << std::endl;
+    }
+
+    std::string Driver::replace( const std::string _toReplaceIn, const std::string _replace, const std::string _by )
+    {
+        std::string result = std::string( _toReplaceIn );
+        size_t index = result.find( _replace );
+        while( index!=std::string::npos )
+        {
+            result.erase( index, _replace.size() );
+            result.insert( index, _by );
+            index = result.find( _replace, index );
+        }
+
+        return result;
     }
 
 }    // namespace smtrat

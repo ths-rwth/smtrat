@@ -63,7 +63,6 @@ namespace smtrat
             return strcmp( s1.c_str(), s2.c_str() ) < 0;
         }
     };
-    typedef std::pair<GiNaC::ex, GiNaC::ex> VS_MultiRootLessLhs;
 
     /**
      * Class to create a constraint object.
@@ -79,7 +78,6 @@ namespace smtrat
              * Attributes:
              */
             GiNaC::ex*           pLhs;
-            VS_MultiRootLessLhs* pMultiRootLessLhs;
             GiNaC::symtab        mVariables;
             Constraint_Relation  mRelation;
             unsigned             mID;
@@ -165,7 +163,7 @@ namespace smtrat
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
 
             // Data access methods (read and write).
-            GiNaC::ex& multiRootLessLhs( const GiNaC::symbol& );
+            GiNaC::ex multiRootLessLhs( const GiNaC::symbol& ) const;
 
             // Operators.
             bool operator <( const Constraint& ) const;
@@ -182,7 +180,7 @@ namespace smtrat
 
             //
             static signed compare( const Constraint&, const Constraint& );
-            static bool mergeConstraints( Constraint&, const Constraint& );
+            static const Constraint* mergeConstraints( const Constraint*, const Constraint* );
             static bool combineConstraints( const Constraint&, const Constraint&, const Constraint& );
         private:
             void getVariables( const GiNaC::ex&, GiNaC::symtab& );
