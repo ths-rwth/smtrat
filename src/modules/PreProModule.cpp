@@ -36,23 +36,27 @@ using namespace GiNaC;
 
 //#define SIMPLIFY_CLAUSES
 #define ADD_LEARNING_CLAUSES
-//#define ADD_NEGATED_LEARNING_CLAUSES
-//#define PROCEED_SUBSTITUTION
-//#define ASSIGN_ACTIVITIES
+//#define ADD_NEGATED_LEARNING_CLAUSES                                          
+//#define PROCEED_SUBSTITUTION                                                  // Substitutes variables ( ONlY USABLE FOR FORMULAS WITH XOR)
+//#define ASSIGN_ACTIVITIES                                                       // Assigns activities between 0 and (100 * scale) 
 
+//#define CONSIDER_ONLY_HIGHEST_DEGREE_FOR_VAR_ACTIVITY                           // Requires ASSIGN_ACTIVITIES
+//#define CHECK_FOR_TAUTOLOGIES                                                 // Requires SIMPLIFY_CLAUSES 
 
 //#define PRINT_RUNTIME
+//#define PRINT_CONSTRAINTS
 
-static const double scale = 1;                                               // value to scale the balance between the activities
-static const double weightOfVarDegrees = -10;
-static const double weightOfQuantities = 20;
-static const double weightOfRelationSymbols = 20;
-static const double weight_CR_EQ = -5;
-static const double weight_CR_NEQ = 10;
-static const double weight_CR_LESS = 5;
-static const double weight_CR_GREATER = 5;
-static const double weight_CR_LEQ = 5;
-static const double weight_CR_GEQ = 5;
+static const double scale = 1;                                                  // value to scale the balance between the activities
+static const double weightOfVarDegrees = -1;
+static const double weightOfConDegrees = -3;
+static const double weightOfVarQuantities = 1;
+static const double weightOfConQuantities = 1;
+static const double weightOfRelationSymbols = 1;
+static const double weight_CR_EQ = 1;
+static const double weight_CR_LESS = 1;
+static const double weight_CR_GREATER = 1;
+static const double weight_CR_LEQ = 1;
+static const double weight_CR_GEQ = 1;
 
 namespace smtrat
 {
@@ -70,9 +74,16 @@ namespace smtrat
         mSubstitutionOrigins( std::vector<vec_set_const_pFormula>() ),
         mNumberOfVariables( std::map<std::string, unsigned>() ),
         mSubstitutions( std::vector<pair<pair<std::string, bool>, pair<pair<GiNaC::symtab, GiNaC::symtab>, pair<GiNaC::ex, GiNaC::ex> > > >() ),
-        mVariableActivities( std::map< std::pair< std::string, GiNaC::ex>, double>() ),
-        mActivityConstraints( std::vector<const Constraint*>() ),
-        mLastCheckedActivityConstraint( std::vector<const Constraint*>::iterator() )
+        mVariableActivities( std::map< std::string, std::pair<double, double>>() ),
+        mConstraintActivities( std::map< const Constraint*, std::pair< std::pair<double,double>, std::pair<double,double> > > () ),
+        mMaxRelWeight( 0 ),
+        mMaxVarDegreeActivity( 0 ),
+        mMaxConDegreeActivity( 0 ),
+        mMaxVarQuantityActivity( 0 ),
+        mMaxConQuantityActivity( 0 ),
+        mActivities( std::map< const Constraint*, double>() ),
+        mMinActivity( INFINITY ),
+        mMaxActivity( -INFINITY )
     {
         this->mModuleType = MT_PreProModule;
     }
@@ -147,7 +158,7 @@ namespace smtrat
             proceedSubstitution();
 #endif
 #ifdef ASSIGN_ACTIVITIES
-            assignActivities( scale, weightOfVarDegrees, weightOfQuantities, weightOfRelationSymbols );
+            assignActivities();
 #endif
         }
         mNewFormulaReceived = false;
@@ -167,79 +178,44 @@ namespace smtrat
     /*
      * Assigns Activities considering parameters to each Formula of Type REALCONSTRAINT
      */
-    void PreProModule::assignActivities(double _Scale, double _wDegree, double _wQuantities, double _wRelation)
+    void PreProModule::assignActivities()
     {
-        //---------------------------------------------------------------------- Collect Constraints of Passed Formula
-        for( Formula::iterator it = mLastCheckedFormula; it != mpPassedFormula->end(); ++it )
+        // Determine upper bound for Relation Symbol
+        if( weight_CR_GEQ > mMaxRelWeight) mMaxRelWeight = weight_CR_GEQ;
+        else if( weight_CR_LEQ > mMaxRelWeight) mMaxRelWeight = weight_CR_LEQ;
+        else if( weight_CR_LESS > mMaxRelWeight) mMaxRelWeight = weight_CR_LESS;
+        else if( weight_CR_GREATER > mMaxRelWeight) mMaxRelWeight = weight_CR_GREATER;
+        // Generate Activities for Variables
+        generateVarActivitiesInDatabase( mpPassedFormula );
+        // Generate Activities for Constraints
+        generateConActivitiesInDatabase( mpPassedFormula );
+        // Determine upper bounds for Constraint ( Constraint Degree, sum Variables Quantity, (sum)Variables Degrees)
+        for( std::map< const Constraint*, std::pair< std::pair< double, double>, std::pair<double, double> > >::iterator 
+        i = mConstraintActivities.begin(); i != mConstraintActivities.end(); ++i )
         {
-            (*it)->getConstraints( mActivityConstraints );
+            if( (*i).second.first.first > mMaxVarQuantityActivity ) mMaxVarQuantityActivity = (*i).second.first.first;
+            if( (*i).second.first.second > mMaxConQuantityActivity ) mMaxConQuantityActivity = (*i).second.first.second;
+            if( (*i).second.second.first > mMaxVarDegreeActivity ) mMaxVarDegreeActivity = (*i).second.second.first;
+            if( (*i).second.second.second > mMaxConDegreeActivity ) mMaxConDegreeActivity = (*i).second.second.second;
         }
-        //---------------------------------------------------------------------- Analyse Data and assign values
-        if( !( mLastCheckedActivityConstraint > mActivityConstraints.begin() ) )mLastCheckedActivityConstraint = mActivityConstraints.begin();
-        // Create Activies for Variables
-        std::vector<const Constraint*>::iterator citerator = mLastCheckedActivityConstraint;
-        while( citerator != mActivityConstraints.end() )
-        {
-            GiNaC::symtab var = (*citerator)->variables();
-            for(std::map< std::string, GiNaC::ex>::iterator varit = var.begin(); varit != var.end(); ++varit )
-            {
-                mVariableActivities[ *varit ] += _wQuantities;
-                for( signed i = (*citerator)->lhs().ldegree((*varit).second); i <= (*citerator)->lhs().degree((*varit).second); ++i )
-                {
-                    if( (*citerator)->lhs().coeff( varit->second, i ) != 0 && i != 0 )
-                    {
-                        mVariableActivities[ *varit ] += i*_wDegree;
-                    }
-                }
-            }
-            ++citerator;
-        }
-        // Generate Activities for Relation Symbol and add Variable Acitivies
-        assignActivitiesfromDatabase( mpPassedFormula, _wRelation, _Scale );
+        // Calculate Final Activities from Database
+        generateFinalActivitiesInDatabase( mpPassedFormula );
+        // Normalize Activities and assign to PassedFormula
+        assignActivitiesFromDatabase( mpPassedFormula );
     }
 
-    /*
-     * Rekursively used help function which is user by assignActivities()
-     * Only use if mVariableActivities and mActivityConstraint is up to date
-    */
-    double PreProModule::assignActivitiesfromDatabase( Formula* _Formula, double _wRelation, double _Scale)
+    void PreProModule::assignActivitiesFromDatabase( Formula* _Formula )
     {
-        double activity = 0;
         if( _Formula->getType() == REALCONSTRAINT )
         {
-            const Constraint t_constraint = _Formula->constraint();
-            switch( t_constraint.relation() )
-            {
-                case CR_EQ:
-                    activity = weight_CR_EQ * _wRelation;
-                    break;
-                case CR_NEQ:
-                    activity = weight_CR_NEQ * _wRelation;
-                    break;
-                case CR_GEQ:
-                    activity = weight_CR_GEQ * _wRelation;
-                    break;
-                case CR_LEQ:
-                    activity = weight_CR_LEQ * _wRelation;
-                    break;
-                case CR_LESS:
-                    activity = weight_CR_LESS * _wRelation;
-                    break;
-                case CR_GREATER:
-                    activity = weight_CR_GREATER * _wRelation;
-                    break;
-                default:
-                    assert( "No Relation defined!");
-                    activity = 0;
-            }
-            GiNaC::symtab var = t_constraint.variables();
-            for( GiNaC::symtab::const_iterator iteratorvar = var.begin(); iteratorvar != var.end(); ++iteratorvar )
-            {
-                activity += mVariableActivities[ *iteratorvar ];
-            }
-            activity = activity * _Scale;
-            _Formula->setActivity( activity );
-            return activity;
+            double normalizedactivity = (mActivities[ _Formula->pConstraint() ] - mMinActivity )/(mMaxActivity-mMinActivity)*100;
+            assert( normalizedactivity >= 0);
+            assert( normalizedactivity <= 100);
+            _Formula->setActivity( normalizedactivity*scale );
+#ifdef PRINT_CONSTRAINTS
+            _Formula->print();
+            cout << endl;
+#endif
         }
         else if( _Formula->getType() == AND || _Formula->getType() == OR || _Formula->getType() == NOT
                 || _Formula->getType() == IFF || _Formula->getType() == XOR || _Formula->getType() == IMPLIES )
@@ -247,12 +223,144 @@ namespace smtrat
             Formula::iterator fiterator = _Formula->begin();
             while( fiterator != _Formula->end() )
             {
-                assignActivitiesfromDatabase( (*fiterator), _wRelation, _Scale );
+                assignActivitiesFromDatabase( (*fiterator) );
                 ++fiterator;
             }
-            return 0;
         }
-        return 0;
+    }
+    
+    void PreProModule::generateConActivitiesInDatabase( Formula* _Formula )
+    {
+        
+        if( _Formula->getType() == REALCONSTRAINT )
+        {
+            const Constraint* t_constraint = _Formula->pConstraint();
+            if( mConstraintActivities.find( t_constraint ) == mConstraintActivities.end() )
+            {
+               GiNaC::symtab var = t_constraint->variables();
+                for( GiNaC::symtab::const_iterator iteratorvar = var.begin(); iteratorvar != var.end(); ++iteratorvar )
+                {
+                    // How many times does the Variable appear in all formulas
+                    mConstraintActivities[ t_constraint ].first.first += mVariableActivities[ (*iteratorvar).first ].first;
+                    // How hard are the variables (degree in all formulas)
+                    mConstraintActivities[ t_constraint ].second.first += mVariableActivities[ (*iteratorvar).first ].second;
+                    // How hard (degree) is the constraint
+                    for( signed i = t_constraint->lhs().ldegree((*iteratorvar).second); i <= t_constraint->lhs().degree((*iteratorvar).second); ++i )
+                    {
+                        if( t_constraint->lhs().coeff( (*iteratorvar).second, (int)i ) != 0 && i != 0)
+                        {
+                            mConstraintActivities[ t_constraint ].second.second += i;
+                        }
+                    }
+                } 
+            }
+            mConstraintActivities[ t_constraint ].first.second += 1;
+        }
+        else if( _Formula->getType() == AND || _Formula->getType() == OR || _Formula->getType() == NOT
+                || _Formula->getType() == IFF || _Formula->getType() == XOR || _Formula->getType() == IMPLIES )
+        {
+            Formula::iterator fiterator = _Formula->begin();
+            while( fiterator != _Formula->end() )
+            {
+                generateConActivitiesInDatabase( (*fiterator) );
+                ++fiterator;
+            }
+        }
+    }
+    /*
+     * Rekursively used help function which is user by assignActivities()
+     * Only use if mVariableActivities and mActivityConstraint is up to date
+    */
+    void PreProModule::generateVarActivitiesInDatabase( Formula* _Formula )
+    {
+        if( _Formula->getType() == REALCONSTRAINT )
+        {
+            const Constraint* t_constraint = &_Formula->constraint();
+            GiNaC::symtab var = t_constraint->variables();
+            for( GiNaC::symtab::const_iterator iteratorvar = var.begin(); iteratorvar != var.end(); ++iteratorvar )
+            {
+                mVariableActivities[ (*iteratorvar).first ].first += 1;
+#ifdef CONSIDER_ONLY_HIGHEST_DEGREE_FOR_VAR_ACTIVITY
+                if( mVariableActivities[ (*iteratorvar).first ].second < t_constraint->lhs().degree( (*iteratorvar).second ) )
+                        mVariableActivities[ (*iteratorvar).first ].second += t_constraint->lhs().degree( (*iteratorvar).second );
+#else
+                double t_activity = 0;
+                for( signed i = t_constraint->lhs().ldegree((*iteratorvar).second); i <= t_constraint->lhs().degree((*iteratorvar).second); ++i )
+                {
+                    if( t_constraint->lhs().coeff( (*iteratorvar).second, i ) != 0 && i != 0 )
+                    {
+                        t_activity += i;
+                    }
+                }
+                if( mVariableActivities[ (*iteratorvar).first ].second < t_activity )
+                        mVariableActivities[ (*iteratorvar).first ].second = t_activity;
+#endif
+            }
+        }
+        else if( _Formula->getType() == AND || _Formula->getType() == OR || _Formula->getType() == NOT
+                || _Formula->getType() == IFF || _Formula->getType() == XOR || _Formula->getType() == IMPLIES )
+        {
+            Formula::iterator fiterator = _Formula->begin();
+            while( fiterator != _Formula->end() )
+            {
+                generateVarActivitiesInDatabase( (*fiterator) );
+                ++fiterator;
+            }
+        }
+    }
+    
+    void PreProModule::generateFinalActivitiesInDatabase( Formula* _Formula )
+    {
+        double activity = 0;
+        if( _Formula->getType() == REALCONSTRAINT )
+        {        
+            const Constraint* t_constraint = _Formula->pConstraint();
+            if( mActivities.find( t_constraint ) == mActivities.end() )
+            {                
+                if( mMaxVarQuantityActivity != 0 && weightOfVarQuantities != 0 ) activity += mConstraintActivities[ t_constraint ].first.first * weightOfVarQuantities * 20 / mMaxVarQuantityActivity;
+                if( mMaxConQuantityActivity != 0 && weightOfConQuantities != 0 ) activity += mConstraintActivities[ t_constraint ].first.second * weightOfConQuantities * 20 / mMaxConQuantityActivity;
+                if( mMaxVarDegreeActivity != 0 && weightOfVarDegrees != 0 ) activity += mConstraintActivities[ t_constraint ].second.first * weightOfVarDegrees * 20 / mMaxVarDegreeActivity;
+                if( mMaxConDegreeActivity != 0 && weightOfConDegrees != 0 ) activity += mConstraintActivities[ t_constraint ].second.second * weightOfConDegrees * 20 / mMaxConDegreeActivity;
+                if( mMaxRelWeight != 0 && weightOfRelationSymbols != 0 )
+                {
+                    switch( (*t_constraint).relation() )
+                    {
+                        case CR_EQ:
+                            activity += weight_CR_EQ * weightOfRelationSymbols * 20 / mMaxRelWeight;
+                            break;
+                        case CR_GEQ:
+                            activity += weight_CR_GEQ * weightOfRelationSymbols * 20 / mMaxRelWeight;
+                            break;
+                        case CR_LEQ:
+                            activity += weight_CR_LEQ * weightOfRelationSymbols * 20 / mMaxRelWeight;
+                            break;
+                        case CR_LESS:
+                            activity += weight_CR_LESS * weightOfRelationSymbols * 20 / mMaxRelWeight;
+                            break;
+                        case CR_GREATER:
+                            activity += weight_CR_GREATER * weightOfRelationSymbols * 20 / mMaxRelWeight;
+                            break;
+                        default:
+                            assert( t_constraint->relation() != CR_NEQ);
+                            assert( "No Relation defined!");
+                            activity = 0;
+                    }
+                }
+                mActivities[ t_constraint ] = activity; 
+                if( activity < mMinActivity ) mMinActivity = activity;
+                if( activity > mMaxActivity ) mMaxActivity = activity;
+            }
+        }
+        else if( _Formula->getType() == AND || _Formula->getType() == OR || _Formula->getType() == NOT
+                || _Formula->getType() == IFF || _Formula->getType() == XOR || _Formula->getType() == IMPLIES )
+        {
+            Formula::iterator fiterator = _Formula->begin();
+            while( fiterator != _Formula->end() )
+            {
+                generateFinalActivitiesInDatabase( (*fiterator) );
+                ++fiterator;
+            }
+        }
     }
 
     /*
@@ -260,12 +368,14 @@ namespace smtrat
      */
     void PreProModule::simplifyClauses()
     {
-//        std::vector<const Constraint*> essentialConstraints;
-//        for( Formula::const_iterator iterator = mpPassedFormula->begin(); iterator != mpPassedFormula->end(); ++iterator )
-//        {
-//            if( (*iterator)->getType() == REALCONSTRAINT )
-//                (*iterator)->getConstraints( essentialConstraints );
-//        }
+#ifdef CHECK_FOR_TAUTOLOGIES
+        std::vector<const Constraint*> essentialConstraints;
+        for( Formula::const_iterator iterator = mpPassedFormula->begin(); iterator != mpPassedFormula->end(); ++iterator )
+        {
+            if( (*iterator)->getType() == REALCONSTRAINT )
+                (*iterator)->getConstraints( essentialConstraints );
+        }
+#endif
         Formula::iterator iterator = mpPassedFormula->begin();
         while(  iterator != mpPassedFormula->end() )
         {
@@ -298,8 +408,8 @@ namespace smtrat
                                 j = i;
                                 break;
                             default:  // Checks for Tautology --  requiers essential Constraints in the beginning of this function
-
-                                /*for( unsigned k = 0; k < essentialConstraints.size(); ++k )
+#ifdef CHECK_FOR_TAUTOLOGIES
+                                for( unsigned k = 0; k < essentialConstraints.size(); ++k )
                                 {
                                     if( Constraint::combineConstraints( (*constraints.at( i )), (*constraints.at( j )), (*essentialConstraints.at( k )) ) )
                                     {
@@ -308,7 +418,8 @@ namespace smtrat
                                         i = constraints.size();
                                         j = i;
                                     }
-                                }*/
+                                }
+#endif
                                 break;
                         }
                         if( newFormula != NULL )
@@ -430,7 +541,7 @@ namespace smtrat
                 const Constraint* tempConstraintA = mConstraints.at( posConsA );
                 mNumberOfComparedConstraints++;
                 std::set<const Constraint*> mUniqueConstraintsB = std::set<const Constraint*>();
-                for( unsigned posConsB = 0; posConsB < posConsA; ++posConsB )
+                for( unsigned posConsB = 0; posConsB < mConstraints.size(); ++posConsB )
                 {
                     if( mUniqueConstraintsB.find( mConstraints.at( posConsB ) ) == mUniqueConstraintsB.end() )
                     {
@@ -439,7 +550,7 @@ namespace smtrat
                         vec_set_const_pFormula origins;
                         origins.push_back( mConstraintOrigins.at( posConsA ) );
                         origins.push_back( mConstraintOrigins.at( posConsB ) );
-                        switch( Constraint::compare( *tempConstraintA, *tempConstraintB ) )
+                        switch( Constraint::compare(  *tempConstraintA, *tempConstraintB ) )
                         {
                             case 1:             // not A or B
                             {
@@ -653,9 +764,11 @@ namespace smtrat
                                 break;
                             }
                         }
-                    }else mUniqueConstraintsB.insert( mConstraints.at( posConsB ));
+                        mUniqueConstraintsB.insert( mConstraints.at( posConsB ));
+                        mUniqueConstraintsA.insert( mConstraints.at( posConsA ));
+                    }
                 }
-            }else mUniqueConstraintsA.insert( mConstraints.at( posConsA ));
+            }
         }
     }
 
@@ -926,36 +1039,36 @@ namespace smtrat
     Formula::iterator PreProModule::interfaceRemoveSubformulaFromPassedFormula( Formula::iterator _formula )
     {
         // Update Database
-        std::vector< const Constraint* > vec_constraints;
-        (*_formula)->getConstraints( vec_constraints );
-        for( std::vector< const Constraint* >::iterator it = vec_constraints.begin(); it != vec_constraints.end(); ++it )
-        {
-            // Refresh Constraints Lists
-            for(std::vector< const Constraint* >::iterator subit = mActivityConstraints.begin(); subit != mActivityConstraints.end(); ++subit )
-            {
-                if( (*subit) == (*it) )
-                {
-                    if( (*subit) == (*mLastCheckedActivityConstraint) )
-                    {
-                        mLastCheckedActivityConstraint = mActivityConstraints.erase( subit );
-                    }else mActivityConstraints.erase( subit );
-                    break;
-                }
-            }
-            // Refresh VariableActivities
-            const GiNaC::symtab var = (*it)->variables();
-            for( std::map< std::string, GiNaC::ex>::const_iterator varit = var.begin(); varit != var.end(); ++varit )
-            {
-                mVariableActivities[ *varit ] -= weightOfQuantities;
-                for( signed i = (*it)->lhs().ldegree((*varit).second); i <= (*it)->lhs().degree((*varit).second); ++i )
-                {
-                    if( (*it)->lhs().coeff( varit->second, i ) != 0 && i != 0 )
-                    {
-                        mVariableActivities[ *varit ] -= i*weightOfVarDegrees;
-                    }
-                }
-            }
-        }
+//        std::vector< const Constraint* > vec_constraints;
+//        (*_formula)->getConstraints( vec_constraints );
+//        for( std::vector< const Constraint* >::iterator it = vec_constraints.begin(); it != vec_constraints.end(); ++it )
+//        {
+//            // Refresh Constraints Lists
+//            for(std::vector< const Constraint* >::iterator subit = mActivityConstraints.begin(); subit != mActivityConstraints.end(); ++subit )
+//            {
+//                if( (*subit) == (*it) )
+//                {
+//                    if( (*subit) == (*mLastCheckedActivityConstraint) )
+//                    {
+//                        mLastCheckedActivityConstraint = mActivityConstraints.erase( subit );
+//                    }else mActivityConstraints.erase( subit );
+//                    break;
+//                }
+//            }
+//            // Refresh VariableActivities
+//            const GiNaC::symtab var = (*it)->variables();
+//            for( std::map< std::string, GiNaC::ex>::const_iterator varit = var.begin(); varit != var.end(); ++varit )
+//            {
+//                mVariableActivities[ *varit ] -= weightOfQuantities;
+//                for( signed i = (*it)->lhs().ldegree((*varit).second); i <= (*it)->lhs().degree((*varit).second); ++i )
+//                {
+//                    if( (*it)->lhs().coeff( varit->second, i ) != 0 && i != 0 )
+//                    {
+//                        mVariableActivities[ *varit ] -= i*weightOfVarDegrees;
+//                    }
+//                }
+//            }
+//        }
         Formula::iterator _return = removeSubformulaFromPassedFormula( _formula );
         if( mLastCheckedFormula == _formula )
         {
@@ -998,7 +1111,7 @@ namespace smtrat
             proceedSubstitution();
 #endif
 #ifdef ASSIGN_ACTIVITIES
-            assignActivities( scale, weightOfVarDegrees, weightOfQuantities, weightOfRelationSymbols );
+            assignActivities();
 #endif
         mLastCheckedFormula = mpPassedFormula->pSubformulas()->end();
     }
