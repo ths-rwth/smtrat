@@ -34,24 +34,24 @@
 using namespace std;
 using namespace GiNaC;
 
-//#define SIMPLIFY_CLAUSES
-#define ADD_LEARNING_CLAUSES
-//#define ADD_NEGATED_LEARNING_CLAUSES                                          
-//#define PROCEED_SUBSTITUTION                                                  // Substitutes variables ( ONlY USABLE FOR FORMULAS WITH XOR)
-//#define ASSIGN_ACTIVITIES                                                       // Assigns activities between 0 and (100 * scale) 
+//#define SIMPLIFY_CLAUSES                                        // Searches for simplifications in clauses 
+#define ADD_LEARNING_CLAUSES                                    // Adds learning clauses
+//#define ADD_NEGATED_LEARNING_CLAUSES                            // Adds negated learning clauses               
+//#define PROCEED_SUBSTITUTION                                  // Substitutes variables ( ONlY USABLE FOR FORMULAS WITH XOR (before CNF) )
+//#define ASSIGN_ACTIVITIES                                       // Assigns activities between 0 and (100 * scale) 
 
-//#define CONSIDER_ONLY_HIGHEST_DEGREE_FOR_VAR_ACTIVITY                           // Requires ASSIGN_ACTIVITIES
-//#define CHECK_FOR_TAUTOLOGIES                                                 // Requires SIMPLIFY_CLAUSES 
+//#define CONSIDER_ONLY_HIGHEST_DEGREE_FOR_VAR_ACTIVITY         // Requires ASSIGN_ACTIVITIES ( ONLYO USABLE FOR FORMULAS WITH CONSTRAINTS WITH DEGREE > 1 )
+//#define CHECK_FOR_TAUTOLOGIES                                 // Requires SIMPLIFY_CLAUSES ( ONLY USABLE FOR FORMULAS WITH CONJUNCTED SINGLE CONSTRAINTS ) 
 
 //#define PRINT_RUNTIME
 //#define PRINT_CONSTRAINTS
 
-static const double scale = 1;                                                  // value to scale the balance between the activities
-static const double weightOfVarDegrees = -1;
-static const double weightOfConDegrees = -3;
-static const double weightOfVarQuantities = 1;
-static const double weightOfConQuantities = 1;
-static const double weightOfRelationSymbols = 1;
+static const double scale = 1;                                  // Value to scale the balance between the activities
+static const double weightOfVarDegrees = -1;                    // Weight for degree of variables
+static const double weightOfConDegrees = -3;                    // Weight for degree of constraints
+static const double weightOfVarQuantities = 1;                  // Weight for quantity of variables
+static const double weightOfConQuantities = 1;                  // Weight for quantity of constraints
+static const double weightOfRelationSymbols = 1;                // Weight for the relation symbols
 static const double weight_CR_EQ = 1;
 static const double weight_CR_LESS = 1;
 static const double weight_CR_GREATER = 1;
@@ -209,8 +209,7 @@ namespace smtrat
         if( _Formula->getType() == REALCONSTRAINT )
         {
             double normalizedactivity = (mActivities[ _Formula->pConstraint() ] - mMinActivity )/(mMaxActivity-mMinActivity)*100;
-            assert( normalizedactivity >= 0);
-            assert( normalizedactivity <= 100);
+            if( normalizedactivity < 0 || normalizedactivity > 100) normalizedactivity = 0;
             _Formula->setActivity( normalizedactivity*scale );
 #ifdef PRINT_CONSTRAINTS
             _Formula->print();
@@ -249,7 +248,7 @@ namespace smtrat
                     {
                         if( t_constraint->lhs().coeff( (*iteratorvar).second, (int)i ) != 0 && i != 0)
                         {
-                            mConstraintActivities[ t_constraint ].second.second += i;
+                            mConstraintActivities[ t_constraint ].second.second += i;           // also regards number of variables
                         }
                     }
                 } 
