@@ -43,13 +43,13 @@ using namespace GiNaC;
 //#define CONSIDER_ONLY_HIGHEST_DEGREE_FOR_VAR_ACTIVITY         // Requires ASSIGN_ACTIVITIES ( ONLYO USABLE FOR FORMULAS WITH CONSTRAINTS WITH DEGREE > 1 )
 //#define CHECK_FOR_TAUTOLOGIES                                 // Requires SIMPLIFY_CLAUSES ( ONLY USABLE FOR FORMULAS WITH CONJUNCTED SINGLE CONSTRAINTS ) 
 
-//#define PRINT_RUNTIME
-//#define PRINT_CONSTRAINTS
+//#define PRINT_RUNTIME                                          // Prints runtime of PreProModule
+//#define PRINT_CONSTRAINTS                                      // Requires ASSIGN_ACTIVITIES
 
 static const double scale = 1;                                  // Value to scale the balance between the activities
 static const double weightOfVarDegrees = -1;                    // Weight for degree of variables
 static const double weightOfConDegrees = -3;                    // Weight for degree of constraints
-static const double weightOfVarQuantities = 1;                  // Weight for quantity of variables
+static const double weightOfVarQuantities = 2;                  // Weight for quantity of variables
 static const double weightOfConQuantities = 1;                  // Weight for quantity of constraints
 static const double weightOfRelationSymbols = 1;                // Weight for the relation symbols
 static const double weight_CR_EQ = 1;
@@ -176,7 +176,7 @@ namespace smtrat
     }
 
     /*
-     * Assigns Activities considering parameters to each Formula of Type REALCONSTRAINT
+     * Assign activities considering parameters to passedFormula
      */
     void PreProModule::assignActivities()
     {
@@ -187,30 +187,25 @@ namespace smtrat
         else if( weight_CR_GREATER > mMaxRelWeight) mMaxRelWeight = weight_CR_GREATER;
         // Generate Activities for Variables
         generateVarActivitiesInDatabase( mpPassedFormula );
-        // Generate Activities for Constraints
+        // Generate Activities for Constraints and determine upper bounds
         generateConActivitiesInDatabase( mpPassedFormula );
-        // Determine upper bounds for Constraint ( Constraint Degree, sum Variables Quantity, (sum)Variables Degrees)
-        for( std::map< const Constraint*, std::pair< std::pair< double, double>, std::pair<double, double> > >::iterator 
-        i = mConstraintActivities.begin(); i != mConstraintActivities.end(); ++i )
-        {
-            if( (*i).second.first.first > mMaxVarQuantityActivity ) mMaxVarQuantityActivity = (*i).second.first.first;
-            if( (*i).second.first.second > mMaxConQuantityActivity ) mMaxConQuantityActivity = (*i).second.first.second;
-            if( (*i).second.second.first > mMaxVarDegreeActivity ) mMaxVarDegreeActivity = (*i).second.second.first;
-            if( (*i).second.second.second > mMaxConDegreeActivity ) mMaxConDegreeActivity = (*i).second.second.second;
-        }
-        // Calculate Final Activities from Database
+        // Calculate Final Activities from Database and determine upper bound for activity
         generateFinalActivitiesInDatabase( mpPassedFormula );
         // Normalize Activities and assign to PassedFormula
         assignActivitiesFromDatabase( mpPassedFormula );
     }
 
+    /*
+     * Assign normalized activities recursivly from database to passed formula  
+     * (Requires 
+     */
     void PreProModule::assignActivitiesFromDatabase( Formula* _Formula )
     {
         if( _Formula->getType() == REALCONSTRAINT )
         {
-            double normalizedactivity = (mActivities[ _Formula->pConstraint() ] - mMinActivity )/(mMaxActivity-mMinActivity)*100;
-            if( normalizedactivity < 0 || normalizedactivity > 100) normalizedactivity = 0;
-            _Formula->setActivity( normalizedactivity*scale );
+            double normalizedactivity = (mActivities[ _Formula->pConstraint() ] - mMinActivity )*100*scale/(mMaxActivity-mMinActivity);
+            if( normalizedactivity/scale < 0 || normalizedactivity/scale > 100) normalizedactivity = 0;
+            _Formula->setActivity( normalizedactivity );
 #ifdef PRINT_CONSTRAINTS
             _Formula->print();
             cout << endl;
@@ -228,6 +223,10 @@ namespace smtrat
         }
     }
     
+    /*
+     * Generate constraint activities recursivly and save it in Database
+     * (Requires generateVarActivitiesInDatabase(Formula*)
+     */
     void PreProModule::generateConActivitiesInDatabase( Formula* _Formula )
     {
         
@@ -251,9 +250,17 @@ namespace smtrat
                             mConstraintActivities[ t_constraint ].second.second += i;           // also regards number of variables
                         }
                     }
-                } 
-            }
-            mConstraintActivities[ t_constraint ].first.second += 1;
+                }
+               
+            }mConstraintActivities[ t_constraint ].first.second += 1;
+            if( mConstraintActivities[ t_constraint ].first.first > mMaxVarQuantityActivity ) 
+                mMaxVarQuantityActivity = mConstraintActivities[ t_constraint ].first.first;
+            if( mConstraintActivities[ t_constraint ].first.second > mMaxConQuantityActivity ) 
+                mMaxConQuantityActivity = mConstraintActivities[ t_constraint ].first.second;
+            if( mConstraintActivities[ t_constraint ].second.first > mMaxVarDegreeActivity ) 
+                mMaxVarDegreeActivity = mConstraintActivities[ t_constraint ].second.first;
+            if( mConstraintActivities[ t_constraint ].second.second > mMaxConDegreeActivity ) 
+                mMaxConDegreeActivity = mConstraintActivities[ t_constraint ].second.second;
         }
         else if( _Formula->getType() == AND || _Formula->getType() == OR || _Formula->getType() == NOT
                 || _Formula->getType() == IFF || _Formula->getType() == XOR || _Formula->getType() == IMPLIES )
@@ -267,8 +274,7 @@ namespace smtrat
         }
     }
     /*
-     * Rekursively used help function which is user by assignActivities()
-     * Only use if mVariableActivities and mActivityConstraint is up to date
+     * Generate activities for variables in database
     */
     void PreProModule::generateVarActivitiesInDatabase( Formula* _Formula )
     {
@@ -308,6 +314,10 @@ namespace smtrat
         }
     }
     
+    /*
+     * Generates final but unnormalized activities in database
+     * (Requires generateConActivitiesInDatabase( Formula* )
+     */
     void PreProModule::generateFinalActivitiesInDatabase( Formula* _Formula )
     {
         double activity = 0;
@@ -316,32 +326,35 @@ namespace smtrat
             const Constraint* t_constraint = _Formula->pConstraint();
             if( mActivities.find( t_constraint ) == mActivities.end() )
             {                
-                if( mMaxVarQuantityActivity != 0 && weightOfVarQuantities != 0 ) activity += mConstraintActivities[ t_constraint ].first.first * weightOfVarQuantities * 20 / mMaxVarQuantityActivity;
-                if( mMaxConQuantityActivity != 0 && weightOfConQuantities != 0 ) activity += mConstraintActivities[ t_constraint ].first.second * weightOfConQuantities * 20 / mMaxConQuantityActivity;
-                if( mMaxVarDegreeActivity != 0 && weightOfVarDegrees != 0 ) activity += mConstraintActivities[ t_constraint ].second.first * weightOfVarDegrees * 20 / mMaxVarDegreeActivity;
-                if( mMaxConDegreeActivity != 0 && weightOfConDegrees != 0 ) activity += mConstraintActivities[ t_constraint ].second.second * weightOfConDegrees * 20 / mMaxConDegreeActivity;
+                if( mMaxVarQuantityActivity != 0 && weightOfVarQuantities != 0 ) 
+                    activity += mConstraintActivities[ t_constraint ].first.first * weightOfVarQuantities * 200 * scale / mMaxVarQuantityActivity;
+                if( mMaxConQuantityActivity != 0 && weightOfConQuantities != 0 ) 
+                    activity += mConstraintActivities[ t_constraint ].first.second * weightOfConQuantities * 200 * scale / mMaxConQuantityActivity;
+                if( mMaxVarDegreeActivity != 0 && weightOfVarDegrees != 0 ) 
+                    activity += mConstraintActivities[ t_constraint ].second.first * weightOfVarDegrees * 200 * scale / mMaxVarDegreeActivity;
+                if( mMaxConDegreeActivity != 0 && weightOfConDegrees != 0 ) 
+                    activity += mConstraintActivities[ t_constraint ].second.second * weightOfConDegrees * 200 * scale / mMaxConDegreeActivity;
                 if( mMaxRelWeight != 0 && weightOfRelationSymbols != 0 )
                 {
                     switch( (*t_constraint).relation() )
                     {
                         case CR_EQ:
-                            activity += weight_CR_EQ * weightOfRelationSymbols * 20 / mMaxRelWeight;
+                            activity += weight_CR_EQ * weightOfRelationSymbols * 200  * scale/ mMaxRelWeight;
                             break;
                         case CR_GEQ:
-                            activity += weight_CR_GEQ * weightOfRelationSymbols * 20 / mMaxRelWeight;
+                            activity += weight_CR_GEQ * weightOfRelationSymbols * 200  * scale/ mMaxRelWeight;
                             break;
                         case CR_LEQ:
-                            activity += weight_CR_LEQ * weightOfRelationSymbols * 20 / mMaxRelWeight;
+                            activity += weight_CR_LEQ * weightOfRelationSymbols * 200  * scale/ mMaxRelWeight;
                             break;
                         case CR_LESS:
-                            activity += weight_CR_LESS * weightOfRelationSymbols * 20 / mMaxRelWeight;
+                            activity += weight_CR_LESS * weightOfRelationSymbols * 200  * scale/ mMaxRelWeight;
                             break;
                         case CR_GREATER:
-                            activity += weight_CR_GREATER * weightOfRelationSymbols * 20 / mMaxRelWeight;
+                            activity += weight_CR_GREATER * weightOfRelationSymbols * 200  * scale/ mMaxRelWeight;
                             break;
                         default:
                             assert( t_constraint->relation() != CR_NEQ);
-                            assert( "No Relation defined!");
                             activity = 0;
                     }
                 }
