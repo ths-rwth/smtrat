@@ -1988,6 +1988,44 @@ namespace smtrat
                                         conflict.insert( *cond );
                                         break;
                                     }
+									
+									switch( (*cond)->constraint().relation() )
+                                    {
+                                        case CR_EQ:
+                                        {
+                                            Constraint invConstraint = Constraint( -(*cond)->constraint().lhs(), CR_EQ );
+                                            if( invConstraint == (*subformula)->constraint() )
+                                            {
+                                                conflict.insert( *cond );
+                                                break;
+                                            }
+                                            break;
+                                        }
+                                        case CR_GEQ:
+                                        {
+                                            Constraint invConstraint = Constraint( -(*cond)->constraint().lhs(), CR_LEQ );
+                                            if( invConstraint == (*subformula)->constraint() )
+                                            {
+                                                conflict.insert( *cond );
+                                                break;
+                                            }
+                                            break;
+                                        }
+                                        case CR_GREATER:
+                                        {
+                                            Constraint invConstraint = Constraint( -(*cond)->constraint().lhs(), CR_LESS );
+                                            if( invConstraint == (*subformula)->constraint() )
+                                            {
+                                                conflict.insert( *cond );
+                                                break;
+                                            }
+                                            break;
+                                        }
+                                        default:
+                                        {
+                                            
+                                        }
+                                    } 
                                 }
                             }
                             conflictSet.insert( conflict );
@@ -1996,6 +2034,7 @@ namespace smtrat
                     }
                 }
                 _state->addConflictSet( NULL, conflictSet );
+				
                 eraseDTsOfRanking( *_state );
 
                 /*
