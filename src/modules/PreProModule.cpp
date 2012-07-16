@@ -34,25 +34,29 @@
 using namespace std;
 using namespace GiNaC;
 
-//#define SIMPLIFY_CLAUSES
-#define ADD_LEARNING_CLAUSES
-//#define ADD_NEGATED_LEARNING_CLAUSES
-//#define PROCEED_SUBSTITUTION
-//#define ASSIGN_ACTIVITIES
+//#define SIMPLIFY_CLAUSES                                        // Searches for simplifications in clauses 
+#define ADD_LEARNING_CLAUSES                                    // Adds learning clauses
+//#define ADD_NEGATED_LEARNING_CLAUSES                            // Adds negated learning clauses               
+//#define PROCEED_SUBSTITUTION                                  // Substitutes variables ( ONlY USABLE FOR FORMULAS WITH XOR (before CNF) )
+//#define ASSIGN_ACTIVITIES                                       // Assigns activities between 0 and (100 * scale) 
 
+//#define CONSIDER_ONLY_HIGHEST_DEGREE_FOR_VAR_ACTIVITY         // Requires ASSIGN_ACTIVITIES ( ONLYO USABLE FOR FORMULAS WITH CONSTRAINTS WITH DEGREE > 1 )
+//#define CHECK_FOR_TAUTOLOGIES                                 // Requires SIMPLIFY_CLAUSES ( ONLY USABLE FOR FORMULAS WITH CONJUNCTED SINGLE CONSTRAINTS ) 
 
-//#define PRINT_RUNTIME
+//#define PRINT_RUNTIME                                          // Prints runtime of PreProModule
+//#define PRINT_CONSTRAINTS                                      // Requires ASSIGN_ACTIVITIES
 
-static const double scale = 1;                                               // value to scale the balance between the activities
-static const double weightOfVarDegrees = -10;
-static const double weightOfQuantities = 20;
-static const double weightOfRelationSymbols = 20;
-static const double weight_CR_EQ = -5;
-static const double weight_CR_NEQ = 10;
-static const double weight_CR_LESS = 5;
-static const double weight_CR_GREATER = 5;
-static const double weight_CR_LEQ = 5;
-static const double weight_CR_GEQ = 5;
+static const double scale = 1;                                  // Value to scale the balance between the activities
+static const double weightOfVarDegrees = -1;                    // Weight for degree of variables
+static const double weightOfConDegrees = -3;                    // Weight for degree of constraints
+static const double weightOfVarQuantities = 2;                  // Weight for quantity of variables
+static const double weightOfConQuantities = 1;                  // Weight for quantity of constraints
+static const double weightOfRelationSymbols = 1;                // Weight for the relation symbols
+static const double weight_CR_EQ = 1;
+static const double weight_CR_LESS = 1;
+static const double weight_CR_GREATER = 1;
+static const double weight_CR_LEQ = 1;
+static const double weight_CR_GEQ = 1;
 
 namespace smtrat
 {
@@ -70,9 +74,16 @@ namespace smtrat
         mSubstitutionOrigins( std::vector<vec_set_const_pFormula>() ),
         mNumberOfVariables( std::map<std::string, unsigned>() ),
         mSubstitutions( std::vector<pair<pair<std::string, bool>, pair<pair<GiNaC::symtab, GiNaC::symtab>, pair<GiNaC::ex, GiNaC::ex> > > >() ),
-        mVariableActivities( std::map< std::pair< std::string, GiNaC::ex>, double>() ),
-        mActivityConstraints( std::vector<const Constraint*>() ),
-        mLastCheckedActivityConstraint( std::vector<const Constraint*>::iterator() )
+        mVariableActivities( std::map< std::string, std::pair<double, double>>() ),
+        mConstraintActivities( std::map< const Constraint*, std::pair< std::pair<double,double>, std::pair<double,double> > > () ),
+        mMaxRelWeight( 0 ),
+        mMaxVarDegreeActivity( 0 ),
+        mMaxConDegreeActivity( 0 ),
+        mMaxVarQuantityActivity( 0 ),
+        mMaxConQuantityActivity( 0 ),
+        mActivities( std::map< const Constraint*, double>() ),
+        mMinActivity( INFINITY ),
+        mMaxActivity( -INFINITY )
     {
         this->mModuleType = MT_PreProModule;
     }
@@ -147,7 +158,7 @@ namespace smtrat
             proceedSubstitution();
 #endif
 #ifdef ASSIGN_ACTIVITIES
-            assignActivities( scale, weightOfVarDegrees, weightOfQuantities, weightOfRelationSymbols );
+            assignActivities();
 #endif
         }
         mNewFormulaReceived = false;
@@ -165,81 +176,40 @@ namespace smtrat
     }
 
     /*
-     * Assigns Activities considering parameters to each Formula of Type REALCONSTRAINT
+     * Assign activities considering parameters to passedFormula
      */
-    void PreProModule::assignActivities(double _Scale, double _wDegree, double _wQuantities, double _wRelation)
+    void PreProModule::assignActivities()
     {
-        //---------------------------------------------------------------------- Collect Constraints of Passed Formula
-        for( Formula::iterator it = mLastCheckedFormula; it != mpPassedFormula->end(); ++it )
-        {
-            (*it)->getConstraints( mActivityConstraints );
-        }
-        //---------------------------------------------------------------------- Analyse Data and assign values
-        if( !( mLastCheckedActivityConstraint > mActivityConstraints.begin() ) )mLastCheckedActivityConstraint = mActivityConstraints.begin();
-        // Create Activies for Variables
-        std::vector<const Constraint*>::iterator citerator = mLastCheckedActivityConstraint;
-        while( citerator != mActivityConstraints.end() )
-        {
-            GiNaC::symtab var = (*citerator)->variables();
-            for(std::map< std::string, GiNaC::ex>::iterator varit = var.begin(); varit != var.end(); ++varit )
-            {
-                mVariableActivities[ *varit ] += _wQuantities;
-                for( signed i = (*citerator)->lhs().ldegree((*varit).second); i <= (*citerator)->lhs().degree((*varit).second); ++i )
-                {
-                    if( (*citerator)->lhs().coeff( varit->second, i ) != 0 && i != 0 )
-                    {
-                        mVariableActivities[ *varit ] += i*_wDegree;
-                    }
-                }
-            }
-            ++citerator;
-        }
-        // Generate Activities for Relation Symbol and add Variable Acitivies
-        assignActivitiesfromDatabase( mpPassedFormula, _wRelation, _Scale );
+        // Determine upper bound for Relation Symbol
+        if( weight_CR_GEQ > mMaxRelWeight) mMaxRelWeight = weight_CR_GEQ;
+        else if( weight_CR_LEQ > mMaxRelWeight) mMaxRelWeight = weight_CR_LEQ;
+        else if( weight_CR_LESS > mMaxRelWeight) mMaxRelWeight = weight_CR_LESS;
+        else if( weight_CR_GREATER > mMaxRelWeight) mMaxRelWeight = weight_CR_GREATER;
+        // Generate Activities for Variables
+        generateVarActivitiesInDatabase( mpPassedFormula );
+        // Generate Activities for Constraints and determine upper bounds
+        generateConActivitiesInDatabase( mpPassedFormula );
+        // Calculate Final Activities from Database and determine upper bound for activity
+        generateFinalActivitiesInDatabase( mpPassedFormula );
+        // Normalize Activities and assign to PassedFormula
+        assignActivitiesFromDatabase( mpPassedFormula );
     }
 
     /*
-     * Rekursively used help function which is user by assignActivities()
-     * Only use if mVariableActivities and mActivityConstraint is up to date
-    */
-    double PreProModule::assignActivitiesfromDatabase( Formula* _Formula, double _wRelation, double _Scale)
+     * Assign normalized activities recursivly from database to passed formula  
+     * (Requires 
+     */
+    void PreProModule::assignActivitiesFromDatabase( Formula* _Formula )
     {
-        double activity = 0;
         if( _Formula->getType() == REALCONSTRAINT )
         {
-            const Constraint t_constraint = _Formula->constraint();
-            switch( t_constraint.relation() )
-            {
-                case CR_EQ:
-                    activity = weight_CR_EQ * _wRelation;
-                    break;
-                case CR_NEQ:
-                    activity = weight_CR_NEQ * _wRelation;
-                    break;
-                case CR_GEQ:
-                    activity = weight_CR_GEQ * _wRelation;
-                    break;
-                case CR_LEQ:
-                    activity = weight_CR_LEQ * _wRelation;
-                    break;
-                case CR_LESS:
-                    activity = weight_CR_LESS * _wRelation;
-                    break;
-                case CR_GREATER:
-                    activity = weight_CR_GREATER * _wRelation;
-                    break;
-                default:
-                    assert( "No Relation defined!");
-                    activity = 0;
-            }
-            GiNaC::symtab var = t_constraint.variables();
-            for( GiNaC::symtab::const_iterator iteratorvar = var.begin(); iteratorvar != var.end(); ++iteratorvar )
-            {
-                activity += mVariableActivities[ *iteratorvar ];
-            }
-            activity = activity * _Scale;
-            _Formula->setActivity( activity );
-            return activity;
+            double normalizedactivity = (mActivities[ _Formula->pConstraint() ] - mMinActivity )*100*scale/(mMaxActivity-mMinActivity);
+            if( normalizedactivity/scale < 0 || normalizedactivity/scale > 100) normalizedactivity = 0;
+            _Formula->setActivity( normalizedactivity );
+#ifdef PRINT_CONSTRAINTS
+            _Formula->print();
+            cout << endl;
+#endif
         }
         else if( _Formula->getType() == AND || _Formula->getType() == OR || _Formula->getType() == NOT
                 || _Formula->getType() == IFF || _Formula->getType() == XOR || _Formula->getType() == IMPLIES )
@@ -247,12 +217,162 @@ namespace smtrat
             Formula::iterator fiterator = _Formula->begin();
             while( fiterator != _Formula->end() )
             {
-                assignActivitiesfromDatabase( (*fiterator), _wRelation, _Scale );
+                assignActivitiesFromDatabase( (*fiterator) );
                 ++fiterator;
             }
-            return 0;
         }
-        return 0;
+    }
+    
+    /*
+     * Generate constraint activities recursivly and save it in Database
+     * (Requires generateVarActivitiesInDatabase(Formula*)
+     */
+    void PreProModule::generateConActivitiesInDatabase( Formula* _Formula )
+    {
+        
+        if( _Formula->getType() == REALCONSTRAINT )
+        {
+            const Constraint* t_constraint = _Formula->pConstraint();
+            if( mConstraintActivities.find( t_constraint ) == mConstraintActivities.end() )
+            {
+               GiNaC::symtab var = t_constraint->variables();
+                for( GiNaC::symtab::const_iterator iteratorvar = var.begin(); iteratorvar != var.end(); ++iteratorvar )
+                {
+                    // How many times does the Variable appear in all formulas
+                    mConstraintActivities[ t_constraint ].first.first += mVariableActivities[ (*iteratorvar).first ].first;
+                    // How hard are the variables (degree in all formulas)
+                    mConstraintActivities[ t_constraint ].second.first += mVariableActivities[ (*iteratorvar).first ].second;
+                    // How hard (degree) is the constraint
+                    for( signed i = t_constraint->lhs().ldegree((*iteratorvar).second); i <= t_constraint->lhs().degree((*iteratorvar).second); ++i )
+                    {
+                        if( t_constraint->lhs().coeff( (*iteratorvar).second, (int)i ) != 0 && i != 0)
+                        {
+                            mConstraintActivities[ t_constraint ].second.second += i;           // also regards number of variables
+                        }
+                    }
+                }
+               
+            }mConstraintActivities[ t_constraint ].first.second += 1;
+            if( mConstraintActivities[ t_constraint ].first.first > mMaxVarQuantityActivity ) 
+                mMaxVarQuantityActivity = mConstraintActivities[ t_constraint ].first.first;
+            if( mConstraintActivities[ t_constraint ].first.second > mMaxConQuantityActivity ) 
+                mMaxConQuantityActivity = mConstraintActivities[ t_constraint ].first.second;
+            if( mConstraintActivities[ t_constraint ].second.first > mMaxVarDegreeActivity ) 
+                mMaxVarDegreeActivity = mConstraintActivities[ t_constraint ].second.first;
+            if( mConstraintActivities[ t_constraint ].second.second > mMaxConDegreeActivity ) 
+                mMaxConDegreeActivity = mConstraintActivities[ t_constraint ].second.second;
+        }
+        else if( _Formula->getType() == AND || _Formula->getType() == OR || _Formula->getType() == NOT
+                || _Formula->getType() == IFF || _Formula->getType() == XOR || _Formula->getType() == IMPLIES )
+        {
+            Formula::iterator fiterator = _Formula->begin();
+            while( fiterator != _Formula->end() )
+            {
+                generateConActivitiesInDatabase( (*fiterator) );
+                ++fiterator;
+            }
+        }
+    }
+    /*
+     * Generate activities for variables in database
+    */
+    void PreProModule::generateVarActivitiesInDatabase( Formula* _Formula )
+    {
+        if( _Formula->getType() == REALCONSTRAINT )
+        {
+            const Constraint* t_constraint = &_Formula->constraint();
+            GiNaC::symtab var = t_constraint->variables();
+            for( GiNaC::symtab::const_iterator iteratorvar = var.begin(); iteratorvar != var.end(); ++iteratorvar )
+            {
+                mVariableActivities[ (*iteratorvar).first ].first += 1;
+#ifdef CONSIDER_ONLY_HIGHEST_DEGREE_FOR_VAR_ACTIVITY
+                if( mVariableActivities[ (*iteratorvar).first ].second < t_constraint->lhs().degree( (*iteratorvar).second ) )
+                        mVariableActivities[ (*iteratorvar).first ].second += t_constraint->lhs().degree( (*iteratorvar).second );
+#else
+                double t_activity = 0;
+                for( signed i = t_constraint->lhs().ldegree((*iteratorvar).second); i <= t_constraint->lhs().degree((*iteratorvar).second); ++i )
+                {
+                    if( t_constraint->lhs().coeff( (*iteratorvar).second, i ) != 0 && i != 0 )
+                    {
+                        t_activity += i;
+                    }
+                }
+                if( mVariableActivities[ (*iteratorvar).first ].second < t_activity )
+                        mVariableActivities[ (*iteratorvar).first ].second = t_activity;
+#endif
+            }
+        }
+        else if( _Formula->getType() == AND || _Formula->getType() == OR || _Formula->getType() == NOT
+                || _Formula->getType() == IFF || _Formula->getType() == XOR || _Formula->getType() == IMPLIES )
+        {
+            Formula::iterator fiterator = _Formula->begin();
+            while( fiterator != _Formula->end() )
+            {
+                generateVarActivitiesInDatabase( (*fiterator) );
+                ++fiterator;
+            }
+        }
+    }
+    
+    /*
+     * Generates final but unnormalized activities in database
+     * (Requires generateConActivitiesInDatabase( Formula* )
+     */
+    void PreProModule::generateFinalActivitiesInDatabase( Formula* _Formula )
+    {
+        double activity = 0;
+        if( _Formula->getType() == REALCONSTRAINT )
+        {        
+            const Constraint* t_constraint = _Formula->pConstraint();
+            if( mActivities.find( t_constraint ) == mActivities.end() )
+            {                
+                if( mMaxVarQuantityActivity != 0 && weightOfVarQuantities != 0 ) 
+                    activity += mConstraintActivities[ t_constraint ].first.first * weightOfVarQuantities * 200 * scale / mMaxVarQuantityActivity;
+                if( mMaxConQuantityActivity != 0 && weightOfConQuantities != 0 ) 
+                    activity += mConstraintActivities[ t_constraint ].first.second * weightOfConQuantities * 200 * scale / mMaxConQuantityActivity;
+                if( mMaxVarDegreeActivity != 0 && weightOfVarDegrees != 0 ) 
+                    activity += mConstraintActivities[ t_constraint ].second.first * weightOfVarDegrees * 200 * scale / mMaxVarDegreeActivity;
+                if( mMaxConDegreeActivity != 0 && weightOfConDegrees != 0 ) 
+                    activity += mConstraintActivities[ t_constraint ].second.second * weightOfConDegrees * 200 * scale / mMaxConDegreeActivity;
+                if( mMaxRelWeight != 0 && weightOfRelationSymbols != 0 )
+                {
+                    switch( (*t_constraint).relation() )
+                    {
+                        case CR_EQ:
+                            activity += weight_CR_EQ * weightOfRelationSymbols * 200  * scale/ mMaxRelWeight;
+                            break;
+                        case CR_GEQ:
+                            activity += weight_CR_GEQ * weightOfRelationSymbols * 200  * scale/ mMaxRelWeight;
+                            break;
+                        case CR_LEQ:
+                            activity += weight_CR_LEQ * weightOfRelationSymbols * 200  * scale/ mMaxRelWeight;
+                            break;
+                        case CR_LESS:
+                            activity += weight_CR_LESS * weightOfRelationSymbols * 200  * scale/ mMaxRelWeight;
+                            break;
+                        case CR_GREATER:
+                            activity += weight_CR_GREATER * weightOfRelationSymbols * 200  * scale/ mMaxRelWeight;
+                            break;
+                        default:
+                            assert( t_constraint->relation() != CR_NEQ);
+                            activity = 0;
+                    }
+                }
+                mActivities[ t_constraint ] = activity; 
+                if( activity < mMinActivity ) mMinActivity = activity;
+                if( activity > mMaxActivity ) mMaxActivity = activity;
+            }
+        }
+        else if( _Formula->getType() == AND || _Formula->getType() == OR || _Formula->getType() == NOT
+                || _Formula->getType() == IFF || _Formula->getType() == XOR || _Formula->getType() == IMPLIES )
+        {
+            Formula::iterator fiterator = _Formula->begin();
+            while( fiterator != _Formula->end() )
+            {
+                generateFinalActivitiesInDatabase( (*fiterator) );
+                ++fiterator;
+            }
+        }
     }
 
     /*
@@ -260,12 +380,14 @@ namespace smtrat
      */
     void PreProModule::simplifyClauses()
     {
-//        std::vector<const Constraint*> essentialConstraints;
-//        for( Formula::const_iterator iterator = mpPassedFormula->begin(); iterator != mpPassedFormula->end(); ++iterator )
-//        {
-//            if( (*iterator)->getType() == REALCONSTRAINT )
-//                (*iterator)->getConstraints( essentialConstraints );
-//        }
+#ifdef CHECK_FOR_TAUTOLOGIES
+        std::vector<const Constraint*> essentialConstraints;
+        for( Formula::const_iterator iterator = mpPassedFormula->begin(); iterator != mpPassedFormula->end(); ++iterator )
+        {
+            if( (*iterator)->getType() == REALCONSTRAINT )
+                (*iterator)->getConstraints( essentialConstraints );
+        }
+#endif
         Formula::iterator iterator = mpPassedFormula->begin();
         while(  iterator != mpPassedFormula->end() )
         {
@@ -298,8 +420,8 @@ namespace smtrat
                                 j = i;
                                 break;
                             default:  // Checks for Tautology --  requiers essential Constraints in the beginning of this function
-
-                                /*for( unsigned k = 0; k < essentialConstraints.size(); ++k )
+#ifdef CHECK_FOR_TAUTOLOGIES
+                                for( unsigned k = 0; k < essentialConstraints.size(); ++k )
                                 {
                                     if( Constraint::combineConstraints( (*constraints.at( i )), (*constraints.at( j )), (*essentialConstraints.at( k )) ) )
                                     {
@@ -308,7 +430,8 @@ namespace smtrat
                                         i = constraints.size();
                                         j = i;
                                     }
-                                }*/
+                                }
+#endif
                                 break;
                         }
                         if( newFormula != NULL )
@@ -422,112 +545,241 @@ namespace smtrat
                 mConstraintOrigins.push_back( getOrigins( i ) );
             }
         }
+        std::set<const Constraint*> mUniqueConstraintsA = std::set<const Constraint*>();
         for( unsigned posConsA = mNumberOfComparedConstraints; posConsA < mConstraints.size(); ++posConsA )
         {
-            const Constraint* tempConstraintA = mConstraints.at( posConsA );
-            mNumberOfComparedConstraints++;
-            for( unsigned posConsB = 0; posConsB < posConsA; ++posConsB )
+            if( mUniqueConstraintsA.find( mConstraints.at( posConsA ) ) == mUniqueConstraintsA.end() )
             {
-                const Constraint* tempConstraintB = mConstraints.at( posConsB );
-#ifdef ADD_LEARNING_CLAUSES
-                Formula* _tSubformula = NULL;
-#endif
-#ifdef ADD_NEGATED_LEARNING_CLAUSES
-                Formula* _tSubformula2 = NULL;
-#endif
-                switch( Constraint::compare( *tempConstraintA, *tempConstraintB ) )
+                const Constraint* tempConstraintA = mConstraints.at( posConsA );
+                mNumberOfComparedConstraints++;
+                std::set<const Constraint*> mUniqueConstraintsB = std::set<const Constraint*>();
+                for( unsigned posConsB = 0; posConsB < mConstraints.size(); ++posConsB )
                 {
-                    case 1:             // not A or B
+                    if( mUniqueConstraintsB.find( mConstraints.at( posConsB ) ) == mUniqueConstraintsB.end() )
                     {
-#ifdef ADD_LC
-                        Formula* tmpFormula = new Formula( NOT );
-#endif
-#ifdef ADD_LEARNING_CLAUSES
-                        _tSubformula = new Formula( OR );
-                        tmpFormula->addSubformula( tempConstraintA );
-                        _tSubformula->addSubformula( tmpFormula );
-                        _tSubformula->addSubformula( tempConstraintB );
-#endif
-#ifdef ADD_NEGATED_LEARNING_CLAUSES
-                                        // inv(A) or not inv(B)
-                        _tSubformula2 = new Formula( OR );
-                        tmpFormula = new Formula( NOT );
-                        const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), getInvertedRelationSymbol( tempConstraintA ) );
-                        const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), getInvertedRelationSymbol( tempConstraintB ) );
-                        tmpFormula->addSubformula( invConstraintB );
-                        _tSubformula2->addSubformula( invConstraintA );
-                        _tSubformula2->addSubformula( tmpFormula );
-#endif
-                        break;
-                    }
-
-                    case -1:            // not B or A
-                    {
-#ifdef ADD_LC
-                        Formula* tmpFormula = new Formula( NOT );
-#endif
-#ifdef ADD_LEARNING_CLAUSES
-                        _tSubformula = new Formula( OR );
-                        tmpFormula->addSubformula( tempConstraintB );
-                        _tSubformula->addSubformula( tmpFormula );
-                        _tSubformula->addSubformula( tempConstraintA );
-#endif
-#ifdef ADD_NEGATED_LEARNING_CLAUSES
-                                        // inv(B) or not inv(A)
-                        _tSubformula2 = new Formula( OR );
-                        tmpFormula = new Formula( NOT );
-                        const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), getInvertedRelationSymbol( tempConstraintA ) );
-                        const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), getInvertedRelationSymbol( tempConstraintB ) );
-                        tmpFormula->addSubformula( invConstraintA );
-                        _tSubformula2->addSubformula( tmpFormula );
-                        _tSubformula2->addSubformula( invConstraintB );
-#endif
-                        break;
-                    }
-                    case -2:            // not A or not B
-                    {
-#ifdef ADD_LEARNING_CLAUSES
-                        _tSubformula = new Formula( OR );
-                        Formula* tmpFormulaA = new Formula( NOT );
-                        tmpFormulaA->addSubformula( new Formula( tempConstraintA ) );
-                        Formula* tmpFormulaB = new Formula( NOT );
-                        tmpFormulaB->addSubformula( new Formula( tempConstraintB ) );
-                        _tSubformula->addSubformula( tmpFormulaA );
-                        _tSubformula->addSubformula( tmpFormulaB );
-#endif
-#ifdef ADD_NEGATED_LEARNING_CLAUSES
-                                        // inv(A) or inv(B)
-                        _tSubformula2 = new Formula( OR );
-                        const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), getInvertedRelationSymbol( tempConstraintA ) );
-                        const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), getInvertedRelationSymbol( tempConstraintB ) );
-                        _tSubformula2->addSubformula( invConstraintA );
-                        _tSubformula2->addSubformula( invConstraintB );
-#endif
-                        break;
-                    }
-                    default:
-                    {
-                        break;
+                        const Constraint* tempConstraintB = mConstraints.at( posConsB );
+                        // Create Origins
+                        vec_set_const_pFormula origins;
+                        origins.push_back( mConstraintOrigins.at( posConsA ) );
+                        origins.push_back( mConstraintOrigins.at( posConsB ) );
+                        switch( Constraint::compare(  *tempConstraintA, *tempConstraintB ) )
+                        {
+                            case 1:             // not A or B
+                            {
+        #ifdef ADD_LC
+                                Formula* tmpFormula = new Formula( NOT );
+        #endif
+        #ifdef ADD_LEARNING_CLAUSES
+                                Formula* _tSubformula = new Formula( OR );
+                                tmpFormula->addSubformula( tempConstraintA );
+                                _tSubformula->addSubformula( tmpFormula );
+                                _tSubformula->addSubformula( tempConstraintB );
+                                addSubformulaToPassedFormula( _tSubformula, origins );
+        #endif
+        #ifdef ADD_NEGATED_LEARNING_CLAUSES
+                                                // inv(A) or not inv(B)
+                                Formula* _tSubformula2 = new Formula( OR );
+                                tmpFormula = new Formula( NOT );
+                                Constraint_Relation crelA = getInvertedRelationSymbol( tempConstraintA );
+                                Constraint_Relation crelB = getInvertedRelationSymbol( tempConstraintB );
+                            if( crelA != CR_NEQ && crelB != CR_NEQ )
+                            {
+                                    const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), crelA );
+                                    const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), crelB );
+                                    tmpFormula->addSubformula( invConstraintB );
+                                    _tSubformula2->addSubformula( invConstraintA );
+                                    _tSubformula2->addSubformula( tmpFormula );
+                            }else if( crelA == CR_NEQ && crelB == CR_NEQ )
+                            {
+                                const Constraint* invConstraintA1 = Formula::newConstraint( tempConstraintA->lhs(), CR_GREATER );
+                                const Constraint* invConstraintA2 = Formula::newConstraint( tempConstraintA->lhs(), CR_LESS );
+                                const Constraint* invConstraintB1 = Formula::newConstraint( tempConstraintB->lhs(), CR_GREATER );
+                                const Constraint* invConstraintB2 = Formula::newConstraint( tempConstraintB->lhs(), CR_LESS );
+                                // To keep passedformula in CNF 2nd Formula is required ( B1 or A1 or A2 ) and ( B2 or A1 or A1 )
+                                Formula* notFormulaB = new Formula( NOT );
+                                notFormulaB->addSubformula( invConstraintB1 );
+                                _tSubformula2->addSubformula( notFormulaB );
+                                _tSubformula2->addSubformula( invConstraintA1 );
+                                _tSubformula2->addSubformula( invConstraintA2 );
+                                addSubformulaToPassedFormula( _tSubformula2, origins );
+                                notFormulaB = new Formula( NOT );
+                                notFormulaB->addSubformula( invConstraintB2 );
+                                _tSubformula2->addSubformula( notFormulaB );
+                                _tSubformula2->addSubformula( invConstraintA1 );
+                                _tSubformula2->addSubformula( invConstraintA2 );
+                            }else if( crelA == CR_NEQ )
+                            {
+                                // Adds ( A1 or A2 or B )
+                                const Constraint* invConstraintA1 = Formula::newConstraint( tempConstraintA->lhs(), CR_GREATER );
+                                const Constraint* invConstraintA2 = Formula::newConstraint( tempConstraintA->lhs(), CR_LESS );
+                                const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), crelB );
+                                tmpFormula->addSubformula( invConstraintB );
+                                _tSubformula2->addSubformula( invConstraintA1 );
+                                _tSubformula2->addSubformula( invConstraintA2 );
+                                _tSubformula2->addSubformula( tmpFormula );
+                            }else if( crelB == CR_NEQ )
+                            {
+                                const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), crelA );
+                                const Constraint* invConstraintB1 = Formula::newConstraint( tempConstraintB->lhs(), CR_GREATER );
+                                const Constraint* invConstraintB2 = Formula::newConstraint( tempConstraintB->lhs(), CR_LESS );
+                                // To keep passedformula in CNF 2nd Formula is required ( A or B1 ) and ( A or B2 )
+                                Formula* notFormulaB = new Formula( NOT );
+                                notFormulaB->addSubformula( invConstraintB1 );
+                                _tSubformula2->addSubformula( notFormulaB );
+                                _tSubformula2->addSubformula( invConstraintA );
+                                addSubformulaToPassedFormula( _tSubformula2, origins );
+                                _tSubformula2 = new Formula( OR );
+                                notFormulaB = new Formula( NOT );
+                                notFormulaB->addSubformula( invConstraintB2 );
+                                _tSubformula2->addSubformula( notFormulaB );
+                                _tSubformula2->addSubformula( invConstraintA );
+                            }
+                            addSubformulaToPassedFormula( _tSubformula2, origins );
+        #endif
+                            break;
+                            }
+                            case -1:            // not B or A
+                            {
+        #ifdef ADD_LC
+                                Formula* tmpFormula = new Formula( NOT );
+        #endif
+        #ifdef ADD_LEARNING_CLAUSES
+                                Formula* _tSubformula = new Formula( OR );
+                                tmpFormula->addSubformula( tempConstraintB );
+                                _tSubformula->addSubformula( tmpFormula );
+                                _tSubformula->addSubformula( tempConstraintA );
+                                addSubformulaToPassedFormula( _tSubformula, origins );
+        #endif
+        #ifdef ADD_NEGATED_LEARNING_CLAUSES
+                                                // inv(B) or not inv(A)
+                                Formula* _tSubformula2 = NULL;
+                                _tSubformula2 = new Formula( OR );
+                                tmpFormula = new Formula( NOT );
+                                Constraint_Relation crelA = getInvertedRelationSymbol( tempConstraintA );
+                                Constraint_Relation crelB = getInvertedRelationSymbol( tempConstraintB );
+                            if( crelA != CR_NEQ && crelB != CR_NEQ )
+                            {
+                                const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), crelA );
+                                const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), crelB );
+                                tmpFormula->addSubformula( invConstraintA );
+                                _tSubformula2->addSubformula( invConstraintB );
+                                _tSubformula2->addSubformula( tmpFormula );
+                            }
+                            else if( crelA == CR_NEQ && crelB == CR_NEQ )
+                            {
+                                const Constraint* invConstraintA1 = Formula::newConstraint( tempConstraintA->lhs(), CR_GREATER );
+                                const Constraint* invConstraintA2 = Formula::newConstraint( tempConstraintA->lhs(), CR_LESS );
+                                const Constraint* invConstraintB1 = Formula::newConstraint( tempConstraintB->lhs(), CR_GREATER );
+                                const Constraint* invConstraintB2 = Formula::newConstraint( tempConstraintB->lhs(), CR_LESS );
+                                // To keep passedformula in CNF 2nd Formula is required (A1 or B1 or B2) and (A2 or B1 or B2)
+                                Formula* notFormulaA = new Formula( NOT );
+                                notFormulaA->addSubformula( invConstraintA1 );
+                                _tSubformula2->addSubformula( notFormulaA );
+                                _tSubformula2->addSubformula( invConstraintB1 );
+                                _tSubformula2->addSubformula( invConstraintB2 );
+                                addSubformulaToPassedFormula( _tSubformula2, origins );
+                                _tSubformula2 = new Formula( OR );
+                                notFormulaA = new Formula( NOT );
+                                notFormulaA->addSubformula( invConstraintA2 );
+                                _tSubformula2->addSubformula( notFormulaA );
+                                _tSubformula2->addSubformula( invConstraintB1 );
+                                _tSubformula2->addSubformula( invConstraintB2 );
+                            }
+                            else if( crelA == CR_NEQ )
+                            {
+                                const Constraint* invConstraintA1 = Formula::newConstraint( tempConstraintA->lhs(), CR_GREATER );
+                                const Constraint* invConstraintA2 = Formula::newConstraint( tempConstraintA->lhs(), CR_LESS );
+                                const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), crelB );
+                                // To keep passedformula in CNF 2nd Formula is required (a1 or b) and (a2 or b)
+                                Formula* notFormulaA = new Formula( NOT );
+                                notFormulaA->addSubformula( invConstraintA1 );
+                                _tSubformula2->addSubformula( notFormulaA );
+                                _tSubformula2->addSubformula( invConstraintB );
+                                addSubformulaToPassedFormula( _tSubformula2, origins );
+                                _tSubformula2 = new Formula( OR );
+                                notFormulaA = new Formula( NOT );
+                                notFormulaA->addSubformula( invConstraintA2 );
+                                _tSubformula2->addSubformula( notFormulaA );
+                                _tSubformula2->addSubformula( invConstraintB );
+                            }else if( crelB == CR_NEQ )
+                            {   
+                                // Add ( a or b1 or b2 )
+                                const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), crelA );
+                                const Constraint* invConstraintB1 = Formula::newConstraint( tempConstraintB->lhs(), CR_GREATER );
+                                const Constraint* invConstraintB2 = Formula::newConstraint( tempConstraintB->lhs(), CR_LESS );
+                                tmpFormula->addSubformula( invConstraintA );
+                                _tSubformula2->addSubformula( tmpFormula );
+                                _tSubformula2->addSubformula( invConstraintB1 );
+                                _tSubformula2->addSubformula( invConstraintB2 );
+                            }
+                                addSubformulaToPassedFormula( _tSubformula2, origins );
+        #endif
+                                break;
+                            }
+                            case -2:            // not A or not B
+                            {
+        #ifdef ADD_LEARNING_CLAUSES
+                                Formula* _tSubformula = new Formula( OR );
+                                Formula* tmpFormulaA = new Formula( NOT );
+                                tmpFormulaA->addSubformula( new Formula( tempConstraintA ) );
+                                Formula* tmpFormulaB = new Formula( NOT );
+                                tmpFormulaB->addSubformula( new Formula( tempConstraintB ) );
+                                _tSubformula->addSubformula( tmpFormulaA );
+                                _tSubformula->addSubformula( tmpFormulaB );
+                                addSubformulaToPassedFormula( _tSubformula, origins );
+        #endif
+        #ifdef ADD_NEGATED_LEARNING_CLAUSES
+                                                // inv(A) or inv(B)
+                                Formula* _tSubformula2 = new Formula( OR );
+                                Constraint_Relation crelA = getInvertedRelationSymbol( tempConstraintA );
+                                Constraint_Relation crelB = getInvertedRelationSymbol( tempConstraintB );
+                            if( crelA != CR_NEQ && crelB != CR_NEQ )
+                            {
+                                const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), crelA );
+                                const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), crelB );
+                                _tSubformula2->addSubformula( invConstraintA );
+                                _tSubformula2->addSubformula( invConstraintB );
+                            }else if( crelA == CR_NEQ && crelB == CR_NEQ )
+                            {
+                                const Constraint* invConstraintA1 = Formula::newConstraint( tempConstraintA->lhs(), CR_GREATER );
+                                const Constraint* invConstraintA2 = Formula::newConstraint( tempConstraintA->lhs(), CR_LESS );
+                                const Constraint* invConstraintB1 = Formula::newConstraint( tempConstraintB->lhs(), CR_GREATER );
+                                const Constraint* invConstraintB2 = Formula::newConstraint( tempConstraintB->lhs(), CR_LESS );
+                                _tSubformula2->addSubformula( invConstraintA1 );
+                                _tSubformula2->addSubformula( invConstraintA2 );
+                                _tSubformula2->addSubformula( invConstraintB1 );
+                                _tSubformula2->addSubformula( invConstraintB2 );
+                            }
+                            else if( crelA == CR_NEQ )
+                            {
+                                const Constraint* invConstraintA1 = Formula::newConstraint( tempConstraintA->lhs(), CR_GREATER );
+                                const Constraint* invConstraintA2 = Formula::newConstraint( tempConstraintA->lhs(), CR_LESS );
+                                const Constraint* invConstraintB = Formula::newConstraint( tempConstraintB->lhs(), crelB );
+                                _tSubformula2->addSubformula( invConstraintA1 );
+                                _tSubformula2->addSubformula( invConstraintA2 );
+                                _tSubformula2->addSubformula( invConstraintB );
+                            }else if( crelB == CR_NEQ )
+                            {
+                                const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), crelA );
+                                const Constraint* invConstraintB1 = Formula::newConstraint( tempConstraintB->lhs(), CR_GREATER );
+                                const Constraint* invConstraintB2 = Formula::newConstraint( tempConstraintB->lhs(), CR_LESS );
+                                _tSubformula2->addSubformula( invConstraintA );
+                                _tSubformula2->addSubformula( invConstraintB1 );
+                                _tSubformula2->addSubformula( invConstraintB2 );
+                            }
+                            addSubformulaToPassedFormula( _tSubformula2, origins );
+        #endif
+                                break;
+                            }
+                            default:
+                            {
+                                break;
+                            }
+                        }
+                        mUniqueConstraintsB.insert( mConstraints.at( posConsB ));
+                        mUniqueConstraintsA.insert( mConstraints.at( posConsA ));
                     }
                 }
-                // Create Origins
-                vec_set_const_pFormula origins;
-                origins.push_back( mConstraintOrigins.at( posConsA ) );
-                origins.push_back( mConstraintOrigins.at( posConsB ) );
-#ifdef ADD_LEARNING_CLAUSES
-                if( _tSubformula != NULL )
-                {
-                    // Add learned Subformula and Origins to PassedFormula
-                    addSubformulaToPassedFormula( _tSubformula, origins );
-                }
-#endif
-#ifdef ADD_NEGATED_LEARNING_CLAUSES
-                if( _tSubformula2 != NULL )
-                {
-                    // Add learned Subformula and Origins to PassedFormula
-                    addSubformulaToPassedFormula( _tSubformula2, origins );
-                }
-#endif
             }
         }
     }
@@ -799,36 +1051,36 @@ namespace smtrat
     Formula::iterator PreProModule::interfaceRemoveSubformulaFromPassedFormula( Formula::iterator _formula )
     {
         // Update Database
-        std::vector< const Constraint* > vec_constraints;
-        (*_formula)->getConstraints( vec_constraints );
-        for( std::vector< const Constraint* >::iterator it = vec_constraints.begin(); it != vec_constraints.end(); ++it )
-        {
-            // Refresh Constraints Lists
-            for(std::vector< const Constraint* >::iterator subit = mActivityConstraints.begin(); subit != mActivityConstraints.end(); ++subit )
-            {
-                if( (*subit) == (*it) )
-                {
-                    if( (*subit) == (*mLastCheckedActivityConstraint) )
-                    {
-                        mLastCheckedActivityConstraint = mActivityConstraints.erase( subit );
-                    }else mActivityConstraints.erase( subit );
-                    break;
-                }
-            }
-            // Refresh VariableActivities
-            const GiNaC::symtab var = (*it)->variables();
-            for( std::map< std::string, GiNaC::ex>::const_iterator varit = var.begin(); varit != var.end(); ++varit )
-            {
-                mVariableActivities[ *varit ] -= weightOfQuantities;
-                for( signed i = (*it)->lhs().ldegree((*varit).second); i <= (*it)->lhs().degree((*varit).second); ++i )
-                {
-                    if( (*it)->lhs().coeff( varit->second, i ) != 0 && i != 0 )
-                    {
-                        mVariableActivities[ *varit ] -= i*weightOfVarDegrees;
-                    }
-                }
-            }
-        }
+//        std::vector< const Constraint* > vec_constraints;
+//        (*_formula)->getConstraints( vec_constraints );
+//        for( std::vector< const Constraint* >::iterator it = vec_constraints.begin(); it != vec_constraints.end(); ++it )
+//        {
+//            // Refresh Constraints Lists
+//            for(std::vector< const Constraint* >::iterator subit = mActivityConstraints.begin(); subit != mActivityConstraints.end(); ++subit )
+//            {
+//                if( (*subit) == (*it) )
+//                {
+//                    if( (*subit) == (*mLastCheckedActivityConstraint) )
+//                    {
+//                        mLastCheckedActivityConstraint = mActivityConstraints.erase( subit );
+//                    }else mActivityConstraints.erase( subit );
+//                    break;
+//                }
+//            }
+//            // Refresh VariableActivities
+//            const GiNaC::symtab var = (*it)->variables();
+//            for( std::map< std::string, GiNaC::ex>::const_iterator varit = var.begin(); varit != var.end(); ++varit )
+//            {
+//                mVariableActivities[ *varit ] -= weightOfQuantities;
+//                for( signed i = (*it)->lhs().ldegree((*varit).second); i <= (*it)->lhs().degree((*varit).second); ++i )
+//                {
+//                    if( (*it)->lhs().coeff( varit->second, i ) != 0 && i != 0 )
+//                    {
+//                        mVariableActivities[ *varit ] -= i*weightOfVarDegrees;
+//                    }
+//                }
+//            }
+//        }
         Formula::iterator _return = removeSubformulaFromPassedFormula( _formula );
         if( mLastCheckedFormula == _formula )
         {
@@ -871,7 +1123,7 @@ namespace smtrat
             proceedSubstitution();
 #endif
 #ifdef ASSIGN_ACTIVITIES
-            assignActivities( scale, weightOfVarDegrees, weightOfQuantities, weightOfRelationSymbols );
+            assignActivities();
 #endif
         mLastCheckedFormula = mpPassedFormula->pSubformulas()->end();
     }
