@@ -57,7 +57,7 @@ static const double upperBoundForVarActivity = 2;
 static const double weightOfVarActivities = -6;                // The highest product degree in each constraint
 static const double weightOfConDegrees = -3;                   // Weight of Degree of constraints
 static const double weightOfConQuantities = 0;                 // Weight of quantity of constraints                   
-static const double weightOfRelationSymbols = 0.1;               // Weight of relation symbols
+static const double weightOfRelationSymbols = 1;               // Weight of relation symbols
 //------------------RelationSymbols----------------------------
 static const double weight_CR_EQ = 2;
 static const double weight_CR_LESS = 1;
@@ -388,7 +388,7 @@ namespace smtrat
                 if( (mConQuantityActivityIntervall.second-mConQuantityActivityIntervall.first) != 0 && weightOfConQuantities != 0 ) 
                     activity += normalizeValue(mConstraintActivities[ t_constraint ].second, mConQuantityActivityIntervall.first, mConQuantityActivityIntervall.second ) 
                             * weightOfConQuantities * scale;
-               if( (mRelWeightIntervall.second-mRelWeightIntervall.first) != 0  && weight_CR_EQ != 0 )
+               if( (mRelWeightIntervall.second-mRelWeightIntervall.first) != 0 )
                 {
                     switch( (*t_constraint).relation() )
                     {
@@ -1206,37 +1206,6 @@ namespace smtrat
      */
     Formula::iterator PreProModule::interfaceRemoveSubformulaFromPassedFormula( Formula::iterator _formula )
     {
-        // Update Database
-//        std::vector< const Constraint* > vec_constraints;
-//        (*_formula)->getConstraints( vec_constraints );
-//        for( std::vector< const Constraint* >::iterator it = vec_constraints.begin(); it != vec_constraints.end(); ++it )
-//        {
-//            // Refresh Constraints Lists
-//            for(std::vector< const Constraint* >::iterator subit = mActivityConstraints.begin(); subit != mActivityConstraints.end(); ++subit )
-//            {
-//                if( (*subit) == (*it) )
-//                {
-//                    if( (*subit) == (*mLastCheckedActivityConstraint) )
-//                    {
-//                        mLastCheckedActivityConstraint = mActivityConstraints.erase( subit );
-//                    }else mActivityConstraints.erase( subit );
-//                    break;
-//                }
-//            }
-//            // Refresh VariableActivities
-//            const GiNaC::symtab var = (*it)->variables();
-//            for( std::map< std::string, GiNaC::ex>::const_iterator varit = var.begin(); varit != var.end(); ++varit )
-//            {
-//                mVariableActivities[ *varit ] -= weightOfQuantities;
-//                for( signed i = (*it)->lhs().ldegree((*varit).second); i <= (*it)->lhs().degree((*varit).second); ++i )
-//                {
-//                    if( (*it)->lhs().coeff( varit->second, i ) != 0 && i != 0 )
-//                    {
-//                        mVariableActivities[ *varit ] -= i*weightOfVarDegrees;
-//                    }
-//                }
-//            }
-//        }
         Formula::iterator _return = removeSubformulaFromPassedFormula( _formula );
         if( mLastCheckedFormula == _formula )
         {
