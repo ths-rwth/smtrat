@@ -28,6 +28,8 @@
  *
  * @version 2012-03-20
  */
+#include <ginacra/SternBrocot.h>
+#include "../config.h"
 #include "GroebnerModule.h"
 
 #include "NSSModule/definitions.h"
@@ -70,12 +72,6 @@ namespace smtrat
         for( GiNaC::symtab::const_iterator it = constraint.variables().begin(); it != constraint.variables().end(); ++it )
         {
 	        unsigned varNr = VariableListPool::addVariable( ex_to<symbol>( it->second ) );
-#ifdef USE_NSS 
-			if( constraint.relation() == CR_EQ )
-			{
-				mVariablesInEqualities.insert(varNr);
-			}
-#endif
 	        mListOfVariables.insert( *it );
         }
 
@@ -115,10 +111,6 @@ namespace smtrat
         if(!mBasis.inputEmpty()) {
 //			//first, we interreduce the input!
 			mBasis.reduceInput();
-			
-			if(mBasis.inputEmpty()) {
-				
-			}
 		}
 		
 //	    //If no equalities are added, we do not know anything 
@@ -127,19 +119,23 @@ namespace smtrat
 			mPopCausesRecalc = false;
 		   //now, we calculate the groebner basis
 			mBasis.calculate();
+			mBasis.getGbIdeal().print();
 			
 			
             Polynomial witness;
+			
 			#ifdef USE_NSS
 			// On linear systems, all solutions lie in Q. So we do not have to check for a solution.
-			if( !mBasis.isConstant() && !mBasis.getGbIdeal().isLinear())  
+			if( Settings::applyNSS && !mBasis.isConstant() && !mBasis.getGbIdeal().isLinear())  
             {
+				std::cout << "NSS?"; 
                 // Lets search for a witness. We only have to do this if the gb is non-constant.
 				
 				std::set<unsigned> variables;
+				std::set<unsigned> allVars = mBasis.getGbIdeal().gatherVariables();
 				std::set<unsigned> superfluous = mBasis.getGbIdeal().getSuperfluousVariables();
 				//std::cout << "nr of sup variables: " << superfluous.size();
-				std::set_difference(mVariablesInEqualities.begin(), mVariablesInEqualities.end(),
+				std::set_difference(allVars.begin(), allVars.end(),
 						superfluous.begin(),  superfluous.end(),
 						std::inserter( variables, variables.end() ));
 
@@ -149,23 +145,31 @@ namespace smtrat
                 // We currently only try with a low nr of variables.
                 if( vars < Settings::SDPupperBoundNrVariables )
                 {
-					std::cout << "Run SDP" << std::endl;
+					std::cout << " Run SDP";
 					
                     GroebnerToSDP<Settings::Order> sdp( mBasis.getGbIdeal(), MonomialIterator( variables, Settings::maxSDPdegree ) );
                     witness = sdp.findWitness();
 				}
+				std::cout << std::endl;
+				if(!witness.isZero()) std::cout << "Found witness: " << witness << std::endl;
             }
             // We have found an infeasible subset. Generate it.
-            if( mBasis.isConstant() || !witness.isZero() )
+            if( mBasis.isConstant() || (Settings::applyNSS && !witness.isZero() ) )
 			#else
 			if(mBasis.isConstant())
 			#endif
 			{
-		        mInfeasibleSubsets.push_back( set<const Formula*>() );
-                // The equalities we used for the basis-computation are the infeasible subset
 				if( mBasis.isConstant() ) {
 					witness = mBasis.getGb().front();
+				} else {
+					Settings::Reductor red(mBasis.getGbIdeal(), witness);
+					witness = red.fullReduce();
+					std::cout << witness << std::endl;
+					assert(witness.isZero());
 				}
+		        mInfeasibleSubsets.push_back( set<const Formula*>() );
+                // The equalities we used for the basis-computation are the infeasible subset
+				
 				GiNaCRA::BitVector::const_iterator origIt = witness.getOrigins().getBitVector().begin();
 				auto it = mBacktrackPoints.begin();
 				for(++it ; it != mBacktrackPoints.end(); ++it )
@@ -182,7 +186,7 @@ namespace smtrat
 						mInfeasibleSubsets.back().insert(**it);
 					}
                 }
-				
+				print();
                 return False;
             }
             saveState();
