@@ -140,8 +140,10 @@ namespace smtrat
                             }
                         }
                         return witness + 1;
+						
                     }
 					precision /= GBSettings::sternBrocotHigherPrecisionFactor;
+					iterations++;
                 }
                 while( !res && iterations < GBSettings::sternBrocotHigherPrecisionSteps );
 
