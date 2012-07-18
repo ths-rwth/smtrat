@@ -172,6 +172,7 @@ namespace smtrat
             bool saveState();
             std::set<const Formula*> generateReasons( const GiNaCRA::BitVector& reasons );
             void passGB();
+			Polynomial transformIntoEquality( Formula::const_iterator constraint );
 
             void removeSubformulaFromPassedFormula( Formula::iterator _formula );
             bool validityCheck();

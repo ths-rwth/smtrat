@@ -24,9 +24,11 @@ namespace smtrat
 
     enum after_firstInfeasibleSubset { RETURN_DIRECTLY, PROCEED_INFEASIBLEANDDEDUCTION, PROCEED_ALLINEQUALITIES };
 
-    enum theory_deductions { NONE, ONLY_INEQUALITIES, ALL };
+    enum theory_deductions { NO_CONSTRAINTS, ONLY_INEQUALITIES, ALL_CONSTRAINTS };
 
     enum check_inequalities { ALWAYS, AFTER_NEW_GB, NEVER };
+	
+	enum transform_inequalities { ALL_INEQUALITIES, ONLY_NONSTRICT, NO_INEQUALITIES };
 	
 	
 	struct decidePassingPolynomial;
@@ -49,9 +51,9 @@ namespace smtrat
         static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
         static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
         static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
-		static const bool								 transformIntoEqualities				 = false;
+		static const bool								 transformIntoEqualities				 = NO_INEQUALITIES;
 
-		static const bool								 applyNSS								 = true;
+		static const bool								 applyNSS								 = false;
         static const unsigned                            maxSDPdegree                            = 4;
         static const unsigned                            SDPupperBoundNrVariables                = 6;
 		static const unsigned							 callSDPAfterNMonomials					 = 6;

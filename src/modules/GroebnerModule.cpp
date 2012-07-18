@@ -89,14 +89,23 @@ namespace smtrat
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
 		{
-//			if(Settings::transformIntoEqualities) {
-//				Polynomial pol( constraint.lhs() );
-//				switch ( constraint.relation() ) 
-//				
-//			}
-			if(Settings::checkInequalities == NEVER) {
+			if(Settings::transformIntoEqualities == ALL_INEQUALITIES) {
+				
+				pushBacktrackPoint(_formula);
+				mBasis.addPolynomial( transformIntoEquality(_formula) );
+				saveState();
+			
+				if(!Settings::passGB)
+				{
+					addReceivedSubformulaToPassedFormula( _formula );
+				}
+			} 
+			else if(Settings::checkInequalities == NEVER)
+			{
 				addReceivedSubformulaToPassedFormula( _formula );
-			} else {
+			} 
+			else
+			{
 				mNewInequalities.push_back(mInequalities.InsertReceivedFormula(_formula));
 			}
 			
@@ -119,7 +128,7 @@ namespace smtrat
 			mPopCausesRecalc = false;
 		   //now, we calculate the groebner basis
 			mBasis.calculate();
-			mBasis.getGbIdeal().print();
+			//mBasis.getGbIdeal().print();
 			
 			
             Polynomial witness;
@@ -175,7 +184,8 @@ namespace smtrat
 				for(++it ; it != mBacktrackPoints.end(); ++it )
 				{
 					assert((**it)->getType() == REALCONSTRAINT);
-                    assert((**it)->constraint().relation() == CR_EQ );
+					
+                    assert(Settings::transformIntoEqualities != NO_INEQUALITIES || (**it)->constraint().relation() == CR_EQ );
 //                    
 					if(Settings::getReasonsForInfeasibility) {
 						if (origIt.get()) {
@@ -186,15 +196,13 @@ namespace smtrat
 						mInfeasibleSubsets.back().insert(**it);
 					}
                 }
-				print();
-                return False;
+				return False;
             }
             saveState();
 //            // We do not know, but we want to present our simplified constraints to other modules.
 //            // We therefore add the equalities
 	
 			if(Settings::checkInequalities != NEVER) {
-				
 				Answer ans = mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
 				mNewInequalities.clear();
 				if(ans != Unknown) {
@@ -241,8 +249,13 @@ namespace smtrat
     }
 
 	void GroebnerModule::removeSubformula( Formula::const_iterator _formula ) {
-		
-		if((*_formula)->constraint().relation() == CR_EQ) {
+		if(Settings::transformIntoEqualities == ALL_INEQUALITIES) {
+			popBacktrackPoint(_formula);
+		} else if(Settings::transformIntoEqualities == ONLY_NONSTRICT && (*_formula)->constraint().relation() != CR_GREATER && (*_formula)->constraint().relation() != CR_LESS) {
+			popBacktrackPoint(_formula);
+		}
+		else if((*_formula)->constraint().relation() == CR_EQ)
+		{
 			popBacktrackPoint(_formula);
 		} else {
 			if(Settings::checkInequalities != NEVER) {
@@ -324,7 +337,17 @@ namespace smtrat
 		//Add all others
 		for(Formula::const_iterator it = btpoint; it != mpReceivedFormula->end(); ++it) {
 			assert( (*it)->getType() == REALCONSTRAINT);
-			if((*it)->constraint().relation() == CR_EQ) {
+			if(Settings::transformIntoEqualities == ALL_INEQUALITIES) {
+				pushBacktrackPoint(it);
+				mBasis.addPolynomial(Polynomial((*it)->constraint().lhs()));
+				// and save them
+				saveState();
+			} else if (Settings::transformIntoEqualities == ONLY_NONSTRICT && (*it)->constraint().relation() != CR_GREATER && (*it)->constraint().relation() != CR_LESS) {
+				pushBacktrackPoint(it);
+				mBasis.addPolynomial(Polynomial((*it)->constraint().lhs()));
+				// and save them
+				saveState();
+			} else if((*it)->constraint().relation() == CR_EQ) {
 				pushBacktrackPoint(it);
 				mBasis.addPolynomial(Polynomial((*it)->constraint().lhs()));
 				// and save them
@@ -335,6 +358,33 @@ namespace smtrat
 		
 
     }
+
+	
+	Polynomial GroebnerModule::transformIntoEquality( Formula::const_iterator constraint ) {
+		Polynomial result( (*constraint)->constraint().lhs() );
+		unsigned varNr = VariableListPool::addVariable();
+		
+		//const RationalNumber& coeff, unsigned varIndex, unsigned exponent 
+		switch( (*constraint)->constraint().relation() ) {
+			case CR_GEQ:
+				result = result + GiNaCRA::MultivariateTermMR(-1, varNr, 2);
+				break;
+			case CR_LEQ:
+				result = result + GiNaCRA::MultivariateTermMR(1, varNr, 2);
+				break;
+			case CR_GREATER:
+				result = result * GiNaCRA::MultivariateTermMR(1, varNr, 2);
+				result = result + GiNaCRA::MultivariateTermMR(-1);
+				break;
+			case CR_LESS:
+				result = result * GiNaCRA::MultivariateTermMR(1, varNr, 2);
+				result = result + GiNaCRA::MultivariateTermMR(1);
+				break;
+			default:
+				assert(false);
+		}
+		return result;
+	}
 
     /**
      * Saves the current state  so it can be restored later
@@ -360,7 +410,14 @@ namespace smtrat
 		// find original constraints which made the gb.
 			for( Formula::const_iterator it = mpReceivedFormula->begin(); it != mpReceivedFormula->end(); ++it )
 			{
-				if( (*it)->constraint().relation() == CR_EQ )
+				if( Settings::transformIntoEqualities == ALL_INEQUALITIES) {
+					originals.front().insert( *it );
+				}
+				else if(Settings::transformIntoEqualities == ONLY_NONSTRICT && (*it)->constraint().relation() != CR_GREATER && (*it)->constraint().relation() != CR_LESS) 
+				{
+					originals.front().insert( *it );
+				}
+				else if( (*it)->constraint().relation() == CR_EQ )
 				{
 					originals.front().insert( *it );
 				}
@@ -387,7 +444,9 @@ namespace smtrat
 		std::set<const Formula*> origins;
 		for( Formula::const_iterator it = mpReceivedFormula->begin(); it != mpReceivedFormula->end(); ++it )
 		{
-			if( (*it)->constraint().relation() == CR_EQ )
+			bool isInGb = Settings::transformIntoEqualities == ALL_INEQUALITIES || (*it)->constraint().relation() == CR_EQ  
+				|| (Settings::transformIntoEqualities == ONLY_NONSTRICT && (*it)->constraint().relation() != CR_GREATER && (*it)->constraint().relation() != CR_LESS );
+			if( isInGb )
 			{
 				if (origIt.get()) {
 					origins.insert( *it );
@@ -594,7 +653,7 @@ namespace smtrat
 					std::set<const Formula*> originals(mModule->generateReasons(reduced.getOrigins().getBitVector()));
 
 					std::get<0>(it->second) = mModule->mpPassedFormula->end();
-					if(GBSettings::addTheoryDeductions != NONE) {
+					if(GBSettings::addTheoryDeductions != NO_CONSTRAINTS) {
 						mModule->addDeduction(originals, &((*(it->first))->constraint()));
 					}
 				}
