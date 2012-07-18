@@ -90,12 +90,12 @@ namespace smtrat
                 }
                 while( result != 0 && mMonomialIterator.hasNext() );
 				
-                unsigned problemSizeSquared = pow( constraintMatrixFactory.getProblemSize(), 2 );
-               
 				if(result != 0 ) {
 					return MultivariatePolynomialMR<Order>();
 				}
 				
+				unsigned problemSizeSquared = pow( constraintMatrixFactory.getProblemSize(), 2 );
+               
 				std::cout << std::endl;
                 for( unsigned i = 1; i <= problemSizeSquared; ++i )
                 {
@@ -105,18 +105,15 @@ namespace smtrat
 					}
 				}
 				
-				std::cout << std::endl;
-				for(auto it = monoms.begin(); it != monoms.end(); ++it) {
-					std::cout << *it << ", ";
-				}
-				mGroebnerBasis.print();
 				  //}
                 
                 bool res;
+				
+				float precision = 1.0 / GBSettings::sternBrocotStartPrecisionOneTo;
+				unsigned iterations = 0;
                 do
-                {
-					
-                    FindExactSolution fes( *solution, constraintMatrixFactory.exportLinEqSys(), 0.01 );
+                {	
+                    FindExactSolution fes( *solution, constraintMatrixFactory.exportLinEqSys(), precision );
                     DenseMatrix sol = fes.getSolutionMatrix( constraintMatrixFactory.getProblemSize() );
                     std::cout << std::endl;
                     sol.print();
@@ -131,26 +128,22 @@ namespace smtrat
                         {
                             if( cholesky.getElemD( i ) != 0 )
                             {
-								std::cout << "i=" << i << std::endl;
                                 MultivariatePolynomialMR<Order> square( monoms[i] );
 								//square =  square * (1 / cholesky.getElemD(i));
 								std::cout << square << std::endl;
                                 for( unsigned j = i + 1; j < monoms.size(); ++j )
                                 {
-                                    square = square +   monoms[j] *  cholesky.getElemL( j, i );
+                                    square = square + monoms[j] * cholesky.getElemL( j, i );
                                 }
-								std::cout << square << std::endl;
                                 square  =  square * square;
-								std::cout << square << std::endl;
-                                witness = witness +  square * cholesky.getElemD( i ) ;
-								
-								std::cout << witness << std::endl;
+								witness = witness +  square * cholesky.getElemD( i ) ;
                             }
                         }
                         return witness + 1;
                     }
+					precision /= GBSettings::sternBrocotHigherPrecisionFactor;
                 }
-                while( !res && /* precision */ false );
+                while( !res && iterations < GBSettings::sternBrocotHigherPrecisionSteps );
 
                 return MultivariatePolynomialMR<Order>();
             }

@@ -71,7 +71,6 @@ namespace smtrat
         protected:
             ///The state of the basis
             const GiNaCRA::Buchberger<GBSettings::Order> mBasis;
-            const std::vector<unsigned>                  mVariablesInEqualities;
     };
 
     class GroebnerModule;
