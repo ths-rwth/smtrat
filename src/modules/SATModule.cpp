@@ -49,12 +49,12 @@
 
 #include "SATModule.h"
 
-//#define DEBUG_SATMODULE
+#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 #define SATMODULE_WITH_CALL_NUMBER
 #define SAT_MODULE_THEORY_PROPAGATION
 //#define WITH_PROGRESS_ESTIMATION
-#define STORE_ONLY_ONE_REASON
+//#define STORE_ONLY_ONE_REASON
 
 using namespace std;
 using namespace Minisat;
@@ -1649,7 +1649,7 @@ NextClause:
                                     #endif
                                     confl = learnTheoryReason( *bestInfeasibleSubset );
                                     #else
-                                    int conflictSize = mpPassedFormula->size();
+                                    int conflictSize = mpPassedFormula->size() + 1;
                                     for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
                                             infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
                                     {
@@ -1703,21 +1703,21 @@ NextClause:
 
             if( confl != CRef_Undef )
             {
-                vector<Lit> maxSatAssign = vector<Lit>();
-                int level = 0;
-                for( int pos = 0; pos < trail.size(); ++pos )
-                {
-                    if( pos == trail_lim[level] )
-                    {
-                        ++level;
-                        if( level == trail_lim.size() - 1 )
-                        {
-                            break;
-                        }
-                    }
-                    maxSatAssign.push_back( trail[pos] );
-                }
-                mMaxSatAssigns.push_back( maxSatAssign );
+//                vector<Lit> maxSatAssign = vector<Lit>();
+//                int level = 0;
+//                for( int pos = 0; pos < trail.size(); ++pos )
+//                {
+//                    if( pos == trail_lim[level] )
+//                    {
+//                        ++level;
+//                        if( level == trail_lim.size() - 1 )
+//                        {
+//                            break;
+//                        }
+//                    }
+//                    maxSatAssign.push_back( trail[pos] );
+//                }
+//                mMaxSatAssigns.push_back( maxSatAssign );
                 // CONFLICT
                 conflicts++;
                 conflictC++;
