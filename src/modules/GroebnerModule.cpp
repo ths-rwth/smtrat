@@ -53,7 +53,6 @@ namespace smtrat
 		mInequalities(this)
 
     {
-		assert(Settings::passInequalities != FULL_REDUCED_ONLYNEW); // not supported yet!
         mModuleType = MT_GroebnerModule;
 		mPopCausesRecalc = false;
 		pushBacktrackPoint(mpReceivedFormula->end());
@@ -94,10 +93,15 @@ namespace smtrat
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
 		{
+//			if(Settings::transformIntoEqualities) {
+//				Polynomial pol( constraint.lhs() );
+//				switch ( constraint.relation() ) 
+//				
+//			}
 			if(Settings::checkInequalities == NEVER) {
 				addReceivedSubformulaToPassedFormula( _formula );
 			} else {
-				mInequalities.InsertReceivedFormula(_formula);
+				mNewInequalities.push_back(mInequalities.InsertReceivedFormula(_formula));
 			}
 			
 		}
@@ -111,6 +115,10 @@ namespace smtrat
         if(!mBasis.inputEmpty()) {
 //			//first, we interreduce the input!
 			mBasis.reduceInput();
+			
+			if(mBasis.inputEmpty()) {
+				
+			}
 		}
 		
 //	    //If no equalities are added, we do not know anything 
@@ -181,11 +189,10 @@ namespace smtrat
 //            // We do not know, but we want to present our simplified constraints to other modules.
 //            // We therefore add the equalities
 	
-			//print();
-			//mInequalities.print();
-			
 			if(Settings::checkInequalities != NEVER) {
+				
 				Answer ans = mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
+				mNewInequalities.clear();
 				if(ans != Unknown) {
 					return ans; 
 				}
@@ -211,16 +218,18 @@ namespace smtrat
 				}
 				passGB();
 			}
-        }
+        } else if(Settings::checkInequalities == ALWAYS) {
+			Answer ans = mInequalities.reduceWRTGroebnerBasis(mNewInequalities,mBasis.getGbIdeal());
+			mNewInequalities.clear();
+			if(ans != Unknown) return ans;
+			
+		}
 		
-		
-		//print();
 		Answer ans = runBackends();
 		if(ans == False) {
 			 getInfeasibleSubsets();
 			 
 			 assert(!mInfeasibleSubsets.empty());
-		//	 printInfeasibleSubsets();
 		}
         //std::cout << "Backend result:" << ans << std::endl;
 		
@@ -428,12 +437,13 @@ namespace smtrat
 		mNewConstraints = mReducedInequalities.begin();
 	}
 
-	void InequalitiesTable::InsertReceivedFormula(Formula::const_iterator received ) {
+	InequalitiesTable::Rows::iterator InequalitiesTable::InsertReceivedFormula(Formula::const_iterator received ) {
 		mModule->addReceivedSubformulaToPassedFormula(received);
 		// We assume that the just added formula is the last one.
 		const Formula::iterator passedEntry =mModule->mpPassedFormula->last();
 		// And we add a row to our table
-		mReducedInequalities.insert(Row (received, RowEntry( passedEntry,(*received)->constraint().relation() ,std::list<CellEntry>(1, CellEntry(0, Polynomial((*received)->constraint().lhs())) ))));
+		return mReducedInequalities.insert(Row (received, RowEntry( passedEntry,(*received)->constraint().relation() ,std::list<CellEntry>(1, CellEntry(0, Polynomial((*received)->constraint().lhs())) )))).first;
+		
 	}
 
 	void InequalitiesTable::pushBacktrackPoint() {
@@ -454,15 +464,41 @@ namespace smtrat
 				if(jt->first > mBtnumber )
 				{
 					std::get<2>(it->second).erase(jt, listEnd);
-					if(GBSettings::passInequalities == FULL_REDUCED) {
+					bool pass;
+					if(GBSettings::passInequalities == FULL_REDUCED_IF) {
+						pass = GBSettings::passPolynomial::evaluate(std::get<2>(it->second).front().second, std::get<2>(it->second).back().second );
+					}
+					
+					// what shall we pass
+					if(GBSettings::passInequalities == AS_RECEIVED )
+					{
+						if(std::get<0>(it->second) == mModule->mpPassedFormula->end()) {
+							// we had reduced it to true, therefore not passed it, but now we have to pass the original one again.
+							mModule->addReceivedSubformulaToPassedFormula(it->first);
+							std::get<0>(it->second) = mModule->mpPassedFormula->last();
+						}
+					}
+					else 
+					{
 						if(std::get<0>(it->second) != mModule->mpPassedFormula->end()) {
 							// we can of course only remove something which is in the formula.
 							mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
 						}
-						std::vector<std::set<const Formula*> > originals;
-						originals.push_back(mModule->generateReasons(std::get<2>(it->second).back().second.getOrigins().getBitVector()));
-						originals.front().insert(*(it->first));
-						mModule->addSubformulaToPassedFormula(new Formula(Formula::newConstraint(std::get<2>(it->second).back().second.toEx(), std::get<1>(it->second))), originals);
+						if(GBSettings::passInequalities == FULL_REDUCED || (GBSettings::passInequalities == FULL_REDUCED_IF && pass) )
+						{
+							std::vector<std::set<const Formula*> > originals;
+							originals.push_back(mModule->generateReasons(std::get<2>(it->second).back().second.getOrigins().getBitVector()));
+							originals.front().insert(*(it->first));
+							mModule->addSubformulaToPassedFormula(new Formula(Formula::newConstraint(std::get<2>(it->second).back().second.toEx(), std::get<1>(it->second))), originals);
+						
+						}
+						else 
+						{	
+							assert(GBSettings::passInequalities == FULL_REDUCED_IF);
+							//we pass the original one.
+							mModule->addReceivedSubformulaToPassedFormula(it->first);
+						}
+						//update the reference to the passed formula again
 						std::get<0>(it->second) = mModule->mpPassedFormula->last();
 					}
 					break;
@@ -474,97 +510,7 @@ namespace smtrat
 	Answer InequalitiesTable::reduceWRTGroebnerBasis(const Ideal& gb) {
 		for(auto it = mReducedInequalities.begin(); it != mReducedInequalities.end(); ++it) 
 		{
-			assert(std::get<1>(it->second) != CR_EQ);
-			Polynomial& p = std::get<2>(it->second).back().second;
-			Polynomial reduced;
-			
-			bool reductionOccured = false;
-			if(!p.isZero() && !p.isConstant()) {
-				GiNaCRA::BaseReductor<GBSettings::Order> reductor(gb, p);
-				reduced = reductor.fullReduce();
-				reductionOccured = reductor.reductionOccured();
-			}
-			
-			Constraint_Relation relation = std::get<1>(it->second);
-			if(reductionOccured) {
-				if( reduced.isZero() || reduced.isConstant() ) {
-					bool satisfied = false;
-					if (reduced.isZero() && !constraintRelationIsStrict(relation) ) 
-					{ 
-						assert(!constraintRelationIsStrict(relation));
-						satisfied = true;
-					} 
-					else if (!reduced.isZero())
-					{ // non zero
-						assert(reduced.nrOfTerms() > 0);
-						assert(reduced.lcoeff() != 0);
-						
-						const Rational reducedConstant = reduced.lcoeff();
-						assert(reducedConstant != 0);
-						if(reducedConstant < 0 ) {
-							if(relation == CR_LESS || relation == CR_LEQ || relation == CR_NEQ) {
-								satisfied = true;
-							}
-						}
-						else
-						{
-							if(relation == CR_GREATER || relation == CR_GEQ || relation == CR_NEQ ) {
-								satisfied = true;
-							}
-						}
-					}
-					
-					if(satisfied) 
-					{
-						if(GBSettings::passInequalities == FULL_REDUCED) 
-						{
-							mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
-						}
-						std::get<2>(it->second).push_back(CellEntry(mBtnumber, reduced) );
-						std::set<const Formula*> originals(mModule->generateReasons(reduced.getOrigins().getBitVector()));
-						
-
-						if(GBSettings::passInequalities == FULL_REDUCED) 
-						{
-							
-							std::get<0>(it->second) = mModule->mpPassedFormula->end();
-						}
-						if(GBSettings::addTheoryDeductions == ONLY_INEQUALITIES) {
-							mModule->addDeduction(originals, &((*(it->first))->constraint()));
-						}
-					}
-					else 
-					{
-						std::set<const Formula*> infeasibleSubset(mModule->generateReasons(reduced.getOrigins().getBitVector()));
-						infeasibleSubset.insert(*(it->first));
-
-						mModule->mInfeasibleSubsets.push_back(infeasibleSubset);
-						if(GBSettings::withInfeasibleSubset == RETURN_DIRECTLY) {	
-							return False;
-						}
-					}	
-				}
-				else if (!GBSettings::withInfeasibleSubset == PROCEED_INFEASIBLEANDDEDUCTION && mModule->mInfeasibleSubsets.empty())
-				{
-					if(GBSettings::checkEqualitiesForTrivialSumOfSquares && reduced.isTrivialSumOfSquares()) std::cout << "Found trivial sum of square inequality" << std::endl;
-			
-					if(GBSettings::passInequalities == FULL_REDUCED) 
-					{
-						mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
-					}
-					std::get<2>(it->second).push_back(CellEntry(mBtnumber, reduced) );
-					if(GBSettings::passInequalities == FULL_REDUCED) 
-					{
-						std::vector<std::set<const Formula*> > originals;
-						originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
-						originals.front().insert(*(it->first));
-
-						mModule->addSubformulaToPassedFormula(new Formula(Formula::newConstraint(reduced.toEx(), relation)), originals);
-						std::get<0>(it->second) = mModule->mpPassedFormula->last();
-					}
-				}
-			}
-			
+			if(!reduceWRTGroebnerBasis(it, gb)) return False;
 		}
 		if(GBSettings::withInfeasibleSubset != RETURN_DIRECTLY) {
 			if(mModule->mInfeasibleSubsets.empty()) {
@@ -577,6 +523,122 @@ namespace smtrat
 		}
 		
 	}
+	
+	Answer InequalitiesTable::reduceWRTGroebnerBasis( const std::list<Rows::iterator>& ineqToBeReduced, const Ideal& gb ) {
+		for(auto it = ineqToBeReduced.begin(); it != ineqToBeReduced.end(); ++it ) {
+			if(!reduceWRTGroebnerBasis(*it, gb)) return False;
+		}
+		if(GBSettings::withInfeasibleSubset != RETURN_DIRECTLY) {
+			if(mModule->mInfeasibleSubsets.empty()) {
+				return Unknown;
+			} else {
+				return False;
+			}
+		} else {
+			return Unknown;
+		}
+	}
+
+	bool InequalitiesTable::reduceWRTGroebnerBasis( Rows::iterator it, const Ideal& gb ) {
+		assert(std::get<1>(it->second) != CR_EQ);
+		Polynomial& p = std::get<2>(it->second).back().second;
+		Polynomial reduced;
+
+		bool reductionOccured = false;
+		if(!p.isZero() && !p.isConstant()) {
+			GiNaCRA::BaseReductor<GBSettings::Order> reductor(gb, p);
+			reduced = reductor.fullReduce();
+			reductionOccured = reductor.reductionOccured();
+		}
+
+		Constraint_Relation relation = std::get<1>(it->second);
+		if(reductionOccured)
+		{
+			if( reduced.isZero() || reduced.isConstant() )
+			{
+				bool satisfied = false;
+				if (reduced.isZero() && !constraintRelationIsStrict(relation) ) 
+				{ 
+					assert(!constraintRelationIsStrict(relation));
+					satisfied = true;
+				} 
+				else if (!reduced.isZero())
+				{ // non zero
+					assert(reduced.nrOfTerms() > 0);
+					assert(reduced.lcoeff() != 0);
+
+					const Rational reducedConstant = reduced.lcoeff();
+					assert(reducedConstant != 0);
+					if(reducedConstant < 0 ) {
+						if(relation == CR_LESS || relation == CR_LEQ || relation == CR_NEQ) {
+							satisfied = true;
+						}
+					}
+					else
+					{
+						if(relation == CR_GREATER || relation == CR_GEQ || relation == CR_NEQ ) {
+							satisfied = true;
+						}
+					}
+				}
+
+				if(satisfied) 
+				{
+					mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
+					
+					std::get<2>(it->second).push_back(CellEntry(mBtnumber, reduced) );
+					std::set<const Formula*> originals(mModule->generateReasons(reduced.getOrigins().getBitVector()));
+
+					std::get<0>(it->second) = mModule->mpPassedFormula->end();
+					if(GBSettings::addTheoryDeductions != NONE) {
+						mModule->addDeduction(originals, &((*(it->first))->constraint()));
+					}
+				}
+				else // we have a conflict
+				{
+					std::set<const Formula*> infeasibleSubset(mModule->generateReasons(reduced.getOrigins().getBitVector()));
+					infeasibleSubset.insert(*(it->first));
+
+					mModule->mInfeasibleSubsets.push_back(infeasibleSubset);
+					if(GBSettings::withInfeasibleSubset == RETURN_DIRECTLY) {	
+						return false;
+					}
+				}	
+			}
+			else if (GBSettings::withInfeasibleSubset == PROCEED_ALLINEQUALITIES || mModule->mInfeasibleSubsets.empty())
+			{
+				if(GBSettings::checkEqualitiesForTrivialSumOfSquares && reduced.isTrivialSumOfSquares()) std::cout << "Found trivial sum of square inequality" << std::endl;
+
+				bool pass;
+				if(GBSettings::passInequalities == FULL_REDUCED_IF)
+				{
+					pass = GBSettings::passPolynomial::evaluate(std::get<2>(it->second).front().second,reduced);
+				}
+				
+				if(GBSettings::passInequalities == FULL_REDUCED || (GBSettings::passInequalities == FULL_REDUCED_IF  && pass ) ) 
+				{
+					//remove the last one
+					mModule->removeSubformulaFromPassedFormula(std::get<0>(it->second));
+				}
+				//add a new cell
+				std::get<2>(it->second).push_back(CellEntry(mBtnumber, reduced) );
+				if(GBSettings::passInequalities == FULL_REDUCED || (GBSettings::passInequalities == FULL_REDUCED_IF  && pass ) ) 
+				{
+					// get the reason set for the reduced polynomial
+					std::vector<std::set<const Formula*> > originals;
+					originals.push_back(mModule->generateReasons(reduced.getOrigins().getBitVector()));
+					originals.front().insert(*(it->first));
+
+					//pass the result
+					mModule->addSubformulaToPassedFormula(new Formula(Formula::newConstraint(reduced.toEx(), relation)), originals);
+					//set the pointer to the passed formula accordingly.
+					std::get<0>(it->second) = mModule->mpPassedFormula->last();
+				}
+			}
+		}
+		return true;
+	}
+	
 	
 	void InequalitiesTable::removeInequality(Formula::const_iterator _formula) {
 		mReducedInequalities.erase(_formula);
