@@ -404,7 +404,7 @@ namespace smtrat
             string moduleName = "";
             switch( (**module).type() )
             {
-                case MT_SimplifierModule:
+                case MT_SmartSimplifier:
                 {
                     moduleName = "Simplifier";
                     break;
