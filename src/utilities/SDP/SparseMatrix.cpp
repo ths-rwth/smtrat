@@ -112,18 +112,36 @@ namespace smtrat
         assert( rowindices != NULL );
         assert( colindices != NULL );
         assert( values != NULL );
+		
+		int nrEntries = 0;
 
         map<pair<int, int>, Rational>::const_iterator it = mNonZeroEntries.begin();
         for( int i = 1; i <= getNrOfNonZeroEntries(); ++i )
         {
-            rowindices[i] = it->first.first + 1;
-            colindices[i] = it->first.second + 1;
-            values[i]     = cln::double_approx( it->second );
+			if(mHide.count(it->first.first) == 0 && mHide.count(it->first.second) == 0) { 
+				rowindices[i] = it->first.first + 1;
+				colindices[i] = it->first.second + 1;
+				values[i]     = cln::double_approx( it->second );
+				++nrEntries;
+			}
             ++it;
         }
 
-        return getNrOfNonZeroEntries();
+        return nrEntries;
     }
+	
+	void SparseMatrix::addHiddenRowAndCol( int rowOrCol ) 
+	{
+		mHide.insert( rowOrCol );
+	}
+	void SparseMatrix::clearHideSet( ) 
+	{
+		mHide.clear();
+	}
+	std::set<int>& SparseMatrix::getHideSet( ) const
+	{
+		return mHide;
+	}
 
     int SparseMatrix::getNrOfNonZeroEntries() const
     {
