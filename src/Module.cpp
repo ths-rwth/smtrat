@@ -577,9 +577,10 @@ namespace smtrat
     {
         string assumption = "";
         assumption += "(push 1)\n";
-        assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and ";
+        assumption += ( _consistent ? "" : "(not ");
         assumption += _formula.toString();
+        assumption += ( _consistent ? "" : ")");
         assumption += " module_";
         stringstream out;
         out << _module.type();
@@ -600,13 +601,14 @@ namespace smtrat
     {
         string assumption = "";
         assumption += "(push 1)\n";
-        assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and ";
+        assumption += ( _consistent ? "" : "(not (and ");
         for( set<const Formula*>::const_iterator formula = _formulas.begin();
              formula != _formulas.end(); ++formula )
         {
             assumption += (*formula)->toString();
         }
+        assumption += ( _consistent ? "" : "))");
         assumption += " module_";
         stringstream out;
         out << _module.type();
