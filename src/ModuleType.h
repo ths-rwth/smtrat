@@ -38,8 +38,6 @@ namespace smtrat
      */
     enum ModuleType
     {
-        /// type of no Module
-        MT_NoModule,
         /// type of class Module
         MT_Module,
         /// type of class SmartSimplifier
@@ -69,7 +67,9 @@ namespace smtrat
         /// type of class VSModule
         MT_SingleVSModule,
         /// type of class SimplifierModule
-        MT_FourierMotzkinSimplifier
+        MT_FourierMotzkinSimplifier,
+        /// type of no Module
+        MT_NoModule           // KEEP THIS AS THE LAST ELEMENT OF THIS ENUM!!!
     };
 }    // namespace smtrat
 

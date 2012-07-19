@@ -224,6 +224,7 @@ namespace smtrat
                 GiNaC::symtab::iterator var = mAllVariables.find( _name );
                 if( var != mAllVariables.end() )
                 {
+                    assert( false );
                     return var->second;
                 }
                 else

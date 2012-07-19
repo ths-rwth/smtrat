@@ -1499,7 +1499,7 @@ NextClause:
      *    NOTE! Use negative value for 'nof_conflicts' indicate infinity.
      *
      *  Output:
-     *    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
+     *    'l_True' if a partial assignment that is consistent with respect to the clause set is found. If
      *    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
      *    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
      *

@@ -34,6 +34,8 @@
 
 #include <typeinfo>
 #include <cln/cln.h>
+#include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -90,6 +92,30 @@ namespace smtrat
 
     Manager::~Manager()
     {
+        if( !Module::mAssumptionToCheck.empty() )
+        {
+            ofstream smtlibFile;
+            smtlibFile.open( "assumptions_to_check.smt2" );
+            smtlibFile << "(set-logic QF_NRA)\n";
+            smtlibFile << "(set-option :interactive-mode true)\n";
+            smtlibFile << "(set-info :smt-lib-version 2.0)\n";
+            for( GiNaC::symtab::const_iterator var = Formula::mConstraintPool.variables().begin();
+                var != Formula::mConstraintPool.variables().end(); ++var )
+            {
+                smtlibFile << "(declare-fun " << var->first << " () Real)\n";
+            }
+            for( unsigned i = 0; i < ModuleType::MT_NoModule; ++i )
+            {
+                smtlibFile << "(declare-fun module_" << i << " () Bool)\n";
+            }
+            for( vector< string >::const_iterator assum = Module::mAssumptionToCheck.begin();
+                 assum != Module::mAssumptionToCheck.end(); ++assum )
+            {
+                smtlibFile << *assum;
+            }
+            smtlibFile << "(exit)";
+            smtlibFile.close();
+        }
         while( !mGeneratedModules.empty() )
         {
             Module* ptsmodule = mGeneratedModules.back();

@@ -177,6 +177,9 @@ namespace smtrat
             std::string toString() const;
             void print( std::ostream& _out = std::cout ) const;
             void print2( std::ostream& _out = std::cout ) const;
+            void printInPrefix( std::ostream& _out = std::cout ) const;
+            const std::string prefixStringOf( const GiNaC::ex& ) const;
+            std::string toPrefixString() const;
 
             //
             static signed compare( const Constraint&, const Constraint& );

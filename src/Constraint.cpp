@@ -666,6 +666,23 @@ namespace smtrat
         }
     }
 
+    void Constraint::getVariables( const ex& _term, symtab& _variables )
+    {
+        if( _term.nops() > 1 )
+        {
+            for( GiNaC::const_iterator subterm = _term.begin(); subterm != _term.end(); ++subterm )
+            {
+                getVariables( *subterm, _variables );
+            }
+        }
+        else if( is_exactly_a<symbol>( _term ) )
+        {
+            stringstream out;
+            out << _term;
+            _variables.insert( pair< string, symbol >( out.str(), ex_to<symbol>( _term ) ) );
+        }
+    }
+
     /**
      * Gives the string represantion of the constraint.
      *
@@ -770,6 +787,156 @@ namespace smtrat
                 _out << "~";
         }
         _out << "0";
+    }
+
+    /**
+     * Gives the string representation of the constraint.
+     *
+     * @return The string representation of the constraint.
+     */
+    string Constraint::toPrefixString() const
+    {
+        string result = "";
+        switch( relation() )
+        {
+            case CR_EQ:
+            {
+                result += "(= ";
+                break;
+            }
+            case CR_NEQ:
+            {
+                result += "(!= ";
+                break;
+            }
+            case CR_LESS:
+            {
+                result += "(< ";
+                break;
+            }
+            case CR_GREATER:
+            {
+                result += "(> ";
+                break;
+            }
+            case CR_LEQ:
+            {
+                result += "(<= ";
+                break;
+            }
+            case CR_GEQ:
+            {
+                result += "(>= ";
+                break;
+            }
+            default:
+            {
+                result += "(~ ";
+            }
+        }
+        result += prefixStringOf( lhs() ) + " 0)";
+        return result;
+    }
+
+    /**
+     * Prints the constraint representation to an output stream.
+     *
+     * @param _out The output stream to which the constraints representation is printed.
+     */
+    void Constraint::printInPrefix( ostream& _out ) const
+    {
+        _out << toPrefixString();
+    }
+
+    const string Constraint::prefixStringOf( const ex& _term ) const
+    {
+        string result = "";
+        if( is_exactly_a<add>( _term ) )
+        {
+            result += "(+";
+            for( GiNaC::const_iterator subterm = _term.begin(); subterm != _term.end(); ++subterm )
+            {
+                result += " " + prefixStringOf( *subterm );
+            }
+            result += ")";
+        }
+        else if( is_exactly_a<mul>( _term ) )
+        {
+            result += "(*";
+            for( GiNaC::const_iterator subterm = _term.begin(); subterm != _term.end(); ++subterm )
+            {
+                result += " " + prefixStringOf( *subterm );
+            }
+            result += ")";
+        }
+        else if( is_exactly_a<power>( _term ) )
+        {
+            assert( _term.nops() == 2 );
+            ex exponent = *(_term.begin()++);
+            if( exponent == 0 )
+            {
+                result = "1";
+            }
+            else
+            {
+                ex subterm = *_term.begin();
+                int exp = exponent.integer_content().to_int();
+                if( exponent.info( info_flags::negative ) )
+                {
+                    result += "(/ 1 ";
+                    exp *= -1;
+                }
+                if( exp == 1 )
+                {
+                    result += prefixStringOf( subterm );
+                }
+                else
+                {
+                    result += "(*";
+                    for( int i = 0; i < exp; ++i )
+                    {
+                        result += " " + prefixStringOf( subterm );
+                    }
+                    result += ")";
+                }
+                if( exponent.info( info_flags::negative ) )
+                {
+                    result += ")";
+                }
+            }
+        }
+        else if( is_exactly_a<numeric>( _term ) )
+        {
+            //TODO: negative case
+            numeric num = ex_to<numeric>( _term );
+            if( num.is_negative() )
+            {
+                result += "(- ";
+            }
+            if( num.is_integer() )
+            {
+                stringstream out;
+                out << abs( num );
+                result += out.str();
+            }
+            else
+            {
+                stringstream out;
+                out << "(/ " << abs( num.numer() ) << " " << abs( num.denom() ) << ")";
+                result += out.str();
+            }
+            if( num.is_negative() )
+            {
+                result += ")";
+            }
+        }
+        else
+        {
+            stringstream out;
+            out << _term;
+            result += out.str();
+        }
+        return result;
     }
 
     /**
@@ -2623,23 +2790,6 @@ namespace smtrat
             }
             default:
                 return false;
-        }
-    }
-
-    void Constraint::getVariables( const ex& _term, symtab& _variables )
-    {
-        if( _term.nops() > 1 )
-        {
-            for( GiNaC::const_iterator subterm = _term.begin(); subterm != _term.end(); ++subterm )
-            {
-                getVariables( *subterm, _variables );
-            }
-        }
-        else if( is_exactly_a<symbol>( _term ) )
-        {
-            stringstream out;
-            out << _term;
-            _variables.insert( pair< string, symbol >( out.str(), ex_to<symbol>( _term ) ) );
         }
     }
 }    // namespace smtrat
