@@ -102,6 +102,7 @@
 %token FORMULA
 %token ASSERT SETLOGIC QFNRA QFLRA
 %token EXIT
+%token DECLARECONST
 %token DECLAREFUN
 %token OB
 %token CB
@@ -195,6 +196,32 @@ command:
 	|	OB CHECKSAT CB
     {
     }
+	|	OB DECLARECONST SYM REAL CB 
+	{
+		GiNaC::parser reader( driver.formulaRoot->rRealValuedVars() );
+		try
+		{
+            for( std::map< const std::string, const std::string >::const_iterator iter = driver.realsymbolpartsToReplace.begin();
+                 iter != driver.realsymbolpartsToReplace.end(); ++iter )
+            {
+                if( $3->find( iter->second ) != std::string::npos )
+                {
+                    std::string errstr = std::string( "The name of a real variable constains " + iter->second + ", which is already internally used!");
+                    error( yyloc, errstr );
+                    break;
+                }
+                *$3 = driver.replace( *$3, iter->first, iter->second );
+            }
+			std::string s = *$3;
+			reader( s );
+		}
+		catch( GiNaC::parse_error& err )
+		{
+			std::cerr << err.what() << std::endl;
+		}
+		driver.formulaRoot->rRealValuedVars().insert( reader.get_syms().begin(), reader.get_syms().end() );
+        delete $3;
+	}
 	| 	OB DECLAREFUN SYM OB CB REAL CB
 	{
 		GiNaC::parser reader( driver.formulaRoot->rRealValuedVars() );

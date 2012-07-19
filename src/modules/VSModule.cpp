@@ -2081,6 +2081,7 @@ namespace smtrat
                     }
                 }
                 _state->addConflictSet( NULL, conflictSet );
+				
                 eraseDTsOfRanking( *_state );
 
                 /*

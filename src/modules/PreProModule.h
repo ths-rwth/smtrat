@@ -60,8 +60,15 @@ namespace smtrat
             void addLearningClauses();
             void proceedSubstitution();
             void simplifyClauses();
-            void assignActivities( double, double, double, double );
-            double assignActivitiesfromDatabase( Formula*, double, double );
+            void assignActivities();
+            void generateVarActivitiesInDatabase( Formula* );
+            void generateConActivitiesInDatabase( Formula* );
+            void generateFinalActivitiesInDatabase( Formula* );
+            double getHighestProductDegree( GiNaC::ex );
+            double getConstraintActivitiy( GiNaC::ex );
+            double normalizeValue( double, double, double );
+            void assignActivitiesFromDatabase( Formula* );
+            
             std::pair< const Formula*, const Formula* > isCandidateforSubstitution( Formula::const_iterator ) const;
             Formula::iterator substituteConstraint( Formula::iterator, std::pair< std::pair< std::string, bool >,
                     std::pair< std::pair<GiNaC::symtab, GiNaC::symtab>, std::pair< GiNaC::ex, GiNaC::ex> > >,
@@ -76,22 +83,35 @@ namespace smtrat
         private:
 
             // Members for AddLearningClauses()
-            std::vector<const Constraint*>                                                     mConstraints;
-            std::vector< std::set<const Formula*> >                                            mConstraintOrigins;
-            std::vector<std::pair<std::pair<bool, unsigned>, std::pair<unsigned, unsigned> > > mConstraintBacktrackPoints;
+            std::vector<const Constraint*>                                      mConstraints;
+            std::vector< std::set<const Formula*> >                             mConstraintOrigins;
+            std::vector<std::pair<std::pair<bool, unsigned>, 
+            std::pair<unsigned, unsigned> > >                                   mConstraintBacktrackPoints;
 
             // Members for proceedSubstitution()
-            bool                                mNewFormulaReceived;
-            unsigned                            mNumberOfComparedConstraints;
-            std::list<Formula*>::iterator                   mLastCheckedFormula;
+            bool                                                                mNewFormulaReceived;
+            unsigned                                                            mNumberOfComparedConstraints;
+            std::list<Formula*>::iterator                                       mLastCheckedFormula;
             std::vector< vec_set_const_pFormula >                               mSubstitutionOrigins;
             std::map< std::string, unsigned >                                   mNumberOfVariables;
-            std::vector< std::pair< std::pair< std::string, bool >, std::pair< std::pair<GiNaC::symtab, GiNaC::symtab>, std::pair< GiNaC::ex, GiNaC::ex> > > >    mSubstitutions;
+            std::vector< std::pair< std::pair< std::string, bool >, 
+            std::pair< std::pair<GiNaC::symtab, GiNaC::symtab>, 
+            std::pair< GiNaC::ex, GiNaC::ex> > > >                              mSubstitutions;
             
             // Members for assignActivities()
-            std::map< std::pair<std::string, GiNaC::ex>, double >               mVariableActivities;
-            std::vector<const Constraint*>                                      mActivityConstraints;
-            std::vector<const Constraint*>::iterator                            mLastCheckedActivityConstraint;
+            std::map< std::string, 
+            std::pair<double, double> >                                         mVariableDegNQuantActivities;
+            std::map< std::string, double>                                      mVariableActivities;
+            std::pair<double, double>                                           mVarDegreeActivityIntervall;
+            std::pair<double, double>                                           mVarQuantityActivityIntervall;
+            std::map< const Constraint*, 
+            std::pair< std::pair<double, double>, double > >                    mConstraintActivities;
+            std::pair<double, double>                                           mConDegreeActivityIntervall;
+            std::pair<double, double>                                           mConQuantityActivityIntervall;
+            std::pair<double, double>                                           mVarActivityIntervall;
+            std::pair<double, double>                                           mRelWeightIntervall;
+            std::map< const Constraint*, double >                               mActivities;
+            std::pair<double, double>                                           mActivityIntervall;
     };
 
 }    // namespace smtrat

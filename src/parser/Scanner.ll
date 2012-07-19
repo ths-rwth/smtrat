@@ -98,6 +98,7 @@ typedef smtrat::Parser::token_type token_type;
 ";".*\n             { }
 "assert"            { return token::ASSERT; }
 "declare-fun"       { return token::DECLAREFUN; }
+"declare-const"		{ return token::DECLARECONST; }
 "+"                 { return token::PLUS; }
 "-"                 { return token::MINUS; }
 "*"                 { return token::TIMES; }

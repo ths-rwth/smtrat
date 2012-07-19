@@ -360,6 +360,11 @@ namespace smtrat
             {
                 return mConstraintPool.newVariable( _name );
             }
+            
+            static const ConstraintPool& constraintPool()
+            {
+                return mConstraintPool;
+            }
 
             /**
              * Generates a fresh real variable and returns its identifier.
