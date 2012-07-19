@@ -45,20 +45,20 @@ namespace smtrat
         static const bool                                getReasonsForInfeasibility              = true;
         static const bool                                passWithMinimalReasons                  = true;
         static const check_inequalities                  checkInequalities                       = ALWAYS;
-        static const pass_inequalities                   passInequalities                        = FULL_REDUCED;
+        static const pass_inequalities                   passInequalities                        = AS_RECEIVED;
         static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_INFEASIBLEANDDEDUCTION;
         static const theory_deductions                   addTheoryDeductions                     = ONLY_INEQUALITIES;
         static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
         static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
         static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
-		static const bool								 transformIntoEqualities				 = NO_INEQUALITIES;
+		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQALITIES;
 
 		static const bool								 applyNSS								 = false;
         static const unsigned                            maxSDPdegree                            = 4;
         static const unsigned                            SDPupperBoundNrVariables                = 6;
 		static const unsigned							 callSDPAfterNMonomials					 = 6;
 		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
-		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 4;
+		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
 		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
     };
 	 
@@ -67,34 +67,7 @@ namespace smtrat
 			return (original.lterm().tdeg() >= reduced.lterm().tdeg() && 3 * original.nrOfTerms() <  reduced.nrOfTerms() );
 		}
 	};
- 
-	
-	
-    struct GBSettings8
-    {
-        typedef GiNaCRA::GradedLexicgraphic              Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
-        typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
-        typedef GiNaCRA::BaseReductor<Order>             Reductor;
-
-        static const bool                                passGB                                  = true;
-        static const bool                                getReasonsForInfeasibility              = true;
-        static const bool                                passWithMinimalReasons                  = true;
-        static const check_inequalities                  checkInequalities                       = AFTER_NEW_GB;
-        static const pass_inequalities                   passInequalities                        = FULL_REDUCED;
-        static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_ALLINEQUALITIES;
-        static const theory_deductions                   addTheoryDeductions                     = ONLY_INEQUALITIES;
-        static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
-        static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
-        static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
-		static const bool								 transformIntoEqualities				 = false;
-
-        static const unsigned                            maxSDPdegree                            = 4;
-        static const unsigned                            SDPupperBoundNrVariables                = 6;
-		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 1000;
-		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 4;
-		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
-    };
+ 	
 }
 
 #endif   /* GBSETTINGS_H */
