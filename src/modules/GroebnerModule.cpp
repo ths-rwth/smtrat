@@ -71,7 +71,7 @@ namespace smtrat
 		
         for( GiNaC::symtab::const_iterator it = constraint.variables().begin(); it != constraint.variables().end(); ++it )
         {
-	        unsigned varNr = VariableListPool::addVariable( ex_to<symbol>( it->second ) );
+	        VariableListPool::addVariable( ex_to<symbol>( it->second ) );
 	        mListOfVariables.insert( *it );
         }
 
@@ -89,8 +89,11 @@ namespace smtrat
 		}
 		else //( receivedFormulaAt( j )->constraint().relation() != CR_EQ )
 		{
-			if(Settings::transformIntoEqualities == ALL_INEQUALITIES) {
-				
+			if(Settings::transformIntoEqualities == ALL_INEQUALITIES ||
+				(Settings::transformIntoEqualities == ONLY_NONSTRICT && (constraint.relation() == CR_GEQ || constraint.relation() == CR_LEQ ) )
+				)
+			{
+				assert(Settings::transformIntoEqualities != NO_INEQUALITIES);
 				pushBacktrackPoint(_formula);
 				mBasis.addPolynomial( transformIntoEquality(_formula) );
 				saveState();
@@ -107,15 +110,18 @@ namespace smtrat
 			else
 			{
 				mNewInequalities.push_back(mInequalities.InsertReceivedFormula(_formula));
-			}
-			
+			}	
 		}
-
 		return true;
     }
 
     Answer GroebnerModule::isConsistent()
     {
+		assert (mpReceivedFormula->size() == mBasis.nrOriginalConstraints());
+		//std::cout << mBacktrackPoints.size() << std::endl;
+		//std::cout << mBasis.nrOriginalConstraints() << std::endl;
+		
+		assert (mBacktrackPoints.size() - 1 == mBasis.nrOriginalConstraints());
 		assert(mInfeasibleSubsets.empty());
         if(!mBasis.inputEmpty()) {
 //			//first, we interreduce the input!
@@ -127,9 +133,9 @@ namespace smtrat
         {
 			mPopCausesRecalc = false;
 		   //now, we calculate the groebner basis
+			//std::cout << "start gb" << std::endl;
 			mBasis.calculate();
 			//mBasis.getGbIdeal().print();
-			
 			
             Polynomial witness;
 			
@@ -163,10 +169,8 @@ namespace smtrat
 				if(!witness.isZero()) std::cout << "Found witness: " << witness << std::endl;
             }
             // We have found an infeasible subset. Generate it.
-            if( mBasis.isConstant() || (Settings::applyNSS && !witness.isZero() ) )
-			#else
-			if(mBasis.isConstant())
-			#endif
+            #endif
+			if( mBasis.isConstant() || (Settings::applyNSS && !witness.isZero() ) )
 			{
 				if( mBasis.isConstant() ) {
 					witness = mBasis.getGb().front();
@@ -187,7 +191,7 @@ namespace smtrat
 					
                     assert(Settings::transformIntoEqualities != NO_INEQUALITIES || (**it)->constraint().relation() == CR_EQ );
 //                    
-					if(Settings::getReasonsForInfeasibility) {
+					if(Settings::getReasonsForInfeasibility) {		
 						if (origIt.get()) {
 							mInfeasibleSubsets.back().insert( **it );
 						}
@@ -196,6 +200,8 @@ namespace smtrat
 						mInfeasibleSubsets.back().insert(**it);
 					}
                 }
+			
+				
 				return False;
             }
             saveState();
@@ -205,6 +211,7 @@ namespace smtrat
 			if(Settings::checkInequalities != NEVER) {
 				Answer ans = mInequalities.reduceWRTGroebnerBasis(mBasis.getGbIdeal());
 				mNewInequalities.clear();
+				std::cout << "cool " << std::endl;
 				if(ans != Unknown) {
 					return ans; 
 				}
@@ -234,7 +241,6 @@ namespace smtrat
 			Answer ans = mInequalities.reduceWRTGroebnerBasis(mNewInequalities,mBasis.getGbIdeal());
 			mNewInequalities.clear();
 			if(ans != Unknown) return ans;
-			
 		}
 		
 		Answer ans = runBackends();
@@ -263,7 +269,6 @@ namespace smtrat
 			}
 		}
 		super::removeSubformula( _formula );
-	//	print();
 	}
 	
     /**
@@ -271,7 +276,6 @@ namespace smtrat
      */
     void GroebnerModule::pushBacktrackPoint(Formula::const_iterator btpoint)
     {
-		
 		assert( mBacktrackPoints.empty() || (*btpoint)->getType() == REALCONSTRAINT);
 		assert(mBacktrackPoints.size() == mStateHistory.size());
 		//std::cout << "Push backtrackpoint " << *btpoint << std::endl;
@@ -283,7 +287,6 @@ namespace smtrat
         mStateHistory.push_back( GroebnerModuleState( mBasis ) );
 		assert(mBacktrackPoints.size() == mStateHistory.size());
 		
-		//printStateHistory();
 		if(Settings::checkInequalities != NEVER) {
 			mInequalities.pushBacktrackPoint();
 		}
@@ -337,22 +340,15 @@ namespace smtrat
 		//Add all others
 		for(Formula::const_iterator it = btpoint; it != mpReceivedFormula->end(); ++it) {
 			assert( (*it)->getType() == REALCONSTRAINT);
-			if(Settings::transformIntoEqualities == ALL_INEQUALITIES) {
+			Constraint_Relation relation = (*it)->constraint().relation();
+			bool isInGb = Settings::transformIntoEqualities == ALL_INEQUALITIES || relation == CR_EQ  
+				|| (Settings::transformIntoEqualities == ONLY_NONSTRICT && relation != CR_GREATER && relation != CR_LESS );
+			if(isInGb) {
 				pushBacktrackPoint(it);
-				mBasis.addPolynomial(Polynomial((*it)->constraint().lhs()));
+				mBasis.addPolynomial( relation == CR_EQ ? Polynomial((*it)->constraint().lhs()) : transformIntoEquality(it) );
 				// and save them
 				saveState();
-			} else if (Settings::transformIntoEqualities == ONLY_NONSTRICT && (*it)->constraint().relation() != CR_GREATER && (*it)->constraint().relation() != CR_LESS) {
-				pushBacktrackPoint(it);
-				mBasis.addPolynomial(Polynomial((*it)->constraint().lhs()));
-				// and save them
-				saveState();
-			} else if((*it)->constraint().relation() == CR_EQ) {
-				pushBacktrackPoint(it);
-				mBasis.addPolynomial(Polynomial((*it)->constraint().lhs()));
-				// and save them
-				saveState();
-			}
+			} 
 		}
 		assert(mBasis.nrOriginalConstraints() == mBacktrackPoints.size()-1);
 		
@@ -362,8 +358,18 @@ namespace smtrat
 	
 	Polynomial GroebnerModule::transformIntoEquality( Formula::const_iterator constraint ) {
 		Polynomial result( (*constraint)->constraint().lhs() );
-		unsigned varNr = VariableListPool::addVariable();
-		
+		unsigned constrId = (*constraint)->constraint().id();
+		std::map<unsigned, unsigned>::const_iterator mapentry = mAdditionalVarMap.find(constrId);
+		unsigned varNr;
+		if (mapentry == mAdditionalVarMap.end()) {
+			std::stringstream stream;
+			stream << "_AddVarGB_" << constrId;
+			GiNaC::symbol varSym = ex_to<symbol>( Formula::newVariable(stream.str()) );
+			mListOfVariables[stream.str()] = varSym;
+			varNr = VariableListPool::addVariable( varSym );
+		} else {
+			varNr = mapentry->second;
+		}
 		//const RationalNumber& coeff, unsigned varIndex, unsigned exponent 
 		switch( (*constraint)->constraint().relation() ) {
 			case CR_GEQ:
@@ -392,11 +398,10 @@ namespace smtrat
      */
     bool GroebnerModule::saveState()
     {
-		//printStateHistory();
 		assert(mStateHistory.size() == mBacktrackPoints.size());
 		mStateHistory.pop_back();
 		mStateHistory.push_back( GroebnerModuleState( mBasis ) );
-		//printStateHistory();
+		
 		
 		return true;
     }
@@ -442,19 +447,20 @@ namespace smtrat
 	{
 		GiNaCRA::BitVector::const_iterator origIt =  reasons.begin();
 		std::set<const Formula*> origins;
-		for( Formula::const_iterator it = mpReceivedFormula->begin(); it != mpReceivedFormula->end(); ++it )
+		
+		auto it = mBacktrackPoints.begin();
+		for(++it ; it != mBacktrackPoints.end(); ++it )
 		{
-			bool isInGb = Settings::transformIntoEqualities == ALL_INEQUALITIES || (*it)->constraint().relation() == CR_EQ  
-				|| (Settings::transformIntoEqualities == ONLY_NONSTRICT && (*it)->constraint().relation() != CR_GREATER && (*it)->constraint().relation() != CR_LESS );
-			if( isInGb )
-			{
-				if (origIt.get()) {
-					origins.insert( *it );
-				}
-				origIt++;
+			assert((**it)->getType() == REALCONSTRAINT);
+			assert(Settings::transformIntoEqualities != NO_INEQUALITIES || (**it)->constraint().relation() == CR_EQ );
+//                    
+			if (origIt.get()) {
+				origins.insert( **it );
 			}
+			origIt++;
 		}
 		return origins;
+	
 	}
 
 	void GroebnerModule::printStateHistory()
@@ -474,7 +480,10 @@ namespace smtrat
 		auto btp = mBacktrackPoints.begin();
 		++btp;
 		for(auto it = mpReceivedFormula->begin(); it != mpReceivedFormula->end(); ++it) {
-			if((*it)->constraint().relation() == CR_EQ) {
+			bool isInGb = Settings::transformIntoEqualities == ALL_INEQUALITIES || (*it)->constraint().relation() == CR_EQ  
+				|| (Settings::transformIntoEqualities == ONLY_NONSTRICT && (*it)->constraint().relation() != CR_GREATER && (*it)->constraint().relation() != CR_LESS );
+			
+			if(isInGb) {
 				
 				if (it != *btp) {
 					print();

@@ -96,15 +96,15 @@ namespace smtrat
 				
 				unsigned problemSizeSquared = pow( constraintMatrixFactory.getProblemSize(), 2 );
                
-				std::cout << std::endl;
-                for( unsigned i = 1; i <= problemSizeSquared; ++i )
-                {
-                    std::cout << (*solution)[i-1] << " ";
-					if (i % constraintMatrixFactory.getProblemSize() == 0) {
-						std::cout << std::endl;
-					}
-				}
-				
+//				std::cout << std::endl;
+//                for( unsigned i = 1; i <= problemSizeSquared; ++i )
+//                {
+//                    std::cout << (*solution)[i-1] << " ";
+//					if (i % constraintMatrixFactory.getProblemSize() == 0) {
+//						std::cout << std::endl;
+//					}
+//				}
+//				
 				  //}
                 
                 bool res;
@@ -115,8 +115,8 @@ namespace smtrat
                 {	
                     FindExactSolution fes( *solution, constraintMatrixFactory.exportLinEqSys(), precision );
                     DenseMatrix sol = fes.getSolutionMatrix( constraintMatrixFactory.getProblemSize() );
-                    std::cout << std::endl;
-                    sol.print();
+               //     std::cout << std::endl;
+             //       sol.print();
                     Cholesky cholesky( sol );
                     res = cholesky.Solve();
                     if( !res )

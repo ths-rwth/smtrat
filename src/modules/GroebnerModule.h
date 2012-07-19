@@ -166,6 +166,8 @@ namespace smtrat
             bool                                 mPopCausesRecalc;
 			
 			std::list<InequalitiesTable::Rows::iterator>		 mNewInequalities;
+			
+			std::map<unsigned, unsigned>         mAdditionalVarMap;
 
             void pushBacktrackPoint( Formula::const_iterator btpoint );
             void popBacktrackPoint( Formula::const_iterator btpoint );
