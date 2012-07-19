@@ -107,7 +107,11 @@ namespace smtrat
         return mNrRows;
     }
 
-    int SparseMatrix::getCSDPFormatEntries( int* rowindices, int* colindices, double* values ) const
+	int SparseMatrix::getCSDPFormatEntries( int* rowindices, int* colindices, double* values ) const {
+		return getCSDPFormatEntries( rowindices, colindices, values, mHide);
+	}
+	
+    int SparseMatrix::getCSDPFormatEntries( int* rowindices, int* colindices, double* values, const std::set<int>& hide ) const
     {
         assert( rowindices != NULL );
         assert( colindices != NULL );
@@ -118,7 +122,7 @@ namespace smtrat
         map<pair<int, int>, Rational>::const_iterator it = mNonZeroEntries.begin();
         for( int i = 1; i <= getNrOfNonZeroEntries(); ++i )
         {
-			if(mHide.count(it->first.first) == 0 && mHide.count(it->first.second) == 0) { 
+			if(hide.count(it->first.first) == 0 && hide.count(it->first.second) == 0) { 
 				rowindices[i] = it->first.first + 1;
 				colindices[i] = it->first.second + 1;
 				values[i]     = cln::double_approx( it->second );
@@ -138,7 +142,7 @@ namespace smtrat
 	{
 		mHide.clear();
 	}
-	std::set<int>& SparseMatrix::getHideSet( ) const
+	const std::set<int>& SparseMatrix::getHideSet( ) const
 	{
 		return mHide;
 	}
@@ -178,4 +182,18 @@ namespace smtrat
             array[it->first.first * mNrCols + it->first.second] = it->second;
         }
     }
+	
+	std::vector<std::pair<int, Rational> > SparseMatrix::getNonZeroDiagEntries() const 
+	{
+		std::vector<std::pair<int, Rational> > result;
+		
+		for( map<pair<int, int>, Rational>::const_iterator it = mNonZeroEntries.begin(); it != mNonZeroEntries.end(); ++it )
+        {
+			if(it->first.first == it->first.second) {
+				result.push_back(std::pair<int,Rational>(it->first.first, it->second));
+			}
+        }
+		return result;
+	}
+	
 }
