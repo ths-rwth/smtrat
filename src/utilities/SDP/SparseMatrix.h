@@ -62,7 +62,8 @@ namespace smtrat
 			std::vector<pair<int, Rational> > getNonZeroDiagEntries() const;
 
             void PrintEntries() const;
-            void writeEntriesToArray( Rational* array ) const;
+			void writeEntriesToArray( Rational* array,   bool halfNonDiagEntries = true ) const;
+            void writeEntriesToArray( Rational* array, const std::set<int>& hide,   bool halfNonDiagEntries = true ) const;
 
         private:
             int                                     mNrCols;

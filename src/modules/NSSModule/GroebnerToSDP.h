@@ -59,11 +59,11 @@ namespace smtrat
             MultivariatePolynomialMR<Order> findWitness()
             {
 				// We should eliminate variables first!
-				
 				int          result = 4;
                 vector<Term> monoms;
                 ConstraintMatrixFactory constraintMatrixFactory( 0 );
                 std::unique_ptr<std::vector<double> > solution;
+				std::set<int> hideSet;
 
 				unsigned i = 0;
                 do
@@ -85,6 +85,7 @@ namespace smtrat
 					//	std::cout << "nr of constraints" << constraintMatrixFactory.exportMatrices().size() << std::endl;
 						CSDPFacade csdp = CSDPFacade( monoms.size(), constraintMatrixFactory.exportMatrices() );
 						result          = csdp.callRoutine( solution );
+						hideSet			= csdp.getHideSet();
 					//	std::cout << "end of call" << std::endl;
 					}
                 }
@@ -94,29 +95,29 @@ namespace smtrat
 					return MultivariatePolynomialMR<Order>();
 				}
 				
-				unsigned problemSizeSquared = pow( constraintMatrixFactory.getProblemSize(), 2 );
+				unsigned problemSizeSquared = pow( constraintMatrixFactory.getProblemSize() - hideSet.size(), 2 );
                
 //				std::cout << std::endl;
 //                for( unsigned i = 1; i <= problemSizeSquared; ++i )
 //                {
 //                    std::cout << (*solution)[i-1] << " ";
-//					if (i % constraintMatrixFactory.getProblemSize() == 0) {
+//					if (i % (constraintMatrixFactory.getProblemSize() - hideSet.size()) == 0) {
 //						std::cout << std::endl;
 //					}
 //				}
-//				
+				
 				  //}
                 
                 bool res;
-				
+				constraintMatrixFactory.setHideSet(hideSet);
 				float precision = 1.0 / GBSettings::sternBrocotStartPrecisionOneTo;
 				unsigned iterations = 0;
                 do
                 {	
                     FindExactSolution fes( *solution, constraintMatrixFactory.exportLinEqSys(), precision );
-                    DenseMatrix sol = fes.getSolutionMatrix( constraintMatrixFactory.getProblemSize() );
+                    DenseMatrix sol = fes.getSolutionMatrix( constraintMatrixFactory.getProblemSize() - constraintMatrixFactory.getHideSet().size() );
                //     std::cout << std::endl;
-             //       sol.print();
+					
                     Cholesky cholesky( sol );
                     res = cholesky.Solve();
                     if( !res )
@@ -124,16 +125,28 @@ namespace smtrat
                     else
                     {
                         MultivariatePolynomialMR<Order> witness;
-                        for( unsigned i = 0; i < monoms.size(); ++i )
+						
+                        
+						std::map<int, int> newIndices;
+						int offset = 0;
+						for(int i = 0; i < sol.getHeight(); ) {
+							if(hideSet.count(i+offset) == 0) {
+								newIndices.insert(std::pair<int,int>(i,i+offset));
+								++i;
+							} else {
+								++offset;
+							}
+						}
+						
+						for( unsigned i = 0; i < sol.getHeight(); ++i )
                         {
                             if( cholesky.getElemD( i ) != 0 )
                             {
-                                MultivariatePolynomialMR<Order> square( monoms[i] );
+                                MultivariatePolynomialMR<Order> square( monoms[newIndices[i]] );
 								//square =  square * (1 / cholesky.getElemD(i));
-								std::cout << square << std::endl;
-                                for( unsigned j = i + 1; j < monoms.size(); ++j )
+							    for( unsigned j = i + 1; j < sol.getHeight(); ++j )
                                 {
-                                    square = square + monoms[j] * cholesky.getElemL( j, i );
+                                    square = square + monoms[newIndices[j]] * cholesky.getElemL( j, i );
                                 }
                                 square  =  square * square;
 								witness = witness +  square * cholesky.getElemD( i ) ;

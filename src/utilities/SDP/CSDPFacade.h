@@ -54,8 +54,21 @@ namespace smtrat
             CSDPFacade( int problemSize, const std::vector<SparseMatrix>& constraints, const double b[] );
             CSDPFacade( int problemSize, const std::vector<SparseMatrix>& constraints );
             int callRoutine( std::unique_ptr<std::vector<double> >& solution );
-
+			
+			const std::set<int>& getHideSet() {
+				return mHideSet;
+			}
+			
+			void addToHideSet(int rowOrCol) {
+				mHideSet.insert(rowOrCol);
+			}
+			
+			
             virtual ~CSDPFacade();
+			
+		protected:
+			std::set<int> mHideSet;
+		
 
         private:
             blockmatrix       mC;
@@ -63,6 +76,7 @@ namespace smtrat
             double*           mb;
             unsigned          mProblemSize;
             unsigned          mNrConstraints;
+			std::vector< SparseMatrix > mConstraints;
 
             void createCostMatrix( int size );
             void createCostMatrix( const double matrix[], int blocksize );

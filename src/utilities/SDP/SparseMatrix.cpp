@@ -117,20 +117,35 @@ namespace smtrat
         assert( colindices != NULL );
         assert( values != NULL );
 		
+		std::map<int, int> newIndices;
+		int offset = 0;
+		for(int i = 0; i < mNrCols; ++i) {
+			if(hide.count(i) == 0) {
+				newIndices.insert(std::pair<int,int>(i,i-offset));
+			} else {
+				++offset;
+			}
+		}
+		
 		int nrEntries = 0;
 
-        map<pair<int, int>, Rational>::const_iterator it = mNonZeroEntries.begin();
-        for( int i = 1; i <= getNrOfNonZeroEntries(); ++i )
+		int i = 1;
+        for( map<pair<int, int>, Rational>::const_iterator it = mNonZeroEntries.begin(); it != mNonZeroEntries.end(); ++it )
         {
 			if(hide.count(it->first.first) == 0 && hide.count(it->first.second) == 0) { 
-				rowindices[i] = it->first.first + 1;
-				colindices[i] = it->first.second + 1;
-				values[i]     = cln::double_approx( it->second );
+				rowindices[i] = newIndices[it->first.first] + 1;
+				colindices[i] = newIndices[it->first.second] + 1;
+				if(it->first.first == it->first.second) {
+					values[i]     = cln::double_approx( it->second );
+				} else {
+					values[i]     = cln::double_approx( it->second/Rational(2) );
+				}
+				
 				++nrEntries;
+				++i;
 			}
-            ++it;
         }
-
+		
         return nrEntries;
     }
 	
@@ -175,11 +190,35 @@ namespace smtrat
         }
     }
 
-    void SparseMatrix::writeEntriesToArray( Rational* array ) const
+	void SparseMatrix::writeEntriesToArray( Rational* array, bool halfNonDiagEntries) const
     {
+		writeEntriesToArray( array, mHide, halfNonDiagEntries );
+    }
+	
+    void SparseMatrix::writeEntriesToArray( Rational* array, const std::set<int>& hide,  bool halfNonDiagEntries ) const
+    {
+		int nrCols = mNrCols - hide.size();
+		std::map<int, int> newIndices;
+		int offset = 0;
+		for(int i = 0; i < mNrCols; ++i) {
+			if(hide.count(i) == 0) {
+				newIndices.insert(std::pair<int,int>(i,i-offset));
+			} else {
+				++offset;
+			}
+		}
+		
         for( map<pair<int, int>, Rational>::const_iterator it = mNonZeroEntries.begin(); it != mNonZeroEntries.end(); ++it )
         {
-            array[it->first.first * mNrCols + it->first.second] = it->second;
+			Rational value(it->second);
+			if(halfNonDiagEntries && it->first.first != it->first.second) {
+				value /= Rational(2);
+			}
+			
+			if(hide.count(it->first.first) == 0 && hide.count(it->first.second) == 0) {
+				array[newIndices[it->first.first] * nrCols + newIndices[it->first.second]] = value;
+				array[newIndices[it->first.second] * nrCols + newIndices[it->first.first]] = value;
+			}
         }
     }
 	
