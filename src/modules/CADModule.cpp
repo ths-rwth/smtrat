@@ -92,38 +92,42 @@ namespace smtrat
         // add the polynomial to the cad
         mCAD.addPolynomial( GiNaCRA::UnivariatePolynomial( (*_subformula)->constraint().lhs(), variables.front(), false ), variables );    // false: disable input checks
         // check the extended constraints for satisfiability
+        #ifdef MODULE_VERBOSE
+        cout << "Checking constraint set " << endl;
+        for( auto k = mConstraints.begin(); k != mConstraints.end(); ++k )
+            cout << " " << *k << endl;
+        cout << "over the variables " << endl;
+        vector<symbol> vars = mCAD.variables();
+        for( auto k = vars.begin(); k != vars.end(); ++k )
+            cout << " " << *k << endl;
+        #endif
         GiNaCRA::RealAlgebraicPoint r;
         ConflictGraph               conflictGraph;
         if( !mCAD.check( mConstraints, r, conflictGraph ) )
         {
             vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets( conflictGraph );
+            assert( !infeasibleSubsets.empty() && !infeasibleSubsets.front().empty() );
             for( vec_set_const_pFormula::const_iterator i = infeasibleSubsets.begin(); i != infeasibleSubsets.end(); ++i )
                 mInfeasibleSubsets.push_back( *i );
             #ifdef MODULE_VERBOSE
             cout << endl << "#Samples: " << mCAD.samples().size() << endl;
             cout << "Result: false" << endl;
             printInfeasibleSubsets();
-            cout << "Performance gain: " << (mpReceivedFormula->size() - mInfeasibleSubsets.front().size()) << endl;
+            cout << "Performance gain: " << (mpReceivedFormula->size() - mInfeasibleSubsets.front().size()) << endl << endl;
             #endif
             mSatisfiable = false;
             return false;
         }
+        #ifdef MODULE_VERBOSE
+        cout << endl << "#Samples: " << mCAD.samples().size() << endl;
+        cout << "Result: true" << endl << endl;
+        #endif
         mInfeasibleSubsets.clear();
         return true;
     }
 
     Answer CADModule::isConsistent()
     {
-        #ifdef MODULE_VERBOSE
-        //        cout << "Check constraint set " << endl;
-        //        for( auto k = mConstraints.begin(); k != mConstraints.end(); ++k )
-        //            cout << " " << *k << endl;
-        //        vector<symbol> variables = mCAD.variables();
-        //        cout << "over the variables " << endl;
-        //        for( auto k = variables.begin(); k != variables.end(); ++k )
-        //            cout << " " << *k << endl;
-        //        cout << "Result: " << mSatisfiable << endl;
-        #endif
         if( mSatisfiable )
             return True;
         return False;
@@ -145,7 +149,7 @@ namespace smtrat
             // reduce the CAD object
             mCAD.removePolynomial( GiNaCRA::UnivariatePolynomial( constraint.polynomial(), constraint.variables().front(), false ) );    // false: disable input checks
             // remove the constraint from the list of constraints
-            mConstraints.erase( mConstraints.begin() + constraintIndex );    // erase the (constraintIt->second)-th element            
+            mConstraints.erase( mConstraints.begin() + constraintIndex );    // erase the (constraintIt->second)-th element
             // update the constraint / index map, i.e., decrement all indices above the removed one
             updateConstraintMap( constraintIndex );
             // forces re-checking the CAD with the next call to assertSubformula
@@ -243,7 +247,7 @@ namespace smtrat
             }
         }
         // collect constraints according to the vertex cover
-        vec_set_const_pFormula mis = vec_set_const_pFormula( 1, std::set<const Formula*>() );    // the last constraint is assumed to be always in the MIS
+        vec_set_const_pFormula mis = vec_set_const_pFormula( 1, std::set<const Formula*>() );
         mis.front().insert( getConstraintAt( mConstraints.size() - 1 ) );    // the last constraint is assumed to be always in the MIS
         for( ConflictGraph::vertex_iterator v = vertexCover.begin(); v != vertexCover.end(); ++v )
             mis.front().insert( getConstraintAt( *v ) );
@@ -260,13 +264,13 @@ namespace smtrat
         cout << "Constraint index = " << index << " of constraint " << mConstraints[index] << endl;
         assert( false );    // The given index should match an input constraint!
     }
-    
+
     inline void CADModule::updateConstraintMap( unsigned index, bool decrement )
     {
         for( ConstraintIndexMap::iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
             if( i->second > index )
                 i->second = decrement ? i->second - 1 : i->second + 1;
     }
-    
+
 }    // namespace smtrat
 

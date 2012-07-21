@@ -6,21 +6,28 @@
         <df name="CMakeFiles">
           <df name="CMakeTmp">
             <df name="CMakeFiles">
-              <df name="cmTryCompileExec.dir">
+              <df name="cmTryCompileExec3326911107.dir">
+              </df>
+              <df name="cmTryCompileExec898166565.dir">
               </df>
             </df>
-          </df>
-          <df name="CompilerIdC">
-            <in>CMakeCCompilerId.c</in>
           </df>
           <df name="CompilerIdCXX">
             <in>CMakeCXXCompilerId.cpp</in>
           </df>
-          <df name="csdp_lib.dir">
+        </df>
+        <df name="doxygen-conf">
+          <df name="CMakeFiles">
+            <df name="doc.dir">
+            </df>
+            <df name="doxygen-doc.dir">
+            </df>
           </df>
         </df>
         <df name="manual">
           <df name="CMakeFiles">
+            <df name="manual.dir">
+            </df>
           </df>
         </df>
         <df name="src">
@@ -29,15 +36,13 @@
               <df name="modules">
                 <df name="LRAModule">
                 </df>
-                <df name="NSSModule">
+                <df name="LRATwoModule">
                 </df>
                 <df name="SATModule">
                 </df>
-                <df name="VSModule">
+                <df name="SingleVSModule">
                 </df>
-              </df>
-              <df name="utilities">
-                <df name="SDP">
+                <df name="VSModule">
                 </df>
               </df>
             </df>
@@ -52,8 +57,6 @@
           </df>
           <df name="parser">
             <df name="CMakeFiles">
-              <df name="parser.dir">
-              </df>
               <df name="smtratSolver.dir">
                 <df name="__">
                 </df>
@@ -66,13 +69,21 @@
             <in>position.hh</in>
             <in>stack.hh</in>
           </df>
-          <in>libsmtrat.so.0.2.1</in>
+          <df name="test">
+            <df name="CMakeFiles">
+              <df name="check.dir">
+              </df>
+              <df name="check_smtrat.dir">
+              </df>
+            </df>
+          </df>
         </df>
-        <in>config.h</in>
       </df>
       <df name="cmake">
       </df>
       <df name="doxygen-conf">
+      </df>
+      <df name="examples">
       </df>
       <df name="external">
         <df name="csdp">
@@ -165,6 +176,11 @@
         <df name="gui">
         </df>
         <df name="modules">
+          <df name="GBModule">
+            <in>GBSettings.h</in>
+            <in>GroebnerModuleState.h</in>
+            <in>InequalitiesTable.h</in>
+          </df>
           <df name="LRAModule">
             <in>Delta.cpp</in>
             <in>Delta.h</in>
@@ -179,6 +195,24 @@
             <in>LRASolverA.cpp</in>
             <in>LRASolverA.h</in>
           </df>
+          <df name="LRATwoModule">
+            <in>BetaMap.cpp</in>
+            <in>BetaMap.h</in>
+            <in>Bound.cpp</in>
+            <in>Bound.h</in>
+            <in>BoundMap.cpp</in>
+            <in>BoundMap.h</in>
+            <in>EqualBound.cpp</in>
+            <in>EqualBound.h</in>
+            <in>LowerBound.cpp</in>
+            <in>LowerBound.h</in>
+            <in>Real.cpp</in>
+            <in>Real.h</in>
+            <in>SimplexTableaux.cpp</in>
+            <in>SimplexTableaux.h</in>
+            <in>UpperBound.cpp</in>
+            <in>UpperBound.h</in>
+          </df>
           <df name="NSSModule">
             <in>ConstraintMatrixFactory.cpp</in>
             <in>ConstraintMatrixFactory.h</in>
@@ -190,20 +224,20 @@
           <df name="SATModule">
             <in>Alg.h</in>
             <in>Alloc.h</in>
-            <in>Dimacs.h</in>
             <in>Heap.h</in>
             <in>IntTypes.h</in>
             <in>Map.h</in>
             <in>Options.cpp</in>
             <in>Options.h</in>
-            <in>ParseUtils.h</in>
             <in>Queue.h</in>
             <in>SolverTypes.h</in>
             <in>Sort.h</in>
-            <in>System.cpp</in>
-            <in>System.h</in>
             <in>Vec.h</in>
             <in>XAlloc.h</in>
+          </df>
+          <df name="SingleVSModule">
+            <in>Substitute.cpp</in>
+            <in>Substitute.h</in>
           </df>
           <df name="VSModule">
             <in>Condition.cpp</in>
@@ -222,19 +256,25 @@
           <in>CADModule.h</in>
           <in>CNFerModule.cpp</in>
           <in>CNFerModule.h</in>
+          <in>FourierMotzkinSimplifier.cpp</in>
+          <in>FourierMotzkinSimplifier.h</in>
           <in>GroebnerModule.cpp</in>
           <in>GroebnerModule.h</in>
           <in>LRAModule.cpp</in>
           <in>LRAModule.h</in>
+          <in>LRAOneModule.cpp</in>
+          <in>LRAOneModule.h</in>
+          <in>LRATwoModule.cpp</in>
+          <in>LRATwoModule.h</in>
           <in>Modules.h</in>
-          <in>PreProCNFModule.cpp</in>
-          <in>PreProCNFModule.h</in>
           <in>PreProModule.cpp</in>
           <in>PreProModule.h</in>
           <in>SATModule.cpp</in>
           <in>SATModule.h</in>
-          <in>SimplifierModule.cpp</in>
-          <in>SimplifierModule.h</in>
+          <in>SingleVSModule.cpp</in>
+          <in>SingleVSModule.h</in>
+          <in>SmartSimplifier.cpp</in>
+          <in>SmartSimplifier.h</in>
           <in>StandardModuleFactory.h</in>
           <in>UnivariateCADModule.cpp</in>
           <in>UnivariateCADModule.h</in>
@@ -245,7 +285,6 @@
           <in>Driver.cc</in>
           <in>Driver.h</in>
           <in>Scanner.h</in>
-          <in>exprtest.cc</in>
         </df>
         <df name="test">
           <in>CSDP_unittest.cpp</in>
@@ -276,8 +315,11 @@
           </df>
         </df>
         <in>Answer.h</in>
+        <in>Condition.h</in>
         <in>Constraint.cpp</in>
         <in>Constraint.h</in>
+        <in>ConstraintPool.cpp</in>
+        <in>ConstraintPool.h</in>
         <in>Formula.cpp</in>
         <in>Formula.h</in>
         <in>Manager.cpp</in>
@@ -288,12 +330,13 @@
         <in>ModuleType.h</in>
         <in>NRATSolver.cpp</in>
         <in>NRATSolver.h</in>
-        <in>NRATSolver_CADonly.cpp</in>
-        <in>NRATSolver_CADonly.h</in>
         <in>Strategy.cpp</in>
         <in>Strategy.h</in>
+        <in>config.h</in>
         <in>smtrat.h</in>
         <in>smtratSolver.cpp</in>
+      </df>
+      <df name="utilities">
       </df>
     </df>
     <logicalFolder name="ExternalFiles"
@@ -323,8 +366,6 @@
           <executablePath></executablePath>
         </makeTool>
       </makefileType>
-      <item path="build/config.h" ex="true" tool="3" flavor="0">
-      </item>
       <folder path="smtrat/build">
         <ccTool>
           <incDir>
@@ -332,12 +373,24 @@
             <pElem>build/src/parser</pElem>
             <pElem>src</pElem>
           </incDir>
+          <preprocessorList>
+            <Elem>lib_smtrat_EXPORTS</Elem>
+          </preprocessorList>
         </ccTool>
       </folder>
       <folder path="smtrat/src/modules">
         <ccTool>
           <incDir>
             <pElem>build/src</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+      <folder path="smtrat/src/modules/NSSModule">
+        <ccTool>
+          <incDir>
+            <pElem>src/parser</pElem>
+            <pElem>build/src/parser</pElem>
+            <pElem>src</pElem>
           </incDir>
           <preprocessorList>
             <Elem>lib_smtrat_EXPORTS</Elem>
@@ -353,10 +406,26 @@
           </incDir>
         </ccTool>
       </folder>
+      <folder path="smtrat/src/test">
+        <ccTool>
+          <incDir>
+            <pElem>src/parser</pElem>
+            <pElem>build/src/parser</pElem>
+            <pElem>build/src</pElem>
+            <pElem>src</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>lib_smtrat_EXPORTS</Elem>
+          </preprocessorList>
+        </ccTool>
+      </folder>
       <folder path="smtrat/src/utilities">
         <ccTool>
           <incDir>
+            <pElem>src/parser</pElem>
+            <pElem>build/src/parser</pElem>
             <pElem>build/src</pElem>
+            <pElem>src</pElem>
           </incDir>
           <preprocessorList>
             <Elem>lib_smtrat_EXPORTS</Elem>
@@ -368,9 +437,13 @@
           <incDir>
             <pElem>build/src</pElem>
           </incDir>
-          <preprocessorList>
-            <Elem>lib_smtrat_EXPORTS</Elem>
-          </preprocessorList>
+        </ccTool>
+      </item>
+      <item path="src/ConstraintPool.cpp" ex="false" tool="1" flavor="0">
+        <ccTool>
+          <incDir>
+            <pElem>build/src</pElem>
+          </incDir>
         </ccTool>
       </item>
       <item path="src/Formula.cpp" ex="false" tool="1" flavor="0">
@@ -378,9 +451,6 @@
           <incDir>
             <pElem>build/src</pElem>
           </incDir>
-          <preprocessorList>
-            <Elem>lib_smtrat_EXPORTS</Elem>
-          </preprocessorList>
         </ccTool>
       </item>
       <item path="src/Manager.cpp" ex="false" tool="1" flavor="0">
@@ -388,9 +458,6 @@
           <incDir>
             <pElem>build/src</pElem>
           </incDir>
-          <preprocessorList>
-            <Elem>lib_smtrat_EXPORTS</Elem>
-          </preprocessorList>
         </ccTool>
       </item>
       <item path="src/Module.cpp" ex="false" tool="1" flavor="0">
@@ -398,9 +465,6 @@
           <incDir>
             <pElem>build/src</pElem>
           </incDir>
-          <preprocessorList>
-            <Elem>lib_smtrat_EXPORTS</Elem>
-          </preprocessorList>
         </ccTool>
       </item>
       <item path="src/NRATSolver.cpp" ex="false" tool="1" flavor="0">
@@ -412,91 +476,31 @@
           </incDir>
         </ccTool>
       </item>
-      <item path="src/NRATSolver_CADonly.cpp" ex="false" tool="1" flavor="0">
-        <ccTool>
-          <incDir>
-            <pElem>build/src</pElem>
-          </incDir>
-          <preprocessorList>
-            <Elem>lib_smtrat_EXPORTS</Elem>
-          </preprocessorList>
-        </ccTool>
-      </item>
       <item path="src/Strategy.cpp" ex="false" tool="1" flavor="0">
         <ccTool>
           <incDir>
             <pElem>build/src</pElem>
           </incDir>
+        </ccTool>
+      </item>
+      <item path="src/modules/GBModule/GroebnerModuleState.h"
+            ex="true"
+            tool="3"
+            flavor="0">
+      </item>
+      <item path="src/modules/SATModule/Queue.h" ex="true" tool="3" flavor="0">
+      </item>
+      <item path="src/modules/UnivariateCADModule.cpp" ex="false" tool="1" flavor="0">
+        <ccTool>
+          <incDir>
+            <pElem>src/parser</pElem>
+            <pElem>build/src/parser</pElem>
+            <pElem>src</pElem>
+          </incDir>
           <preprocessorList>
             <Elem>lib_smtrat_EXPORTS</Elem>
           </preprocessorList>
         </ccTool>
-      </item>
-      <item path="src/modules/CADModule.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/CNFerModule.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/GroebnerModule.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/LRAModule.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/LRAModule/Delta.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/LRAModule/LAArray.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/LRAModule/LAColumn.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/LRAModule/LARow.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/LRAModule/LAVar.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/LRAModule/LRASolverA.cpp"
-            ex="false"
-            tool="1"
-            flavor="0">
-      </item>
-      <item path="src/modules/NSSModule/ConstraintMatrixFactory.cpp"
-            ex="false"
-            tool="1"
-            flavor="0">
-      </item>
-      <item path="src/modules/NSSModule/MonomialIterator.cpp"
-            ex="false"
-            tool="1"
-            flavor="0">
-      </item>
-      <item path="src/modules/PreProCNFModule.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/PreProModule.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/SATModule.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/SATModule/Dimacs.h" ex="true" tool="3" flavor="0">
-      </item>
-      <item path="src/modules/SATModule/Options.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/SATModule/Queue.h" ex="true" tool="3" flavor="0">
-      </item>
-      <item path="src/modules/SATModule/System.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/SimplifierModule.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/UnivariateCADModule.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/VSModule.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/VSModule/Condition.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/VSModule/SqrtEx.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/VSModule/State.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/VSModule/Substitute.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/modules/VSModule/Substitution.cpp"
-            ex="false"
-            tool="1"
-            flavor="0">
       </item>
       <item path="src/smtratSolver.cpp" ex="false" tool="1" flavor="0">
         <ccTool>
@@ -507,22 +511,12 @@
           </incDir>
         </ccTool>
       </item>
-      <item path="src/test/CSDP_unittest.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/test/ConstraintMatrixFactory_unittest.cpp"
-            ex="false"
-            tool="1"
-            flavor="0">
-      </item>
-      <item path="src/test/DenseMatrix_unittest.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/test/GroebnerToSDP_unittest.cpp" ex="false" tool="1" flavor="0">
-      </item>
       <item path="src/test/test.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/utilities/SDP/CSDPFacade.cpp" ex="false" tool="1" flavor="0">
-      </item>
-      <item path="src/utilities/SDP/SparseMatrix.cpp" ex="false" tool="1" flavor="0">
+        <ccTool>
+          <incDir>
+            <pElem>build/src/test</pElem>
+          </incDir>
+        </ccTool>
       </item>
     </conf>
   </confs>
