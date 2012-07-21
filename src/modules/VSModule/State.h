@@ -199,7 +199,7 @@ struct subComp
 
 typedef std::vector	< Condition* > 			ConditionVector						;
 typedef std::vector	< ConditionVector > 	DisjunctionOfConditionConjunctions	;
-typedef std::vector	< smtrat::Constraint* > TS_ConstraintConjunction			;
+typedef std::vector	< const smtrat::Constraint* > TS_ConstraintConjunction			;
 
 
 class State
@@ -319,7 +319,7 @@ public:
 	bool 									refreshConditions					( )																	;
 	void									initConditionFlags					( )																	;
 	bool 									initIndex							( const GiNaC::symtab& )											;
-	void									addCondition						( const smtrat::Constraint&	   ,
+	void									addCondition						( const smtrat::Constraint*	   ,
 																  				  const ConditionSet&   ,
 																				  const unsigned 		   ,
 																				  const bool 				)										;

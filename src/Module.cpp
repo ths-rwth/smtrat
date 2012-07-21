@@ -37,11 +37,16 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
+//#define LOG_THEORY_CALLS
+//#define LOG_INFEASIBLE_SUBSETS
 
 using namespace std;
 
+
 namespace smtrat
 {
+    vector<string> Module::mAssumptionToCheck = vector<string>();
+
     Module::Module( Manager* const _tsManager, const Formula* const _formula ):
         mInfeasibleSubsets(),
         mpManager( _tsManager ),
@@ -329,6 +334,9 @@ namespace smtrat
         for( vec_set_const_pFormula::const_iterator infSubSet = backendsInfsubsets.begin(); infSubSet != backendsInfsubsets.end(); ++infSubSet )
         {
             assert( !infSubSet->empty() );
+            #ifdef LOG_INFEASIBLE_SUBSETS
+            addAssumptionToCheck( *infSubSet, false, _backend );
+            #endif
             result.push_back( set<const Formula*>() );
             for( set<const Formula*>::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
             {
@@ -404,7 +412,7 @@ namespace smtrat
             string moduleName = "";
             switch( (**module).type() )
             {
-                case MT_SimplifierModule:
+                case MT_SmartSimplifier:
                 {
                     moduleName = "Simplifier";
                     break;
@@ -445,10 +453,16 @@ namespace smtrat
                 }
             }
             cout << endl << "Call to module " << moduleName << endl;
-            //            (**module).print( cout, " ");
+            (**module).print( cout, " ");
             #endif
             result = (*module)->isConsistent();
             (*module)->receivedFormulaChecked();
+            #ifdef LOG_THEORY_CALLS
+            if( result != Unknown )
+            {
+                addAssumptionToCheck( *mpPassedFormula, result == True, *this );
+            }
+            #endif
             ++module;
         }
         #ifdef MODULE_VERBOSE
@@ -552,6 +566,58 @@ namespace smtrat
             }
         }
         return false;
+    }
+
+    /**
+     *
+     * @param _formula
+     * @param _consistent
+     */
+    void Module::addAssumptionToCheck( const Formula& _formula, bool _consistent, const Module& _module )
+    {
+        string assumption = "";
+        assumption += "(push 1)\n";
+        assumption += "(assert (and ";
+        assumption += ( _consistent ? "" : "(not ");
+        assumption += _formula.toString();
+        assumption += ( _consistent ? "" : ")");
+        assumption += " module_";
+        stringstream out;
+        out << _module.type();
+        assumption += out.str();
+        assumption += "))\n";
+        assumption += "(get-assertions)\n";
+        assumption += "(check-sat-using qfnra)\n";
+        assumption += "(pop 1)\n";
+        mAssumptionToCheck.push_back( assumption );
+    }
+
+    /**
+     *
+     * @param _constraints
+     * @param _consistent
+     */
+    void Module::addAssumptionToCheck( const set<const Formula*>& _formulas, bool _consistent, const Module& _module )
+    {
+        string assumption = "";
+        assumption += "(push 1)\n";
+        assumption += "(assert (and ";
+        assumption += ( _consistent ? "" : "(not (and ");
+        for( set<const Formula*>::const_iterator formula = _formulas.begin();
+             formula != _formulas.end(); ++formula )
+        {
+            assumption += (*formula)->toString();
+        }
+        assumption += ( _consistent ? "" : "))");
+        assumption += " module_";
+        stringstream out;
+        out << _module.type();
+        assumption += out.str();
+        assumption += "))\n";
+        assumption += "(get-assertions)\n";
+        assumption += "(check-sat-using qfnra)\n";
+        assumption += "(pop 1)\n";
+        mAssumptionToCheck.push_back( assumption );
     }
 
     /**

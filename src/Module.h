@@ -92,6 +92,8 @@ namespace smtrat
             Module( Manager* const , const Formula* const );
             virtual ~Module();
 
+            static std::vector<std::string> mAssumptionToCheck;
+
             // Main interfaces
             virtual bool inform( const Constraint* const _constraint )
             {
@@ -201,6 +203,8 @@ namespace smtrat
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
             const std::set<const Formula*>& getOrigins( Formula::const_iterator ) const;
+            static void addAssumptionToCheck( const Formula&, bool, const Module& );
+            static void addAssumptionToCheck( const std::set<const Formula*>&, bool, const Module& );
 
         private:
             void updateDeductions();

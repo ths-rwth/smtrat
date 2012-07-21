@@ -48,6 +48,14 @@ namespace smtrat
         }
     };
 
+    struct constraintPointerCmp
+    {
+        bool operator ()( const Constraint* const _constraintA, const Constraint* const _constraintB ) const
+        {
+            return ( (*_constraintA) < (*_constraintB) );
+        }
+    };
+
     typedef std::unordered_set<const Constraint*, constraintHash, constraintEqual>                 fastConstraintSet;
     typedef std::unordered_set<const Constraint*, constraintHash, constraintEqual>::const_iterator fcs_const_iterator;
 
@@ -61,6 +69,8 @@ namespace smtrat
             GiNaC::symtab mAllVariables;
             /// for each string representation its constraint (considering all constraints of which the manager has already been informed)
             fastConstraintSet mAllConstraints;
+            /// variable-free constraints
+            std::set< const Constraint*, constraintPointerCmp > mAllVariableFreeConstraints;
             /// id allocator
             unsigned mIdAllocator;
 
@@ -85,6 +95,7 @@ namespace smtrat
                 mAllVariables   = GiNaC::symtab();
                 mAllConstraints = fastConstraintSet();
                 mAllConstraints.reserve( _capacity );
+                mAllVariableFreeConstraints = std::set< const Constraint*, constraintPointerCmp >();
                 mIdAllocator = 1;
             }
 
@@ -94,6 +105,12 @@ namespace smtrat
                 {
                     const Constraint* pCons = *mAllConstraints.begin();
                     mAllConstraints.erase( mAllConstraints.begin() );
+                    delete pCons;
+                }
+                while( !mAllVariableFreeConstraints.empty() )
+                {
+                    const Constraint* pCons = *mAllVariableFreeConstraints.begin();
+                    mAllVariableFreeConstraints.erase( mAllVariableFreeConstraints.begin() );
                     delete pCons;
                 }
             }
@@ -121,6 +138,7 @@ namespace smtrat
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel )
             {
                 assert( hasNoOtherVariables( _lhs ) );
+                assert( _rel != CR_NEQ );
                 Constraint* constraint;
                 if( _rel == CR_GREATER )
                 {
@@ -134,21 +152,34 @@ namespace smtrat
                 {
                     constraint = new Constraint( _lhs, _rel, mIdAllocator );
                 }
-                std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
-                if( !iterBoolPair.second )
+                if( constraint->isConsistent() == 2 )
                 {
-                    delete constraint;
+                    std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
+                    if( !iterBoolPair.second )
+                    {
+                        delete constraint;
+                    }
+                    else
+                    {
+                        ++mIdAllocator;
+                    }
+                    return *iterBoolPair.first;
                 }
                 else
                 {
-                    ++mIdAllocator;
+                    std::pair<std::set< const Constraint*, constraintPointerCmp >::iterator, bool> iterBoolPair = mAllVariableFreeConstraints.insert( constraint );
+                    if( !iterBoolPair.second )
+                    {
+                        delete constraint;
+                    }
+                    return *iterBoolPair.first;
                 }
-                return *iterBoolPair.first;
             }
 
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation _rel )
             {
                 assert( hasNoOtherVariables( _lhs ) && hasNoOtherVariables( _rhs ) );
+                assert( _rel != CR_NEQ );
                 Constraint* constraint;
                 if( _rel == CR_GREATER )
                 {
@@ -162,16 +193,28 @@ namespace smtrat
                 {
                     constraint = new Constraint( _lhs, _rhs, _rel, mIdAllocator );
                 }
-                std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
-                if( !iterBoolPair.second )
+                if( constraint->isConsistent() == 2 )
                 {
-                    delete constraint;
+                    std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
+                    if( !iterBoolPair.second )
+                    {
+                        delete constraint;
+                    }
+                    else
+                    {
+                        ++mIdAllocator;
+                    }
+                    return *iterBoolPair.first;
                 }
                 else
                 {
-                    ++mIdAllocator;
+                    std::pair<std::set< const Constraint*, constraintPointerCmp >::iterator, bool> iterBoolPair = mAllVariableFreeConstraints.insert( constraint );
+                    if( !iterBoolPair.second )
+                    {
+                        delete constraint;
+                    }
+                    return *iterBoolPair.first;
                 }
-                return *iterBoolPair.first;
             }
 
             const Constraint* newConstraint( const std::string& _stringrep, const bool = true, const bool = true );
@@ -181,6 +224,7 @@ namespace smtrat
                 GiNaC::symtab::iterator var = mAllVariables.find( _name );
                 if( var != mAllVariables.end() )
                 {
+                    assert( false );
                     return var->second;
                 }
                 else
@@ -189,6 +233,17 @@ namespace smtrat
                 }
             }
 
+            void print( std::ostream& _out = std::cout ) const
+            {
+                _out << "---------------------------------------------------" << std::endl;
+                _out << "Constraint pool:" << std::endl;
+                for( fcs_const_iterator constraint = mAllConstraints.begin();
+                     constraint != mAllConstraints.end(); ++constraint )
+                {
+                    _out << "    " << **constraint << std::endl;
+                }
+                _out << "---------------------------------------------------" << std::endl;
+            }
     };
 }    // namespace smtrat
 

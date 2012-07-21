@@ -30,7 +30,6 @@
  *
  * The classes contained in here are
  * GroebnerModuleState
- * InequalitiesRow
  * InequalitiesTable
  * GroebnerModule
  *
@@ -72,7 +71,6 @@ namespace smtrat
         protected:
             ///The state of the basis
             const GiNaCRA::Buchberger<GBSettings::Order> mBasis;
-            const std::vector<unsigned>                  mVariablesInEqualities;
     };
 
     class GroebnerModule;
@@ -92,21 +90,24 @@ namespace smtrat
     {
         typedef GBSettings::Polynomial                                                    Polynomial;
         typedef GBSettings::MultivariateIdeal                                             Ideal;
-        typedef std::pair<unsigned, Polynomial>                                           CellEntry;
-        typedef std::tuple<Formula::iterator, Constraint_Relation, std::list<CellEntry> > RowEntry;
-        typedef std::map<Formula::const_iterator, RowEntry, FormulaConstraintCompare>     Rows;
-        typedef std::pair<Formula::const_iterator, RowEntry>                              Row;
-
         public:
+			
+			typedef std::pair<unsigned, Polynomial>                                           CellEntry;
+			typedef std::tuple<Formula::iterator, Constraint_Relation, std::list<CellEntry> > RowEntry;
+			typedef std::map<Formula::const_iterator, RowEntry, FormulaConstraintCompare>     Rows;
+			typedef std::pair<Formula::const_iterator, RowEntry>                              Row;
+			
             InequalitiesTable( GroebnerModule* module );
 
-            void InsertReceivedFormula( Formula::const_iterator received );
+            Rows::iterator InsertReceivedFormula( Formula::const_iterator received );
 
             void pushBacktrackPoint();
 
             void popBacktrackPoint( unsigned nrBacktracks );
 
             Answer reduceWRTGroebnerBasis( const Ideal& gb );
+			bool reduceWRTGroebnerBasis( Rows::iterator, const Ideal& gb );
+			Answer reduceWRTGroebnerBasis( const std::list<Rows::iterator>& ineqToBeReduced, const Ideal& gb );
 
             void removeInequality( Formula::const_iterator _formula );
 
@@ -119,6 +120,9 @@ namespace smtrat
 
             Rows::iterator  mNewConstraints;
             unsigned        mLastRestart;
+			
+
+     
     };
 
     /**
@@ -160,12 +164,15 @@ namespace smtrat
             std::vector<Formula::const_iterator> mBacktrackPoints;
 
             bool                                 mPopCausesRecalc;
+			
+			std::list<InequalitiesTable::Rows::iterator>		 mNewInequalities;
 
             void pushBacktrackPoint( Formula::const_iterator btpoint );
             void popBacktrackPoint( Formula::const_iterator btpoint );
             bool saveState();
             std::set<const Formula*> generateReasons( const GiNaCRA::BitVector& reasons );
             void passGB();
+			Polynomial transformIntoEquality( Formula::const_iterator constraint );
 
             void removeSubformulaFromPassedFormula( Formula::iterator _formula );
             bool validityCheck();

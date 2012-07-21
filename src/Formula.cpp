@@ -743,6 +743,79 @@ namespace smtrat
         }
     }
 
+    string Formula::toString() const
+    {
+        string result = "";
+        switch( mType )
+        {
+            case AND:
+            {
+                result += "(and";
+                break;
+            }
+            case OR:
+            {
+                result += "(or";
+                break;
+            }
+            case NOT:
+            {
+                result += "(not";
+                break;
+            }
+            case IFF:
+            {
+                result += "(iff";
+                break;
+            }
+            case XOR:
+            {
+                result += "(xor";
+                break;
+            }
+            case IMPLIES:
+            {
+                result += "(implies";
+                break;
+            }
+            case BOOL:
+            {
+                result += *mpIdentifier;
+                break;
+            }
+            case REALCONSTRAINT:
+            {
+                result += mpConstraint->toPrefixString();
+                break;
+            }
+            case TTRUE:
+            {
+                result += "True";
+                break;
+            }
+            case FFALSE:
+            {
+                result += "False";
+                break;
+            }
+            default:
+            {
+                result += "Undefined";
+            }
+        }
+        if( isBooleanCombination() )
+        {
+            std::list<Formula*>::const_iterator subformula = mpSubformulas->begin();
+            while( subformula != mpSubformulas->end() )
+            {
+                result += " " + (*subformula)->toString();
+                ++subformula;
+            }
+            result += ")";
+        }
+        return result;
+    }
+
     /**
      *
      * @param _const

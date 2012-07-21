@@ -172,6 +172,7 @@ namespace smtrat
          */
         mAllVariables.insert( reader.get_syms().begin(), reader.get_syms().end() );
         Constraint* constraint;
+        assert( relation != CR_NEQ );
         if( relation == CR_GREATER )
         {
             constraint = new Constraint( -lhs, -rhs, CR_LESS, mIdAllocator );
@@ -184,16 +185,28 @@ namespace smtrat
         {
             constraint = new Constraint( lhs, rhs, relation, mIdAllocator );
         }
-        std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
-        if( !iterBoolPair.second )
+        if( constraint->isConsistent() == 2 )
         {
-            delete constraint;
+            std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
+            if( !iterBoolPair.second )
+            {
+                delete constraint;
+            }
+            else
+            {
+                ++mIdAllocator;
+            }
+            return *iterBoolPair.first;
         }
         else
         {
-            ++mIdAllocator;
+            std::pair<std::set< const Constraint*, constraintPointerCmp >::iterator, bool> iterBoolPair = mAllVariableFreeConstraints.insert( constraint );
+            if( !iterBoolPair.second )
+            {
+                delete constraint;
+            }
+            return *iterBoolPair.first;
         }
-        return *iterBoolPair.first;
     }
 
     /**

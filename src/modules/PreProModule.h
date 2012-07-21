@@ -64,6 +64,9 @@ namespace smtrat
             void generateVarActivitiesInDatabase( Formula* );
             void generateConActivitiesInDatabase( Formula* );
             void generateFinalActivitiesInDatabase( Formula* );
+            double getHighestProductDegree( GiNaC::ex );
+            double getConstraintActivitiy( GiNaC::ex );
+            double normalizeValue( double, double, double );
             void assignActivitiesFromDatabase( Formula* );
             
             std::pair< const Formula*, const Formula* > isCandidateforSubstitution( Formula::const_iterator ) const;
@@ -97,17 +100,20 @@ namespace smtrat
             
             // Members for assignActivities()
             std::map< std::string, 
-            std::pair<double, double> >                                         mVariableActivities;
-            std::map< const Constraint*, 
-            std::pair< std::pair<double, double>, std::pair<double, double> > > mConstraintActivities;
-            double                                                              mMaxRelWeight;
-            double                                                              mMaxVarDegreeActivity;
-            double                                                              mMaxConDegreeActivity;
-            double                                                              mMaxVarQuantityActivity;
-            double                                                              mMaxConQuantityActivity;
+            std::pair<double, double> >                                         mVariableDegNQuantActivities;
+            std::map< std::string, double>                                      mVariableActivities;
+            std::pair<double, double>                                           mVarDegreeActivityIntervall;
+            std::pair<double, double>                                           mVarQuantityActivityIntervall;
+            std::map< const Constraint*, std::pair< std::pair<double, double>,
+            std::pair< std::pair<double, double >, double > > >                 mConstraintActivities; 
+            std::pair<double, double>                                           mVarActivityIntervall;
+            std::pair<double, double>                                           mHPDegreeActivityIntervall;
+            std::pair<double, double>                                           mHVDegreeActivityIntervall;
+            std::pair<double, double>                                           mConQuantityActivityIntervall;
+            std::pair<double, double>                                           mNumberOfVarsActivityIntervall;
+            std::pair<double, double>                                           mRelWeightIntervall;
             std::map< const Constraint*, double >                               mActivities;
-            double                                                              mMinActivity;
-            double                                                              mMaxActivity;
+            std::pair<double, double>                                           mActivityIntervall;
     };
 
 }    // namespace smtrat
