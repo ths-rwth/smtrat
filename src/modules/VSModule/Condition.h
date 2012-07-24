@@ -31,7 +31,7 @@
 #define SMTRAT_VS_CONDITION_H
 
 #include <set>
-#include "../../Constraint.h"
+#include "../../Formula.h"
 
 namespace vs
 {
@@ -55,19 +55,32 @@ namespace vs
             };
             typedef std::set<Condition*, condComp> ConditionSet;
 
+        private:
+
+            /**
+             * Members:
+             */
+            bool                mFlag;
+            bool                mRecentlyAdded;
+            unsigned            mValuation;
+            const smtrat::Constraint* mpConstraint;
+            ConditionSet*       mpOriginalConditions;
+
+        public:
+
             /**
              * Constructors:
              */
 
             Condition();
 
-            Condition( const smtrat::Constraint& );
+            Condition( const smtrat::Constraint* );
 
-            Condition( const smtrat::Constraint&, unsigned );
+            Condition( const smtrat::Constraint*, unsigned );
 
-            Condition( const smtrat::Constraint&, const bool, const ConditionSet&, const unsigned );
+            Condition( const smtrat::Constraint*, const bool, const ConditionSet&, const unsigned );
 
-            Condition( const smtrat::Constraint&, const bool, const ConditionSet&, const unsigned, const bool );
+            Condition( const smtrat::Constraint*, const bool, const ConditionSet&, const unsigned, const bool );
 
             Condition( const Condition& );
 
@@ -110,11 +123,6 @@ namespace vs
                 return mValuation;
             }
 
-            smtrat::Constraint& rConstraint()
-            {
-                return *mpConstraint;
-            }
-
             const smtrat::Constraint& constraint() const
             {
                 return *mpConstraint;
@@ -135,24 +143,17 @@ namespace vs
                 return *mpOriginalConditions;
             }
 
+            void changeRelationTo( smtrat::Constraint_Relation _relation )
+            {
+                mpConstraint = smtrat::Formula::newConstraint( mpConstraint->lhs(), _relation );
+            }
+
             unsigned valuate( const std::string, const unsigned, const bool );
             bool bestVariable( std::string& ) const;
             unsigned bestVariable2( std::string& ) const;
             bool operator ==( const Condition& ) const;
             bool operator <( const Condition& ) const;
             void print( std::ostream& ) const;
-
-        private:
-
-            /**
-             * Attributes:
-             */
-            bool                mFlag;
-            bool                mRecentlyAdded;
-            unsigned            mValuation;
-            smtrat::Constraint* mpConstraint;
-            ConditionSet*       mpOriginalConditions;
-
     };
 
     typedef std::set<Condition*, Condition::condComp> ConditionSet;

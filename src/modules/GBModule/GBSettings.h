@@ -51,7 +51,7 @@ namespace smtrat
         static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
         static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
         static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
-		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQALITIES;
+		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQUALITIES;
 
 		static const bool								 applyNSS								 = false;
         static const unsigned                            maxSDPdegree                            = 4;

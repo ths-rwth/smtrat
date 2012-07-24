@@ -54,7 +54,7 @@
 #define SATMODULE_WITH_CALL_NUMBER
 #define SAT_MODULE_THEORY_PROPAGATION
 //#define WITH_PROGRESS_ESTIMATION
-//#define STORE_ONLY_ONE_REASON
+#define STORE_ONLY_ONE_REASON
 
 using namespace std;
 using namespace Minisat;
@@ -544,7 +544,7 @@ namespace smtrat
                     // Add the clause (or normConstrAuxBoolean InvConstrAuxBoolean)
                     addClause( mkLit( normConstrAuxBoolean, false ), mkLit( invConstrAuxBoolean, false ) );
                     // Add the clause (or (not normConstrAuxBoolean) (not InvConstrAuxBoolean))
-//                    addClause( negNormConstrAuxLit, negInvConstrAuxLit );
+                    addClause( negNormConstrAuxLit, negInvConstrAuxLit );
 
                     /*
                      * Map the literals to the corresponding constraints.
@@ -1225,6 +1225,7 @@ namespace smtrat
      */
     void SATModule::uncheckedEnqueue( Lit p, CRef from )
     {
+        if( value( p ) != l_Undef ) Module::storeAssumptionsToCheck();
         assert( value( p ) == l_Undef );
         assigns[var( p )] = lbool( !sign( p ) );
         vardata[var( p )] = mkVarData( from, decisionLevel() );
@@ -1499,7 +1500,7 @@ NextClause:
      *    NOTE! Use negative value for 'nof_conflicts' indicate infinity.
      *
      *  Output:
-     *    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
+     *    'l_True' if a partial assignment that is consistent with respect to the clause set is found. If
      *    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
      *    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
      *

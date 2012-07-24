@@ -184,16 +184,28 @@ namespace smtrat
         {
             constraint = new Constraint( lhs, rhs, relation, mIdAllocator );
         }
-        std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
-        if( !iterBoolPair.second )
+        if( constraint->isConsistent() == 2 )
         {
-            delete constraint;
+            std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
+            if( !iterBoolPair.second )
+            {
+                delete constraint;
+            }
+            else
+            {
+                ++mIdAllocator;
+            }
+            return *iterBoolPair.first;
         }
         else
         {
-            ++mIdAllocator;
+            std::pair<std::set< const Constraint*, constraintPointerCmp >::iterator, bool> iterBoolPair = mAllVariableFreeConstraints.insert( constraint );
+            if( !iterBoolPair.second )
+            {
+                delete constraint;
+            }
+            return *iterBoolPair.first;
         }
-        return *iterBoolPair.first;
     }
 
     /**

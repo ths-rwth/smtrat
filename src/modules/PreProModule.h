@@ -104,11 +104,13 @@ namespace smtrat
             std::map< std::string, double>                                      mVariableActivities;
             std::pair<double, double>                                           mVarDegreeActivityIntervall;
             std::pair<double, double>                                           mVarQuantityActivityIntervall;
-            std::map< const Constraint*, 
-            std::pair< std::pair<double, double>, double > >                    mConstraintActivities;
-            std::pair<double, double>                                           mConDegreeActivityIntervall;
-            std::pair<double, double>                                           mConQuantityActivityIntervall;
+            std::map< const Constraint*, std::pair< std::pair<double, double>,
+            std::pair< std::pair<double, double >, double > > >                 mConstraintActivities; 
             std::pair<double, double>                                           mVarActivityIntervall;
+            std::pair<double, double>                                           mHPDegreeActivityIntervall;
+            std::pair<double, double>                                           mHVDegreeActivityIntervall;
+            std::pair<double, double>                                           mConQuantityActivityIntervall;
+            std::pair<double, double>                                           mNumberOfVarsActivityIntervall;
             std::pair<double, double>                                           mRelWeightIntervall;
             std::map< const Constraint*, double >                               mActivities;
             std::pair<double, double>                                           mActivityIntervall;
