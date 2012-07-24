@@ -138,7 +138,6 @@ namespace smtrat
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel )
             {
                 assert( hasNoOtherVariables( _lhs ) );
-                assert( _rel != CR_NEQ );
                 Constraint* constraint;
                 if( _rel == CR_GREATER )
                 {
@@ -179,7 +178,6 @@ namespace smtrat
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation _rel )
             {
                 assert( hasNoOtherVariables( _lhs ) && hasNoOtherVariables( _rhs ) );
-                assert( _rel != CR_NEQ );
                 Constraint* constraint;
                 if( _rel == CR_GREATER )
                 {

@@ -162,7 +162,7 @@ namespace vs
 
             /*
              * Collect all necessary left hand sides to create the new conditions of all cases
-             * refering to the virtual substitution.
+             * referring to the virtual substitution.
              */
             SqrtEx substituted = subBySqrtEx( _constraint->lhs(), ex( sym ), _substitution.term() );
 
@@ -186,17 +186,7 @@ namespace vs
                      * Add conjunction (q = 0) to the substitution result.
                      */
                     _substitutionResults.push_back( TS_ConstraintConjunction() );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( substituted.constantPart(), smtrat::CR_EQ ) );
-                }
-                else if( _constraint->relation() == smtrat::CR_NEQ )
-                {
-                    /*
-                     * Add conjunction (q != 0) to the substitution result.
-                     */
-                    _substitutionResults.push_back( TS_ConstraintConjunction() );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( substituted.constantPart(), smtrat::CR_LESS ) );
-                    _substitutionResults.push_back( TS_ConstraintConjunction() );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( substituted.constantPart(), smtrat::CR_GREATER ) );
+                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( substituted.constantPart(), _constraint->relation() ) );
                 }
                 else
                 {
@@ -340,7 +330,7 @@ namespace vs
     }
 
     /**
-     * Submethod of substituteNormalSqrt, where applying the substitution led to a term
+     * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
      * containing a square root. The relation symbol of the constraint to substitute is "=".
      *
      *                              (_q+_r*sqrt(_radicand))
@@ -432,7 +422,7 @@ namespace vs
     }
 
     /**
-     * Submethod of substituteNormalSqrt, where applying the substitution led to a term
+     * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
      * containing a square root. The relation symbol of the constraint to substitute is "!=".
      *
      *                              (_q+_r*sqrt(_radicand))
@@ -492,9 +482,7 @@ namespace vs
          * Add conjunction (q^2-r^2*radicand!=0) to the substitution result.
          */
         _substitutionResults.push_back( TS_ConstraintConjunction() );
-        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_LESS ) );
-        _substitutionResults.push_back( TS_ConstraintConjunction() );
-        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_GREATER ) );
+        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_NEQ ) );
         #else
 
         ex qr = _q * _r;
@@ -512,15 +500,12 @@ namespace vs
          */
         _substitutionResults.push_back( TS_ConstraintConjunction() );
         _substitutionResults.back().push_back( smtrat::Formula::newConstraint( qr, smtrat::CR_GREATER ) );
-        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_LESS ) );
-        _substitutionResults.push_back( TS_ConstraintConjunction() );
-        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( qr, smtrat::CR_GREATER ) );
-        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_GREATER ) );
+        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_NEQ ) );
         #endif
     }
 
     /**
-     * Submethod of substituteNormalSqrt, where applying the substitution led to a term
+     * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
      * containing a square root. The relation symbol of the constraint to substitute is "<".
      *
      *                              (_q+_r*sqrt(_radicand))
@@ -652,7 +637,7 @@ namespace vs
     }
 
     /**
-     * Submethod of substituteNormalSqrt, where applying the substitution led to a term
+     * Sub-method of substituteNormalSqrt, where applying the substitution led to a term
      * containing a square root. The relation symbol of the constraint to substitute is "<=".
      *
      *                              (_q+_r*sqrt(_radicand))
@@ -777,7 +762,7 @@ namespace vs
     /**
      * Applies the given substitution to the given constraint, where the substitution
      * is of the form [x -> t+epsilon] with x as the variable and c and b polynomials in
-     * the real theorie excluding x. The constraint is of the form "f(x) \rho 0" with
+     * the real theory excluding x. The constraint is of the form "f(x) \rho 0" with
      * \rho element of {=,!=,<,>,<=,>=} and k as the maximum degree of x in f.
      *
      * @param _constraint           The constraint to substitute in.
@@ -858,8 +843,8 @@ namespace vs
     }
 
     /**
-     * Submethod of substituteEps and substituteMinusEps, where one of the gradients in the
-     * point represented by the substitution must be negativ if the parameter relation is <
+     * Sub-method of substituteEps and substituteMinusEps, where one of the gradients in the
+     * point represented by the substitution must be negative if the parameter relation is <
      * or positive if the parameter relation is >. The constraint is of the form:
      *
      *  f(x)~0, with ~ being < in the case of +epsilon and > in the case of -epsilon
@@ -926,20 +911,20 @@ namespace vs
          *
          * where the relation is ~.
          */
-        while( collection.back()->lhs().has( ex( sym ) ) )
+        ex derivative = ex( _constraint.lhs() );
+        while( derivative.has( ex( sym ) ) )
         {
             /*
              * Change the relation symbol of the last added constraint to "=".
              */
-            const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( collection.back()->lhs(), smtrat::CR_EQ );
+            const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( derivative, smtrat::CR_EQ );
             collection.pop_back();
             collection.push_back( constraint );
 
             /*
              * Form the derivate of the left hand side of the last added constraint.
              */
-            ex derivative;
-            derivative = ex( collection.back()->lhs().diff( sym, 1 ) );
+            derivative = ex( derivative.diff( sym, 1 ) );
 
             #ifdef VS_DEBUG_CALCULATIONS
             cout << endl;
@@ -953,7 +938,7 @@ namespace vs
             #endif
 
             /*
-             * Check, whether the degree of the variable we derivated for decreased.
+             * Check, whether the degree of the variable we derivate for has decreased.
              */
             assert( derivative.degree( ex( sym ) ) < collection.back()->lhs().degree( ex( sym ) ) );
 
@@ -1004,7 +989,7 @@ namespace vs
     /**
      * Applies the given substitution to the given constraint, where the substitution
      * is of the form [x -> -infinity] with x as the variable and c and b polynomials in
-     * the real theorie excluding x. The constraint is of the form "f(x) \rho 0" with
+     * the real theory excluding x. The constraint is of the form "f(x) \rho 0" with
      * \rho element of {=,!=,<,>,<=,>=} and k as the maximum degree of x in f.
      *
      * @param _constraint           The constraint to substitute in.
@@ -1062,7 +1047,7 @@ namespace vs
     /**
      * Applies the given substitution to the given constraint, where the substitution
      * is of the form [x -> +/-infinity] with x as the variable and c and b polynomials in
-     * the real theorie excluding x. The constraint is of the form "a*x^2+bx+c \rho 0",
+     * the real theory excluding x. The constraint is of the form "a*x^2+bx+c \rho 0",
      * where \rho is < or >.
      *
      * @param _constraint           The constraint to substitute in.
@@ -1147,7 +1132,7 @@ namespace vs
 
     /**
      * Deals with the case, that the left hand side of the constraint to substitute is
-     * a trivial polynom in the variable to substitute.
+     * a trivial polynomial in the variable to substitute.
      *
      * The constraints left hand side then should looks like:   ax^2+bx+c
      *
@@ -1196,7 +1181,7 @@ namespace vs
 
     /**
      * Deals with the case, that the left hand side of the constraint to substitute is
-     * not a trivial polynom in the variable to substitute.
+     * not a trivial polynomial in the variable to substitute.
      *
      * The constraints left hand side then should looks like:   ax^2+bx+c
      *
@@ -1237,9 +1222,7 @@ namespace vs
              * Add conjunction (a_i!=0) to the substitution result.
              */
             _substitutionResults.push_back( TS_ConstraintConjunction() );
-            _substitutionResults.back().push_back( smtrat::Formula::newConstraint( coefficients.at( i ), smtrat::CR_LESS ) );
-            _substitutionResults.push_back( TS_ConstraintConjunction() );
-            _substitutionResults.back().push_back( smtrat::Formula::newConstraint( coefficients.at( i ), smtrat::CR_GREATER ) );
+            _substitutionResults.back().push_back( smtrat::Formula::newConstraint( coefficients.at( i ), smtrat::CR_NEQ ) );
         }
     }
 

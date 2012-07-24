@@ -39,16 +39,6 @@ using namespace GiNaC;
 namespace smtrat
 {
     /**
-     * true if 0 -rel- 0 yields false
-     * @param The relation
-     * @return
-     */
-    bool constraintRelationIsStrict( Constraint_Relation rel )
-    {
-        return (rel == CR_NEQ || rel == CR_LESS || rel == CR_GREATER);
-    }
-
-    /**
      * Constructors:
      */
     Constraint::Constraint():
@@ -72,9 +62,7 @@ namespace smtrat
             mID = 0;
         }
         getVariables( rLhs(), mVariables );
-        #ifdef TS_CONSTRAINT_SIMPLIFIER
         simplify();
-        #endif
     }
 
     Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, unsigned _id ):
@@ -89,9 +77,7 @@ namespace smtrat
             mID = 0;
         }
         getVariables( rLhs(), mVariables );
-        #ifdef TS_CONSTRAINT_SIMPLIFIER
         simplify();
-        #endif
     }
 
     Constraint::Constraint( const Constraint& _constraint ):
@@ -290,6 +276,16 @@ namespace smtrat
         {
             return 0;
         }
+    }
+
+    /**
+     * true if 0 -rel- 0 yields false
+     * @param The relation
+     * @return
+     */
+    bool constraintRelationIsStrict( Constraint_Relation rel )
+    {
+        return (rel == CR_NEQ || rel == CR_LESS || rel == CR_GREATER);
     }
 
     /**
@@ -661,7 +657,14 @@ namespace smtrat
             lhs().unitcontprim( ex( variables().begin()->second ), un, con, prim );
             if( con.info( info_flags::rational ) )
             {
-                rLhs() = prim * un;
+                if( relation() == CR_EQ || relation() == CR_NEQ )
+                {
+                    rLhs() = prim;
+                }
+                else
+                {
+                    rLhs() = prim * un;
+                }
             }
         }
     }
@@ -684,9 +687,9 @@ namespace smtrat
     }
 
     /**
-     * Gives the string represantion of the constraint.
+     * Gives the string representation of the constraint.
      *
-     * @return The string represantion of the constraint.
+     * @return The string representation of the constraint.
      */
     string Constraint::toString() const
     {
@@ -872,7 +875,7 @@ namespace smtrat
         else if( is_exactly_a<power>( _term ) )
         {
             assert( _term.nops() == 2 );
-            ex exponent = *(_term.begin()++);
+            ex exponent = *(++_term.begin());
             if( exponent == 0 )
             {
                 result = "1";

@@ -28,11 +28,13 @@
  */
 
 #include "State.h"
+#include "../../Module.h"
 
 //#define VS_DEBUG_METHODS
 //#define VS_DEBUG_METHODS_X
 //#define VS_DEBUG_BACKENDS
 //#define VS_DEBUG_BACKENDS_EXTENDED
+#define VS_LOG_INFSUBSETS
 
 namespace vs
 {
@@ -2304,6 +2306,14 @@ namespace vs
             cout << "  " << (**cond).constraint().toString();
         }
         cout << endl;
+        #endif
+        #ifdef VS_LOG_INFSUBSETS
+        set< const smtrat::Constraint* > constraints = set< const smtrat::Constraint* >();
+        for( ConditionSet::const_iterator cond = covSet.begin(); cond != covSet.end(); ++cond )
+        {
+            constraints.insert( (**cond).pConstraint() );
+        }
+        smtrat::Module::addAssumptionToCheck( constraints, false, "VSModule_IS_1" );
         #endif
 
         /*

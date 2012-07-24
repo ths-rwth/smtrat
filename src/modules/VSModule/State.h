@@ -219,7 +219,7 @@ public:
 	~State	( )	;
 
 	/*
-	 * Intern type structur:
+	 * Intern type structure:
 	 */
 	typedef std::map	< const Substitution* const, ConditionSetSetSet, subComp > 	ConflictSets		 ;
 	typedef std::vector	< State* >													StateVector			 ;

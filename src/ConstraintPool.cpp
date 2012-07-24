@@ -172,7 +172,6 @@ namespace smtrat
          */
         mAllVariables.insert( reader.get_syms().begin(), reader.get_syms().end() );
         Constraint* constraint;
-        assert( relation != CR_NEQ );
         if( relation == CR_GREATER )
         {
             constraint = new Constraint( -lhs, -rhs, CR_LESS, mIdAllocator );

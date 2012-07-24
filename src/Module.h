@@ -53,6 +53,14 @@ namespace smtrat
     typedef std::map<const Formula*, vec_set_const_pFormula>       FormulaOrigins;
     typedef std::pair<std::set<const Formula*>, const Constraint*> TheoryDeduction;
 
+    struct strcomp
+    {
+        bool operator() ( const std::string& _stringA, const std::string& _stringB )
+        {
+            return (_stringA.compare( _stringB ) < 0);
+        }
+    };
+
     /**
      * A base class for all kind of theory solving methods.
      */
@@ -93,6 +101,7 @@ namespace smtrat
             virtual ~Module();
 
             static std::vector<std::string> mAssumptionToCheck;
+            static std::set<std::string, strcomp> mVariablesInAssumptionToCheck;
 
             // Main interfaces
             virtual bool inform( const Constraint* const _constraint )
@@ -186,6 +195,11 @@ namespace smtrat
                 mFirstUncheckedReceivedSubformula = mpReceivedFormula->end();
             }
 
+            static void addAssumptionToCheck( const Formula&, bool, const std::string );
+            static void addAssumptionToCheck( const std::set<const Formula*>&, bool, const std::string );
+            static void addAssumptionToCheck( const std::set<const Constraint*>&, bool, const std::string );
+            static void storeAssumptionsToCheck( const std::string = "assumptions_to_check.smt2" );
+            static const std::string moduleName( const ModuleType );
             //SMT
 
         protected:
@@ -203,8 +217,6 @@ namespace smtrat
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
             const std::set<const Formula*>& getOrigins( Formula::const_iterator ) const;
-            static void addAssumptionToCheck( const Formula&, bool, const Module& );
-            static void addAssumptionToCheck( const std::set<const Formula*>&, bool, const Module& );
 
         private:
             void updateDeductions();

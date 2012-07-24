@@ -81,7 +81,9 @@ namespace smtrat
         mpFather( NULL ),
         mPropositions(),
         mPropositionsUptodate( false )
-    {}
+    {
+//        assert( _constraint->relation() != CR_NEQ );
+    }
 
     Formula::Formula( const Formula& _formula ):
         mActivity( 0 ),
@@ -260,6 +262,7 @@ namespace smtrat
     {
         assert( isBooleanCombination() );
         assert( mType != NOT || mpSubformulas->empty() );
+//        assert( _formula->getType() != REALCONSTRAINT || _formula->constraint().relation() != CR_NEQ );
         _formula->setFather( this );
 
         /*
@@ -531,11 +534,6 @@ namespace smtrat
             case MT_PreProModule:
             {
                 mPropositions |= PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE;
-                break;
-            }
-            case MT_PreProCNFModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE;
                 break;
             }
             case MT_CNFerModule:
