@@ -147,6 +147,7 @@ namespace vs
             // Operators.
             bool operator ==( const Substitution& ) const;
             bool operator <( const Substitution& ) const;
+            friend std::ostream& operator <<( std::ostream&, const Substitution& );
 
             // Printing methods.
             void print( std::ostream& ) const;
@@ -154,7 +155,6 @@ namespace vs
             std::string toString2() const;
         private:
             void getVariables( const GiNaC::ex&, GiNaC::symtab& );
-
     };
 
 }    // end namspace vs

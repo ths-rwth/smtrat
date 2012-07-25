@@ -52,7 +52,7 @@ namespace vs
         #ifdef VS_DEBUG_SUBSTITUTION
         cout << "substitute: ( ";
         _constraint.print( cout );
-        cout << " )" << _substitution.toString() << endl;
+        cout << " )" << _substitution << endl;
         #endif
 
         /*
@@ -104,32 +104,7 @@ namespace vs
         }
         simplify( _substitutionResults );
         #ifdef VS_DEBUG_SUBSTITUTION
-        cout << "Result of Substitution: " << endl;
-        DisjunctionOfConstraintConjunctions::const_iterator conj = _substitutionResults.begin();
-        while( conj != _substitutionResults.end() )
-        {
-            if( conj != _substitutionResults.begin() )
-            {
-                cout << " or (";
-            }
-            else
-            {
-                cout << "    (";
-            }
-            TS_ConstraintConjunction::const_iterator cons = (**conj).begin();
-            while( cons != (**conj).end() )
-            {
-                if( cons != (**conj).begin() )
-                {
-                    cout << " and ";
-                }
-                (**cons).print( cout );
-                cons++;
-            }
-            cout << ")" << endl;
-            conj++;
-        }
-        cout << endl;
+        print( _substitutionResults );
         #endif
     }
 
@@ -360,18 +335,7 @@ namespace vs
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
         smtrat::Constraint::normalize( lhs );
 
-        #ifdef VS_DEBUG_CALCULATIONS
-        cout << "q^2-r^2*radicand:        " << lhs << endl;
-        cout << endl;
-        #endif
-
         #ifndef VS_SUBSTITUTION_ACCORDING_PAPER
-
-        #ifdef VS_DEBUG_CALCULATIONS
-        cout << "+++++++++++ CALCULATIONS ++++++++++++" << endl;
-        cout << endl;
-        #endif
-
         /*
          * Add conjunction (q=0 and r=0) to the substitution result.
          */
@@ -404,13 +368,6 @@ namespace vs
         #else
         ex qr = _q * _r;
         smtrat::Constraint::normalize( qr );
-
-        #ifdef VS_DEBUG_CALCULATIONS
-        cout << "q*r:                     " << qr << endl;
-        cout << endl;
-        cout << "+++++++++++ CALCULATIONS ++++++++++++" << endl;
-        cout << endl;
-        #endif
 
         /*
          * Add conjunction (q*r<=0 and q^2-r^2*radicand=0) to the substitution result.
@@ -452,18 +409,7 @@ namespace vs
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
         smtrat::Constraint::normalize( lhs );
 
-        #ifdef VS_DEBUG_CALCULATIONS
-        cout << "q^2-r^2*radicand:        " << lhs << endl;
-        cout << endl;
-        #endif
-
         #ifndef VS_SUBSTITUTION_ACCORDING_PAPER
-
-        #ifdef VS_DEBUG_CALCULATIONS
-        cout << "+++++++++++ CALCULATIONS ++++++++++++" << endl;
-        cout << endl;
-        #endif
-
         /*
          * Add conjunction (q>0 and r>0) to the substitution result.
          */
@@ -487,13 +433,6 @@ namespace vs
 
         ex qr = _q * _r;
         smtrat::Constraint::normalize( qr );
-
-        #ifdef VS_DEBUG_CALCULATIONS
-        cout << "q*r:                     " << qr << endl;
-        cout << endl;
-        cout << "+++++++++++ CALCULATIONS ++++++++++++" << endl;
-        cout << endl;
-        #endif
 
         /*
          * Add conjunction (q*r>0 and q^2-r^2*radicand!=0) to the substitution result.
@@ -537,18 +476,7 @@ namespace vs
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
         smtrat::Constraint::normalize( lhs );
 
-        #ifdef VS_DEBUG_CALCULATIONS
-        cout << "q^2-r^2*radicand:        " << lhs << endl;
-        cout << endl;
-        #endif
-
         #ifndef VS_SUBSTITUTION_ACCORDING_PAPER
-
-        #ifdef VS_DEBUG_CALCULATIONS
-        cout << "+++++++++++ CALCULATIONS ++++++++++++" << endl;
-        cout << endl;
-        #endif
-
         /*
          * Add conjunction (q<0 and s>0 and q^2-r^2*radicand>0) to the substitution result.
          */
@@ -603,15 +531,6 @@ namespace vs
 
         ex rs = _r * _s;
         smtrat::Constraint::normalize( rs );
-
-        #ifdef VS_DEBUG_CALCULATIONS
-        cout << "q*s:                     " << qs << endl;
-        cout << endl;
-        cout << "r*s:                     " << rs << endl;
-        cout << endl;
-        cout << "+++++++++++ CALCULATIONS ++++++++++++" << endl;
-        cout << endl;
-        #endif
 
         /*
          * Add conjunction (q*s<0 and q^2-r^2*radicand>0) to the substitution result.
@@ -669,18 +588,7 @@ namespace vs
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
         smtrat::Constraint::normalize( lhs );
 
-        #ifdef VS_DEBUG_CALCULATIONS
-        cout << "q^2-r^2*radicand:        " << lhs << endl;
-        cout << endl;
-        #endif
-
         #ifndef VS_SUBSTITUTION_ACCORDING_PAPER
-
-        #ifdef VS_DEBUG_CALCULATIONS
-        cout << "+++++++++++ CALCULATIONS ++++++++++++" << endl;
-        cout << endl;
-        #endif
-
         /*
          * Add conjunction (q<0 and s>0 and q^2-r^2*radicand>=0) to the substitution result.
          */
@@ -733,15 +641,6 @@ namespace vs
 
         ex rs = _r * _s;
         smtrat::Constraint::normalize( rs );
-
-        #ifdef VS_DEBUG_CALCULATIONS
-        cout << "q*s:                     " << qs << endl;
-        cout << endl;
-        cout << "r*s:                     " << rs << endl;
-        cout << endl;
-        cout << "+++++++++++ CALCULATIONS ++++++++++++" << endl;
-        cout << endl;
-        #endif
 
         /*
          * Add conjunction (q*s<=0 and q^2-r^2*radicand>=0) to the substitution result.
@@ -925,17 +824,6 @@ namespace vs
              * Form the derivate of the left hand side of the last added constraint.
              */
             derivative = ex( derivative.diff( sym, 1 ) );
-
-            #ifdef VS_DEBUG_CALCULATIONS
-            cout << endl;
-            cout << "+++++++++++ CALCULATIONS ++++++++++++" << endl;
-            cout << endl;
-            cout << "function                    :  " << (*collection.back()).lhs() << endl;
-            cout << "derivate                    :  " << derivative << endl;
-            cout << endl;
-            cout << "+++++++++++ CALCULATIONS ++++++++++++" << endl;
-            cout << endl;
-            #endif
 
             /*
              * Check, whether the degree of the variable we derivate for has decreased.
@@ -1966,99 +1854,141 @@ namespace vs
      */
     void simplify( DisjunctionOfConstraintConjunctions& _toSimplify )
     {
-        #ifdef VS_DEBUG_METHODS
-        cout << "simplify" << endl;
-        #endif
-        bool                                          containsEmptyDisjunction = false;
-        DisjunctionOfConstraintConjunctions::iterator conj                     = _toSimplify.begin();
-        while( conj != _toSimplify.end() )
+//        #ifdef VS_DEBUG_METHODS
+//        cout << "simplify" << endl;
+//        #endif
+//        bool                                          containsEmptyDisjunction = false;
+//        DisjunctionOfConstraintConjunctions::iterator conj                     = _toSimplify.begin();
+//        while( conj != _toSimplify.end() )
+//        {
+//            bool                               conjInconsistent = false;
+//            TS_ConstraintConjunction::iterator cons             = (*conj).begin();
+//            while( cons != (*conj).end() )
+//            {
+//                unsigned consConsistent = (**cons).isConsistent();
+//                if( consConsistent == 0 )
+//                {
+//                    conjInconsistent = true;
+//                    break;
+//                }
+//                else if( consConsistent == 1 )
+//                {
+//                    // Delete the constraint.
+//                    cons = (*conj).erase( cons );
+//                }
+//                else
+//                {
+//                    cons++;
+//                }
+//            }
+//            bool conjEmpty = (*conj).empty();
+//            if( conjInconsistent || (containsEmptyDisjunction && conjEmpty) )
+//            {
+//                // Delete the conjunction.
+//                (*conj).clear();
+//                conj = _toSimplify.erase( conj );
+//            }
+//            else
+//            {
+//                conj++;
+//            }
+//            if( !containsEmptyDisjunction && conjEmpty )
+//            {
+//                containsEmptyDisjunction = true;
+//            }
+//        }
+//
+//        DisjunctionOfConstraintConjunctions::iterator conjA = _toSimplify.begin();
+//        while( conjA != _toSimplify.end() )
+//        {
+//            if( conjA->size() == 1 )
+//            {
+//                const smtrat::Constraint* result = NULL;
+//                DisjunctionOfConstraintConjunctions::iterator conjB = conjA;
+//                ++conjB;
+//                while( conjB != _toSimplify.end() )
+//                {
+//                    if( conjB->size() == 1 )
+//                    {
+//                        result = smtrat::Constraint::mergeConstraints( conjA->back(), conjB->back() );
+//                        cout << "mergeConstraints( " << *conjA->back() << " , " << *conjB->back() << " ) = ";
+//                        if( result != NULL )
+//                        {
+//                            cout << *result << endl;
+//                            //Check if merging led to a consistent constraint.
+//                            assert( result->isConsistent() != 0 );
+//                            break;
+//                        }
+//                        else
+//                        {
+//                            cout << "NULL" << endl;
+//                            conjB++;
+//                        }
+//                    }
+//                    else
+//                    {
+//                        conjB++;
+//                    }
+//                }
+//                if( result != NULL )
+//                {
+//                    // Delete the second conjunction.
+//                    _toSimplify.erase( conjB );
+//                    if( result->isConsistent() == 2 )
+//                    {
+//                        conjA->pop_back();
+//                        conjA->push_back( result );
+//                        conjA++;
+//                    }
+//                    else
+//                    {
+//                        conjA = _toSimplify.erase( conjA );
+//                    }
+//                }
+//                else
+//                {
+//                    conjA++;
+//                }
+//            }
+//            else
+//            {
+//                conjA++;
+//            }
+//        }
+    }
+
+    /**
+     *
+     * @param _substitutionResults
+     */
+    void print( DisjunctionOfConstraintConjunctions& _substitutionResults )
+    {
+        cout << "Result of Substitution: " << endl;
+        DisjunctionOfConstraintConjunctions::const_iterator conj = _substitutionResults.begin();
+        while( conj != _substitutionResults.end() )
         {
-            bool                               conjInconsistent = false;
-            TS_ConstraintConjunction::iterator cons             = (*conj).begin();
+            if( conj != _substitutionResults.begin() )
+            {
+                cout << " or (";
+            }
+            else
+            {
+                cout << "    (";
+            }
+            TS_ConstraintConjunction::const_iterator cons = (*conj).begin();
             while( cons != (*conj).end() )
             {
-                unsigned consConsistent = (**cons).isConsistent();
-                if( consConsistent == 0 )
+                if( cons != (*conj).begin() )
                 {
-                    conjInconsistent = true;
-                    break;
+                    cout << " and ";
                 }
-                else if( consConsistent == 1 )
-                {
-                    // Delete the constraint.
-                    cons = (*conj).erase( cons );
-                }
-                else
-                {
-                    cons++;
-                }
+                (**cons).print( cout );
+                cons++;
             }
-            bool conjEmpty = (*conj).empty();
-            if( conjInconsistent || (containsEmptyDisjunction && conjEmpty) )
-            {
-                // Delete the conjunction.
-                (*conj).clear();
-                conj = _toSimplify.erase( conj );
-            }
-            else
-            {
-                conj++;
-            }
-            if( !containsEmptyDisjunction && conjEmpty )
-            {
-                containsEmptyDisjunction = true;
-            }
+            cout << ")" << endl;
+            conj++;
         }
-
-        DisjunctionOfConstraintConjunctions::iterator conjA = _toSimplify.begin();
-        while( conjA != _toSimplify.end() )
-        {
-            if( conjA->size() == 1 )
-            {
-                DisjunctionOfConstraintConjunctions::iterator conjB = conjA;
-                conjB++;
-                while( conjB != _toSimplify.end() )
-                {
-                    if( conjB->size() == 1 )
-                    {
-                        if( smtrat::Constraint::mergeConstraints( conjA->back(), conjB->back() ) )
-                        {
-                            // Delete the second conjunction.
-                            (*conjB).pop_back();
-                            conjB = _toSimplify.erase( conjB );
-
-                            //Check if merging led to a consistent constraint.
-                            if( conjA->back()->isConsistent() == 1 )
-                            {
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            conjB++;
-                        }
-                    }
-                    else
-                    {
-                        conjB++;
-                    }
-                }
-                if( conjB != _toSimplify.end() )
-                {
-                    // Delete the second conjunction.
-                    (*conjA).pop_back();
-                    conjA = _toSimplify.erase( conjA );
-                }
-                else
-                {
-                    conjA++;
-                }
-            }
-            else
-            {
-                conjA++;
-            }
-        }
+        cout << endl;
     }
 
 }    // end namspace vs

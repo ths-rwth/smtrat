@@ -268,7 +268,7 @@ namespace vs
     }
 
     /**
-    * Gives the string represenation of this substitution.
+    * Gives the string representation of this substitution.
     *
     * @return The string representation of this substitution.
     */
@@ -350,7 +350,7 @@ namespace vs
     }
 
     /**
-    * Gives the string represenation of this substitution.
+    * Gives the string representation of this substitution.
     *
     * @return The string representation of this substitution.
     */
@@ -574,6 +574,19 @@ namespace vs
         }
     }
 
+    /**
+     * Prints a square root expression on an output stream.
+     *
+     * @param   _ostream    The output stream, on which to write.
+     * @param   _sqrtEx     The square root expression to print.
+     *
+     * @return The representation of the square root expression on an output stream.
+     */
+    ostream& operator <<( ostream& _ostream, const Substitution& _substitution )
+    {
+        _ostream << _substitution.toString();
+        return _ostream;
+    }
 
     void Substitution::getVariables( const ex& _term, symtab& _variables )
     {

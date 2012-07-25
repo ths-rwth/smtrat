@@ -783,7 +783,7 @@ namespace smtrat
             }
             case REALCONSTRAINT:
             {
-                result += mpConstraint->toPrefixString();
+                result += mpConstraint->smtlibString();
                 break;
             }
             case TTRUE:
