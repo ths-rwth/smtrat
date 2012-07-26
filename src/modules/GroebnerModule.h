@@ -42,33 +42,25 @@
 
 #include <ginacra/ginacra.h>
 
-//#include <ginacra/mr/MultivariateIdeal.h>
-
 #include <ginacra/mr/Buchberger.h>
 #include "../Module.h"
-#include "GBModule/InequalitiesTable.h"
 
 namespace smtrat
 {
 
 /**
  * A class to save the current state of a GroebnerModule.
- * Needed for backtracking-support
+ * Used for backtracking-support
  */
 class GroebnerModuleState
 {
 public:
-
     GroebnerModuleState( )
     {
     }
 
     GroebnerModuleState( const GiNaCRA::Buchberger<GBSettings::Order>& basis ) :
     mBasis( basis )
-    {
-    }
-
-    ~GroebnerModuleState( )
     {
     }
 
@@ -93,14 +85,15 @@ struct FormulaConstraintCompare
 };
 
 /**
+ * Datastructure for the GBModule.
  * A table of all inequalities and how they are reduced.
+ * @author Sebastian Junges
  */
 class InequalitiesTable
 {
     typedef GBSettings::Polynomial Polynomial;
     typedef GBSettings::MultivariateIdeal Ideal;
 public:
-
     typedef std::pair<unsigned, Polynomial> CellEntry;
     typedef std::tuple<Formula::iterator, Constraint_Relation, std::list<CellEntry> > RowEntry;
     typedef std::map<Formula::const_iterator, RowEntry, FormulaConstraintCompare> Rows;
@@ -122,21 +115,23 @@ public:
 
     void print( std::ostream& os = std::cout ) const;
 
+    /// A map of pointers from received iterators to rows.
     Rows mReducedInequalities;
 
+    /// The actual number of backtrackpoints
     unsigned mBtnumber;
+    /// A pointer to the GroebnerModule which uses this table.
     GroebnerModule* mModule;
 
     Rows::iterator mNewConstraints;
     unsigned mLastRestart;
-
-
-
 };
 
 /**
- * A solver module based on Groebner basis
- *
+ * A solver module based on Groebner basis. 
+ * Details can be found in my Bachelor Thesis 
+ * "On Groebner Bases in SMT-Compliant Decision Procedures"
+ * @author Sebastian Junges
  */
 class GroebnerModule :
 public Module
@@ -156,24 +151,21 @@ public:
     virtual Answer isConsistent( );
     void removeSubformula( Formula::const_iterator _formula );
     void printStateHistory( );
-
 protected:
-    //TODO just take the last one from the state history?
     /// The current Groebner basis
     GiNaCRA::Buchberger<Settings::Order> mBasis;
     /// A list of variables to help define the simplified constraints
     GiNaC::symtab mListOfVariables;
+    /// The inequalities table for handling inequalities
+    InequalitiesTable mInequalities;
+    /// The vector of backtrack points, which has pointers to received constraints.
+    std::vector<Formula::const_iterator> mBacktrackPoints;
     /// Saves the relevant history to support backtracking
     std::list<GroebnerModuleState> mStateHistory;
-
-    InequalitiesTable mInequalities;
-
-    std::set<unsigned> mVariablesInEqualities;
-
-    std::vector<Formula::const_iterator> mBacktrackPoints;
-
+    /// Flag indicating there was no consistency check after the last removal of inequalities.
     bool mPopCausesRecalc;
 
+    /// A list of inequalities which were added after the last consistency check. 
     std::list<InequalitiesTable::Rows::iterator> mNewInequalities;
 
     std::map<unsigned, unsigned> mAdditionalVarMap;
@@ -190,8 +182,6 @@ protected:
 
 private:
     typedef Module super;
-
-    static const bool gatherStatistics = false;
 
 };
 

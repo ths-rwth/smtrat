@@ -141,7 +141,7 @@ Answer GroebnerModule::isConsistent( )
         mBasis.reduceInput( );
     }
 
-    //	    //If no equalities are added, we do not know anything 
+    //If no equalities are added, we do not know anything 
     if( !mBasis.inputEmpty( ) || (mPopCausesRecalc && mBasis.nrOriginalConstraints( ) > 0) )
     {
         mPopCausesRecalc = false;
@@ -164,8 +164,6 @@ Answer GroebnerModule::isConsistent( )
                                  superfluous.begin( ), superfluous.end( ),
                                  std::inserter( variables, variables.end( ) ) );
 
-
-            //std::cout << "reduced nr variables from " << mVariablesInEqualities.size() << " to " << variables.size() << std::endl;
             unsigned vars = variables.size( );
             // We currently only try with a low nr of variables.
             if( vars < Settings::SDPupperBoundNrVariables )
@@ -224,7 +222,6 @@ Answer GroebnerModule::isConsistent( )
         {
             Answer ans = mInequalities.reduceWRTGroebnerBasis( mBasis.getGbIdeal( ) );
             mNewInequalities.clear( );
-            std::cout << "cool " << std::endl;
             if( ans != Unknown )
             {
                 return ans;
@@ -448,6 +445,9 @@ bool GroebnerModule::saveState( )
     return true;
 }
 
+/**
+ * Add the equalities from the Groebner basis to the passed formula. Adds the reason vector.
+ */
 void GroebnerModule::passGB( )
 {
     assert( Settings::passGB );
@@ -474,7 +474,6 @@ void GroebnerModule::passGB( )
         }
     }
 
-    assert( Settings::passGB );
     // The gb should be passed
     std::list<Polynomial> simplified = mBasis.getGb( );
     for( std::list<Polynomial>::const_iterator simplIt = simplified.begin( ); simplIt != simplified.end( ); ++simplIt )
@@ -490,9 +489,9 @@ void GroebnerModule::passGB( )
 }
 
 /**
- * 
- * @param reasons
- * @return 
+ * Generate reason sets from reason vectors
+ * @param reasons The reasons vector.
+ * @return The reason set.
  */
 std::set<const Formula*> GroebnerModule::generateReasons( const GiNaCRA::BitVector& reasons )
 {
@@ -570,7 +569,7 @@ void GroebnerModule::removeSubformulaFromPassedFormula( Formula::iterator _formu
 }
 
 /**
- * Initializes the inequalitiestable
+ * Initializes the inequalities table
  * @param module
  */
 InequalitiesTable::InequalitiesTable( GroebnerModule* module ) : mModule( module )
@@ -594,6 +593,9 @@ InequalitiesTable::Rows::iterator InequalitiesTable::InsertReceivedFormula( Form
 
 }
 
+/**
+ * Informs the inequalities table that new reductions are with respect to the GB with the latest btpoint.
+ */
 void InequalitiesTable::pushBacktrackPoint( )
 {
     ++mBtnumber;
@@ -606,6 +608,11 @@ void InequalitiesTable::pushBacktrackPoint( )
     }
 }
 
+/**
+ * Clears cells from the inequalities table with backtrack points from the latest nrOfBacktracks many backtrackpoints.
+ * Also updates the new backtracknumber.
+ * @param nrOfBacktracks How many backtrack points are popped.
+ */
 void InequalitiesTable::popBacktrackPoint( unsigned nrOfBacktracks )
 {
     assert( mBtnumber >= nrOfBacktracks );
@@ -693,6 +700,12 @@ Answer InequalitiesTable::reduceWRTGroebnerBasis( const Ideal& gb )
 
 }
 
+/**
+ * Reduce the given rows with respect to the given Groebner basis.
+ * @param ineqToBeReduced A list of rows which should be updated.
+ * @param gb The Groebner basis.
+ * @return If one of the inequalities yields a contradiction, False, else Unknown.
+ */
 Answer InequalitiesTable::reduceWRTGroebnerBasis( const std::list<Rows::iterator>& ineqToBeReduced, const Ideal& gb )
 {
     for( auto it = ineqToBeReduced.begin( ); it != ineqToBeReduced.end( ); ++it )
@@ -716,6 +729,12 @@ Answer InequalitiesTable::reduceWRTGroebnerBasis( const std::list<Rows::iterator
     }
 }
 
+/**
+ * Reduce the given row with respect to the given Groebner basis.
+ * @param ineqToBeReduced A pointer to the row which should be updated.
+ * @param gb The Groebner basis.
+ * @return If one of the inequalities yields a contradiction, False, else Unknown.
+ */
 bool InequalitiesTable::reduceWRTGroebnerBasis( Rows::iterator it, const Ideal& gb )
 {
     assert( std::get < 1 > (it->second) != CR_EQ );
