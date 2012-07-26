@@ -8,8 +8,11 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2012-07-07                                         #
+# Version: 2012-07-26                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+include_directories( ${PROJECT_SOURCE_DIR}/src
+                     ${GINACRA_INCLUDE_DIR} )
 
 set(lib_core_src
     Manager.cpp
