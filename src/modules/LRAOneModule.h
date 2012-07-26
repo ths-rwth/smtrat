@@ -32,17 +32,49 @@
 #define LRAONEMODULE_H
 
 #include "../Module.h"
+#include "LRAOneModule/Value.h"
+#include "LRAOneModule/Variable.h"
+#include "LRAOneModule/Bound.h"
+#include <stdio.h>
 
 namespace smtrat
 {
     class LRAOneModule:
         public Module
     {
+        public:
+            struct exPointerComp
+            {
+                bool operator ()( const GiNaC::ex* const pExA, const GiNaC::ex* const pExB ) const
+                {
+                    return GiNaC::ex_is_less()( *pExA, *pExB );
+                }
+            };
+            typedef std::map<const GiNaC::ex*, lraone::Variable*, exPointerComp>            ExVariableMap;
+            typedef std::pair<const Constraint* const , std::vector<const lraone::Bound*> > ConstraintBoundPair;
+            typedef std::map<const Constraint* const , std::vector<const lraone::Bound*> >  ConstraintBoundMap;
+            typedef std::map<const Constraint*, const Formula* const >                      ConstraintFormulaMap;
+            typedef std::map<const lraone::Bound* const , const Constraint*>                BoundConstraintMap;
+            typedef std::pair<unsigned, unsigned>                                           Position;
+            typedef std::map<Position, GiNaC::numeric>                                      Tableau;
+
         private:
 
             /**
              * Members:
              */
+            Tableau                        mTableau;
+            std::vector<lraone::Variable*> mAllVars;    // vector which saves the order of the priorities
+            std::vector<const Constraint*> mAllConstraints;
+            bool                           mInitialized;
+            unsigned                       mRowMaximum;
+            unsigned                       mColumnMaximum;
+            lraone::Variable*              mPivotNonBasicVar;
+            GiNaC::numeric                 mPivotCoeff;
+            ExVariableMap                  mExistingVars;
+            BoundConstraintMap             mBoundToConstraint;
+            ConstraintFormulaMap           mConstraintToFormula;
+            ConstraintBoundMap             mConstraintToBound;
 
         public:
 
@@ -66,11 +98,25 @@ namespace smtrat
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
 
+            void pivotingStep();
+
+            void printAssignments( std::ostream& = std::cout ) const;
+            void printVariables( std::ostream& = std::cout ) const;
+            void printTableau( std::ostream& = std::cout ) const;
+
         private:
 
             /**
              * Methods:
              */
+            void activateBound( lraone::Variable&, const lraone::Bound* );
+            void setBound( lraone::Variable&, const Constraint_Relation&, bool, GiNaC::numeric&, const Constraint* );
+            void initialize();
+            void initPriority();
+            bool isInConflict( unsigned, bool );
+            void getConflicts( unsigned, bool );
+            void pivotAndUpdate( lraone::Variable*, lraone::Variable*, const lraone::Bound&, GiNaC::numeric& );
+            lraone::Variable* getVar( bool, unsigned );
     };
 
 }    // namespace smtrat

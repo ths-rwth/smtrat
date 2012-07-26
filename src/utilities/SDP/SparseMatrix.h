@@ -50,17 +50,26 @@ namespace smtrat
             int getNrRows() const;
             void extend( int nrRows, int nrCols );
 
-            int getCSDPFormatEntries( int* rowindices, int* colindices, double* values ) const;
+			int getCSDPFormatEntries( int* rowindices, int* colindices, double* values) const;
+            int getCSDPFormatEntries( int* rowindices, int* colindices, double* values, const std::set<int>& hide ) const;
 
             int getNrOfNonZeroEntries() const;
+			
+			void addHiddenRowAndCol( int rowOrCol );
+			void clearHideSet( );
+			const std::set<int>& getHideSet( ) const;
+			
+			std::vector<pair<int, Rational> > getNonZeroDiagEntries() const;
 
             void PrintEntries() const;
-            void writeEntriesToArray( Rational* array ) const;
+			void writeEntriesToArray( Rational* array,   bool halfNonDiagEntries = true ) const;
+            void writeEntriesToArray( Rational* array, const std::set<int>& hide,   bool halfNonDiagEntries = true ) const;
 
         private:
             int                                     mNrCols;
             int                                     mNrRows;
             std::map<std::pair<int, int>, Rational> mNonZeroEntries;
+			std::set<int>							mHide;
 
             void setNonZero( std::pair<int, int>, Rational value );
 

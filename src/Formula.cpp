@@ -81,7 +81,9 @@ namespace smtrat
         mpFather( NULL ),
         mPropositions(),
         mPropositionsUptodate( false )
-    {}
+    {
+//        assert( _constraint->relation() != CR_NEQ );
+    }
 
     Formula::Formula( const Formula& _formula ):
         mActivity( 0 ),
@@ -260,6 +262,7 @@ namespace smtrat
     {
         assert( isBooleanCombination() );
         assert( mType != NOT || mpSubformulas->empty() );
+//        assert( _formula->getType() != REALCONSTRAINT || _formula->constraint().relation() != CR_NEQ );
         _formula->setFather( this );
 
         /*
@@ -533,11 +536,6 @@ namespace smtrat
                 mPropositions |= PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE;
                 break;
             }
-            case MT_PreProCNFModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE;
-                break;
-            }
             case MT_CNFerModule:
             {
                 mPropositions |= PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE;
@@ -741,6 +739,79 @@ namespace smtrat
         {
             _out << endl;
         }
+    }
+
+    string Formula::toString() const
+    {
+        string result = "";
+        switch( mType )
+        {
+            case AND:
+            {
+                result += "(and";
+                break;
+            }
+            case OR:
+            {
+                result += "(or";
+                break;
+            }
+            case NOT:
+            {
+                result += "(not";
+                break;
+            }
+            case IFF:
+            {
+                result += "(iff";
+                break;
+            }
+            case XOR:
+            {
+                result += "(xor";
+                break;
+            }
+            case IMPLIES:
+            {
+                result += "(implies";
+                break;
+            }
+            case BOOL:
+            {
+                result += *mpIdentifier;
+                break;
+            }
+            case REALCONSTRAINT:
+            {
+                result += mpConstraint->smtlibString();
+                break;
+            }
+            case TTRUE:
+            {
+                result += "True";
+                break;
+            }
+            case FFALSE:
+            {
+                result += "False";
+                break;
+            }
+            default:
+            {
+                result += "Undefined";
+            }
+        }
+        if( isBooleanCombination() )
+        {
+            std::list<Formula*>::const_iterator subformula = mpSubformulas->begin();
+            while( subformula != mpSubformulas->end() )
+            {
+                result += " " + (*subformula)->toString();
+                ++subformula;
+            }
+            result += ")";
+        }
+        return result;
     }
 
     /**

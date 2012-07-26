@@ -1,6 +1,5 @@
 /**
  * @file   DenseMatrix.h
- *         Created on May 14, 2012, 6:04 PM
  * @author: Sebastian Junges
  *
  *

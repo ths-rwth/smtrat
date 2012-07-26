@@ -34,14 +34,22 @@
 #include "ModuleFactory.h"
 #include "Manager.h"
 #include <limits.h>
+#include <iostream>
+#include <fstream>
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
+//#define LOG_THEORY_CALLS
+//#define LOG_INFEASIBLE_SUBSETS
 
 using namespace std;
 
+
 namespace smtrat
 {
+    vector<string> Module::mAssumptionToCheck = vector<string>();
+    set<string, strcomp> Module::mVariablesInAssumptionToCheck = set<string, strcomp>();
+
     Module::Module( Manager* const _tsManager, const Formula* const _formula ):
         mInfeasibleSubsets(),
         mpManager( _tsManager ),
@@ -329,6 +337,9 @@ namespace smtrat
         for( vec_set_const_pFormula::const_iterator infSubSet = backendsInfsubsets.begin(); infSubSet != backendsInfsubsets.end(); ++infSubSet )
         {
             assert( !infSubSet->empty() );
+            #ifdef LOG_INFEASIBLE_SUBSETS
+            addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) );
+            #endif
             result.push_back( set<const Formula*>() );
             for( set<const Formula*>::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
             {
@@ -404,7 +415,7 @@ namespace smtrat
             string moduleName = "";
             switch( (**module).type() )
             {
-                case MT_SimplifierModule:
+                case MT_SmartSimplifier:
                 {
                     moduleName = "Simplifier";
                     break;
@@ -445,10 +456,16 @@ namespace smtrat
                 }
             }
             cout << endl << "Call to module " << moduleName << endl;
-            //            (**module).print( cout, " ");
+            (**module).print( cout, " ");
             #endif
             result = (*module)->isConsistent();
             (*module)->receivedFormulaChecked();
+            #ifdef LOG_THEORY_CALLS
+            if( result != Unknown )
+            {
+                addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
+            }
+            #endif
             ++module;
         }
         #ifdef MODULE_VERBOSE
@@ -555,6 +572,181 @@ namespace smtrat
     }
 
     /**
+     *
+     * @param _formula
+     * @param _consistent
+     */
+    void Module::addAssumptionToCheck( const Formula& _formula, bool _consistent, const string _moduleName )
+    {
+        string assumption = "";
+        assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
+        assumption += "(assert (and ";
+        assumption += _formula.toString();
+        assumption += " " + _moduleName;
+        assumption += "))\n";
+        assumption += "(get-assertions)\n";
+        assumption += "(check-sat)\n";
+        mAssumptionToCheck.push_back( assumption );
+        mVariablesInAssumptionToCheck.insert( _moduleName );
+    }
+
+    /**
+     *
+     * @param _constraints
+     * @param _consistent
+     */
+    void Module::addAssumptionToCheck( const set<const Formula*>& _formulas, bool _consistent, const string _moduleName )
+    {
+        string assumption = "";
+        assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
+        assumption += "(assert (and";
+        for( set<const Formula*>::const_iterator formula = _formulas.begin();
+             formula != _formulas.end(); ++formula )
+        {
+            assumption += " " + (*formula)->toString();
+        }
+        assumption += " " + _moduleName;
+        assumption += "))\n";
+        assumption += "(get-assertions)\n";
+        assumption += "(check-sat)\n";
+        mAssumptionToCheck.push_back( assumption );
+        mVariablesInAssumptionToCheck.insert( _moduleName );
+    }
+
+    /**
+     *
+     * @param _constraints
+     * @param _consistent
+     */
+    void Module::addAssumptionToCheck( const set<const Constraint*>& _constraints, bool _consistent, const string _moduleName )
+    {
+        string assumption = "";
+        assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
+        assumption += "(assert (and";
+        for( set<const Constraint*>::const_iterator constraint = _constraints.begin();
+             constraint != _constraints.end(); ++constraint )
+        {
+            assumption += " " + (*constraint)->smtlibString();
+        }
+        assumption += " " + _moduleName;
+        assumption += "))\n";
+        assumption += "(get-assertions)\n";
+        assumption += "(check-sat)\n";
+        mAssumptionToCheck.push_back( assumption );
+        mVariablesInAssumptionToCheck.insert( _moduleName );
+    }
+
+    /**
+     *
+     * @param _filename
+     */
+    void Module::storeAssumptionsToCheck( const string _filename )
+    {
+        if( !Module::mAssumptionToCheck.empty() )
+        {
+            ofstream smtlibFile;
+            smtlibFile.open( _filename );
+            for( vector< string >::const_iterator assum = Module::mAssumptionToCheck.begin();
+                 assum != Module::mAssumptionToCheck.end(); ++assum )
+            {
+                smtlibFile << "(reset)\n";
+                smtlibFile << "(set-logic QF_NRA)\n";
+                smtlibFile << "(set-option :interactive-mode true)\n";
+                smtlibFile << "(set-info :smt-lib-version 2.0)\n";
+                for( GiNaC::symtab::const_iterator var = Formula::mConstraintPool.variables().begin();
+                    var != Formula::mConstraintPool.variables().end(); ++var )
+                {
+                    smtlibFile << "(declare-fun " << var->first << " () Real)\n";
+                }
+                for( set<string, strcomp>::const_iterator involvedModule = Module::mVariablesInAssumptionToCheck.begin();
+                     involvedModule != Module::mVariablesInAssumptionToCheck.end(); ++involvedModule )
+                {
+                    smtlibFile << "(declare-fun " << *involvedModule << " () Bool)\n";
+                }
+                smtlibFile << *assum;
+            }
+            smtlibFile << "(exit)";
+            smtlibFile.close();
+        }
+    }
+
+    /**
+     *
+     * @param _moduleType
+     * @return
+     */
+    const string Module::moduleName( const ModuleType _moduleType )
+    {
+        switch( _moduleType )
+        {
+            case MT_Module:
+            {
+                return "Module";
+            }
+            case MT_SmartSimplifier:
+            {
+                return "SmartSimplifier";
+            }
+            case MT_GroebnerModule:
+            {
+                return "GroebnerModule";
+            }
+            case MT_VSModule:
+            {
+                return "VSModule";
+            }
+            case MT_CADModule:
+            {
+                return "CADModule";
+            }
+            case MT_UnivariateCADModule:
+            {
+                return "UnivariateCADModule";
+            }
+            case MT_SATModule:
+            {
+                return "SATModule";
+            }
+            case MT_LRAModule:
+            {
+                return "LRAModule";
+            }
+            case MT_LRAOneModule:
+            {
+                return "LRAOneModule";
+            }
+            case MT_LRATwoModule:
+            {
+                return "LRATwoModule";
+            }
+            case MT_PreProModule:
+            {
+                return "PreProModule";
+            }
+            case MT_CNFerModule:
+            {
+                return "CNFerModule";
+            }
+            case MT_SingleVSModule:
+            {
+                return "SingleVSModule";
+            }
+            case MT_FourierMotzkinSimplifier:
+            {
+                return "FourierMotzkinSimplifier";
+            }
+            case MT_NoModule:
+            {
+                return "NoModule";
+            }
+            default:
+            {
+                return "UnknownModule";
+            }
+        }
+    }
+
+    /**
      * Prints everything relevant of the solver.
      *
      * @param _out  The output stream where the answer should be printed.
@@ -563,7 +755,7 @@ namespace smtrat
     void Module::print( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "********************************************************************************" << endl;
-        _out << _initiation << " Solver with stored at " << this << " with type " << type() << endl;
+        _out << _initiation << " Solver with stored at " << this << " with name " << moduleName( type() ) << endl;
         _out << _initiation << endl;
         _out << _initiation << " Current solver state" << endl;
         _out << _initiation << endl;

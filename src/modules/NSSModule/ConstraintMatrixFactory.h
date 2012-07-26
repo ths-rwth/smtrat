@@ -76,9 +76,18 @@ namespace smtrat
             void extendProblemSize( unsigned newSize );
             void incrementProblemSize();
 
+			void setHideSet( const std::set<int>& hideset ) {
+				mHide = hideset;
+			}
+			
+			const std::set<int>& getHideSet() const {
+				return mHide;
+			}
+			
         private:
             unsigned                       mProblemSize;
             map<Term, SparseMatrix, Order> constraints;
+			std::set<int>				   mHide;
 
     };
 

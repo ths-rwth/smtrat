@@ -93,6 +93,7 @@ namespace smtrat
 		#endif
 //		strategy().addModuleType( caseThree, MT_SmartSimplifier );
 //		strategy().addModuleType( caseThree, MT_FourierMotzkinSimplifier );
+//        strategy().addModuleType( caseThree, MT_LRAOneModule );
 		strategy().addModuleType( caseFive, MT_SATModule );
         strategy().addModuleType( caseFour, MT_PreProModule );
         strategy().addModuleType( caseSix, MT_CNFerModule );

@@ -23,7 +23,7 @@
 
 using namespace std;
 
-namespace lra
+namespace lraone
 {
     //
     // Adds element to the Row and return the index of the new element in array

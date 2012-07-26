@@ -32,7 +32,6 @@
 
 //#define VS_DEBUG_METHODS
 //#define VS_DEBUG_SUBSTITUTION
-//#define VS_DEBUG_CALCULATIONS
 
 #include "Substitution.h"
 #include "Tools.h"
@@ -46,7 +45,7 @@ namespace vs
 
     #ifndef TS_CONSTRAINT_CONJUNCTION
     #define TS_CONSTRAINT_CONJUNCTION
-    typedef std::vector<smtrat::Constraint*>      TS_ConstraintConjunction;
+    typedef std::vector<const smtrat::Constraint*> TS_ConstraintConjunction;
     #endif
     typedef std::vector<TS_ConstraintConjunction> DisjunctionOfConstraintConjunctions;
 
@@ -54,8 +53,8 @@ namespace vs
      * Methods:
      */
 
-    void substitute( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
-    void substituteNormal( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    void substitute( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    void substituteNormal( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteNormalSqrt( const smtrat::Constraint&, const Substitution&, const GiNaC::ex&, DisjunctionOfConstraintConjunctions& );
     void substituteNormalSqrtEq( const smtrat::Constraint&,
                                  const Substitution&,
@@ -83,14 +82,13 @@ namespace vs
                                   const GiNaC::ex&,
                                   const GiNaC::ex&,
                                   DisjunctionOfConstraintConjunctions& );
-    void substitutePlusEps( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    void substitutePlusEps( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteEpsGradients( const smtrat::Constraint&,
                                  const Substitution&,
                                  const smtrat::Constraint_Relation,
                                  const smtrat::Constraint_Relation,
                                  DisjunctionOfConstraintConjunctions& );
-    void substituteMinusInf( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
-    void clear( DisjunctionOfConstraintConjunctions& );
+    void substituteMinusInf( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteInfLessGreater( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteTrivialCase( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteNotTrivialCase( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
@@ -135,7 +133,7 @@ namespace vs
     #endif
 
     void simplify( DisjunctionOfConstraintConjunctions& );
-
+    void print( DisjunctionOfConstraintConjunctions& );
 }    // end namspace vs
 
 #endif

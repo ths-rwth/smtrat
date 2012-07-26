@@ -24,7 +24,7 @@
 using namespace std;
 using namespace GiNaC;
 
-namespace lra
+namespace lraone
 {
     int      LAVar::column_count         = 0;
     int      LAVar::row_count            = 0;

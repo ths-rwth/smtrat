@@ -114,12 +114,13 @@ if( DOXYGEN_PDFLATEX )
   set( TEX_DIR ${CMAKE_CURRENT_BINARY_DIR}/../${DOXYGEN_OUTPUT_DIR}/latex )
   set( PDF_OUTPUT ${TEX_DIR}/refman.pdf )
   add_custom_command( OUTPUT ${PDF_OUTPUT}
+					  POST_BUILD
                       COMMAND ${PDFLATEX_COMPILER}
                       ARGS refman.tex
                       WORKING_DIRECTORY ${TEX_DIR}
                       DEPENDS doxygen-doc )
   add_custom_target( doc
-                     COMMAND mv -T ${PDF_OUTPUT} ${CMAKE_CURRENT_BINARY_DIR}/../${DOXYGEN_OUTPUT_DIR}/latex/doc_${PROJECT_NAME}-${PROJECT_VERSION}.pdf
+                     COMMAND mv -T ${PDF_OUTPUT} ${CMAKE_CURRENT_BINARY_DIR}/doc_${PROJECT_NAME}-${PROJECT_VERSION}.pdf
                      DEPENDS ${PDF_OUTPUT} )
 else( DOXYGEN_PDFLATEX )
   add_custom_target( doc 

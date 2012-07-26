@@ -62,23 +62,26 @@ namespace smtrat
 
     DenseMatrix ConstraintMatrixFactory::exportLinEqSys() const
     {
+		unsigned actualProblemSize = mProblemSize - mHide.size();
         // The number of rows is the number of constraints + symmetry constraints
-        DenseMatrix m( constraints.size() + (mProblemSize * (mProblemSize - 1)) / 2, (mProblemSize * mProblemSize) + 1 );
+        DenseMatrix m( constraints.size() + (actualProblemSize * (actualProblemSize - 1)) / 2, (actualProblemSize * actualProblemSize) + 1 );
         unsigned row = 0;
         for( map<Term, SparseMatrix, GiNaCRA::GradedLexicgraphic>::const_iterator it = constraints.begin(); it != constraints.end(); ++it )
         {
-            it->second.writeEntriesToArray( m.getPointerToRow( row ) );
-            row++;
+            it->second.writeEntriesToArray( m.getPointerToRow( row ), mHide );
+			
+			
+			row++;
         }
         // Because the constant term should be equal -1 in order to find an counterexample
-        m.set( 0, mProblemSize * mProblemSize, -1 );
+        m.set( 0, actualProblemSize * actualProblemSize, -1 );
         // Now we add the symmetry constraints
-        for( unsigned i = 1; i < mProblemSize; ++i )
+        for( unsigned i = 1; i < actualProblemSize; ++i )
         {
             for( unsigned j = 0; j < i; ++j )
             {
-                m.set( row, j * mProblemSize + i, Rational( 1 ) );
-                m.set( row, i * mProblemSize + j, Rational( -1 ) );
+                m.set( row, j * actualProblemSize + i, Rational( 1 ) );
+                m.set( row, i * actualProblemSize + j, Rational( -1 ) );
                 ++row;
             }
         }

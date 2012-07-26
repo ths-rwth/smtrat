@@ -102,6 +102,7 @@
 %token FORMULA
 %token ASSERT SETLOGIC QFNRA QFLRA
 %token EXIT
+%token DECLARECONST
 %token DECLAREFUN
 %token OB
 %token CB
@@ -195,6 +196,32 @@ command:
 	|	OB CHECKSAT CB
     {
     }
+	|	OB DECLARECONST SYM REAL CB
+	{
+		GiNaC::parser reader( driver.formulaRoot->rRealValuedVars() );
+		try
+		{
+            for( std::map< const std::string, const std::string >::const_iterator iter = driver.realsymbolpartsToReplace.begin();
+                 iter != driver.realsymbolpartsToReplace.end(); ++iter )
+            {
+                if( $3->find( iter->second ) != std::string::npos )
+                {
+                    std::string errstr = std::string( "The name of a real variable constains " + iter->second + ", which is already internally used!");
+                    error( yyloc, errstr );
+                    break;
+                }
+                *$3 = driver.replace( *$3, iter->first, iter->second );
+            }
+			std::string s = *$3;
+			reader( s );
+		}
+		catch( GiNaC::parse_error& err )
+		{
+			std::cerr << err.what() << std::endl;
+		}
+		driver.formulaRoot->rRealValuedVars().insert( reader.get_syms().begin(), reader.get_syms().end() );
+        delete $3;
+	}
 	| 	OB DECLAREFUN SYM OB CB REAL CB
 	{
 		GiNaC::parser reader( driver.formulaRoot->rRealValuedVars() );
@@ -231,6 +258,12 @@ command:
   	}
 	|	OB EXIT CB
 	{
+        while( !driver.collectedBooleanAuxilliaries.empty() )
+        {
+            smtrat::Formula* formula = driver.collectedBooleanAuxilliaries.begin()->second;
+            driver.collectedBooleanAuxilliaries.erase( driver.collectedBooleanAuxilliaries.begin() );
+            delete formula;
+        }
 	}
 	;
 
@@ -270,14 +303,22 @@ expr:
 	}
 	| 	SYM
 	{
-        if( driver.collectedBooleans.find( *$1 ) == driver.collectedBooleans.end() )
+        std::map< const std::string, smtrat::Formula*>::iterator iter = driver.collectedBooleanAuxilliaries.find( *$1 );
+        if( iter != driver.collectedBooleanAuxilliaries.end() )
         {
-            std::string errstr = std::string( "The Boolean variable " + *$1 + " is not defined!");
-  			error( yyloc, errstr );
+            $$ = new smtrat::Formula( *iter->second );
         }
         else
         {
-            $$ = new smtrat::Formula( *$1 );
+            if( driver.collectedBooleans.find( *$1 ) == driver.collectedBooleans.end() )
+            {
+                std::string errstr = std::string( "The Boolean variable " + *$1 + " is not defined!");
+                error( yyloc, errstr );
+            }
+            else
+            {
+                $$ = new smtrat::Formula( *$1 );
+            }
         }
         delete $1;
     }
@@ -616,12 +657,15 @@ bind :
 	}
 	|	OB SYM expr CB
 	{
-        driver.collectedBooleans.insert( *$2 );
-		smtrat::Formula* formulaTmp = new smtrat::Formula( IMPLIES );
-        formulaTmp->addSubformula( new smtrat::Formula( *$2 ) );
-        formulaTmp->addSubformula( $3 );
+        //river.collectedBooleans.insert( *$2 );
+		//smtrat::Formula* formulaTmp = new smtrat::Formula( IMPLIES );
+        //formulaTmp->addSubformula( new smtrat::Formula( *$2 ) );
+        //formulaTmp->addSubformula( $3 );
+        //delete $2;
+        //$$ = formulaTmp;
+        driver.collectedBooleanAuxilliaries.insert( std::pair<const std::string, smtrat::Formula*>( *$2, $3 ) );
+        $$ = NULL;
         delete $2;
-        $$ = formulaTmp;
 	}
 	;
 
