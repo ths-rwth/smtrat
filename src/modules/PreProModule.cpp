@@ -35,8 +35,8 @@ using namespace std;
 using namespace GiNaC;
 
 //#define SIMPLIFY_CLAUSES                                       // Searches for simplifications in clauses 
-//#define ADD_LEARNING_CLAUSES                                   // Adds learning clauses
-#define ADD_NEGATED_LEARNING_CLAUSES                           // Adds negated learning clauses               
+#define ADD_LEARNING_CLAUSES                                   // Adds learning clauses
+//#define ADD_NEGATED_LEARNING_CLAUSES                           // Adds negated learning clauses               
 //#define PROCEED_SUBSTITUTION                                   // Substitutes variables ( ONlY USABLE FOR FORMULAS WITH XOR (before CNF) )
 //#define ASSIGN_ACTIVITIES                                      // Assigns activities between 0 and 1 
 
