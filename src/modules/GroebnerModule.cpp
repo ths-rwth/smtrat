@@ -22,7 +22,7 @@
 
 /**
  * @file   GroebnerModule.cpp
- * 
+ *
  * @author Sebastian Junges
  * @author Ulrich Loup
  *
@@ -66,7 +66,7 @@ GroebnerModule::~GroebnerModule( )
 }
 
 /**
- * Adds the constraint to the known constraints of the module. 
+ * Adds the constraint to the known constraints of the module.
  * This includes scanning variables as well as transforming inequalities, if this is enabled.
  * @param _formula A REALCONSTRAINT which should be regarded by the next theory call.
  * @return true
@@ -131,23 +131,23 @@ Answer GroebnerModule::isConsistent( )
 {
     // This check asserts that all the conflicts are handled by the SAT solver.
     if( !mInfeasibleSubsets.empty() ) return False;
-    
+
     assert( mBacktrackPoints.size( ) - 1 == mBasis.nrOriginalConstraints( ) );
     assert( mInfeasibleSubsets.empty( ) );
- 
+
     if( !mBasis.inputEmpty( ) )
     {
         //first, we interreduce the input!
         mBasis.reduceInput( );
     }
 
-    //	    //If no equalities are added, we do not know anything 
+    //	    //If no equalities are added, we do not know anything
     if( !mBasis.inputEmpty( ) || (mPopCausesRecalc && mBasis.nrOriginalConstraints( ) > 0) )
     {
         mPopCausesRecalc = false;
         //now, we calculate the groebner basis
         mBasis.calculate( );
-        
+
         Polynomial witness;
 
 #ifdef USE_NSS
@@ -202,7 +202,7 @@ Answer GroebnerModule::isConsistent( )
             {
                 assert( (**it)->getType( ) == REALCONSTRAINT );
                 assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (**it)->constraint( ).relation( ) == CR_EQ );
-                               
+
                 if( Settings::getReasonsForInfeasibility )
                 {
                     if( origIt.get( ) )
@@ -224,7 +224,7 @@ Answer GroebnerModule::isConsistent( )
         {
             Answer ans = mInequalities.reduceWRTGroebnerBasis( mBasis.getGbIdeal( ) );
             mNewInequalities.clear( );
-            std::cout << "cool " << std::endl;
+//            std::cout << "cool " << std::endl;
             if( ans != Unknown )
             {
                 return ans;
@@ -305,7 +305,7 @@ void GroebnerModule::pushBacktrackPoint( Formula::const_iterator btpoint )
 {
     assert( mBacktrackPoints.empty( ) || (*btpoint)->getType( ) == REALCONSTRAINT );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
-  
+
     if( !mBacktrackPoints.empty( ) )
     {
         saveState( );
@@ -322,9 +322,9 @@ void GroebnerModule::pushBacktrackPoint( Formula::const_iterator btpoint )
 
 
 /**
- * Pops all states from the stack until the state which we had before the constraint was added. 
+ * Pops all states from the stack until the state which we had before the constraint was added.
  * Then, we make new states with all equalities which were added afterwards.
- * @param a pointer in the received formula to the constraint which will be removed. 
+ * @param a pointer in the received formula to the constraint which will be removed.
  */
 void GroebnerModule::popBacktrackPoint( Formula::const_iterator btpoint )
 {
@@ -411,7 +411,7 @@ Polynomial GroebnerModule::transformIntoEquality( Formula::const_iterator constr
     {
         varNr = mapentry->second;
     }
-    
+
     switch( (*constraint)->constraint( ).relation( ) )
     {
     case CR_GEQ:
@@ -435,8 +435,8 @@ Polynomial GroebnerModule::transformIntoEquality( Formula::const_iterator constr
 }
 
 /**
- * 
- * @return 
+ *
+ * @return
  */
 bool GroebnerModule::saveState( )
 {
@@ -490,9 +490,9 @@ void GroebnerModule::passGB( )
 }
 
 /**
- * 
+ *
  * @param reasons
- * @return 
+ * @return
  */
 std::set<const Formula*> GroebnerModule::generateReasons( const GiNaCRA::BitVector& reasons )
 {
@@ -504,7 +504,7 @@ std::set<const Formula*> GroebnerModule::generateReasons( const GiNaCRA::BitVect
     {
         assert( (**it)->getType( ) == REALCONSTRAINT );
         assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (**it)->constraint( ).relation( ) == CR_EQ );
-        //                    
+        //
         if( origIt.get( ) )
         {
             origins.insert( **it );
