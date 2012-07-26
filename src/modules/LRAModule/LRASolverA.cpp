@@ -26,7 +26,7 @@ using namespace GiNaC;
 using namespace smtrat;
 using namespace std;
 
-namespace lra
+namespace lraone
 {
     //
     // Constructor

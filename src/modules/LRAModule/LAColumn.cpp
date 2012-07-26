@@ -23,7 +23,7 @@
 
 using namespace std;
 
-namespace lra
+namespace lraone
 {
     int LAColumn::add( const int key, const int pos )
     {

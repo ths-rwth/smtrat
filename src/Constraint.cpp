@@ -797,48 +797,40 @@ namespace smtrat
      *
      * @return The string representation of the constraint.
      */
-    string Constraint::toPrefixString() const
+    string Constraint::smtlibString() const
     {
         string result = "";
         switch( relation() )
         {
             case CR_EQ:
             {
-                result += "(= ";
-                break;
+                return "(= " + prefixStringOf( lhs() ) + " 0)";
             }
             case CR_NEQ:
             {
-                result += "(!= ";
-                break;
+                return "(or (< " + prefixStringOf( lhs() ) + " 0) (> " + prefixStringOf( lhs() ) + " 0))";
             }
             case CR_LESS:
             {
-                result += "(< ";
-                break;
+                return "(< " + prefixStringOf( lhs() ) + " 0)";
             }
             case CR_GREATER:
             {
-                result += "(> ";
-                break;
+                return "(> " + prefixStringOf( lhs() ) + " 0)";
             }
             case CR_LEQ:
             {
-                result += "(<= ";
-                break;
+                return "(<= " + prefixStringOf( lhs() ) + " 0)";
             }
             case CR_GEQ:
             {
-                result += "(>= ";
-                break;
+                return "(>= " + prefixStringOf( lhs() ) + " 0)";
             }
             default:
             {
-                result += "(~ ";
+                return "(~ " + prefixStringOf( lhs() ) + " 0)";
             }
         }
-        result += prefixStringOf( lhs() ) + " 0)";
-        return result;
     }
 
     /**
@@ -848,7 +840,7 @@ namespace smtrat
      */
     void Constraint::printInPrefix( ostream& _out ) const
     {
-        _out << toPrefixString();
+        _out << smtlibString();
     }
 
     const string Constraint::prefixStringOf( const ex& _term ) const
@@ -1678,7 +1670,7 @@ namespace smtrat
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
+                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
                             }
                             return NULL;
                         }
@@ -1694,7 +1686,7 @@ namespace smtrat
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
+                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
                             }
                             return NULL;
                         }
@@ -1710,7 +1702,7 @@ namespace smtrat
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
+                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
                             }
                             return NULL;
                         }
@@ -1726,7 +1718,7 @@ namespace smtrat
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
+                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
                             }
                             return NULL;
                         }
@@ -1812,13 +1804,13 @@ namespace smtrat
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
+                                return Formula::newConstraint( _constraintB->lhs(), CR_LEQ );
                             }
                             ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
+                                return Formula::newConstraint( _constraintB->lhs(), CR_GEQ );
                             }
                             return NULL;
                         }
@@ -1856,13 +1848,13 @@ namespace smtrat
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
+                                return Formula::newConstraint( _constraintB->lhs(), CR_GEQ );
                             }
                             ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
+                                return Formula::newConstraint( _constraintB->lhs(), CR_LEQ );
                             }
                             return NULL;
                         }
@@ -1906,7 +1898,7 @@ namespace smtrat
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return _constraintA;
+                                return Formula::newConstraint( _constraintB->lhs(), CR_GEQ );
                             }
                             return NULL;
                         }
@@ -1950,7 +1942,7 @@ namespace smtrat
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return _constraintA;
+                                return Formula::newConstraint( _constraintB->lhs(), CR_LEQ );
                             }
                             return NULL;
                         }

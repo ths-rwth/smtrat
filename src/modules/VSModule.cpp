@@ -34,7 +34,8 @@ using namespace std;
 using namespace GiNaC;
 using namespace vs;
 
-#define VS_ASSIGNMENT_DEBUG
+//#define VS_ASSIGNMENT_DEBUG
+//#define VS_LOG_INFSUBSETS_OF_BACKEND
 
 namespace smtrat
 {
@@ -1963,7 +1964,6 @@ namespace smtrat
                 vector<Module*>::const_iterator backend = usedBackends().begin();
                 while( backend != usedBackends().end() )
                 {
-                    (*backend)->print();
                     if( !(*backend)->rInfeasibleSubsets().empty() )
                     {
                         for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
@@ -1974,26 +1974,41 @@ namespace smtrat
                             {
                                 for( ConditionVector::const_iterator cond = _state->conditions().begin(); cond != _state->conditions().end(); ++cond )
                                 {
-//                                    cout << (*cond)->constraint() << "  " << (*cond)->constraint().id() << endl;
-//                                    cout << (*subformula)->constraint() << "  " << (*subformula)->constraint().id() << endl;
                                     if( (*cond)->constraint() == (*subformula)->constraint() )
                                     {
-//                                        cout << "True" << endl << endl;
                                         conflict.insert( *cond );
                                         break;
                                     }
-//                                    cout << "False" << endl << endl;
                                 }
                             }
 
-//                            #ifdef VS_LOG_INFSUBSETS
+                            #ifdef VS_LOG_INFSUBSETS_OF_BACKEND
                             set< const smtrat::Constraint* > constraints = set< const smtrat::Constraint* >();
                             for( ConditionSet::const_iterator cond = conflict.begin(); cond != conflict.end(); ++cond )
                             {
                                 constraints.insert( (**cond).pConstraint() );
                             }
-                            smtrat::Module::addAssumptionToCheck( constraints, false, "VSModule_IS_2" );
-//                            #endif
+                            smtrat::Module::addAssumptionToCheck( constraints, false, "IS_of_Backend_of_VSModule" );
+                            #endif
+//                            if( conflict.size() != infsubset->size() )
+//                            {
+//                                cout << "infeasible subset = {";
+//                                for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
+//                                {
+//                                    cout << " " << (*subformula)->constraint();
+//                                }
+//                                cout << " }" << endl;
+//                                cout << "projected infeasible subset = {";
+//                                for( ConditionSet::const_iterator cond = conflict.begin(); cond != conflict.end(); ++cond )
+//                                {
+//                                    cout << " " << (*cond)->constraint();
+//                                }
+//                                cout << " }" << endl;
+//                                (*backend)->print();
+//                                _state->printAlone();
+//                                assert( false );
+//                            }
+                            assert( conflict.size() == infsubset->size() ); // If this assertion fails, uncomment the code above
                             if( conflict.empty() )
                             {
                                 _state->printAlone( "", cout );

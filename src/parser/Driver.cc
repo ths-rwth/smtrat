@@ -45,7 +45,8 @@ namespace smtrat
         collectedBooleans( std::set<std::string>() ),
         collectedRealAuxilliaries( std::map<std::string, std::string>() ),
         status( -1 ),
-        realsymbolpartsToReplace()
+        realsymbolpartsToReplace(),
+        collectedBooleanAuxilliaries()
     {
         realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "~", "__tilde__" ) );
         realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "!", "__exclamation__" ) );

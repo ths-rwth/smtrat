@@ -32,7 +32,6 @@
 
 //#define VS_DEBUG_METHODS
 //#define VS_DEBUG_SUBSTITUTION
-//#define VS_DEBUG_CALCULATIONS
 
 #include "Substitution.h"
 #include "Tools.h"
@@ -134,7 +133,7 @@ namespace vs
     #endif
 
     void simplify( DisjunctionOfConstraintConjunctions& );
-
+    void print( DisjunctionOfConstraintConjunctions& );
 }    // end namspace vs
 
 #endif

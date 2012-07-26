@@ -29,7 +29,7 @@
 
 #define opensmt_error( S ) { cerr << "# Error: " << S << " (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << endl; exit( 1 ); }
 
-namespace lra
+namespace lraone
 {
     /*
      * Class to solve Linear Arithmetic theories

@@ -25,7 +25,7 @@
 #include <vector>
 #include <assert.h>
 
-namespace lra
+namespace lraone
 {
     template<class T>
     class LAArray:

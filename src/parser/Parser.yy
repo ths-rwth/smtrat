@@ -196,7 +196,7 @@ command:
 	|	OB CHECKSAT CB
     {
     }
-	|	OB DECLARECONST SYM REAL CB 
+	|	OB DECLARECONST SYM REAL CB
 	{
 		GiNaC::parser reader( driver.formulaRoot->rRealValuedVars() );
 		try
@@ -258,6 +258,12 @@ command:
   	}
 	|	OB EXIT CB
 	{
+        while( !driver.collectedBooleanAuxilliaries.empty() )
+        {
+            smtrat::Formula* formula = driver.collectedBooleanAuxilliaries.begin()->second;
+            driver.collectedBooleanAuxilliaries.erase( driver.collectedBooleanAuxilliaries.begin() );
+            delete formula;
+        }
 	}
 	;
 
@@ -297,14 +303,22 @@ expr:
 	}
 	| 	SYM
 	{
-        if( driver.collectedBooleans.find( *$1 ) == driver.collectedBooleans.end() )
+        std::map< const std::string, smtrat::Formula*>::iterator iter = driver.collectedBooleanAuxilliaries.find( *$1 );
+        if( iter != driver.collectedBooleanAuxilliaries.end() )
         {
-            std::string errstr = std::string( "The Boolean variable " + *$1 + " is not defined!");
-  			error( yyloc, errstr );
+            $$ = new smtrat::Formula( *iter->second );
         }
         else
         {
-            $$ = new smtrat::Formula( *$1 );
+            if( driver.collectedBooleans.find( *$1 ) == driver.collectedBooleans.end() )
+            {
+                std::string errstr = std::string( "The Boolean variable " + *$1 + " is not defined!");
+                error( yyloc, errstr );
+            }
+            else
+            {
+                $$ = new smtrat::Formula( *$1 );
+            }
         }
         delete $1;
     }
@@ -643,12 +657,15 @@ bind :
 	}
 	|	OB SYM expr CB
 	{
-        driver.collectedBooleans.insert( *$2 );
-		smtrat::Formula* formulaTmp = new smtrat::Formula( IMPLIES );
-        formulaTmp->addSubformula( new smtrat::Formula( *$2 ) );
-        formulaTmp->addSubformula( $3 );
+        //river.collectedBooleans.insert( *$2 );
+		//smtrat::Formula* formulaTmp = new smtrat::Formula( IMPLIES );
+        //formulaTmp->addSubformula( new smtrat::Formula( *$2 ) );
+        //formulaTmp->addSubformula( $3 );
+        //delete $2;
+        //$$ = formulaTmp;
+        driver.collectedBooleanAuxilliaries.insert( std::pair<const std::string, smtrat::Formula*>( *$2, $3 ) );
+        $$ = NULL;
         delete $2;
-        $$ = formulaTmp;
 	}
 	;
 
