@@ -24,7 +24,7 @@
 
 #include "LAArray.h"
 
-namespace lra
+namespace lraone
 {
     struct LAColumnItem
     {

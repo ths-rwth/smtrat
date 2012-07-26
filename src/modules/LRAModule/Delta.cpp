@@ -23,7 +23,7 @@
 
 using namespace std;
 
-namespace lra
+namespace lraone
 {
     //
     // prints the Delta

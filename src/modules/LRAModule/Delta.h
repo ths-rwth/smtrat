@@ -26,7 +26,7 @@
 #include <ginac/flags.h>
 #include <assert.h>
 
-namespace lra
+namespace lraone
 {
     //
     // Class to keep the delta values and bounds values for the LAVar

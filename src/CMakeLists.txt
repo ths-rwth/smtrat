@@ -135,6 +135,18 @@ set(lib_LRAModule_src
 	modules/LRAModule/LRASolverA.cpp
 )
 
+set(lib_LRAOneModule_headers
+	modules/LRAOneModule/Bound.h
+	modules/LRAOneModule/Value.h
+	modules/LRAOneModule/Variable.h
+)
+
+set(lib_LRAOneModule_src
+	modules/LRAOneModule/Bound.cpp
+	modules/LRAOneModule/Value.cpp
+	modules/LRAOneModule/Variable.cpp
+)
+
 set(lib_LRATwoModule_headers
     modules/LRATwoModule/BetaMap.h
     modules/LRATwoModule/Bound.h

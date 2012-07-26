@@ -67,7 +67,7 @@ namespace smtrat
             void removeSubformula( Formula::const_iterator );
 
         private:
-            lra::LRASolverA*               mpLRASolver;
+            lraone::LRASolverA*               mpLRASolver;
             cons_to_cons_bool_pair_vec_map mLRASolverConstraints;
             unsigned                       mNumAddedNonlinearConstraints;
 

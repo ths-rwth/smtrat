@@ -25,7 +25,7 @@
 #include "LAArray.h"
 #include <ginac/ginac.h>
 
-namespace lra
+namespace lraone
 {
     struct LARowItem
     {

@@ -27,7 +27,7 @@
 #include "LAColumn.h"
 #include "../../Constraint.h"
 
-namespace lra
+namespace lraone
 {
     //
     // Class to store the term of constraints as a column of Simplex method tableau
