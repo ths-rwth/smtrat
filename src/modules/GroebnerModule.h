@@ -34,7 +34,7 @@
  * GroebnerModule
  *
  * Since: 2012-01-18
- * Version: 2012-06-20
+ * Version: 2012-07-26
  */
 
 #ifndef SMTRAT_GROEBNERMODULE_H
@@ -44,6 +44,8 @@
 
 #include <ginacra/mr/Buchberger.h>
 #include "../Module.h"
+#include "GBModule/GBSettings.h"
+
 
 namespace smtrat
 {
@@ -85,7 +87,7 @@ struct FormulaConstraintCompare
 };
 
 /**
- * Datastructure for the GBModule.
+ * Datastructure for the GroebnerModule.
  * A table of all inequalities and how they are reduced.
  * @author Sebastian Junges
  */
@@ -182,8 +184,8 @@ protected:
 
 private:
     typedef Module super;
-
 };
-
 } // namespace smtrat
+#include "GroebnerModule.tpp"
+
 #endif   /** GROEBNERMODULE_H */
