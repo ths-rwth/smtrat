@@ -120,7 +120,7 @@ if( DOXYGEN_PDFLATEX )
                       WORKING_DIRECTORY ${TEX_DIR}
                       DEPENDS doxygen-doc )
   add_custom_target( doc
-                     COMMAND mv -T ${PDF_OUTPUT} ${CMAKE_CURRENT_BINARY_DIR}/../${DOXYGEN_OUTPUT_DIR}/latex/doc_${PROJECT_NAME}-${PROJECT_VERSION}.pdf
+                     COMMAND mv -T ${PDF_OUTPUT} ${CMAKE_CURRENT_BINARY_DIR}/doc_${PROJECT_NAME}-${PROJECT_VERSION}.pdf
                      DEPENDS ${PDF_OUTPUT} )
 else( DOXYGEN_PDFLATEX )
   add_custom_target( doc 
