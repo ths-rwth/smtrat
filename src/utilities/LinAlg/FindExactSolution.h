@@ -1,6 +1,5 @@
 /** 
  * @file   FindExactSolution.h
- *         Created on May 14, 2012, 5:22 PM
  * @author: Sebastian Junges
  *
  * 

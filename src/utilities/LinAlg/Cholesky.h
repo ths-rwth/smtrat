@@ -1,6 +1,5 @@
 /**
  * @file   Cholesky.h
- *         Created on May 16, 2012, 7:46 PM
  * @author: Sebastian Junges
  *
  *

@@ -22,7 +22,7 @@
 
 /**
  * @file   GroebnerModule.cpp
- *         Created on January 18, 2012, 7:31 PM
+ * 
  * @author Sebastian Junges
  * @author Ulrich Loup
  *
@@ -125,7 +125,7 @@ bool GroebnerModule::assertSubformula( Formula::const_iterator _formula )
 
 /**
  * A theory call to the GroebnerModule. The exact working of this module depends on the settings in GBSettings.
- * @return {TRUE,FALSE,UNKNOWN} dependent on the asserted constraints.
+ * @return (TRUE,FALSE,UNKNOWN) dependent on the asserted constraints.
  */
 Answer GroebnerModule::isConsistent( )
 {
@@ -516,7 +516,7 @@ std::set<const Formula*> GroebnerModule::generateReasons( const GiNaCRA::BitVect
 }
 
 /**
- * 
+ *  Prints the state history.
  */
 void GroebnerModule::printStateHistory( )
 {
@@ -532,6 +532,10 @@ void GroebnerModule::printStateHistory( )
     std::cout << "]" << std::endl;
 }
 
+/**
+ * A validity check of the data structures which can be used to assert valid behaviour.
+ * @return true, iff the backtrackpoints are valid.
+ */
 bool GroebnerModule::validityCheck( )
 {
     auto btp = mBacktrackPoints.begin( );
@@ -556,17 +560,30 @@ bool GroebnerModule::validityCheck( )
     return true;
 }
 
+/**
+ * This function is overwritten such that it is visible to the InequalitiesTable. For more details take a look at Module::removeSubformulaFromPassedFormula()
+ * @param _formula
+ */
 void GroebnerModule::removeSubformulaFromPassedFormula( Formula::iterator _formula )
 {
     super::removeSubformulaFromPassedFormula( _formula );
 }
 
+/**
+ * Initializes the inequalitiestable
+ * @param module
+ */
 InequalitiesTable::InequalitiesTable( GroebnerModule* module ) : mModule( module )
 {
     mBtnumber = 0;
     mNewConstraints = mReducedInequalities.begin( );
 }
 
+/**
+ * Adds the constraint as a row to the inequalities table.
+ * @param received A pointer from the receivedFormula to the inequality.
+ * @return The position in the inequalities table.
+ */
 InequalitiesTable::Rows::iterator InequalitiesTable::InsertReceivedFormula( Formula::const_iterator received )
 {
     mModule->addReceivedSubformulaToPassedFormula( received );
@@ -647,6 +664,11 @@ void InequalitiesTable::popBacktrackPoint( unsigned nrOfBacktracks )
     }
 }
 
+/**
+ * Reduce all rows with respect to the given Groebner basis.
+ * @param gb The groebner basis
+ * @return If one of the inequalities yields a contradiction, False, else Unknown.
+ */
 Answer InequalitiesTable::reduceWRTGroebnerBasis( const Ideal& gb )
 {
     for( auto it = mReducedInequalities.begin( ); it != mReducedInequalities.end( ); ++it )
@@ -801,6 +823,10 @@ bool InequalitiesTable::reduceWRTGroebnerBasis( Rows::iterator it, const Ideal& 
     return true;
 }
 
+/**
+ * Removes the row corresponding to this constraint from the inequalities table.
+ * @param _formula A pointer to the constraint in the receivedFormula which has to be removed.
+ */
 void InequalitiesTable::removeInequality( Formula::const_iterator _formula )
 {
     mReducedInequalities.erase( _formula );
@@ -810,6 +836,10 @@ void InequalitiesTable::removeInequality( Formula::const_iterator _formula )
     }
 }
 
+/**
+ * A print function for the inequalitiestable
+ * @param os
+ */
 void InequalitiesTable::print( std::ostream& os ) const
 {
     std::cout << "Bt: " << mBtnumber << std::endl;

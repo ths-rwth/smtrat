@@ -114,6 +114,7 @@ if( DOXYGEN_PDFLATEX )
   set( TEX_DIR ${CMAKE_CURRENT_BINARY_DIR}/../${DOXYGEN_OUTPUT_DIR}/latex )
   set( PDF_OUTPUT ${TEX_DIR}/refman.pdf )
   add_custom_command( OUTPUT ${PDF_OUTPUT}
+					  POST_BUILD
                       COMMAND ${PDFLATEX_COMPILER}
                       ARGS refman.tex
                       WORKING_DIRECTORY ${TEX_DIR}
