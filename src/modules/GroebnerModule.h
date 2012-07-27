@@ -54,6 +54,7 @@ namespace smtrat
  * A class to save the current state of a GroebnerModule.
  * Used for backtracking-support
  */
+template<typename Settings> 
 class GroebnerModuleState
 {
 public:
@@ -73,10 +74,10 @@ public:
 
 protected:
     ///The state of the basis
-    const GiNaCRA::Buchberger<GBSettings::Order> mBasis;
+    const GiNaCRA::Buchberger<typename Settings::Order> mBasis;
 };
 
-template<class Settings>
+template<typename Settings>
 class GroebnerModule;
 
 struct FormulaConstraintCompare
@@ -163,7 +164,7 @@ protected:
     /// The vector of backtrack points, which has pointers to received constraints.
     std::vector<Formula::const_iterator> mBacktrackPoints;
     /// Saves the relevant history to support backtracking
-    std::list<GroebnerModuleState> mStateHistory;
+    std::list<GroebnerModuleState<Settings> > mStateHistory;
     /// Flag indicating there was no consistency check after the last removal of inequalities.
     bool mPopCausesRecalc;
 

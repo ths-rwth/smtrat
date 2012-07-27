@@ -63,10 +63,8 @@ set(lib_modules_src
 )
 
 if(USE_GB)
-	set(lib_module_GBModule_headers modules/GBModule/InequalitiesTable.h modules/GBModule/GBSettings.h)
-
-	set(lib_modules_headers ${lib_modules_headers} modules/GroebnerModule.h)
-	set(lib_modules_src ${lib_modules_src}  modules/GroebnerModule.cpp)
+	set(lib_module_GBModule_headers  modules/GBModule/GBSettings.h)
+	set(lib_modules_headers ${lib_modules_headers} modules/GroebnerModule.h modules/GroebnerModule.tpp)
 endif()
 
 if(USE_CAD)

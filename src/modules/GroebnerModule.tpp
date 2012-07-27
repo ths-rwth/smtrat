@@ -313,7 +313,7 @@ void GroebnerModule<Settings>::pushBacktrackPoint( Formula::const_iterator btpoi
         saveState( );
     }
     mBacktrackPoints.push_back( btpoint );
-    mStateHistory.push_back( GroebnerModuleState( mBasis ) );
+    mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis ) );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
 
     if( Settings::checkInequalities != NEVER )
@@ -447,7 +447,7 @@ bool GroebnerModule<Settings>::saveState( )
 {
     assert( mStateHistory.size( ) == mBacktrackPoints.size( ) );
     mStateHistory.pop_back( );
-    mStateHistory.push_back( GroebnerModuleState( mBasis ) );
+    mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis ) );
 
     return true;
 }
@@ -621,9 +621,9 @@ template<class Settings>
 void InequalitiesTable<Settings>::pushBacktrackPoint( )
 {
     ++mBtnumber;
-    if( GBSettings::setCheckInequalitiesToBeginAfter > 1 )
+    if( Settings::setCheckInequalitiesToBeginAfter > 1 )
     {
-        if( mLastRestart + GBSettings::setCheckInequalitiesToBeginAfter == mBtnumber )
+        if( mLastRestart + Settings::setCheckInequalitiesToBeginAfter == mBtnumber )
         {
             mNewConstraints = mReducedInequalities.begin( );
         }
@@ -650,13 +650,13 @@ void InequalitiesTable<Settings>::popBacktrackPoint( unsigned nrOfBacktracks )
             {
                 std::get < 2 > (it->second).erase( jt, listEnd );
                 bool pass;
-                if( GBSettings::passInequalities == FULL_REDUCED_IF )
+                if( Settings::passInequalities == FULL_REDUCED_IF )
                 {
-                    pass = GBSettings::passPolynomial::evaluate( std::get < 2 > (it->second).front( ).second, std::get < 2 > (it->second).back( ).second );
+                    pass = Settings::passPolynomial::evaluate( std::get < 2 > (it->second).front( ).second, std::get < 2 > (it->second).back( ).second );
                 }
 
                 // what shall we pass
-                if( GBSettings::passInequalities == AS_RECEIVED )
+                if( Settings::passInequalities == AS_RECEIVED )
                 {
                     if( std::get < 0 > (it->second) == mModule->mpPassedFormula->end( ) )
                     {
@@ -672,7 +672,7 @@ void InequalitiesTable<Settings>::popBacktrackPoint( unsigned nrOfBacktracks )
                         // we can of course only remove something which is in the formula.
                         mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
                     }
-                    if( GBSettings::passInequalities == FULL_REDUCED || (GBSettings::passInequalities == FULL_REDUCED_IF && pass) )
+                    if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
                     {
                         std::vector<std::set<const Formula*> > originals;
                         originals.push_back( mModule->generateReasons( std::get < 2 > (it->second).back( ).second.getOrigins( ).getBitVector( ) ) );
@@ -682,7 +682,7 @@ void InequalitiesTable<Settings>::popBacktrackPoint( unsigned nrOfBacktracks )
                     }
                     else
                     {
-                        assert( GBSettings::passInequalities == FULL_REDUCED_IF );
+                        assert( Settings::passInequalities == FULL_REDUCED_IF );
                         //we pass the original one.
                         mModule->addReceivedSubformulaToPassedFormula( it->first );
                     }
@@ -708,7 +708,7 @@ Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const Ideal& gb )
     {
         if( !reduceWRTGroebnerBasis( it, gb ) ) return False;
     }
-    if( GBSettings::withInfeasibleSubset != RETURN_DIRECTLY )
+    if( Settings::withInfeasibleSubset != RETURN_DIRECTLY )
     {
         if( mModule->mInfeasibleSubsets.empty( ) )
         {
@@ -741,7 +741,7 @@ Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const std::list<type
         assert( std::get < 1 > ((*it)->second) != CR_EQ );
         if( !reduceWRTGroebnerBasis( *it, gb ) ) return False;
     }
-    if( GBSettings::withInfeasibleSubset != RETURN_DIRECTLY )
+    if( Settings::withInfeasibleSubset != RETURN_DIRECTLY )
     {
         if( mModule->mInfeasibleSubsets.empty( ) )
         {
@@ -775,7 +775,7 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
     bool reductionOccured = false;
     if( !p.isZero( ) && !p.isConstant( ) )
     {
-        GiNaCRA::BaseReductor<GBSettings::Order> reductor( gb, p );
+        GiNaCRA::BaseReductor<Settings::Order> reductor( gb, p );
         reduced = reductor.fullReduce( );
         reductionOccured = reductor.reductionOccured( );
     }
@@ -822,7 +822,7 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                 std::set<const Formula*> originals( mModule->generateReasons( reduced.getOrigins( ).getBitVector( ) ) );
 
                 std::get < 0 > (it->second) = mModule->mpPassedFormula->end( );
-                if( GBSettings::addTheoryDeductions != NO_CONSTRAINTS )
+                if( Settings::addTheoryDeductions != NO_CONSTRAINTS )
                 {
                     mModule->addDeduction( originals, &((*(it->first))->constraint( )) );
                 }
@@ -833,30 +833,30 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                 infeasibleSubset.insert( *(it->first) );
 
                 mModule->mInfeasibleSubsets.push_back( infeasibleSubset );
-                if( GBSettings::withInfeasibleSubset == RETURN_DIRECTLY )
+                if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
                 {
                     return false;
                 }
             }
         }
-        else if( GBSettings::withInfeasibleSubset == PROCEED_ALLINEQUALITIES || mModule->mInfeasibleSubsets.empty( ) )
+        else if( Settings::withInfeasibleSubset == PROCEED_ALLINEQUALITIES || mModule->mInfeasibleSubsets.empty( ) )
         {
-            if( GBSettings::checkEqualitiesForTrivialSumOfSquares && reduced.isTrivialSumOfSquares( ) ) std::cout << "Found trivial sum of square inequality" << std::endl;
+            if( Settings::checkEqualitiesForTrivialSumOfSquares && reduced.isTrivialSumOfSquares( ) ) std::cout << "Found trivial sum of square inequality" << std::endl;
 
             bool pass;
-            if( GBSettings::passInequalities == FULL_REDUCED_IF )
+            if( Settings::passInequalities == FULL_REDUCED_IF )
             {
-                pass = GBSettings::passPolynomial::evaluate( std::get < 2 > (it->second).front( ).second, reduced );
+                pass = Settings::passPolynomial::evaluate( std::get < 2 > (it->second).front( ).second, reduced );
             }
 
-            if( GBSettings::passInequalities == FULL_REDUCED || (GBSettings::passInequalities == FULL_REDUCED_IF && pass) )
+            if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
             {
                 //remove the last one
                 mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
             }
             //add a new cell
             std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) );
-            if( GBSettings::passInequalities == FULL_REDUCED || (GBSettings::passInequalities == FULL_REDUCED_IF && pass) )
+            if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
             {
                 // get the reason set for the reduced polynomial
                 std::vector<std::set<const Formula*> > originals;
