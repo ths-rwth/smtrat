@@ -76,6 +76,7 @@ protected:
     const GiNaCRA::Buchberger<GBSettings::Order> mBasis;
 };
 
+template<class Settings>
 class GroebnerModule;
 
 struct FormulaConstraintCompare
@@ -91,27 +92,28 @@ struct FormulaConstraintCompare
  * A table of all inequalities and how they are reduced.
  * @author Sebastian Junges
  */
+template<class Settings>
 class InequalitiesTable
 {
-    typedef GBSettings::Polynomial Polynomial;
-    typedef GBSettings::MultivariateIdeal Ideal;
+    typedef typename Settings::Polynomial Polynomial;
+    typedef typename Settings::MultivariateIdeal Ideal;
 public:
-    typedef std::pair<unsigned, Polynomial> CellEntry;
-    typedef std::tuple<Formula::iterator, Constraint_Relation, std::list<CellEntry> > RowEntry;
-    typedef std::map<Formula::const_iterator, RowEntry, FormulaConstraintCompare> Rows;
-    typedef std::pair<Formula::const_iterator, RowEntry> Row;
+    typedef typename std::pair<unsigned, Polynomial> CellEntry;
+    typedef typename std::tuple<Formula::iterator, Constraint_Relation, std::list<CellEntry> > RowEntry;
+    typedef typename std::map<Formula::const_iterator, RowEntry, FormulaConstraintCompare> Rows;
+    typedef typename std::pair<Formula::const_iterator, RowEntry> Row;
 
-    InequalitiesTable( GroebnerModule* module );
+    InequalitiesTable( GroebnerModule<Settings>* module );
 
-    Rows::iterator InsertReceivedFormula( Formula::const_iterator received );
+    typename Rows::iterator InsertReceivedFormula( Formula::const_iterator received );
 
     void pushBacktrackPoint( );
 
     void popBacktrackPoint( unsigned nrBacktracks );
 
     Answer reduceWRTGroebnerBasis( const Ideal& gb );
-    bool reduceWRTGroebnerBasis( Rows::iterator, const Ideal& gb );
-    Answer reduceWRTGroebnerBasis( const std::list<Rows::iterator>& ineqToBeReduced, const Ideal& gb );
+    bool reduceWRTGroebnerBasis( typename  Rows::iterator, const Ideal& gb );
+    Answer reduceWRTGroebnerBasis( const  std::list< typename Rows::iterator>& ineqToBeReduced, const Ideal& gb );
 
     void removeInequality( Formula::const_iterator _formula );
 
@@ -123,9 +125,9 @@ public:
     /// The actual number of backtrackpoints
     unsigned mBtnumber;
     /// A pointer to the GroebnerModule which uses this table.
-    GroebnerModule* mModule;
+    GroebnerModule<Settings>* mModule;
 
-    Rows::iterator mNewConstraints;
+    typename Rows::iterator mNewConstraints;
     unsigned mLastRestart;
 };
 
@@ -135,16 +137,14 @@ public:
  * "On Groebner Bases in SMT-Compliant Decision Procedures"
  * @author Sebastian Junges
  */
-class GroebnerModule :
-public Module
+template<class Settings>
+class GroebnerModule : public Module
 {
-    typedef GBSettings Settings;
-
-    friend class InequalitiesTable;
+    friend class InequalitiesTable<Settings>;
 
 public:
-    typedef Settings::Order Order;
-    typedef Settings::Polynomial Polynomial;
+    typedef typename Settings::Order Order;
+    typedef typename Settings::Polynomial Polynomial;
 
     GroebnerModule( Manager * const, const Formula * const );
     virtual ~GroebnerModule( );
@@ -155,11 +155,11 @@ public:
     void printStateHistory( );
 protected:
     /// The current Groebner basis
-    GiNaCRA::Buchberger<Settings::Order> mBasis;
+    GiNaCRA::Buchberger<typename Settings::Order> mBasis;
     /// A list of variables to help define the simplified constraints
     GiNaC::symtab mListOfVariables;
     /// The inequalities table for handling inequalities
-    InequalitiesTable mInequalities;
+    InequalitiesTable<Settings> mInequalities;
     /// The vector of backtrack points, which has pointers to received constraints.
     std::vector<Formula::const_iterator> mBacktrackPoints;
     /// Saves the relevant history to support backtracking
@@ -168,7 +168,7 @@ protected:
     bool mPopCausesRecalc;
 
     /// A list of inequalities which were added after the last consistency check. 
-    std::list<InequalitiesTable::Rows::iterator> mNewInequalities;
+    std::list<typename InequalitiesTable<Settings>::Rows::iterator> mNewInequalities;
 
     std::map<unsigned, unsigned> mAdditionalVarMap;
 

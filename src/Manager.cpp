@@ -68,7 +68,7 @@ namespace smtrat
          */
         addModuleType( MT_SmartSimplifier, new StandardModuleFactory<SmartSimplifier>() );
 #ifdef USE_GB
-        addModuleType( MT_GroebnerModule, new StandardModuleFactory<GroebnerModule>() );
+        addModuleType( MT_GroebnerModule, new StandardModuleFactory<GroebnerModule<GBSettings> >() );
         #endif
         addModuleType( MT_VSModule, new StandardModuleFactory<VSModule>() );
         #ifdef USE_CAD
@@ -255,12 +255,11 @@ namespace smtrat
     }
 
     /**
-     * Get the module types which shall be used as backend for the module requiring backends.
      *
      * @param _formula      The problem instance.
      * @param _requiredBy   The module asking for a backend.
      *
-     * @return  The module types which shall be used as backend for the module requiring backends.
+     * @return  The module factories which create the backends for the module requiring backends.
      */
     vector<ModuleFactory*> Manager::getBackendsFactories( Formula* const _formula, Module* _requiredBy ) const
     {
