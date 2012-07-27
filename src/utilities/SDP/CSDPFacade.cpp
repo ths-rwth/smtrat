@@ -51,13 +51,9 @@ namespace smtrat
      */
     CSDPFacade::CSDPFacade( int problemSize, const double costMatrix[], const std::vector<SparseMatrix>& constraints, const double b[] ):
         mProblemSize( problemSize ),
-        mNrConstraints( constraints.size() )
+        mNrConstraints( constraints.size() ),
+			mConstraints(constraints)
     {
-        print_debug( "create costmatrix", CSDPFacadeDBGLVL );
-        createCostMatrix( costMatrix, problemSize );
-
-        print_debug( "create constraintmatrix", CSDPFacadeDBGLVL );
-        createConstraintMatrices( constraints );
         mb = (double*)malloc( (mNrConstraints + 1) * sizeof(double) );
         if( mb == NULL )
         {
@@ -68,16 +64,14 @@ namespace smtrat
         {
             mb[i] = b[i - 1];
         }
-        assert( mpConstraints != NULL );
         assert( mb != NULL );
     }
 
     CSDPFacade::CSDPFacade( int problemSize, const std::vector<SparseMatrix>& constraints, const double b[] ):
         mProblemSize( problemSize ),
-        mNrConstraints( constraints.size() )
+        mNrConstraints( constraints.size() ),
+			mConstraints(constraints)
     {
-        createCostMatrix( problemSize );
-        createConstraintMatrices( constraints );
         mb = (double*)malloc( (mNrConstraints + 1) * sizeof(double) );
         if( mb == NULL )
         {
@@ -88,16 +82,14 @@ namespace smtrat
         {
             mb[i] = b[i - 1];
         }
-        assert( mpConstraints != NULL );
         assert( mb != NULL );
     }
 
     CSDPFacade::CSDPFacade( int problemSize, const std::vector<SparseMatrix>& constraints ):
         mProblemSize( problemSize ),
-        mNrConstraints( constraints.size() )
+        mNrConstraints( constraints.size() ),
+			mConstraints(constraints)
     {
-        createCostMatrix( problemSize );
-        createConstraintMatrices( constraints );
         mb = (double*)malloc( (mNrConstraints + 1) * sizeof(double) );
         if( mb == NULL )
         {
@@ -110,7 +102,6 @@ namespace smtrat
             mb[i] = 0.0;
         }
 
-        assert( mpConstraints != NULL );
         assert( mb != NULL );
     }
 
@@ -131,25 +122,33 @@ namespace smtrat
         //mC = testCostMatrix();
         //mpConstraints = testConstraintMatrix();
 
+		
+        createCostMatrix( mProblemSize - mHideSet.size());
+		createConstraintMatrices( mConstraints );
+        
         //write_prob("call",mProblemSize,mNrConstraints,mC,mb,mpConstraints);
+		
         print_debug( "Initializing CSDP:", CSDPFacadeDBGLVL );
 
-        initsoln( (int)mProblemSize, (int)mNrConstraints, mC, mb, mpConstraints, &X, &y, &Z );
+        initsoln( (int)mProblemSize-mHideSet.size(), (int)mNrConstraints, mC, mb, mpConstraints, &X, &y, &Z );
 
         print_debug( "Run CSDP:", CSDPFacadeDBGLVL );
-        int returnvalue = easy_sdp( (int)mProblemSize, (int)mNrConstraints, mC, mb, mpConstraints, (double)constOffset, &X, &y, &Z, &pobj, &dobj );
-        if( returnvalue == 0 )
-            solution = createSparseMatrix( X );
+        int returnvalue = easy_sdp( (int)mProblemSize-mHideSet.size(), (int)mNrConstraints, mC, mb, mpConstraints, (double)constOffset, &X, &y, &Z, &pobj, &dobj );
+        if( returnvalue == 0 ) {
+			solution = createSparseMatrix( X );
+			
+		}
 
-        //write_sol("sol", (int)mProblemSize, (int)mNrConstraints, X, y, Z );
+       // write_sol("sol", (int)mProblemSize-mHideSet.size(), (int)mNrConstraints, X, y, Z );
 
-        free_prob( (int)mProblemSize, int(mNrConstraints), mC, mb, mpConstraints, X, y, Z );
+        free_prob( (int)mProblemSize-mHideSet.size(), int(mNrConstraints), mC, mb, mpConstraints, X, y, Z );
 
         return returnvalue;
     }
 
     void CSDPFacade::createCostMatrix( int size )
     {
+		
         mC = blockmatrix();
         free( mC.blocks );
         mC.nblocks = 1;
@@ -249,11 +248,10 @@ namespace smtrat
             }
             ;
             blockptr->blocknum      = 1;
-            blockptr->blocksize     = it->getNrRows();
+            blockptr->blocksize     = mProblemSize - mHideSet.size();
             blockptr->constraintnum = constraintNum;
             blockptr->next          = NULL;
             blockptr->nextbyblock   = NULL;
-            blockptr->numentries    = it->getNrOfNonZeroEntries();
 
             int numEntries = it->getNrOfNonZeroEntries();
 
@@ -267,26 +265,26 @@ namespace smtrat
                 exit( 1 );
             }
 
-            blockptr->numentries                = it->getCSDPFormatEntries( blockptr->iindices, blockptr->jindices, blockptr->entries );
+            blockptr->numentries                = it->getCSDPFormatEntries( blockptr->iindices, blockptr->jindices, blockptr->entries, mHideSet );
             mpConstraints[constraintNum].blocks = blockptr;
             ++constraintNum;
         }
-        //      for (int counter = 1; counter <= constraints.size(); counter++) {
-        //      sparseblock *p = mpConstraints[counter].blocks;
-        //      printf
-        //          ("\n ConstraintNr: %d, blocknum: %d, constraintnum: %d, blocksize: %d\n",
-        //           counter, p->blocknum, p->constraintnum, p->blocksize);
-        //      std::cout << "num entries " << p->numentries << std::endl;
-        //          for (int c = 1; c <= p->numentries; ++c) {
-        //              std::cout << "(" << p->iindices[c] << "," << p->jindices[c] << "): " << p->entries[c] << std::endl;
-        //          }
-        //      }
+//              for (int counter = 1; counter <= constraints.size(); counter++) {
+//              sparseblock *p = mpConstraints[counter].blocks;
+//              printf
+//                  ("\n ConstraintNr: %d, blocknum: %d, constraintnum: %d, blocksize: %d\n",
+//                   counter, p->blocknum, p->constraintnum, p->blocksize);
+//              std::cout << "num entries " << p->numentries << std::endl;
+//                  for (int c = 1; c <= p->numentries; ++c) {
+//                      std::cout << "(" << p->iindices[c] << "," << p->jindices[c] << "): " << p->entries[c] << std::endl;
+//                  }
+//              }
     }
 
     std::unique_ptr<std::vector<double> > CSDPFacade::createSparseMatrix( const blockmatrix& in ) const
     {
         //unique_ptr<SparseMatrix> result(new SparseMatrix(mProblemSize, mProblemSize));
-        std::unique_ptr<std::vector<double> > result( new std::vector<double>( mProblemSize * mProblemSize, 0.0 ) );
+        std::unique_ptr<std::vector<double> > result( new std::vector<double>( (mProblemSize - mHideSet.size()) * (mProblemSize - mHideSet.size()), 0.0 ) );
         unsigned                              offset = 0;
         for( int blockNum = 1; blockNum <= in.nblocks; ++blockNum )
         {

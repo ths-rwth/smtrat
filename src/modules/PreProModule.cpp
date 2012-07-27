@@ -775,7 +775,8 @@ namespace smtrat
                 std::set<const Constraint*> mUniqueConstraintsB = std::set<const Constraint*>();
                 for( unsigned posConsB = 0; posConsB < mConstraints.size(); ++posConsB )
                 {
-                    if( mUniqueConstraintsB.find( mConstraints.at( posConsB ) ) == mUniqueConstraintsB.end() )
+                    if( mUniqueConstraintsB.find( mConstraints.at( posConsB ) ) == mUniqueConstraintsB.end() 
+                            && mConstraints.at( posConsB )->lhs() != 0 && mConstraints.at( posConsA )->lhs() != 0 )
                     {
                         const Constraint* tempConstraintB = mConstraints.at( posConsB );
                         // Create Origins
