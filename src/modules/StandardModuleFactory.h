@@ -34,7 +34,7 @@
 
 namespace smtrat
 {
-    template<class Module>
+    template<typename Module>
     class StandardModuleFactory:
         public ModuleFactory
     {

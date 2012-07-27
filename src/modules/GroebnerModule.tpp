@@ -775,7 +775,7 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
     bool reductionOccured = false;
     if( !p.isZero( ) && !p.isConstant( ) )
     {
-        GiNaCRA::BaseReductor<Settings::Order> reductor( gb, p );
+        GiNaCRA::BaseReductor<typename Settings::Order> reductor( gb, p );
         reduced = reductor.fullReduce( );
         reductionOccured = reductor.reductionOccured( );
     }
