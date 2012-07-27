@@ -32,14 +32,16 @@ namespace lraone
             Value( const Value& orig );
             virtual ~Value();
 
-            Value operator +( Value& ) const;
-            Value operator -( Value& ) const;
-            Value operator *( GiNaC::numeric& ) const;
-            Value operator /( GiNaC::numeric& ) const;
+            Value operator +( const Value& ) const;
+            Value operator -( const Value& ) const;
+            Value operator *( const GiNaC::numeric& ) const;
+            Value operator /( const GiNaC::numeric& ) const;
             bool operator <( const Value& ) const;
             bool operator >( const Value& ) const;
             bool operator <=( const Value& ) const;
             bool operator ==( const Value& ) const;
+
+            const std::string toString() const;
 
             void setmainP( int _num, int _denom )
             {
@@ -67,8 +69,8 @@ namespace lraone
                 return GiNaC::numeric( mDeltaPart );
             }
 
-            std::string toString() const;
             void print( std::ostream& = std::cout ) const;
+//            friend std::ostream& operator <<( std::ostream&, const Value& );
     };
 }    // end namspace lra
 #endif   /* _VALUE_H */

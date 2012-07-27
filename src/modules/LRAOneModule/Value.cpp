@@ -5,8 +5,11 @@
  * Created on April 30, 2012, 5:59 PM
  */
 
+#include <sstream>
+
 #include "Value.h"
 #include "assert.h"
+#include "Bound.h"
 
 using namespace std;
 
@@ -22,28 +25,28 @@ namespace lraone
         mDeltaPart( 0 )
     {
         assert( _num.is_rational() );
-        this->mDeltaPart = 0;    // if we have one argument, delta part is 0
-        this->mMainPart  = _num;
+        mDeltaPart = 0;    // if we have one argument, delta part is 0
+        mMainPart  = _num;
     }
 
     Value::Value( GiNaC::numeric _num1, GiNaC::numeric _num2 )
     {
         assert( _num1.is_rational() );
         assert( _num2.is_rational() );
-        this->mDeltaPart = _num2;
-        this->mMainPart  = _num1;
+        mDeltaPart = _num2;
+        mMainPart  = _num1;
     }
 
     Value::Value( int _mainPnum, int _mainPdenom, int _deltaPnum, int _deltaPdenom )
     {
-        this->mMainPart  = GiNaC::numeric( _mainPnum ) / _mainPdenom;
-        this->mDeltaPart = GiNaC::numeric( _deltaPnum ) / _deltaPdenom;
+        mMainPart  = GiNaC::numeric( _mainPnum ) / _mainPdenom;
+        mDeltaPart = GiNaC::numeric( _deltaPnum ) / _deltaPdenom;
     }
 
     Value::Value( const Value& orig )
     {
-        this->mMainPart  = GiNaC::numeric( orig.getmainP() );
-        this->mDeltaPart = GiNaC::numeric( orig.getdeltaP() );
+        mMainPart  = GiNaC::numeric( orig.getmainP() );
+        mDeltaPart = GiNaC::numeric( orig.getdeltaP() );
     }
 
     Value::~Value(){}
@@ -53,10 +56,10 @@ namespace lraone
      * @param val
      * @return
      */
-    Value Value::operator +( Value& val ) const
+    Value Value::operator +( const Value& val ) const
     {
-        GiNaC::numeric num1 = this->mMainPart + val.getmainP();
-        GiNaC::numeric num2 = this->mDeltaPart + val.getdeltaP();
+        GiNaC::numeric num1 = mMainPart + val.getmainP();
+        GiNaC::numeric num2 = mDeltaPart + val.getdeltaP();
         return Value( num1, num2 );
     }
 
@@ -65,10 +68,10 @@ namespace lraone
      * @param val
      * @return
      */
-    Value Value::operator -( Value& val ) const
+    Value Value::operator -( const Value& val ) const
     {
-        GiNaC::numeric num1 = this->mMainPart - val.getmainP();
-        GiNaC::numeric num2 = this->mDeltaPart - val.getdeltaP();
+        GiNaC::numeric num1 = mMainPart - val.getmainP();
+        GiNaC::numeric num2 = mDeltaPart - val.getdeltaP();
         return Value( num1, num2 );
     }
 
@@ -77,10 +80,10 @@ namespace lraone
      * @param a
      * @return
      */
-    Value Value::operator *( GiNaC::numeric& a ) const
+    Value Value::operator *( const GiNaC::numeric& a ) const
     {
-        GiNaC::numeric num1 = a * this->mMainPart;
-        GiNaC::numeric num2 = a * this->mDeltaPart;
+        GiNaC::numeric num1 = a * mMainPart;
+        GiNaC::numeric num2 = a * mDeltaPart;
         return Value( num1, num2 );
     }
 
@@ -89,10 +92,10 @@ namespace lraone
      * @param a
      * @return
      */
-    Value Value::operator /( GiNaC::numeric& a ) const
+    Value Value::operator /( const GiNaC::numeric& a ) const
     {
-        GiNaC::numeric num1 = GiNaC::numeric( this->mMainPart ) / a;
-        GiNaC::numeric num2 = GiNaC::numeric( this->mDeltaPart ) / a;
+        GiNaC::numeric num1 = GiNaC::numeric( mMainPart ) / a;
+        GiNaC::numeric num2 = GiNaC::numeric( mDeltaPart ) / a;
         return Value( num1, num2 );
     }
 
@@ -146,7 +149,7 @@ namespace lraone
     bool Value::operator <=( const Value& val ) const
     {
         bool b = false;
-        if( (this->mMainPart < val.getmainP()) || (this->mMainPart == val.getmainP() && this->mDeltaPart <= val.getdeltaP()) )
+        if( (mMainPart < val.getmainP()) || (mMainPart == val.getmainP() && mDeltaPart <= val.getdeltaP()) )
             b = true;
         return b;
     }
@@ -159,10 +162,34 @@ namespace lraone
     bool Value::operator ==( const Value& val ) const
     {
         bool b = false;
-        if( (this->mMainPart == val.getmainP()) && (this->mDeltaPart == val.getdeltaP()) )
+        if( (mMainPart == val.getmainP()) && (mDeltaPart == val.getdeltaP()) )
             b = true;
         return b;
     }
+
+    /**
+     *
+     * @return
+     */
+    const string Value::toString() const
+    {
+        stringstream out;
+        out << mMainPart << "+d*" << mDeltaPart;
+        return out.str();
+    }
+
+    /**
+     *
+     * @param _ostream
+     * @param _value
+     * @return
+     */
+//    ostream& operator <<( ostream& _ostream, const Value& _value )
+//    {
+//        _value.print( _ostream );
+//        return _ostream;
+//    }
+
 
     /**
      *
@@ -170,8 +197,8 @@ namespace lraone
      */
     void Value::print( ostream& _out ) const
     {
-        _out << "( " << this->mMainPart;
-        _out << " + d * " << this->mDeltaPart << " )";
+        _out << "( " << mMainPart;
+        _out << " + d * " << mDeltaPart << " )";
     }
 }    // end namspace lra
 

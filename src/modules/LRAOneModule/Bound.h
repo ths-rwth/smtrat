@@ -36,7 +36,9 @@ namespace lraone
             bool operator <( const Value& ) const;
             bool operator <( const Bound& ) const;
             bool operator >( const Bound& ) const;
-            void print( std::ostream& = std::cout ) const;
+            const std::string toString() const;
+            friend std::ostream& operator <<( std::ostream&, const Bound& );
+            void print( std::ostream& = std::cout, bool = false ) const;
 
             Value& limit() const
             {
@@ -58,7 +60,7 @@ namespace lraone
                 return mVar;
             }
 
-            bool getIsUpper() const
+            bool isUpper() const
             {
                 return mIsUpper;
             }

@@ -30,6 +30,8 @@
 #include "LRAOneModule.h"
 #include <iostream>
 
+#define DEBUG_LRA_MODULE
+
 using namespace std;
 using namespace lraone;
 using namespace GiNaC;
@@ -43,7 +45,8 @@ namespace smtrat
         Module( _tsManager, _formula ),
         mTableau(),
         mAllVars(),
-        mAllConstraints(),
+        mLinearConstraints(),
+        mNonlinearConstraints(),
         mInitialized( false ),
         mRowMaximum( 0 ),
         mColumnMaximum( 0 ),
@@ -53,13 +56,21 @@ namespace smtrat
         mConstraintToFormula(),
         mConstraintToBound()
     {
-        this->mModuleType = MT_LRAOneModule;
+        mModuleType = MT_LRAOneModule;
     }
 
     /**
      * Destructor:
      */
-    LRAOneModule::~LRAOneModule(){}
+    LRAOneModule::~LRAOneModule()
+    {
+        while( !mExistingVars.empty() )
+        {
+            const ex* exToDelete = mExistingVars.begin()->first;
+            mExistingVars.erase( mExistingVars.begin() );
+            delete exToDelete;
+        }
+    }
 
     /**
      * Methods:
@@ -72,10 +83,12 @@ namespace smtrat
      */
     bool LRAOneModule::inform( const Constraint* const _constraint )
     {
+        #ifdef DEBUG_LRA_MODULE
         cout << "inform about " << *_constraint << endl;
+        #endif
         if( _constraint->isConsistent() == 2 )
         {
-            mAllConstraints.push_back( _constraint );
+            mLinearConstraints.insert( _constraint );
         }
         return true;
     }
@@ -88,7 +101,9 @@ namespace smtrat
     bool LRAOneModule::assertSubformula( Formula::const_iterator _subformula )
     {
         assert( (*_subformula)->getType() == REALCONSTRAINT );
+        #ifdef DEBUG_LRA_MODULE
         cout << "assert " << (*_subformula)->constraint() << endl;
+        #endif
         Module::assertSubformula( _subformula );
         if( !mInitialized )
         {
@@ -99,20 +114,76 @@ namespace smtrat
         int               consistency = constraint->isConsistent();
         if( consistency == 2 )
         {
-            pair<const Constraint*, const Formula* const > cFpair = pair<const Constraint*, const Formula* const >( constraint, *_subformula );
-            mConstraintToFormula.insert( cFpair );
-            ConstraintBoundMap::iterator iter = mConstraintToBound.find( constraint );
-
-            assert( iter != mConstraintToBound.end() );
-
-            vector<const Bound*> boundL = (*iter).second;
-
-            //iterate through boundvector, nescassary for equal
-            for( vector<const Bound*>::const_iterator bIter = boundL.begin(); bIter != boundL.end(); ++bIter )
+            if( constraint->isLinear() )
             {
-                activateBound( *(*bIter)->pVariable(), *bIter );
+                pair<const Constraint*, const Formula* const > cFpair = pair<const Constraint*, const Formula* const >( constraint, *_subformula );
+                mConstraintToFormula.insert( cFpair );
+                ConstraintBoundMap::iterator iter = mConstraintToBound.find( constraint );
+
+                assert( iter != mConstraintToBound.end() );
+
+                vector<const Bound*> boundL = (*iter).second;
+
+                //iterate through boundvector, nescassary for equal
+                for( vector<const Bound*>::const_iterator bIter = boundL.begin(); bIter != boundL.end(); ++bIter )
+                {
+                    if( !activateBound( *(*bIter)->pVariable(), *bIter ) )
+                    {
+                        // Bound creates directly a conflict
+                        const Variable* var = (*bIter)->pVariable();
+                        if( (*bIter)->isUpper() )
+                        {
+                            BoundActivityMap::const_iterator bound = var->lowerbounds().begin(); //TODO: Start with the infimum. This needs that it is stored as iterator.
+                            while( bound != var->lowerbounds().end() )
+                            {
+                                if( *(bound->first) > **bIter )
+                                {
+                                    if( bound->second > 0 )
+                                    {
+                                        set<const Formula*> infsubset = set<const Formula*>();
+                                        infsubset.insert( *_subformula );
+                                        infsubset.insert( getSubformula( bound->first ) );
+                                        mInfeasibleSubsets.push_back( infsubset );
+                                    }
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                                ++bound;
+                            }
+                        }
+                        else
+                        {
+                            BoundActivityMap::const_iterator bound = var->upperbounds().begin(); //TODO: Start with the supremum. This needs that it is stored as iterator.
+                            while( bound != var->upperbounds().end() )
+                            {
+                                if( *(bound->first) < **bIter )
+                                {
+                                    if( bound->second > 0 )
+                                    {
+                                        set<const Formula*> infsubset = set<const Formula*>();
+                                        infsubset.insert( *_subformula );
+                                        infsubset.insert( getSubformula( bound->first ) );
+                                        mInfeasibleSubsets.push_back( infsubset );
+                                    }
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                                ++bound;
+                            }
+                        }
+                    }
+                }
+                return mInfeasibleSubsets.empty() || !mNonlinearConstraints.empty();
             }
-            return true;
+            else
+            {
+                mNonlinearConstraints.insert( constraint );
+                return true;
+            }
         }
         else
         {
@@ -122,85 +193,131 @@ namespace smtrat
 
     /**
      *
+     * @param _subformula
+     */
+    void LRAOneModule::removeSubformula( Formula::const_iterator _subformula )
+    {
+        #ifdef DEBUG_LRA_MODULE
+        cout << "remove " << (*_subformula)->constraint() << endl;
+        #endif
+
+        // Remove the mapping of the constraint to the sub-formula in the received formula
+        const Constraint* constraint = (*_subformula)->pConstraint();
+        mConstraintToFormula.erase( constraint );
+        // Deactivate the bounds regarding the given constraint
+        ConstraintBoundMap::iterator iter = mConstraintToBound.find( constraint );
+        assert( iter != mConstraintToBound.end() );
+        vector<const Bound*> boundL = (*iter).second;
+        for( vector<const Bound*>::const_iterator bIter = boundL.begin(); bIter != boundL.end(); ++bIter )
+        {
+            (*bIter)->pVariable()->deactivateBound( *bIter );
+        }
+        Module::removeSubformula( _subformula );
+    }
+
+    /**
+     *
      * @return
      */
     Answer LRAOneModule::isConsistent()
     {
+        #ifdef DEBUG_LRA_MODULE
         cout << "check for consistency" << endl;
+        #endif
+        if( !mInfeasibleSubsets.empty() ) return False;
         while( true )
         {
+            #ifdef DEBUG_LRA_MODULE
+            cout << endl;
+            printVariables();
+            cout << endl;
             printTableau();
+            cout << endl;
+            #endif
+            // Search for a basic variable which violates its bound
             Variable * basicVar;
-            bool         upperBoundViolated = false;
-            bool         lowerBoundViolated = false;
-            const Bound* violatedBound;
-            for( vector<Variable*>::const_iterator basicIt = mAllVars.begin(); basicIt != mAllVars.end(); ++basicIt )
+            const Bound* violatedBound = NULL;
+            vector<Variable*>::const_iterator basicIt = mAllVars.begin();
+            while( basicIt != mAllVars.end() )
             {
                 if( (**basicIt).getBasic() )
                 {
-                    if( *(**basicIt).getSupremum() < (**basicIt).rAssignment() )
+                    if( *(**basicIt).pSupremum() < (**basicIt).rAssignment() )
                     {
-                        upperBoundViolated = true;
                         basicVar           = *basicIt;
-                        violatedBound      = (**basicIt).getSupremum();
+                        violatedBound      = (**basicIt).pSupremum();
                         break;
                     }
-                    else if( *(**basicIt).getInfimum() > (**basicIt).rAssignment() )
+                    else if( *(**basicIt).pInfimum() > (**basicIt).rAssignment() )
                     {
-                        lowerBoundViolated = true;
                         basicVar           = *basicIt;
-                        violatedBound      = (**basicIt).getInfimum();
+                        violatedBound      = (**basicIt).pInfimum();
                         break;
                     }
                 }
+                ++basicIt;
             }
-            if( !(upperBoundViolated || lowerBoundViolated) )
+            // Found a solution
+            if( violatedBound == NULL )
             {
-                Module::print();
-                return True;    // SAT
+                #ifdef DEBUG_LRA_MODULE
+                cout << "True" << endl;
+                #endif
+                return (checkAssignmentForNonlinearConstraint() ? True : Unknown );
             }
-            assert( !(upperBoundViolated && lowerBoundViolated) );
 
-            unsigned i = basicVar->rPosition();
-
-            if( !isInConflict( i, upperBoundViolated ) )
+            unsigned i = basicVar->position();
+            if( !isInConflict( i, violatedBound->isUpper() ) )
             {
                 pivotAndUpdate( basicVar, mPivotNonBasicVar, *violatedBound, mPivotCoeff );
             }
             else
             {
-                //TODO: return infeasible subset
-                //iterate through every row
-                mInfeasibleSubsets.clear();
-                for( vector<Variable*>::const_iterator basicIt = mAllVars.begin(); basicIt != mAllVars.end(); ++basicIt )
+                while( basicIt != mAllVars.end() )
                 {
                     if( (**basicIt).getBasic() )
                     {
-                        lowerBoundViolated = false;
-                        upperBoundViolated = false;
-                        if( *(**basicIt).getSupremum() < (**basicIt).rAssignment() )
+                        violatedBound = NULL;
+                        if( *(**basicIt).pSupremum() < (**basicIt).rAssignment() )
                         {
-                            upperBoundViolated = true;
+                            violatedBound = (**basicIt).pSupremum();
                         }
-                        else if( *(**basicIt).getInfimum() > (**basicIt).rAssignment() )
+                        else if( *(**basicIt).pInfimum() > (**basicIt).rAssignment() )
                         {
-                            lowerBoundViolated = true;
+                            violatedBound = (**basicIt).pInfimum();
                         }
-                        if( lowerBoundViolated || upperBoundViolated )
+                        if( violatedBound != NULL )
                         {
-                            if( isInConflict( (**basicIt).rPosition(), upperBoundViolated ) )
+                            bool upperBoundViolated = violatedBound->isUpper();
+                            if( isInConflict( (**basicIt).position(), upperBoundViolated ) )
                             {
-                                getConflicts( (**basicIt).rPosition(), upperBoundViolated );
+                                getConflicts( **basicIt, upperBoundViolated );
                             }
                         }
                     }
                 }
-                Module::print();
+                #ifdef DEBUG_LRA_MODULE
+                cout << "False" << endl;
+                #endif
                 return False;
             }
         }
         assert( false );
         return True;
+    }
+
+    bool LRAOneModule::checkAssignmentForNonlinearConstraint() const
+    {
+        if( mNonlinearConstraints.empty() )
+        {
+            return true;
+        }
+        else
+        {
+            // TODO: check whether the found satisfying assignment is by coincidence a
+            // satisfying assignment of the non linear constraints
+            return false;
+        }
     }
 
     /**
@@ -213,37 +330,64 @@ namespace smtrat
     void LRAOneModule::pivotAndUpdate( Variable* basicVar, Variable* nonBasicVar, const Bound& bound, numeric& coeff )
     {
         assert( !bound.isInfinite() );
-        Value test       = bound.limit();
-        Value theta      = (test - basicVar->rAssignment()) / coeff;
-        Value assignment = bound.limit();
-        basicVar->wAssignment( assignment );
-        assignment = nonBasicVar->rAssignment() + theta;
-        nonBasicVar->wAssignment( assignment );
-        unsigned i;
-        unsigned j = nonBasicVar->rPosition();
-        Position tableauIndex;
+        cout << "pivotAndUpdate" << endl;
+        basicVar->print();
+        nonBasicVar->print();
+        bound.print( cout, true );
+        cout << endl << "coeff = ";
+        coeff.print( cout );
+        cout << endl;
+        Value theta = (bound.limit() - basicVar->rAssignment()) / coeff;
+        cout << "theta = ";
+        theta.print( cout );
+        cout << endl;
+        // Update the assignment of the basic variable to pivot
+        cout << "beta(basicvar) = ";
+        basicVar->rAssignment().print( cout );
+        cout << endl;
+        basicVar->wAssignment( bound.limit() );
+        cout << "beta(basicvar) = ";
+        basicVar->rAssignment().print( cout );
+        cout << endl;
+        // Update the assignment of the non basic variable to pivot
+        cout << "beta(nonBasicVar) = ";
+        nonBasicVar->rAssignment().print( cout );
+        cout << endl;
+        nonBasicVar->wAssignment( nonBasicVar->rAssignment() + theta );
+        cout << "beta(nonBasicVar) = ";
+        nonBasicVar->rAssignment().print( cout );
+        cout << endl;
+        // Update the assignments of all basic variables.
+        cout << "Now the other basic variables:" << endl;
+        unsigned columnNumber = nonBasicVar->position();
         for( vector<Variable*>::const_iterator basicIt = mAllVars.begin(); basicIt != mAllVars.end(); ++basicIt )
         {
             if( (**basicIt).getBasic() && (*basicIt) != basicVar )
             {
-                //comparing pointers could be troublesome
-                i            = (*basicIt)->rPosition();
-                tableauIndex = Position( i, j );
-                Tableau::iterator it = mTableau.find( tableauIndex );
+                Tableau::iterator it = mTableau.find( Position( (*basicIt)->position(), columnNumber ) );
                 if( !(it == mTableau.end()) )
                 {
-                    numeric coeffic = mTableau.at( tableauIndex );
-                    Value rest      = theta * coeffic;
-                    assignment      = (*basicIt)->rAssignment() + rest;
-                    (*basicIt)->wAssignment( assignment );
+                    cout << "beta(basicvar) = ";
+                    (*basicIt)->rAssignment().print( cout );
+                    cout << endl;
+                    (*basicIt)->wAssignment( (*basicIt)->rAssignment() + Value( theta * it->second ) );
+                    cout << "beta(basicvar) = ";
+                    (*basicIt)->rAssignment().print( cout );
+                    cout << endl;
                 }
             }
         }
-        unsigned column = nonBasicVar->rPosition();
-        nonBasicVar->wPosition( basicVar->rPosition() );
+        // Pivot the given basic and non basic variable
+        unsigned column = nonBasicVar->position();
+        nonBasicVar->wPosition( basicVar->position() );
         nonBasicVar->setBasic( true );
         basicVar->wPosition( column );
         basicVar->setBasic( false );
+        //TODO: update the tableau
+        // 1.) Divide all entries of the row at basicVar->position() by coeff
+        // 2.) Update all the other rows i having (i,nonBasicVar->position()) non zero:
+        //     2.1) the entry is   1/coeff      , if i=nonBasicVar->position()
+        //     2.2) subtract       entry/coeff  , otherwise
     }
 
     /**
@@ -260,7 +404,7 @@ namespace smtrat
         {
             if( !(**nonBasicIt).getBasic() )
             {
-                j = (*nonBasicIt)->rPosition();
+                j = (*nonBasicIt)->position();
                 // TODO: maybe try map from coefficients to variable
                 tableauIndex = Position( i, j );
                 // Problem: coefficient could be zero and thus non existent
@@ -270,8 +414,8 @@ namespace smtrat
                 {
                     if( isUpperBoundViolated )
                     {
-                        if( (*(**nonBasicIt).getSupremum() > (**nonBasicIt).rAssignment() && it->second < 0)
-                                || (*(**nonBasicIt).getInfimum() < (**nonBasicIt).rAssignment() && it->second > 0) )
+                        if( (*(**nonBasicIt).pSupremum() > (**nonBasicIt).rAssignment() && it->second < 0)
+                                || (*(**nonBasicIt).pInfimum() < (**nonBasicIt).rAssignment() && it->second > 0) )
                         {
                             //nonbasic variable can be increased
                             mPivotNonBasicVar = *nonBasicIt;
@@ -281,8 +425,8 @@ namespace smtrat
                     }
                     else
                     {
-                        if( (*(**nonBasicIt).getSupremum() > (**nonBasicIt).rAssignment() && it->second > 0)
-                                || (*(**nonBasicIt).getInfimum() < (**nonBasicIt).rAssignment() && it->second < 0) )
+                        if( (*(**nonBasicIt).pSupremum() > (**nonBasicIt).rAssignment() && it->second > 0)
+                                || (*(**nonBasicIt).pInfimum() < (**nonBasicIt).rAssignment() && it->second < 0) )
                         {
                             //nonbasic variable can be increased
                             mPivotNonBasicVar = *nonBasicIt;
@@ -302,48 +446,59 @@ namespace smtrat
      * @param i
      * @param isUpperBoundViolated
      */
-    void LRAOneModule::getConflicts( unsigned i, bool isUpperBoundViolated )
+    void LRAOneModule::getConflicts( const Variable& _variable, bool isUpperBoundViolated )
     {
         unsigned            j;
-        const Constraint*   constraint;
         set<const Formula*> infeasibleSubset = set<const Formula*>();
+        // Add the constraint of the variable to the infeasible subset
+        if( isUpperBoundViolated )
+        {
+            infeasibleSubset.insert( getSubformula( _variable.pSupremum() ) );
+        }
+        else
+        {
+            infeasibleSubset.insert( getSubformula( _variable.pInfimum() ) );
+        }
         Position            tableauIndex;
         for( vector<Variable*>::const_iterator nonBasicIt = mAllVars.begin(); nonBasicIt != mAllVars.end(); ++nonBasicIt )
         {
             if( !(**nonBasicIt).getBasic() )
             {
-                j            = (*nonBasicIt)->rPosition();
-                tableauIndex = Position( i, j );
+                j            = (*nonBasicIt)->position();
+                tableauIndex = Position( _variable.position(), j );
                 Tableau::iterator it = mTableau.find( tableauIndex );
                 if( !(it == mTableau.end()) )
                 {
                     //coeff != 0, variable occurs
                     if( (isUpperBoundViolated && it->second < 0) || (!isUpperBoundViolated && it->second > 0) )
                     {
-                        const Bound*                                                  b  = (**nonBasicIt).getSupremum();
-                        BoundConstraintMap::iterator it = mBoundToConstraint.find( b );
-                        assert( it != mBoundToConstraint.end() );
-                        constraint = (*it).second;
-                        ConstraintFormulaMap::iterator consToForm = mConstraintToFormula.find( constraint );
-                        assert( consToForm != mConstraintToFormula.end() );
-                        infeasibleSubset.insert( consToForm->second );
+                        infeasibleSubset.insert( getSubformula( (**nonBasicIt).pSupremum() ) );
                     }
                     else
                     {
                         assert( (isUpperBoundViolated && it->second > 0) || (!isUpperBoundViolated && it->second < 0) );
-                        const Bound*                                                  b  = (**nonBasicIt).getInfimum();
-                        BoundConstraintMap::iterator it = mBoundToConstraint.find( b );
-                        assert( it != mBoundToConstraint.end() );
-                        constraint = (*it).second;
-                        ConstraintFormulaMap::iterator consToForm = mConstraintToFormula.find( constraint );
-                        assert( consToForm != mConstraintToFormula.end() );
-                        infeasibleSubset.insert( consToForm->second );
+                        infeasibleSubset.insert( getSubformula( (**nonBasicIt).pInfimum() ) );
                     }
 
                 }
             }
         }
         Module::mInfeasibleSubsets.push_back( infeasibleSubset );
+    }
+
+    /**
+     *
+     * @param _bound
+     * @return
+     */
+    const Formula* LRAOneModule::getSubformula( const lraone::Bound* _bound ) const
+    {
+        BoundConstraintMap::const_iterator it = mBoundToConstraint.find( _bound );
+        assert( it != mBoundToConstraint.end() );
+        const Constraint* constraint = (*it).second;
+        ConstraintFormulaMap::const_iterator consToForm = mConstraintToFormula.find( constraint );
+        assert( consToForm != mConstraintToFormula.end() );
+        return consToForm->second;
     }
 
     /**
@@ -356,7 +511,7 @@ namespace smtrat
     {
         for( vector<Variable*>::const_iterator varIt = mAllVars.begin(); varIt != mAllVars.end(); ++varIt )
         {
-            if( (**varIt).getBasic() == isBasic && (**varIt).rPosition() == position )
+            if( (**varIt).getBasic() == isBasic && (*varIt)->position() == position )
             {
                 return *varIt;
             }
@@ -367,30 +522,11 @@ namespace smtrat
 
     /**
      *
-     * @param _subformula
-     */
-    void LRAOneModule::removeSubformula( Formula::const_iterator _subformula )
-    {
-        //TODO:deactivate Flag for activation
-        //and reset the lowest upper bound, and the highest lower bound
-        const Constraint* constraint = (*_subformula)->pConstraint();
-        mConstraintToFormula.erase( constraint );
-        ConstraintBoundMap::iterator iter = mConstraintToBound.find( constraint );
-        assert( iter != mConstraintToBound.end() );
-        vector<const Bound*> boundL = (*iter).second;
-        for( vector<const Bound*>::const_iterator bIter = boundL.begin(); bIter != boundL.end(); ++bIter )
-        {
-            (*bIter)->pVariable()->deactivateBound( *bIter );
-        }
-        Module::removeSubformula( _subformula );
-    }
-
-    /**
-     *
      */
     void LRAOneModule::initialize()
     {
-        for( vector<const Constraint*>::const_iterator iter = mAllConstraints.begin(); iter != mAllConstraints.end(); ++iter )
+        for( set<const Constraint*, constraintPointerComp>::const_iterator iter = mLinearConstraints.begin();
+             iter != mLinearConstraints.end(); ++iter )
         {
             map<const string, numeric, strCmp> coeffs = (**iter).linearAndConstantCoefficients();
             assert( coeffs.size() > 1 );
@@ -400,6 +536,7 @@ namespace smtrat
 
             //divide the linear Part and constraint by the highest coefficient
             numeric highestCoeff = currentCoeff->second;
+            --currentCoeff;
             while( currentCoeff != coeffs.end() )
             {
                 currentCoeff->second = currentCoeff->second / highestCoeff;
@@ -416,7 +553,7 @@ namespace smtrat
                     //constraint not found, add new nonbasic variable
                     if( basicIter == mExistingVars.end() )
                     {
-                        Variable* nonBasic = new Variable( 1, mColumnMaximum, false );
+                        Variable* nonBasic = new Variable( 1, mColumnMaximum, false, var );
                         mExistingVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
                         mAllVars.push_back( nonBasic );
                         mColumnMaximum++;
@@ -436,7 +573,7 @@ namespace smtrat
                 ExVariableMap::iterator slackIter = mExistingVars.find( linearPart );
                 if( slackIter == mExistingVars.end() )
                 {
-                    Variable* slackVar = new Variable( 1, mRowMaximum, true );
+                    Variable* slackVar = new Variable( 1, mRowMaximum, true, linearPart );
                     //See if variable already exists
                     symtab::const_iterator                       varIt   = (**iter).variables().begin();
                     map<const string, numeric, strCmp>::iterator coeffIt = coeffs.begin();
@@ -448,10 +585,10 @@ namespace smtrat
                         ExVariableMap::iterator nonBasicIter = mExistingVars.find( var );
                         if( mExistingVars.end() == nonBasicIter )
                         {
-                            Variable* nonBasic = new Variable( 1, mColumnMaximum, false );
+                            Variable* nonBasic = new Variable( 1, mColumnMaximum, false, var );
                             mExistingVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
                             mColumnMaximum++;
-                            Position p1 = Position( mRowMaximum, nonBasic->rPosition() );
+                            Position p1 = Position( mRowMaximum, nonBasic->position() );
                             pair<Position, numeric> p2 = pair<Position, numeric>( p1, coeffIt->second );
                             mTableau.insert( p2 );
                             mAllVars.push_back( nonBasic );
@@ -460,7 +597,7 @@ namespace smtrat
                         {
                             delete var;
                             Variable* nonBasic = (*nonBasicIter).second;
-                            Position p1 = Position( mRowMaximum, nonBasic->rPosition() );
+                            Position p1 = Position( mRowMaximum, nonBasic->position() );
                             pair<Position, numeric> p2 = pair<Position, numeric>( p1, coeffIt->second );
                             mTableau.insert( p2 );
                         }
@@ -490,6 +627,8 @@ namespace smtrat
      */
     void LRAOneModule::initPriority()
     {
+        // TODO: Sort the vector according to a variable order heuristic and set the priorities of the variables
+        // or maybe there is no need of the priorities of the variables anymore
         unsigned prior = 0;
         for( vector<Variable*>::const_iterator varIt = mAllVars.begin(); varIt != mAllVars.end(); ++varIt )
         {
@@ -502,64 +641,74 @@ namespace smtrat
      *
      * @param _var
      * @param bound
+     * @return
      */
-    void LRAOneModule::activateBound( Variable& _var, const Bound* bound )
+    bool LRAOneModule::activateBound( Variable& _var, const Bound* bound )
     {
-        assert( _var.getSupremum() != NULL );
-        bool isUpper = (*bound).getIsUpper();
+        assert( _var.pSupremum() != NULL );
+        bool isUpper = bound->isUpper();
         _var.setActive( bound, true );
         //isAnUpperBound
         if( isUpper )
         {
+            if( *_var.pInfimum() > *bound )
+            {
+                return false;
+            }
             //current smallest upper bound
-            if( *_var.getSupremum() > *bound )
+            if( *_var.pSupremum() > *bound )
             {
                 //change the position of the smallest upper bound to the position of the new bound
                 _var.setSupremum( bound );
 
-                if( !_var.getBasic() && (*_var.getSupremum() < _var.rAssignment()) )
+                if( !_var.getBasic() && (*_var.pSupremum() < _var.rAssignment()) )
                 {
-                    _var.wAssignment( (*_var.getSupremum()).limit() );
+                    _var.wAssignment( (*_var.pSupremum()).limit() );
                     for( vector<Variable*>::const_iterator iter = mAllVars.begin(); iter != mAllVars.end(); ++iter )
                     {
                         if( (*iter)->getBasic() )
                         {
-                            Position p = Position( (*iter)->rPosition(), _var.rPosition() );
+                            Position p = Position( (*iter)->position(), _var.position() );
                             Tableau::iterator tabIt = mTableau.find( p );
                             if( tabIt != mTableau.end() )
                             {
-                                (*iter)->wAssignment( (*_var.getSupremum()).limit() );
+                                (*iter)->wAssignment( (*_var.pSupremum()).limit() );
                             }
                         }
                     }
                 }
             }
-            //update assignment
         }
         else
         {
+            if( *_var.pSupremum() < *bound )
+            {
+                return false;
+            }
             //check if the new lower bound is bigger
-            if( *_var.getInfimum() < *bound )
+            if( *_var.pInfimum() < *bound )
             {
                 _var.setInfimum( bound );
-            }
-            if( !_var.getBasic() && (*_var.getInfimum() > _var.rAssignment()) )
-            {
-                _var.wAssignment( (*_var.getInfimum()).limit() );
-                for( vector<Variable*>::const_iterator iter = mAllVars.begin(); iter != mAllVars.end(); ++iter )
+
+                if( !_var.getBasic() && (*_var.pInfimum() > _var.rAssignment()) )
                 {
-                    if( (*iter)->getBasic() )
+                    _var.wAssignment( (*_var.pInfimum()).limit() );
+                    for( vector<Variable*>::const_iterator iter = mAllVars.begin(); iter != mAllVars.end(); ++iter )
                     {
-                        Position p = Position( (*iter)->rPosition(), _var.rPosition() );
-                        Tableau::iterator tabIt = mTableau.find( p );
-                        if( tabIt != mTableau.end() )
+                        if( (*iter)->getBasic() )
                         {
-                            (*iter)->wAssignment( (*_var.getInfimum()).limit() );
+                            Position p = Position( (*iter)->position(), _var.position() );
+                            Tableau::iterator tabIt = mTableau.find( p );
+                            if( tabIt != mTableau.end() )
+                            {
+                                (*iter)->wAssignment( (*_var.pInfimum()).limit() );
+                            }
                         }
                     }
                 }
             }
         }
+        return true;
     }
 
     /**
@@ -640,25 +789,12 @@ namespace smtrat
      *
      * @param _out
      */
-    void LRAOneModule::printAssignments( ostream& _out ) const
-    {
-        _out << "Assignments:" << endl;
-        for( vector<Variable*>::const_iterator varIt = mAllVars.begin(); varIt != mAllVars.end(); ++varIt )
-        {
-            _out << "Assignment = ";
-            (**varIt).rAssignment().print();
-            _out << endl;
-        }
-    }
-
-    /**
-     *
-     * @param _out
-     */
     void LRAOneModule::printVariables( ostream& _out ) const
     {
+        _out << "Variables:" << endl;
         for( vector<Variable*>::const_iterator varIt = mAllVars.begin(); varIt != mAllVars.end(); ++varIt )
         {
+            _out << "  ";
             (*varIt)->print( _out );
         }
     }
@@ -669,7 +805,7 @@ namespace smtrat
      */
     void LRAOneModule::printTableau( ostream& _out ) const
     {
-        unsigned maxlength     = 10;    // how many digit positions it should take up
+        unsigned maxlength     = 15;    // how many digit positions it should take up
         unsigned currentrow    = 0;
         unsigned currentcolumn = 0;
         char     frameSign     = '-';
@@ -679,21 +815,11 @@ namespace smtrat
         {
             for( vector<Variable*>::const_iterator var = mAllVars.begin(); var != mAllVars.end(); ++var )
             {
-                if( (*var)->rPosition() == i )
+                if( (*var)->position() == i &&!(*var)->getBasic() )
                 {
-                    if( !(*var)->getBasic() )
-                    {
-                        for( ExVariableMap::const_iterator iter = mExistingVars.begin(); iter != mExistingVars.end(); ++iter )
-                        {
-                            if( iter->second == *var )
-                            {
-                                stringstream out;
-                                out << *(*iter).first;
-                                _out << setw( maxlength ) << out.str();
-                                break;
-                            }
-                        }
-                    }
+                    stringstream out;
+                    out << *(*var)->pExpression();
+                    _out << setw( maxlength ) << out.str() + " #";
                 }
             }
         }
@@ -702,21 +828,11 @@ namespace smtrat
         _out << setfill( ' ' );
         for( vector<Variable*>::const_iterator var = mAllVars.begin(); var != mAllVars.end(); ++var )
         {
-            if( (*var)->rPosition() == 0 )
+            if( (*var)->position() == 0 && (*var)->getBasic() )
             {
-                if( (*var)->getBasic() )
-                {
-                    for( ExVariableMap::const_iterator iter = mExistingVars.begin(); iter != mExistingVars.end(); ++iter )
-                    {
-                        if( iter->second == *var )
-                        {
-                            stringstream out;
-                            out << *(*iter).first;
-                            _out << setw( maxlength ) << out.str() + " #";
-                            break;
-                        }
-                    }
-                }
+                stringstream out;
+                out << *(*var)->pExpression();
+                _out << setw( maxlength ) << out.str() + " #";
             }
         }
         for( Tableau::const_iterator iter = mTableau.begin(); iter != mTableau.end(); ++iter )
@@ -725,48 +841,39 @@ namespace smtrat
             {
                 for( unsigned i = currentcolumn; i < mColumnMaximum; ++i )
                 {
-                    _out << setw( maxlength ) << "0";
+                    _out << setw( maxlength ) << "0 #";
                 }
                 _out << endl;
                 ++currentrow;
                 for( vector<Variable*>::const_iterator var = mAllVars.begin(); var != mAllVars.end(); ++var )
                 {
-                    if( (*var)->rPosition() == currentrow )
+                    if( (*var)->position() == currentrow && (*var)->getBasic() )
                     {
-                        if( (*var)->getBasic() )
-                        {
-                            for( ExVariableMap::const_iterator iter = mExistingVars.begin(); iter != mExistingVars.end(); ++iter )
-                            {
-                                if( iter->second == *var )
-                                {
-                                    stringstream out;
-                                    out << *(*iter).first;
-                                    _out << setw( maxlength ) << out.str() + " #";
-                                    break;
-                                }
-                            }
-                        }
+                        stringstream out;
+                        out << *(*var)->pExpression();
+                        _out << setw( maxlength ) << out.str() + " #";
                     }
                 }
                 currentcolumn = 0;
             }
             while( currentcolumn < (*iter).first.second )
             {
-                _out << setw( maxlength ) << "0";
+                _out << setw( maxlength ) << "0 #";
                 ++currentcolumn;
             }
 
             stringstream out;
             out << (*iter).second;
-            _out << setw( maxlength ) << out.str();
+            _out << setw( maxlength ) << out.str() + " #";
             ++currentcolumn;
         }
         for( unsigned i = currentcolumn; i < mColumnMaximum; ++i )
         {
-            _out << setw( maxlength ) << "0";
+            _out << setw( maxlength ) << "0 #";
         }
         _out << endl;
         _out << setw( maxlength * (mColumnMaximum + 1) ) << setfill( frameSign ) << "" << endl;
+        _out << setfill( ' ' );
     }
 
 }    // namespace smtrat

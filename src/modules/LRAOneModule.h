@@ -50,13 +50,20 @@ namespace smtrat
                     return GiNaC::ex_is_less()( *pExA, *pExB );
                 }
             };
-            typedef std::map<const GiNaC::ex*, lraone::Variable*, exPointerComp>            ExVariableMap;
-            typedef std::pair<const Constraint* const , std::vector<const lraone::Bound*> > ConstraintBoundPair;
-            typedef std::map<const Constraint* const , std::vector<const lraone::Bound*> >  ConstraintBoundMap;
-            typedef std::map<const Constraint*, const Formula* const >                      ConstraintFormulaMap;
-            typedef std::map<const lraone::Bound* const , const Constraint*>                BoundConstraintMap;
-            typedef std::pair<unsigned, unsigned>                                           Position;
-            typedef std::map<Position, GiNaC::numeric>                                      Tableau;
+            struct constraintPointerComp
+            {
+                bool operator ()( const Constraint* const pConstraintA, const Constraint* const pConstraintB ) const
+                {
+                    return (*pConstraintA) < (*pConstraintB);
+                }
+            };
+            typedef std::map<const GiNaC::ex*, lraone::Variable*, exPointerComp>                                 ExVariableMap;
+            typedef std::pair<const Constraint* const , std::vector<const lraone::Bound*> >                      ConstraintBoundPair;
+            typedef std::map<const Constraint* const , std::vector<const lraone::Bound*>, constraintPointerComp> ConstraintBoundMap;
+            typedef std::map<const Constraint*, const Formula* const, constraintPointerComp>                     ConstraintFormulaMap;
+            typedef std::map<const lraone::Bound* const , const Constraint*>                                     BoundConstraintMap;
+            typedef std::pair<unsigned, unsigned>                                                                Position;
+            typedef std::map<Position, GiNaC::numeric>                                                           Tableau;
 
         private:
 
@@ -65,7 +72,8 @@ namespace smtrat
              */
             Tableau                        mTableau;
             std::vector<lraone::Variable*> mAllVars;    // vector which saves the order of the priorities
-            std::vector<const Constraint*> mAllConstraints;
+            std::set<const Constraint*, constraintPointerComp > mLinearConstraints;
+            std::set<const Constraint*, constraintPointerComp > mNonlinearConstraints;
             bool                           mInitialized;
             unsigned                       mRowMaximum;
             unsigned                       mColumnMaximum;
@@ -93,14 +101,11 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool assertSubformula( Formula::const_iterator );
             bool inform( const Constraint* const );
-            Answer isConsistent();
+            bool assertSubformula( Formula::const_iterator );
             void removeSubformula( Formula::const_iterator );
+            Answer isConsistent();
 
-            void pivotingStep();
-
-            void printAssignments( std::ostream& = std::cout ) const;
             void printVariables( std::ostream& = std::cout ) const;
             void printTableau( std::ostream& = std::cout ) const;
 
@@ -109,14 +114,16 @@ namespace smtrat
             /**
              * Methods:
              */
-            void activateBound( lraone::Variable&, const lraone::Bound* );
+            bool checkAssignmentForNonlinearConstraint() const;
+            void pivotAndUpdate( lraone::Variable*, lraone::Variable*, const lraone::Bound&, GiNaC::numeric& );
+            bool activateBound( lraone::Variable&, const lraone::Bound* );
             void setBound( lraone::Variable&, const Constraint_Relation&, bool, GiNaC::numeric&, const Constraint* );
+            bool isInConflict( unsigned, bool );
+            void getConflicts( const lraone::Variable&, bool );
+            const Formula* getSubformula( const lraone::Bound* ) const;
+            lraone::Variable* getVar( bool, unsigned );
             void initialize();
             void initPriority();
-            bool isInConflict( unsigned, bool );
-            void getConflicts( unsigned, bool );
-            void pivotAndUpdate( lraone::Variable*, lraone::Variable*, const lraone::Bound&, GiNaC::numeric& );
-            lraone::Variable* getVar( bool, unsigned );
     };
 
 }    // namespace smtrat

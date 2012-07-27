@@ -22,7 +22,7 @@ namespace lraone
         }
     };
 
-    typedef std::map<const Bound*, unsigned, boundComp> boundActivityMap;
+    typedef std::map<const Bound*, unsigned, boundComp> BoundActivityMap;
 
     class Variable
     {
@@ -33,23 +33,25 @@ namespace lraone
              */
             Value             mAssignment;
             int               mPriority;
-            bool              mBasic;    // False nonbasic, True basic
+            bool              mBasic;       // False nonbasic, True basic
             unsigned          mPosition;    // Number of Row or Column
-            boundActivityMap* mUBs;    // Know number of bounds for size of vector beforehand
-            boundActivityMap* mLBs;    // Maybe wait until last inform, pushbacktrackpoint() marks the last inform
-            const Bound*      mSupremum;
-            const Bound*      mInfimum;
+            BoundActivityMap  mUpperbounds; // Know number of bounds for size of vector beforehand
+            BoundActivityMap  mLowerbounds; // Maybe wait until last inform, pushbacktrackpoint() marks the last inform
+            const Bound*      mpSupremum;
+            const Bound*      mpInfimum;
+            const GiNaC::ex*  mExpression;
 
         public:
             Variable();
-            Variable( int, unsigned, bool );
+            Variable( int, unsigned, bool, const GiNaC::ex* );
             virtual ~Variable();
+
             Value& rAssignment()
             {
                 return mAssignment;
             }
 
-            void wAssignment( Value& _assignment )
+            void wAssignment( const Value& _assignment )
             {
                 mAssignment = _assignment;
             }
@@ -66,25 +68,25 @@ namespace lraone
 
             void setSupremum( const Bound* _supremum )
             {
-                mSupremum = _supremum;
+                mpSupremum = _supremum;
             }
 
-            const Bound* getSupremum()
+            const Bound* pSupremum() const
             {
-                return mSupremum;
+                return mpSupremum;
             }
 
             void setInfimum( const Bound* _infimum )
             {
-                mInfimum = _infimum;
+                mpInfimum = _infimum;
             }
 
-            const Bound* getInfimum()
+            const Bound* pInfimum() const
             {
-                return mInfimum;
+                return mpInfimum;
             }
 
-            unsigned rPosition()
+            const unsigned position() const
             {
                 return mPosition;
             }
@@ -96,22 +98,22 @@ namespace lraone
 
             unsigned rLowerBoundsSize()
             {
-                return mLBs->size();
+                return mLowerbounds.size();
             }
 
             unsigned rUpperBoundsSize()
             {
-                return mUBs->size();
+                return mUpperbounds.size();
             }
 
-            boundActivityMap* getUBs()
+            const BoundActivityMap& upperbounds() const
             {
-                return mUBs;
+                return mUpperbounds;
             }
 
-            boundActivityMap* getLBs()
+            const BoundActivityMap& lowerbounds() const
             {
-                return mLBs;
+                return mLowerbounds;
             }
 
             void wPosition( unsigned _position )
@@ -124,77 +126,18 @@ namespace lraone
                 mPriority = _priority;
             }
 
+            const GiNaC::ex* pExpression() const
+            {
+                return mExpression;
+            }
+
             const Bound* addUpperBound( Value* const );
             const Bound* addLowerBound( Value* const );
+            unsigned setActive( const Bound*, bool );
+            void deactivateBound( const Bound* );
+
             void print( std::ostream& = std::cout ) const;
-
-            void setActive( const Bound* _bound, bool _active )
-            {
-                assert( _bound != NULL );
-                if( _bound->getIsUpper() )
-                {
-                    boundActivityMap::iterator iter = mUBs->find( _bound );
-                    assert( iter != mUBs->end() );
-                    if( _active )
-                    {
-                        iter->second++;
-                    }
-                    else
-                    {
-                        assert( iter->second != 0 );
-                        iter->second--;
-                    }
-                }
-                else
-                {
-                    boundActivityMap::iterator iter = mLBs->find( _bound );
-                    assert( iter != mLBs->end() );
-                    if( _active )
-                    {
-                        iter->second++;
-                    }
-                    else
-                    {
-                        assert( iter->second != 0 );
-                        iter->second--;
-                    }
-                }
-            }
-
-            void deactivateBound( const Bound* bound )
-            {
-                bool isUpper = (*bound).getIsUpper();
-                this->setActive( bound, false );
-
-                //isAnUpperBound
-                if( isUpper )
-                {
-                    boundActivityMap::iterator iterU = mUBs->find( bound );
-                    if( iterU->second == 0 )
-                    {
-                        assert( this->getSupremum() != NULL );
-                        //current smallest upper bound
-                        if( *this->getSupremum() > *bound )
-                        {
-                            //change the position of the smallest upper bound to the position of the new bound
-                            this->setSupremum( bound );
-                        }
-                    }
-                }
-                else
-                {
-                    boundActivityMap::iterator iterL = mLBs->find( bound );
-                    if( iterL->second == 0 )
-                    {
-                        assert( this->getInfimum() != NULL );
-                        //check if the new lower bound is bigger
-                        if( *this->getInfimum() < *bound )
-                        {
-                            this->setInfimum( bound );
-                        }
-                    }
-                }
-            }
+            void printAllBounds( std::ostream& = std::cout ) const;
     };
 }    // end namspace lra
 #endif   /* _VARIABLE_H */
