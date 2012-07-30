@@ -8,7 +8,7 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2012-07-06                                         #
+# Version: 2012-07-30                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 # common settings
@@ -77,7 +77,6 @@ if(USE_GINACRA)
 	find_package(GiNaCRA REQUIRED)
 endif()
 include( FindCLN )
-message( "${CLN_LIBRARY}" )
 # find gmp (which is necessary for CLN, at least when linking statically)
 include( FindGMP )
 
