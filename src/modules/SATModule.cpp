@@ -52,7 +52,7 @@
 //#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 #define SATMODULE_WITH_CALL_NUMBER
-#define SAT_MODULE_THEORY_PROPAGATION
+//#define SAT_MODULE_THEORY_PROPAGATION
 //#define WITH_PROGRESS_ESTIMATION
 #define STORE_ONLY_ONE_REASON
 
@@ -201,6 +201,8 @@ namespace smtrat
     {
         budgetOff();
         assumptions.clear();
+
+        addAssumptionToCheck( *mpReceivedFormula, false, moduleName( mModuleType ) );
 
         model.clear();
         conflict.clear();
@@ -527,7 +529,9 @@ namespace smtrat
 
                     /*
                      * Add the constraint and its negation, both using either the relation
-                     * symbol = or <=, to the map (normal form). A new Boolean variable gets generated.
+                     * symbol <, = or <=, to the map (normal form). A new Boolean variable gets generated.
+                     *
+                     * This transformation is done in order to ensure that positive literals in an assignment directly correspond to a theory call.
                      */
                     Var normConstrAuxBoolean = newVar( true, true, _formula.activity() );
                     Var normConstrBoolean    = newVar();
@@ -639,16 +643,22 @@ namespace smtrat
                 // if it is a Boolean abstraction of a constraint
                 if( iter != mBooleanConstraintMap.end() )
                 {
+                    // we take the corresponding auxiliary variable
                     lbool assignmentAux = assigns[posInAssigns - 1];
+
+                    assert( assignmentAux != l_False );
                     if( assignmentAux == l_True )
                     {
+                        // This constraint has to be part of the theory call
                         constraintsToCheck.insert( pair<const Formula*, const Formula*>( iter->second.first, iter->second.second ) );
                     }
                 }
             }
             ++posInAssigns;
         }
+        #ifdef SAT_MODULE_THEORY_PROPAGATION
         simplifyByLearnedTheoryDeductions( constraintsToCheck );
+        #endif
 
         /*
          * Remove the constraints from the constraints to check, which are already in the passed formula
@@ -782,6 +792,7 @@ namespace smtrat
             }
             if( isTheoryDeduction && conclusion != NULL )
             {
+                #ifdef SAT_MODULE_THEORY_PROPAGATION
                 mLearnedDeductions[conclusion].push_back( premise );
                 #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                 cout << "Learn:  ( ";
@@ -791,6 +802,7 @@ namespace smtrat
                 }
                 cout << ")  ->  " << conclusion->constraint().toString();
                 cout << "    " << mLearnedDeductions[conclusion].size() << ". premise" << endl;
+                #endif
                 #endif
             }
         }
@@ -804,7 +816,7 @@ namespace smtrat
      * used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
      *
      * @param sign
-     * @param dvar
+     * @param dvar decision variable
      *
      * @return
      */
@@ -834,7 +846,9 @@ namespace smtrat
      */
     bool SATModule::addClause_( vec<Lit>& ps )
     {
+        #ifdef SAT_MODULE_THEORY_PROPAGATION
         addTheoryDeduction( ps );
+        #endif
         // assert( decisionLevel() == 0 ); // Commented, as we already allow to add clauses belatedly
         if( !ok )
             return false;
