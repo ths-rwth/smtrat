@@ -2119,7 +2119,7 @@ NextClause:
 
         for( int i = 0; i < c.size(); i++ )
         {
-            signed tmp = (sign( c[i] ) ? -1 : 1) * var( c[i] ) + 1;
+            signed tmp = (sign( c[i] ) ? -1 : 1) * var( c[i] );
             _out << setw( 6 ) << tmp;
         }
 
@@ -2140,7 +2140,7 @@ NextClause:
     {
         for( int i = 0; i < c.size(); i++ )
         {
-            signed tmp = (sign( c[i] ) ? -1 : 1) * var( c[i] ) + 1;
+            signed tmp = (sign( c[i] ) ? -1 : 1) * var( c[i] );
             _out << setw( 6 ) << tmp;
         }
 
@@ -2193,7 +2193,7 @@ NextClause:
         for( int i = 0; i < assumptions.size(); i++ )
         {
             assert( value( assumptions[i] ) != l_False );
-            _out << _init << "  " << (sign( assumptions[i] ) ? "-" : "") << (mapVar( var( assumptions[i] ), map, max ) + 1) << endl;
+            _out << _init << "  " << (sign( assumptions[i] ) ? "-" : "") << (mapVar( var( assumptions[i] ), map, max )) << endl;
         }
 
         for( int i = 0; i < _clauses.size(); i++ )
@@ -2274,7 +2274,7 @@ NextClause:
             {
                 _out << _init << "             ";
             }
-            signed tmp = (sign( trail[pos] ) ? -1 : 1) * var( trail[pos] ) + 1;
+            signed tmp = (sign( trail[pos] ) ? -1 : 1) * var( trail[pos] );
             _out << setw( 6 ) << tmp << " @ " << level << endl;
         }
     }
