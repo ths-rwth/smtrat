@@ -29,6 +29,7 @@ set( smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 
 # options
 option( STATICLIB_SWITCH "Compile a statically linked version of the library." )
+option( GATHER_STATS "Gather statistics during the calculation" )
 option(USE_NSS "Compile the NSS Module")
 option(USE_GINACRA "Compile modules using GiNaCRA")
 option(USE_GB "Compile modules using GroebnerBasis")

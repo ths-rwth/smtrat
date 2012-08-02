@@ -10,4 +10,6 @@
 #cmakedefine USE_GB
 #cmakedefine USE_CAD
 
+#cmakedefine GATHER_STATS
+
 #endif
