@@ -40,6 +40,11 @@ int main( int argc, char* argv[] )
     smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
     smtrat::Driver   driver( form );
 
+    if(argc == 1) {
+        std::cout << "This is " << PROJECT_NAME << "." <<  std::endl;
+        std::cout << "Version: " << VERSION << std::endl;
+        std::cout << "For more information, run this binary with --help." << std::endl;
+    }
     for( int ai = 1; ai < argc; ++ai )
     {
         if( argv[ai] == std::string( "-p" ) )
@@ -49,6 +54,9 @@ int main( int argc, char* argv[] )
         else if( argv[ai] == std::string( "-s" ) )
         {
             driver.trace_scanning = true;
+        }
+        else if( argv[ai] == std::string( "--help") ) {
+            std::cout << "The help is not yet implemented. Please visit our website ...." << std::endl;
         }
         else
         {
