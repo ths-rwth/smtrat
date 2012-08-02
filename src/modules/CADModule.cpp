@@ -60,6 +60,7 @@ namespace smtrat
         mConstraints(),
         mVariables(),
         mConstraintsMap(),
+        mNewPolynomials(),
         mSatisfiable( true )
     {
         mModuleType = MT_CADModule;
@@ -88,6 +89,7 @@ namespace smtrat
             return true;    // constraint already considered
         mConstraints.push_back( convertConstraint( (*_subformula)->constraint() ) );
         mConstraintsMap[ _subformula ] = mConstraints.size() - 1;
+        mNewPolynomials.push_back( mConstraints.back().polynomial() ); // mark the constraint as to be added to mCAD with the next call to isConsistent
         // add the new variables to the local variables
         for( register GiNaC::symtab::const_iterator sym = (*_subformula)->constraint().variables().begin();
                 sym != (*_subformula)->constraint().variables().end(); ++sym )
@@ -109,11 +111,9 @@ namespace smtrat
      */
     Answer CADModule::isConsistent()
     {
-        // add the polynomials of the current constraints to the cad
-        list<UnivariatePolynomial> polynomials = list<UnivariatePolynomial>( );
-        for( vector<GiNaCRA::Constraint>::const_iterator constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
-            polynomials.push_back( UnivariatePolynomial( constraint->polynomial(), mVariables.front() ) );
-        mCAD.addPolynomials( polynomials.begin(), polynomials.end(), mVariables );    // false: disable input checks
+        // add the polynomials of the new constraints to the cad
+        mCAD.addPolynomials( mNewPolynomials.begin(), mNewPolynomials.end(), mVariables );    // false: disable input checks
+        mNewPolynomials.clear();
         // check the extended constraints for satisfiability
         #ifdef MODULE_VERBOSE
         cout << "Checking constraint set " << endl;
@@ -123,6 +123,18 @@ namespace smtrat
         vector<symbol> vars = mCAD.variables();
         for( auto k = vars.begin(); k != vars.end(); ++k )
             cout << " " << *k << endl;
+        cout << "Elimination set sizes:";
+        vector<EliminationSet> elimSets = mCAD.eliminationSets();
+        for( unsigned i = 0; i != elimSets.size(); ++i )
+            cout << "  Level " << i << ": " << elimSets[i].size();
+        cout << endl;
+        for( unsigned i = 0; i != elimSets.size(); ++i )
+        {
+            cout << "  Level " << i << " (" << elimSets[i].size() << "): ";
+            for( EliminationSet::const_iterator j = elimSets[i].begin(); j != elimSets[i].end(); ++j )
+                cout << **j << "   ";
+            cout << endl;
+        }
         #endif
         GiNaCRA::RealAlgebraicPoint r;
         ConflictGraph               conflictGraph;
@@ -163,6 +175,8 @@ namespace smtrat
             unsigned constraintIndex = constraintIt->second;
             // remove the constraint in mConstraintsMap
             mConstraintsMap.erase( constraintIt );
+            // remove the corresponding polynomial
+            mNewPolynomials.remove( constraint.polynomial() );
             // reduce the CAD object
             mCAD.removePolynomial( GiNaCRA::UnivariatePolynomial( constraint.polynomial(), constraint.variables().front(), false ) );    // false: disable input checks
             // update the variables by the CAD's current variables
@@ -282,6 +296,7 @@ namespace smtrat
         }
         cout << "Constraint index = " << index << " of constraint " << mConstraints[index] << endl;
         assert( false );    // The given index should match an input constraint!
+        return NULL;
     }
 
     inline void CADModule::updateConstraintMap( unsigned index, bool decrement )

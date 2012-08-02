@@ -398,7 +398,10 @@ namespace smtrat
             {
                 for( Formula::const_iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
                 {
-                    (*module)->assertSubformula( subformula );
+                    if( !(*module)->assertSubformula( subformula ) )
+                    {
+                        return False;
+                    }
                 }
             }
         }

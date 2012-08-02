@@ -8,8 +8,17 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2012-07-07                                         #
+# Version: 2012-07-30                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+include_directories( ${PROJECT_BUILD_DIR}/src
+                     ${PROJECT_SOURCE_DIR}/src/parser
+                     ${PROJECT_BUILD_DIR}/src/parser
+                     ${GINACRA_INCLUDE_DIR}
+)
+
+# set some variables
+# # # # # # # # # # #
 
 set(lib_core_src
     Manager.cpp
@@ -19,7 +28,6 @@ set(lib_core_src
     Constraint.cpp
     ConstraintPool.cpp
 )
-
 set(lib_core_headers
     Manager.h
     Answer.h
@@ -33,7 +41,6 @@ set(lib_core_headers
     ConstraintPool.h
     smtrat.h
 )
-
 set(lib_modules_headers
     modules/Modules.h
     modules/StandardModuleFactory.h
@@ -48,7 +55,6 @@ set(lib_modules_headers
     modules/SingleVSModule.h
     modules/FourierMotzkinSimplifier.h
 )
-
 set(lib_modules_src
     modules/SmartSimplifier.cpp
     modules/VSModule.cpp
@@ -80,7 +86,6 @@ set(lib_VSModule_headers
     modules/VSModule/Substitution.h
     modules/VSModule/Tools.h
 )
-
 set(lib_VSModule_src
     modules/VSModule/Condition.cpp
     modules/VSModule/SqrtEx.cpp
@@ -88,7 +93,6 @@ set(lib_VSModule_src
     modules/VSModule/Substitute.cpp
     modules/VSModule/Substitution.cpp
 )
-
 set(lib_SingleVSModule_headers
     modules/SingleVSModule/Substitute.h
 )
@@ -96,7 +100,6 @@ set(lib_SingleVSModule_headers
 set(lib_SingleVSModule_src
     modules/SingleVSModule/Substitute.cpp
 )
-
 set(lib_SATModule_headers
 	modules/SATModule/Alg.h
 	modules/SATModule/Alloc.h
@@ -110,11 +113,9 @@ set(lib_SATModule_headers
 	modules/SATModule/Options.h
 	modules/SATModule/SolverTypes.h
 )
-
 set(lib_SATModule_src
 	modules/SATModule/Options.cpp
 )
-
 set(lib_LRAModule_headers
 	modules/LRAModule/Delta.h
 	modules/LRAModule/LAArray.h
@@ -123,7 +124,6 @@ set(lib_LRAModule_headers
 	modules/LRAModule/LAVar.h
 	modules/LRAModule/LRASolverA.h
 )
-
 set(lib_LRAModule_src
 	modules/LRAModule/Delta.cpp
 	modules/LRAModule/LAArray.cpp
@@ -132,19 +132,16 @@ set(lib_LRAModule_src
 	modules/LRAModule/LAVar.cpp
 	modules/LRAModule/LRASolverA.cpp
 )
-
 set(lib_LRAOneModule_headers
 	modules/LRAOneModule/Bound.h
 	modules/LRAOneModule/Value.h
 	modules/LRAOneModule/Variable.h
 )
-
 set(lib_LRAOneModule_src
 	modules/LRAOneModule/Bound.cpp
 	modules/LRAOneModule/Value.cpp
 	modules/LRAOneModule/Variable.cpp
 )
-
 set(lib_LRATwoModule_headers
     modules/LRATwoModule/BetaMap.h
     modules/LRATwoModule/Bound.h
@@ -155,7 +152,6 @@ set(lib_LRATwoModule_headers
     modules/LRATwoModule/SimplexTableaux.h
     modules/LRATwoModule/UpperBound.h
 )
-
 set(lib_LRATwoModule_src
     modules/LRATwoModule/BetaMap.cpp
     modules/LRATwoModule/Bound.cpp
@@ -167,30 +163,27 @@ set(lib_LRATwoModule_src
     modules/LRATwoModule/UpperBound.cpp
 )
 
+# Nullstellensatz module variables
+
 if(USE_NSS)
 set(lib_NSSModule_headers
 	modules/NSSModule/ConstraintMatrixFactory.h
 	modules/NSSModule/GroebnerToSDP.h
 	modules/NSSModule/MonomialIterator.h
 )
-
 set(lib_NSSModule_src
 	modules/NSSModule/ConstraintMatrixFactory.cpp
-
 	modules/NSSModule/MonomialIterator.cpp
 )
-
 set(lib_SDP_headers
 	utilities/SDP/SDPFacade.h
 	utilities/SDP/CSDPFacade.h
 	utilities/SDP/SparseMatrix.h
 )
-
 set(lib_SDP_src
 	utilities/SDP/CSDPFacade.cpp
 	utilities/SDP/SparseMatrix.cpp
 )
-
 set(lib_LinAlg
 	utilities/LinAlg/DenseMatrix.h
 	utilities/LinAlg/FindExactSolution.h
@@ -200,11 +193,8 @@ set(lib_Utilities
 	utilities/debug/debug.h
 )
 
-
 set( lib_nratsolver_headers NRATSolver.h )
 set( lib_nratsolver_src NRATSolver.cpp )
-
-add_subdirectory(${CMAKE_SOURCE_DIR}/src/parser)
 
 set(lib_${PROJECT_NAME}_SRCS
     ${lib_nratsolver_headers}
@@ -233,16 +223,19 @@ set(lib_${PROJECT_NAME}_SRCS
     ${lib_SingleVSModule_src}
 )
 
+# set linking flags
+# # # # # # # # # #
+
 set(STATICLIB "SHARED")
 if(${STATICLIB_SWITCH} STREQUAL "ON")
 	set(STATICLIB "STATIC")
 endif()
+
+# library target
+# # # # # # # # #
+
 add_library(lib_${PROJECT_NAME} ${STATICLIB} ${lib_${PROJECT_NAME}_SRCS} )
-
-# Other libraries that are used by the project library should go here.
-target_link_libraries( lib_${PROJECT_NAME} ${libraries} )
-
-
+target_link_libraries( lib_${PROJECT_NAME} ${libraries} ) # libraries definied in top-level CMakeLists.txt
 set_target_properties( lib_${PROJECT_NAME} PROPERTIES
 #		# create *nix style library versions + symbolic links
 		VERSION "${${PROJECT_NAME}_MAJORVERSION}.${${PROJECT_NAME}_MINORVERSION}.${${PROJECT_NAME}_MAINTENANCEVERSION}"
@@ -251,23 +244,34 @@ set_target_properties( lib_${PROJECT_NAME} PROPERTIES
 #		# CLEAN_DIRECT_OUTPUT 1
 #		# avoid conflicts between library and binary target names
 		OUTPUT_NAME ${PROJECT_NAME}
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+        ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-#Set install destination and permissions for the library
+# unit tests
+# # # # # # #
+
+if(CppUnit_FOUND)
+    add_subdirectory(test)
+endif()
+
+# parser + solver binary
+# # # # # # # # # # # # s#
+add_subdirectory( ${CMAKE_SOURCE_DIR}/src/parser )
+
+# Install destination and permissions for the library
+# # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 install( TARGETS lib_${PROJECT_NAME} DESTINATION lib PERMISSIONS
     OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_EXECUTE
-    WORLD_READ WORLD_EXECUTE )
-
+    WORLD_READ WORLD_EXECUTE
+)
 install( FILES ${lib_core_headers} ${lib_nratsolver_headers} DESTINATION include/${PROJECT_NAME} )
-install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/modules)
-install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/modules/VSModule)
-install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/modules/SATModule)
-install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRAModule)
-install( FILES ${lib_LRAOneModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRAOneModule)
-install( FILES ${lib_LRATwoModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRATwoModule)
-install( FILES ${lib_SingleVSModule_headers} DESTINATION include/${PROJECT_NAME}/modules/SingleVSModule)
-
-if(CppUnit_FOUND)
-add_subdirectory(test)
-endif()
+install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/modules )
+install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/modules/VSModule )
+install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/modules/SATModule )
+install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRAModule )
+install( FILES ${lib_LRAOneModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRAOneModule )
+install( FILES ${lib_LRATwoModule_headers} DESTINATION include/${PROJECT_NAME}/modules/LRATwoModule )
+install( FILES ${lib_SingleVSModule_headers} DESTINATION include/${PROJECT_NAME}/modules/SingleVSModule )

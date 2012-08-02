@@ -633,12 +633,10 @@ namespace smtrat
     }
 
     /**
-     * Prints a square root expression on an output stream.
      *
-     * @param   _ostream    The output stream, on which to write.
-     * @param   _sqrtEx     The square root expression to print.
-     *
-     * @return The representation of the square root expression on an output stream.
+     * @param _ostream
+     * @param _constraint
+     * @return
      */
     ostream& operator <<( ostream& _ostream, const Constraint& _constraint )
     {

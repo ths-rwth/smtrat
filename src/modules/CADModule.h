@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-02-04
- * @version 2012-07-24
+ * @version 2012-08-01
  *
  */
 #ifndef SMTRAT_CADMODULE_H
@@ -74,6 +74,8 @@ namespace smtrat
         vector<GiNaC::symbol> mVariables;
         /// the GiNaCRA constraints' indices assigned to the received constraints
         ConstraintIndexMap mConstraintsMap;
+        /// the GiNaCRA constraints' polynomials not yet added to the CAD object
+        std::list<GiNaCRA::Polynomial> mNewPolynomials;
         /// flag storing global satisfiability status
         bool mSatisfiable;
 
