@@ -31,7 +31,9 @@
 #include <fstream>
 #include "parser/Driver.h"
 #include "NRATSolver.h"
-
+#ifdef GATHER_STATS
+#include "utilities/stats/CollectStatistics.h"
+#endif GATHER_STATS
 /**
  *
  */
@@ -112,6 +114,9 @@ int main( int argc, char* argv[] )
                 delete nratSolver;
                 delete form;
             }
+            #ifdef GATHER_STATS
+            smtrat::CollectStatistics::print(std::cout);
+            #endif GATHER_STATS
         }
     }
     return (EXIT_SUCCESS);

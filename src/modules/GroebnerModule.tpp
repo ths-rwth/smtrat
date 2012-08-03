@@ -28,10 +28,12 @@
  *
  * @version 2012-03-20
  */
-#include <ginacra/SternBrocot.h>
 #include "../config.h"
 
+
 #include "NSSModule/definitions.h"
+#include "GroebnerModule.h"
+#include "GBModule/GBModuleStatistics.h"
 #ifdef USE_NSS
 #include "NSSModule/GroebnerToSDP.h"
 #endif
@@ -53,6 +55,9 @@ Module( _tsManager, _formula ),
 mBasis( ),
 mInequalities( this ),
 mStateHistory( )
+#ifdef GATHER_STATS
+    , mStats(GroebnerModuleStats::getInstance(MT_GroebnerModule))
+#endif
 
 {
     mModuleType = MT_GroebnerModule;
@@ -84,7 +89,10 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
         VariableListPool::addVariable( ex_to<symbol > (it->second) );
         mListOfVariables.insert( *it );
     }
-
+    
+    #ifdef GATHER_STATS
+    mStats->constraintAdded(constraint.relation());
+    #endif
     //only equalities should be added to the gb
     if( constraint.relation( ) == CR_EQ )
     {
@@ -132,8 +140,12 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
 template<class Settings>
 Answer GroebnerModule<Settings>::isConsistent( )
 {
-    // This check asserts that all the conflicts are handled by the SAT solver.
+    // This check asserts that all the conflicts are handled by the SAT solver. (workaround)
     if( !mInfeasibleSubsets.empty() ) return False;
+    
+    #ifdef GATHER_STATS
+    mStats->called();
+    #endif
     
     assert( mBacktrackPoints.size( ) - 1 == mBasis.nrOriginalConstraints( ) );
     assert( mInfeasibleSubsets.empty( ) );
@@ -173,7 +185,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
             {
                 std::cout << " Run SDP";
 
-                GroebnerToSDP<Settings::Order> sdp( mBasis.getGbIdeal( ), MonomialIterator( variables, Settings::maxSDPdegree ) );
+                GroebnerToSDP<typename Settings::Order> sdp( mBasis.getGbIdeal( ), MonomialIterator( variables, Settings::maxSDPdegree ) );
                 witness = sdp.findWitness( );
             }
             std::cout << std::endl;
@@ -185,6 +197,9 @@ Answer GroebnerModule<Settings>::isConsistent( )
         {
             if( mBasis.isConstant( ) )
             {
+                #ifdef GATHER_STATS
+                mStats->constantGB();
+                #endif
                 witness = mBasis.getGb( ).front( );
             }
             else
@@ -217,6 +232,10 @@ Answer GroebnerModule<Settings>::isConsistent( )
                     mInfeasibleSubsets.back( ).insert( **it );
                 }
             }
+            
+            #ifdef GATHER_STATS
+            mStats->EffectivenessOfConflicts(mInfeasibleSubsets.back().size()/mpReceivedFormula->size());
+            #endif
             return False;
         }
         saveState( );
@@ -259,6 +278,9 @@ Answer GroebnerModule<Settings>::isConsistent( )
     Answer ans = runBackends( );
     if( ans == False )
     {
+        #ifdef GATHER_STATS
+        mStats->backendFalse();
+        #endif
         getInfeasibleSubsets( );
 
         assert( !mInfeasibleSubsets.empty( ) );
@@ -276,6 +298,9 @@ Answer GroebnerModule<Settings>::isConsistent( )
 template<class Settings>
 void GroebnerModule<Settings>::removeSubformula( Formula::const_iterator _formula )
 {
+    #ifdef GATHER_STATS
+    mStats->constraintRemoved((*_formula)->constraint().relation());
+    #endif
     if( Settings::transformIntoEqualities == ALL_INEQUALITIES )
     {
         popBacktrackPoint( _formula );

@@ -69,7 +69,8 @@ set(lib_modules_src
 )
 
 if(USE_GB)
-	set(lib_module_GBModule_headers  modules/GBModule/GBSettings.h)
+	set(lib_GBModule_headers modules/GBModule/GBSettings.h modules/GBModule/GBModuleStatistics.h)
+	set(lib_GBModule_src modules/GBModule/GBModuleStatistics.cpp)
 	set(lib_modules_headers ${lib_modules_headers} modules/GroebnerModule.h modules/GroebnerModule.tpp)
 endif()
 
@@ -189,9 +190,14 @@ set(lib_LinAlg
 	utilities/LinAlg/FindExactSolution.h
 )
 endif()
-set(lib_Utilities
+set(lib_Utilities_headers
 	utilities/debug/debug.h
+	utilities/stats/CollectStatistics.h
 )
+set(lib_Utilities_src
+	utilities/stats/CollectStatistics.cpp
+)
+
 
 set( lib_nratsolver_headers NRATSolver.h )
 set( lib_nratsolver_src NRATSolver.cpp )
@@ -214,11 +220,14 @@ set(lib_${PROJECT_NAME}_SRCS
 	${lib_LRATwoModule_headers}
 	${lib_LRATwoModule_src}
 	${lib_GBModule_headers}
+	${lib_GBModule_src}
 	${lib_NSSModule_headers}
 	${lib_NSSModule_src}
 	${lib_SDP_headers}
 	${lib_SDP_src}
 	${lib_LinAlg}
+	${lib_Utilities_headers}
+	${lib_Utilities_src}
     ${lib_SingleVSModule_headers}
     ${lib_SingleVSModule_src}
 )

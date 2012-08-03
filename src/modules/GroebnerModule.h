@@ -47,6 +47,11 @@
 #include "GBModule/GBSettings.h"
 
 
+#ifdef GATHER_STATS
+#include "GBModule/GBModuleStatistics.h"
+#endif 
+
+
 namespace smtrat
 {
 
@@ -184,6 +189,9 @@ protected:
     bool validityCheck( );
 
 private:
+    #ifdef GATHER_STATS
+    GroebnerModuleStats* mStats;
+    #endif GATHER_STATS
     typedef Module super;
 };
 } // namespace smtrat
