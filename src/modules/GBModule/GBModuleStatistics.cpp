@@ -20,6 +20,7 @@
  */
 #include "GBModuleStatistics.h"
 
+#include <algorithm>
 namespace smtrat 
 {
 
@@ -40,10 +41,20 @@ void GroebnerModuleStats::printAll(std::ostream& os) {
 
 void GroebnerModuleStats::print(std::ostream& os) {
     os << "Groebner module statistics:\n";
-    os << "Times called:\t\t "                              << mNrCalls               << std::endl;
-    os << "Times constant gb found: "                       << mNrConstantGBs         << std::endl;
-    os << "Number of undetected unsatisfiable instances"    << mNrBackendReturnsFalse << std::endl;
+    os << "Times called:\t\t\t\t\t "                              << mNrCalls               << std::endl;
+    os << "Times constant gb found:\t\t\t "                       << mNrConstantGBs         << std::endl;
+    os << "Times inequality reduced to false:\t\t "             << mNrInfeasibleInequalities << std::endl;
+    os << "Number of undetected unsatisfiable instances: \t"  << mNrBackendReturnsFalse << std::endl;
+    os << "Equalities added/removed: \t\t\t"                  << mNrOfEqualitiesAdded << " / " << mNrOfEqualitiesRemoved << std::endl;
+    os << "Strict inequalities added/removed: \t\t"           << mNrOfStrictInequalitiesAdded << " / " << mNrOfStrictInequalitiesRemoved << std::endl;
+    os << "Nonstrict inequalities added/removed: \t\t"        << mNrOfNonStrictInequalitiesAdded << " / " << mNrOfNonStrictInequalitiesRemoved << std::endl;
+
+    os << "Maximal number of pop backtracks after one removal: " << *std::max_element( mPopLevel.begin(), mPopLevel.end() ) << std::endl;
+    //os << "Mean value of number of pop backtracks after one removal: " << meanValue(mPopLevel.begin(), mPopLevel.end()) << std::endl;
+    //os << "Median value of number of pop backtracks after one removal: " << medianValue(mPopLevel.begin(), mPopLevel.end()) << std::endl;
+    
 }
+
 
 }
 
