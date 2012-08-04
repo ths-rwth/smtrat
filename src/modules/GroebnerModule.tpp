@@ -56,7 +56,7 @@ mBasis( ),
 mInequalities( this ),
 mStateHistory( )
 #ifdef GATHER_STATS
-    , mStats(GroebnerModuleStats::getInstance(MT_GroebnerModule))
+    , mStats(GroebnerModuleStats::getInstance(Settings::identifier))
 #endif
 
 {
@@ -375,6 +375,10 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
         ++nrOfBacktracks;
         mBacktrackPoints.pop_back( );
     }
+    
+    #ifdef GATHER_STATS
+    mStats->PopLevel(nrOfBacktracks);
+    #endif 
 
     for( unsigned i = 0; i < nrOfBacktracks; ++i )
     {
@@ -382,8 +386,6 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
         mStateHistory.pop_back( );
     }
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
-
-
     assert( !mStateHistory.empty( ) );
 
     // Load the state to be restored;
@@ -433,8 +435,9 @@ typename GroebnerModule<Settings>::Polynomial GroebnerModule<Settings>::transfor
         std::stringstream stream;
         stream << "_AddVarGB_" << constrId;
         GiNaC::symbol varSym = ex_to<symbol > (Formula::newVariable( stream.str( ) ));
-        mListOfVariables[stream.str( )] = varSym;
+        mListOfVariables[stream.str()] = varSym;
         varNr = VariableListPool::addVariable( varSym );
+        mAdditionalVarMap.insert(std::pair<unsigned, unsigned>(constrId, varNr));
     }
     else
     {
@@ -618,6 +621,7 @@ InequalitiesTable<Settings>::InequalitiesTable( GroebnerModule<Settings>* module
 {
     mBtnumber = 0;
     mNewConstraints = mReducedInequalities.begin( );
+    mStats = GroebnerModuleStats::getInstance(Settings::identifier);
 }
 
 /**
@@ -731,7 +735,12 @@ Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const Ideal& gb )
 {
     for( auto it = mReducedInequalities.begin( ); it != mReducedInequalities.end( ); ++it )
     {
-        if( !reduceWRTGroebnerBasis( it, gb ) ) return False;
+        if( !reduceWRTGroebnerBasis( it, gb ) ) {
+            #ifdef GATHER_STATS
+            mStats->infeasibleInequality();
+            #endif
+            return False;   
+        }
     }
     if( Settings::withInfeasibleSubset != RETURN_DIRECTLY )
     {
@@ -741,6 +750,9 @@ Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const Ideal& gb )
         }
         else
         {
+            #ifdef GATHER_STATS
+            mStats->infeasibleInequality();
+            #endif
             return False;
         }
     }
@@ -764,7 +776,12 @@ Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const std::list<type
     for( auto it = ineqToBeReduced.begin( ); it != ineqToBeReduced.end( ); ++it )
     {
         assert( std::get < 1 > ((*it)->second) != CR_EQ );
-        if( !reduceWRTGroebnerBasis( *it, gb ) ) return False;
+        if( !reduceWRTGroebnerBasis( *it, gb ) ) {
+            #ifdef GATHER_STATS
+            mStats->infeasibleInequality();
+            #endif
+            return False;
+        }
     }
     if( Settings::withInfeasibleSubset != RETURN_DIRECTLY )
     {
@@ -774,6 +791,9 @@ Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const std::list<type
         }
         else
         {
+            #ifdef GATHER_STATS
+            mStats->infeasibleInequality();
+            #endif
             return False;
         }
     }
@@ -854,9 +874,10 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
             }
             else // we have a conflict
             {
+                
                 std::set<const Formula*> infeasibleSubset( mModule->generateReasons( reduced.getOrigins( ).getBitVector( ) ) );
                 infeasibleSubset.insert( *(it->first) );
-
+                mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->mpReceivedFormula->size());
                 mModule->mInfeasibleSubsets.push_back( infeasibleSubset );
                 if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
                 {

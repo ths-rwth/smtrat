@@ -135,6 +135,10 @@ public:
 
     typename Rows::iterator mNewConstraints;
     unsigned mLastRestart;
+private:
+    #ifdef GATHER_STATS
+    GroebnerModuleStats* mStats;
+    #endif GATHER_STATS
 };
 
 /**
