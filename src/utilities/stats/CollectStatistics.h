@@ -43,6 +43,7 @@ namespace smtrat {
         CollectStatistics( );
         virtual ~CollectStatistics( ) {};
         static void print(std::ostream& os = std::cout);
+        static void exportKeyValue(std::string path);
     private:
 
     };

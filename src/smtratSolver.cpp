@@ -42,6 +42,9 @@ int main( int argc, char* argv[] )
     smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
     smtrat::Driver   driver( form );
 
+    bool printStats = false;
+    bool exportStats = false; 
+    
     if(argc == 1) {
         std::cout << "This is " << PROJECT_NAME << "." <<  std::endl;
         std::cout << "Version: " << VERSION << std::endl;
@@ -56,6 +59,12 @@ int main( int argc, char* argv[] )
         else if( argv[ai] == std::string( "-s" ) )
         {
             driver.trace_scanning = true;
+        }
+        else if( argv[ai] == std::string( "--print-stats") ) {
+            printStats = true;
+        }
+        else if( argv[ai] == std::string( "--export-stats") ) {
+            exportStats = true;
         }
         else if( argv[ai] == std::string( "--help") ) {
             std::cout << "The help is not yet implemented. Please visit our website ...." << std::endl;
@@ -115,7 +124,7 @@ int main( int argc, char* argv[] )
                 delete form;
             }
             #ifdef GATHER_STATS
-            smtrat::CollectStatistics::print(std::cout);
+            if(printStats) smtrat::CollectStatistics::print(std::cout);
             #endif GATHER_STATS
         }
     }
