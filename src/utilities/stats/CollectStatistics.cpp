@@ -45,5 +45,5 @@ void CollectStatistics::print(std::ostream& os) {
 
 }
 
-#endif GATHER_STATS
+#endif //GATHER_STATS
 

@@ -138,7 +138,7 @@ public:
 private:
     #ifdef GATHER_STATS
     GroebnerModuleStats* mStats;
-    #endif GATHER_STATS
+    #endif //GATHER_STATS
 };
 
 /**
@@ -195,7 +195,7 @@ protected:
 private:
     #ifdef GATHER_STATS
     GroebnerModuleStats* mStats;
-    #endif GATHER_STATS
+    #endif //GATHER_STATS
     typedef Module super;
 };
 } // namespace smtrat

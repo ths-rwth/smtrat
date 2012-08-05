@@ -621,7 +621,9 @@ InequalitiesTable<Settings>::InequalitiesTable( GroebnerModule<Settings>* module
 {
     mBtnumber = 0;
     mNewConstraints = mReducedInequalities.begin( );
+    #ifdef GATHER_STATS
     mStats = GroebnerModuleStats::getInstance(Settings::identifier);
+    #endif 
 }
 
 /**
@@ -877,7 +879,9 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                 
                 std::set<const Formula*> infeasibleSubset( mModule->generateReasons( reduced.getOrigins( ).getBitVector( ) ) );
                 infeasibleSubset.insert( *(it->first) );
+                #ifdef GATHER_STATS
                 mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->mpReceivedFormula->size());
+                #endif //GATHER_STATS
                 mModule->mInfeasibleSubsets.push_back( infeasibleSubset );
                 if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
                 {

@@ -33,7 +33,7 @@
 #include "NRATSolver.h"
 #ifdef GATHER_STATS
 #include "utilities/stats/CollectStatistics.h"
-#endif GATHER_STATS
+#endif //GATHER_STATS
 /**
  *
  */
@@ -42,9 +42,11 @@ int main( int argc, char* argv[] )
     smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
     smtrat::Driver   driver( form );
 
+    #ifdef GATHER_STATS
     bool printStats = false;
     bool exportStats = false; 
-    
+    #endif //GATHER_STATS 
+   
     if(argc == 1) {
         std::cout << "This is " << PROJECT_NAME << "." <<  std::endl;
         std::cout << "Version: " << VERSION << std::endl;
@@ -60,12 +62,14 @@ int main( int argc, char* argv[] )
         {
             driver.trace_scanning = true;
         }
+        #ifdef GATHER_STATS
         else if( argv[ai] == std::string( "--print-stats") ) {
             printStats = true;
         }
         else if( argv[ai] == std::string( "--export-stats") ) {
             exportStats = true;
         }
+        #endif
         else if( argv[ai] == std::string( "--help") ) {
             std::cout << "The help is not yet implemented. Please visit our website ...." << std::endl;
         }
@@ -125,7 +129,7 @@ int main( int argc, char* argv[] )
             }
             #ifdef GATHER_STATS
             if(printStats) smtrat::CollectStatistics::print(std::cout);
-            #endif GATHER_STATS
+            #endif //GATHER_STATS
         }
     }
     return (EXIT_SUCCESS);
