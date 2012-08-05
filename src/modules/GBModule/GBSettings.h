@@ -40,7 +40,7 @@ namespace smtrat
     struct GBSettings6;
     struct GBSettings7;
 
-    typedef GBSettings6 GBSettings;
+    typedef GBSettings3 GBSettings;
    /**
      * Only active if we check inequalities.
      * AS_RECEIVED: Do not change the received inequalities.
