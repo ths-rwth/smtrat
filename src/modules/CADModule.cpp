@@ -25,8 +25,10 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2012-07-24
+ * @version 2012-08-10
  */
+
+//#define MODULE_VERBOSE
 
 #include "../Manager.h"
 #include "CADModule.h"
@@ -65,6 +67,10 @@ namespace smtrat
     {
         mModuleType = MT_CADModule;
         mInfeasibleSubsets.clear();    // initially everything is satisfied
+        GiNaCRA::CADSettings setting = GiNaCRA::CADSettings::getSettings();
+        setting.setRemoveConstants( true );
+        setting.setPreferNRSamples( true );
+        mCAD.alterSetting( setting );
     }
 
     CADModule::~CADModule(){}
@@ -170,8 +176,25 @@ namespace smtrat
             ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find( _subformula );
             if( constraintIt == mConstraintsMap.end() )
                 return; // there is nothing to remove
-//            assert( std::find( mpReceivedFormula->begin(), mpReceivedFormula->end(), *_subformula ) == mpReceivedFormula->end() && constraintIt != mConstraintsMap.end() );    // the constraint to be removed should have been asserted before!
             GiNaCRA::Constraint constraint = mConstraints[constraintIt->second];
+            #ifdef MODULE_VERBOSE
+            cout << endl << "---- Constraint removal (before) ----" << endl;
+            cout << "Elimination set sizes:";
+            vector<EliminationSet> elimSets = mCAD.eliminationSets();
+            for( unsigned i = 0; i != elimSets.size(); ++i )
+                cout << "  Level " << i << ": " << elimSets[i].size();
+            cout << endl;
+            for( unsigned i = 0; i != elimSets.size(); ++i )
+            {
+                cout << "  Level " << i << " (" << elimSets[i].size() << "): ";
+                for( EliminationSet::const_iterator j = elimSets[i].begin(); j != elimSets[i].end(); ++j )
+                    cout << **j << "   ";
+                cout << endl;
+            }
+            cout << endl << "#Samples: " << mCAD.samples().size() << endl;
+            cout << "-----------------------------------------" << endl;
+            cout << "Removing " << constraint << "..." << endl;
+            #endif
             unsigned constraintIndex = constraintIt->second;
             // remove the constraint in mConstraintsMap
             mConstraintsMap.erase( constraintIt );
@@ -179,6 +202,23 @@ namespace smtrat
             mNewPolynomials.remove( constraint.polynomial() );
             // reduce the CAD object
             mCAD.removePolynomial( GiNaCRA::UnivariatePolynomial( constraint.polynomial(), constraint.variables().front(), false ) );    // false: disable input checks
+            #ifdef MODULE_VERBOSE
+            cout << endl << "---- Constraint removal (afterwards) ----" << endl;
+            cout << "Elimination set sizes:";
+            elimSets = mCAD.eliminationSets();
+            for( unsigned i = 0; i != elimSets.size(); ++i )
+                cout << "  Level " << i << ": " << elimSets[i].size();
+            cout << endl;
+            for( unsigned i = 0; i != elimSets.size(); ++i )
+            {
+                cout << "  Level " << i << " (" << elimSets[i].size() << "): ";
+                for( EliminationSet::const_iterator j = elimSets[i].begin(); j != elimSets[i].end(); ++j )
+                    cout << **j << "   ";
+                cout << endl;
+            }
+            cout << endl << "#Samples: " << mCAD.samples().size() << endl;
+            cout << "-----------------------------------------" << endl;
+            #endif
             // update the variables by the CAD's current variables
             mVariables = mCAD.variables();
             // remove the constraint from the list of constraints

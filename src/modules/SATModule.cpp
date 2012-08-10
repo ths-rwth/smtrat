@@ -646,7 +646,7 @@ namespace smtrat
                     // we take the corresponding auxiliary variable
                     lbool assignmentAux = assigns[posInAssigns - 1];
 
-                    assert( assignmentAux != l_False );
+//                    assert( assignmentAux != l_False );
                     if( assignmentAux == l_True )
                     {
                         // This constraint has to be part of the theory call
