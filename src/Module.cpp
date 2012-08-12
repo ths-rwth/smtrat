@@ -27,7 +27,7 @@
  * @author Ulrich Loup
  * @author Sebastian Junges
  * @since: 2012-01-18
- * @version: 2012-06-18
+ * @version: 2012-08-13
  */
 
 #include "Module.h"
@@ -39,7 +39,7 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
-//#define LOG_THEORY_CALLS
+#define LOG_THEORY_CALLS
 //#define LOG_INFEASIBLE_SUBSETS
 
 using namespace std;
@@ -575,9 +575,10 @@ namespace smtrat
     }
 
     /**
-     *
+     * Add a formula to the assumption vector and its predetermined consistency status.
      * @param _formula
      * @param _consistent
+     * @see Module::storeAssumptionsToCheck
      */
     void Module::addAssumptionToCheck( const Formula& _formula, bool _consistent, const string _moduleName )
     {
@@ -594,9 +595,10 @@ namespace smtrat
     }
 
     /**
-     *
+     * Add a conjunction of _constraints to the assumption vector and its predetermined consistency status.
      * @param _constraints
      * @param _consistent
+     * @see Module::storeAssumptionsToCheck
      */
     void Module::addAssumptionToCheck( const set<const Formula*>& _formulas, bool _consistent, const string _moduleName )
     {
@@ -617,9 +619,10 @@ namespace smtrat
     }
 
     /**
-     *
+     * Add a conjunction of _constraints to the assumption vector and its predetermined consistency status.
      * @param _constraints
      * @param _consistent
+     * @see Module::storeAssumptionsToCheck
      */
     void Module::addAssumptionToCheck( const set<const Constraint*>& _constraints, bool _consistent, const string _moduleName )
     {
@@ -640,7 +643,7 @@ namespace smtrat
     }
 
     /**
-     *
+     * Prints the collected assumptions in the assumption vector into _filename with an appropriate smt2 header including all variables used.
      * @param _filename
      */
     void Module::storeAssumptionsToCheck( const string _filename )
@@ -651,16 +654,23 @@ namespace smtrat
             smtlibFile.open( _filename );
             for( vector< string >::const_iterator assum = Module::mAssumptionToCheck.begin();
                  assum != Module::mAssumptionToCheck.end(); ++assum )
-            {
+            { // for each assumption add a new solver-call by resetting the search state
                 smtlibFile << "(reset)\n";
                 smtlibFile << "(set-logic QF_NRA)\n";
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
+                // add all real-valued variables
                 for( GiNaC::symtab::const_iterator var = Formula::mConstraintPool.variables().begin();
                     var != Formula::mConstraintPool.variables().end(); ++var )
                 {
                     smtlibFile << "(declare-fun " << var->first << " () Real)\n";
                 }
+                // add all Boolean auxiliary variables
+                for( unsigned auxIndex = 0; auxIndex < Formula::mAuxiliaryBooleanCounter; ++auxIndex )
+                {
+                    smtlibFile << "(declare-fun " << Formula::mAuxiliaryBooleanNamePrefix << auxIndex << " () Bool)\n";
+                }
+                // add module name variables
                 for( set<string, strcomp>::const_iterator involvedModule = Module::mVariablesInAssumptionToCheck.begin();
                      involvedModule != Module::mVariablesInAssumptionToCheck.end(); ++involvedModule )
                 {
