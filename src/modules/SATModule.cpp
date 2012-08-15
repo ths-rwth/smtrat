@@ -40,11 +40,13 @@
  */
 
 
-/*
- * File:   SATModule.cpp
+/**
+ * @file   SATModule.cpp
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
+ * @author Ulrich Loup
  *
- * Created on January 18, 2012, 3:51 PM
+ * @since 2012-01-18
+ * @version 2012-08-15
  */
 
 #include "SATModule.h"
@@ -202,7 +204,8 @@ namespace smtrat
         budgetOff();
         assumptions.clear();
 
-        addAssumptionToCheck( *mpReceivedFormula, false, moduleName( mModuleType ) );
+//        // add the whole input formula to the assumptions
+//        addAssumptionToCheck( *mpReceivedFormula, false, moduleName( mModuleType ) );
 
         model.clear();
         conflict.clear();
