@@ -759,7 +759,7 @@ namespace vs
                     /*
                      * If it is easy to decide that cond1 and cond2 are conflicting.
                      */
-                    else if( strongProp == -2 )
+                    else if( strongProp == -2 || strongProp == -4 )
                     {
                         ConditionSet condSet = ConditionSet();
 

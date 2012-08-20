@@ -293,6 +293,28 @@ namespace smtrat
                             }
                             break;
                         }
+                        case -4:
+                        {
+                            redundantFormulaSet.erase( *subformulaA );
+                            redundantFormulaSet.erase( *subformulaB );
+
+                            /*
+                             * If it is easy to decide that consA and consB are conflicting.
+                             */
+
+                            vec_set_const_pFormula originsA = vec_set_const_pFormula();
+                            getOrigins( *subformulaA, originsA );
+                            vec_set_const_pFormula originsB = vec_set_const_pFormula();
+                            getOrigins( *subformulaB, originsB );
+
+                            vec_set_const_pFormula originsAB = merge( originsA, originsB );
+                            for( vec_set_const_pFormula::iterator setIter = originsAB.begin(); setIter != originsAB.end(); ++setIter )
+                            {
+                                mInfeasibleSubsets.push_back( set<const Formula*>() );
+                                mInfeasibleSubsets.back().insert( setIter->begin(), setIter->end() );
+                            }
+                            break;
+                        }
                         case -3:
                         {
                             /*

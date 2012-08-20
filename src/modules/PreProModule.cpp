@@ -34,14 +34,14 @@
 using namespace std;
 using namespace GiNaC;
 
-//#define SIMPLIFY_CLAUSES                                       // Searches for simplifications in clauses 
+#define SIMPLIFY_CLAUSES                                       // Searches for simplifications in clauses
 #define ADD_LEARNING_CLAUSES                                   // Adds learning clauses
-//#define ADD_NEGATED_LEARNING_CLAUSES                           // Adds negated learning clauses               
+//#define ADD_NEGATED_LEARNING_CLAUSES                           // Adds negated learning clauses
 //#define PROCEED_SUBSTITUTION                                   // Substitutes variables ( ONlY USABLE FOR FORMULAS WITH XOR (before CNF) )
-//#define ASSIGN_ACTIVITIES                                      // Assigns activities between 0 and 1 
+#define ASSIGN_ACTIVITIES                                      // Assigns activities between 0 and 1
 
-#define CONSIDER_ONLY_HIGHEST_DEGREE_FOR_VAR_ACTIVITY          // Requires ASSIGN_ACTIVITIES ( ONLYO USABLE FOR FORMULAS WITH CONSTRAINTS WITH DEGREE > 1 )      
-//#define CHECK_FOR_TAUTOLOGIES                                  // Requires SIMPLIFY_CLAUSES ( ONLY USABLE FOR FORMULAS WITH CONJUNCTED SINGLE CONSTRAINTS ) 
+#define CONSIDER_ONLY_HIGHEST_DEGREE_FOR_VAR_ACTIVITY          // Requires ASSIGN_ACTIVITIES ( ONLYO USABLE FOR FORMULAS WITH CONSTRAINTS WITH DEGREE > 1 )
+//#define CHECK_FOR_TAUTOLOGIES                                  // Requires SIMPLIFY_CLAUSES ( ONLY USABLE FOR FORMULAS WITH CONJUNCTED SINGLE CONSTRAINTS )
 //#define DIVIDE_VAR_ACTIVITIES_BY_QUANTITY_OF_SUMMANDS          // Instead of sum of variable degrees
 #define DIVIDE_VAR_ACTIVITIES_BY_SUM_OF_VARIABLE_DEGREES
 
@@ -53,14 +53,14 @@ static const double scale = 100;                               // Value to scale
 //------------------VarActivities------------------------------
 static const double weightOfVarDegrees = -2;                   // The highes degree which appears variable x in whole formula
 static const double weightOfVarQuantities = 2;                 // The number of constraints where variable x appears
-static const double lowerBoundForVarActivity = 1.5;            // Influences reaction on variable with higher degrees       
-static const double upperBoundForVarActivity = 2;  
+static const double lowerBoundForVarActivity = 1.5;            // Influences reaction on variable with higher degrees
+static const double upperBoundForVarActivity = 2;
 //------------------ConstraintActivities-----------------------
-static const double weightOfVarActivities = 4;                 // Weight of Variable Activities  
+static const double weightOfVarActivities = 4;                 // Weight of Variable Activities
 static const double weightOfHPDegrees = -6;                    // Weight of highest product degree of constraints
-static const double weightOfHVDegrees = -6;                    // Weight of highest  
-static const double weightOfConQuantities = 1;                 // Weight of quantity of constraints  
-static const double weightOfVarQuantitiesInConstraint = -1;                     
+static const double weightOfHVDegrees = -6;                    // Weight of highest
+static const double weightOfConQuantities = 1;                 // Weight of quantity of constraints
+static const double weightOfVarQuantitiesInConstraint = -1;
 static const double weightOfRelationSymbols = 1;               // Weight of relation symbols
 //------------------RelationSymbols----------------------------
 static const double weight_CR_EQ = 2;
@@ -224,11 +224,11 @@ namespace smtrat
         {
             mVariableActivities[(*it).first] = 0;
             if( mVarQuantityActivityIntervall.first-mVarQuantityActivityIntervall.second != 0 && weightOfVarQuantities != 0 )
-                mVariableActivities[(*it).first] += weightOfVarQuantities * 
+                mVariableActivities[(*it).first] += weightOfVarQuantities *
                         normalizeValue( (*it).second.first, mVarQuantityActivityIntervall.first, mVarQuantityActivityIntervall.second );
             if( mVarDegreeActivityIntervall.first-mVarDegreeActivityIntervall.second != 0 && weightOfVarDegrees != 0 )
                 mVariableActivities[(*it).first] += weightOfVarDegrees *
-                        normalizeValue( (*it).second.second, mVarDegreeActivityIntervall.first, mVarDegreeActivityIntervall.second ); 
+                        normalizeValue( (*it).second.second, mVarDegreeActivityIntervall.first, mVarDegreeActivityIntervall.second );
             if( mVariableActivities[(*it).first] < intervall.first ) intervall.first = mVariableActivities[(*it).first];
             if( mVariableActivities[(*it).first] > intervall.second ) intervall.second = mVariableActivities[(*it).first];
         }
@@ -250,8 +250,8 @@ namespace smtrat
     }
 
     /*
-     * Assign normalized activities recursivly from database to passed formula  
-     * (Requires 
+     * Assign normalized activities recursivly from database to passed formula
+     * (Requires
      */
     void PreProModule::assignActivitiesFromDatabase( Formula* _Formula )
     {
@@ -260,7 +260,7 @@ namespace smtrat
             double normalizedactivity = 0;
             if( mActivityIntervall.first-mActivityIntervall.second != 0 && scale != 0 )
                 normalizedactivity = normalizeValue(mActivities[ _Formula->pConstraint() ], mActivityIntervall.first, mActivityIntervall.second ) * scale;
-            assert( normalizedactivity/scale >= 0 && normalizedactivity/scale <= 1 && normalizedactivity == normalizedactivity); 
+            assert( normalizedactivity/scale >= 0 && normalizedactivity/scale <= 1 && normalizedactivity == normalizedactivity);
             _Formula->setActivity( normalizedactivity );
 #ifdef PRINT_CONSTRAINTS
             _Formula->print();
@@ -278,14 +278,14 @@ namespace smtrat
             }
         }
     }
-    
+
     /*
      * Generate constraint activities recursivly and save it in Database
      * (Requires generateVarActivitiesInDatabase(Formula*)
      */
     void PreProModule::generateConActivitiesInDatabase( Formula* _Formula )
     {
-        
+
         if( _Formula->getType() == REALCONSTRAINT )
         {
             const Constraint* t_constraint = _Formula->pConstraint();
@@ -320,7 +320,7 @@ namespace smtrat
                     }
                 }
                 mConstraintActivities[ t_constraint ].first.first = mConstraintActivities[ t_constraint ].first.first/numberOfDegrees;
-                
+
 #endif
                 // Determine highest degree of product
                 if( weightOfHPDegrees != 0)
@@ -338,26 +338,26 @@ namespace smtrat
             }
             // Determine Quantity of this Constraint
             mConstraintActivities[ t_constraint ].second.first.second += 1;
-            
+
             // Determine lower bounds
             if( mConstraintActivities[ t_constraint ].first.first < mVarActivityIntervall.first )
                 mVarActivityIntervall.first = mConstraintActivities[ t_constraint ].first.first;
-            if( mConstraintActivities[ t_constraint ].first.second < mHPDegreeActivityIntervall.first ) 
+            if( mConstraintActivities[ t_constraint ].first.second < mHPDegreeActivityIntervall.first )
                 mHPDegreeActivityIntervall.first = mConstraintActivities[ t_constraint ].first.second;
             if( mConstraintActivities[ t_constraint ].second.first.first < mHVDegreeActivityIntervall.first )
                 mHVDegreeActivityIntervall.first = mConstraintActivities[ t_constraint ].second.first.first;
-            if( mConstraintActivities[ t_constraint ].second.first.second < mConQuantityActivityIntervall.first ) 
+            if( mConstraintActivities[ t_constraint ].second.first.second < mConQuantityActivityIntervall.first )
                 mConQuantityActivityIntervall.first = mConstraintActivities[ t_constraint ].second.first.second;
             if( mConstraintActivities[ t_constraint ].second.second < mNumberOfVarsActivityIntervall.first )
                 mNumberOfVarsActivityIntervall.first = mConstraintActivities[ t_constraint ].second.second;
             // Determine upper bounds
             if( mConstraintActivities[ t_constraint ].first.first > mVarActivityIntervall.second )
                 mVarActivityIntervall.second = mConstraintActivities[ t_constraint ].first.first;
-            if( mConstraintActivities[ t_constraint ].first.second > mHPDegreeActivityIntervall.second ) 
+            if( mConstraintActivities[ t_constraint ].first.second > mHPDegreeActivityIntervall.second )
                 mHPDegreeActivityIntervall.second = mConstraintActivities[ t_constraint ].first.second;
             if( mConstraintActivities[ t_constraint ].second.first.first > mHVDegreeActivityIntervall.second )
                 mHVDegreeActivityIntervall.second = mConstraintActivities[ t_constraint ].second.first.first;
-            if( mConstraintActivities[ t_constraint ].second.first.second > mConQuantityActivityIntervall.second ) 
+            if( mConstraintActivities[ t_constraint ].second.first.second > mConQuantityActivityIntervall.second )
                 mConQuantityActivityIntervall.second = mConstraintActivities[ t_constraint ].second.first.second;
             if( mConstraintActivities[ t_constraint ].second.second > mNumberOfVarsActivityIntervall.second)
                 mNumberOfVarsActivityIntervall.second = mConstraintActivities[ t_constraint ].second.second;
@@ -401,14 +401,14 @@ namespace smtrat
                         mVariableDegNQuantActivities[ (*iteratorvar).first ].second = t_activity;
 #endif
                 // Determine lower bounds
-                if( mVariableDegNQuantActivities[ (*iteratorvar).first ].first < mVarQuantityActivityIntervall.first ) 
+                if( mVariableDegNQuantActivities[ (*iteratorvar).first ].first < mVarQuantityActivityIntervall.first )
                     mVarQuantityActivityIntervall.first = mVariableDegNQuantActivities[ (*iteratorvar).first ].first;
-                if( mVariableDegNQuantActivities[ (*iteratorvar).first ].second < mVarDegreeActivityIntervall.first ) 
+                if( mVariableDegNQuantActivities[ (*iteratorvar).first ].second < mVarDegreeActivityIntervall.first )
                     mVarDegreeActivityIntervall.first = mVariableDegNQuantActivities[ (*iteratorvar).first ].second;
                 // Determine upper bounds
-                if( mVariableDegNQuantActivities[ (*iteratorvar).first ].first > mVarQuantityActivityIntervall.second ) 
+                if( mVariableDegNQuantActivities[ (*iteratorvar).first ].first > mVarQuantityActivityIntervall.second )
                     mVarQuantityActivityIntervall.second = mVariableDegNQuantActivities[ (*iteratorvar).first ].first;
-                if( mVariableDegNQuantActivities[ (*iteratorvar).first ].second > mVarDegreeActivityIntervall.second ) 
+                if( mVariableDegNQuantActivities[ (*iteratorvar).first ].second > mVarDegreeActivityIntervall.second )
                     mVarDegreeActivityIntervall.second = mVariableDegNQuantActivities[ (*iteratorvar).first ].second;
             }
         }
@@ -423,7 +423,7 @@ namespace smtrat
             }
         }
     }
-    
+
     /*
      * Generates final but unnormalized activities in database
      * (Requires generateConActivitiesInDatabase( Formula* )
@@ -432,39 +432,39 @@ namespace smtrat
     {
         double activity = 0;
         if( _Formula->getType() == REALCONSTRAINT )
-        {        
+        {
             const Constraint* t_constraint = _Formula->pConstraint();
             if( mActivities.find( t_constraint ) == mActivities.end() )
-            {                
-                if( (mVarActivityIntervall.second-mVarActivityIntervall.first) != 0 && weightOfVarActivities != 0 ) 
-                    activity += normalizeValue(mConstraintActivities[ t_constraint ].first.first, mVarActivityIntervall.first, mVarActivityIntervall.second ) 
+            {
+                if( (mVarActivityIntervall.second-mVarActivityIntervall.first) != 0 && weightOfVarActivities != 0 )
+                    activity += normalizeValue(mConstraintActivities[ t_constraint ].first.first, mVarActivityIntervall.first, mVarActivityIntervall.second )
                             * weightOfVarActivities * scale;
-                if( (mHPDegreeActivityIntervall.second-mHPDegreeActivityIntervall.first) != 0 && weightOfHPDegrees != 0 ) 
-                    activity += normalizeValue(mConstraintActivities[ t_constraint ].first.second, mHPDegreeActivityIntervall.first, mHPDegreeActivityIntervall.second ) 
+                if( (mHPDegreeActivityIntervall.second-mHPDegreeActivityIntervall.first) != 0 && weightOfHPDegrees != 0 )
+                    activity += normalizeValue(mConstraintActivities[ t_constraint ].first.second, mHPDegreeActivityIntervall.first, mHPDegreeActivityIntervall.second )
                             * weightOfHPDegrees * scale;
-                if( (mHVDegreeActivityIntervall.second-mHVDegreeActivityIntervall.first) != 0 && weightOfHVDegrees != 0 ) 
-                    activity += normalizeValue(mConstraintActivities[ t_constraint ].second.first.first, mHVDegreeActivityIntervall.first, mHVDegreeActivityIntervall.second ) 
+                if( (mHVDegreeActivityIntervall.second-mHVDegreeActivityIntervall.first) != 0 && weightOfHVDegrees != 0 )
+                    activity += normalizeValue(mConstraintActivities[ t_constraint ].second.first.first, mHVDegreeActivityIntervall.first, mHVDegreeActivityIntervall.second )
                             * weightOfHVDegrees * scale;
-                if( (mConQuantityActivityIntervall.second-mConQuantityActivityIntervall.first) != 0 && weightOfConQuantities != 0 ) 
-                    activity += normalizeValue(mConstraintActivities[ t_constraint ].second.first.second, mConQuantityActivityIntervall.first, mConQuantityActivityIntervall.second ) 
+                if( (mConQuantityActivityIntervall.second-mConQuantityActivityIntervall.first) != 0 && weightOfConQuantities != 0 )
+                    activity += normalizeValue(mConstraintActivities[ t_constraint ].second.first.second, mConQuantityActivityIntervall.first, mConQuantityActivityIntervall.second )
                             * weightOfConQuantities * scale;
-                if( (mNumberOfVarsActivityIntervall.second-mNumberOfVarsActivityIntervall.first) != 0 && weightOfVarQuantitiesInConstraint != 0 ) 
-                    activity += normalizeValue(mConstraintActivities[ t_constraint ].second.second, mNumberOfVarsActivityIntervall.first, mNumberOfVarsActivityIntervall.second ) 
+                if( (mNumberOfVarsActivityIntervall.second-mNumberOfVarsActivityIntervall.first) != 0 && weightOfVarQuantitiesInConstraint != 0 )
+                    activity += normalizeValue(mConstraintActivities[ t_constraint ].second.second, mNumberOfVarsActivityIntervall.first, mNumberOfVarsActivityIntervall.second )
                             * weightOfVarQuantitiesInConstraint * scale;
                if( (mRelWeightIntervall.second-mRelWeightIntervall.first) != 0 )
                 {
                     switch( (*t_constraint).relation() )
                     {
                         case CR_EQ:
-                            activity += normalizeValue(weight_CR_EQ, mRelWeightIntervall.first, mRelWeightIntervall.second ) 
+                            activity += normalizeValue(weight_CR_EQ, mRelWeightIntervall.first, mRelWeightIntervall.second )
                                     * weightOfRelationSymbols * scale;
                             break;
                         case CR_GEQ:
-                            activity += normalizeValue(weight_CR_GEQ, mRelWeightIntervall.first, mRelWeightIntervall.second ) 
+                            activity += normalizeValue(weight_CR_GEQ, mRelWeightIntervall.first, mRelWeightIntervall.second )
                                     * weightOfRelationSymbols * scale;
                             break;
                         case CR_LEQ:
-                            activity += normalizeValue(weight_CR_LEQ, mRelWeightIntervall.first, mRelWeightIntervall.second) 
+                            activity += normalizeValue(weight_CR_LEQ, mRelWeightIntervall.first, mRelWeightIntervall.second)
                                     * weightOfRelationSymbols * scale;
                             break;
                         case CR_LESS:
@@ -472,7 +472,7 @@ namespace smtrat
                                     * weightOfRelationSymbols * scale;
                             break;
                         case CR_GREATER:
-                            activity += normalizeValue(weight_CR_GREATER, mRelWeightIntervall.first, mRelWeightIntervall.second ) 
+                            activity += normalizeValue(weight_CR_GREATER, mRelWeightIntervall.first, mRelWeightIntervall.second )
                                     * weightOfRelationSymbols * scale;
                             break;
                         default:
@@ -481,7 +481,7 @@ namespace smtrat
                     }
                 }
                 assert( activity == activity );
-                mActivities[ t_constraint ] = activity; 
+                mActivities[ t_constraint ] = activity;
                 if( activity < mActivityIntervall.first ) mActivityIntervall.first = activity;
                 if( activity > mActivityIntervall.second ) mActivityIntervall.second = activity;
             }
@@ -497,12 +497,12 @@ namespace smtrat
             }
         }
     }
-    
+
     /*
      * Requires generateVarActivities()
      */
     double PreProModule::getConstraintActivitiy( GiNaC::ex _ex )
-    {   
+    {
         double result = 0;
         ex linearterm = _ex.expand();
         if( is_exactly_a<add>( linearterm ) )
@@ -516,7 +516,7 @@ namespace smtrat
         {
             result = 1;
             for( GiNaC::const_iterator factor = linearterm.begin(); factor != linearterm.end(); ++factor )
-            { 
+            {
                 double t_res = getConstraintActivitiy( *factor );
                 if( t_res != 0 ) result *= t_res;
             }
@@ -525,7 +525,7 @@ namespace smtrat
         {
             for( GiNaC::const_iterator power = linearterm.begin(); power != linearterm.end(); ++power )
             {
-                if( is_exactly_a<symbol>( (*power) ) ) 
+                if( is_exactly_a<symbol>( (*power) ) )
                 {
                      GiNaC::symbol sym = ex_to<symbol>(*power);
                      result = mVariableActivities[ sym.get_name() ];
@@ -537,14 +537,14 @@ namespace smtrat
                 }
             }
         }
-        else if( is_exactly_a<symbol>(linearterm) ) 
+        else if( is_exactly_a<symbol>(linearterm) )
         {
             GiNaC::symbol sym = ex_to<symbol>(linearterm);
-            result = mVariableActivities[ sym.get_name() ];   
+            result = mVariableActivities[ sym.get_name() ];
         }
         return result;
     }
-    
+
     /*
      * returns the biggest product degree
      */
@@ -575,7 +575,7 @@ namespace smtrat
         {
             for( GiNaC::const_iterator factor = linearterm.begin(); factor != linearterm.end(); ++factor )
             {
-                if( is_exactly_a<numeric>( *factor ) ) 
+                if( is_exactly_a<numeric>( *factor ) )
                 {
                      GiNaC::numeric num = ex_to<numeric>(*factor);
                      result = (double) num.to_double();
@@ -585,7 +585,7 @@ namespace smtrat
         else if( is_exactly_a<symbol>( linearterm ) ) result = 1;
         return result;
     }
-    
+
     /*
      * Returns normalized value
      */
@@ -635,6 +635,11 @@ namespace smtrat
                                 newFormula = removeConstraint( (*iterator), (*constraints.at( i )).lhs(), (*constraints.at( i )).relation() );                // C1 <= C2       delete C2
                                 break;
                             case -2:                // C1 or C2 <=> true
+                                iterator = interfaceRemoveSubformulaFromPassedFormula( iterator );
+                                i = constraints.size();
+                                j = i;
+                                break;
+                            case -4:                // C1 or C2 <=> true
                                 iterator = interfaceRemoveSubformulaFromPassedFormula( iterator );
                                 i = constraints.size();
                                 j = i;
@@ -751,7 +756,7 @@ namespace smtrat
             }
         }
     }
-    
+
     /*
      * Adds helpfull information about all Constraints to PassedFormula
     */
@@ -775,7 +780,7 @@ namespace smtrat
                 std::set<const Constraint*> mUniqueConstraintsB = std::set<const Constraint*>();
                 for( unsigned posConsB = 0; posConsB < mConstraints.size(); ++posConsB )
                 {
-                    if( mUniqueConstraintsB.find( mConstraints.at( posConsB ) ) == mUniqueConstraintsB.end() 
+                    if( mUniqueConstraintsB.find( mConstraints.at( posConsB ) ) == mUniqueConstraintsB.end()
                             && mConstraints.at( posConsB )->lhs() != 0 && mConstraints.at( posConsA )->lhs() != 0 )
                     {
                         const Constraint* tempConstraintB = mConstraints.at( posConsB );
@@ -923,7 +928,7 @@ namespace smtrat
                                 _tSubformula2->addSubformula( notFormulaA );
                                 _tSubformula2->addSubformula( invConstraintB );
                             }else if( crelB == CR_NEQ )
-                            {   
+                            {
                                 // Add ( a or b1 or b2 )
                                 const Constraint* invConstraintA = Formula::newConstraint( tempConstraintA->lhs(), crelA );
                                 const Constraint* invConstraintB1 = Formula::newConstraint( tempConstraintB->lhs(), CR_GREATER );
@@ -992,6 +997,24 @@ namespace smtrat
         #endif
                                 break;
                             }
+                            case -4:            // (A or B) and (not A or not B)
+                            {
+        #ifdef ADD_LEARNING_CLAUSES
+                                Formula* _tSubformulaA = new Formula( OR );
+                                _tSubformulaA->addSubformula( new Formula( tempConstraintA ) );
+                                _tSubformulaA->addSubformula( new Formula( tempConstraintB ) );
+                                Formula* _tSubformulaB = new Formula( OR );
+                                Formula* tmpFormulaBA = new Formula( NOT );
+                                tmpFormulaBA->addSubformula( new Formula( tempConstraintA ) );
+                                Formula* tmpFormulaBB = new Formula( NOT );
+                                tmpFormulaBB->addSubformula( new Formula( tempConstraintB ) );
+                                _tSubformulaB->addSubformula( tmpFormulaBA );
+                                _tSubformulaB->addSubformula( tmpFormulaBB );
+                                addSubformulaToPassedFormula( _tSubformulaA, origins );
+                                addSubformulaToPassedFormula( _tSubformulaB, origins );
+        #endif
+                                break;
+                            }
                             default:
                             {
                                 break;
@@ -1006,7 +1029,7 @@ namespace smtrat
     }
 
     /*
-     * Returns the inverted Constraint Relation of the Constraint _const 
+     * Returns the inverted Constraint Relation of the Constraint _const
      */
     const Constraint_Relation PreProModule::getInvertedRelationSymbol( const Constraint* const _const )
     {

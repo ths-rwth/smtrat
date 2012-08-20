@@ -542,8 +542,42 @@ namespace smtrat
                 }
                 case REALCONSTRAINT:
                 {
-                    return NULL;
-
+                    const Constraint* constraint = subformula->pConstraint();
+                    switch( constraint->relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            Formula* newsubformula = new Formula( OR );
+                            newsubformula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS ) ) );
+                            newsubformula->addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS ) ) );
+                            delete _formula;
+                            return newsubformula;
+                        }
+                        case CR_LEQ:
+                        {
+                            Formula* newsubformula = new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS ) );
+                            delete _formula;
+                            return newsubformula;
+                        }
+                        case CR_LESS:
+                        {
+                            Formula* newsubformula = new Formula( Formula::newConstraint( -constraint->lhs(), CR_LEQ ) );
+                            delete _formula;
+                            return newsubformula;
+                        }
+                        case CR_NEQ:
+                        {
+                            Formula* newsubformula = new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ ) );
+                            delete _formula;
+                            return newsubformula;
+                        }
+                        default:
+                        {
+                            cerr << "Unexpected relation symbol!" << endl;
+                            assert( false );
+                            return NULL;
+                        }
+                    }
                 }
                 case TTRUE:
                 {

@@ -940,6 +940,7 @@ namespace smtrat
      *          -1, if it is easy to decide that this constraint includes all solutions of the given constraint;
      *          -2, if it is easy to decide that this constraint has no solution common with the given constraint;
      *          -3, if it is easy to decide that this constraint and the given constraint can be intersected;
+     *          -4, if it is easy to decide that this constraint is the inverse of the given constraint;
      *          0,  otherwise.
      */
     signed Constraint::compare( const Constraint& _constraintA, const Constraint& _constraintB )
@@ -1014,13 +1015,13 @@ namespace smtrat
                             ex result1 = lhsA - lhsB;
                             normalize( result1 );
                             if( result1 == 0 )
-                                return -2;
+                                return -4;
                             if( result1.info( info_flags::rational ) )
                                 return -1;
                             ex result2 = lhsA + lhsB;
                             normalize( result2 );
                             if( result2 == 0 )
-                                return -2;
+                                return -4;
                             if( result2.info( info_flags::rational ) )
                                 return -1;
                             return 0;
@@ -1106,13 +1107,13 @@ namespace smtrat
                             ex result1 = lhsA - lhsB;
                             normalize( result1 );
                             if( result1 == 0 )
-                                return -2;
+                                return -4;
                             if( result1.info( info_flags::rational ) )
                                 return 1;
                             ex result2 = lhsA + lhsB;
                             normalize( result2 );
                             if( result2 == 0 )
-                                return -2;
+                                return -4;
                             if( result2.info( info_flags::rational ) )
                                 return 1;
                             return 0;
@@ -1263,16 +1264,20 @@ namespace smtrat
                                 return -1;
                             ex result2 = lhsA + lhsB;
                             normalize( result2 );
-                            if( result2.info( info_flags::nonnegative ) )
+                            if( result2.info( info_flags::positive ) )
                                 return -2;
+                            if( result2 == 0 )
+                                return -4;
                             return 0;
                         }
                         case CR_GEQ:
                         {
                             ex result1 = -1 * (lhsA - lhsB);
                             normalize( result1 );
-                            if( result1.info( info_flags::nonnegative ) )
+                            if( result1.info( info_flags::positive ) )
                                 return -2;
+                            if( result1 == 0 )
+                                return -4;
                             ex result2 = lhsA + lhsB;
                             normalize( result2 );
                             if( result2.info( info_flags::nonnegative ) )
@@ -1355,8 +1360,10 @@ namespace smtrat
                         {
                             ex result1 = lhsA - lhsB;
                             normalize( result1 );
-                            if( result1.info( info_flags::nonnegative ) )
+                            if( result1.info( info_flags::positive ) )
                                 return -2;
+                            if( result1 == 0 )
+                                return -4;
                             ex result2 = -1 * (lhsA + lhsB);
                             normalize( result2 );
                             if( result2.info( info_flags::nonnegative ) )
@@ -1375,8 +1382,10 @@ namespace smtrat
                                 return -1;
                             ex result2 = -1 * (lhsA + lhsB);
                             normalize( result2 );
-                            if( result2.info( info_flags::nonnegative ) )
+                            if( result2.info( info_flags::positive ) )
                                 return -2;
+                            if( result2 == 0 )
+                                return -4;
                             return 0;
                         }
                         default:
@@ -1431,16 +1440,20 @@ namespace smtrat
                                 return 1;
                             ex result2 = lhsA + lhsB;
                             normalize( result2 );
-                            if( result2.info( info_flags::nonnegative ) )
+                            if( result2.info( info_flags::positive ) )
                                 return -2;
+                            if( result2 == 0 )
+                                return -4;
                             return 0;
                         }
                         case CR_GREATER:
                         {
                             ex result1 = -1 * (lhsA - lhsB);
                             normalize( result1 );
-                            if( result1.info( info_flags::nonnegative ) )
+                            if( result1.info( info_flags::positive ) )
                                 return -2;
+                            if( result1 == 0 )
+                                return -4;
                             ex result2 = -1 * (lhsA + lhsB);
                             normalize( result2 );
                             if( result2.info( info_flags::nonnegative ) )
@@ -1529,8 +1542,10 @@ namespace smtrat
                         {
                             ex result1 = lhsA - lhsB;
                             normalize( result1 );
-                            if( result1.info( info_flags::nonnegative ) )
+                            if( result1.info( info_flags::positive ) )
                                 return -2;
+                            if( result1 == 0 )
+                                return -4;
                             ex result2 = lhsA + lhsB;
                             normalize( result2 );
                             if( result2.info( info_flags::nonnegative ) )
@@ -1549,8 +1564,10 @@ namespace smtrat
                                 return 1;
                             ex result2 = -1 * (lhsA + lhsB);
                             normalize( result2 );
-                            if( result2.info( info_flags::nonnegative ) )
+                            if( result2.info( info_flags::positive ) )
                                 return -2;
+                            if( result2 == 0 )
+                                return -4;
                             return 0;
                         }
                         case CR_LEQ:

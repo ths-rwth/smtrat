@@ -531,86 +531,13 @@ namespace smtrat
                     assert( _origin != NULL );
 
                     /*
-                     * Add the constraint and its negation, both using either the relation
-                     * symbol <, = or <=, to the map (normal form). A new Boolean variable gets generated.
-                     *
-                     * This transformation is done in order to ensure that positive literals in an assignment directly correspond to a theory call.
+                     * Add a fresh Boolean variable as an abstraction of the constraint.
                      */
-                    Var normConstrAuxBoolean = newVar( true, true, _formula.activity() );
-                    Var normConstrBoolean    = newVar();
-                    Var invConstrAuxBoolean  = newVar( true, true, _formula.activity() );
-                    Var invConstrBoolean     = newVar();
-
-                    Lit negNormConstrAuxLit  = mkLit( normConstrAuxBoolean, true );
-                    Lit negInvConstrAuxLit   = mkLit( invConstrAuxBoolean, true );
-
-                    // Add the clause  (or (not normConstrAuxBoolean) normConstrBoolean)
-                    addClause( negNormConstrAuxLit, mkLit( normConstrBoolean, false ) );
-                    // Add the clause  (or (not InvConstrAuxBoolean) InvConstrBoolean)
-                    addClause( negInvConstrAuxLit, mkLit( invConstrBoolean, false ) );
-                    // Add the clause (or normConstrAuxBoolean InvConstrAuxBoolean)
-                    addClause( mkLit( normConstrAuxBoolean, false ), mkLit( invConstrAuxBoolean, false ) );
-                    // Add the clause (or (not normConstrAuxBoolean) (not InvConstrAuxBoolean))
-                    addClause( negNormConstrAuxLit, negInvConstrAuxLit );
-
-                    /*
-                     * Map the literals to the corresponding constraints.
-                     */
-                    switch( constraint->relation() )
-                    {
-                        case CR_EQ:
-                        {
-                            mBooleanConstraintMap[normConstrBoolean] = pair<Formula*, const Formula*>( new Formula( constraint ), _origin );
-                            mConstraintLiteralMap[constraint] = mkLit( normConstrAuxBoolean, false );
-                            break;
-                        }
-                        case CR_LEQ:
-                        {
-                            mBooleanConstraintMap[normConstrBoolean] = pair<Formula*, const Formula*>( new Formula( constraint ), _origin );
-                            mConstraintLiteralMap[constraint] = mkLit( normConstrAuxBoolean, false );
-                            const Constraint* invertedConstraint = Formula::newConstraint( -constraint->lhs(), CR_LESS );
-                            mConstraintsToInform.insert( invertedConstraint );
-                            mBooleanConstraintMap[invConstrBoolean] = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
-                            mConstraintLiteralMap[invertedConstraint] = mkLit( invConstrAuxBoolean, false );
-                            break;
-                        }
-                        case CR_GEQ:
-                        {
-                            mBooleanConstraintMap[normConstrBoolean] = pair<Formula*, const Formula*>( new Formula( constraint ), _origin );
-                            mConstraintLiteralMap[constraint] = mkLit( normConstrAuxBoolean, false );
-                            const Constraint* invertedConstraint = Formula::newConstraint( constraint->lhs(), CR_LESS );
-                            mConstraintsToInform.insert( invertedConstraint );
-                            mBooleanConstraintMap[invConstrBoolean] = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
-                            mConstraintLiteralMap[invertedConstraint] = mkLit( invConstrAuxBoolean, false );
-                            break;
-                        }
-                        case CR_LESS:
-                        {
-                            const Constraint* invertedConstraint = Formula::newConstraint( -constraint->lhs(), CR_LEQ );
-                            mConstraintsToInform.insert( invertedConstraint );
-                            mBooleanConstraintMap[normConstrBoolean] = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
-                            mConstraintLiteralMap[invertedConstraint] = mkLit( normConstrAuxBoolean, false );
-                            mBooleanConstraintMap[invConstrBoolean] = pair<Formula*, const Formula*>( new Formula( constraint ), _origin );
-                            mConstraintLiteralMap[constraint] = mkLit( invConstrAuxBoolean, false );
-                            break;
-                        }
-                        case CR_GREATER:
-                        {
-                            const Constraint* invertedConstraint = Formula::newConstraint( constraint->lhs(), CR_LEQ );
-                            mConstraintsToInform.insert( invertedConstraint );
-                            mBooleanConstraintMap[normConstrBoolean] = pair<Formula*, const Formula*>( new Formula( invertedConstraint ), _origin );
-                            mConstraintLiteralMap[invertedConstraint] = mkLit( normConstrAuxBoolean, false );
-                            mBooleanConstraintMap[invConstrBoolean] = pair<Formula*, const Formula*>( new Formula( constraint ), _origin );
-                            mConstraintLiteralMap[constraint] = mkLit( invConstrAuxBoolean, false );
-                            break;
-                        }
-                        default:
-                        {
-                            cerr << "Unknown relation symbol!" << endl;
-                            assert( false );
-                        }
-                    }
-                    return mConstraintLiteralMap[constraint];
+                    Var constraintAbstraction = newVar( true, true, _formula.activity() );
+                    mBooleanConstraintMap[constraintAbstraction] = pair<Formula*, const Formula*>( new Formula( constraint ), _origin );
+                    Lit lit = mkLit( constraintAbstraction, false );
+                    mConstraintLiteralMap[constraint] = lit;
+                    return lit;
                 }
             }
             default:
@@ -646,15 +573,8 @@ namespace smtrat
                 // if it is a Boolean abstraction of a constraint
                 if( iter != mBooleanConstraintMap.end() )
                 {
-                    // we take the corresponding auxiliary variable
-                    lbool assignmentAux = assigns[posInAssigns - 1];
-
-//                    assert( assignmentAux != l_False );
-                    if( assignmentAux == l_True )
-                    {
-                        // This constraint has to be part of the theory call
-                        constraintsToCheck.insert( pair<const Formula*, const Formula*>( iter->second.first, iter->second.second ) );
-                    }
+                    // This constraint has to be part of the theory call
+                    constraintsToCheck.insert( pair<const Formula*, const Formula*>( iter->second.first, iter->second.second ) );
                 }
             }
             ++posInAssigns;
