@@ -36,6 +36,7 @@ using namespace vs;
 
 //#define VS_ASSIGNMENT_DEBUG
 //#define VS_LOG_INFSUBSETS_OF_BACKEND
+//#define VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
 
 namespace smtrat
 {
@@ -171,6 +172,9 @@ namespace smtrat
         {
             if( mInfeasibleSubsets.empty() )
             {
+                #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                checkAnswer();
+                #endif
                 return True;
             }
             else
@@ -184,6 +188,9 @@ namespace smtrat
         #endif
         if( mpReceivedFormula->empty() )
         {
+            #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+            checkAnswer();
+            #endif
             return True;
         }
         if( mInconsistentConstraintAdded )
@@ -365,6 +372,9 @@ namespace smtrat
                                         {
                                             printAll( cout );
                                         }
+                                        #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                                        checkAnswer();
+                                        #endif
                                         return True;
                                     }
                                 }
@@ -477,7 +487,6 @@ namespace smtrat
                                                 case True:
                                                 {
                                                     currentState->rToHighDegree() = true;
-                                                    //printAnswer( cout );
 
                                                     State * unfinishedAncestor;
                                                     if( currentState->unfinishedAncestor( unfinishedAncestor ) )
@@ -506,6 +515,9 @@ namespace smtrat
                                                         {
                                                             printAll( cout );
                                                         }
+                                                        #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                                                        checkAnswer();
+                                                        #endif
                                                         return True;
                                                     }
                                                     break;
@@ -2063,6 +2075,12 @@ namespace smtrat
         }
     }
 
+    /**
+     *
+     * @param _condition
+     * @param _state
+     * @return
+     */
     vec_set_const_pFormula VSModule::getOriginsOfCondition( const vs::Condition* _condition, const vs::State* _state ) const
     {
         vec_set_const_pFormula result = vec_set_const_pFormula();
@@ -2090,6 +2108,29 @@ namespace smtrat
 
         return result;
     }
+
+    #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+    /**
+     *
+     */
+    void VSModule::checkAnswer() const
+    {
+        if( !(*mpRanking).empty() )
+        {
+            const State* currentState = (*(*mpRanking).begin()).second;
+            while( !(*currentState).isRoot() )
+            {
+                set< const smtrat::Constraint* > constraints = set< const smtrat::Constraint* >();
+                for( ConditionVector::const_iterator cond = currentState->conditions().begin(); cond != currentState->conditions().end(); ++cond )
+                {
+                    constraints.insert( (**cond).pConstraint() );
+                }
+                smtrat::Module::addAssumptionToCheck( constraints, true, "Intermediate_result_of_VSModule" );
+                currentState = (*currentState).pFather();
+            }
+        }
+    }
+    #endif
 
     /**
      * Prints the history to the output stream.

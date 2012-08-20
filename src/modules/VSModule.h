@@ -151,6 +151,7 @@ namespace smtrat
             bool adaptPassedFormula( const vs::State& );
             Answer runBackendSolvers( vs::State* );
             vec_set_const_pFormula getOriginsOfCondition( const vs::Condition*, const vs::State* ) const;
+            void checkAnswer() const;
     };
 
 }    // end namespace smtrat

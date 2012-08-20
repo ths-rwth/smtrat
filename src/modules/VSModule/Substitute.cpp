@@ -774,9 +774,7 @@ namespace vs
         /*
          * Create a substitution formed by the given one without an addition of epsilon.
          */
-        Substitution * substitution1;
-        substitution1            = new Substitution( _substitution );
-        (*substitution1).rType() = ST_NORMAL;
+        Substitution substitution1 = Substitution( _substitution.variable(), _substitution.term(), ST_NORMAL, _substitution.originalConditions() );
 
         /*
          * Create the vector of constraints which serves as a collection of the necessary constraints.
@@ -794,7 +792,7 @@ namespace vs
         /*
          * Check:  (f(x)~0) [x -> t]
          */
-        substituteNormal( collection.back(), *substitution1, _substitutionResults );
+        substituteNormal( collection.back(), substitution1, _substitutionResults );
 
         /*
          * Create a vector to store the results of each single substitution.
@@ -850,18 +848,12 @@ namespace vs
             }
 
             /*
-             * Apply the substitution (without epsilon) to each constraint in
-             * the collection.
+             * Apply the substitution (without epsilon) to each constraint in the collection.
              */
-            signed constraintNumber = 0;
             for( TS_ConstraintConjunction::const_iterator cons = collection.begin(); cons != collection.end(); ++cons )
             {
-                if( constraintNumber > static_cast<signed>(collection.size()) - 3 )
-                {
-                    substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-                    substituteNormal( *cons, *substitution1, substitutionResultsVector.back() );
-                }
-                constraintNumber++;
+                substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
+                substituteNormal( *cons, substitution1, substitutionResultsVector.back() );
             }
 
             combine( substitutionResultsVector, _substitutionResults );
@@ -871,7 +863,6 @@ namespace vs
              */
             substitutionResultsVector.clear();
         }
-        delete substitution1;
     }
 
     /**

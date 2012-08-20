@@ -66,7 +66,6 @@ namespace vs
         {
             mpFactor = new ex( _factor );
         }
-        mpDenominator = new ex( _denominator );
         if( _factor == 0 )
         {
             mpRadicand = new ex( 0 );
@@ -74,6 +73,14 @@ namespace vs
         else
         {
             mpRadicand = new ex( _radicand );
+        }
+        if( *mpFactor == 0 && *mpConstantPart == 0 )
+        {
+            mpDenominator = new ex( 1 );
+        }
+        else
+        {
+            mpDenominator = new ex( _denominator );
         }
     }
 
