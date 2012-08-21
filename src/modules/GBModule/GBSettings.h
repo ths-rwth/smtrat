@@ -32,16 +32,9 @@
 
 namespace smtrat
 {
-    struct GBSettings1;
-    struct GBSettings2;
-    struct GBSettings3; 
-    struct GBSettings4; 
-    struct GBSettings5b;
-    struct GBSettings6;
-    struct GBSettings7;
-    struct GBSettings9;
+    struct GBSettings10;
     
-    typedef GBSettings5b GBSettings;
+    typedef GBSettings10 GBSettings;
    /**
      * Only active if we check inequalities.
      * AS_RECEIVED: Do not change the received inequalities.
@@ -192,7 +185,7 @@ namespace smtrat
 		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
     };
     
-    struct GBSettings5b
+    struct GBSettings5
     {
         static const unsigned                            identifier                              = 5;
         
@@ -206,7 +199,7 @@ namespace smtrat
         static const bool                                getReasonsForInfeasibility              = true;
         static const bool                                passWithMinimalReasons                  = true;
         static const check_inequalities                  checkInequalities                       = ALWAYS;
-        static const pass_inequalities                   passInequalities                        = FULL_REDUCED_IF;
+        static const pass_inequalities                   passInequalities                        = FULL_REDUCED;
         static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_ALLINEQUALITIES;
         static const theory_deductions                   addTheoryDeductions                     = NO_CONSTRAINTS;
         static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
