@@ -36,11 +36,12 @@ namespace smtrat
     struct GBSettings2;
     struct GBSettings3; 
     struct GBSettings4; 
-    struct GBSettings5;
+    struct GBSettings5b;
     struct GBSettings6;
     struct GBSettings7;
-
-    typedef GBSettings3 GBSettings;
+    struct GBSettings9;
+    
+    typedef GBSettings5b GBSettings;
    /**
      * Only active if we check inequalities.
      * AS_RECEIVED: Do not change the received inequalities.
@@ -191,7 +192,7 @@ namespace smtrat
 		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
     };
     
-    struct GBSettings5
+    struct GBSettings5b
     {
         static const unsigned                            identifier                              = 5;
         
@@ -205,7 +206,7 @@ namespace smtrat
         static const bool                                getReasonsForInfeasibility              = true;
         static const bool                                passWithMinimalReasons                  = true;
         static const check_inequalities                  checkInequalities                       = ALWAYS;
-        static const pass_inequalities                   passInequalities                        = FULL_REDUCED;
+        static const pass_inequalities                   passInequalities                        = FULL_REDUCED_IF;
         static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_ALLINEQUALITIES;
         static const theory_deductions                   addTheoryDeductions                     = NO_CONSTRAINTS;
         static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
@@ -284,10 +285,164 @@ namespace smtrat
 		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
     };
     
+    struct GBSettings0
+    {
+        static const unsigned                            identifier                              = 0;
+        
+        typedef GiNaCRA::GradedLexicgraphic              Order;
+        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
+        typedef GiNaCRA::BaseReductor<Order>             Reductor;
+		typedef smtrat::decidePassingPolynomial			 passPolynomial;
+
+        static const bool                                passGB                                  = false;
+        static const bool                                getReasonsForInfeasibility              = false;
+        static const bool                                passWithMinimalReasons                  = false;
+        static const check_inequalities                  checkInequalities                       = NEVER;
+        static const pass_inequalities                   passInequalities                        = AS_RECEIVED;
+        static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_INFEASIBLEANDDEDUCTION;
+        static const theory_deductions                   addTheoryDeductions                     = ONLY_INEQUALITIES;
+        static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
+        static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
+        static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
+		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQUALITIES;
+
+		static const bool								 applyNSS								 = false;
+        static const unsigned                            maxSDPdegree                            = 4;
+        static const unsigned                            SDPupperBoundNrVariables                = 6;
+		static const unsigned							 callSDPAfterNMonomials					 = 6;
+		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
+		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
+		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
+    };
+    
+    struct GBSettings8
+    {
+        static const unsigned                            identifier                              = 8;
+        
+        typedef GiNaCRA::GradedLexicgraphic              Order;
+        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
+        typedef GiNaCRA::BaseReductor<Order>             Reductor;
+		typedef smtrat::decidePassingPolynomial			 passPolynomial;
+
+        static const bool                                passGB                                  = true;
+        static const bool                                getReasonsForInfeasibility              = true;
+        static const bool                                passWithMinimalReasons                  = true;
+        static const check_inequalities                  checkInequalities                       = NEVER;
+        static const pass_inequalities                   passInequalities                        = AS_RECEIVED;
+        static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_ALLINEQUALITIES;
+        static const theory_deductions                   addTheoryDeductions                     = NO_CONSTRAINTS;
+        static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
+        static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
+        static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
+		static const transform_inequalities				 transformIntoEqualities				 = ALL_INEQUALITIES;
+
+		static const bool								 applyNSS								 = false;
+        static const unsigned                            maxSDPdegree                            = 4;
+        static const unsigned                            SDPupperBoundNrVariables                = 6;
+		static const unsigned							 callSDPAfterNMonomials					 = 6;
+		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
+		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
+		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
+    };
+    
+    struct GBSettings9
+    {
+        static const unsigned                            identifier                              = 9;
+        
+        typedef GiNaCRA::GradedLexicgraphic              Order;
+        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
+        typedef GiNaCRA::BaseReductor<Order>             Reductor;
+		typedef smtrat::decidePassingPolynomial			 passPolynomial;
+
+        static const bool                                passGB                                  = true;
+        static const bool                                getReasonsForInfeasibility              = true;
+        static const bool                                passWithMinimalReasons                  = true;
+        static const check_inequalities                  checkInequalities                       = AFTER_NEW_GB;
+        static const pass_inequalities                   passInequalities                        = AS_RECEIVED;
+        static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_ALLINEQUALITIES;
+        static const theory_deductions                   addTheoryDeductions                     = NO_CONSTRAINTS;
+        static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
+        static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
+        static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
+		static const transform_inequalities				 transformIntoEqualities				 = ONLY_NONSTRICT;
+
+		static const bool								 applyNSS								 = false;
+        static const unsigned                            maxSDPdegree                            = 4;
+        static const unsigned                            SDPupperBoundNrVariables                = 6;
+		static const unsigned							 callSDPAfterNMonomials					 = 6;
+		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
+		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
+		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
+    };
+    
+    struct GBSettings10
+    {
+        static const unsigned                            identifier                              = 10;
+        
+        typedef GiNaCRA::GradedLexicgraphic              Order;
+        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
+        typedef GiNaCRA::BaseReductor<Order>             Reductor;
+		typedef smtrat::decidePassingPolynomial			 passPolynomial;
+
+        static const bool                                passGB                                  = false;
+        static const bool                                getReasonsForInfeasibility              = true;
+        static const bool                                passWithMinimalReasons                  = false;
+        static const check_inequalities                  checkInequalities                       = NEVER;
+        static const pass_inequalities                   passInequalities                        = AS_RECEIVED;
+        static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_INFEASIBLEANDDEDUCTION;
+        static const theory_deductions                   addTheoryDeductions                     = ONLY_INEQUALITIES;
+        static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
+        static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
+        static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
+		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQUALITIES;
+
+		static const bool								 applyNSS								 = false;
+        static const unsigned                            maxSDPdegree                            = 4;
+        static const unsigned                            SDPupperBoundNrVariables                = 6;
+		static const unsigned							 callSDPAfterNMonomials					 = 6;
+		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
+		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
+		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
+    };
+    
+    struct GBSettings25
+    {
+        static const unsigned                            identifier                              = 25;
+        
+        typedef GiNaCRA::GradedLexicgraphic              Order;
+        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
+        typedef GiNaCRA::BaseReductor<Order>             Reductor;
+		typedef smtrat::decidePassingPolynomial			 passPolynomial;
+
+        static const bool                                passGB                                  = true;
+        static const bool                                getReasonsForInfeasibility              = true;
+        static const bool                                passWithMinimalReasons                  = true;
+        static const check_inequalities                  checkInequalities                       = ALWAYS;
+        static const pass_inequalities                   passInequalities                        = AS_RECEIVED;
+        static const after_firstInfeasibleSubset         withInfeasibleSubset                    = RETURN_DIRECTLY;
+        static const theory_deductions                   addTheoryDeductions                     = NO_CONSTRAINTS;
+        static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
+        static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
+        static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
+		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQUALITIES;
+
+		static const bool								 applyNSS								 = true;
+        static const unsigned                            maxSDPdegree                            = 3;
+        static const unsigned                            SDPupperBoundNrVariables                = 60;
+		static const unsigned							 callSDPAfterNMonomials					 = 6;
+		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
+		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
+		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
+    };
     
 	struct decidePassingPolynomial {
 		static bool evaluate (const GBSettings::Polynomial original, const GBSettings::Polynomial& reduced) {
-			return (original.lterm().tdeg() >= reduced.lterm().tdeg() && 3 * original.nrOfTerms() < 2 * reduced.nrOfTerms() );
+			return (original.lterm().tdeg() >= reduced.lterm().tdeg() && original.nrOfTerms() < reduced.nrOfTerms() );
 		}
 	};
 }

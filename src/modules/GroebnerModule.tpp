@@ -30,7 +30,6 @@
  */
 #include "../config.h"
 
-
 #include "NSSModule/definitions.h"
 #include "GroebnerModule.h"
 #include "GBModule/GBModuleStatistics.h"
@@ -128,6 +127,7 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
         else
         {
             mNewInequalities.push_back( mInequalities.InsertReceivedFormula( _formula ) );
+            assert((*(mNewInequalities.back()->first))->constraint().relation() != CR_EQ);
         }
     }
     return true;
@@ -140,12 +140,14 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
 template<class Settings>
 Answer GroebnerModule<Settings>::isConsistent( )
 {
+    
     // This check asserts that all the conflicts are handled by the SAT solver. (workaround)
     if( !mInfeasibleSubsets.empty() ) return False;
     
     #ifdef GATHER_STATS
     mStats->called();
     #endif
+    
     
     assert( mBacktrackPoints.size( ) - 1 == mBasis.nrOriginalConstraints( ) );
     assert( mInfeasibleSubsets.empty( ) );
@@ -155,16 +157,14 @@ Answer GroebnerModule<Settings>::isConsistent( )
         //first, we interreduce the input!
         mBasis.reduceInput( );
     }
-
     //If no equalities are added, we do not know anything 
     if( !mBasis.inputEmpty( ) || (mPopCausesRecalc && mBasis.nrOriginalConstraints( ) > 0) )
     {
-        mPopCausesRecalc = false;
+      mPopCausesRecalc = false;
         //now, we calculate the groebner basis
         mBasis.calculate( );
-        
         Polynomial witness;
-
+        
 #ifdef USE_NSS
         // On linear systems, all solutions lie in Q. So we do not have to check for a solution.
         if( Settings::applyNSS && !mBasis.isConstant( ) && !mBasis.getGbIdeal( ).isLinear( ) )
@@ -239,6 +239,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
             return False;
         }
         saveState( );
+        
 
         if( Settings::checkInequalities != NEVER )
         {
@@ -282,10 +283,10 @@ Answer GroebnerModule<Settings>::isConsistent( )
         mStats->backendFalse();
         #endif
         getInfeasibleSubsets( );
-
+        
         assert( !mInfeasibleSubsets.empty( ) );
     }
-
+    
     return ans;
 }
 
@@ -458,6 +459,10 @@ typename GroebnerModule<Settings>::Polynomial GroebnerModule<Settings>::transfor
         break;
     case CR_LESS:
         result = result * GiNaCRA::MultivariateTermMR( 1, varNr, 2 );
+        result = result + GiNaCRA::MultivariateTermMR( 1 );
+        break;
+    case CR_NEQ:
+        result = result * GiNaCRA::MultivariateTermMR( 1, varNr, 1);
         result = result + GiNaCRA::MultivariateTermMR( 1 );
         break;
     default:
@@ -640,6 +645,7 @@ typename InequalitiesTable<Settings>::Rows::iterator InequalitiesTable<Settings>
     // We assume that the just added formula is the last one.
     const Formula::iterator passedEntry = mModule->mpPassedFormula->last( );
     // And we add a row to our table
+    
     return mReducedInequalities.insert( Row( received, RowEntry( passedEntry, (*received)->constraint( ).relation( ), std::list<CellEntry > (1, CellEntry( 0, Polynomial( (*received)->constraint( ).lhs( ) ) )) ) ) ).first;
 
 }

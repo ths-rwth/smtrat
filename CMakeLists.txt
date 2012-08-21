@@ -115,7 +115,7 @@ if(USE_NSS)
 
         #Csdp should be automatically compiled whenever we compile smtrat
         add_dependencies(csdp csdp_lib)
-        SET( libraries ${libraries} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} csdp )
+        SET( libraries ${libraries} csdp ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES}  )
 endif()
 
 
