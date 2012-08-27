@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2012-08-13
+ * @version 2012-08-27
  */
 
 //#define MODULE_VERBOSE
@@ -69,8 +69,8 @@ namespace smtrat
         mModuleType = MT_CADModule;
         mInfeasibleSubsets.clear();    // initially everything is satisfied
         GiNaCRA::CADSettings setting = GiNaCRA::CADSettings::getSettings();
-        setting.setRemoveConstants( true );
-        setting.setPreferNRSamples( true );
+        setting.removeConstants = true;
+        setting.preferNRSamples = true;
         mCAD.alterSetting( setting );
     }
 
