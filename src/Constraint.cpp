@@ -945,6 +945,7 @@ namespace smtrat
      */
     signed Constraint::compare( const Constraint& _constraintA, const Constraint& _constraintB )
     {
+        if( _constraintA.variables().empty() || _constraintB.variables().empty() ) return 0;
         symtab::const_iterator var1 = _constraintA.variables().begin();
         symtab::const_iterator var2 = _constraintB.variables().begin();
         while( var1 != _constraintA.variables().end() && var2 != _constraintB.variables().end() )

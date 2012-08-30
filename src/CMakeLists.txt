@@ -135,11 +135,13 @@ set(lib_LRAModule_src
 )
 set(lib_LRAOneModule_headers
 	modules/LRAOneModule/Bound.h
+	modules/LRAOneModule/Tableau.h
 	modules/LRAOneModule/Value.h
 	modules/LRAOneModule/Variable.h
 )
 set(lib_LRAOneModule_src
 	modules/LRAOneModule/Bound.cpp
+	modules/LRAOneModule/Tableau.cpp
 	modules/LRAOneModule/Value.cpp
 	modules/LRAOneModule/Variable.cpp
 )

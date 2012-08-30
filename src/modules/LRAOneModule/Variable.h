@@ -1,8 +1,31 @@
 /*
- * File:   Variable.h
- * Author: x
+ *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
+ * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
- * Created on April 30, 2012, 5:47 PM
+ * This file is part of SMT-RAT.
+ *
+ * SMT-RAT is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SMT-RAT is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+
+/**
+ * @file Variable.h
+ * @author name surname <emailadress>
+ *
+ * @version 2012-04-05
+ * Created on April 5th, 2012, 3:22 PM
  */
 
 #ifndef _VARIABLE_H
@@ -32,7 +55,6 @@ namespace lraone
              * Members.
              */
             Value             mAssignment;
-            int               mPriority;
             bool              mBasic;       // False nonbasic, True basic
             unsigned          mPosition;    // Number of Row or Column
             BoundActivityMap  mUpperbounds; // Know number of bounds for size of vector beforehand
@@ -43,17 +65,17 @@ namespace lraone
 
         public:
             Variable();
-            Variable( int, unsigned, bool, const GiNaC::ex* );
+            Variable( unsigned, bool, const GiNaC::ex* );
             virtual ~Variable();
 
-            Value& rAssignment()
+            const Value& assignment() const
             {
                 return mAssignment;
             }
 
-            void wAssignment( const Value& _assignment )
+            Value& rAssignment()
             {
-                mAssignment = _assignment;
+                return mAssignment;
             }
 
             void setBasic( bool _basic )
@@ -76,6 +98,11 @@ namespace lraone
                 return mpSupremum;
             }
 
+            const Bound& supremum() const
+            {
+                return *mpSupremum;
+            }
+
             void setInfimum( const Bound* _infimum )
             {
                 mpInfimum = _infimum;
@@ -86,14 +113,14 @@ namespace lraone
                 return mpInfimum;
             }
 
+            const Bound& infimum() const
+            {
+                return *mpInfimum;
+            }
+
             const unsigned position() const
             {
                 return mPosition;
-            }
-
-            unsigned rPriority()
-            {
-                return mPriority;
             }
 
             unsigned rLowerBoundsSize()
@@ -116,14 +143,9 @@ namespace lraone
                 return mLowerbounds;
             }
 
-            void wPosition( unsigned _position )
+            unsigned& rPosition()
             {
-                mPosition = _position;
-            }
-
-            void wPriority( unsigned _priority )
-            {
-                mPriority = _priority;
+                return mPosition;
             }
 
             const GiNaC::ex* pExpression() const

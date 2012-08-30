@@ -35,6 +35,7 @@
 #include "LRAOneModule/Value.h"
 #include "LRAOneModule/Variable.h"
 #include "LRAOneModule/Bound.h"
+#include "LRAOneModule/Tableau.h"
 #include <stdio.h>
 
 namespace smtrat
@@ -62,23 +63,16 @@ namespace smtrat
             typedef std::map<const Constraint* const , std::vector<const lraone::Bound*>, constraintPointerComp> ConstraintBoundMap;
             typedef std::map<const Constraint*, const Formula* const, constraintPointerComp>                     ConstraintFormulaMap;
             typedef std::map<const lraone::Bound* const , const Constraint*>                                     BoundConstraintMap;
-            typedef std::pair<unsigned, unsigned>                                                                Position;
-            typedef std::map<Position, GiNaC::numeric>                                                           Tableau;
 
         private:
 
             /**
              * Members:
              */
-            Tableau                        mTableau;
-            std::vector<lraone::Variable*> mAllVars;    // vector which saves the order of the priorities
+            lraone::Tableau                mTableau;
             std::set<const Constraint*, constraintPointerComp > mLinearConstraints;
             std::set<const Constraint*, constraintPointerComp > mNonlinearConstraints;
             bool                           mInitialized;
-            unsigned                       mRowMaximum;
-            unsigned                       mColumnMaximum;
-            lraone::Variable*              mPivotNonBasicVar;
-            GiNaC::numeric                 mPivotCoeff;
             ExVariableMap                  mExistingVars;
             BoundConstraintMap             mBoundToConstraint;
             ConstraintFormulaMap           mConstraintToFormula;
@@ -106,24 +100,15 @@ namespace smtrat
             void removeSubformula( Formula::const_iterator );
             Answer isConsistent();
 
-            void printVariables( std::ostream& = std::cout ) const;
-            void printTableau( std::ostream& = std::cout ) const;
-
         private:
-
             /**
              * Methods:
              */
             bool checkAssignmentForNonlinearConstraint() const;
-            void pivotAndUpdate( lraone::Variable*, lraone::Variable*, const lraone::Bound&, GiNaC::numeric& );
             bool activateBound( lraone::Variable&, const lraone::Bound* );
-            void setBound( lraone::Variable&, const Constraint_Relation&, bool, GiNaC::numeric&, const Constraint* );
-            bool isInConflict( unsigned, bool );
-            void getConflicts( const lraone::Variable&, bool );
+            void setBound( lraone::Variable&, const Constraint_Relation&, bool, const GiNaC::numeric&, const Constraint* );
             const Formula* getSubformula( const lraone::Bound* ) const;
-            lraone::Variable* getVar( bool, unsigned );
             void initialize();
-            void initPriority();
     };
 
 }    // namespace smtrat

@@ -39,7 +39,7 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
-#define LOG_THEORY_CALLS
+//#define LOG_THEORY_CALLS
 //#define LOG_INFEASIBLE_SUBSETS
 
 using namespace std;

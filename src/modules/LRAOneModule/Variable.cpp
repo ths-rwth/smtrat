@@ -1,8 +1,31 @@
 /*
- * File:   Variable.cpp
- * Author: x
+ *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
+ * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
- * Created on April 30, 2012, 5:47 PM
+ * This file is part of SMT-RAT.
+ *
+ * SMT-RAT is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SMT-RAT is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+
+/**
+ * @file Variable.cpp
+ * @author name surname <emailadress>
+ *
+ * @version 2012-04-05
+ * Created on April 5th, 2012, 3:22 PM
  */
 
 #include <sstream>
@@ -16,7 +39,6 @@ namespace lraone
 {
     Variable::Variable():
         mAssignment(),
-        mPriority( 0 ),
         mBasic( true ),
         mPosition( 0 ),
         mUpperbounds( BoundActivityMap() ),
@@ -26,9 +48,8 @@ namespace lraone
         mpInfimum  = addLowerBound( NULL );
     }
 
-    Variable::Variable( int _priority, unsigned _position, bool _basic, const ex* _expression ):
+    Variable::Variable( unsigned _position, bool _basic, const ex* _expression ):
         mAssignment(),
-        mPriority( _priority ),
         mBasic( _basic ),
         mPosition( _position ),
         mUpperbounds( BoundActivityMap() ),
@@ -182,7 +203,6 @@ namespace lraone
      */
     void Variable::print( std::ostream& _out ) const
     {
-        _out << setw( 9 ) << ( mBasic ? "Basic " : "Nonbasic " );
         stringstream out;
         out << *mExpression;
         _out << setw( 15 ) << out.str();
@@ -192,7 +212,7 @@ namespace lraone
         _out << setw( 12 ) << mpInfimum->toString();
         _out << setw( 2 ) << ", ";
         _out << setw( 12 ) << mpSupremum->toString();
-        _out << setw( 1 ) << "]" << endl;
+        _out << setw( 1 ) << "]";
     }
 
     void Variable::printAllBounds( std::ostream& _out ) const

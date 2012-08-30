@@ -715,7 +715,6 @@ namespace smtrat
             }
             if( isTheoryDeduction && conclusion != NULL )
             {
-                #ifdef SAT_MODULE_THEORY_PROPAGATION
                 mLearnedDeductions[conclusion].push_back( premise );
                 #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                 cout << "Learn:  ( ";
@@ -725,7 +724,6 @@ namespace smtrat
                 }
                 cout << ")  ->  " << conclusion->constraint().toString();
                 cout << "    " << mLearnedDeductions[conclusion].size() << ". premise" << endl;
-                #endif
                 #endif
             }
         }
@@ -770,7 +768,7 @@ namespace smtrat
     bool SATModule::addClause_( vec<Lit>& ps )
     {
         #ifdef SAT_MODULE_THEORY_PROPAGATION
-        addTheoryDeduction( ps );
+//        addTheoryDeduction( ps );
         #endif
         // assert( decisionLevel() == 0 ); // Commented, as we already allow to add clauses belatedly
         if( !ok )
