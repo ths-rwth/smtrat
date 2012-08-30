@@ -61,9 +61,7 @@ namespace smtrat
         Module( _tsManager, _formula ),
         mCAD(),
         mConstraints(),
-        mVariables(),
         mConstraintsMap(),
-        mNewPolynomials(),
         mSatisfiable( true )
     {
         mModuleType = MT_CADModule;
@@ -97,19 +95,7 @@ namespace smtrat
         GiNaCRA::Constraint constraint = convertConstraint( (*_subformula)->constraint() );
         mConstraints.push_back( constraint );
         mConstraintsMap[ _subformula ] = mConstraints.size() - 1;
-        if( std::find( mNewPolynomials.begin(), mNewPolynomials.end(), constraint.polynomial() ) != mNewPolynomials.end() )
-            return true;    // a constraint with the same polynomial was already considered
-        mNewPolynomials.push_back( constraint.polynomial() ); // mark the constraint as to be added to mCAD with the next call to isConsistent
-        // add the new variables to the local variables
-        for( register GiNaC::symtab::const_iterator sym = (*_subformula)->constraint().variables().begin();
-                sym != (*_subformula)->constraint().variables().end(); ++sym )
-        {
-            symbol newVariable = ex_to<symbol>( sym->second );
-            if( std::find( mVariables.begin(), mVariables.end(), newVariable ) == mVariables.end() )
-            {    // found a new variable
-                mVariables.push_back( newVariable );
-            }
-        }
+        mCAD.addPolynomial( constraint.polynomial(), constraint.variables() );
         return true;
     }
 
@@ -121,8 +107,8 @@ namespace smtrat
      */
     Answer CADModule::isConsistent()
     {
-        // add the polynomials of the new constraints to the cad
-        mCAD.addPolynomials( mNewPolynomials.begin(), mNewPolynomials.end(), mVariables );    // false: disable input checks
+        // perform the scheduled elimination
+        mCAD.eliminate( );
         #ifdef MODULE_VERBOSE
         cout << "Checking constraint set " << endl;
         for( auto k = mConstraints.begin(); k != mConstraints.end(); ++k )
@@ -130,9 +116,6 @@ namespace smtrat
         cout << "over the variables " << endl;
         vector<symbol> vars = mCAD.variables();
         for( auto k = vars.begin(); k != vars.end(); ++k )
-            cout << " " << *k << endl;
-        cout << "with the newly-added polynomials " << endl;
-        for( auto k = mNewPolynomials.begin(); k != mNewPolynomials.end(); ++k )
             cout << " " << *k << endl;
         cout << "Elimination sets:" << endl;
         vector<EliminationSet> elimSets = mCAD.eliminationSets();
@@ -144,7 +127,6 @@ namespace smtrat
             cout << endl;
         }
         #endif
-        mNewPolynomials.clear();
         // check the extended constraints for satisfiability
         GiNaCRA::RealAlgebraicPoint r;
         ConflictGraph               conflictGraph;
@@ -216,12 +198,8 @@ namespace smtrat
                     break;
                 }
             }
-            if( doDelete )
-            { // no other constraint claims the polynomial, hence remove it from the list and the cad
-                mNewPolynomials.remove( constraint.polynomial() );
-                // reduce the CAD object
+            if( doDelete ) // no other constraint claims the polynomial, hence remove it from the list and the cad
                 mCAD.removePolynomial( constraint.polynomial() );
-            }
             #ifdef MODULE_VERBOSE
             cout << endl << "---- Constraint removal (afterwards) ----" << endl;
             cout << "New constraint set:" << endl;
@@ -242,8 +220,6 @@ namespace smtrat
             cout << endl << "#Samples: " << mCAD.samples().size() << endl;
             cout << "-----------------------------------------" << endl;
             #endif
-            // update the variables by the CAD's current variables
-            mVariables = mCAD.variables();
             // forces re-checking the CAD with the next call to assertSubformula
             mSatisfiable = true;
             Module::removeSubformula( _subformula );
