@@ -24,6 +24,7 @@
  * @file Parser.yy
  *
  * @author Florian Corzilius
+ * @author Ulrich Loup
  * @since 2012-03-19
  * @version 2012-03-19
  */
@@ -132,7 +133,7 @@
 %type  <sval>  	relationSymbol;
 %type  <eval>  	unaryOperator;
 %type  <eval>  	binaryOperator;
-%type  <eval>  	nnaryOperator;
+%type  <eval>  	naryOperator;
 
  /*** END EXAMPLE - Change the smtrat grammar's tokens above ***/
 
@@ -149,10 +150,7 @@
 
 %}
 
-%% /*** Grammar Rules ***/
-
- /*** BEGIN EXAMPLE - Change the smtrat grammar rules below ***/
-
+%% /*** SMT_RAT Grammar Rules ***/
 
 start:
 	command_list
@@ -268,7 +266,7 @@ command:
 	;
 
 expr:
-		OB nnaryOperator exprlist CB
+		OB naryOperator exprlist CB
 	{
 		smtrat::Formula* formulaTmp = new smtrat::Formula( (smtrat::Type) $2 );
 		while( !$3->empty() )
@@ -407,7 +405,7 @@ binaryOperator :
 	}
 	;
 
-nnaryOperator :
+naryOperator :
 		AND
 	{
 		$$ = smtrat::AND;

@@ -5,26 +5,30 @@ Contact: Florian Corzilius <corzilius@cs.rwth-aachen.de>, Ulrich Loup <loup@cs.r
 Project sourceforge page: http://smtrat.sourceforge.net/
 Development status: beta
 
-
 * Prerequisites
     - The build system CMake (only for building the library): http://www.cmake.org/
     - The library CLN: http://www.ginac.de/CLN/
     - The library GiNaC: http://www.ginac.de/
-    - The library GiNaCRA: http://ginacra.sourceforge.net/
-
 
 * Optional dependencies
+    - The library GiNaCRA: http://ginacra.sourceforge.net/ (CAD module, GB module)
+	- Blas and Lapack libraries e.g. http://www.netlib.org/blas/, http://www.netlib.org/lapack/  (NSS extension for GB)
     - The documentation build system Doxygen: http://www.stack.nl/~dimitri/doxygen/ 
     - The build system Ant (only for building the gui): http://ant.apache.org/
     - A Java development environment >= 1.6 (only for building the gui): http://www.oracle.com/technetwork/java/index.html
 
 
-* How to build the project including library
+* How to build the project including library and the binary (solver)
 mkdir build         // Create a separate build directory.
 cd build
 cmake ..            // Configure using cmake. Use "ccmake .." in order for an interactive user interface with more options.
-make                // Build the project, in particular, build the library, the tests src/test/check_ginacra and the tools src/tools/ginacraconsole.
+make                // Build the project, in particular, build the solver smtratSolver
 
+* How to build the binary which uses CAD and GB
+mkdir build
+cd build
+cmake .. -i			//No advanced options, then, keep all settings as before, but set USE_CAD, USE_GINACRA and USE_GB to to ON
+make 
 
 * Other targets to make
 
@@ -43,19 +47,15 @@ Required: Doxygen: http://www.stack.nl/~dimitri/doxygen/
 
 make doc
 
-
 * Note on how to include a new module
   - Add NewModule.{h,cpp} to src/modules.
   - Add '#include "NewModule.h"'src/modules/Modules.h.
   - Add MT_NewModule entry to TSModuleType in TSModule.h.
   - Add NewModule.{h,cpp} to the variables lib_modules_headers resp. lib_modules_src in src/CMakeLists.
 
-
 * Troubleshooting
+  - I have GiNaCRA installed but SMT-RAT does not find it!
+	You can set the right path manually by cmake .. -i and use the advanced options. We recommend using the command line interface tool ccmake for this.
 
-  - I have GiNaCRA installed but GiNaCRA does not find it!
-      . Is pkg-config set up correctly? There must be a file named "ginac.pc" in the subfolder "pkgconfig/" of the library path to GiNaC's libraries.
-      . Optional: Do LD_LIBRARY_PATH and /etc/ld.so.conf contain the path to the GiNaCRA libraries?
-  
   This list can grow - by your help! Just contact one of the authors.
 

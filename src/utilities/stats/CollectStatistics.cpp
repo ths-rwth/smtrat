@@ -40,7 +40,9 @@ CollectStatistics::CollectStatistics( )
 }
 
 void CollectStatistics::print(std::ostream& os) {
+#ifdef USE_GB
     GroebnerModuleStats::printAll();
+#endif
 }
 
 }
