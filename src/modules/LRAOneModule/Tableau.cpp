@@ -47,6 +47,7 @@ namespace lraone
     {
         mpEntries = new vector< TableauEntry >();
         mpEntries->push_back( TableauEntry() );
+        mpTheta = new Value();
     };
 
     Tableau::~Tableau()
@@ -61,6 +62,7 @@ namespace lraone
             mpEntries->pop_back();
             delete tmpNum;
         }
+        delete mpTheta;
     };
 
     /**
@@ -92,13 +94,13 @@ namespace lraone
         {
             (*mpEntries)[(*mpEntries)[_entryID].up()].setDown( (*mpEntries)[_entryID].down() );
         }
-        else
-        {
-            mColumns[(*mpEntries)[_entryID].columnNumber()].mStartEntry = (*mpEntries)[_entryID].down();
-        }
         if( (*mpEntries)[_entryID].down() != 0 )
         {
             (*mpEntries)[(*mpEntries)[_entryID].down()].setUp( (*mpEntries)[_entryID].up() );
+        }
+        else
+        {
+            mColumns[(*mpEntries)[_entryID].columnNumber()].mStartEntry = (*mpEntries)[_entryID].up();
         }
         if( (*mpEntries)[_entryID].left() != 0 )
         {
@@ -144,13 +146,12 @@ namespace lraone
         assert( _coefficients.size() == _coefficients.size() );
         Variable* var = new Variable( mHeight++, true, _ex );
         mRows.push_back( TableauHead() );
+        EntryID currentStartEntryOfRow = 0;
         vector< Variable* >::const_iterator basicVar = _nonbasicVariables.begin();
         vector< numeric >::iterator coeff = _coefficients.begin();
-        EntryID lastRowEntry = 0;
         while( basicVar != _nonbasicVariables.end() )
         {
             EntryID entry = newTableauEntry();
-            if( lastRowEntry == 0 ) mRows[mHeight-1].mStartEntry = entry;
             // Fix the position.
             (*mpEntries)[entry].setColumnNumber( (*basicVar)->position() );
             (*mpEntries)[entry].setRowNumber( mHeight-1 );
@@ -166,22 +167,40 @@ namespace lraone
             ++mColumns[(*mpEntries)[entry].columnNumber()].mSize;
             (*mpEntries)[entry].setDown( 0 );
             // Put it in the row.
-            if( lastRowEntry != 0 )
-            {
-                (*mpEntries)[lastRowEntry].setRight( entry );
-            }
-            (*mpEntries)[entry].setLeft( lastRowEntry );
-            ++basicVar;
-            ++coeff;
-            if( basicVar == _nonbasicVariables.end() )
-            {
-                (*mpEntries)[entry].setRight( 0 );
-            }
+            if( currentStartEntryOfRow == 0 ) currentStartEntryOfRow = entry;
             else
             {
-                lastRowEntry = entry;
+                Iterator rowIter = Iterator( currentStartEntryOfRow, mpEntries );
+                while( !rowIter.rowEnd() && (*rowIter).columnNumber() < (*mpEntries)[entry].columnNumber() )
+                {
+                    rowIter.right();
+                }
+                assert( (*rowIter).columnNumber() !=  (*mpEntries)[entry].columnNumber() );
+                if( (*rowIter).columnNumber() > (*mpEntries)[entry].columnNumber() )
+                {
+                    // Entry horizontally between two entries.
+                    EntryID leftEntryID = (*rowIter).left();
+                    if( leftEntryID != 0 )
+                    {
+                        (*mpEntries)[leftEntryID].setRight( entry );
+                    }
+                    (*rowIter).setLeft( entry );
+                    (*mpEntries)[entry].setLeft( leftEntryID );
+                    (*mpEntries)[entry].setRight( rowIter.entryID() );
+                    if( rowIter.rowBegin() ) currentStartEntryOfRow = entry;
+                }
+                else
+                {
+                    // Entry will be the rightmost in this row.
+                    (*rowIter).setRight( entry );
+                    (*mpEntries)[entry].setLeft( rowIter.entryID() );
+                    (*mpEntries)[entry].setRight( 0 );
+                }
             }
+            ++basicVar;
+            ++coeff;
         }
+        mRows[mHeight-1].mStartEntry = currentStartEntryOfRow;
         mRows[mHeight-1].mSize = _nonbasicVariables.size();
         mRows[mHeight-1].mName = var;
         return var;
@@ -202,7 +221,12 @@ namespace lraone
             for( unsigned rowNumber = 0; rowNumber < mRows.size(); ++rowNumber )
             {
                 pair<EntryID,bool> result = isSuitable( rowNumber );
-                if( result.first != 0 && result.second )
+                if( !result.second )
+                {
+                    // Found a conflicting row.
+                    return pair<EntryID,bool>( result.first, false );
+                }
+                else if( result.first != 0 )
                 {
                     if( mRows[(*mpEntries)[result.first].rowNumber()].mSize < smallestRowSize )
                     {
@@ -218,11 +242,6 @@ namespace lraone
                         smallestColumnSize = mColumns[(*mpEntries)[result.first].columnNumber()].mSize;
                         beginOfBestRow = result.first;
                     }
-                }
-                else if( !result.second )
-                {
-                    // Found a conflicting row.
-                    return pair<EntryID,bool>( result.first, false );
                 }
             }
             if( beginOfBestRow != 0 )
@@ -242,18 +261,15 @@ namespace lraone
             for( unsigned rowNumber = 0; rowNumber < mRows.size(); ++rowNumber )
             {
                 pair<EntryID,bool> result = isSuitable( rowNumber );
-                if( result.first != 0 )
+                if( !result.second )
                 {
-                    if( result.second )
-                    {
-                        // Found a pivoting element
-                        return pair<EntryID,bool>( result.first, true );
-                    }
-                    else
-                    {
-                        // Found a conflicting row.
-                        return pair<EntryID,bool>( result.first, false );
-                    }
+                    // Found a conflicting row.
+                    return pair<EntryID,bool>( result.first, false );
+                }
+                else if( result.first != 0 )
+                {
+                    // Found a pivoting element
+                    return pair<EntryID,bool>( result.first, true );
                 }
             }
             // Found no pivoting element, that is no variable violates its bounds.
@@ -280,6 +296,7 @@ namespace lraone
                     if( mColumns[(*rowIter).columnNumber()].mName->supremum() > mColumns[(*rowIter).columnNumber()].mName->assignment() )
                     {
                         // Basic variable suitable
+                        *mpTheta = (mRows[_rowNumber].mName->supremum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
                         return pair<EntryID,bool>( rowIter.entryID(), true );
                     }
                 }
@@ -288,6 +305,7 @@ namespace lraone
                     if( mColumns[(*rowIter).columnNumber()].mName->infimum() < mColumns[(*rowIter).columnNumber()].mName->assignment()  )
                     {
                         // Basic variable suitable
+                        *mpTheta = (mRows[_rowNumber].mName->supremum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
                         return pair<EntryID,bool>( rowIter.entryID(), true );
                     }
                 }
@@ -314,6 +332,7 @@ namespace lraone
                     if( mColumns[(*rowIter).columnNumber()].mName->supremum() > mColumns[(*rowIter).columnNumber()].mName->assignment() )
                     {
                         // Basic variable suitable
+                        *mpTheta = (mRows[_rowNumber].mName->infimum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
                         return pair<EntryID,bool>( rowIter.entryID(), true );
                     }
                 }
@@ -322,6 +341,7 @@ namespace lraone
                     if( mColumns[(*rowIter).columnNumber()].mName->infimum() < mColumns[(*rowIter).columnNumber()].mName->assignment() )
                     {
                         // Basic variable suitable
+                        *mpTheta = (mRows[_rowNumber].mName->infimum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
                         return pair<EntryID,bool>( rowIter.entryID(), true );
                     }
                 }
@@ -444,20 +464,28 @@ namespace lraone
         return conflicts;
     }
 
+    /**
+     *
+     * @param _column
+     * @param _change
+     */
     void Tableau::updateBasicAssignments( unsigned _column, const Value& _change )
     {
-        Iterator columnIter = Iterator( mColumns[_column].mStartEntry, mpEntries );
-        while( true )
+        if( mColumns[_column].mSize > 0 )
         {
-            Variable& basic = *mRows[(*columnIter).rowNumber()].mName;
-            basic.rAssignment() = basic.assignment() + (_change * (*columnIter).content());
-            if( columnIter.columnBegin() )
+            Iterator columnIter = Iterator( mColumns[_column].mStartEntry, mpEntries );
+            while( true )
             {
-                break;
-            }
-            else
-            {
-                columnIter.up();
+                Variable& basic = *mRows[(*columnIter).rowNumber()].mName;
+                basic.rAssignment() = basic.assignment() + (_change * (*columnIter).content());
+                if( columnIter.columnBegin() )
+                {
+                    break;
+                }
+                else
+                {
+                    columnIter.up();
+                }
             }
         }
     }
@@ -470,43 +498,47 @@ namespace lraone
     {
         // Find all columns having "a nonzero entry in the pivoting row"**, update this entry and store it.
         // First the column with ** left to the pivoting column until the leftmost column with **.
-        vector<Iterator> pivotingRow = vector<Iterator>();
+        vector<Iterator> pivotingRowLeftSide = vector<Iterator>();
         Iterator iterTemp = Iterator( _pivotingElement, mpEntries );
         while( !iterTemp.rowBegin() )
         {
             iterTemp.left();
             (*iterTemp).rContent() = -(*iterTemp).content()/(*mpEntries)[_pivotingElement].content();
-            pivotingRow.push_back( iterTemp );
+            pivotingRowLeftSide.push_back( iterTemp );
         }
         // Then the column with ** right to the pivoting column until the rightmost column with **.
+        vector<Iterator> pivotingRowRightSide = vector<Iterator>();
         iterTemp = Iterator( _pivotingElement, mpEntries );
         while( !iterTemp.rowEnd() )
         {
             iterTemp.right();
             (*iterTemp).rContent() = -(*iterTemp).content()/(*mpEntries)[_pivotingElement].content();
-            pivotingRow.push_back( iterTemp );
+            pivotingRowRightSide.push_back( iterTemp );
         }
+        // Update the assignments of the pivoting variables
+        Variable* nameTmp = mRows[(*mpEntries)[_pivotingElement].rowNumber()].mName;
+        nameTmp->rAssignment() = nameTmp->assignment() + (*mpTheta) * (*mpEntries)[_pivotingElement].content();
+        mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mName->rAssignment() = mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mName->assignment() + (*mpTheta);
+        // Update the content of the pivoting entry
         (*mpEntries)[_pivotingElement].rContent() = 1/(*mpEntries)[_pivotingElement].content();
-
         // Let (p_r,p_c,p_e) be the pivoting entry, where p_r is the row number, p_c the column number and p_e the content.
         // For all rows R having a nonzero entry in the pivoting column:
         //    For all columns C having a nonzero entry (r_r,r_c,r_e) in the pivoting row:
         //        Update the entry (t_r,t_c,t_e) of the intersection of R and C to (t_r,t_c,t_e+r_e).
         if( (*mpEntries)[_pivotingElement].up() == 0 )
         {
-            updateDownwards( _pivotingElement, pivotingRow );
+            updateDown( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
         }
         else if( (*mpEntries)[_pivotingElement].down() == 0 )
         {
-            updateUpwards( _pivotingElement, pivotingRow );
+            updateUp( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
         }
         else
         {
-            updateDownwards( _pivotingElement, pivotingRow );
-            updateUpwards( _pivotingElement, pivotingRow );
+            updateDown( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
+            updateUp( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
         }
         // Swap the row and the column head.
-        Variable* nameTmp = mRows[(*mpEntries)[_pivotingElement].rowNumber()].mName;
         mRows[(*mpEntries)[_pivotingElement].rowNumber()].mName = mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mName;
         mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mName = nameTmp;
         // Adapt both variables.
@@ -524,154 +556,182 @@ namespace lraone
      * @param _pivotingElement
      * @param _pivotingRow
      */
-    void Tableau::updateDownwards( EntryID _pivotingElement, vector<Iterator>& _pivotingRow )
+    void Tableau::updateDown( EntryID _pivotingElement, vector<Iterator>& _pivotingRowLeftSide, vector<Iterator>& _pivotingRowRightSide )
     {
-        vector<Iterator> columnIters = vector<Iterator>( _pivotingRow );
+        vector<Iterator> leftColumnIters = vector<Iterator>( _pivotingRowLeftSide );
+        vector<Iterator> rightColumnIters = vector<Iterator>( _pivotingRowRightSide );
         Iterator pivotingColumnIter = Iterator( _pivotingElement, mpEntries );
-        do
+        while( true )
         {
-            pivotingColumnIter.down();
-            Iterator currentRowIter = pivotingColumnIter;
-            bool directionChanged = false;
-            auto pivotingRowIter = _pivotingRow.begin();
-            for( auto currentColumnIter = columnIters.begin(); currentColumnIter != columnIters.end(); ++currentColumnIter )
+            if( !pivotingColumnIter.columnEnd() )
             {
-                assert( pivotingRowIter != _pivotingRow.end() );
+                pivotingColumnIter.down();
+            }
+            else
+            {
+                break;
+            }
+            // Update the assignment of the basic variable corresponding to this row
+            mRows[(*pivotingColumnIter).rowNumber()].mName->rAssignment() = mRows[(*pivotingColumnIter).rowNumber()].mName->assignment()
+                                                                            + (*mpTheta) * (*pivotingColumnIter).content();
+            // Update the row
+            Iterator currentRowIter = pivotingColumnIter;
+            auto pivotingRowIter = _pivotingRowLeftSide.begin();
+            for( auto currentColumnIter = leftColumnIters.begin(); currentColumnIter != leftColumnIters.end(); ++currentColumnIter )
+            {
+                assert( pivotingRowIter != _pivotingRowLeftSide.end() );
                 while( !(*currentColumnIter).columnEnd() && (**currentColumnIter).rowNumber() < (*pivotingColumnIter).rowNumber() )
                 {
                     (*currentColumnIter).down();
                 }
-                if( directionChanged )
+                while( !currentRowIter.rowBegin() && (*currentRowIter).columnNumber() > (**currentColumnIter).columnNumber() )
                 {
-                    while( !currentRowIter.rowBegin() && (*currentRowIter).columnNumber() < (**currentColumnIter).columnNumber() )
+                    currentRowIter.left();
+                }
+                // Update the entry
+                if( (*currentColumnIter) == currentRowIter )
+                {
+                    // Entry already exists, so update it only and maybe remove it.
+                    (*currentRowIter).rContent() = (*currentRowIter).content() + (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                    if( (*currentRowIter).content() == 0 )
                     {
+                        EntryID toRemove = currentRowIter.entryID();
+                        (*currentColumnIter).up();
                         currentRowIter.right();
-                    }
-                    // Update the entry
-                    if( (*currentColumnIter) == currentRowIter )
-                    {
-                        // Entry already exists, so update it only and maybe remove it.
-                        (*currentRowIter).rContent() = (*currentRowIter).content() + (*pivotingColumnIter).content()*(**pivotingRowIter).content();
-                        if( (*currentRowIter).content() == 0 )
-                        {
-                            removeEntry( currentRowIter.entryID() );
-                        }
-                    }
-                    else
-                    {
-                        EntryID entryID = newTableauEntry();
-                        // Set the position.
-                        (*mpEntries)[entryID].setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
-                        (*mpEntries)[entryID].setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
-                        if( (*currentColumnIter).columnEnd() )
-                        {
-                            // Entry will be the lowest in this column.
-                            (**currentColumnIter).setDown( entryID );
-                            (*mpEntries)[entryID].setUp( (*currentColumnIter).entryID() );
-                            (*mpEntries)[entryID].setDown( 0 );
-                        }
-                        else
-                        {
-                            // Entry vertically between to entries.
-                            EntryID upperEntryID = (**currentColumnIter).up();
-                            (*mpEntries)[upperEntryID].setDown( entryID );
-                            (**currentColumnIter).setUp( entryID );
-                            (*mpEntries)[entryID].setUp( upperEntryID );
-                            (*mpEntries)[entryID].setDown( (*currentColumnIter).entryID() );
-                        }
-                        if( currentRowIter.rowBegin() )
-                        {
-                            // Entry will be the rightmost in this row.
-                            (*currentRowIter).setRight( entryID );
-                            (*mpEntries)[entryID].setLeft( currentRowIter.entryID() );
-                            (*mpEntries)[entryID].setRight( 0 );
-                        }
-                        else
-                        {
-                            // Entry horizontally between to entries.
-                            EntryID leftEntryID = (*currentRowIter).left();
-                            (*mpEntries)[leftEntryID].setRight( entryID );
-                            (*currentRowIter).setLeft( entryID );
-                            (*mpEntries)[entryID].setLeft( leftEntryID );
-                            (*mpEntries)[entryID].setRight( currentRowIter.entryID() );
-                        }
-                        // Set the content of the entry.
-                        ++mRows[(*mpEntries)[entryID].rowNumber()].mSize;
-                        ++mColumns[(*mpEntries)[entryID].columnNumber()].mSize;
-                        (*mpEntries)[entryID].rContent() = (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                        removeEntry( toRemove );
                     }
                 }
                 else
                 {
-                    while( !currentRowIter.rowBegin() && (*currentRowIter).columnNumber() > (**currentColumnIter).columnNumber() )
+                    EntryID entryID = newTableauEntry();
+                    // Set the position.
+                    (*mpEntries)[entryID].setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
+                    (*mpEntries)[entryID].setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
+                    if( (**currentColumnIter).rowNumber() > (*pivotingColumnIter).rowNumber() )
                     {
-                        currentRowIter.left();
-                    }
-                    // Update the entry
-                    if( (*currentColumnIter) == currentRowIter )
-                    {
-                        // Entry already exists, so update it only and maybe remove it.
-                        (*currentRowIter).rContent() = (*currentRowIter).content() + (*pivotingColumnIter).content()*(**pivotingRowIter).content();
-                        if( (*currentRowIter).content() == 0 )
+                        // Entry vertically between two entries.
+                        EntryID upperEntryID = (**currentColumnIter).up();
+                        if( upperEntryID != 0 )
                         {
-                            removeEntry( currentRowIter.entryID() );
+                            (*mpEntries)[upperEntryID].setDown( entryID );
                         }
+                        (**currentColumnIter).setUp( entryID );
+                        (*mpEntries)[entryID].setUp( upperEntryID );
+                        (*mpEntries)[entryID].setDown( (*currentColumnIter).entryID() );
                     }
                     else
                     {
-                        EntryID entryID = newTableauEntry();
-                        // Set the position.
-                        (*mpEntries)[entryID].setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
-                        (*mpEntries)[entryID].setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
-                        if( (*currentColumnIter).columnEnd() )
+                        // Entry will be the lowest in this column.
+                        (**currentColumnIter).setDown( entryID );
+                        (*mpEntries)[entryID].setUp( (*currentColumnIter).entryID() );
+                        (*mpEntries)[entryID].setDown( 0 );
+                    }
+                    if( (*currentRowIter).columnNumber() < (**currentColumnIter).columnNumber() )
+                    {
+                        // Entry horizontally between two entries.
+                        EntryID rightEntryID = (*currentRowIter).right();
+                        if( rightEntryID != 0 )
                         {
-                            // Entry will be the lowest in this column.
-                            (**currentColumnIter).setDown( entryID );
-                            (*mpEntries)[entryID].setUp( (*currentColumnIter).entryID() );
-                            (*mpEntries)[entryID].setDown( 0 );
-                        }
-                        else
-                        {
-                            // Entry vertically between to entries.
-                            EntryID upperEntryID = (**currentColumnIter).up();
-                            (*mpEntries)[upperEntryID].setDown( entryID );
-                            (**currentColumnIter).setUp( entryID );
-                            (*mpEntries)[entryID].setUp( upperEntryID );
-                            (*mpEntries)[entryID].setDown( (*currentColumnIter).entryID() );
-                        }
-                        if( currentRowIter.rowBegin() )
-                        {
-                            // Entry will be the leftmost in this row.
-                            (*currentRowIter).setLeft( entryID );
-                            (*mpEntries)[entryID].setRight( currentRowIter.entryID() );
-                            (*mpEntries)[entryID].setLeft( 0 );
-                            mRows[(*mpEntries)[entryID].rowNumber()].mStartEntry = entryID;
-                        }
-                        else
-                        {
-                            // Entry horizontally between to entries.
-                            EntryID rightEntryID = (*currentRowIter).right();
                             (*mpEntries)[rightEntryID].setLeft( entryID );
-                            (*currentRowIter).setRight( entryID );
-                            (*mpEntries)[entryID].setRight( rightEntryID );
-                            (*mpEntries)[entryID].setLeft( currentRowIter.entryID() );
                         }
-                        // Set the content of the entry.
-                        ++mRows[(*mpEntries)[entryID].rowNumber()].mSize;
-                        ++mColumns[(*mpEntries)[entryID].columnNumber()].mSize;
-                        (*mpEntries)[entryID].rContent() = (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                        (*currentRowIter).setRight( entryID );
+                        (*mpEntries)[entryID].setRight( rightEntryID );
+                        (*mpEntries)[entryID].setLeft( currentRowIter.entryID() );
+                    }
+                    else
+                    {
+                        // Entry will be the leftmost in this row.
+                        (*currentRowIter).setLeft( entryID );
+                        (*mpEntries)[entryID].setRight( currentRowIter.entryID() );
+                        (*mpEntries)[entryID].setLeft( 0 );
+                        mRows[(*mpEntries)[entryID].rowNumber()].mStartEntry = entryID;
+                    }
+                    // Set the content of the entry.
+                    ++mRows[(*mpEntries)[entryID].rowNumber()].mSize;
+                    ++mColumns[(*mpEntries)[entryID].columnNumber()].mSize;
+                    (*mpEntries)[entryID].rContent() = (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                }
+                ++pivotingRowIter;
+            }
+            currentRowIter = pivotingColumnIter;
+            pivotingRowIter = _pivotingRowRightSide.begin();
+            for( auto currentColumnIter = rightColumnIters.begin(); currentColumnIter != rightColumnIters.end(); ++currentColumnIter )
+            {
+                assert( pivotingRowIter != _pivotingRowRightSide.end() );
+                while( !(*currentColumnIter).columnEnd() && (**currentColumnIter).rowNumber() < (*pivotingColumnIter).rowNumber() )
+                {
+                    (*currentColumnIter).down();
+                }
+                while( !currentRowIter.rowEnd() && (*currentRowIter).columnNumber() < (**currentColumnIter).columnNumber() )
+                {
+                    currentRowIter.right();
+                }
+                // Update the entry
+                if( (*currentColumnIter) == currentRowIter )
+                {
+                    // Entry already exists, so update it only and maybe remove it.
+                    (*currentRowIter).rContent() = (*currentRowIter).content() + (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                    if( (*currentRowIter).content() == 0 )
+                    {
+                        EntryID toRemove = currentRowIter.entryID();
+                        (*currentColumnIter).up();
+                        currentRowIter.left();
+                        removeEntry( toRemove );
                     }
                 }
-                if( (*currentColumnIter).rowBegin() )
+                else
                 {
-                    currentRowIter = pivotingColumnIter;
-                    directionChanged = true;
+                    EntryID entryID = newTableauEntry();
+                    // Set the position.
+                    (*mpEntries)[entryID].setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
+                    (*mpEntries)[entryID].setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
+                    if( (**currentColumnIter).rowNumber() > (*pivotingColumnIter).rowNumber() )
+                    {
+                        // Entry vertically between two entries.
+                        EntryID upperEntryID = (**currentColumnIter).up();
+                        if( upperEntryID != 0 )
+                        {
+                            (*mpEntries)[upperEntryID].setDown( entryID );
+                        }
+                        (**currentColumnIter).setUp( entryID );
+                        (*mpEntries)[entryID].setUp( upperEntryID );
+                        (*mpEntries)[entryID].setDown( (*currentColumnIter).entryID() );
+                    }
+                    else
+                    {
+                        // Entry will be the lowest in this column.
+                        (**currentColumnIter).setDown( entryID );
+                        (*mpEntries)[entryID].setUp( (*currentColumnIter).entryID() );
+                        (*mpEntries)[entryID].setDown( 0 );
+                    }
+                    if( (*currentRowIter).columnNumber() > (**currentColumnIter).columnNumber() )
+                    {
+                        // Entry horizontally between two entries.
+                        EntryID leftEntryID = (*currentRowIter).left();
+                        if( leftEntryID != 0 )
+                        {
+                            (*mpEntries)[leftEntryID].setRight( entryID );
+                        }
+                        (*currentRowIter).setLeft( entryID );
+                        (*mpEntries)[entryID].setLeft( leftEntryID );
+                        (*mpEntries)[entryID].setRight( currentRowIter.entryID() );
+                    }
+                    else
+                    {
+                        // Entry will be the rightmost in this row.
+                        (*currentRowIter).setRight( entryID );
+                        (*mpEntries)[entryID].setLeft( currentRowIter.entryID() );
+                        (*mpEntries)[entryID].setRight( 0 );
+                    }
+                    // Set the content of the entry.
+                    ++mRows[(*mpEntries)[entryID].rowNumber()].mSize;
+                    ++mColumns[(*mpEntries)[entryID].columnNumber()].mSize;
+                    (*mpEntries)[entryID].rContent() = (*pivotingColumnIter).content()*(**pivotingRowIter).content();
                 }
                 ++pivotingRowIter;
             }
             (*pivotingColumnIter).rContent() = (*pivotingColumnIter).content() * (*mpEntries)[_pivotingElement].content();
         }
-        while( !pivotingColumnIter.columnEnd() );
     }
 
     /**
@@ -679,162 +739,189 @@ namespace lraone
      * @param _pivotingElement
      * @param _pivotingRow
      */
-    void Tableau::updateUpwards( EntryID _pivotingElement, vector<Iterator>& _pivotingRow )
+    void Tableau::updateUp( EntryID _pivotingElement, vector<Iterator>& _pivotingRowLeftSide, vector<Iterator>& _pivotingRowRightSide )
     {
-        vector<Iterator> columnIters = vector<Iterator>( _pivotingRow );
+        vector<Iterator> leftColumnIters = vector<Iterator>( _pivotingRowLeftSide );
+        vector<Iterator> rightColumnIters = vector<Iterator>( _pivotingRowRightSide );
         Iterator pivotingColumnIter = Iterator( _pivotingElement, mpEntries );
-        do
+        while( true )
         {
-            pivotingColumnIter.up();
-            Iterator currentRowIter = pivotingColumnIter;
-            bool directionChanged = false;
-            auto pivotingRowIter = _pivotingRow.begin();
-            for( auto currentColumnIter = columnIters.begin(); currentColumnIter != columnIters.end(); ++currentColumnIter )
+            if( !pivotingColumnIter.columnBegin() )
             {
-                assert( pivotingRowIter != _pivotingRow.end() );
+                pivotingColumnIter.up();
+            }
+            else
+            {
+                break;
+            }
+            // Update the assignment of the basic variable corresponding to this row
+            mRows[(*pivotingColumnIter).rowNumber()].mName->rAssignment() = mRows[(*pivotingColumnIter).rowNumber()].mName->assignment()
+                                                                            + (*mpTheta) * (*pivotingColumnIter).content();
+            // Update the row
+            Iterator currentRowIter = pivotingColumnIter;
+            auto pivotingRowIter = _pivotingRowLeftSide.begin();
+            for( auto currentColumnIter = leftColumnIters.begin(); currentColumnIter != leftColumnIters.end(); ++currentColumnIter )
+            {
+                assert( pivotingRowIter != _pivotingRowLeftSide.end() );
                 while( !(*currentColumnIter).columnBegin() && (**currentColumnIter).rowNumber() > (*pivotingColumnIter).rowNumber() )
                 {
                     (*currentColumnIter).up();
                 }
-                if( directionChanged )
+                while( !currentRowIter.rowBegin() && (*currentRowIter).columnNumber() > (**currentColumnIter).columnNumber() )
                 {
-                    while( !currentRowIter.rowBegin() && (*currentRowIter).columnNumber() < (**currentColumnIter).columnNumber() )
+                    currentRowIter.left();
+                }
+                // Update the entry
+                if( (*currentColumnIter) == currentRowIter )
+                {
+                    // Entry already exists, so update it only and maybe remove it.
+                    (*currentRowIter).rContent() = (*currentRowIter).content() + (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                    if( (*currentRowIter).content() == 0 )
                     {
+                        EntryID toRemove = currentRowIter.entryID();
+                        (*currentColumnIter).down();
                         currentRowIter.right();
-                    }
-                    // Update the entry
-                    if( (*currentColumnIter) == currentRowIter )
-                    {
-                        // Entry already exists, so update it only and maybe remove it.
-                        (*currentRowIter).rContent() = (*currentRowIter).content() + (*pivotingColumnIter).content()*(**pivotingRowIter).content();
-                        if( (*currentRowIter).content() == 0 )
-                        {
-                            removeEntry( currentRowIter.entryID() );
-                        }
-                    }
-                    else
-                    {
-                        EntryID entryID = newTableauEntry();
-                        // Set the position.
-                        (*mpEntries)[entryID].setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
-                        (*mpEntries)[entryID].setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
-                        if( (*currentColumnIter).columnBegin() )
-                        {
-                            // Entry will be the uppermost in this column.
-                            (**currentColumnIter).setUp( entryID );
-                            (*mpEntries)[entryID].setDown( (*currentColumnIter).entryID() );
-                            (*mpEntries)[entryID].setUp( 0 );
-                            mColumns[(*mpEntries)[entryID].columnNumber()].mStartEntry = entryID;
-                        }
-                        else
-                        {
-                            // Entry vertically between to entries.
-                            EntryID lowerEntryID = (**currentColumnIter).down();
-                            (*mpEntries)[lowerEntryID].setUp( entryID );
-                            (**currentColumnIter).setDown( entryID );
-                            (*mpEntries)[entryID].setDown( lowerEntryID );
-                            (*mpEntries)[entryID].setUp( (*currentColumnIter).entryID() );
-                        }
-                        if( currentRowIter.rowBegin() )
-                        {
-                            // Entry will be the rightmost in this row.
-                            (*currentRowIter).setRight( entryID );
-                            (*mpEntries)[entryID].setLeft( currentRowIter.entryID() );
-                            (*mpEntries)[entryID].setRight( 0 );
-                        }
-                        else
-                        {
-                            // Entry horizontally between to entries.
-                            EntryID leftEntryID = (*currentRowIter).left();
-                            (*mpEntries)[leftEntryID].setRight( entryID );
-                            (*currentRowIter).setLeft( entryID );
-                            (*mpEntries)[entryID].setLeft( leftEntryID );
-                            (*mpEntries)[entryID].setRight( currentRowIter.entryID() );
-                        }
-                        // Set the content of the entry.
-                        ++mRows[(*mpEntries)[entryID].rowNumber()].mSize;
-                        ++mColumns[(*mpEntries)[entryID].columnNumber()].mSize;
-                        (*mpEntries)[entryID].rContent() = (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                        removeEntry( toRemove );
                     }
                 }
                 else
                 {
-                    while( !currentRowIter.rowBegin() && (*currentRowIter).columnNumber() > (**currentColumnIter).columnNumber() )
+                    EntryID entryID = newTableauEntry();
+                    // Set the position.
+                    (*mpEntries)[entryID].setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
+                    (*mpEntries)[entryID].setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
+                    if( (**currentColumnIter).rowNumber() < (*pivotingColumnIter).rowNumber() )
                     {
-                        currentRowIter.left();
-                    }
-                    // Update the entry
-                    if( (*currentColumnIter) == currentRowIter )
-                    {
-                        // Entry already exists, so update it only and maybe remove it.
-                        (*currentRowIter).rContent() = (*currentRowIter).content() + (*pivotingColumnIter).content()*(**pivotingRowIter).content();
-                        if( (*currentRowIter).content() == 0 )
+                        // Entry vertically between two entries.
+                        EntryID lowerEntryID = (**currentColumnIter).down();
+                        if( lowerEntryID != 0 )
                         {
-                            removeEntry( currentRowIter.entryID() );
+                            (*mpEntries)[lowerEntryID].setUp( entryID );
                         }
+                        (**currentColumnIter).setDown( entryID );
+                        (*mpEntries)[entryID].setDown( lowerEntryID );
+                        (*mpEntries)[entryID].setUp( (*currentColumnIter).entryID() );
                     }
                     else
                     {
-                        EntryID entryID = newTableauEntry();
-                        // Set the position.
-                        (*mpEntries)[entryID].setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
-                        (*mpEntries)[entryID].setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
-                        if( (*currentColumnIter).columnBegin() )
+                        (**currentColumnIter).setUp( entryID );
+                        (*mpEntries)[entryID].setDown( (*currentColumnIter).entryID() );
+                        (*mpEntries)[entryID].setUp( 0 );
+                        mColumns[(*mpEntries)[entryID].columnNumber()].mStartEntry = entryID;
+                    }
+                    if( (*currentRowIter).columnNumber() < (**currentColumnIter).columnNumber() )
+                    {
+                        // Entry horizontally between two entries.
+                        EntryID rightEntryID = (*currentRowIter).right();
+                        if( rightEntryID != 0 )
                         {
-                            // Entry will be the uppermost in this column.
-                            (**currentColumnIter).setUp( entryID );
-                            (*mpEntries)[entryID].setDown( (*currentColumnIter).entryID() );
-                            (*mpEntries)[entryID].setUp( 0 );
-                            mColumns[(*mpEntries)[entryID].columnNumber()].mStartEntry = entryID;
-                        }
-                        else
-                        {
-                            // Entry vertically between to entries.
-                            EntryID lowerEntryID = (**currentColumnIter).down();
-                            (*mpEntries)[lowerEntryID].setUp( entryID );
-                            (**currentColumnIter).setDown( entryID );
-                            (*mpEntries)[entryID].setDown( lowerEntryID );
-                            (*mpEntries)[entryID].setUp( (*currentColumnIter).entryID() );
-                        }
-                        if( currentRowIter.rowBegin() )
-                        {
-                            // Entry will be the leftmost in this row.
-                            (*currentRowIter).setLeft( entryID );
-                            (*mpEntries)[entryID].setRight( currentRowIter.entryID() );
-                            (*mpEntries)[entryID].setLeft( 0 );
-                            mRows[(*mpEntries)[entryID].rowNumber()].mStartEntry = entryID;
-                        }
-                        else
-                        {
-                            // Entry horizontally between to entries.
-                            EntryID rightEntryID = (*currentRowIter).right();
                             (*mpEntries)[rightEntryID].setLeft( entryID );
-                            (*currentRowIter).setRight( entryID );
-                            (*mpEntries)[entryID].setRight( rightEntryID );
-                            (*mpEntries)[entryID].setLeft( currentRowIter.entryID() );
                         }
-                        // Set the content of the entry.
-                        ++mRows[(*mpEntries)[entryID].rowNumber()].mSize;
-                        ++mColumns[(*mpEntries)[entryID].columnNumber()].mSize;
-                        (*mpEntries)[entryID].rContent() = (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                        (*currentRowIter).setRight( entryID );
+                        (*mpEntries)[entryID].setRight( rightEntryID );
+                        (*mpEntries)[entryID].setLeft( currentRowIter.entryID() );
+                    }
+                    else
+                    {
+                        (*currentRowIter).setLeft( entryID );
+                        (*mpEntries)[entryID].setRight( currentRowIter.entryID() );
+                        (*mpEntries)[entryID].setLeft( 0 );
+                        mRows[(*mpEntries)[entryID].rowNumber()].mStartEntry = entryID;
+                    }
+                    // Set the content of the entry.
+                    ++mRows[(*mpEntries)[entryID].rowNumber()].mSize;
+                    ++mColumns[(*mpEntries)[entryID].columnNumber()].mSize;
+                    (*mpEntries)[entryID].rContent() = (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                }
+                ++pivotingRowIter;
+            }
+            currentRowIter = pivotingColumnIter;
+            pivotingRowIter = _pivotingRowRightSide.begin();
+            for( auto currentColumnIter = rightColumnIters.begin(); currentColumnIter != rightColumnIters.end(); ++currentColumnIter )
+            {
+                assert( pivotingRowIter != _pivotingRowRightSide.end() );
+                while( !(*currentColumnIter).columnBegin() && (**currentColumnIter).rowNumber() > (*pivotingColumnIter).rowNumber() )
+                {
+                    (*currentColumnIter).up();
+                }
+                while( !currentRowIter.rowEnd() && (*currentRowIter).columnNumber() < (**currentColumnIter).columnNumber() )
+                {
+                    currentRowIter.right();
+                }
+                // Update the entry
+                if( (*currentColumnIter) == currentRowIter )
+                {
+                    // Entry already exists, so update it only and maybe remove it.
+                    (*currentRowIter).rContent() = (*currentRowIter).content() + (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                    if( (*currentRowIter).content() == 0 )
+                    {
+                        EntryID toRemove = currentRowIter.entryID();
+                        (*currentColumnIter).down();
+                        currentRowIter.left();
+                        removeEntry( toRemove );
                     }
                 }
-                if( (*currentColumnIter).rowBegin() )
+                else
                 {
-                    currentRowIter = pivotingColumnIter;
-                    directionChanged = true;
+                    EntryID entryID = newTableauEntry();
+                    // Set the position.
+                    (*mpEntries)[entryID].setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
+                    (*mpEntries)[entryID].setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
+                    if( (**currentColumnIter).rowNumber() < (*pivotingColumnIter).rowNumber() )
+                    {
+                        // Entry vertically between two entries.
+                        EntryID lowerEntryID = (**currentColumnIter).down();
+                        if( lowerEntryID != 0 )
+                        {
+                            (*mpEntries)[lowerEntryID].setUp( entryID );
+                        }
+                        (**currentColumnIter).setDown( entryID );
+                        (*mpEntries)[entryID].setDown( lowerEntryID );
+                        (*mpEntries)[entryID].setUp( (*currentColumnIter).entryID() );
+                    }
+                    else
+                    {
+                        // Entry will be the uppermost in this column.
+                        (**currentColumnIter).setUp( entryID );
+                        (*mpEntries)[entryID].setDown( (*currentColumnIter).entryID() );
+                        (*mpEntries)[entryID].setUp( 0 );
+                        mColumns[(*mpEntries)[entryID].columnNumber()].mStartEntry = entryID;
+                    }
+                    if( (*currentRowIter).columnNumber() > (**currentColumnIter).columnNumber() )
+                    {
+                        // Entry horizontally between two entries.
+                        EntryID leftEntryID = (*currentRowIter).left();
+                        if( leftEntryID != 0 )
+                        {
+                            (*mpEntries)[leftEntryID].setRight( entryID );
+                        }
+                        (*currentRowIter).setLeft( entryID );
+                        (*mpEntries)[entryID].setLeft( leftEntryID );
+                        (*mpEntries)[entryID].setRight( currentRowIter.entryID() );
+                    }
+                    else
+                    {
+                        // Entry will be the rightmost in this row.
+                        (*currentRowIter).setRight( entryID );
+                        (*mpEntries)[entryID].setLeft( currentRowIter.entryID() );
+                        (*mpEntries)[entryID].setRight( 0 );
+                    }
+                    // Set the content of the entry.
+                    ++mRows[(*mpEntries)[entryID].rowNumber()].mSize;
+                    ++mColumns[(*mpEntries)[entryID].columnNumber()].mSize;
+                    (*mpEntries)[entryID].rContent() = (*pivotingColumnIter).content()*(**pivotingRowIter).content();
                 }
                 ++pivotingRowIter;
             }
             (*pivotingColumnIter).rContent() = (*pivotingColumnIter).content() * (*mpEntries)[_pivotingElement].content();
         }
-        while( !pivotingColumnIter.columnEnd() );
     }
 
-    void Tableau::printHeap( ostream& _out, unsigned _maxEntryLength ) const
+    void Tableau::printHeap( ostream& _out, unsigned _maxEntryLength, const string _init ) const
     {
         for( EntryID pos = 0; pos < mpEntries->size(); ++pos )
         {
+            cout << _init;
             printEntry( _out, pos, _maxEntryLength );
             _out << endl;
         }
@@ -868,33 +955,29 @@ namespace lraone
             _out << "]";
     }
 
-    void Tableau::printVariables( ostream& _out ) const
+    void Tableau::printVariables( ostream& _out, const string _init ) const
     {
-        _out << "Basic variables:" << endl;
+        _out << _init << "Basic variables:" << endl;
         for( vector<TableauHead>::const_iterator row = mRows.begin(); row != mRows.end(); ++row )
         {
-            _out << "  ";
+            _out << _init << "  ";
             row->mName->print( _out );
-            _out << endl << "    starts with the entry ( ";
-            printEntry( _out, row->mStartEntry );
-            _out << ") with " << row->mSize << " entries" << endl;
+            _out << endl;
         }
-        _out << "Nonbasic variables:" << endl;
+        _out << _init << "Nonbasic variables:" << endl;
         for( vector<TableauHead>::const_iterator column = mColumns.begin(); column != mColumns.end(); ++column )
         {
-            _out << "  ";
+            _out << _init << "  ";
             column->mName->print( _out );
-            _out << endl << "    starts with the entry ( ";
-            printEntry( _out, column->mStartEntry );
-            _out << ") with " << column->mSize << " entries" << endl;
+            _out << endl;
         }
     }
 
-    void Tableau::print( ostream& _out, unsigned _maxEntryLength ) const
+    void Tableau::print( ostream& _out, unsigned _maxEntryLength, const string _init ) const
     {
         char     frameSign     = '-';
-        _out << setw( _maxEntryLength * (mWidth + 1) ) << setfill( frameSign ) << "" << endl;
-        _out << setw( _maxEntryLength ) << setfill( ' ' ) << "#";
+        _out << _init << setw( _maxEntryLength * (mWidth + 1) ) << setfill( frameSign ) << "" << endl;
+        _out << _init << setw( _maxEntryLength ) << setfill( ' ' ) << "#";
         for( vector<TableauHead>::const_iterator column = mColumns.begin(); column != mColumns.end(); ++column )
         {
             stringstream out;
@@ -902,10 +985,11 @@ namespace lraone
             _out << setw( _maxEntryLength ) << out.str() + " #";
         }
         _out << endl;
-        _out << setw( _maxEntryLength * (mWidth + 1) ) << setfill( '#' ) << "" << endl;
+        _out << _init << setw( _maxEntryLength * (mWidth + 1) ) << setfill( '#' ) << "" << endl;
         _out << setfill( ' ' );
         for( vector<TableauHead>::const_iterator row = mRows.begin(); row != mRows.end(); ++row )
         {
+            _out << _init;
             stringstream out;
             out << *row->mName->pExpression();
             _out << setw( _maxEntryLength ) << out.str() + " #";
@@ -920,9 +1004,10 @@ namespace lraone
                 stringstream out;
                 out << (*rowIter).content();
                 _out << setw( _maxEntryLength ) << out.str() + " #";
+                currentColumn = (*rowIter).columnNumber()+1;
                 if( rowIter.rowEnd() )
                 {
-                    for( unsigned i = currentColumn+1; i < mWidth; ++i )
+                    for( unsigned i = currentColumn; i < mWidth; ++i )
                     {
                         _out << setw( _maxEntryLength ) << "0 #";
                     }
@@ -930,10 +1015,9 @@ namespace lraone
                     break;
                 }
                 rowIter.right();
-                currentColumn = (*rowIter).columnNumber();
             }
         }
-        _out << setw( _maxEntryLength * (mWidth + 1) ) << setfill( frameSign ) << "" << endl;
+        _out << _init << setw( _maxEntryLength * (mWidth + 1) ) << setfill( frameSign ) << "" << endl;
         _out << setfill( ' ' );
     }
 

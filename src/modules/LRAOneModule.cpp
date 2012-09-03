@@ -31,7 +31,7 @@
 #include <iostream>
 #include <algorithm>
 
-#define DEBUG_LRA_MODULE
+//#define DEBUG_LRA_MODULE
 
 using namespace std;
 using namespace lraone;
@@ -98,6 +98,7 @@ namespace smtrat
     bool LRAOneModule::assertSubformula( Formula::const_iterator _subformula )
     {
         assert( (*_subformula)->getType() == REALCONSTRAINT );
+        assert( (*_subformula)->constraint().relation() != CR_NEQ );
         #ifdef DEBUG_LRA_MODULE
         cout << "assert " << (*_subformula)->constraint() << endl;
         #endif
@@ -226,18 +227,16 @@ namespace smtrat
         {
             #ifdef DEBUG_LRA_MODULE
             cout << endl;
-            mTableau.printHeap();
+            mTableau.printVariables( cout, "    " );
             cout << endl;
-            mTableau.printVariables();
-            cout << endl;
-            mTableau.print();
+            mTableau.print( cout, 15, "    " );
             cout << endl;
             #endif
 
             pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
 
             #ifdef DEBUG_LRA_MODULE
-            cout << "Next pivoting element: ";
+            cout << "    Next pivoting element: ";
             mTableau.printEntry( cout, pivotingElement.first );
             cout << (pivotingElement.second ? "(True)" : "(False)");
             cout << " [" << pivotingElement.first << "]" << endl;
@@ -250,7 +249,19 @@ namespace smtrat
                     #ifdef DEBUG_LRA_MODULE
                     cout << "True" << endl;
                     #endif
-                    return (checkAssignmentForNonlinearConstraint() ? True : Unknown );
+                    if( checkAssignmentForNonlinearConstraint() )
+                    {
+                        return True;
+                    }
+                    else
+                    {
+                        Answer a = runBackends();
+                        if( a == False )
+                        {
+                            getInfeasibleSubsets();
+                        }
+                        return a;
+                    }
                 }
                 else
                 {

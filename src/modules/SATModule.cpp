@@ -589,7 +589,7 @@ namespace smtrat
          * constraints to add.
          */
         Formula::iterator subformula = mpPassedFormula->begin();
-        while( subformula != mpPassedFormula->end() )
+        while( subformula != firstSubformulaToPass() )
         {
             if( constraintsToCheck.erase( *subformula ) == 0 )
             {

@@ -173,6 +173,7 @@ namespace lraone
             std::vector<TableauHead>   mRows;    // First element is the head of the row and the second the length of the row.
             std::vector<TableauHead>   mColumns;    // First element is the end of the column and the second the length of the column.
             std::vector<TableauEntry>* mpEntries;
+            Value*                     mpTheta;
 
             class Iterator
             {
@@ -292,12 +293,12 @@ namespace lraone
             std::vector< std::set< const Bound* > > getConflicts( EntryID ) const;
             void updateBasicAssignments( unsigned, const Value& );
             void pivot( EntryID );
-            void updateDownwards( EntryID, std::vector<Iterator>& );
-            void updateUpwards( EntryID, std::vector<Iterator>& );
-            void printHeap( std::ostream& = std::cout, unsigned = 15 ) const;
-            void printEntry( std::ostream& = std::cout, EntryID = 0, unsigned = 15 ) const;
-            void printVariables( std::ostream& = std::cout ) const;
-            void print( std::ostream& = std::cout, unsigned = 15 ) const;
+            void updateDown( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
+            void updateUp( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
+            void printHeap( std::ostream& = std::cout, unsigned = 20, const std::string = "" ) const;
+            void printEntry( std::ostream& = std::cout, EntryID = 0, unsigned = 20 ) const;
+            void printVariables( std::ostream& = std::cout, const std::string = "" ) const;
+            void print( std::ostream& = std::cout, unsigned = 20, const std::string = "" ) const;
 
     };
 }    // end namspace lra

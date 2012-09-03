@@ -190,6 +190,11 @@ namespace smtrat
                 return mFirstUncheckedReceivedSubformula;
             }
 
+            Formula::const_iterator firstSubformulaToPass() const
+            {
+                return mFirstSubformulaToPass;
+            }
+            
             void receivedFormulaChecked()
             {
                 mFirstUncheckedReceivedSubformula = mpReceivedFormula->end();
