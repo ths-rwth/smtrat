@@ -848,6 +848,7 @@ namespace smtrat
      */
     void Formula::toCNF( Formula& _formula, bool _keepConstraints )
     {
+        if( _keepConstraints && (_formula.getPropositions() | ~PROP_IS_IN_CNF) == ~PROP_TRUE ) return;
         Formula* copy = new Formula( _formula.getType() );
         while( !_formula.empty() )
         {
@@ -906,14 +907,14 @@ namespace smtrat
                      */
                     if( Formula::resolveNegation( *currentFormula, _keepConstraints ) )
                     {
-                        subformulasToTransform.push_back( currentFormula );
-                    }
-                    else
-                    {
                         /*
                          * It is a literal.
                          */
                         _formula.addSubformula( currentFormula );
+                    }
+                    else
+                    {
+                        subformulasToTransform.push_back( currentFormula );
                     }
                     break;
                 }
@@ -992,14 +993,14 @@ namespace smtrat
                                     */
                                 if( Formula::resolveNegation( *currentSubformula, _keepConstraints ) )
                                 {
-                                    /*
-                                    * It is a literal.
-                                    */
-                                    currentFormula->addSubformula( currentSubformula );
+                                    phis.push_back( currentSubformula );
                                 }
                                 else
                                 {
-                                    phis.push_back( currentSubformula );
+                                    /*
+                                     * It is a literal.
+                                     */
+                                    currentFormula->addSubformula( currentSubformula );
                                 }
                                 break;
                             }
@@ -1230,6 +1231,7 @@ namespace smtrat
         {
             _formula.copyAndDelete( new Formula( TTRUE ) );
         }
+        _formula.getPropositions();
     }
 
     /**
@@ -1406,6 +1408,7 @@ namespace smtrat
                 return false;
             }
         }
+        _formula.getPropositions();
     }
 }    // namespace smtrat
 

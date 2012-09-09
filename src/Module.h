@@ -53,7 +53,6 @@ namespace smtrat
 
     typedef std::vector<std::set<const Formula*> >                      vec_set_const_pFormula;
     typedef std::map<const Formula*, vec_set_const_pFormula>            FormulaOrigins;
-    typedef std::pair<std::set<const Constraint*>, const Constraint*>   TheoryDeduction;
 
     struct strcomp
     {
@@ -90,7 +89,7 @@ namespace smtrat
             /// for each passed formula index its original sub formulas in mpReceivedFormula
             FormulaOrigins mPassedformulaOrigins;
             /// stores the deductions this module or its backends made.
-            std::vector<TheoryDeduction> mDeductions;
+            std::vector<Formula*> mDeductions;
             ///
             Formula::const_iterator mFirstSubformulaToPass;
             ///
@@ -171,17 +170,22 @@ namespace smtrat
                 return mConstraintsToInform;
             }
 
-            void addDeduction( std::set<const Constraint*> _premise, const Constraint* _conclusion )
+            void addDeduction( Formula* _deduction )
             {
-                mDeductions.push_back( TheoryDeduction( _premise, _conclusion ) );
+                mDeductions.push_back( _deduction );
             }
 
             void clearDeductions()
             {
-                mDeductions.clear();
+                while( !mDeductions.empty() )
+                {
+                    Formula* toDelete = mDeductions.back();
+                    mDeductions.pop_back();
+                    delete toDelete;
+                }
             }
 
-            const std::vector<TheoryDeduction>& deductions() const
+            const std::vector<Formula*>& deductions() const
             {
                 return mDeductions;
             }

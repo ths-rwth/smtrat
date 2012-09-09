@@ -363,35 +363,47 @@ namespace smtrat
             ConstraintBoundPair p = ConstraintBoundPair( _constraint, eqBounds );
             mConstraintToBound.insert( p );
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            set<const Constraint*> _premise = set<const Constraint*>();
             if( resultA.second.first != NULL && resultA.second.first->pAsConstraint() != NULL )
             {
-                _premise.insert( resultA.second.first->pAsConstraint() );
-                addDeduction( _premise, constraintA );
-                _premise.clear();
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( resultA.second.first->pAsConstraint() );
+                deduction->addSubformula( constraintA );
+                addDeduction( deduction );
             }
             if( resultB.second.first != NULL && resultB.second.first->pAsConstraint() != NULL )
             {
-                _premise.insert( resultB.second.first->pAsConstraint() );
-                addDeduction( _premise, constraintB );
-                _premise.clear();
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( resultB.second.first->pAsConstraint() );
+                deduction->addSubformula( constraintB );
+                addDeduction( deduction );
             }
             if( resultA.second.second != NULL && resultA.second.second->pAsConstraint() != NULL )
             {
-                _premise.insert( _constraint );
-                addDeduction( _premise, resultA.second.second->pAsConstraint() );
-                _premise.clear();
-                _premise.insert( constraintA );
-                addDeduction( _premise, resultA.second.second->pAsConstraint() );
-                _premise.clear();
+                Formula* deductionA = new Formula( OR );
+                deductionA->addSubformula( new Formula( NOT ) );
+                deductionA->back()->addSubformula( _constraint );
+                deductionA->addSubformula( resultA.second.second->pAsConstraint() );
+                addDeduction( deductionA );
+                Formula* deductionB = new Formula( OR );
+                deductionB->addSubformula( new Formula( NOT ) );
+                deductionB->back()->addSubformula( constraintA );
+                deductionB->addSubformula( resultA.second.second->pAsConstraint() );
+                addDeduction( deductionB );
             }
             if( resultB.second.second != NULL && resultB.second.second->pAsConstraint() != NULL )
             {
-                _premise.insert( _constraint );
-                addDeduction( _premise, resultB.second.second->pAsConstraint() );
-                _premise.clear();
-                _premise.insert( constraintB );
-                addDeduction( _premise, resultB.second.second->pAsConstraint() );
+                Formula* deductionA = new Formula( OR );
+                deductionA->addSubformula( new Formula( NOT ) );
+                deductionA->back()->addSubformula( _constraint );
+                deductionA->addSubformula( resultB.second.second->pAsConstraint() );
+                addDeduction( deductionA );
+                Formula* deductionB = new Formula( OR );
+                deductionB->addSubformula( new Formula( NOT ) );
+                deductionB->back()->addSubformula( constraintB );
+                deductionB->addSubformula( resultB.second.second->pAsConstraint() );
+                addDeduction( deductionB );
             }
             #endif
         }
@@ -404,17 +416,21 @@ namespace smtrat
             ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
             mConstraintToBound.insert( p );
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            set<const Constraint*> _premise = set<const Constraint*>();
             if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
             {
-                _premise.insert( result.second.first->pAsConstraint() );
-                addDeduction( _premise, _constraint );
-                _premise.clear();
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
+                deduction->addSubformula( _constraint );
+                addDeduction( deduction );
             }
             if( result.second.second != NULL && result.second.second->pAsConstraint() != NULL )
             {
-                _premise.insert( _constraint );
-                addDeduction( _premise, result.second.second->pAsConstraint() );
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( _constraint );
+                deduction->addSubformula( result.second.second->pAsConstraint() );
+                addDeduction( deduction );
             }
             #endif
         }
@@ -427,17 +443,21 @@ namespace smtrat
             ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
             mConstraintToBound.insert( p );
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            set<const Constraint*> _premise = set<const Constraint*>();
             if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
             {
-                _premise.insert( result.second.first->pAsConstraint() );
-                addDeduction( _premise, _constraint );
-                _premise.clear();
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
+                deduction->addSubformula( _constraint );
+                addDeduction( deduction );
             }
             if( result.second.second != NULL && result.second.second->pAsConstraint() != NULL )
             {
-                _premise.insert( _constraint );
-                addDeduction( _premise, result.second.second->pAsConstraint() );
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( _constraint );
+                deduction->addSubformula( result.second.second->pAsConstraint() );
+                addDeduction( deduction );
             }
             #endif
         }
@@ -450,17 +470,21 @@ namespace smtrat
             ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
             mConstraintToBound.insert( p );
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            set<const Constraint*> _premise = set<const Constraint*>();
             if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
             {
-                _premise.insert( result.second.first->pAsConstraint() );
-                addDeduction( _premise, _constraint );
-                _premise.clear();
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
+                deduction->addSubformula( _constraint );
+                addDeduction( deduction );
             }
             if( result.second.second != NULL && result.second.second->pAsConstraint() != NULL )
             {
-                _premise.insert( _constraint );
-                addDeduction( _premise, result.second.second->pAsConstraint() );
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( _constraint );
+                deduction->addSubformula( result.second.second->pAsConstraint() );
+                addDeduction( deduction );
             }
             #endif
         }
@@ -473,17 +497,21 @@ namespace smtrat
             ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
             mConstraintToBound.insert( p );
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            set<const Constraint*> _premise = set<const Constraint*>();
             if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
             {
-                _premise.insert( result.second.first->pAsConstraint() );
-                addDeduction( _premise, _constraint );
-                _premise.clear();
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
+                deduction->addSubformula( _constraint );
+                addDeduction( deduction );
             }
             if( result.second.second != NULL && result.second.second->pAsConstraint() != NULL )
             {
-                _premise.insert( _constraint );
-                addDeduction( _premise, result.second.second->pAsConstraint() );
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( _constraint );
+                deduction->addSubformula( result.second.second->pAsConstraint() );
+                addDeduction( deduction );
             }
             #endif
         }
