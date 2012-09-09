@@ -34,6 +34,8 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
+#define LOG_THEORY_CALLS
+#define LOG_INFEASIBLE_SUBSETS
 
 #include <vector>
 #include <map>
@@ -49,9 +51,9 @@ namespace smtrat
 {
     class Manager;
 
-    typedef std::vector<std::set<const Formula*> >                 vec_set_const_pFormula;
-    typedef std::map<const Formula*, vec_set_const_pFormula>       FormulaOrigins;
-    typedef std::pair<std::set<const Formula*>, const Constraint*> TheoryDeduction;
+    typedef std::vector<std::set<const Formula*> >                      vec_set_const_pFormula;
+    typedef std::map<const Formula*, vec_set_const_pFormula>            FormulaOrigins;
+    typedef std::pair<std::set<const Constraint*>, const Constraint*>   TheoryDeduction;
 
     struct strcomp
     {
@@ -169,9 +171,8 @@ namespace smtrat
                 return mConstraintsToInform;
             }
 
-            void addDeduction( std::set<const Formula*> _premise, const Constraint* _conclusion )
+            void addDeduction( std::set<const Constraint*> _premise, const Constraint* _conclusion )
             {
-                assert( mpReceivedFormula->contains( _premise ) );
                 mDeductions.push_back( TheoryDeduction( _premise, _conclusion ) );
             }
 
@@ -194,7 +195,7 @@ namespace smtrat
             {
                 return mFirstSubformulaToPass;
             }
-            
+
             void receivedFormulaChecked()
             {
                 mFirstUncheckedReceivedSubformula = mpReceivedFormula->end();
@@ -216,6 +217,7 @@ namespace smtrat
             Answer specialCaseConsistencyCheck() const;
             void getInfeasibleSubsets();
             Answer runBackends();
+            Formula::iterator removeSubformulaFromPassedFormulaOnly( Formula::iterator );
             Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator );
             Formula::iterator pruneSubformulaFromPassedFormula( Formula::iterator );
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
@@ -229,7 +231,6 @@ namespace smtrat
             //Printing
 
         public:
-            void printWithBackends( std::ostream& = std::cout, const std::string = "***" ) const;
             void print( std::ostream& = std::cout, const std::string = "***" ) const;
             void printReceivedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printPassedFormula( std::ostream& = std::cout, const std::string = "***" ) const;

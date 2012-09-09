@@ -14,16 +14,28 @@ namespace lraone
     Bound::Bound():
         mLimit( NULL ),
         mIsUpper( true ),
-        mVar( NULL )
-    {}
+        mVar( NULL ),
+        mpAsConstraint( NULL )
+    {
+        mpOrigins = new set< const smtrat::Formula* >();
+        mpOrigins->insert( NULL );
+    }
 
-    Bound::Bound( Value* const _limit, Variable* const _var, bool _isUpper ):
+    Bound::Bound( Value* const _limit, Variable* const _var, bool _isUpper, const smtrat::Constraint* _constraint ):
         mLimit( _limit ),
         mIsUpper( _isUpper ),
-        mVar( _var )
-    {}
+        mVar( _var ),
+        mpAsConstraint( _constraint )
+    {
+        mpOrigins = new set< const smtrat::Formula* >();
+        if( _limit == NULL ) mpOrigins->insert( NULL );
+    }
 
-    Bound::~Bound(){}
+    Bound::~Bound()
+    {
+        delete mpOrigins;
+        delete mLimit;
+    }
 
     /**
      *
@@ -219,6 +231,8 @@ namespace lraone
         else
         {
             limit().print();
+            assert( mpAsConstraint != NULL );
+            _out << "  from  " << *mpAsConstraint;
         }
     }
 

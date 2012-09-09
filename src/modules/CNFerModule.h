@@ -62,15 +62,6 @@ namespace smtrat
             bool inform( const Constraint* const );
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
-
-        private:
-
-            /**
-             * Methods:
-             */
-            bool assertClauses( std::vector<Formula*>&, vec_set_const_pFormula& );
-            Formula* resolveNegation( Formula* ) const;
-            void printSolverState( const std::vector<Formula*>& ) const;
     };
 
 }    // namespace smtrat

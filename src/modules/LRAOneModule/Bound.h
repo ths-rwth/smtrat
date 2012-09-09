@@ -9,6 +9,7 @@
 #define _BOUND_H
 
 #include "Value.h"
+#include "../../Formula.h"
 #include <stddef.h>
 
 namespace lraone
@@ -22,13 +23,15 @@ namespace lraone
             /**
              * Members.
              */
-            Value*          mLimit;
-            bool            mIsUpper;
-            Variable* const mVar;
+            Value*                              mLimit;
+            bool                                mIsUpper;
+            Variable* const                     mVar;
+            const smtrat::Constraint*           mpAsConstraint;
+            std::set< const smtrat::Formula* >* mpOrigins;
 
         public:
             Bound();
-            Bound( Value* const , Variable* const , bool );
+            Bound( Value* const , Variable* const , bool, const smtrat::Constraint* );
             ~Bound();
 
             bool operator >( const Value& ) const;
@@ -60,6 +63,11 @@ namespace lraone
                 return mVar;
             }
 
+            const Variable& variable() const
+            {
+                return *mVar;
+            }
+
             bool isUpper() const
             {
                 return mIsUpper;
@@ -73,6 +81,26 @@ namespace lraone
             void setLower()
             {
                 mIsUpper = false;
+            }
+
+            const smtrat::Constraint* const pAsConstraint() const
+            {
+                return mpAsConstraint;
+            }
+
+            std::set< const smtrat::Formula* >* const pOrigins() const
+            {
+                return mpOrigins;
+            }
+
+            const std::set< const smtrat::Formula* >& origins() const
+            {
+                return *mpOrigins;
+            }
+
+            bool isActive() const
+            {
+                return !mpOrigins->empty();
             }
     };
 

@@ -315,6 +315,8 @@ namespace smtrat
             //
             // Removes already satisfied clauses.
             bool simplify();
+            // Learns a clause.
+            Minisat::CRef addLearnedClause( Minisat::vec<Minisat::Lit>& );
             // Search for a model that respects a given set of assumptions.
             bool solve( const Minisat::vec<Minisat::Lit>& assumps );
             // Search for a model that respects a given set of assumptions (With resource constraints).
@@ -468,8 +470,9 @@ namespace smtrat
                 return (int)(drand( seed ) * size);
             }
 
-            Answer addClauseToSatSolver( const Formula* );
+            Answer addClause( const Formula*, bool );
             Minisat::Lit getLiteral( const Formula&, const Formula* = NULL );
+            Minisat::Lit getLiteral( const Constraint*, const Formula* = NULL );
             bool adaptPassedFormula();
             void simplifyByLearnedTheoryDeductions( ConstraintOriginMap& ) const;
             void addTheoryDeduction( Minisat::vec<Minisat::Lit>& );

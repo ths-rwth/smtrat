@@ -126,6 +126,36 @@ namespace smtrat
                 return mType;
             }
 
+            void copyAndDelete( Formula* _formula )
+            {
+                assert( _formula != this );
+                assert( empty() );
+                mType = _formula->getType();
+                if( _formula->getType() == BOOL )
+                {
+                    delete mpSubformulas;
+                    mpIdentifier = new std::string( _formula->identifier() );
+                }
+                else if( _formula->getType() == REALCONSTRAINT )
+                {
+                    delete mpSubformulas;
+                    mpConstraint = _formula->pConstraint();
+                }
+                else if( _formula->getType() == TTRUE || _formula->getType() == FFALSE )
+                {
+                    delete mpSubformulas;
+                    mpSubformulas = NULL;
+                }
+                else
+                {
+                    while( !_formula->empty() )
+                    {
+                        addSubformula( _formula->pruneBack() );
+                    }
+                }
+                delete _formula;
+            }
+
             Condition proposition() const
             {
                 assert( mPropositionsUptodate );
@@ -360,7 +390,7 @@ namespace smtrat
             {
                 return mConstraintPool.newVariable( _name );
             }
-            
+
             static const ConstraintPool& constraintPool()
             {
                 return mConstraintPool;
@@ -451,8 +481,11 @@ namespace smtrat
             void clear();
             void notSolvableBy( ModuleType );
             void print( std::ostream& = std::cout, const std::string = "", bool = false ) const;
+            friend std::ostream& operator <<( std::ostream&, const Formula& );
             std::string toString() const;
             void getConstraints( std::vector<const Constraint*>& ) const;
+            static void toCNF( Formula&, bool = true );
+            static bool resolveNegation( Formula&, bool = true );
 
         private:
 

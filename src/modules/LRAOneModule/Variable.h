@@ -45,7 +45,7 @@ namespace lraone
         }
     };
 
-    typedef std::map<const Bound*, unsigned, boundComp> BoundActivityMap;
+    typedef std::set<const Bound*, boundComp> BoundSet;
 
     class Variable
     {
@@ -54,14 +54,14 @@ namespace lraone
             /**
              * Members.
              */
-            Value             mAssignment;
-            bool              mBasic;       // False nonbasic, True basic
-            unsigned          mPosition;    // Number of Row or Column
-            BoundActivityMap  mUpperbounds; // Know number of bounds for size of vector beforehand
-            BoundActivityMap  mLowerbounds; // Maybe wait until last inform, pushbacktrackpoint() marks the last inform
+            bool              mBasic;
+            unsigned          mPosition;
+            BoundSet          mUpperbounds;
+            BoundSet          mLowerbounds;
             const Bound*      mpSupremum;
             const Bound*      mpInfimum;
             const GiNaC::ex*  mExpression;
+            Value             mAssignment;
 
         public:
             Variable();
@@ -83,7 +83,7 @@ namespace lraone
                 mBasic = _basic;
             }
 
-            bool getBasic()
+            bool isBasic() const
             {
                 return mBasic;
             }
@@ -133,12 +133,12 @@ namespace lraone
                 return mUpperbounds.size();
             }
 
-            const BoundActivityMap& upperbounds() const
+            const BoundSet& upperbounds() const
             {
                 return mUpperbounds;
             }
 
-            const BoundActivityMap& lowerbounds() const
+            const BoundSet& lowerbounds() const
             {
                 return mLowerbounds;
             }
@@ -153,13 +153,12 @@ namespace lraone
                 return mExpression;
             }
 
-            const Bound* addUpperBound( Value* const );
-            const Bound* addLowerBound( Value* const );
-            unsigned setActive( const Bound*, bool );
+            std::pair<const Bound*,std::pair<const Bound*, const Bound*> > addUpperBound( Value* const, const smtrat::Constraint* = NULL );
+            std::pair<const Bound*,std::pair<const Bound*, const Bound*> > addLowerBound( Value* const, const smtrat::Constraint* = NULL );
             void deactivateBound( const Bound* );
 
             void print( std::ostream& = std::cout ) const;
-            void printAllBounds( std::ostream& = std::cout ) const;
+            void printAllBounds( std::ostream& = std::cout, const std::string = "" ) const;
     };
 }    // end namspace lra
 #endif   /* _VARIABLE_H */

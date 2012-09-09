@@ -688,7 +688,9 @@ namespace smtrat
             }
             case REALCONSTRAINT:
             {
-                _out << _init << *mpConstraint << " (" << mActivity << ")";
+                _out << _init;
+                mpConstraint->printInPrefix( _out );
+//                _out << " (" << mActivity << ")";
                 break;
             }
             case TTRUE:
@@ -739,6 +741,12 @@ namespace smtrat
         {
             _out << endl;
         }
+    }
+
+    ostream& operator <<( ostream& _ostream, const Formula& _formula )
+    {
+        _formula.print( _ostream, "", true );
+        return _ostream;
     }
 
     string Formula::toString() const
@@ -829,6 +837,573 @@ namespace smtrat
             for( const_iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
             {
                 (*subFormula)->getConstraints( _const );
+            }
+        }
+    }
+
+    /**
+     *
+     * @param _formula
+     * @param _keepConstraints
+     */
+    void Formula::toCNF( Formula& _formula, bool _keepConstraints )
+    {
+        Formula* copy = new Formula( _formula.getType() );
+        while( !_formula.empty() )
+        {
+            copy->addSubformula( _formula.pruneBack() );
+        }
+        _formula.copyAndDelete( new Formula( AND ) );
+        vector<Formula*> subformulasToTransform = vector<Formula*>();
+        subformulasToTransform.push_back( copy );
+        while( !subformulasToTransform.empty() )
+        {
+            Formula* currentFormula = subformulasToTransform.back();
+            subformulasToTransform.pop_back();
+            switch( currentFormula->getType() )
+            {
+                case BOOL:
+                {
+                    _formula.addSubformula( currentFormula );
+                    break;
+                }
+                case REALCONSTRAINT:
+                {
+                    _formula.addSubformula( currentFormula );
+                    break;
+                }
+                case TTRUE:
+                {
+                    /*
+                     * Remove it.
+                     */
+                    delete currentFormula;
+                    break;
+                }
+                case FFALSE:
+                {
+                    /*
+                     * Makes everything false.
+                     */
+                    while( !_formula.empty() )
+                    {
+                        Formula* formulaToDelete = _formula.pruneBack();
+                        delete formulaToDelete;
+                    }
+                    while( !subformulasToTransform.empty() )
+                    {
+                        Formula* formulaToDelete = subformulasToTransform.back();
+                        subformulasToTransform.pop_back();
+                        delete formulaToDelete;
+                    }
+                    _formula.copyAndDelete( currentFormula );
+                    return;
+                }
+                case NOT:
+                {
+                    /*
+                     * Try to resolve this negation.
+                     */
+                    if( Formula::resolveNegation( *currentFormula, _keepConstraints ) )
+                    {
+                        subformulasToTransform.push_back( currentFormula );
+                    }
+                    else
+                    {
+                        /*
+                         * It is a literal.
+                         */
+                        _formula.addSubformula( currentFormula );
+                    }
+                    break;
+                }
+                case AND:
+                {
+                    /*
+                     * (and phi_1 .. phi_n) -> psi_1 .. psi_m
+                     */
+                    while( !currentFormula->empty() )
+                    {
+                        subformulasToTransform.push_back( currentFormula->pruneBack() );
+                    }
+                    delete currentFormula;
+                    break;
+                }
+                // Note, that the following case could be implemented using less code, but it would clearly
+                // lead to a worse performance as we would then not benefit from the properties of a disjunction.
+                case OR:
+                {
+                    /*
+                     * (or phi_1 .. phi_n) -> (or psi_1 .. psi_m)
+                     *
+                     * where phi_i is transformed as follows:
+                     */
+                    vector<Formula*> phis = vector<Formula*>();
+                    while( !currentFormula->empty() )
+                    {
+                        phis.push_back( currentFormula->pruneBack() );
+                    }
+                    while( !phis.empty() )
+                    {
+                        Formula* currentSubformula = phis.back();
+                        phis.pop_back();
+                        switch( currentSubformula->getType() )
+                        {
+                            // B -> B
+                            case BOOL:
+                            {
+                                currentFormula->addSubformula( currentSubformula );
+                                break;
+                            }
+                            // p~0 -> p~0
+                            case REALCONSTRAINT:
+                            {
+                                currentFormula->addSubformula( currentSubformula );
+                                break;
+                            }
+                            // remove the entire considered disjunction and everything which has been created by considering it
+                            case TTRUE:
+                            {
+                                while( !currentFormula->empty() )
+                                {
+                                    Formula* formulaToDelete = currentFormula->pruneBack();
+                                    delete formulaToDelete;
+                                }
+                                while( !phis.empty() )
+                                {
+                                    Formula* formulaToDelete = phis.back();
+                                    phis.pop_back();
+                                    delete formulaToDelete;
+                                }
+                                delete currentFormula;
+                                break;
+                            }
+                            // remove it
+                            case FFALSE:
+                            {
+                                delete currentSubformula;
+                                break;
+                            }
+                            // resolve the negation
+                            case NOT:
+                            {
+                                /*
+                                    * Try to resolve this negation.
+                                    */
+                                if( Formula::resolveNegation( *currentSubformula, _keepConstraints ) )
+                                {
+                                    /*
+                                    * It is a literal.
+                                    */
+                                    currentFormula->addSubformula( currentSubformula );
+                                }
+                                else
+                                {
+                                    phis.push_back( currentSubformula );
+                                }
+                                break;
+                            }
+                            // (and phi_i1 .. phi_ik) -> h_i, where (or (not h_i) phi_i1) .. (or (not h_i) phi_ik) is added to the queue
+                            case AND:
+                            {
+                                Formula* hi = new Formula( Formula::getAuxiliaryBoolean() );
+                                while( !currentSubformula->empty() )
+                                {
+                                    Formula* formulaToAssert = new Formula( OR );
+                                    formulaToAssert->addSubformula( new Formula( NOT ) );
+                                    formulaToAssert->back()->addSubformula( new Formula( *hi ) );
+                                    formulaToAssert->addSubformula( currentSubformula->pruneBack() );
+                                    subformulasToTransform.push_back( formulaToAssert );
+                                }
+                                delete currentSubformula;
+                                currentFormula->addSubformula( hi );
+                                break;
+                            }
+                            // (or phi_i1 .. phi_ik) -> phi_i1 .. phi_ik
+                            case OR:
+                            {
+                                while( !currentSubformula->empty() )
+                                {
+                                    phis.push_back( currentSubformula->pruneBack() );
+                                }
+                                delete currentSubformula;
+                                break;
+                            }
+                            // (-> lhs_i rhs_i) -> (not lhs_i) rhs_i
+                            case IMPLIES:
+                            {
+                                assert( currentSubformula->back()->size() == 2 );
+                                Formula* rhs = currentSubformula->pruneBack();
+                                Formula* lhs = currentSubformula->pruneBack();
+                                delete currentSubformula;
+                                phis.push_back( new Formula( NOT ) );
+                                phis.back()->addSubformula( lhs );
+                                phis.push_back( rhs );
+                                break;
+                            }
+                            // (iff lhs_i rhs_i) -> h_i1 h_i2, where (or (not h_i1) lhs_i) (or (not h_i1) rhs_i)
+                            //                                       (or (not h_i2) (not lhs_i)) (or (not h_i2) (not rhs_i))  is added to the queue
+                            case IFF:
+                            {
+                                assert( currentSubformula->back()->size() == 2 );
+                                Formula* h_i1  = new Formula( Formula::getAuxiliaryBoolean() );
+                                Formula* h_i2  = new Formula( Formula::getAuxiliaryBoolean() );
+                                Formula* rhs_i = currentSubformula->pruneBack();
+                                Formula* lhs_i = currentSubformula->pruneBack();
+                                delete currentSubformula;
+
+                                phis.push_back( new Formula( OR ) );
+                                phis.back()->addSubformula( new Formula( NOT ) );
+                                phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
+                                phis.back()->addSubformula( lhs_i );
+                                phis.push_back( new Formula( OR ) );
+                                phis.back()->addSubformula( new Formula( NOT ) );
+                                phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
+                                phis.back()->addSubformula( rhs_i );
+                                phis.push_back( new Formula( OR ) );
+                                phis.back()->addSubformula( new Formula( NOT ) );
+                                phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
+                                phis.back()->addSubformula( new Formula( NOT ) );
+                                phis.back()->back()->addSubformula( new Formula( *lhs_i ) );
+                                phis.push_back( new Formula( OR ) );
+                                phis.back()->addSubformula( new Formula( NOT ) );
+                                phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
+                                phis.back()->addSubformula( new Formula( NOT ) );
+                                phis.back()->back()->addSubformula( new Formula( *rhs_i ) );
+
+                                currentFormula->addSubformula( h_i1 );
+                                currentFormula->addSubformula( h_i2 );
+                                break;
+                            }
+                            // (xor lhs_i rhs_i) -> h_i1 h_i2, where (or (not h_i1) (not lhs_i)) (or (not h_i1) rhs_i)
+                            //                                       (or (not h_i2) lhs_i) (or (not h_i2) (not rhs_i))  is added to the queue
+                            case XOR:
+                            {
+                                assert( currentSubformula->back()->size() == 2 );
+                                Formula* h_i1  = new Formula( Formula::getAuxiliaryBoolean() );
+                                Formula* h_i2  = new Formula( Formula::getAuxiliaryBoolean() );
+                                Formula* rhs_i = currentSubformula->pruneBack();
+                                Formula* lhs_i = currentSubformula->pruneBack();
+                                delete currentSubformula;
+
+                                phis.push_back( new Formula( OR ) );
+                                phis.back()->addSubformula( new Formula( NOT ) );
+                                phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
+                                phis.back()->addSubformula( new Formula( NOT ) );
+                                phis.back()->back()->addSubformula( lhs_i );
+                                phis.push_back( new Formula( OR ) );
+                                phis.back()->addSubformula( new Formula( NOT ) );
+                                phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
+                                phis.back()->addSubformula( rhs_i );
+                                phis.push_back( new Formula( OR ) );
+                                phis.back()->addSubformula( new Formula( NOT ) );
+                                phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
+                                phis.back()->addSubformula( new Formula( *lhs_i ) );
+                                phis.push_back( new Formula( OR ) );
+                                phis.back()->addSubformula( new Formula( NOT ) );
+                                phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
+                                phis.back()->addSubformula( new Formula( NOT ) );
+                                phis.back()->back()->addSubformula( new Formula( *rhs_i ) );
+
+                                currentFormula->addSubformula( h_i1 );
+                                currentFormula->addSubformula( h_i2 );
+                                break;
+                            }
+                            default:
+                            {
+                                cerr << "Unexpected type of formula!" << endl;
+                                assert( false );
+                            }
+                        }
+                    }
+                    if( !currentFormula->empty() ) _formula.addSubformula( currentFormula );
+                    break;
+                }
+                case IMPLIES:
+                {
+                    /*
+                    * (-> lhs rhs)  ->  (or (not lhs) rhs)
+                    */
+                    assert( currentFormula->size() == 2 );
+                    Formula* rhs = currentFormula->pruneBack();
+                    Formula* lhs = currentFormula->pruneBack();
+                    delete currentFormula;
+                    currentFormula = new Formula( OR );
+                    currentFormula->addSubformula( new Formula( NOT ) );
+                    currentFormula->back()->addSubformula( lhs );
+                    currentFormula->addSubformula( rhs );
+                    subformulasToTransform.push_back( currentFormula );
+                    break;
+                }
+                case IFF:
+                {
+                    /*
+                    * (iff lhs rhs)  ->  (or h1 h2) (or (not h1) lhs) (or (not h1) rhs) (or (not h2) (not lhs)) (or (not h2) (not rhs))
+                    */
+                    assert( currentFormula->size() == 2 );
+                    // Get lhs and rhs and delete currentFormula.
+                    Formula* rhs = currentFormula->pruneBack();
+                    Formula* lhs = currentFormula->pruneBack();
+                    delete currentFormula;
+                    // Add (or h1 h2) to the passed formula, where h1 and h2 are fresh Boolean variables.
+                    Formula* h1     = new Formula( Formula::getAuxiliaryBoolean() );
+                    Formula* h2     = new Formula( Formula::getAuxiliaryBoolean() );
+                    Formula* clause = new Formula( OR );
+                    clause->addSubformula( h1 );
+                    clause->addSubformula( h2 );
+                    _formula.addSubformula( clause );
+                    // Append (or (not h1) lhs), (or (not h1) rhs), (or (not h2) (not lhs)) and (or (not h2) (not rhs)) to _formulasToAssert.
+                    Formula* formulaToAssertA = new Formula( OR );
+                    formulaToAssertA->addSubformula( new Formula( NOT ) );
+                    formulaToAssertA->back()->addSubformula( new Formula( *h1 ) );
+                    formulaToAssertA->addSubformula( lhs );    // Once it can be used, otherwise copy it,
+                    subformulasToTransform.push_back( formulaToAssertA );
+                    Formula* formulaToAssertB = new Formula( OR );
+                    formulaToAssertB->addSubformula( new Formula( NOT ) );
+                    formulaToAssertB->back()->addSubformula( new Formula( *h1 ) );
+                    formulaToAssertB->addSubformula( rhs );    // Once it can be used, otherwise copy it,
+                    subformulasToTransform.push_back( formulaToAssertB );
+                    Formula* formulaToAssertC = new Formula( OR );
+                    formulaToAssertC->addSubformula( new Formula( NOT ) );
+                    formulaToAssertC->back()->addSubformula( new Formula( *h2 ) );
+                    formulaToAssertC->addSubformula( new Formula( NOT ) );
+                    formulaToAssertC->back()->addSubformula( new Formula( *lhs ) );
+                    subformulasToTransform.push_back( formulaToAssertC );
+                    Formula* formulaToAssertD = new Formula( OR );
+                    formulaToAssertD->addSubformula( new Formula( NOT ) );
+                    formulaToAssertD->back()->addSubformula( new Formula( *h2 ) );
+                    formulaToAssertD->addSubformula( new Formula( NOT ) );
+                    formulaToAssertD->back()->addSubformula( new Formula( *rhs ) );
+                    subformulasToTransform.push_back( formulaToAssertD );
+                    break;
+                }
+                case XOR:
+                {
+                    /*
+                    * (xor lhs rhs)  ->  (or h1 h2) (or (not h1) (not lhs)) (or (not h1) rhs) (or (not h2) lhs) (or (not h2) (not rhs))
+                    */
+                    assert( currentFormula->size() == 2 );
+                    // Get lhs and rhs and delete currentFormula.
+                    Formula* rhs = currentFormula->pruneBack();
+                    Formula* lhs = currentFormula->pruneBack();
+                    delete currentFormula;
+                    // Add (or h1 h2) to the passed formula, where h1 and h2 are fresh Boolean variables.
+                    Formula* h1     = new Formula( Formula::getAuxiliaryBoolean() );
+                    Formula* h2     = new Formula( Formula::getAuxiliaryBoolean() );
+                    Formula* clause = new Formula( OR );
+                    clause->addSubformula( h1 );
+                    clause->addSubformula( h2 );
+                    _formula.addSubformula( clause );
+                    // Append (or (not h1) (not lhs)), (or (not h1) rhs), (or (not h2) lhs) and (or (not h2) (not rhs)) to _formulasToAssert.
+                    Formula* formulaToAssertA = new Formula( OR );
+                    formulaToAssertA->addSubformula( new Formula( NOT ) );
+                    formulaToAssertA->back()->addSubformula( new Formula( *h1 ) );
+                    formulaToAssertA->addSubformula( new Formula( NOT ) );
+                    formulaToAssertA->back()->addSubformula( lhs );    // Once it can be used, otherwise copy it,
+                    subformulasToTransform.push_back( formulaToAssertA );
+                    Formula* formulaToAssertB = new Formula( OR );
+                    formulaToAssertB->addSubformula( new Formula( NOT ) );
+                    formulaToAssertB->back()->addSubformula( new Formula( *h1 ) );
+                    formulaToAssertB->addSubformula( rhs );    // Once it can be used, otherwise copy it,
+                    subformulasToTransform.push_back( formulaToAssertB );
+                    Formula* formulaToAssertC = new Formula( OR );
+                    formulaToAssertC->addSubformula( new Formula( NOT ) );
+                    formulaToAssertC->back()->addSubformula( new Formula( *h2 ) );
+                    formulaToAssertC->addSubformula( new Formula( *lhs ) );
+                    subformulasToTransform.push_back( formulaToAssertC );
+                    Formula* formulaToAssertD = new Formula( OR );
+                    formulaToAssertD->addSubformula( new Formula( NOT ) );
+                    formulaToAssertD->back()->addSubformula( new Formula( *h2 ) );
+                    formulaToAssertD->addSubformula( new Formula( NOT ) );
+                    formulaToAssertD->back()->addSubformula( new Formula( *rhs ) );
+                    subformulasToTransform.push_back( formulaToAssertD );
+                    break;
+                }
+                default:
+                {
+                    cerr << "Unexpected type of formula!" << endl;
+                    assert( false );
+                }
+            }
+        }
+        if( _formula.empty() )
+        {
+            _formula.copyAndDelete( new Formula( TTRUE ) );
+        }
+    }
+
+    /**
+        *
+        * @param _formula
+        * @param _keepConstraints
+        */
+    bool Formula::resolveNegation( Formula& _formula, bool _keepConstraint )
+    {
+        assert( _formula.getType() == NOT );
+        Formula* subformula = _formula.back();
+        switch( subformula->getType() )
+        {
+            case BOOL:
+            {
+                return false;
+            }
+            case REALCONSTRAINT:
+            {
+                if( _keepConstraint ) return false;
+                else
+                {
+                    const Constraint* constraint = subformula->pConstraint();
+                    _formula.pop_back();
+                    switch( constraint->relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            _formula.copyAndDelete( new Formula( OR ) );
+                            _formula.addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS ) ) );
+                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS ) ) );
+                            return true;
+                        }
+                        case CR_LEQ:
+                        {
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS ) ) );
+                            return false;
+                        }
+                        case CR_LESS:
+                        {
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LEQ ) ) );
+                            return false;
+                        }
+                        case CR_NEQ:
+                        {
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ ) ) );
+                            return false;
+                        }
+                        default:
+                        {
+                            cerr << "Unexpected relation symbol!" << endl;
+                            assert( false );
+                            return false;
+                        }
+                    }
+                }
+            }
+            case TTRUE:
+            {
+                /*
+                    * (not true)  ->  false
+                    */
+                _formula.copyAndDelete( _formula.pruneBack() );
+                return true;
+            }
+            case FFALSE:
+            {
+                /*
+                    * (not false)  ->  true
+                    */
+                _formula.copyAndDelete( _formula.pruneBack() );
+                return true;
+            }
+            case NOT:
+            {
+                /*
+                    * (not (not phi))  ->  phi
+                    */
+                Formula* subsubformula = subformula->pruneBack();
+                _formula.pop_back();
+                _formula.copyAndDelete( subsubformula );
+                return true;
+            }
+            case AND:
+            {
+                /*
+                    * (not (and phi_1 .. phi_n))  ->  (or (not phi_1) .. (not phi_n))
+                    */
+                vector<Formula*> subsubformulas = vector<Formula*>();
+                while( !subformula->empty() )
+                {
+                    subsubformulas.push_back( subformula->pruneBack() );
+                }
+                _formula.pop_back();
+                _formula.copyAndDelete( new Formula( OR ) );
+                while( !subsubformulas.empty() )
+                {
+                    _formula.addSubformula( new Formula( NOT ) );
+                    _formula.back()->addSubformula( subsubformulas.back() );
+                    subsubformulas.pop_back();
+                }
+                return true;
+            }
+            case OR:
+            {
+                /*
+                    * (not (or phi_1 .. phi_n))  ->  (and (not phi_1) .. (not phi_n))
+                    */
+                vector<Formula*> subsubformulas = vector<Formula*>();
+                while( !subformula->empty() )
+                {
+                    subsubformulas.push_back( subformula->pruneBack() );
+                }
+                _formula.pop_back();
+                _formula.copyAndDelete( new Formula( AND ) );
+                while( !subsubformulas.empty() )
+                {
+                    _formula.addSubformula( new Formula( NOT ) );
+                    _formula.back()->addSubformula( subsubformulas.back() );
+                    subsubformulas.pop_back();
+                }
+                return true;
+            }
+            case IMPLIES:
+            {
+                assert( subformula->size() == 2 );
+
+                /*
+                    * (not (implies lhs rhs))  ->  (and rhs (not lhs))
+                    */
+                Formula* rhsOfSubformula = subformula->pruneBack();
+                Formula* lhsOfSubformula = subformula->pruneBack();
+                _formula.pop_back();
+                _formula.copyAndDelete( new Formula( AND ) );
+                _formula.addSubformula( lhsOfSubformula );
+                _formula.addSubformula( new Formula( NOT ) );
+                _formula.back()->addSubformula( rhsOfSubformula );
+                return true;
+            }
+            case IFF:
+            {
+                assert( subformula->size() == 2 );
+
+                /*
+                    * (not (iff lhs rhs))  ->  (xor lhs rhs)
+                    */
+                Formula* rhsOfSubformula = subformula->pruneBack();
+                Formula* lhsOfSubformula = subformula->pruneBack();
+                _formula.pop_back();
+                _formula.copyAndDelete( new Formula( XOR ) );
+                _formula.addSubformula( lhsOfSubformula );
+                _formula.addSubformula( rhsOfSubformula );
+                return true;
+            }
+            case XOR:
+            {
+                assert( subformula->size() == 2 );
+
+                /*
+                    * (not (xor lhs rhs))  ->  (iff lhs rhs)
+                    */
+                Formula* rhsOfSubformula = subformula->pruneBack();
+                Formula* lhsOfSubformula = subformula->pruneBack();
+                _formula.pop_back();
+                _formula.copyAndDelete( new Formula( IFF ) );
+                _formula.addSubformula( lhsOfSubformula );
+                _formula.addSubformula( rhsOfSubformula );
+                return true;
+            }
+            default:
+            {
+                cerr << "Unexpected type of formula!" << endl;
+                assert( false );
+                return false;
             }
         }
     }

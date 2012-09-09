@@ -54,9 +54,9 @@
 //#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 #define SATMODULE_WITH_CALL_NUMBER
-//#define SAT_MODULE_THEORY_PROPAGATION
+#define SAT_MODULE_THEORY_PROPAGATION
 //#define WITH_PROGRESS_ESTIMATION
-#define STORE_ONLY_ONE_REASON
+//#define STORE_ONLY_ONE_REASON
 
 using namespace std;
 using namespace Minisat;
@@ -156,7 +156,15 @@ namespace smtrat
     /**
      * Destructor:
      */
-    SATModule::~SATModule(){}
+    SATModule::~SATModule()
+    {
+        while( !mBooleanConstraintMap.empty() )
+        {
+            const Formula* formulaToDelete = mBooleanConstraintMap.begin()->second.first;
+            mBooleanConstraintMap.erase( mBooleanConstraintMap.begin() );
+            delete formulaToDelete;
+        }
+    }
 
     /**
      * Methods:
@@ -175,7 +183,7 @@ namespace smtrat
         assert( ((*_subformula)->proposition() | ~PROP_IS_A_CLAUSE) == ~PROP_TRUE );
         Module::assertSubformula( _subformula );
 
-        addClauseToSatSolver( *_subformula );
+        addClause( *_subformula, false );
 
         return true;
     }
@@ -269,7 +277,7 @@ namespace smtrat
      *                  formula is expected to be in CNF.
      * @param _literals The literals occurring in the added clauses.
      */
-    Answer SATModule::addClauseToSatSolver( const Formula* _formula )
+    Answer SATModule::addClause( const Formula* _formula, bool _learned )
     {
         switch( _formula->getType() )
         {
@@ -288,22 +296,31 @@ namespace smtrat
                             ++numberOfPositivLiterals;
                             if( (*subformula)->constraint().relation() == CR_NEQ )
                             {
-//                                cout << "test1" << endl;
                                 const Constraint& constraint = (*subformula)->constraint();
                                 Formula subformulaA = Formula( Formula::newConstraint( constraint.lhs(), CR_LESS ) );
                                 subformulaA.setActivity( (*subformula)->activity() ); // Hack
                                 Formula subformulaB = Formula( Formula::newConstraint( constraint.lhs(), CR_GREATER ) );
                                 subformulaB.setActivity( (*subformula)->activity() ); // Hack
 
-                                Lit litA            = getLiteral( subformulaA, _formula );
-                                Lit litB            = getLiteral( subformulaB, _formula );
+                                Lit litA            = getLiteral( subformulaA, _learned ? NULL : _formula );
+                                Lit litB            = getLiteral( subformulaB, _learned ? NULL : _formula );
                                 clauseLits.push( litA );
                                 clauseLits.push( litB );
-                                addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                                if( _learned )
+                                {
+                                    vec<Lit> learned_clause;
+                                    learned_clause.push( mkLit( var( litA ), !sign( litA ) ) );
+                                    learned_clause.push( mkLit( var( litB ), !sign( litB ) ) );
+                                    addLearnedClause( learned_clause );
+                                }
+                                else
+                                {
+                                    addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                                }
                             }
                             else
                             {
-                                clauseLits.push( getLiteral( **subformula, _formula ) );
+                                clauseLits.push( getLiteral( **subformula, _learned ? NULL : _formula ) );
                             }
                             break;
                         }
@@ -316,10 +333,9 @@ namespace smtrat
                                 {
                                     if( subsubformula.getType() == REALCONSTRAINT && subsubformula.constraint().relation() == CR_NEQ )
                                     {
-//                                        cout << "test2" << endl;
                                         Formula subsubformula = Formula( Formula::newConstraint( subsubformula.constraint().lhs(), CR_EQ ) );
                                         subsubformula.setActivity( subsubformula.activity()*2 ); // Hack
-                                        clauseLits.push( getLiteral( subsubformula, _formula ) );
+                                        clauseLits.push( getLiteral( subsubformula, _learned ? NULL : _formula ) );
                                     }
                                     else if( subsubformula.getType() == REALCONSTRAINT && subsubformula.constraint().relation() == CR_EQ )
                                     {
@@ -329,15 +345,25 @@ namespace smtrat
                                         Formula subsubformulaB = Formula( Formula::newConstraint( constraint.lhs(), CR_GREATER ) );
                                         subsubformulaB.setActivity( subsubformula.activity()/2 ); // Hack
 
-                                        Lit litA               = getLiteral( subsubformulaA, _formula );
-                                        Lit litB               = getLiteral( subsubformulaB, _formula );
+                                        Lit litA               = getLiteral( subsubformulaA, _learned ? NULL : _formula );
+                                        Lit litB               = getLiteral( subsubformulaB, _learned ? NULL : _formula );
                                         clauseLits.push( litA );
                                         clauseLits.push( litB );
-                                        addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                                        if( _learned )
+                                        {
+                                            vec<Lit> learned_clause;
+                                            learned_clause.push( mkLit( var( litA ), !sign( litA ) ) );
+                                            learned_clause.push( mkLit( var( litB ), !sign( litB ) ) );
+                                            addLearnedClause( learned_clause );
+                                        }
+                                        else
+                                        {
+                                            addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                                        }
                                     }
                                     else
                                     {
-                                        Lit literal = getLiteral( subsubformula, _formula );
+                                        Lit literal = getLiteral( subsubformula, _learned ? NULL : _formula );
                                         clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
                                     }
                                     break;
@@ -345,7 +371,7 @@ namespace smtrat
                                 case BOOL:
                                 {
                                     consistsOfRealConstraints = false;
-                                    Lit literal               = getLiteral( subsubformula, _formula );
+                                    Lit literal               = getLiteral( subsubformula, _learned ? NULL : _formula );
                                     clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
                                     break;
                                 }
@@ -368,7 +394,7 @@ namespace smtrat
                         case BOOL:
                         {
                             consistsOfRealConstraints = false;
-                            clauseLits.push( getLiteral( **subformula, _formula ) );
+                            clauseLits.push( getLiteral( **subformula, _learned ? NULL : _formula ) );
                             break;
                         }
                         case TTRUE:
@@ -386,15 +412,18 @@ namespace smtrat
                         }
                     }
                 }
-
-                /*
-                 * If the clause is of the form (~c_1 or .. or ~c_n or c), where c_1, ..., c_n, c are constraints,
-                 * add
-                 */
-                if( consistsOfRealConstraints && numberOfPositivLiterals == 1 )
+                if( _learned )
                 {
+                    if( consistsOfRealConstraints && numberOfPositivLiterals == 1 )
+                    {
+                        addTheoryDeduction( clauseLits );
+                    }
+                    addLearnedClause( clauseLits );
                 }
-                addClause( clauseLits );
+                else
+                {
+                    addClause( clauseLits );
+                }
                 return Unknown;
             }
             case REALCONSTRAINT:
@@ -405,14 +434,37 @@ namespace smtrat
                     Formula subformulaA = Formula( Formula::newConstraint( constraint.lhs(), CR_LESS ) );
                     Formula subformulaB = Formula( Formula::newConstraint( constraint.lhs(), CR_GREATER ) );
 
-                    Lit litA            = getLiteral( subformulaA, _formula );
-                    Lit litB            = getLiteral( subformulaA, _formula );
-                    addClause( litA, litB );
-                    addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                    Lit litA            = getLiteral( subformulaA, _learned ? NULL : _formula );
+                    Lit litB            = getLiteral( subformulaA, _learned ? NULL : _formula );
+                    if( _learned )
+                    {
+                        vec<Lit> learned_clause;
+                        learned_clause.push( litA );
+                        learned_clause.push( litB );
+                        addLearnedClause( learned_clause );
+                        learned_clause.clear();
+                        learned_clause.push( mkLit( var( litA ), !sign( litA ) ) );
+                        learned_clause.push( mkLit( var( litB ), !sign( litB ) ) );
+                        addLearnedClause( learned_clause );
+                    }
+                    else
+                    {
+                        addClause( litA, litB );
+                        addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                    }
                 }
                 else
                 {
-                    addClause( getLiteral( *_formula, _formula ) );
+                    if( _learned )
+                    {
+                        vec<Lit> learned_clause;
+                        learned_clause.push( getLiteral( *_formula, _learned ? NULL : _formula ) );
+                        addLearnedClause( learned_clause );
+                    }
+                    else
+                    {
+                        addClause( getLiteral( *_formula, _learned ? NULL : _formula ) );
+                    }
                 }
                 return Unknown;
             }
@@ -429,27 +481,68 @@ namespace smtrat
                             Formula subsubformulaA = Formula( Formula::newConstraint( constraint.lhs(), CR_LESS ) );
                             Formula subsubformulaB = Formula( Formula::newConstraint( constraint.lhs(), CR_GREATER ) );
 
-                            Lit litA               = getLiteral( subsubformulaA, _formula );
-                            Lit litB               = getLiteral( subsubformulaB, _formula );
-                            addClause( litA, litB );
-                            addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                            Lit litA               = getLiteral( subsubformulaA, _learned ? NULL : _formula );
+                            Lit litB               = getLiteral( subsubformulaB, _learned ? NULL : _formula );
+                            if( _learned )
+                            {
+                                vec<Lit> learned_clause;
+                                learned_clause.push( litA );
+                                learned_clause.push( litB );
+                                addLearnedClause( learned_clause );
+                                learned_clause.clear();
+                                learned_clause.push( mkLit( var( litA ), !sign( litA ) ) );
+                                learned_clause.push( mkLit( var( litB ), !sign( litB ) ) );
+                                addLearnedClause( learned_clause );
+                            }
+                            else
+                            {
+                                addClause( litA, litB );
+                                addClause( mkLit( var( litA ), !sign( litA ) ), mkLit( var( litB ), !sign( litB ) ) );
+                            }
                         }
                         else if( subformula.constraint().relation() == CR_NEQ )
                         {
                             Formula subsubformula = Formula( Formula::newConstraint( subformula.constraint().lhs(), CR_EQ ) );
-                            addClause( getLiteral( subsubformula, _formula ) );
+                            if( _learned )
+                            {
+                                vec<Lit> learned_clause;
+                                learned_clause.push( getLiteral( *_formula, _learned ? NULL : _formula ) );
+                                addLearnedClause( learned_clause );
+                            }
+                            else
+                            {
+                                addClause( getLiteral( subsubformula, _learned ? NULL : _formula ) );
+                            }
                         }
                         else
                         {
-                            Lit literal = getLiteral( subformula, _formula );
-                            addClause( mkLit( var( literal ), !sign( literal ) ) );
+                            Lit literal = getLiteral( subformula, _learned ? NULL : _formula );
+                            if( _learned )
+                            {
+                                vec<Lit> learned_clause;
+                                learned_clause.push( mkLit( var( literal ), !sign( literal ) ) );
+                                addLearnedClause( learned_clause );
+                            }
+                            else
+                            {
+                                addClause( mkLit( var( literal ), !sign( literal ) ) );
+                            }
                         }
                         return Unknown;
                     }
                     case BOOL:
                     {
-                        Lit literal = getLiteral( subformula, _formula );
-                        addClause( mkLit( var( literal ), !sign( literal ) ) );
+                        Lit literal = getLiteral( subformula, _learned ? NULL : _formula );
+                        if( _learned )
+                        {
+                            vec<Lit> learned_clause;
+                            learned_clause.push( mkLit( var( literal ), !sign( literal ) ) );
+                            addLearnedClause( learned_clause );
+                        }
+                        else
+                        {
+                            addClause( mkLit( var( literal ), !sign( literal ) ) );
+                        }
                         return Unknown;
                     }
                     case TTRUE:
@@ -471,7 +564,16 @@ namespace smtrat
             }
             case BOOL:
             {
-                addClause( getLiteral( *_formula, _formula ) );
+                if( _learned )
+                {
+                    vec<Lit> learned_clause;
+                    learned_clause.push( getLiteral( *_formula, _learned ? NULL : _formula ) );
+                    addLearnedClause( learned_clause );
+                }
+                else
+                {
+                    addClause( getLiteral( *_formula, _learned ? NULL : _formula ) );
+                }
                 return Unknown;
             }
             case TTRUE:
@@ -519,26 +621,8 @@ namespace smtrat
             }
             case REALCONSTRAINT:
             {
-                const Constraint* constraint = _formula.pConstraint();
-                mConstraintsToInform.insert( constraint );
-                ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( constraint );
-                if( constraintLiteralPair != mConstraintLiteralMap.end() )
-                {
-                    return constraintLiteralPair->second;
-                }
-                else
-                {
-                    assert( _origin != NULL );
-
-                    /*
-                     * Add a fresh Boolean variable as an abstraction of the constraint.
-                     */
-                    Var constraintAbstraction = newVar( true, true, _formula.activity() );
-                    mBooleanConstraintMap[constraintAbstraction] = pair<Formula*, const Formula*>( new Formula( constraint ), _origin );
-                    Lit lit = mkLit( constraintAbstraction, false );
-                    mConstraintLiteralMap[constraint] = lit;
-                    return lit;
-                }
+                mConstraintsToInform.insert( _formula.pConstraint() );
+                return getLiteral( _formula.pConstraint(), _origin );
             }
             default:
             {
@@ -546,6 +630,32 @@ namespace smtrat
                 assert( false );
                 return mkLit( newVar(), false );
             }
+        }
+    }
+
+    /**
+     *
+     * @param _formula
+     * @param _origin
+     * @return
+     */
+    Lit SATModule::getLiteral( const Constraint* _constraint, const Formula* _origin )
+    {
+        ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _constraint );
+        if( constraintLiteralPair != mConstraintLiteralMap.end() )
+        {
+            return constraintLiteralPair->second;
+        }
+        else
+        {
+            /*
+             * Add a fresh Boolean variable as an abstraction of the constraint.
+             */
+            Var constraintAbstraction = newVar( true, true, _origin != NULL ? _origin->activity() : 0 );
+            mBooleanConstraintMap[constraintAbstraction] = pair<Formula*, const Formula*>( new Formula( _constraint ), _origin );
+            Lit lit = mkLit( constraintAbstraction, false );
+            mConstraintLiteralMap[_constraint] = lit;
+            return lit;
         }
     }
 
@@ -588,12 +698,25 @@ namespace smtrat
          * and remove the sub formulas (constraints) in the passed formula, which do not occur in the
          * constraints to add.
          */
+
         Formula::iterator subformula = mpPassedFormula->begin();
         while( subformula != firstSubformulaToPass() )
         {
             if( constraintsToCheck.erase( *subformula ) == 0 )
             {
                 subformula           = removeSubformulaFromPassedFormula( subformula );
+                changedPassedFormula = true;
+            }
+            else
+            {
+                ++subformula;
+            }
+        }
+        while( subformula != mpPassedFormula->end() )
+        {
+            if( constraintsToCheck.erase( *subformula ) == 0 )
+            {
+                subformula = removeSubformulaFromPassedFormulaOnly( subformula );
                 changedPassedFormula = true;
             }
             else
@@ -610,7 +733,15 @@ namespace smtrat
             changedPassedFormula = true;
             // we must create a new formula here, as the first element of the given
             // pair is constant and must be constant in order to be used in a set/map as key
-            addSubformulaToPassedFormula( new Formula( iter->first->pConstraint() ), iter->second );
+            if( iter->second != NULL )
+            {
+                addSubformulaToPassedFormula( new Formula( iter->first->pConstraint() ), iter->second );
+            }
+            else
+            {
+                vec_set_const_pFormula emptyOrigins = vec_set_const_pFormula();
+                addSubformulaToPassedFormula( new Formula( iter->first->pConstraint() ), emptyOrigins );
+            }
         }
         return changedPassedFormula;
     }
@@ -674,6 +805,10 @@ namespace smtrat
         #endif
     }
 
+    /**
+     * 
+     * @param _clause
+     */
     void SATModule::addTheoryDeduction( vec<Lit>& _clause )
     {
         /*
@@ -682,50 +817,33 @@ namespace smtrat
          */
         if( _clause.size() > 1 )
         {
-            bool                isTheoryDeduction = true;
             const Formula*      conclusion        = NULL;
             set<const Formula*> premise           = set<const Formula*>();
             for( int i = 0; i < _clause.size(); ++i )
             {
-                BooleanConstraintMap::iterator iter = mBooleanConstraintMap.find( var( _clause[i] ) + 1 );
-                if( iter == mBooleanConstraintMap.end() )
+                BooleanConstraintMap::iterator iter = mBooleanConstraintMap.find( var( _clause[i] ) );
+                assert( iter != mBooleanConstraintMap.end() );
+                if( sign( _clause[i] ) )
                 {
-                    isTheoryDeduction = false;
-                    break;
+                    premise.insert( iter->second.first );
                 }
                 else
                 {
-                    if( sign( _clause[i] ) )
-                    {
-                        premise.insert( iter->second.first );
-                    }
-                    else
-                    {
-                        if( conclusion == NULL )
-                        {
-                            conclusion = iter->second.first;
-                        }
-                        else
-                        {
-                            isTheoryDeduction = false;
-                            break;
-                        }
-                    }
+                    assert( conclusion == NULL );
+                    conclusion = iter->second.first;
                 }
             }
-            if( isTheoryDeduction && conclusion != NULL )
+            assert( conclusion != NULL );
+            mLearnedDeductions[conclusion].push_back( premise );
+            #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
+            cout << "Learn:  ( ";
+            for( set<const Formula*>::const_iterator iter = premise.begin(); iter != premise.end(); ++iter )
             {
-                mLearnedDeductions[conclusion].push_back( premise );
-                #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
-                cout << "Learn:  ( ";
-                for( set<const Formula*>::const_iterator iter = premise.begin(); iter != premise.end(); ++iter )
-                {
-                    cout << (*iter)->constraint().toString() << " ";
-                }
-                cout << ")  ->  " << conclusion->constraint().toString();
-                cout << "    " << mLearnedDeductions[conclusion].size() << ". premise" << endl;
-                #endif
+                cout << (*iter)->constraint().toString() << " ";
             }
+            cout << ")  ->  " << conclusion->constraint().toString();
+            cout << "    " << mLearnedDeductions[conclusion].size() << ". premise" << endl;
+            #endif
         }
     }
 
@@ -767,9 +885,6 @@ namespace smtrat
      */
     bool SATModule::addClause_( vec<Lit>& ps )
     {
-        #ifdef SAT_MODULE_THEORY_PROPAGATION
-//        addTheoryDeduction( ps );
-        #endif
         // assert( decisionLevel() == 0 ); // Commented, as we already allow to add clauses belatedly
         if( !ok )
             return false;
@@ -1337,7 +1452,7 @@ NextClause:
             return true;
 
         // Remove satisfied clauses:
-        removeSatisfied( learnts );
+//        removeSatisfied( learnts );
         if( remove_satisfied )    // Can be turned off.
             removeSatisfied( clauses );
         checkGarbage();
@@ -1347,6 +1462,26 @@ NextClause:
         simpDB_props   = clauses_literals + learnts_literals;    // (shouldn't depend on stats really, but it will do for now)
 
         return true;
+    }
+
+    CRef SATModule::addLearnedClause( vec<Lit>& _clause )
+    {
+        assert( _clause.size() != 0 );
+        CRef result;
+        // Do not store theory lemma
+        if( _clause.size() == 1 )
+        {
+            result = ca.alloc( _clause, true );
+        }
+        // Learn theory lemma
+        else
+        {
+            result = ca.alloc( _clause, true );
+            learnts.push( result );
+            attachClause( result );
+            claBumpActivity( ca[result] );
+        }
+        return result;
     }
 
     /**
@@ -1363,12 +1498,6 @@ NextClause:
         set<const Formula*, formulaCmp> sortedConstraints = set<const Formula*, formulaCmp>();
         for( set<const Formula*>::const_iterator subformula = _theoryReason.begin(); subformula != _theoryReason.end(); ++subformula )
         {
-            if( (*subformula)->getType() != REALCONSTRAINT )
-            {
-                cout << (*subformula) << endl;
-                (*subformula)->print();
-                cout << endl;
-            }
             assert( (*subformula)->getType() == REALCONSTRAINT );
             sortedConstraints.insert( *subformula );
         }
@@ -1509,7 +1638,6 @@ NextClause:
                         case True:
                         {
                             #ifdef SAT_MODULE_THEORY_PROPAGATION
-
                             /*
                              * Theory propagation.
                              */
@@ -1530,24 +1658,31 @@ NextClause:
                                     /*
                                      * Add the clause (premise -> conclusion).
                                      */
-                                    for( set<const Formula*>::const_iterator subformula = tDeduction->first.begin();
-                                            subformula != tDeduction->first.end(); ++subformula )
+                                    for( set<const Constraint*>::const_iterator constraint = tDeduction->first.begin();
+                                            constraint != tDeduction->first.end(); ++constraint )
                                     {
-                                        Lit lit = getLiteral( **subformula );
-                                        learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
+                                        learnt_clause.push( mkLit( var( getLiteral( *constraint ) ), true ) );
                                     }
-                                    ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( tDeduction->second );
-                                    assert( constraintLiteralPair != mConstraintLiteralMap.end() );
-                                    learnt_clause.push( constraintLiteralPair->second );
+                                    assert( tDeduction->second != NULL );
+                                    learnt_clause.push( getLiteral( tDeduction->second ) );
 
                                     addTheoryDeduction( learnt_clause );
+
+                                    #ifdef DEBUG_SATMODULE
+                                    cout << "###" << endl << "### Learn theory lemma" << endl;
+                                    cout << "### Clause (" << learnt_clause.size() << ") = ";
+                                    #endif
 
                                     CRef clause = ca.alloc( learnt_clause, true );
                                     learnts.push( clause );
                                     attachClause( clause );
                                     claBumpActivity( ca[clause] );
                                     learnt_clause.clear();
-                                    break;
+
+                                    #ifdef DEBUG_SATMODULE
+                                    printClause( cout, ca[clause] );
+                                    cout << endl << "###" << endl;
+                                    #endif
                                 }
                                 (*backend)->clearDeductions();
                                 ++backend;
@@ -1574,6 +1709,10 @@ NextClause:
                                     for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
                                             infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
                                     {
+
+                                        #ifdef LOG_INFEASIBLE_SUBSETS
+                                        addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
+                                        #endif
                                         if( bestInfeasibleSubset->size() > infsubset->size() )
                                         {
                                             bestInfeasibleSubset = infsubset;
@@ -1728,7 +1867,7 @@ NextClause:
                 //                }
 
                 // Simplify the set of problem clauses:
-                if( decisionLevel() == 0 &&!simplify() )
+                if( decisionLevel() == 0 && !simplify() )
                     return l_False;
 
                 if( learnts.size() - nAssigns() >= max_learnts )
@@ -2020,7 +2159,7 @@ NextClause:
         _out << _init << " BooleanConstraintMap" << endl;
         for( BooleanConstraintMap::const_iterator bcPair = mBooleanConstraintMap.begin(); bcPair != mBooleanConstraintMap.end(); ++bcPair )
         {
-            _out << _init << "   " << bcPair->first + 1 << "  ->  " << bcPair->second.first->constraint();
+            _out << _init << "   " << bcPair->first << "  ->  " << bcPair->second.first->constraint();
             _out << "  (" << setw( 7 ) << activity[bcPair->first + 1] << ") " << endl;
         }
     }
