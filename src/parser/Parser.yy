@@ -186,7 +186,9 @@ command:
                 std::string errstr = std::string( "Unknown status flag. Choose either sat or unsat!");
                 error( yyloc, errstr );
             }
+            delete $4;
         }
+        delete $3;
 	}
 	|	OB SETINFO KEY CB
 	{
@@ -339,6 +341,7 @@ expr:
         }
         else
         {
+            delete $4;
             $$ = $6;
         }
     }
@@ -458,6 +461,7 @@ term :
    			std::string errstr = std::string( "There should be a point in a decimal!");
   			error( yyloc, errstr );
         }
+        delete $1;
    	}
     |  	termOp
     {
@@ -558,6 +562,7 @@ nums :
    			std::string errstr = std::string( "There should be a point in a decimal!");
   			error( yyloc, errstr );
         }
+        delete $1;
    	}
     |	OB PLUS numlistPlus CB
 	{
@@ -704,21 +709,18 @@ keys :
 	}
 	|	DEC DB keys
 	{
-	}
-	|	SYM keys
-	{
-	}
-	|	SYM DB keys
-	{
+        delete $1;
 	}
 	|	NUM
 	{
 	}
 	|	DEC
 	{
+        delete $1;
 	}
 	|	SYM
 	{
+        $$ = $1;
 	}
 	;
 

@@ -38,39 +38,39 @@ using namespace GiNaC;
 namespace lraone
 {
     Variable::Variable():
-        mAssignment(),
         mBasic( true ),
         mPosition( 0 ),
-        mUpperbounds( BoundActivityMap() ),
-        mLowerbounds( BoundActivityMap() )
+        mUpperbounds( BoundSet() ),
+        mLowerbounds( BoundSet() ),
+        mAssignment()
     {
-        mpSupremum = addUpperBound( NULL );
-        mpInfimum  = addLowerBound( NULL );
+        mpSupremum = addUpperBound( NULL ).first;
+        mpInfimum  = addLowerBound( NULL ).first;
     }
 
     Variable::Variable( unsigned _position, bool _basic, const ex* _expression ):
-        mAssignment(),
         mBasic( _basic ),
         mPosition( _position ),
-        mUpperbounds( BoundActivityMap() ),
-        mLowerbounds( BoundActivityMap() ),
-        mExpression( _expression)
+        mUpperbounds( BoundSet() ),
+        mLowerbounds( BoundSet() ),
+        mExpression( _expression),
+        mAssignment()
     {
-        mpSupremum = addUpperBound( NULL );
-        mpInfimum  = addLowerBound( NULL );
+        mpSupremum = addUpperBound( NULL ).first;
+        mpInfimum  = addLowerBound( NULL ).first;
     }
 
     Variable::~Variable()
     {
         while( !mLowerbounds.empty() )
         {
-            const Bound* b = mLowerbounds.begin()->first;
+            const Bound* b = *mLowerbounds.begin();
             mLowerbounds.erase( mLowerbounds.begin() );
             delete b;
         }
         while( !mUpperbounds.empty() )
         {
-            const Bound* b = mUpperbounds.begin()->first;
+            const Bound* b = *mUpperbounds.begin();
             mUpperbounds.erase( mUpperbounds.begin() );
             delete b;
         }
@@ -81,15 +81,33 @@ namespace lraone
      * @param _val
      * @return
      */
-    const Bound* Variable::addLowerBound( Value* const _val )
+    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addLowerBound( Value* const _val, const smtrat::Constraint* _constraint )
     {
-        const Bound*                           b = new Bound( _val, this, false );
-        pair<BoundActivityMap::iterator, bool> p = mLowerbounds.insert( pair<const Bound*, bool>( b, _val == NULL ) );
-        if( !p.second )
+        const Bound*                 newBound = new Bound( _val, this, false, _constraint );
+        pair<BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
+        if( !result.second )
         {
-            delete b;
+            delete newBound;
+            return pair<const Bound*,pair<const Bound*, const Bound*> >( *result.first, pair<const Bound*, const Bound*>( NULL, NULL ) );
         }
-        return p.first->first;
+        else
+        {
+            const Bound* nextStrongerBound = NULL;
+            const Bound* nextWeakerBound = NULL;
+            ++result.first;
+            if( result.first != mLowerbounds.end() )
+            {
+                nextStrongerBound = *result.first;
+            }
+            --result.first;
+            if( result.first != mLowerbounds.begin() )
+            {
+                --result.first;
+                nextWeakerBound = *result.first;
+                ++result.first;
+            }
+            return pair<const Bound*,pair<const Bound*, const Bound*> >( *result.first, pair<const Bound*, const Bound*>( nextStrongerBound, nextWeakerBound ) );
+        }
     }
 
     /**
@@ -97,53 +115,33 @@ namespace lraone
      * @param _val
      * @return
      */
-    const Bound* Variable::addUpperBound( Value* const _val )
+    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addUpperBound( Value* const _val, const smtrat::Constraint* _constraint )
     {
-        const Bound*                           b = new Bound( _val, this, true );
-        pair<BoundActivityMap::iterator, bool> p = mUpperbounds.insert( pair<const Bound*, bool>( b, _val == NULL ) );
-        if( !p.second )
+        const Bound*                 newBound = new Bound( _val, this, true, _constraint );
+        pair<BoundSet::iterator, bool> result = mUpperbounds.insert( newBound );
+        if( !result.second )
         {
-            delete b;
-        }
-        return p.first->first;
-    }
-
-    /**
-     *
-     * @param _bound
-     * @param _active
-     * @return
-     */
-    unsigned Variable::setActive( const Bound* _bound, bool _active )
-    {
-        assert( _bound != NULL );
-        if( _bound->isUpper() )
-        {
-            BoundActivityMap::iterator iter = mUpperbounds.find( _bound );
-            assert( iter != mUpperbounds.end() );
-            if( _active )
-            {
-                return ++iter->second;
-            }
-            else
-            {
-                assert( iter->second > 0 );
-                return --iter->second;
-            }
+            delete newBound;
+            return pair<const Bound*,pair<const Bound*, const Bound*> >( *result.first, pair<const Bound*, const Bound*>( NULL, NULL ) );
         }
         else
         {
-            BoundActivityMap::iterator iter = mLowerbounds.find( _bound );
-            assert( iter != mLowerbounds.end() );
-            if( _active )
+            const Bound* nextStrongerBound = NULL;
+            const Bound* nextWeakerBound = NULL;
+            if( result.first != mUpperbounds.begin() )
             {
-                return ++iter->second;
+                nextStrongerBound = *(--result.first);
+                ++result.first;
             }
-            else
+            if( result.first != mUpperbounds.end() )
             {
-                assert( iter->second > 0 );
-                return --iter->second;
+                if( ++result.first != mUpperbounds.end() )
+                {
+                    nextWeakerBound = *result.first;
+                }
+                --result.first;
             }
+            return pair<const Bound*,pair<const Bound*, const Bound*> >( *result.first, pair<const Bound*, const Bound*>( nextStrongerBound, nextWeakerBound ) );
         }
     }
 
@@ -153,46 +151,42 @@ namespace lraone
      */
     void Variable::deactivateBound( const Bound* bound )
     {
-        // Bound gets deactivated
-        if( setActive( bound, false ) == 0 )
+        if( bound->isUpper() )
         {
-            if( bound->isUpper() )
+            //check if it is the supremum
+            if( pSupremum() == bound )
             {
-                //check if it is the supremum
-                if( pSupremum() == bound )
+                //find the supremum
+                BoundSet::iterator newBound = mUpperbounds.begin();
+                while( newBound != mUpperbounds.end() )
                 {
-                    //find the supremum
-                    BoundActivityMap::iterator newBound = mUpperbounds.begin();
-                    while( newBound != mUpperbounds.end() )
+                    if( (*newBound)->isActive() )
                     {
-                        if( newBound->second > 0 )
-                        {
-                            setSupremum( newBound->first );
-                            break;
-                        }
-                        ++newBound;
+                        setSupremum( *newBound );
+                        break;
                     }
-                    assert( newBound != mUpperbounds.end() );
+                    ++newBound;
                 }
+                assert( newBound != mUpperbounds.end() );
             }
-            else
+        }
+        else
+        {
+            //check if it is the infimum
+            if( pInfimum() == bound )
             {
-                //check if it is the infimum
-                if( pInfimum() == bound )
+                //find the infimum
+                BoundSet::reverse_iterator newBound = mLowerbounds.rbegin();
+                while( newBound != mLowerbounds.rend() )
                 {
-                    //find the infimum
-                    BoundActivityMap::iterator newBound = mLowerbounds.begin();
-                    while( newBound != mLowerbounds.end() )
+                    if( (*newBound)->isActive() )
                     {
-                        if( newBound->second > 0 )
-                        {
-                            setInfimum( newBound->first );
-                            break;
-                        }
-                        ++newBound;
+                        setInfimum( *newBound );
+                        break;
                     }
-                    assert( newBound != mLowerbounds.end() );
+                    ++newBound;
                 }
+                assert( newBound != mLowerbounds.rend() );
             }
         }
     }
@@ -215,21 +209,45 @@ namespace lraone
         _out << setw( 1 ) << "]";
     }
 
-    void Variable::printAllBounds( std::ostream& _out ) const
+    void Variable::printAllBounds( std::ostream& _out, const std::string _init ) const
     {
-        _out << " Upper bounds: " << endl;
-        for( BoundActivityMap::const_iterator bIter = mUpperbounds.begin(); bIter != mUpperbounds.end(); ++bIter )
+        _out << _init << " Upper bounds: " << endl;
+        for( BoundSet::const_iterator bIter = mUpperbounds.begin(); bIter != mUpperbounds.end(); ++bIter )
         {
-            _out << "  ";
-            (*bIter).first->print( _out, true );
-            _out << endl;
+            _out << _init << "     ";
+            (*bIter)->print( _out, true );
+            _out << "  { ";
+            for( auto origin = (*bIter)->origins().begin(); origin != (*bIter)->origins().end(); ++origin )
+            {
+                if( *origin != NULL )
+                {
+                    _out << **origin << " ";
+                }
+                else
+                {
+                    _out << "NULL ";
+                }
+            }
+            _out << "}" << endl;
         }
-        _out << " Lower bounds: " << endl;
-        for( BoundActivityMap::const_iterator bIter = mLowerbounds.begin(); bIter != mLowerbounds.end(); ++bIter )
+        _out << _init << " Lower bounds: " << endl;
+        for( BoundSet::const_iterator bIter = mLowerbounds.begin(); bIter != mLowerbounds.end(); ++bIter )
         {
-            _out << "  ";
-            (*bIter).first->print( _out, true );
-            _out << endl;
+            _out << _init << "     ";
+            (*bIter)->print( _out, true );
+            _out << "  { ";
+            for( auto origin = (*bIter)->origins().begin(); origin != (*bIter)->origins().end(); ++origin )
+            {
+                if( *origin != NULL )
+                {
+                    _out << **origin << " ";
+                }
+                else
+                {
+                    _out << "NULL ";
+                }
+            }
+            _out << "}" << endl;
         }
     }
 }    // end namspace lra

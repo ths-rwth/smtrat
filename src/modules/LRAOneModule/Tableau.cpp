@@ -41,6 +41,11 @@ namespace lraone
         mHeight( 0 ),
         mWidth( 0 ),
         mPivotingSteps( 0 ),
+        #ifdef LRA_USE_PIVOTING_STRATEGY
+        mRestarts( 0 ),
+        mNextRestartBegin( 0 ),
+        mNextRestartEnd( 0 ),
+        #endif
         mUnusedIDs(),
         mRows(),
         mColumns()
@@ -52,6 +57,18 @@ namespace lraone
 
     Tableau::~Tableau()
     {
+        while( !mRows.empty() )
+        {
+            Variable* varToDel = mRows.back().mName;
+            mRows.pop_back();
+            delete varToDel;
+        }
+        while( !mColumns.empty() )
+        {
+            Variable* varToDel = mColumns.back().mName;
+            mColumns.pop_back();
+            delete varToDel;
+        }
         while( !mUnusedIDs.empty() )
         {
             mUnusedIDs.pop();
@@ -62,6 +79,7 @@ namespace lraone
             mpEntries->pop_back();
             delete tmpNum;
         }
+        delete mpEntries;
         delete mpTheta;
     };
 
@@ -127,6 +145,9 @@ namespace lraone
     Variable* Tableau::newNonbasicVariable( const ex* _ex )
     {
         Variable* var = new Variable( mWidth++, false, _ex );
+        #ifdef LRA_USE_PIVOTING_STRATEGY
+        ++mNextRestartEnd;
+        #endif
         mColumns.push_back( TableauHead() );
         mColumns[mWidth-1].mStartEntry = 0;
         mColumns[mWidth-1].mSize = 0;
@@ -167,7 +188,10 @@ namespace lraone
             ++mColumns[(*mpEntries)[entry].columnNumber()].mSize;
             (*mpEntries)[entry].setDown( 0 );
             // Put it in the row.
-            if( currentStartEntryOfRow == 0 ) currentStartEntryOfRow = entry;
+            if( currentStartEntryOfRow == 0 )
+            {
+                currentStartEntryOfRow = entry;
+            }
             else
             {
                 Iterator rowIter = Iterator( currentStartEntryOfRow, mpEntries );
@@ -187,7 +211,10 @@ namespace lraone
                     (*rowIter).setLeft( entry );
                     (*mpEntries)[entry].setLeft( leftEntryID );
                     (*mpEntries)[entry].setRight( rowIter.entryID() );
-                    if( rowIter.rowBegin() ) currentStartEntryOfRow = entry;
+                    if( leftEntryID == 0 )
+                    {
+                        currentStartEntryOfRow = entry;
+                    }
                 }
                 else
                 {
@@ -206,25 +233,62 @@ namespace lraone
         return var;
     }
 
+    #ifdef LRA_USE_PIVOTING_STRATEGY
+    /**
+     *
+     * @param y
+     * @param x
+     * @return
+     */
+    static unsigned luby( unsigned _numberOfRestarts )
+    {
+        // Find the finite subsequence that contains index 'x', and the
+        // size of that subsequence:
+        cout << "_numberOfRestarts = " << _numberOfRestarts;
+        unsigned size, seq;
+        for( size = 1, seq = 0; size < _numberOfRestarts + 1; seq++, size = 2 * size + 1 );
+
+        while( size - 1 != _numberOfRestarts )
+        {
+            size = (size - 1) >> 1;
+            seq--;
+            _numberOfRestarts = _numberOfRestarts % size;
+        }
+        cout << " results in seq = " << seq << endl;
+        if( seq >= 64 ) return 0;
+        cout << " results in seq = " << seq << endl;
+        unsigned result = 1;
+        result = result << seq;
+        cout << "result = " << result << endl;
+        return result;
+    }
+    #endif
+
     /**
      *
      * @return
      */
-    pair<EntryID,bool> Tableau::nextPivotingElement() const
+    pair<EntryID,bool> Tableau::nextPivotingElement()
     {
-        // Dynamic strategy for a fixed number of steps
-        if( false ) //mPivotingSteps > mWidth )
+        #ifdef LRA_USE_PIVOTING_STRATEGY
+        //  Dynamic strategy for a fixed number of steps
+        if( mPivotingSteps >= mNextRestartBegin && mPivotingSteps < mNextRestartEnd )
         {
             unsigned smallestRowSize = mWidth;
             unsigned smallestColumnSize = mHeight;
             EntryID beginOfBestRow = 0;
+            EntryID beginOfFirstConflictRow = 0;
             for( unsigned rowNumber = 0; rowNumber < mRows.size(); ++rowNumber )
             {
-                pair<EntryID,bool> result = isSuitable( rowNumber );
+                Value theta = Value();
+                pair<EntryID,bool> result = isSuitable( rowNumber, theta );
                 if( !result.second )
                 {
                     // Found a conflicting row.
-                    return pair<EntryID,bool>( result.first, false );
+                    if( beginOfFirstConflictRow == 0 )
+                    {
+                        beginOfFirstConflictRow = result.first;
+                    }
                 }
                 else if( result.first != 0 )
                 {
@@ -234,6 +298,7 @@ namespace lraone
                         smallestRowSize = mRows[(*mpEntries)[result.first].rowNumber()].mSize;
                         smallestColumnSize = mColumns[(*mpEntries)[result.first].columnNumber()].mSize;
                         beginOfBestRow = result.first;
+                        *mpTheta = theta;
                     }
                     else if( mRows[(*mpEntries)[result.first].rowNumber()].mSize == smallestRowSize
                              && mColumns[(*mpEntries)[result.first].columnNumber()].mSize < smallestColumnSize )
@@ -241,10 +306,16 @@ namespace lraone
                         // Found a better pivoting element.
                         smallestColumnSize = mColumns[(*mpEntries)[result.first].columnNumber()].mSize;
                         beginOfBestRow = result.first;
+                        *mpTheta = theta;
                     }
                 }
             }
-            if( beginOfBestRow != 0 )
+            if( beginOfBestRow == 0 && beginOfFirstConflictRow != 0 )
+            {
+                // The best pivoting element found
+                return pair<EntryID,bool>( beginOfFirstConflictRow, false );
+            }
+            else if( beginOfBestRow != 0 )
             {
                 // The best pivoting element found
                 return pair<EntryID,bool>( beginOfBestRow, true );
@@ -258,9 +329,16 @@ namespace lraone
         // Bland's rule
         else
         {
+//            if( mPivotingSteps == mNextRestartEnd )
+//            {
+//                mNextRestartBegin = mNextRestartEnd + mWidth * luby( mRestarts++ );
+//                mNextRestartEnd = mNextRestartBegin + mWidth;
+//                cout << "Next restart range = [" << mNextRestartBegin << "," << mNextRestartEnd << "]" << endl;
+//            }
+        #endif
             for( unsigned rowNumber = 0; rowNumber < mRows.size(); ++rowNumber )
             {
-                pair<EntryID,bool> result = isSuitable( rowNumber );
+                pair<EntryID,bool> result = isSuitable( rowNumber, *mpTheta );
                 if( !result.second )
                 {
                     // Found a conflicting row.
@@ -274,7 +352,9 @@ namespace lraone
             }
             // Found no pivoting element, that is no variable violates its bounds.
             return pair<EntryID,bool>( 0, true );
+        #ifdef LRA_USE_PIVOTING_STRATEGY
         }
+        #endif
     }
 
     /**
@@ -282,7 +362,7 @@ namespace lraone
      * @param _rowNumber
      * @return
      */
-    pair<EntryID,bool> Tableau::isSuitable( unsigned _rowNumber ) const
+    pair<EntryID,bool> Tableau::isSuitable( unsigned _rowNumber, Value& _theta ) const
     {
         // Upper bound is violated
         if( mRows[_rowNumber].mName->supremum() < mRows[_rowNumber].mName->assignment() )
@@ -296,7 +376,8 @@ namespace lraone
                     if( mColumns[(*rowIter).columnNumber()].mName->supremum() > mColumns[(*rowIter).columnNumber()].mName->assignment() )
                     {
                         // Basic variable suitable
-                        *mpTheta = (mRows[_rowNumber].mName->supremum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
+                        assert( (*rowIter).content() != 0 );
+                        _theta = (mRows[_rowNumber].mName->supremum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
                         return pair<EntryID,bool>( rowIter.entryID(), true );
                     }
                 }
@@ -305,7 +386,8 @@ namespace lraone
                     if( mColumns[(*rowIter).columnNumber()].mName->infimum() < mColumns[(*rowIter).columnNumber()].mName->assignment()  )
                     {
                         // Basic variable suitable
-                        *mpTheta = (mRows[_rowNumber].mName->supremum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
+                        assert( (*rowIter).content() != 0 );
+                        _theta = (mRows[_rowNumber].mName->supremum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
                         return pair<EntryID,bool>( rowIter.entryID(), true );
                     }
                 }
@@ -332,7 +414,8 @@ namespace lraone
                     if( mColumns[(*rowIter).columnNumber()].mName->supremum() > mColumns[(*rowIter).columnNumber()].mName->assignment() )
                     {
                         // Basic variable suitable
-                        *mpTheta = (mRows[_rowNumber].mName->infimum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
+                        assert( (*rowIter).content() != 0 );
+                        _theta = (mRows[_rowNumber].mName->infimum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
                         return pair<EntryID,bool>( rowIter.entryID(), true );
                     }
                 }
@@ -341,7 +424,8 @@ namespace lraone
                     if( mColumns[(*rowIter).columnNumber()].mName->infimum() < mColumns[(*rowIter).columnNumber()].mName->assignment() )
                     {
                         // Basic variable suitable
-                        *mpTheta = (mRows[_rowNumber].mName->infimum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
+                        assert( (*rowIter).content() != 0 );
+                        _theta = (mRows[_rowNumber].mName->infimum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
                         return pair<EntryID,bool>( rowIter.entryID(), true );
                     }
                 }
@@ -496,6 +580,7 @@ namespace lraone
      */
     void Tableau::pivot( EntryID _pivotingElement )
     {
+        // TODO: refine the pivoting row
         // Find all columns having "a nonzero entry in the pivoting row"**, update this entry and store it.
         // First the column with ** left to the pivoting column until the leftmost column with **.
         vector<Iterator> pivotingRowLeftSide = vector<Iterator>();
@@ -527,20 +612,23 @@ namespace lraone
         //        Update the entry (t_r,t_c,t_e) of the intersection of R and C to (t_r,t_c,t_e+r_e).
         if( (*mpEntries)[_pivotingElement].up() == 0 )
         {
-            updateDown( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
+            updateDownwards( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
         }
         else if( (*mpEntries)[_pivotingElement].down() == 0 )
         {
-            updateUp( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
+            updateUpwards( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
         }
         else
         {
-            updateDown( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
-            updateUp( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
+            updateDownwards( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
+            updateUpwards( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
         }
         // Swap the row and the column head.
+        unsigned activityTmp = mRows[(*mpEntries)[_pivotingElement].rowNumber()].mActivity;
         mRows[(*mpEntries)[_pivotingElement].rowNumber()].mName = mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mName;
+        mRows[(*mpEntries)[_pivotingElement].rowNumber()].mActivity = mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mActivity;
         mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mName = nameTmp;
+        mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mActivity = activityTmp;
         // Adapt both variables.
         Variable& basicVar = *mRows[(*mpEntries)[_pivotingElement].rowNumber()].mName;
         basicVar.rPosition() = (*mpEntries)[_pivotingElement].rowNumber();
@@ -556,13 +644,14 @@ namespace lraone
      * @param _pivotingElement
      * @param _pivotingRow
      */
-    void Tableau::updateDown( EntryID _pivotingElement, vector<Iterator>& _pivotingRowLeftSide, vector<Iterator>& _pivotingRowRightSide )
+    void Tableau::updateDownwards( EntryID _pivotingElement, vector<Iterator>& _pivotingRowLeftSide, vector<Iterator>& _pivotingRowRightSide )
     {
         vector<Iterator> leftColumnIters = vector<Iterator>( _pivotingRowLeftSide );
         vector<Iterator> rightColumnIters = vector<Iterator>( _pivotingRowRightSide );
         Iterator pivotingColumnIter = Iterator( _pivotingElement, mpEntries );
         while( true )
         {
+            // TODO: exclude not activated rows and update them when they get activated
             if( !pivotingColumnIter.columnEnd() )
             {
                 pivotingColumnIter.down();
@@ -584,6 +673,7 @@ namespace lraone
                 {
                     (*currentColumnIter).down();
                 }
+                // TODO: refine the current row
                 while( !currentRowIter.rowBegin() && (*currentRowIter).columnNumber() > (**currentColumnIter).columnNumber() )
                 {
                     currentRowIter.left();
@@ -625,6 +715,7 @@ namespace lraone
                         (**currentColumnIter).setDown( entryID );
                         (*mpEntries)[entryID].setUp( (*currentColumnIter).entryID() );
                         (*mpEntries)[entryID].setDown( 0 );
+                        mColumns[(*mpEntries)[entryID].columnNumber()].mStartEntry = entryID;
                     }
                     if( (*currentRowIter).columnNumber() < (**currentColumnIter).columnNumber() )
                     {
@@ -703,6 +794,7 @@ namespace lraone
                         (**currentColumnIter).setDown( entryID );
                         (*mpEntries)[entryID].setUp( (*currentColumnIter).entryID() );
                         (*mpEntries)[entryID].setDown( 0 );
+                        mColumns[(*mpEntries)[entryID].columnNumber()].mStartEntry = entryID;
                     }
                     if( (*currentRowIter).columnNumber() > (**currentColumnIter).columnNumber() )
                     {
@@ -739,13 +831,14 @@ namespace lraone
      * @param _pivotingElement
      * @param _pivotingRow
      */
-    void Tableau::updateUp( EntryID _pivotingElement, vector<Iterator>& _pivotingRowLeftSide, vector<Iterator>& _pivotingRowRightSide )
+    void Tableau::updateUpwards( EntryID _pivotingElement, vector<Iterator>& _pivotingRowLeftSide, vector<Iterator>& _pivotingRowRightSide )
     {
         vector<Iterator> leftColumnIters = vector<Iterator>( _pivotingRowLeftSide );
         vector<Iterator> rightColumnIters = vector<Iterator>( _pivotingRowRightSide );
         Iterator pivotingColumnIter = Iterator( _pivotingElement, mpEntries );
         while( true )
         {
+            // TODO: exclude not activated rows and update them when they get activated
             if( !pivotingColumnIter.columnBegin() )
             {
                 pivotingColumnIter.up();
@@ -807,7 +900,6 @@ namespace lraone
                         (**currentColumnIter).setUp( entryID );
                         (*mpEntries)[entryID].setDown( (*currentColumnIter).entryID() );
                         (*mpEntries)[entryID].setUp( 0 );
-                        mColumns[(*mpEntries)[entryID].columnNumber()].mStartEntry = entryID;
                     }
                     if( (*currentRowIter).columnNumber() < (**currentColumnIter).columnNumber() )
                     {
@@ -885,7 +977,6 @@ namespace lraone
                         (**currentColumnIter).setUp( entryID );
                         (*mpEntries)[entryID].setDown( (*currentColumnIter).entryID() );
                         (*mpEntries)[entryID].setUp( 0 );
-                        mColumns[(*mpEntries)[entryID].columnNumber()].mStartEntry = entryID;
                     }
                     if( (*currentRowIter).columnNumber() > (**currentColumnIter).columnNumber() )
                     {
@@ -917,6 +1008,12 @@ namespace lraone
         }
     }
 
+    /**
+     *
+     * @param _out
+     * @param _maxEntryLength
+     * @param _init
+     */
     void Tableau::printHeap( ostream& _out, unsigned _maxEntryLength, const string _init ) const
     {
         for( EntryID pos = 0; pos < mpEntries->size(); ++pos )
@@ -927,6 +1024,12 @@ namespace lraone
         }
     }
 
+    /**
+     *
+     * @param _out
+     * @param _entry
+     * @param _maxEntryLength
+     */
     void Tableau::printEntry( ostream& _out, EntryID _entry, unsigned _maxEntryLength ) const
     {
             _out << setw( 4 ) << _entry << ": ";
@@ -955,6 +1058,11 @@ namespace lraone
             _out << "]";
     }
 
+    /**
+     *
+     * @param _out
+     * @param _init
+     */
     void Tableau::printVariables( ostream& _out, const string _init ) const
     {
         _out << _init << "Basic variables:" << endl;
@@ -962,17 +1070,25 @@ namespace lraone
         {
             _out << _init << "  ";
             row->mName->print( _out );
-            _out << endl;
+            _out << "(" << row->mActivity << ")" << endl;
+            row->mName->printAllBounds( _out, _init + "                    " );
         }
         _out << _init << "Nonbasic variables:" << endl;
         for( vector<TableauHead>::const_iterator column = mColumns.begin(); column != mColumns.end(); ++column )
         {
             _out << _init << "  ";
             column->mName->print( _out );
-            _out << endl;
+            _out << "(" << column->mActivity << ")" << endl;
+            column->mName->printAllBounds( _out, _init + "                    " );
         }
     }
 
+    /**
+     *
+     * @param _out
+     * @param _maxEntryLength
+     * @param _init
+     */
     void Tableau::print( ostream& _out, unsigned _maxEntryLength, const string _init ) const
     {
         char     frameSign     = '-';

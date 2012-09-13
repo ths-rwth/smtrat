@@ -39,8 +39,6 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
-#define LOG_THEORY_CALLS
-//#define LOG_INFEASIBLE_SUBSETS
 
 using namespace std;
 
@@ -65,7 +63,10 @@ namespace smtrat
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() )
     {}
 
-    Module::~Module(){}
+    Module::~Module()
+    {
+        delete mpPassedFormula;
+    }
 
     /**
      * Checks the received formula for consistency.
@@ -170,11 +171,6 @@ namespace smtrat
                 ++infSubSet;
             }
         }
-
-        /*
-         * Clear the deductions.
-         */
-        mDeductions.clear();
     }
 
     /**
@@ -338,7 +334,7 @@ namespace smtrat
         {
             assert( !infSubSet->empty() );
             #ifdef LOG_INFEASIBLE_SUBSETS
-            addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) );
+            addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) + "_infeasible_subset" );
             #endif
             result.push_back( set<const Formula*>() );
             for( set<const Formula*>::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
@@ -400,7 +396,7 @@ namespace smtrat
                 {
                     if( !(*module)->assertSubformula( subformula ) )
                     {
-                        mFirstSubformulaToPass = subformula;
+                        mFirstSubformulaToPass = ++subformula;
                         return False;
                     }
                 }
@@ -416,51 +412,8 @@ namespace smtrat
         while( module != mUsedBackends.end() && result == Unknown )
         {
             #ifdef MODULE_VERBOSE
-            string moduleName = "";
-            switch( (**module).type() )
-            {
-                case MT_SmartSimplifier:
-                {
-                    moduleName = "Simplifier";
-                    break;
-                }
-                case MT_GroebnerModule:
-                {
-                    moduleName = "Groebner";
-                    break;
-                }
-                case MT_CADModule:
-                {
-                    moduleName = "CAD";
-                    break;
-                }
-                case MT_VSModule:
-                {
-                    moduleName = "VS";
-                    break;
-                }
-                case MT_PreProModule:
-                {
-                    moduleName = "Preprocessor";
-                    break;
-                }
-                case MT_SATModule:
-                {
-                    moduleName = "SAT";
-                    break;
-                }
-                case MT_CNFerModule:
-                {
-                    moduleName = "CNF transformer";
-                    break;
-                }
-                default:
-                {
-                    break;
-                }
-            }
-            cout << endl << "Call to module " << moduleName << endl;
-            (**module).print( cout, " ");
+            cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
+            (*module)->print( cout, " ");
             #endif
             result = (*module)->isConsistent();
             (*module)->receivedFormulaChecked();
@@ -476,6 +429,22 @@ namespace smtrat
         cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : "Unknown")) << endl;
         #endif
         return result;
+    }
+
+    /**
+     *
+     * @param _subformula
+     * @return
+     */
+    Formula::iterator Module::removeSubformulaFromPassedFormulaOnly( Formula::iterator _subformula )
+    {
+        assert( _subformula != mpPassedFormula->end() );
+        if( _subformula == mFirstSubformulaToPass )
+        {
+            mFirstSubformulaToPass++;
+        }
+        mPassedformulaOrigins.erase( *_subformula );
+        return mpPassedFormula->erase( _subformula );
     }
 
     /**
@@ -529,34 +498,34 @@ namespace smtrat
      */
     void Module::updateDeductions()
     {
-        for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
-        {
-            for( vector<TheoryDeduction>::const_iterator deduction = (*module)->deductions().begin(); deduction != (*module)->deductions().end();
-                    ++deduction )
-            {
-                /*
-                 * Projects backends deductions (passed formula) to the  in the received formula.
-                 */
-                vec_set_const_pFormula deductionsToAdd = vec_set_const_pFormula();
-                deductionsToAdd.push_back( set<const Formula*>() );
-
-                for( FormulaOrigins::const_iterator origins = mPassedformulaOrigins.begin(); origins != mPassedformulaOrigins.end(); ++origins )
-                {
-                    vec_set_const_pFormula tmpContainer = vec_set_const_pFormula();
-                    tmpContainer.swap( deductionsToAdd );
-                    vec_set_const_pFormula::const_iterator origin = origins->second.begin();
-                    while( origin != origins->second.end() )
-                    {
-                        for( vec_set_const_pFormula::iterator tmpDeduction = tmpContainer.begin(); tmpDeduction != tmpContainer.end();
-                                ++tmpDeduction )
-                        {
-                            tmpDeduction->insert( origin->begin(), origin->end() );
-                            deductionsToAdd.push_back( *tmpDeduction );
-                        }
-                    }
-                }
-            }
-        }
+//        for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+//        {
+//            for( vector<TheoryDeduction>::const_iterator deduction = (*module)->deductions().begin(); deduction != (*module)->deductions().end();
+//                    ++deduction )
+//            {
+//                /*
+//                 * Projects backends deductions (passed formula) to the  in the received formula.
+//                 */
+//                vec_set_const_pFormula deductionsToAdd = vec_set_const_pFormula();
+//                deductionsToAdd.push_back( set<const Formula*>() );
+//
+//                for( FormulaOrigins::const_iterator origins = mPassedformulaOrigins.begin(); origins != mPassedformulaOrigins.end(); ++origins )
+//                {
+//                    vec_set_const_pFormula tmpContainer = vec_set_const_pFormula();
+//                    tmpContainer.swap( deductionsToAdd );
+//                    vec_set_const_pFormula::const_iterator origin = origins->second.begin();
+//                    while( origin != origins->second.end() )
+//                    {
+//                        for( vec_set_const_pFormula::iterator tmpDeduction = tmpContainer.begin(); tmpDeduction != tmpContainer.end();
+//                                ++tmpDeduction )
+//                        {
+//                            tmpDeduction->insert( origin->begin(), origin->end() );
+//                            deductionsToAdd.push_back( *tmpDeduction );
+//                        }
+//                    }
+//                }
+//            }
+//        }
     }
 
     /**
@@ -794,7 +763,7 @@ namespace smtrat
         for( Formula::const_iterator receivedSubformula = mpReceivedFormula->begin(); receivedSubformula != mpReceivedFormula->end();
                 ++receivedSubformula )
         {
-            _out << _initiation << "   " << "[" << *receivedSubformula << "]" << endl;
+//            _out << _initiation << "   " << "[" << *receivedSubformula << "]" << endl;
             (*receivedSubformula)->print( _out, _initiation + "   ", false );
             _out << endl;
         }
@@ -849,7 +818,7 @@ namespace smtrat
             _out << " {";
             for( set<const Formula*>::const_iterator infSubFormula = infSubSet->begin(); infSubFormula != infSubSet->end(); ++infSubFormula )
             {
-                _out << " " << *infSubFormula;
+                _out << " " << **infSubFormula;
             }
             _out << " }";
         }

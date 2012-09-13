@@ -60,6 +60,8 @@
 #include <math.h>
 #include "../Module.h"
 
+#define SAT_MODULE_THEORY_PROPAGATION
+
 namespace smtrat
 {
     class SATModule:
@@ -79,10 +81,10 @@ namespace smtrat
                     return (_formulaA->constraint() < _formulaB->constraint());
                 }
             };
-            typedef std::map<const Constraint* const , Minisat::Lit>                   ConstraintLiteralMap;
-            typedef std::map<const std::string, Minisat::Var>                          BooleanVarMap;
-            typedef std::map<const Minisat::Var, std::pair<Formula*, const Formula*> > BooleanConstraintMap;
-            typedef std::map<const Formula*, const Formula*, formulaCmp>               ConstraintOriginMap;
+            typedef std::map<const Constraint* const , Minisat::Lit>        ConstraintLiteralMap;
+            typedef std::map<const std::string, Minisat::Var>               BooleanVarMap;
+            typedef Minisat::vec<std::pair<Formula*, const Formula*> >      BooleanConstraintMap;
+            typedef std::map<const Formula*, const Formula*, formulaCmp>    ConstraintOriginMap;
 
             /*
              * Helper structures:
@@ -244,11 +246,14 @@ namespace smtrat
             int64_t               propagation_budget;    // -1 means no budget.
             bool                  asynch_interrupt;
 
+            BooleanConstraintMap  mBooleanConstraintMap;
+            #ifdef SAT_MODULE_THEORY_PROPAGATION
+            // A heuristic measurement of the activity of a variable.
+            Minisat::vec<bool>    mDeduced;
+            #endif
             ConstraintLiteralMap  mConstraintLiteralMap;
             BooleanVarMap         mBooleanVarMap;
-            BooleanConstraintMap  mBooleanConstraintMap;
             std::vector<unsigned> mBacktrackpointInSatSolver;
-            FormulaOrigins        mLearnedDeductions;
 
             // Extra results: (read-only member variable)
             //
@@ -296,7 +301,7 @@ namespace smtrat
             // Problem specification:
             //
             // Add a new variable with parameters specifying variable mode.
-            Minisat::Var newVar( bool polarity = true, bool dvar = true, double = 0 );
+            Minisat::Var newVar( bool polarity = true, bool dvar = true, double = 0, Formula* = NULL, const Formula* = NULL );
             // Add a clause to the solver.
             bool addClause( const Minisat::vec<Minisat::Lit>& ps );
             // Add the empty clause, making the solver contradictory.
@@ -315,6 +320,8 @@ namespace smtrat
             //
             // Removes already satisfied clauses.
             bool simplify();
+            // Learns a clause.
+            Minisat::CRef addLearnedClause( Minisat::vec<Minisat::Lit>& );
             // Search for a model that respects a given set of assumptions.
             bool solve( const Minisat::vec<Minisat::Lit>& assumps );
             // Search for a model that respects a given set of assumptions (With resource constraints).
@@ -468,11 +475,11 @@ namespace smtrat
                 return (int)(drand( seed ) * size);
             }
 
-            Answer addClauseToSatSolver( const Formula* );
+            Answer addFormula( Formula* );
+            Answer addClause( const Formula*, bool );
             Minisat::Lit getLiteral( const Formula&, const Formula* = NULL );
+            Minisat::Lit getLiteral( const Constraint*, const Formula* = NULL );
             bool adaptPassedFormula();
-            void simplifyByLearnedTheoryDeductions( ConstraintOriginMap& ) const;
-            void addTheoryDeduction( Minisat::vec<Minisat::Lit>& );
     };
 
     //=================================================================================================

@@ -28,10 +28,12 @@
 
 
 #include "LRAOneModule.h"
+#include "LRATwoModule/Bound.h"
 #include <iostream>
 #include <algorithm>
 
 //#define DEBUG_LRA_MODULE
+#define LRA_SIMPLE_THEORY_PROPAGATION
 
 using namespace std;
 using namespace lraone;
@@ -44,13 +46,11 @@ namespace smtrat
      */
     LRAOneModule::LRAOneModule( Manager* const _tsManager, const Formula* const _formula ):
         Module( _tsManager, _formula ),
+        mInitialized(),
         mTableau(),
         mLinearConstraints(),
         mNonlinearConstraints(),
-        mInitialized( false ),
         mExistingVars(),
-        mBoundToConstraint(),
-        mConstraintToFormula(),
         mConstraintToBound()
     {
         mModuleType = MT_LRAOneModule;
@@ -83,7 +83,7 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "inform about " << *_constraint << endl;
         #endif
-        if( _constraint->isConsistent() == 2 )
+        if( _constraint->isConsistent() == 2 && _constraint->isLinear() )
         {
             mLinearConstraints.insert( _constraint );
         }
@@ -102,11 +102,8 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "assert " << (*_subformula)->constraint() << endl;
         #endif
+        if( !mInitialized ) initialize();
         Module::assertSubformula( _subformula );
-        if( !mInitialized )
-        {
-            initialize();
-        }
 
         const Constraint* constraint  = (*_subformula)->pConstraint();
         int               consistency = constraint->isConsistent();
@@ -114,67 +111,18 @@ namespace smtrat
         {
             if( constraint->isLinear() )
             {
-                pair<const Constraint*, const Formula* const > cFpair = pair<const Constraint*, const Formula* const >( constraint, *_subformula );
-                mConstraintToFormula.insert( cFpair );
                 ConstraintBoundMap::iterator iter = mConstraintToBound.find( constraint );
 
                 assert( iter != mConstraintToBound.end() );
 
-                vector<const Bound*> boundL = (*iter).second;
+                vector<const lraone::Bound*> boundL = (*iter).second;
 
                 //iterate through bound vector, necessary for equal
-                for( vector<const Bound*>::const_iterator bIter = boundL.begin(); bIter != boundL.end(); ++bIter )
+                for( vector<const lraone::Bound*>::const_iterator bIter = boundL.begin(); bIter != boundL.end(); ++bIter )
                 {
-                    if( !activateBound( *(*bIter)->pVariable(), *bIter ) )
-                    {
-                        // Bound creates directly a conflict
-                        const Variable* var = (*bIter)->pVariable();
-                        if( (*bIter)->isUpper() )
-                        {
-                            BoundActivityMap::const_iterator bound = var->lowerbounds().begin();
-                            while( bound != var->lowerbounds().end() )
-                            {
-                                if( *(bound->first) > **bIter )
-                                {
-                                    if( bound->second > 0 )
-                                    {
-                                        set<const Formula*> infsubset = set<const Formula*>();
-                                        infsubset.insert( *_subformula );
-                                        infsubset.insert( getSubformula( bound->first ) );
-                                        mInfeasibleSubsets.push_back( infsubset );
-                                    }
-                                }
-                                else
-                                {
-                                    break;
-                                }
-                                ++bound;
-                            }
-                        }
-                        else
-                        {
-                            BoundActivityMap::const_iterator bound = var->upperbounds().begin();
-                            while( bound != var->upperbounds().end() )
-                            {
-                                if( *(bound->first) < **bIter )
-                                {
-                                    if( bound->second > 0 )
-                                    {
-                                        set<const Formula*> infsubset = set<const Formula*>();
-                                        infsubset.insert( *_subformula );
-                                        infsubset.insert( getSubformula( bound->first ) );
-                                        mInfeasibleSubsets.push_back( infsubset );
-                                    }
-                                }
-                                else
-                                {
-                                    break;
-                                }
-                                ++bound;
-                            }
-                        }
-                    }
+                    activateBound( *bIter, *_subformula );
                 }
+                assert( mInfeasibleSubsets.empty() || !mInfeasibleSubsets.begin()->empty() );
                 return mInfeasibleSubsets.empty() || !mNonlinearConstraints.empty();
             }
             else
@@ -183,9 +131,16 @@ namespace smtrat
                 return true;
             }
         }
+        else if( consistency == 0 )
+        {
+            set< const Formula* > infSubSet = set< const Formula* >();
+            infSubSet.insert( *_subformula );
+            mInfeasibleSubsets.push_back( infSubSet );
+            return false;
+        }
         else
         {
-            return (consistency == 1);
+            return true;
         }
     }
 
@@ -201,14 +156,25 @@ namespace smtrat
 
         // Remove the mapping of the constraint to the sub-formula in the received formula
         const Constraint* constraint = (*_subformula)->pConstraint();
-        mConstraintToFormula.erase( constraint );
-        // Deactivate the bounds regarding the given constraint
-        ConstraintBoundMap::iterator iter = mConstraintToBound.find( constraint );
-        assert( iter != mConstraintToBound.end() );
-        vector<const Bound*> boundL = (*iter).second;
-        for( vector<const Bound*>::const_iterator bIter = boundL.begin(); bIter != boundL.end(); ++bIter )
+        if( constraint->isConsistent() == 2 )
         {
-            (*bIter)->pVariable()->deactivateBound( *bIter );
+            // Deactivate the bounds regarding the given constraint
+            ConstraintBoundMap::iterator iter = mConstraintToBound.find( constraint );
+            assert( iter != mConstraintToBound.end() );
+            vector<const lraone::Bound*> boundL = (*iter).second;
+            for( vector<const lraone::Bound*>::const_iterator bIter = boundL.begin(); bIter != boundL.end(); ++bIter )
+            {
+                (*bIter)->pOrigins()->erase( *_subformula );
+                (*bIter)->pVariable()->deactivateBound( *bIter );
+                if( (*bIter)->variable().isBasic() )
+                {
+                    mTableau.decrementBasicActivity( *(*bIter)->pVariable() );
+                }
+                else
+                {
+                    mTableau.decrementNonbasicActivity( *(*bIter)->pVariable() );
+                }
+            }
         }
         Module::removeSubformula( _subformula );
     }
@@ -222,8 +188,11 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "check for consistency" << endl;
         #endif
-        if( !mInfeasibleSubsets.empty() ) return False;
-        while( true )
+        if( !mInfeasibleSubsets.empty() )
+        {
+            return False;
+        }
+        for( ; ; )
         {
             #ifdef DEBUG_LRA_MODULE
             cout << endl;
@@ -270,13 +239,14 @@ namespace smtrat
             }
             else
             {
-                vector< set< const Bound* > > conflictingBounds = mTableau.getConflicts( pivotingElement.first );
+                vector< set< const lraone::Bound* > > conflictingBounds = mTableau.getConflicts( pivotingElement.first );
                 for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
                 {
                     set< const Formula* > infSubSet = set< const Formula* >();
                     for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
                     {
-                        infSubSet.insert( getSubformula( *bound ) );
+                        assert( (*bound)->isActive() );
+                        infSubSet.insert( *(*bound)->pOrigins()->begin() );
                     }
                     mInfeasibleSubsets.push_back( infSubSet );
                 }
@@ -306,152 +276,63 @@ namespace smtrat
 
     /**
      *
-     * @param _bound
-     * @return
-     */
-    const Formula* LRAOneModule::getSubformula( const lraone::Bound* _bound ) const
-    {
-        BoundConstraintMap::const_iterator it = mBoundToConstraint.find( _bound );
-        assert( it != mBoundToConstraint.end() );
-        const Constraint* constraint = (*it).second;
-        ConstraintFormulaMap::const_iterator consToForm = mConstraintToFormula.find( constraint );
-        assert( consToForm != mConstraintToFormula.end() );
-        return consToForm->second;
-    }
-
-    /**
-     *
-     */
-    void LRAOneModule::initialize()
-    {
-        for( set<const Constraint*, constraintPointerComp>::const_iterator iter = mLinearConstraints.begin();
-             iter != mLinearConstraints.end(); ++iter )
-        {
-            map<const string, numeric, strCmp> coeffs = (**iter).linearAndConstantCoefficients();
-            assert( coeffs.size() > 1 );
-            map<const string, numeric, strCmp>::iterator currentCoeff = coeffs.begin();
-            ex*                                          linearPart   = new ex( (*iter)->lhs() - currentCoeff->second );
-            ++currentCoeff;
-
-            // divide the linear Part and the constraint by the highest coefficient
-            numeric highestCoeff = currentCoeff->second;
-            --currentCoeff;
-            while( currentCoeff != coeffs.end() )
-            {
-                currentCoeff->second = currentCoeff->second / highestCoeff;
-                ++currentCoeff;
-            }
-            *linearPart = *linearPart / highestCoeff;
-            if( coeffs.size() == 2 )
-            {
-                // constraint has one variable
-                ex*                     var       = new ex( (*(**iter).variables().begin()).second );
-                ExVariableMap::iterator basicIter = mExistingVars.find( var );
-                // constraint not found, add new nonbasic variable
-                if( basicIter == mExistingVars.end() )
-                {
-                    Variable* nonBasic = mTableau.newNonbasicVariable( var );
-                    mExistingVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
-                    setBound( *nonBasic, (**iter).relation(), highestCoeff.is_negative(), -coeffs.begin()->second, *iter );
-                }
-                else
-                {
-                    delete var;
-                    Variable* nonBasic = (*basicIter).second;
-                    setBound( *nonBasic, (**iter).relation(), highestCoeff.is_negative(), -coeffs.begin()->second, *iter );
-                }
-
-            }
-            else
-            {
-                ExVariableMap::iterator slackIter = mExistingVars.find( linearPart );
-                if( slackIter == mExistingVars.end() )
-                {
-                    vector< Variable* > nonbasics = vector< Variable* >();
-                    vector< numeric > numCoeffs = vector< numeric >();
-                    symtab::const_iterator                       varIt   = (**iter).variables().begin();
-                    map<const string, numeric, strCmp>::iterator coeffIt = coeffs.begin();
-                    ++coeffIt;
-                    while( varIt != (**iter).variables().end() )
-                    {
-                        assert( coeffIt != coeffs.end() );
-                        ex*                     var          = new ex( (*varIt).second );
-                        ExVariableMap::iterator nonBasicIter = mExistingVars.find( var );
-                        if( mExistingVars.end() == nonBasicIter )
-                        {
-                            Variable* nonBasic = mTableau.newNonbasicVariable( var );
-                            mExistingVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
-                            nonbasics.push_back( nonBasic );
-                        }
-                        else
-                        {
-                            delete var;
-                            nonbasics.push_back( (*nonBasicIter).second );
-                        }
-                        numCoeffs.push_back( coeffIt->second );
-                        ++varIt;
-                        ++coeffIt;
-                    }
-
-                    Variable* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );
-
-                    mExistingVars.insert( pair<const ex*, Variable*>( linearPart, slackVar ) );
-                    setBound( *slackVar, (**iter).relation(), highestCoeff.is_negative(), -coeffs.begin()->second, *iter );
-                }
-                else
-                {
-                    delete linearPart;
-                    Variable* slackVar = (*slackIter).second;
-                    setBound( *slackVar, (**iter).relation(), highestCoeff.is_negative(), -coeffs.begin()->second, *iter );
-                }
-            }
-        }
-        mInitialized = true;
-    }
-
-    /**
-     *
      * @param _var
      * @param bound
      * @return
      */
-    bool LRAOneModule::activateBound( Variable& _var, const Bound* bound )
+    bool LRAOneModule::activateBound( const lraone::Bound* bound, const Formula* _formula )
     {
-        assert( _var.pSupremum() != NULL );
+        bound->pOrigins()->insert( _formula );
+        const Variable& var = bound->variable();
+        if( var.isBasic() )
+        {
+            mTableau.incrementBasicActivity( var );
+        }
+        else
+        {
+            mTableau.incrementNonbasicActivity( var );
+        }
         bool isUpper = bound->isUpper();
-        _var.setActive( bound, true );
         if( isUpper )
         {
-            if( *_var.pInfimum() > *bound )
+            if( *var.pInfimum() > *bound )
             {
+                set<const Formula*> infsubset = set<const Formula*>();
+                infsubset.insert( *bound->pOrigins()->begin() );
+                infsubset.insert( *var.pInfimum()->pOrigins()->begin() );
+                mInfeasibleSubsets.push_back( infsubset );
                 return false;
             }
-            if( *_var.pSupremum() > *bound )
+            if( *var.pSupremum() > *bound )
             {
-                _var.setSupremum( bound );
+                bound->pVariable()->setSupremum( bound );
 
-                if( !_var.getBasic() && (*_var.pSupremum() < _var.assignment()) )
+                if( !var.isBasic() && (*var.pSupremum() < var.assignment()) )
                 {
-                    mTableau.updateBasicAssignments( _var.position(), Value( (*_var.pSupremum()).limit() - _var.assignment() ) );
-                    _var.rAssignment() = (*_var.pSupremum()).limit();
+                    mTableau.updateBasicAssignments( var.position(), Value( (*var.pSupremum()).limit() - var.assignment() ) );
+                    bound->pVariable()->rAssignment() = (*var.pSupremum()).limit();
                 }
             }
         }
         else
         {
-            if( *_var.pSupremum() < *bound )
+            if( *var.pSupremum() < *bound )
             {
+                set<const Formula*> infsubset = set<const Formula*>();
+                infsubset.insert( *bound->pOrigins()->begin() );
+                infsubset.insert( *var.pSupremum()->pOrigins()->begin() );
+                mInfeasibleSubsets.push_back( infsubset );
                 return false;
             }
             //check if the new lower bound is bigger
-            if( *_var.pInfimum() < *bound )
+            if( *var.pInfimum() < *bound )
             {
-                _var.setInfimum( bound );
+                bound->pVariable()->setInfimum( bound );
 
-                if( !_var.getBasic() && (*_var.pInfimum() > _var.assignment()) )
+                if( !var.isBasic() && (*var.pInfimum() > var.assignment()) )
                 {
-                    mTableau.updateBasicAssignments( _var.position(), Value( (*_var.pInfimum()).limit() - _var.assignment() ) );
-                    _var.rAssignment() = (*_var.pInfimum()).limit();
+                    mTableau.updateBasicAssignments( var.position(), Value( (*var.pInfimum()).limit() - var.assignment() ) );
+                    bound->pVariable()->rAssignment() = (*var.pInfimum()).limit();
                 }
             }
         }
@@ -466,70 +347,329 @@ namespace smtrat
      * @param boundValue
      * @param constr
      */
-    void LRAOneModule::setBound( Variable& var, const Constraint_Relation& rel, bool constraintInverted, const numeric& boundValue, const Constraint* constr )
+    void LRAOneModule::setBound( Variable& var, const Constraint_Relation& rel, bool constraintInverted, const numeric& boundValue, const Constraint* _constraint )
     {
         if( rel == CR_EQ )
         {
-            Value*       value  = new Value( boundValue );
-            const Bound* ubound = var.addUpperBound( value );
-            mBoundToConstraint[ubound] = constr;
-            const Bound*         lbound   = var.addLowerBound( value );
-            vector<const Bound*> eqBounds = vector<const Bound*>();
-            eqBounds.push_back( ubound );
-            eqBounds.push_back( lbound );
-
-            ConstraintBoundPair p      = ConstraintBoundPair( constr, eqBounds );
-            mBoundToConstraint[lbound] = constr;
+            Value* valueA  = new Value( boundValue );
+            Value* valueB  = new Value( boundValue );
+            const Constraint* constraintA = Formula::newConstraint( _constraint->lhs(), CR_LEQ );
+            const Constraint* constraintB = Formula::newConstraint( _constraint->lhs(), CR_GEQ );
+            pair<const lraone::Bound*,pair<const lraone::Bound*, const lraone::Bound*> > resultA = var.addUpperBound( valueA, constraintA );
+            pair<const lraone::Bound*,pair<const lraone::Bound*, const lraone::Bound*> > resultB = var.addLowerBound( valueB, constraintB );
+            vector<const lraone::Bound*> eqBounds = vector<const lraone::Bound*>();
+            eqBounds.push_back( resultA.first );
+            eqBounds.push_back( resultB.first );
+            ConstraintBoundPair p = ConstraintBoundPair( _constraint, eqBounds );
             mConstraintToBound.insert( p );
+            #ifdef LRA_SIMPLE_THEORY_PROPAGATION
+            if( resultA.second.first != NULL && resultA.second.first->pAsConstraint() != NULL )
+            {
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( resultA.second.first->pAsConstraint() );
+                deduction->addSubformula( constraintA );
+                addDeduction( deduction );
+            }
+            if( resultB.second.first != NULL && resultB.second.first->pAsConstraint() != NULL )
+            {
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( resultB.second.first->pAsConstraint() );
+                deduction->addSubformula( constraintB );
+                addDeduction( deduction );
+            }
+            if( resultA.second.second != NULL && resultA.second.second->pAsConstraint() != NULL )
+            {
+                Formula* deductionA = new Formula( OR );
+                deductionA->addSubformula( new Formula( NOT ) );
+                deductionA->back()->addSubformula( _constraint );
+                deductionA->addSubformula( resultA.second.second->pAsConstraint() );
+                addDeduction( deductionA );
+                Formula* deductionB = new Formula( OR );
+                deductionB->addSubformula( new Formula( NOT ) );
+                deductionB->back()->addSubformula( constraintA );
+                deductionB->addSubformula( resultA.second.second->pAsConstraint() );
+                addDeduction( deductionB );
+            }
+            if( resultB.second.second != NULL && resultB.second.second->pAsConstraint() != NULL )
+            {
+                Formula* deductionA = new Formula( OR );
+                deductionA->addSubformula( new Formula( NOT ) );
+                deductionA->back()->addSubformula( _constraint );
+                deductionA->addSubformula( resultB.second.second->pAsConstraint() );
+                addDeduction( deductionA );
+                Formula* deductionB = new Formula( OR );
+                deductionB->addSubformula( new Formula( NOT ) );
+                deductionB->back()->addSubformula( constraintB );
+                deductionB->addSubformula( resultB.second.second->pAsConstraint() );
+                addDeduction( deductionB );
+            }
+            #endif
         }
         else if( rel == CR_LEQ )
         {
-            Value*                                       value = new Value( boundValue );
-            const Bound*                                 bound = (constraintInverted ? var.addLowerBound( value ) : var.addUpperBound( value ));
-            pair<const Bound* const , const Constraint*> p2    = pair<const Bound* const , const Constraint*>( bound, constr );
-            mBoundToConstraint.insert( p2 );
-            vector<const Bound*> vecto = vector<const Bound*>();
-            vecto.push_back( bound );
-            ConstraintBoundPair p = ConstraintBoundPair( constr, vecto );
-
+            Value* value = new Value( boundValue );
+            pair<const lraone::Bound*,pair<const lraone::Bound*, const lraone::Bound*> > result = constraintInverted ? var.addLowerBound( value, _constraint ) : var.addUpperBound( value, _constraint );
+            vector<const lraone::Bound*> vecto = vector<const lraone::Bound*>();
+            vecto.push_back( result.first );
+            ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
             mConstraintToBound.insert( p );
+            #ifdef LRA_SIMPLE_THEORY_PROPAGATION
+            if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
+            {
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
+                deduction->addSubformula( _constraint );
+                addDeduction( deduction );
+            }
+            if( result.second.second != NULL && result.second.second->pAsConstraint() != NULL )
+            {
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( _constraint );
+                deduction->addSubformula( result.second.second->pAsConstraint() );
+                addDeduction( deduction );
+            }
+            #endif
         }
         else if( rel == CR_GEQ )
         {
-            Value*                                       value = new Value( boundValue );
-            const Bound*                                 bound = (constraintInverted ? var.addUpperBound( value ) : var.addLowerBound( value ));
-            pair<const Bound* const , const Constraint*> p2    = pair<const Bound* const , const Constraint*>( bound, constr );
-            mBoundToConstraint.insert( p2 );
-            vector<const Bound*> vecto = vector<const Bound*>();
-            vecto.push_back( bound );
-            ConstraintBoundPair p = ConstraintBoundPair( constr, vecto );
-
+            Value* value = new Value( boundValue );
+            pair<const lraone::Bound*,pair<const lraone::Bound*, const lraone::Bound*> > result = constraintInverted ? var.addUpperBound( value, _constraint ) : var.addLowerBound( value, _constraint );
+            vector<const lraone::Bound*> vecto = vector<const lraone::Bound*>();
+            vecto.push_back( result.first );
+            ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
             mConstraintToBound.insert( p );
+            #ifdef LRA_SIMPLE_THEORY_PROPAGATION
+            if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
+            {
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
+                deduction->addSubformula( _constraint );
+                addDeduction( deduction );
+            }
+            if( result.second.second != NULL && result.second.second->pAsConstraint() != NULL )
+            {
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( _constraint );
+                deduction->addSubformula( result.second.second->pAsConstraint() );
+                addDeduction( deduction );
+            }
+            #endif
         }
         else if( rel == CR_LESS )
         {
-            Value*                                       value = new Value( boundValue, (constraintInverted ? 1 : -1) );
-            const Bound*                                 bound = (constraintInverted ? var.addLowerBound( value ) : var.addUpperBound( value ));
-            pair<const Bound* const , const Constraint*> p2    = pair<const Bound* const , const Constraint*>( bound, constr );
-            mBoundToConstraint.insert( p2 );
-            vector<const Bound*> vecto = vector<const Bound*>();
-            vecto.push_back( bound );
-            ConstraintBoundPair p = ConstraintBoundPair( constr, vecto );
-
+            Value* value = new Value( boundValue, (constraintInverted ? 1 : -1) );
+            pair<const lraone::Bound*,pair<const lraone::Bound*, const lraone::Bound*> > result = constraintInverted ? var.addLowerBound( value, _constraint ) : var.addUpperBound( value, _constraint );
+            vector<const lraone::Bound*> vecto = vector<const lraone::Bound*>();
+            vecto.push_back( result.first );
+            ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
             mConstraintToBound.insert( p );
+            #ifdef LRA_SIMPLE_THEORY_PROPAGATION
+            if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
+            {
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
+                deduction->addSubformula( _constraint );
+                addDeduction( deduction );
+            }
+            if( result.second.second != NULL && result.second.second->pAsConstraint() != NULL )
+            {
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( _constraint );
+                deduction->addSubformula( result.second.second->pAsConstraint() );
+                addDeduction( deduction );
+            }
+            #endif
         }
         else if( rel == CR_GREATER )
         {
-            Value*                                       value = new Value( boundValue, (constraintInverted ? -1 : 1) );
-            const Bound*                                 bound = (constraintInverted ? var.addUpperBound( value ) : var.addLowerBound( value ));
-            pair<const Bound* const , const Constraint*> p2    = pair<const Bound* const , const Constraint*>( bound, constr );
-            mBoundToConstraint.insert( p2 );
-            vector<const Bound*> vecto = vector<const Bound*>();
-            vecto.push_back( bound );
-            ConstraintBoundPair p = ConstraintBoundPair( constr, vecto );
-
+            Value* value = new Value( boundValue, (constraintInverted ? -1 : 1) );
+            pair<const lraone::Bound*,pair<const lraone::Bound*, const lraone::Bound*> > result = constraintInverted ? var.addUpperBound( value, _constraint ) : var.addLowerBound( value, _constraint );
+            vector<const lraone::Bound*> vecto = vector<const lraone::Bound*>();
+            vecto.push_back( result.first );
+            ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
             mConstraintToBound.insert( p );
+            #ifdef LRA_SIMPLE_THEORY_PROPAGATION
+            if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
+            {
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
+                deduction->addSubformula( _constraint );
+                addDeduction( deduction );
+            }
+            if( result.second.second != NULL && result.second.second->pAsConstraint() != NULL )
+            {
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( _constraint );
+                deduction->addSubformula( result.second.second->pAsConstraint() );
+                addDeduction( deduction );
+            }
+            #endif
         }
+    }
+
+    /**
+     *
+     */
+    void LRAOneModule::initialize()
+    {
+        mInitialized = true;
+        //TODO: sort the constraints as a first kind of a pivoting strategy
+        for( auto constraint = mLinearConstraints.begin(); constraint != mLinearConstraints.end(); ++constraint )
+        {
+            map<const string, numeric, strCmp> coeffs = (*constraint)->linearAndConstantCoefficients();
+            assert( coeffs.size() > 1 );
+            map<const string, numeric, strCmp>::iterator currentCoeff = coeffs.begin();
+            ex*                                          linearPart   = new ex( (*constraint)->lhs() - currentCoeff->second );
+            ++currentCoeff;
+
+            // divide the linear Part and the constraint by the highest coefficient
+            numeric highestCoeff = currentCoeff->second;
+            --currentCoeff;
+            while( currentCoeff != coeffs.end() )
+            {
+                currentCoeff->second = currentCoeff->second / highestCoeff;
+                ++currentCoeff;
+            }
+            *linearPart = *linearPart / highestCoeff;
+            if( coeffs.size() == 2 )
+            {
+                // constraint has one variable
+                ex* var = new ex( (*(*constraint)->variables().begin()).second );
+                ExVariableMap::iterator basicIter = mExistingVars.find( var );
+                // constraint not found, add new nonbasic variable
+                if( basicIter == mExistingVars.end() )
+                {
+                    Variable* nonBasic = mTableau.newNonbasicVariable( var );
+                    mExistingVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
+                    setBound( *nonBasic, (*constraint)->relation(), highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
+                }
+                else
+                {
+                    delete var;
+                    Variable* nonBasic = basicIter->second;
+                    setBound( *nonBasic, (*constraint)->relation(), highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
+                }
+
+            }
+            else
+            {
+                ExVariableMap::iterator slackIter = mExistingVars.find( linearPart );
+                if( slackIter == mExistingVars.end() )
+                {
+                    vector< Variable* > nonbasics = vector< Variable* >();
+                    vector< numeric > numCoeffs = vector< numeric >();
+                    symtab::const_iterator varIt   = (*constraint)->variables().begin();
+                    map<const string, numeric, strCmp>::iterator coeffIt = coeffs.begin();
+                    ++coeffIt;
+                    while( varIt != (*constraint)->variables().end() )
+                    {
+                        assert( coeffIt != coeffs.end() );
+                        ex* var = new ex( varIt->second );
+                        ExVariableMap::iterator nonBasicIter = mExistingVars.find( var );
+                        if( mExistingVars.end() == nonBasicIter )
+                        {
+                            Variable* nonBasic = mTableau.newNonbasicVariable( var );
+                            mExistingVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
+                            nonbasics.push_back( nonBasic );
+                        }
+                        else
+                        {
+                            delete var;
+                            nonbasics.push_back( nonBasicIter->second );
+                        }
+                        numCoeffs.push_back( coeffIt->second );
+                        ++varIt;
+                        ++coeffIt;
+                    }
+
+                    Variable* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );
+
+                    mExistingVars.insert( pair<const ex*, Variable*>( linearPart, slackVar ) );
+                    setBound( *slackVar, (*constraint)->relation(), highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
+                }
+                else
+                {
+                    delete linearPart;
+                    Variable* slackVar = slackIter->second;
+                    setBound( *slackVar, (*constraint)->relation(), highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
+                }
+            }
+        }
+    }
+
+
+
+    /**
+     *
+     * @return
+     */
+    bool LRAOneModule::allPassedconstraintsAreConsidered() const
+    {
+        for( auto constraint = rReceivedFormula().begin(); constraint != rReceivedFormula().end(); ++constraint )
+        {
+            bool constraintConsidered = false;
+            for( auto column = mTableau.columns().begin(); column != mTableau.columns().end(); ++column )
+            {
+                for( auto bound = column->mName->upperbounds().begin(); bound != column->mName->upperbounds().end(); ++bound )
+                {
+                    if( (*bound)->origins().find( *constraint ) != (*bound)->origins().end() )
+                    {
+                        constraintConsidered = true;
+                        break;
+                    }
+                }
+                if( !constraintConsidered )
+                {
+                    for( auto bound = column->mName->lowerbounds().begin(); bound != column->mName->lowerbounds().end(); ++bound )
+                    {
+                        if( (*bound)->origins().find( *constraint ) != (*bound)->origins().end() )
+                        {
+                            constraintConsidered = true;
+                            break;
+                        }
+                    }
+                }
+                if( constraintConsidered ) break;
+            }
+            if( !constraintConsidered )
+            {
+                for( auto row = mTableau.rows().begin(); row != mTableau.rows().end(); ++row )
+                {
+                    for( auto bound = row->mName->upperbounds().begin(); bound != row->mName->upperbounds().end(); ++bound )
+                    {
+                        if( (*bound)->origins().find( *constraint ) != (*bound)->origins().end() )
+                        {
+                            constraintConsidered = true;
+                            break;
+                        }
+                    }
+                    if( !constraintConsidered )
+                    {
+                        for( auto bound = row->mName->lowerbounds().begin(); bound != row->mName->lowerbounds().end(); ++bound )
+                        {
+                            if( (*bound)->origins().find( *constraint ) != (*bound)->origins().end() )
+                            {
+                                constraintConsidered = true;
+                                break;
+                            }
+                        }
+                    }
+                    if( constraintConsidered ) break;
+                }
+            }
+            if( !constraintConsidered ) return false;
+        }
+        return true;
     }
 }    // namespace smtrat
 

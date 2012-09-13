@@ -61,21 +61,17 @@ namespace smtrat
             typedef std::map<const GiNaC::ex*, lraone::Variable*, exPointerComp>                                 ExVariableMap;
             typedef std::pair<const Constraint* const , std::vector<const lraone::Bound*> >                      ConstraintBoundPair;
             typedef std::map<const Constraint* const , std::vector<const lraone::Bound*>, constraintPointerComp> ConstraintBoundMap;
-            typedef std::map<const Constraint*, const Formula* const, constraintPointerComp>                     ConstraintFormulaMap;
-            typedef std::map<const lraone::Bound* const , const Constraint*>                                     BoundConstraintMap;
 
         private:
 
             /**
              * Members:
              */
+            bool                           mInitialized;
             lraone::Tableau                mTableau;
             std::set<const Constraint*, constraintPointerComp > mLinearConstraints;
             std::set<const Constraint*, constraintPointerComp > mNonlinearConstraints;
-            bool                           mInitialized;
             ExVariableMap                  mExistingVars;
-            BoundConstraintMap             mBoundToConstraint;
-            ConstraintFormulaMap           mConstraintToFormula;
             ConstraintBoundMap             mConstraintToBound;
 
         public:
@@ -105,10 +101,10 @@ namespace smtrat
              * Methods:
              */
             bool checkAssignmentForNonlinearConstraint() const;
-            bool activateBound( lraone::Variable&, const lraone::Bound* );
+            bool activateBound( const lraone::Bound*, const Formula* );
             void setBound( lraone::Variable&, const Constraint_Relation&, bool, const GiNaC::numeric&, const Constraint* );
-            const Formula* getSubformula( const lraone::Bound* ) const;
             void initialize();
+            bool allPassedconstraintsAreConsidered() const;
     };
 
 }    // namespace smtrat

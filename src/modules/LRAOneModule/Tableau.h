@@ -36,6 +36,8 @@
 #include <map>
 #include "Variable.h"
 
+#define LRA_USE_PIVOTING_STRATEGY
+
 namespace lraone
 {
     typedef unsigned EntryID;
@@ -78,7 +80,8 @@ namespace lraone
                 mpContent( _content )
             {}
             ;
-            ~TableauEntry(){}
+            ~TableauEntry()
+            {}
             ;
 
             EntryID up() const
@@ -165,10 +168,16 @@ namespace lraone
                 EntryID   mStartEntry;
                 unsigned  mSize;
                 Variable* mName;
+                unsigned  mActivity;
             };
             unsigned                   mHeight;
             unsigned                   mWidth;
             unsigned                   mPivotingSteps;
+            #ifdef LRA_USE_PIVOTING_STRATEGY
+            unsigned                   mRestarts;
+            unsigned                   mNextRestartBegin;
+            unsigned                   mNextRestartEnd;
+            #endif
             std::stack<EntryID>        mUnusedIDs;
             std::vector<TableauHead>   mRows;    // First element is the head of the row and the second the length of the row.
             std::vector<TableauHead>   mColumns;    // First element is the end of the column and the second the length of the column.
@@ -284,21 +293,48 @@ namespace lraone
                 return mColumns;
             }
 
+            void incrementBasicActivity( const Variable& _var )
+            {
+                ++mRows[_var.position()].mActivity;
+            }
+
+            void incrementNonbasicActivity( const Variable& _var )
+            {
+                ++mColumns[_var.position()].mActivity;
+            }
+
+            void decrementBasicActivity( const Variable& _var )
+            {
+                assert( mRows[_var.position()].mActivity != 0 );
+                --mRows[_var.position()].mActivity;
+            }
+
+            void decrementNonbasicActivity( const Variable& _var )
+            {
+                assert( mColumns[_var.position()].mActivity != 0 );
+                --mColumns[_var.position()].mActivity;
+            }
+
+            unsigned numberOfPivotingSteps() const
+            {
+                return mPivotingSteps;
+            }
+
             EntryID newTableauEntry();
             void removeEntry( EntryID );
             Variable* newNonbasicVariable( const GiNaC::ex* );
             Variable* newBasicVariable( const GiNaC::ex*, const std::vector<Variable*>&, std::vector<GiNaC::numeric>& );
-            std::pair<EntryID, bool> nextPivotingElement() const;
-            std::pair<EntryID, bool> isSuitable( EntryID ) const;
+            std::pair<EntryID, bool> nextPivotingElement();
+            std::pair<EntryID, bool> isSuitable( EntryID, Value& ) const;
             std::vector< std::set< const Bound* > > getConflicts( EntryID ) const;
             void updateBasicAssignments( unsigned, const Value& );
             void pivot( EntryID );
-            void updateDown( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
-            void updateUp( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
-            void printHeap( std::ostream& = std::cout, unsigned = 20, const std::string = "" ) const;
+            void updateDownwards( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
+            void updateUpwards( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
+            void printHeap( std::ostream& = std::cout, unsigned = 30, const std::string = "" ) const;
             void printEntry( std::ostream& = std::cout, EntryID = 0, unsigned = 20 ) const;
             void printVariables( std::ostream& = std::cout, const std::string = "" ) const;
-            void print( std::ostream& = std::cout, unsigned = 20, const std::string = "" ) const;
+            void print( std::ostream& = std::cout, unsigned = 28, const std::string = "" ) const;
 
     };
 }    // end namspace lra
