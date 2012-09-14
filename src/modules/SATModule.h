@@ -60,7 +60,7 @@
 #include <math.h>
 #include "../Module.h"
 
-#define SAT_MODULE_THEORY_PROPAGATION
+//#define SAT_MODULE_THEORY_PROPAGATION
 
 namespace smtrat
 {
@@ -321,7 +321,9 @@ namespace smtrat
             // Removes already satisfied clauses.
             bool simplify();
             // Learns a clause.
-            Minisat::CRef addLearnedClause( Minisat::vec<Minisat::Lit>& );
+            Minisat::CRef addLearnedClause( Minisat::vec<Minisat::Lit>&, bool );
+            // Finds the best two candidates for watching
+            void arangeForWatches( Minisat::Clause& );
             // Search for a model that respects a given set of assumptions.
             bool solve( const Minisat::vec<Minisat::Lit>& assumps );
             // Search for a model that respects a given set of assumptions (With resource constraints).
@@ -475,10 +477,10 @@ namespace smtrat
                 return (int)(drand( seed ) * size);
             }
 
-            Answer addFormula( Formula* );
-            Answer addClause( const Formula*, bool );
+            Minisat::CRef addFormula( Formula* );
+            Minisat::CRef addClause( const Formula*, bool );
             Minisat::Lit getLiteral( const Formula&, const Formula* = NULL );
-            Minisat::Lit getLiteral( const Constraint*, const Formula* = NULL );
+            Minisat::Lit getLiteral( const Constraint*, const Formula* = NULL, double = 0 );
             bool adaptPassedFormula();
     };
 

@@ -37,6 +37,8 @@
 #include "Variable.h"
 
 #define LRA_USE_PIVOTING_STRATEGY
+#define LRA_REFINEMENT
+//#define LRA_PROPAGATE_NEW_CONSTRAINTS
 
 namespace lraone
 {
@@ -183,6 +185,9 @@ namespace lraone
             std::vector<TableauHead>   mColumns;    // First element is the end of the column and the second the length of the column.
             std::vector<TableauEntry>* mpEntries;
             Value*                     mpTheta;
+            #ifdef LRA_REFINEMENT
+            std::vector<std::pair<const Bound*, std::vector<smtrat::Formula*> > >  mLearnedBounds;
+            #endif
 
             class Iterator
             {
@@ -283,6 +288,13 @@ namespace lraone
                 mpEntries->reserve( _expectedHeight*_expectedWidth+1 );
             }
 
+            #ifdef LRA_USE_PIVOTING_STRATEGY
+            void setBlandsRuleStart( unsigned _start )
+            {
+                mNextRestartEnd = _start;
+            }
+            #endif
+
             const std::vector<TableauHead>& rows() const
             {
                 return mRows;
@@ -320,17 +332,32 @@ namespace lraone
                 return mPivotingSteps;
             }
 
+            #ifdef LRA_REFINEMENT
+            std::vector<std::pair<const Bound*, std::vector<smtrat::Formula*> > >& learnedBounds()
+            {
+                return mLearnedBounds;
+            }
+            #endif
+
             EntryID newTableauEntry();
             void removeEntry( EntryID );
             Variable* newNonbasicVariable( const GiNaC::ex* );
             Variable* newBasicVariable( const GiNaC::ex*, const std::vector<Variable*>&, std::vector<GiNaC::numeric>& );
             std::pair<EntryID, bool> nextPivotingElement();
             std::pair<EntryID, bool> isSuitable( EntryID, Value& ) const;
-            std::vector< std::set< const Bound* > > getConflicts( EntryID ) const;
+            bool betterEntry( EntryID, EntryID ) const;
+            std::vector< const Bound* > getConflict( EntryID ) const;
+            std::vector< std::set< const Bound* > > getConflictsFrom( EntryID ) const;
             void updateBasicAssignments( unsigned, const Value& );
             void pivot( EntryID );
             void updateDownwards( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
             void updateUpwards( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
+            #ifdef LRA_REFINEMENT
+            void upperRefinement( const TableauHead& );
+            void lowerRefinement( const TableauHead& );
+            #endif
+            unsigned checkCorrectness() const;
+            bool rowCorrect( unsigned _rowNumber ) const;
             void printHeap( std::ostream& = std::cout, unsigned = 30, const std::string = "" ) const;
             void printEntry( std::ostream& = std::cout, EntryID = 0, unsigned = 20 ) const;
             void printVariables( std::ostream& = std::cout, const std::string = "" ) const;

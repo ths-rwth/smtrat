@@ -36,6 +36,7 @@
 //#define MODULE_VERBOSE
 #define LOG_THEORY_CALLS
 #define LOG_INFEASIBLE_SUBSETS
+#define LOG_LEMMATA
 
 #include <vector>
 #include <map>
