@@ -239,9 +239,10 @@ namespace smtrat
             }
             if( backend == allBackends.end() )
             {
-                ModuleFactory* backendFactory = (*mpModulFactories)[iter->second];
+                auto backendFactory = mpModulFactories->find( iter->second );
+                assert( backendFactory != mpModulFactories->end() );
                 // backend does not exist => create it
-                Module* pBackend = backendFactory->create( this, _requiredBy->pPassedFormula() );
+                Module* pBackend = backendFactory->second->create( this, _requiredBy->pPassedFormula() );
                 mGeneratedModules.push_back( pBackend );
                 allBackends.push_back( pBackend );
                 backends.push_back( pBackend );
