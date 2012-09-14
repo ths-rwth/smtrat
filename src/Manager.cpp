@@ -268,7 +268,7 @@ namespace smtrat
         /*
          * Find the first fulfilled strategy case.
          */
-        vector<ModuleStrategyCase>::const_iterator strategyCase = mpStrategy->fulfilledCase( _formula );
+        vector<ModuleStrategyCase>::const_iterator strategyCase = mpStrategy->fulfilledCase( *_formula );
         if( strategyCase != mpStrategy->strategy().end() )
         {
             /*

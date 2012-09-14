@@ -25,6 +25,7 @@ set(lib_core_src
     Module.cpp
     Formula.cpp
     Strategy.cpp
+    StrategyGraph.cpp
     Constraint.cpp
     ConstraintPool.cpp
 )
@@ -35,6 +36,7 @@ set(lib_core_headers
     Condition.h
     Formula.h
     Strategy.h
+    StrategyGraph.h
     ModuleFactory.h
     ModuleType.h
     Constraint.h

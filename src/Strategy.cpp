@@ -62,7 +62,7 @@ namespace smtrat
      *
      * @return  A pointer to the strategy for the module of the given module type.
      */
-    vector<ModuleStrategyCase>::iterator Strategy::fulfilledCase( Formula* const formula )
+    vector<ModuleStrategyCase>::iterator Strategy::fulfilledCase( Formula& _formula )
     {
         /*
          * Find the first fulfilled strategy case.
@@ -73,7 +73,7 @@ namespace smtrat
             /*
              * The first strategy case fulfilled specifies the types of the backends to return.
              */
-            if( moduleStrategyCase->first( formula->getPropositions() ) )
+            if( moduleStrategyCase->first( _formula.getPropositions() ) )
             {
                 return moduleStrategyCase;
             }

@@ -83,7 +83,7 @@ namespace smtrat
                 return mStrategy;
             }
 
-            std::vector<ModuleStrategyCase>::iterator fulfilledCase( Formula* const );
+            std::vector<ModuleStrategyCase>::iterator fulfilledCase( Formula& );
 
             // Methods
 
