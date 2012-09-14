@@ -87,6 +87,10 @@ namespace smtrat
             static const std::string mAuxiliaryRealNamePrefix;
             /// A counter for the auxiliary Booleans defined in this formula.
             static unsigned mAuxiliaryRealCounter;
+            ///
+            static double mSumOfAllActivities;
+            ///
+            static unsigned mNumberOfNonZeroActivities;
 
             /**
              *  Constructors and destructor.
@@ -118,6 +122,11 @@ namespace smtrat
 
             void setActivity( double _activity )
             {
+                if( mActivity == 0 )
+                {
+                    ++Formula::mNumberOfNonZeroActivities;
+                    Formula::mSumOfAllActivities += _activity;
+                }
                 mActivity = _activity;
             }
 

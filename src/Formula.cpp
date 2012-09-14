@@ -40,6 +40,8 @@ namespace smtrat
     unsigned       Formula::mAuxiliaryBooleanCounter    = 0;
     const string   Formula::mAuxiliaryRealNamePrefix    = string( "h_r_" );
     unsigned       Formula::mAuxiliaryRealCounter       = 0;
+    double         Formula::mSumOfAllActivities         = 0;
+    unsigned       Formula::mNumberOfNonZeroActivities  = 0;
 
     Formula::Formula():
         mActivity( 0 ),
@@ -82,7 +84,7 @@ namespace smtrat
         mPropositions(),
         mPropositionsUptodate( false )
     {
-//        assert( _constraint->relation() != CR_NEQ );
+        //        assert( _constraint->relation() != CR_NEQ );
     }
 
     Formula::Formula( const Formula& _formula ):
@@ -262,7 +264,7 @@ namespace smtrat
     {
         assert( isBooleanCombination() );
         assert( mType != NOT || mpSubformulas->empty() );
-//        assert( _formula->getType() != REALCONSTRAINT || _formula->constraint().relation() != CR_NEQ );
+        //        assert( _formula->getType() != REALCONSTRAINT || _formula->constraint().relation() != CR_NEQ );
         _formula->setFather( this );
 
         /*
@@ -689,8 +691,8 @@ namespace smtrat
             case REALCONSTRAINT:
             {
                 _out << _init;
-                mpConstraint->printInPrefix( _out );
-//                _out << " (" << mActivity << ")";
+                mpConstraint->print( _out );
+                                _out << " (" << mActivity << ")";
                 break;
             }
             case TTRUE:
@@ -848,7 +850,8 @@ namespace smtrat
      */
     void Formula::toCNF( Formula& _formula, bool _keepConstraints )
     {
-        if( _keepConstraints && (_formula.getPropositions() | ~PROP_IS_IN_CNF) == ~PROP_TRUE ) return;
+        if( _keepConstraints && (_formula.getPropositions() | ~PROP_IS_IN_CNF) == ~PROP_TRUE )
+            return;
         Formula* copy = new Formula( _formula.getType() );
         while( !_formula.empty() )
         {
@@ -1117,7 +1120,8 @@ namespace smtrat
                             }
                         }
                     }
-                    if( !currentFormula->empty() ) _formula.addSubformula( currentFormula );
+                    if( !currentFormula->empty() )
+                        _formula.addSubformula( currentFormula );
                     break;
                 }
                 case IMPLIES:
@@ -1251,7 +1255,8 @@ namespace smtrat
             }
             case REALCONSTRAINT:
             {
-                if( _keepConstraint ) return false;
+                if( _keepConstraint )
+                    return false;
                 else
                 {
                     const Constraint* constraint = subformula->pConstraint();

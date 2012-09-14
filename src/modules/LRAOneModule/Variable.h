@@ -54,14 +54,14 @@ namespace lraone
             /**
              * Members.
              */
-            bool              mBasic;
-            unsigned          mPosition;
-            BoundSet          mUpperbounds;
-            BoundSet          mLowerbounds;
-            const Bound*      mpSupremum;
-            const Bound*      mpInfimum;
-            const GiNaC::ex*  mExpression;
-            Value             mAssignment;
+            bool             mBasic;
+            unsigned         mPosition;
+            BoundSet         mUpperbounds;
+            BoundSet         mLowerbounds;
+            const Bound*     mpSupremum;
+            const Bound*     mpInfimum;
+            const GiNaC::ex* mExpression;
+            Value            mAssignment;
 
         public:
             Variable();
@@ -153,8 +153,8 @@ namespace lraone
                 return mExpression;
             }
 
-            std::pair<const Bound*,std::pair<const Bound*, const Bound*> > addUpperBound( Value* const, const smtrat::Constraint* = NULL );
-            std::pair<const Bound*,std::pair<const Bound*, const Bound*> > addLowerBound( Value* const, const smtrat::Constraint* = NULL );
+            std::pair<const Bound*, std::pair<const Bound*, const Bound*> > addUpperBound( Value* const , const smtrat::Constraint* = NULL );
+            std::pair<const Bound*, std::pair<const Bound*, const Bound*> > addLowerBound( Value* const , const smtrat::Constraint* = NULL );
             void deactivateBound( const Bound* );
 
             void print( std::ostream& = std::cout ) const;

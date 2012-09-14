@@ -32,8 +32,9 @@
 #include <iostream>
 #include <algorithm>
 
-//#define DEBUG_LRA_MODULE
+#define DEBUG_LRA_MODULE
 #define LRA_SIMPLE_THEORY_PROPAGATION
+#define LRA_ONE_REASON
 
 using namespace std;
 using namespace lraone;
@@ -166,13 +167,16 @@ namespace smtrat
             {
                 (*bIter)->pOrigins()->erase( *_subformula );
                 (*bIter)->pVariable()->deactivateBound( *bIter );
-                if( (*bIter)->variable().isBasic() )
+                if( ((*bIter)->isUpper() && (*bIter)->variable().pSupremum()->isInfinite()) || (!(*bIter)->isUpper() && (*bIter)->variable().pInfimum()->isInfinite()) )
                 {
-                    mTableau.decrementBasicActivity( *(*bIter)->pVariable() );
-                }
-                else
-                {
-                    mTableau.decrementNonbasicActivity( *(*bIter)->pVariable() );
+                    if( (*bIter)->variable().isBasic() )
+                    {
+                        mTableau.decrementBasicActivity( *(*bIter)->pVariable() );
+                    }
+                    else
+                    {
+                        mTableau.decrementNonbasicActivity( *(*bIter)->pVariable() );
+                    }
                 }
             }
         }
@@ -235,11 +239,39 @@ namespace smtrat
                 else
                 {
                     mTableau.pivot( pivotingElement.first );
+                    #ifdef LRA_REFINEMENT
+                    vector<pair<const lraone::Bound*, vector<Formula* > > >& lBs = mTableau.learnedBounds();
+                    while( !lBs.empty() )
+                    {
+                        for( auto deduction = lBs.back().second.begin(); deduction != lBs.back().second.end(); ++deduction )
+                        {
+                            addDeduction( *deduction );
+                        }
+                        #ifdef LRA_PROPAGATE_NEW_CONSTRAINTS
+                        vector<const lraone::Bound*> bounds = vector<const lraone::Bound*>();
+                        bounds.push_back( lBs.back().first );
+                        ConstraintBoundPair p = ConstraintBoundPair( lBs.back().first->pAsConstraint(), bounds );
+                        mConstraintToBound.insert( p );
+                        #endif
+                        lBs.back().first->pOrigins()->clear();
+                        lBs.pop_back();
+                    }
+                    #endif
                 }
             }
             else
             {
-                vector< set< const lraone::Bound* > > conflictingBounds = mTableau.getConflicts( pivotingElement.first );
+                #ifdef LRA_ONE_REASON
+                vector< const lraone::Bound* > conflict = mTableau.getConflict( pivotingElement.first );
+                set< const Formula* > infSubSet = set< const Formula* >();
+                for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
+                {
+                    assert( (*bound)->isActive() );
+                    infSubSet.insert( *(*bound)->pOrigins()->begin() );
+                }
+                mInfeasibleSubsets.push_back( infSubSet );
+                #else
+                vector< set< const lraone::Bound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
                 for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
                 {
                     set< const Formula* > infSubSet = set< const Formula* >();
@@ -250,6 +282,7 @@ namespace smtrat
                     }
                     mInfeasibleSubsets.push_back( infSubSet );
                 }
+                #endif
                 #ifdef DEBUG_LRA_MODULE
                 cout << "False" << endl;
                 #endif
@@ -284,13 +317,16 @@ namespace smtrat
     {
         bound->pOrigins()->insert( _formula );
         const Variable& var = bound->variable();
-        if( var.isBasic() )
+        if( (bound->isUpper() && var.pSupremum()->isInfinite()) || (!bound->isUpper() && var.pInfimum()->isInfinite()) )
         {
-            mTableau.incrementBasicActivity( var );
-        }
-        else
-        {
-            mTableau.incrementNonbasicActivity( var );
+            if( var.isBasic() )
+            {
+                mTableau.incrementBasicActivity( var );
+            }
+            else
+            {
+                mTableau.incrementNonbasicActivity( var );
+            }
         }
         bool isUpper = bound->isUpper();
         if( isUpper )
@@ -356,7 +392,13 @@ namespace smtrat
             const Constraint* constraintA = Formula::newConstraint( _constraint->lhs(), CR_LEQ );
             const Constraint* constraintB = Formula::newConstraint( _constraint->lhs(), CR_GEQ );
             pair<const lraone::Bound*,pair<const lraone::Bound*, const lraone::Bound*> > resultA = var.addUpperBound( valueA, constraintA );
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
+            findSimpleConflicts( *resultA.first );
+            #endif
             pair<const lraone::Bound*,pair<const lraone::Bound*, const lraone::Bound*> > resultB = var.addLowerBound( valueB, constraintB );
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
+            findSimpleConflicts( *resultB.first );
+            #endif
             vector<const lraone::Bound*> eqBounds = vector<const lraone::Bound*>();
             eqBounds.push_back( resultA.first );
             eqBounds.push_back( resultB.first );
@@ -411,6 +453,9 @@ namespace smtrat
         {
             Value* value = new Value( boundValue );
             pair<const lraone::Bound*,pair<const lraone::Bound*, const lraone::Bound*> > result = constraintInverted ? var.addLowerBound( value, _constraint ) : var.addUpperBound( value, _constraint );
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
+            findSimpleConflicts( *result.first );
+            #endif
             vector<const lraone::Bound*> vecto = vector<const lraone::Bound*>();
             vecto.push_back( result.first );
             ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
@@ -438,6 +483,9 @@ namespace smtrat
         {
             Value* value = new Value( boundValue );
             pair<const lraone::Bound*,pair<const lraone::Bound*, const lraone::Bound*> > result = constraintInverted ? var.addUpperBound( value, _constraint ) : var.addLowerBound( value, _constraint );
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
+            findSimpleConflicts( *result.first );
+            #endif
             vector<const lraone::Bound*> vecto = vector<const lraone::Bound*>();
             vecto.push_back( result.first );
             ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
@@ -465,6 +513,9 @@ namespace smtrat
         {
             Value* value = new Value( boundValue, (constraintInverted ? 1 : -1) );
             pair<const lraone::Bound*,pair<const lraone::Bound*, const lraone::Bound*> > result = constraintInverted ? var.addLowerBound( value, _constraint ) : var.addUpperBound( value, _constraint );
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
+            findSimpleConflicts( *result.first );
+            #endif
             vector<const lraone::Bound*> vecto = vector<const lraone::Bound*>();
             vecto.push_back( result.first );
             ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
@@ -492,6 +543,9 @@ namespace smtrat
         {
             Value* value = new Value( boundValue, (constraintInverted ? -1 : 1) );
             pair<const lraone::Bound*,pair<const lraone::Bound*, const lraone::Bound*> > result = constraintInverted ? var.addUpperBound( value, _constraint ) : var.addLowerBound( value, _constraint );
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
+            findSimpleConflicts( *result.first );
+            #endif
             vector<const lraone::Bound*> vecto = vector<const lraone::Bound*>();
             vecto.push_back( result.first );
             ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
@@ -516,6 +570,54 @@ namespace smtrat
             #endif
         }
     }
+
+    #ifdef LRA_SIMPLE_CONFLICT_SEARCH
+    /**
+     *
+     * @param _bound
+     */
+    void LRAOneModule::findSimpleConflicts( const lraone::Bound& _bound )
+    {
+        if( _bound.isUpper() )
+        {
+            for( auto lbound = _bound.variable().lowerbounds().rbegin(); lbound != --_bound.variable().lowerbounds().rend(); ++lbound )
+            {
+                if( **lbound > _bound )
+                {
+                    Formula* deduction = new Formula( OR );
+                    deduction->addSubformula( new Formula( NOT ) );
+                    deduction->back()->addSubformula( _bound.pAsConstraint() );
+                    deduction->addSubformula( new Formula( NOT ) );
+                    deduction->back()->addSubformula( (*lbound)->pAsConstraint() );
+                    addDeduction( deduction );
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        else
+        {
+            for( auto ubound = _bound.variable().upperbounds().begin(); ubound != --_bound.variable().upperbounds().end(); ++ubound )
+            {
+                if( **ubound < _bound )
+                {
+                    Formula* deduction = new Formula( OR );
+                    deduction->addSubformula( new Formula( NOT ) );
+                    deduction->back()->addSubformula( _bound.pAsConstraint() );
+                    deduction->addSubformula( new Formula( NOT ) );
+                    deduction->back()->addSubformula( (*ubound)->pAsConstraint() );
+                    addDeduction( deduction );
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+    }
+    #endif
 
     /**
      *
@@ -605,6 +707,9 @@ namespace smtrat
                 }
             }
         }
+        #ifdef LRA_USE_PIVOTING_STRATEGY
+        mTableau.setBlandsRuleStart( mTableau.columns().size() * 4 );
+        #endif
     }
 
 

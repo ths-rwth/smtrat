@@ -38,6 +38,8 @@
 #include "LRAOneModule/Tableau.h"
 #include <stdio.h>
 
+#define LRA_SIMPLE_CONFLICT_SEARCH
+
 namespace smtrat
 {
     class LRAOneModule:
@@ -103,6 +105,9 @@ namespace smtrat
             bool checkAssignmentForNonlinearConstraint() const;
             bool activateBound( const lraone::Bound*, const Formula* );
             void setBound( lraone::Variable&, const Constraint_Relation&, bool, const GiNaC::numeric&, const Constraint* );
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
+            void findSimpleConflicts( const lraone::Bound& );
+            #endif
             void initialize();
             bool allPassedconstraintsAreConsidered() const;
     };
