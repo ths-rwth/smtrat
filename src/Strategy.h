@@ -21,7 +21,7 @@
 
 
 /**
- * @file ModuleStrategy.h
+ * @file Strategy.h
  *
  * @author Ulrich Loup
  * @author Florian Corzilius
@@ -45,9 +45,9 @@ namespace smtrat
     ///////////
 
     class Strategy;
-    typedef bool (*conditionEvaluation)( Condition );
+    typedef bool (*ConditionEvaluation)( Condition );
 
-    typedef std::pair<conditionEvaluation, std::set<ModuleType> > ModuleStrategyCase;
+    typedef std::pair<ConditionEvaluation, std::set<ModuleType> > ModuleStrategyCase;
 
     /**
      *
@@ -87,11 +87,11 @@ namespace smtrat
 
             // Methods
 
-            bool addModuleType( conditionEvaluation, ModuleType );
+            bool addModuleType( ConditionEvaluation, ModuleType );
 
-            bool removeCase( conditionEvaluation );
+            bool removeCase( ConditionEvaluation );
 
-            bool removeModuleType( conditionEvaluation, ModuleType );
+            bool removeModuleType( ConditionEvaluation, ModuleType );
     };
 }    // namespace smtrat
 #endif   /* SMTRAT_STRATEGY_H */

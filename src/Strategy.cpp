@@ -21,7 +21,7 @@
 
 
 /**
- * @file ModuleStrategy.cpp
+ * @file Strategy.cpp
  *
  * @author Ulrich Loup
  * @author Florian Corzilius
@@ -92,7 +92,7 @@ namespace smtrat
      * @return  true,   if an element was inserted;
      *          false,  otherwise.
      */
-    bool Strategy::addModuleType( conditionEvaluation _function, ModuleType moduletype )
+    bool Strategy::addModuleType( ConditionEvaluation _function, ModuleType moduletype )
     {
         vector<ModuleStrategyCase>::iterator modStratPair = mStrategy.begin();
         while( modStratPair != mStrategy.end() )
@@ -118,7 +118,7 @@ namespace smtrat
      * @return  true,   if an element was removed;
      *          false,  otherwise.
      */
-    bool Strategy::removeCase( conditionEvaluation _function )
+    bool Strategy::removeCase( ConditionEvaluation _function )
     {
         vector<ModuleStrategyCase>::iterator modStratPair = mStrategy.begin();
         while( modStratPair != mStrategy.end() )
@@ -142,7 +142,7 @@ namespace smtrat
      * @return  true,   if an element was removed;
      *          false,  otherwise.
      */
-    bool Strategy::removeModuleType( conditionEvaluation _function, ModuleType moduleType )
+    bool Strategy::removeModuleType( ConditionEvaluation _function, ModuleType moduleType )
     {
         vector<ModuleStrategyCase>::iterator modStratPair = mStrategy.begin();
         while( modStratPair != mStrategy.end() )

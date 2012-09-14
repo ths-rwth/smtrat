@@ -31,6 +31,7 @@
 
 #include "Manager.h"
 #include "modules/Modules.h"
+#include "StrategyGraph.h"
 
 #include <typeinfo>
 #include <cln/cln.h>
@@ -50,12 +51,14 @@ namespace smtrat
     Manager::Manager( Formula* _inputFormula ):
         mpPassedFormula( _inputFormula ),
         mGeneratedModules( vector<Module*>( 1, new Module( this, mpPassedFormula ) ) ),
-        mBackendsOfModules( map<const Module* const , vector<Module*> >() ),
+        mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
-        mBackTrackPoints( vector<unsigned>() )
+        mBackTrackPoints(),
+        mStrategyGraph(),
+        mModulePositionInStrategy()
     {
-        mpStrategy       = new Strategy();
         mpModulFactories = new map<const ModuleType, ModuleFactory*>();
+        mModulePositionInStrategy[mpPrimaryBackend] = 0;
 
         // inform it about all constraints
         for( fcs_const_iterator constraint = Formula::mConstraintPool.begin(); constraint != Formula::mConstraintPool.end(); ++constraint )
@@ -104,7 +107,6 @@ namespace smtrat
             delete pModulFactory;
         }
         delete mpModulFactories;
-        delete mpStrategy;
     }
 
     /**
@@ -220,15 +222,14 @@ namespace smtrat
     {
         vector<Module*>        backends         = vector<Module*>();
         vector<Module*>&       allBackends      = mBackendsOfModules[_requiredBy];
-        vector<ModuleFactory*> backendFactories = getBackendsFactories( _formula, _requiredBy );
-        for( vector<ModuleFactory*>::const_iterator backendFactory = backendFactories.begin(); backendFactory != backendFactories.end();
-                ++backendFactory )
+        vector< pair<unsigned, ModuleType> > backendModuleTypes = mStrategyGraph.nextModuleTypes( mModulePositionInStrategy[_requiredBy], _formula->getPropositions() );
+        for( auto iter = backendModuleTypes.begin(); iter != backendModuleTypes.end(); ++iter )
         {
-            assert( (*backendFactory)->type() != _requiredBy->type() );
+            assert( iter->second != _requiredBy->type() );
             vector<Module*>::iterator backend = allBackends.begin();
             while( backend != allBackends.end() )
             {
-                if( (*backend)->type() == (*backendFactory)->type() )
+                if( (*backend)->type() == iter->second )
                 {
                     // the backend already exists
                     backends.push_back( *backend );
@@ -238,11 +239,13 @@ namespace smtrat
             }
             if( backend == allBackends.end() )
             {
+                ModuleFactory* backendFactory = (*mpModulFactories)[iter->second];
                 // backend does not exist => create it
-                Module* pBackend = (*backendFactory)->create( this, _requiredBy->pPassedFormula() );
+                Module* pBackend = backendFactory->create( this, _requiredBy->pPassedFormula() );
                 mGeneratedModules.push_back( pBackend );
                 allBackends.push_back( pBackend );
                 backends.push_back( pBackend );
+                mModulePositionInStrategy[pBackend] = iter->first;
                 // inform it about all constraints
                 for( fcs_const_iterator constraint = _requiredBy->constraintsToInform().begin();
                         constraint != _requiredBy->constraintsToInform().end(); ++constraint )
@@ -252,34 +255,6 @@ namespace smtrat
             }
         }
         return backends;
-    }
-
-    /**
-     *
-     * @param _formula      The problem instance.
-     * @param _requiredBy   The module asking for a backend.
-     *
-     * @return  The module factories which create the backends for the module requiring backends.
-     */
-    vector<ModuleFactory*> Manager::getBackendsFactories( Formula* const _formula, Module* _requiredBy ) const
-    {
-        vector<ModuleFactory*> result = vector<ModuleFactory*>();
-
-        /*
-         * Find the first fulfilled strategy case.
-         */
-        vector<ModuleStrategyCase>::const_iterator strategyCase = mpStrategy->fulfilledCase( *_formula );
-        if( strategyCase != mpStrategy->strategy().end() )
-        {
-            /*
-             * The first strategy case fulfilled specifies the types of the backends to return.
-             */
-            for( set<ModuleType>::const_iterator moduleType = strategyCase->second.begin(); moduleType != strategyCase->second.end(); ++moduleType )
-            {
-                result.push_back( (*mpModulFactories)[*moduleType] );
-            }
-        }
-        return result;
     }
 
 }    // namespace smtrat

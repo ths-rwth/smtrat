@@ -38,7 +38,7 @@
 #include "Constraint.h"
 #include "Answer.h"
 #include "ModuleFactory.h"
-#include "Strategy.h"
+#include "StrategyGraph.h"
 #include "ModuleType.h"
 #include "Module.h"
 #include "config.h"
@@ -58,7 +58,7 @@ namespace smtrat
             /// all generated instances of modules
             std::vector<Module*> mGeneratedModules;
             /// a mapping of each module to its backends
-            std::map<const Module* const , std::vector<Module*> > mBackendsOfModules;
+            std::map<const Module* const, std::vector<Module*> > mBackendsOfModules;
             /// the primary backends
             Module* mpPrimaryBackend;
             /// the backtrack points
@@ -68,7 +68,9 @@ namespace smtrat
             /// modules we can use
             std::map<const ModuleType, ModuleFactory*>* mpModulFactories;
             /// primary strategy
-            Strategy* mpStrategy;
+            StrategyGraph mStrategyGraph;
+            /// position of the module instance in the strategy
+            std::map<const Module* const, unsigned> mModulePositionInStrategy;
 
         public:
             Manager( Formula* = new Formula( AND ) );
@@ -94,9 +96,9 @@ namespace smtrat
                 mpModulFactories->insert( std::pair<const ModuleType, ModuleFactory*>( _moduleType, _factory ) );
             }
 
-            Strategy& strategy()
+            StrategyGraph& rStrategyGraph()
             {
-                return *mpStrategy;
+                return mStrategyGraph;
             }
 
             std::vector<Module*> getAllBackends( Module* _module )
@@ -126,7 +128,6 @@ namespace smtrat
             bool addConstraint( const std::string&, const bool, const bool );
             std::vector<std::vector<unsigned> > getReasons() const;
             std::vector<Module*> getBackends( Formula*, Module* );
-            std::vector<ModuleFactory*> getBackendsFactories( Formula* const , Module* ) const;
     };
 
 }    // namespace smtrat
