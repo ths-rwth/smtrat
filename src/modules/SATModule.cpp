@@ -666,7 +666,7 @@ namespace smtrat
             /*
              * Add a fresh Boolean variable as an abstraction of the constraint.
              */
-            Var constraintAbstraction          = newVar( (_origin->activity() > (Formula::mSumOfAllActivities/Formula::mNumberOfNonZeroActivities) ? false : true ), true, _activity, new Formula( _constraint ), _origin );
+            Var constraintAbstraction          = newVar( (_activity > (Formula::mSumOfAllActivities*1.02/Formula::mNumberOfNonZeroActivities) ? false : true ), true, _activity, new Formula( _constraint ), _origin );
             Lit lit                            = mkLit( constraintAbstraction, false );
             mConstraintLiteralMap[_constraint] = lit;
             return lit;
