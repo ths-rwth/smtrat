@@ -24,7 +24,6 @@ set(lib_core_src
     Manager.cpp
     Module.cpp
     Formula.cpp
-    Strategy.cpp
     StrategyGraph.cpp
     Constraint.cpp
     ConstraintPool.cpp
@@ -35,7 +34,6 @@ set(lib_core_headers
     Module.h
     Condition.h
     Formula.h
-    Strategy.h
     StrategyGraph.h
     ModuleFactory.h
     ModuleType.h

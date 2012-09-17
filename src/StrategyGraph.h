@@ -59,7 +59,6 @@ namespace smtrat
     class StrategyGraph
     {
         private:
-            
             class Edge;
             
             class Vertex
@@ -120,7 +119,6 @@ namespace smtrat
             // members
             
             std::vector<Vertex> mStrategyGraph;
-//            unsigned mIndexAllocator;
 
         public:
             // [Con|De]structors
