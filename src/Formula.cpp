@@ -850,15 +850,21 @@ namespace smtrat
      */
     void Formula::toCNF( Formula& _formula, bool _keepConstraints )
     {
+        cout << __func__ << endl;
         if( _keepConstraints && (_formula.getPropositions() | ~PROP_IS_IN_CNF) == ~PROP_TRUE )
+        {
+            cout << __func__ << " end" << endl;
             return;
+        }
         else if( _formula.getType() == NOT )
         {
             resolveNegation( _formula );
+            cout << __func__ << " end" << endl;
             return;
         }
         else if( _formula.isAtom() )
         {
+            cout << __func__ << " end" << endl;
             return;
         }
         Formula* copy = new Formula( _formula.getType() );
@@ -910,6 +916,7 @@ namespace smtrat
                         delete formulaToDelete;
                     }
                     _formula.copyAndDelete( currentFormula );
+            cout << __func__ << " end" << endl;
                     return;
                 }
                 case NOT:
@@ -917,7 +924,7 @@ namespace smtrat
                     /*
                      * Try to resolve this negation.
                      */
-                    if( Formula::resolveNegation( *currentFormula, _keepConstraints ) )
+                    if( !Formula::resolveNegation( *currentFormula, _keepConstraints ) )
                     {
                         /*
                          * It is a literal.
@@ -1001,8 +1008,8 @@ namespace smtrat
                             case NOT:
                             {
                                 /*
-                                    * Try to resolve this negation.
-                                    */
+                                 * Try to resolve this negation.
+                                 */
                                 if( Formula::resolveNegation( *currentSubformula, _keepConstraints ) )
                                 {
                                     phis.push_back( currentSubformula );
@@ -1245,6 +1252,7 @@ namespace smtrat
             _formula.copyAndDelete( new Formula( TTRUE ) );
         }
         _formula.getPropositions();
+            cout << __func__ << " end" << endl;
     }
 
     /**
@@ -1260,12 +1268,16 @@ namespace smtrat
         {
             case BOOL:
             {
+            cout << __func__ << " end" << endl;
                 return false;
             }
             case REALCONSTRAINT:
             {
                 if( _keepConstraint )
+                {
+            cout << __func__ << " end" << endl;
                     return false;
+                }
                 else
                 {
                     const Constraint* constraint = subformula->pConstraint();
@@ -1277,21 +1289,25 @@ namespace smtrat
                             _formula.copyAndDelete( new Formula( OR ) );
                             _formula.addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS ) ) );
                             _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS ) ) );
+            cout << __func__ << " end" << endl;
                             return true;
                         }
                         case CR_LEQ:
                         {
                             _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS ) ) );
+            cout << __func__ << " end" << endl;
                             return false;
                         }
                         case CR_LESS:
                         {
                             _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LEQ ) ) );
+            cout << __func__ << " end" << endl;
                             return false;
                         }
                         case CR_NEQ:
                         {
                             _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ ) ) );
+            cout << __func__ << " end" << endl;
                             return false;
                         }
                         default:
@@ -1306,34 +1322,37 @@ namespace smtrat
             case TTRUE:
             {
                 /*
-                    * (not true)  ->  false
-                    */
+                 * (not true)  ->  false
+                 */
                 _formula.copyAndDelete( _formula.pruneBack() );
+            cout << __func__ << " end" << endl;
                 return true;
             }
             case FFALSE:
             {
                 /*
-                    * (not false)  ->  true
-                    */
+                 * (not false)  ->  true
+                 */
                 _formula.copyAndDelete( _formula.pruneBack() );
+            cout << __func__ << " end" << endl;
                 return true;
             }
             case NOT:
             {
                 /*
-                    * (not (not phi))  ->  phi
-                    */
+                 * (not (not phi))  ->  phi
+                 */
                 Formula* subsubformula = subformula->pruneBack();
                 _formula.pop_back();
                 _formula.copyAndDelete( subsubformula );
+            cout << __func__ << " end" << endl;
                 return true;
             }
             case AND:
             {
                 /*
-                    * (not (and phi_1 .. phi_n))  ->  (or (not phi_1) .. (not phi_n))
-                    */
+                 * (not (and phi_1 .. phi_n))  ->  (or (not phi_1) .. (not phi_n))
+                 */
                 vector<Formula*> subsubformulas = vector<Formula*>();
                 while( !subformula->empty() )
                 {
@@ -1347,13 +1366,14 @@ namespace smtrat
                     _formula.back()->addSubformula( subsubformulas.back() );
                     subsubformulas.pop_back();
                 }
+            cout << __func__ << " end" << endl;
                 return true;
             }
             case OR:
             {
                 /*
-                    * (not (or phi_1 .. phi_n))  ->  (and (not phi_1) .. (not phi_n))
-                    */
+                 * (not (or phi_1 .. phi_n))  ->  (and (not phi_1) .. (not phi_n))
+                 */
                 vector<Formula*> subsubformulas = vector<Formula*>();
                 while( !subformula->empty() )
                 {
@@ -1367,6 +1387,7 @@ namespace smtrat
                     _formula.back()->addSubformula( subsubformulas.back() );
                     subsubformulas.pop_back();
                 }
+            cout << __func__ << " end" << endl;
                 return true;
             }
             case IMPLIES:
@@ -1374,8 +1395,8 @@ namespace smtrat
                 assert( subformula->size() == 2 );
 
                 /*
-                    * (not (implies lhs rhs))  ->  (and rhs (not lhs))
-                    */
+                 * (not (implies lhs rhs))  ->  (and rhs (not lhs))
+                 */
                 Formula* rhsOfSubformula = subformula->pruneBack();
                 Formula* lhsOfSubformula = subformula->pruneBack();
                 _formula.pop_back();
@@ -1383,6 +1404,7 @@ namespace smtrat
                 _formula.addSubformula( lhsOfSubformula );
                 _formula.addSubformula( new Formula( NOT ) );
                 _formula.back()->addSubformula( rhsOfSubformula );
+            cout << __func__ << " end" << endl;
                 return true;
             }
             case IFF:
@@ -1390,14 +1412,15 @@ namespace smtrat
                 assert( subformula->size() == 2 );
 
                 /*
-                    * (not (iff lhs rhs))  ->  (xor lhs rhs)
-                    */
+                 * (not (iff lhs rhs))  ->  (xor lhs rhs)
+                 */
                 Formula* rhsOfSubformula = subformula->pruneBack();
                 Formula* lhsOfSubformula = subformula->pruneBack();
                 _formula.pop_back();
                 _formula.copyAndDelete( new Formula( XOR ) );
                 _formula.addSubformula( lhsOfSubformula );
                 _formula.addSubformula( rhsOfSubformula );
+            cout << __func__ << " end" << endl;
                 return true;
             }
             case XOR:
@@ -1405,24 +1428,27 @@ namespace smtrat
                 assert( subformula->size() == 2 );
 
                 /*
-                    * (not (xor lhs rhs))  ->  (iff lhs rhs)
-                    */
+                 * (not (xor lhs rhs))  ->  (iff lhs rhs)
+                 */
                 Formula* rhsOfSubformula = subformula->pruneBack();
                 Formula* lhsOfSubformula = subformula->pruneBack();
                 _formula.pop_back();
                 _formula.copyAndDelete( new Formula( IFF ) );
                 _formula.addSubformula( lhsOfSubformula );
                 _formula.addSubformula( rhsOfSubformula );
+            cout << __func__ << " end" << endl;
                 return true;
             }
             default:
             {
                 cerr << "Unexpected type of formula!" << endl;
                 assert( false );
+            cout << __func__ << " end" << endl;
                 return false;
             }
         }
         _formula.getPropositions();
+            cout << __func__ << " end" << endl;
     }
 }    // namespace smtrat
 
