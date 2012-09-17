@@ -57,6 +57,8 @@
 //#define WITH_PROGRESS_ESTIMATION
 #define STORE_ONLY_ONE_REASON
 
+const static double FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY = 1.02;
+
 using namespace std;
 using namespace Minisat;
 
@@ -666,7 +668,15 @@ namespace smtrat
             /*
              * Add a fresh Boolean variable as an abstraction of the constraint.
              */
-            Var constraintAbstraction          = newVar( (_origin->activity() > (Formula::mSumOfAllActivities/Formula::mNumberOfNonZeroActivities) ? false : true ), true, _activity, new Formula( _constraint ), _origin );
+            Var constraintAbstraction;
+            if( _activity > Formula::mSumOfAllActivities*FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY/Formula::mNumberOfNonZeroActivities )
+            {
+                constraintAbstraction = newVar( false, true, _activity, new Formula( _constraint ), _origin );
+            }
+            else
+            {
+                constraintAbstraction = newVar( true, true, _activity, new Formula( _constraint ), _origin );
+            }
             Lit lit                            = mkLit( constraintAbstraction, false );
             mConstraintLiteralMap[_constraint] = lit;
             return lit;

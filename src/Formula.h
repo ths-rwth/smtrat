@@ -138,25 +138,49 @@ namespace smtrat
             void copyAndDelete( Formula* _formula )
             {
                 assert( _formula != this );
-                assert( empty() );
                 mType = _formula->getType();
                 if( _formula->getType() == BOOL )
                 {
-                    delete mpSubformulas;
+                    if( isBooleanCombination() )
+                    {
+                        delete mpSubformulas;
+                    }
                     mpIdentifier = new std::string( _formula->identifier() );
                 }
                 else if( _formula->getType() == REALCONSTRAINT )
                 {
-                    delete mpSubformulas;
+                    if( isBooleanCombination() )
+                    {
+                        delete mpSubformulas;
+                    }
+                    else if( mType == BOOL )
+                    {
+                        delete mpIdentifier;
+                    }
                     mpConstraint = _formula->pConstraint();
                 }
                 else if( _formula->getType() == TTRUE || _formula->getType() == FFALSE )
                 {
-                    delete mpSubformulas;
+                    if( isBooleanCombination() )
+                    {
+                        delete mpSubformulas;
+                    }
+                    else if( mType == BOOL )
+                    {
+                        delete mpIdentifier;
+                    }
                     mpSubformulas = NULL;
                 }
                 else
                 {
+                    if( mType == BOOL )
+                    {
+                        delete mpIdentifier;
+                    }
+                    if( !isBooleanCombination() )
+                    {
+                        mpSubformulas = new std::list<Formula*>();
+                    }
                     while( !_formula->empty() )
                     {
                         addSubformula( _formula->pruneBack() );

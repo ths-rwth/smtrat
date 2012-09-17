@@ -1147,18 +1147,18 @@ namespace lraone
     void Tableau::upperRefinement( const TableauHead& _row )
     {
         Value* newlimit = new Value();
-        vector<const smtrat::Constraint*> premise = vector<const smtrat::Constraint*>();
+        vector<const Bound*>* premise = new vector<const Bound*>();
         Iterator rowEntry = Iterator( _row.mStartEntry, mpEntries );
         while( true )
         {
             if( (*rowEntry).content().is_positive() )
             {
-                const Bound& sup = mColumns[(*rowEntry).columnNumber()].mName->supremum();
-                const Value* limit = sup.pLimit();
+                const Bound* sup = mColumns[(*rowEntry).columnNumber()].mName->pSupremum();
+                const Value* limit = sup->pLimit();
                 if( limit != NULL )
                 {
                     *newlimit = (*newlimit) + (*limit) * (*rowEntry).content();
-                    premise.push_back( sup.pAsConstraint() );
+                    premise->push_back( sup );
                 }
                 else
                 {
@@ -1168,61 +1168,23 @@ namespace lraone
             }
             else
             {
-                const Bound& inf = mColumns[(*rowEntry).columnNumber()].mName->infimum();
-                const Value* limit = inf.pLimit();
+                const Bound* inf = mColumns[(*rowEntry).columnNumber()].mName->pInfimum();
+                const Value* limit = inf->pLimit();
                 if( limit != NULL )
                 {
                     *newlimit = (*newlimit) + (*limit) * (*rowEntry).content();
-                    premise.push_back( inf.pAsConstraint() );
+                    premise->push_back( inf );
                 }
                 else
                 {
                     delete newlimit;
+                    delete premise;
                     return;
                 }
             }
             if( rowEntry.rowEnd() ) break;
             else rowEntry.right();
         }
-        #ifdef LRA_PROPAGATE_NEW_CONSTRAINTS
-        const Bound& sup = _row.mName->supremum();
-        if( sup > *newlimit )
-        {
-            ex lhs = (*sup.variable().pExpression()) - newlimit->getmainP();
-            const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, newlimit->getdeltaP().is_zero() ? smtrat::CR_LEQ : smtrat::CR_LESS );
-            vector<smtrat::Formula*> deductions = vector<smtrat::Formula*>();
-            smtrat::Formula* deduction = new smtrat::Formula( smtrat::OR );
-            for( auto premiseConstraint = premise.begin(); premiseConstraint != premise.end(); ++premiseConstraint )
-            {
-                deduction->addSubformula( new smtrat::Formula( smtrat::NOT ) );
-                deduction->back()->addSubformula( *premiseConstraint );
-            }
-            deduction->addSubformula( constraint );
-            cout << "D: " << *deduction << endl;
-            deductions.push_back( deduction );
-            pair<const Bound*,pair<const Bound*, const Bound*> > result = sup.pVariable()->addUpperBound( newlimit, constraint );
-            if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
-            {
-                smtrat::Formula* deductionB = new smtrat::Formula( smtrat::OR );
-                deductionB->addSubformula( new smtrat::Formula( smtrat::NOT ) );
-                deductionB->back()->addSubformula( result.second.first->pAsConstraint() );
-                deductionB->addSubformula( constraint );
-                cout << "E: " << *deductionB << endl;
-                deductions.push_back( deductionB );
-            }
-            if( result.second.second != NULL && result.second.second->pAsConstraint() != NULL )
-            {
-                smtrat::Formula* deductionB = new smtrat::Formula( smtrat::OR );
-                deductionB->addSubformula( new smtrat::Formula( smtrat::NOT ) );
-                deductionB->back()->addSubformula( constraint );
-                deductionB->addSubformula( result.second.second->pAsConstraint() );
-                cout << "F: " << *deductionB << endl;
-                deductions.push_back( deductionB );
-            }
-            result.first->pOrigins()->insert( NULL );
-            mLearnedBounds.push_back( pair< const Bound*, vector<smtrat::Formula*> >( result.first, deductions ) );
-        }
-        #else
         const Variable& bvar = *_row.mName;
         const BoundSet& upperBounds = bvar.upperbounds();
         auto ubound = upperBounds.begin();
@@ -1237,20 +1199,13 @@ namespace lraone
         }
         if( ubound != --upperBounds.end() )
         {
-            vector<smtrat::Formula*> deductions = vector<smtrat::Formula*>();
-            smtrat::Formula* deduction = new smtrat::Formula( smtrat::OR );
-            for( auto premiseConstraint = premise.begin(); premiseConstraint != premise.end(); ++premiseConstraint )
-            {
-                deduction->addSubformula( new smtrat::Formula( smtrat::NOT ) );
-                deduction->back()->addSubformula( *premiseConstraint );
-            }
-            deduction->addSubformula( (*ubound)->pAsConstraint() );
-            cout << "A: " << *deduction << endl;
-            deductions.push_back( deduction );
-//            (*ubound)->pOrigins()->insert( NULL );
-            mLearnedBounds.push_back( pair< const Bound*, vector<smtrat::Formula*> >( *ubound, deductions ) );
+            mLearnedBounds.push_back( pair< const Bound*, vector< const Bound* >* >( *ubound, premise ) );
         }
-        #endif
+        else
+        {
+            delete premise;
+        }
+        delete newlimit;
     }
     #endif
 
@@ -1258,18 +1213,18 @@ namespace lraone
     void Tableau::lowerRefinement( const TableauHead& _row )
     {
         Value* newlimit = new Value();
-        vector<const smtrat::Constraint*> premise = vector<const smtrat::Constraint*>();
+        vector<const Bound*>* premise = new vector<const Bound*>();
         Iterator rowEntry = Iterator( _row.mStartEntry, mpEntries );
         while( true )
         {
             if( (*rowEntry).content().is_positive() )
             {
-                const Bound& inf = mColumns[(*rowEntry).columnNumber()].mName->infimum();
-                const Value* limit = inf.pLimit();
+                const Bound* inf = mColumns[(*rowEntry).columnNumber()].mName->pInfimum();
+                const Value* limit = inf->pLimit();
                 if( limit != NULL )
                 {
                     *newlimit = (*newlimit) + (*limit) * (*rowEntry).content();
-                    premise.push_back( inf.pAsConstraint() );
+                    premise->push_back( inf );
                 }
                 else
                 {
@@ -1279,61 +1234,23 @@ namespace lraone
             }
             else
             {
-                const Bound& sup = mColumns[(*rowEntry).columnNumber()].mName->supremum();
-                const Value* limit = sup.pLimit();
+                const Bound* sup = mColumns[(*rowEntry).columnNumber()].mName->pSupremum();
+                const Value* limit = sup->pLimit();
                 if( limit != NULL )
                 {
                     *newlimit = (*newlimit) + (*limit) * (*rowEntry).content();
-                    premise.push_back( sup.pAsConstraint() );
+                    premise->push_back( sup );
                 }
                 else
                 {
                     delete newlimit;
+                    delete premise;
                     return;
                 }
             }
             if( rowEntry.rowEnd() ) break;
             else rowEntry.right();
         }
-        #ifdef LRA_PROPAGATE_NEW_CONSTRAINTS
-        const Bound& inf = _row.mName->infimum();
-        if( inf < *newlimit )
-        {
-            ex lhs = - (*inf.variable().pExpression()) + newlimit->getmainP();
-            const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, newlimit->getdeltaP().is_zero() ? smtrat::CR_LEQ : smtrat::CR_LESS );
-            vector<smtrat::Formula*> deductions = vector<smtrat::Formula*>();
-            smtrat::Formula* deduction = new smtrat::Formula( smtrat::OR );
-            for( auto premiseConstraint = premise.begin(); premiseConstraint != premise.end(); ++premiseConstraint )
-            {
-                deduction->addSubformula( new smtrat::Formula( smtrat::NOT ) );
-                deduction->back()->addSubformula( *premiseConstraint );
-            }
-            deduction->addSubformula( constraint );
-            cout << "D: " << *deduction << endl;
-            deductions.push_back( deduction );
-            pair<const Bound*,pair<const Bound*, const Bound*> > result = inf.pVariable()->addLowerBound( newlimit, constraint );
-            if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
-            {
-                smtrat::Formula* deductionB = new smtrat::Formula( smtrat::OR );
-                deductionB->addSubformula( new smtrat::Formula( smtrat::NOT ) );
-                deductionB->back()->addSubformula( result.second.first->pAsConstraint() );
-                deductionB->addSubformula( constraint );
-                cout << "E: " << *deductionB << endl;
-                deductions.push_back( deductionB );
-            }
-            if( result.second.second != NULL && result.second.second->pAsConstraint() != NULL )
-            {
-                smtrat::Formula* deductionB = new smtrat::Formula( smtrat::OR );
-                deductionB->addSubformula( new smtrat::Formula( smtrat::NOT ) );
-                deductionB->back()->addSubformula( constraint );
-                deductionB->addSubformula( result.second.second->pAsConstraint() );
-                cout << "F: " << *deductionB << endl;
-                deductions.push_back( deductionB );
-            }
-            result.first->pOrigins()->insert( NULL );
-            mLearnedBounds.push_back( pair< const Bound*, vector<smtrat::Formula*> >( result.first, deductions ) );
-        }
-        #else
         const Variable& bvar = *_row.mName;
         const BoundSet& lowerBounds = bvar.lowerbounds();
         auto lbound = lowerBounds.rbegin();
@@ -1348,20 +1265,13 @@ namespace lraone
         }
         if( lbound != --lowerBounds.rend() )
         {
-            vector<smtrat::Formula*> deductions = vector<smtrat::Formula*>();
-            smtrat::Formula* deduction = new smtrat::Formula( smtrat::OR );
-            for( auto premiseConstraint = premise.begin(); premiseConstraint != premise.end(); ++premiseConstraint )
-            {
-                deduction->addSubformula( new smtrat::Formula( smtrat::NOT ) );
-                deduction->back()->addSubformula( *premiseConstraint );
-            }
-            deduction->addSubformula( (*lbound)->pAsConstraint() );
-            cout << "B: " << *deduction << endl;
-            deductions.push_back( deduction );
-//            (*lbound)->pOrigins()->insert( NULL );
-            mLearnedBounds.push_back( pair< const Bound*, vector<smtrat::Formula*> >( *lbound, deductions ) );
+            mLearnedBounds.push_back( pair< const Bound*, vector<const Bound*>* >( *lbound, premise ) );
         }
-        #endif
+        else
+        {
+            delete premise;
+        }
+        delete newlimit;
     }
     #endif
 

@@ -38,7 +38,6 @@
 
 #define LRA_USE_PIVOTING_STRATEGY
 #define LRA_REFINEMENT
-//#define LRA_PROPAGATE_NEW_CONSTRAINTS
 
 namespace lraone
 {
@@ -186,7 +185,7 @@ namespace lraone
             std::vector<TableauEntry>* mpEntries;
             Value*                     mpTheta;
             #ifdef LRA_REFINEMENT
-            std::vector<std::pair<const Bound*, std::vector<smtrat::Formula*> > >  mLearnedBounds;
+            std::vector<std::pair<const Bound*, std::vector< const Bound*>* > >  mLearnedBounds;
             #endif
 
             class Iterator
@@ -333,7 +332,7 @@ namespace lraone
             }
 
             #ifdef LRA_REFINEMENT
-            std::vector<std::pair<const Bound*, std::vector<smtrat::Formula*> > >& learnedBounds()
+            std::vector<std::pair<const Bound*, std::vector<const Bound*>* > >& rLearnedBounds()
             {
                 return mLearnedBounds;
             }

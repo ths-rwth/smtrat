@@ -102,14 +102,16 @@ namespace smtrat
             /**
              * Methods:
              */
+            #ifdef LRA_REFINEMENT
+            void learnRefinements();
+            #endif
             bool checkAssignmentForNonlinearConstraint() const;
-            bool activateBound( const lraone::Bound*, const Formula* );
+            bool activateBound( const lraone::Bound*, std::set<const Formula*>& );
             void setBound( lraone::Variable&, const Constraint_Relation&, bool, const GiNaC::numeric&, const Constraint* );
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             void findSimpleConflicts( const lraone::Bound& );
             #endif
             void initialize();
-            bool allPassedconstraintsAreConsidered() const;
     };
 
 }    // namespace smtrat

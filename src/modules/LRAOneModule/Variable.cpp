@@ -154,7 +154,7 @@ namespace lraone
         if( bound->isUpper() )
         {
             //check if it is the supremum
-            if( pSupremum() == bound )
+            if( mpSupremum == bound )
             {
                 //find the supremum
                 BoundSet::iterator newBound = mUpperbounds.begin();
@@ -162,7 +162,7 @@ namespace lraone
                 {
                     if( (*newBound)->isActive() )
                     {
-                        setSupremum( *newBound );
+                        mpSupremum = *newBound;
                         break;
                     }
                     ++newBound;
@@ -173,7 +173,7 @@ namespace lraone
         else
         {
             //check if it is the infimum
-            if( pInfimum() == bound )
+            if( mpInfimum == bound )
             {
                 //find the infimum
                 BoundSet::reverse_iterator newBound = mLowerbounds.rbegin();
@@ -181,7 +181,7 @@ namespace lraone
                 {
                     if( (*newBound)->isActive() )
                     {
-                        setInfimum( *newBound );
+                        mpInfimum = *newBound;
                         break;
                     }
                     ++newBound;
@@ -215,39 +215,15 @@ namespace lraone
         for( BoundSet::const_iterator bIter = mUpperbounds.begin(); bIter != mUpperbounds.end(); ++bIter )
         {
             _out << _init << "     ";
-            (*bIter)->print( _out, true );
-            _out << "  { ";
-            for( auto origin = (*bIter)->origins().begin(); origin != (*bIter)->origins().end(); ++origin )
-            {
-                if( *origin != NULL )
-                {
-                    _out << **origin << " ";
-                }
-                else
-                {
-                    _out << "NULL ";
-                }
-            }
-            _out << "}" << endl;
+            (*bIter)->print( _out, true, true );
+            _out << endl;
         }
         _out << _init << " Lower bounds: " << endl;
         for( BoundSet::const_iterator bIter = mLowerbounds.begin(); bIter != mLowerbounds.end(); ++bIter )
         {
             _out << _init << "     ";
-            (*bIter)->print( _out, true );
-            _out << "  { ";
-            for( auto origin = (*bIter)->origins().begin(); origin != (*bIter)->origins().end(); ++origin )
-            {
-                if( *origin != NULL )
-                {
-                    _out << **origin << " ";
-                }
-                else
-                {
-                    _out << "NULL ";
-                }
-            }
-            _out << "}" << endl;
+            (*bIter)->print( _out, true, true );
+            _out << endl;
         }
     }
 }    // end namspace lra

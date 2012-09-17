@@ -95,11 +95,13 @@ namespace lraone
 
             const Bound* pSupremum() const
             {
+                assert( !mpSupremum->origins().empty() );
                 return mpSupremum;
             }
 
             const Bound& supremum() const
             {
+                assert( !mpSupremum->origins().empty() );
                 return *mpSupremum;
             }
 
@@ -110,11 +112,13 @@ namespace lraone
 
             const Bound* pInfimum() const
             {
+                assert( !mpInfimum->origins().empty() );
                 return mpInfimum;
             }
 
             const Bound& infimum() const
             {
+                assert( !mpInfimum->origins().empty() );
                 return *mpInfimum;
             }
 

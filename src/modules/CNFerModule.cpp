@@ -108,12 +108,18 @@ namespace smtrat
             }
             else
             {
-                assert( formulaToAssert->getType() == AND );
-                while( !formulaToAssert->empty() )
+                if( formulaToAssert->isBooleanCombination() )
                 {
-                    addSubformulaToPassedFormula( formulaToAssert->pruneBack(), origins );
+                    while( !formulaToAssert->empty() )
+                    {
+                        addSubformulaToPassedFormula( formulaToAssert->pruneBack(), origins );
+                    }
+                    delete formulaToAssert;
                 }
-                delete formulaToAssert;
+                else
+                {
+                    addSubformulaToPassedFormula( formulaToAssert, origins );
+                }
             }
             ++receivedSubformula;
         }
