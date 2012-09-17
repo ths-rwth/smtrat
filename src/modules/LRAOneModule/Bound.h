@@ -23,11 +23,11 @@ namespace lraone
             /**
              * Members.
              */
-            Value*                              mLimit;
-            bool                                mIsUpper;
-            Variable* const                     mVar;
-            const smtrat::Constraint*           mpAsConstraint;
-            std::set< const smtrat::Formula* >* mpOrigins;
+            Value*                                              mLimit;
+            bool                                                mIsUpper;
+            Variable* const                                     mVar;
+            const smtrat::Constraint*                           mpAsConstraint;
+            std::vector<std::set< const smtrat::Formula* > >*   mpOrigins;
 
         public:
             Bound();
@@ -41,7 +41,7 @@ namespace lraone
             bool operator >( const Bound& ) const;
             const std::string toString() const;
             friend std::ostream& operator <<( std::ostream&, const Bound& );
-            void print( std::ostream& = std::cout, bool = false ) const;
+            void print( std::ostream& = std::cout, bool = false, bool = false ) const;
 
             Value& limit() const
             {
@@ -88,12 +88,12 @@ namespace lraone
                 return mpAsConstraint;
             }
 
-            std::set< const smtrat::Formula* >* const pOrigins() const
+            std::vector<std::set< const smtrat::Formula* > >* const pOrigins() const
             {
                 return mpOrigins;
             }
 
-            const std::set< const smtrat::Formula* >& origins() const
+            const std::vector<std::set< const smtrat::Formula* > >& origins() const
             {
                 return *mpOrigins;
             }

@@ -17,8 +17,10 @@ namespace lraone
         mVar( NULL ),
         mpAsConstraint( NULL )
     {
-        mpOrigins = new set< const smtrat::Formula* >();
-        mpOrigins->insert( NULL );
+        mpOrigins = new vector<set< const smtrat::Formula* > >();
+        set< const smtrat::Formula* > originSet = set< const smtrat::Formula* >();
+        originSet.insert( NULL );
+        mpOrigins->push_back( originSet );
     }
 
     Bound::Bound( Value* const _limit, Variable* const _var, bool _isUpper, const smtrat::Constraint* _constraint ):
@@ -27,8 +29,13 @@ namespace lraone
         mVar( _var ),
         mpAsConstraint( _constraint )
     {
-        mpOrigins = new set< const smtrat::Formula* >();
-        if( _limit == NULL ) mpOrigins->insert( NULL );
+        mpOrigins = new vector<set< const smtrat::Formula* > >();
+        if( _limit == NULL )
+        {
+            set< const smtrat::Formula* > originSet = set< const smtrat::Formula* >();
+            originSet.insert( NULL );
+            mpOrigins->push_back( originSet );
+        }
     }
 
     Bound::~Bound()
@@ -207,7 +214,7 @@ namespace lraone
      *
      * @param _out
      */
-    void Bound::print( std::ostream& _out, bool _printType ) const
+    void Bound::print( std::ostream& _out, bool _printType, bool _withOrigins ) const
     {
         if( _printType )
         {
@@ -233,6 +240,27 @@ namespace lraone
             limit().print();
             assert( mpAsConstraint != NULL );
             _out << "  from  " << *mpAsConstraint;
+        }
+        if( _withOrigins )
+        {
+            _out << "  ( ";
+            for( auto originSet = origins().begin(); originSet != origins().end(); ++originSet )
+            {
+                _out << "{ ";
+                for( auto origin = originSet->begin(); origin != originSet->end(); ++origin )
+                {
+                    if( *origin != NULL )
+                    {
+                        _out << **origin << " ";
+                    }
+                    else
+                    {
+                        _out << "NULL ";
+                    }
+                }
+                _out << "} ";
+            }
+            _out << ")";
         }
     }
 

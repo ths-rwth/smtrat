@@ -852,6 +852,15 @@ namespace smtrat
     {
         if( _keepConstraints && (_formula.getPropositions() | ~PROP_IS_IN_CNF) == ~PROP_TRUE )
             return;
+        else if( _formula.getType() == NOT )
+        {
+            resolveNegation( _formula );
+            return;
+        }
+        else if( _formula.isAtom() )
+        {
+            return;
+        }
         Formula* copy = new Formula( _formula.getType() );
         while( !_formula.empty() )
         {
