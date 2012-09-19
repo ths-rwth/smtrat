@@ -19,13 +19,12 @@
  *
  */
 
-
 /**
  * @file StrategyGraph.h
  *
- * @author Henrik Schmitz
- * @since 2012-09-10
- * @version 2012-09-10
+ * @author  Henrik Schmitz
+ * @since   2012-09-10
+ * @version 2012-09-19
  */
 
 #ifndef SMTRAT_STRATEGYGRAPH_H
@@ -38,16 +37,14 @@
 
 namespace smtrat
 {
-    ///////////
-    // Types //
-    ///////////
-
     typedef bool (*ConditionEvaluation)( Condition );
+
     static bool isCondition( Condition _condition )
     {
         return true;
     }
-    
+
+// Future use:
 //    static bool isConjunction( Condition _condition )
 //    {
 //        return PROP_IS_PURE_CONJUNCTION <= _condition;
@@ -59,7 +56,36 @@ namespace smtrat
     class StrategyGraph
     {
         private:
-            class Edge;
+            class Edge
+            {
+                private:
+                    unsigned mId;
+                    unsigned mSuccessor;
+                    ConditionEvaluation mpConditionEvaluation;
+
+                    static unsigned mIdAllocator;
+                    
+                public:
+                    Edge();
+                    Edge( unsigned, ConditionEvaluation );
+                    ~Edge();
+                    
+// Future use:
+//                    const unsigned id() const
+//                    {
+//                        return mId;
+//                    };
+                    
+                    const unsigned successor() const
+                    {
+                        return mSuccessor;
+                    };
+                    
+                    const ConditionEvaluation conditionEvaluation() const
+                    {
+                        return *mpConditionEvaluation;
+                    }   
+            };
             
             class Vertex
             {
@@ -74,8 +100,6 @@ namespace smtrat
                     Vertex( ModuleType );
                     ~Vertex();
                     
-                    void addSuccessor( unsigned, ConditionEvaluation );
-                    
                     const ModuleType& moduleType() const
                     {
                         return mModuleType;
@@ -85,46 +109,19 @@ namespace smtrat
                     {
                         return *mpEdgeList;
                     };
+                    
+                    void addSuccessor( unsigned, ConditionEvaluation );
+            };
+            
+            // Members
 
-//                    std::vector<Edge>& rEdgeList()
-//                    {
-//                        return *mpEdgeList;
-//                    };
-            };
-            
-            class Edge
-            {
-                private:
-                    unsigned mSuccessor;
-                    ConditionEvaluation mpCondition;
-                    
-                public:
-                    Edge();
-                    Edge( unsigned, ConditionEvaluation );
-                    ~Edge();
-                    
-                    const unsigned successor() const
-                    {
-                        return mSuccessor;
-                    };
-                    
-                    const ConditionEvaluation conditionEvaluation() const
-                    {
-                        return *mpCondition;
-                    }
-                    
-                    
-            };
-            
-            // members
-            
             std::vector<Vertex> mStrategyGraph;
 
         public:
             // [Con|De]structors
 
             /**
-             * Standard strategy which is an empty strategy.
+             * Standard constructor.
              */
             StrategyGraph();
 
@@ -137,10 +134,11 @@ namespace smtrat
             
             // Methods
 
-            unsigned addSuccessor( unsigned, ModuleType, ConditionEvaluation = isCondition );
+            unsigned addModuleType( unsigned, ModuleType, ConditionEvaluation = isCondition );
             
-            void addEdge( unsigned, unsigned, ConditionEvaluation = isCondition );
-            
+            // Only used within StrategyGraph class itself. Leaving public for future use.
+            void addCondition( unsigned, unsigned, ConditionEvaluation = isCondition );
+
             std::vector< std::pair<unsigned, ModuleType> > nextModuleTypes( unsigned, Condition );
     };
 }    // namespace smtrat

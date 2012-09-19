@@ -44,21 +44,21 @@ namespace smtrat
         #endif
 
         unsigned position = 0;
-        position = rStrategyGraph().addSuccessor( position, MT_CNFerModule );
-        position = rStrategyGraph().addSuccessor( position, MT_PreProModule );
-        position = rStrategyGraph().addSuccessor( position, MT_SATModule );
+        position = rStrategyGraph().addModuleType( position, MT_CNFerModule );
+        position = rStrategyGraph().addModuleType( position, MT_PreProModule );
+        position = rStrategyGraph().addModuleType( position, MT_SATModule );
 //      position = rStrategyGraph().addSuccessor( position, MT_LRAOneModule );
 //	position = rStrategyGraph().addSuccessor( position, MT_FourierMotzkinSimplifier );
 //	position = rStrategyGraph().addSuccessor( position, MT_SmartSimplifier );
         #ifdef USE_GB
-        position = rStrategyGraph().addSuccessor( position, MT_GroebnerModule );
-        position = rStrategyGraph().addSuccessor( position, MT_VSModule );
+        position = rStrategyGraph().addModuleType( position, MT_GroebnerModule );
+        position = rStrategyGraph().addModuleType( position, MT_VSModule );
         #else
-        position = rStrategyGraph().addSuccessor( position, MT_VSModule );
+        position = rStrategyGraph().addModuleType( position, MT_VSModule );
         #endif
         #ifdef USE_CAD
 //      position = rStrategyGraph().addSuccessor( position, MT_CADModule );
-        position = rStrategyGraph().addSuccessor( position, MT_CADModule );
+        position = rStrategyGraph().addModuleType( position, MT_CADModule );
         #endif    
       
     }

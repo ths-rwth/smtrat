@@ -19,12 +19,12 @@
  *
  */
 
-
- /* @file StrategyGraph.cpp
+/**
+ * @file StrategyGraph.cpp
  *
- * @author Henrik Schmitz
- * @since 2012-09-10
- * @version 2012-09-10
+ * @author  Henrik Schmitz
+ * @since   2012-09-10
+ * @version 2012-09-19
  */
 
 #include "StrategyGraph.h"
@@ -32,15 +32,14 @@
 using namespace std;
 
 namespace smtrat{
-    ///////////////
-    // Functions //
-    ///////////////
+    unsigned StrategyGraph::Edge::mIdAllocator = 0;
     
     StrategyGraph::Edge::Edge(){}
     
-    StrategyGraph::Edge::Edge( unsigned to, ConditionEvaluation condition ):
-        mSuccessor( to ),
-        mpCondition( condition )
+    StrategyGraph::Edge::Edge( unsigned _to, ConditionEvaluation _condition ):
+        mId( mIdAllocator++ ),
+        mSuccessor( _to ),
+        mpConditionEvaluation( _condition )
     {}
     
     StrategyGraph::Edge::~Edge(){}
@@ -51,8 +50,8 @@ namespace smtrat{
         mpEdgeList( new vector<Edge>() )
     {}
 
-    StrategyGraph::Vertex::Vertex( ModuleType moduleType ):
-        mModuleType( moduleType ),
+    StrategyGraph::Vertex::Vertex( ModuleType _moduleType ):
+        mModuleType( _moduleType ),
         mpEdgeList( new vector<Edge>() )
     {}
     
@@ -67,10 +66,6 @@ namespace smtrat{
 
     StrategyGraph::~StrategyGraph(){}
 
-    ///////////////
-    // Functions //
-    ///////////////
-   
     /**
      * ...
      *
@@ -78,31 +73,16 @@ namespace smtrat{
      *
      * @return void
      */
-    unsigned StrategyGraph::addSuccessor( unsigned at, ModuleType moduleType, ConditionEvaluation condition )
+    bool StrategyGraph::Vertex::successorExists( unsigned _to ) const
     {
-        Vertex vertexInsert = Vertex( moduleType );
-        mStrategyGraph.push_back( vertexInsert );
-        
-        addEdge( at, mStrategyGraph.size()-1, condition );
-        
-        return mStrategyGraph.size()-1;
-    }
-    
-    bool StrategyGraph::Vertex::successorExists( unsigned to ) const
-    {
-        for(auto edge = mpEdgeList->begin(); edge!=mpEdgeList->end(); ++edge) {
-            if (edge->successor()==to)
+        for( auto edge = mpEdgeList->begin(); edge!=mpEdgeList->end(); ++edge )
+        {
+            if ( edge->successor()==_to )
                 return true;
         }
         return false;
     }
-    
-    void StrategyGraph::Vertex::addSuccessor( unsigned to, ConditionEvaluation condition )
-    {
-        assert(!successorExists(to));
-        mpEdgeList->push_back( Edge( to, condition ) );
-    }
-    
+
     /**
      * ...
      *
@@ -110,11 +90,12 @@ namespace smtrat{
      *
      * @return void
      */
-    void StrategyGraph::addEdge( unsigned from, unsigned to, ConditionEvaluation condition )
+    void StrategyGraph::Vertex::addSuccessor( unsigned _to, ConditionEvaluation _condition )
     {
-        mStrategyGraph[from].addSuccessor( to, condition );
+        assert( !successorExists( _to ) );
+        mpEdgeList->push_back( Edge( _to, _condition ) );
     }
-    
+
     /**
      * ...
      *
@@ -122,13 +103,43 @@ namespace smtrat{
      *
      * @return void
      */
-    vector< pair<unsigned, ModuleType> > StrategyGraph::nextModuleTypes( unsigned from, Condition condition )
+    unsigned StrategyGraph::addModuleType( unsigned _at, ModuleType _moduleType, ConditionEvaluation _condition )
+    {
+        Vertex successor = Vertex( _moduleType );
+        mStrategyGraph.push_back( successor );
+        
+        addCondition( _at, mStrategyGraph.size()-1, _condition );
+        
+        return mStrategyGraph.size()-1;
+    }
+
+    /**
+     * ...
+     *
+     * @param formula       The formula to be considered.
+     *
+     * @return void
+     */
+    void StrategyGraph::addCondition( unsigned _from, unsigned _to, ConditionEvaluation _condition )
+    {
+        mStrategyGraph[_from].addSuccessor( _to, _condition );
+    }
+
+    /**
+     * ...
+     *
+     * @param formula       The formula to be considered.
+     *
+     * @return void
+     */
+    vector< pair<unsigned, ModuleType> > StrategyGraph::nextModuleTypes( unsigned _from, Condition _condition )
     {
         vector< pair<unsigned, ModuleType> > result = vector< pair<unsigned, ModuleType> >();
         
-        const vector<Edge>& edges = mStrategyGraph[from].edgeList();
-        for(auto edge = edges.begin(); edge!=edges.end(); ++edge){
-            if (edge->conditionEvaluation()( condition ))
+        const vector<Edge>& edges = mStrategyGraph[_from].edgeList();
+        for( auto edge = edges.begin(); edge!=edges.end(); ++edge )
+        {
+            if ( edge->conditionEvaluation()( _condition ) )
             {
                 unsigned succ = edge->successor();
                 result.push_back( pair<unsigned, ModuleType>( succ, mStrategyGraph[succ].moduleType() ) );
