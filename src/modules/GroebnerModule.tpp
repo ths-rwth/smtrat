@@ -877,7 +877,8 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                 std::get < 0 > (it->second) = mModule->mpPassedFormula->end( );
                 if( Settings::addTheoryDeductions != NO_CONSTRAINTS )
                 {
-                    mModule->addDeduction( originals, &((*(it->first))->constraint( )) );
+                    //TODO add deduction with new syntax.
+                    //mModule->addDeduction( originals, &((*(it->first))->constraint( )) );
                 }
             }
             else // we have a conflict
