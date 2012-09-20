@@ -27,6 +27,7 @@ set(lib_core_src
     StrategyGraph.cpp
     Constraint.cpp
     ConstraintPool.cpp
+	RuntimeSettings.cpp
 )
 set(lib_core_headers
     Manager.h
@@ -39,6 +40,7 @@ set(lib_core_headers
     ModuleType.h
     Constraint.h
     ConstraintPool.h
+	RuntimeSettings.h
     smtrat.h
 )
 set(lib_modules_headers
