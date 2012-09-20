@@ -81,12 +81,13 @@ int main( int argc, char* argv[] )
             if( !infile.good() )
             {
                 std::cerr << "Could not open file: " << argv[ai] << std::endl;
-                return 0;
+                return EXIT_FAILURE;
             }
 
             bool result = driver.parse_stream( infile, argv[ai] );
             if( result )
             {
+                bool error = false;
                 smtrat::NRATSolver* nratSolver = new smtrat::NRATSolver( form );
                 switch( nratSolver->isConsistent() )
                 {
@@ -94,7 +95,8 @@ int main( int argc, char* argv[] )
                     {
                         if( driver.status == 0 )
                         {
-                            std::cout << "error" << std::endl;
+                            std::cout << "error, expected sat, but returned unsat" << std::endl;
+                            error = true;
                         }
                         else
                         {
@@ -106,7 +108,8 @@ int main( int argc, char* argv[] )
                     {
                         if( driver.status == 1 )
                         {
-                            std::cout << "error" << std::endl;
+                            std::cout << "error, expected unsat, but returned sat" << std::endl;
+                            error = true;
                         }
                         else
                         {
@@ -126,10 +129,15 @@ int main( int argc, char* argv[] )
                 }
                 delete nratSolver;
                 delete form;
+                
+                #ifdef GATHER_STATS
+                if(printStats) smtrat::CollectStatistics::print(std::cout);
+                #endif //GATHER_STATS
+
+                if(error) return EXIT_FAILURE;
+            } else {
+                std::cerr << "Parse error" << std::endl;
             }
-            #ifdef GATHER_STATS
-            if(printStats) smtrat::CollectStatistics::print(std::cout);
-            #endif //GATHER_STATS
         }
     }
     return (EXIT_SUCCESS);
