@@ -35,7 +35,7 @@
 #include <string>
 #include <vector>
 
-#include "Formula.h"
+#include <lib/Formula.h>
 
 %}
 

@@ -30,9 +30,9 @@
 #include <iostream>
 #include <fstream>
 #include "parser/Driver.h"
-#include "NRATSolver.h"
+#include "../lib/NRATSolver.h"
 #ifdef GATHER_STATS
-#include "utilities/stats/CollectStatistics.h"
+#include "../lib/utilities/stats/CollectStatistics.h"
 #endif //GATHER_STATS
 /**
  *

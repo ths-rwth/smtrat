@@ -127,7 +127,6 @@ set( DOLLAR "$" )
 # further directories to be included
 # # # # # # # # # # # # # # # # # # #
 add_subdirectory(src)
-add_subdirectory(src/gui EXCLUDE_FROM_ALL)
 
 # if doxygen is installed, create the make doc target
 include(FindDoxygen)
@@ -143,7 +142,7 @@ add_subdirectory(manual EXCLUDE_FROM_ALL)
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 configure_file( ${CMAKE_SOURCE_DIR}/smtrat.pc.in ${CMAKE_BINARY_DIR}/smtrat.pc )
-configure_file( ${CMAKE_SOURCE_DIR}/src/config.h.in ${CMAKE_SOURCE_DIR}/src/config.h )
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/config.h )
 
 # [un]install targets
 # # # # # # # # # # #
