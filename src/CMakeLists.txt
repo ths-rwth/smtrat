@@ -1,6 +1,7 @@
 add_subdirectory(lib)
-add_subdirectory(solver)
-
+if(BUILD_SOLVER)
+	add_subdirectory(solver)
+endif()
 # unit tests
 # # # # # # #
 
