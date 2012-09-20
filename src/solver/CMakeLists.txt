@@ -11,12 +11,14 @@
 # Version: 2012-07-30                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+#TODO: are all these directories really necessary?
 include_directories(${CMAKE_SOURCE_DIR}/src
 					 ${CMAKE_SOURCE_DIR}/src/solver
 					 ${CMAKE_SOURCE_DIR}/src/solver/parser
 					 ${CMAKE_BINARY_DIR}/src/solver
 					 ${CMAKE_BINARY_DIR}/src/solver/parser )
 
+#TODO: we only link against the library, which is copied to the binary root dir. We should somehow save that in a variable.
 link_directories( ${PROJECT_BINARY_DIR}/src/lib
                   ${PROJECT_BINARY_DIR} )
 
@@ -37,18 +39,11 @@ add_custom_command( OUTPUT ${CMAKE_BINARY_DIR}/src/solver/lex.smtrat.cc
 
 add_executable( smtratSolver
 	${CMAKE_SOURCE_DIR}/src/solver/parser/Driver.cc
-	${CMAKE_SOURCE_DIR}/src/lib/NRATSolver.cpp
 	${CMAKE_SOURCE_DIR}/src/solver/smtratSolver.cpp
 	${CMAKE_BINARY_DIR}/src/solver/Parser.tab.cc
 	${CMAKE_BINARY_DIR}/src/solver/lex.smtrat.cc
 )
-add_dependencies( smtratSolver
-	${CMAKE_BINARY_DIR}/src/solver/parser/lex.smtrat.cc
-	${CMAKE_SOURCE_DIR}/src/solver/parser/Driver.cc
-	${CMAKE_SOURCE_DIR}/src/lib/NRATSolver.cpp
-	${CMAKE_SOURCE_DIR}/src/solver/smtratSolver.cpp
-	${CMAKE_BINARY_DIR}/src/solver/parser/Parser.tab.cc
-)
+
 target_link_libraries( smtratSolver
 		       lib_${PROJECT_NAME}
 		       ${libraries} # libraries definied in top-level CMakeLists.txt
