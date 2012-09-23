@@ -12,7 +12,7 @@
 #include <ginac/ginac.h>
 #include <assert.h>
 
-namespace lraone
+namespace lra
 {
     class Value
     {

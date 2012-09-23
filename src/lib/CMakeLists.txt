@@ -50,8 +50,6 @@ set(lib_modules_headers
     modules/VSModule.h
     modules/SATModule.h
     modules/LRAModule.h
-    modules/LRAOneModule.h
-    modules/LRATwoModule.h
     modules/PreProModule.h
     modules/CNFerModule.h
     modules/SingleVSModule.h
@@ -62,8 +60,6 @@ set(lib_modules_src
     modules/VSModule.cpp
     modules/SATModule.cpp
     modules/LRAModule.cpp
-    modules/LRAOneModule.cpp
-    modules/LRATwoModule.cpp
     modules/PreProModule.cpp
     modules/CNFerModule.cpp
     modules/SingleVSModule.cpp
@@ -120,52 +116,16 @@ set(lib_SATModule_src
 	modules/SATModule/Options.cpp
 )
 set(lib_LRAModule_headers
-	modules/LRAModule/Delta.h
-	modules/LRAModule/LAArray.h
-	modules/LRAModule/LAColumn.h
-	modules/LRAModule/LARow.h
-	modules/LRAModule/LAVar.h
-	modules/LRAModule/LRASolverA.h
+	modules/LRAModule/Bound.h
+	modules/LRAModule/Tableau.h
+	modules/LRAModule/Value.h
+	modules/LRAModule/Variable.h
 )
 set(lib_LRAModule_src
-	modules/LRAModule/Delta.cpp
-	modules/LRAModule/LAArray.cpp
-	modules/LRAModule/LAColumn.cpp
-	modules/LRAModule/LARow.cpp
-	modules/LRAModule/LAVar.cpp
-	modules/LRAModule/LRASolverA.cpp
-)
-set(lib_LRAOneModule_headers
-	modules/LRAOneModule/Bound.h
-	modules/LRAOneModule/Tableau.h
-	modules/LRAOneModule/Value.h
-	modules/LRAOneModule/Variable.h
-)
-set(lib_LRAOneModule_src
-	modules/LRAOneModule/Bound.cpp
-	modules/LRAOneModule/Tableau.cpp
-	modules/LRAOneModule/Value.cpp
-	modules/LRAOneModule/Variable.cpp
-)
-set(lib_LRATwoModule_headers
-    modules/LRATwoModule/BetaMap.h
-    modules/LRATwoModule/Bound.h
-    modules/LRATwoModule/BoundMap.h
-    modules/LRATwoModule/EqualBound.h
-    modules/LRATwoModule/LowerBound.h
-    modules/LRATwoModule/Real.h
-    modules/LRATwoModule/SimplexTableaux.h
-    modules/LRATwoModule/UpperBound.h
-)
-set(lib_LRATwoModule_src
-    modules/LRATwoModule/BetaMap.cpp
-    modules/LRATwoModule/Bound.cpp
-    modules/LRATwoModule/BoundMap.cpp
-    modules/LRATwoModule/EqualBound.cpp
-    modules/LRATwoModule/LowerBound.cpp
-    modules/LRATwoModule/Real.cpp
-    modules/LRATwoModule/SimplexTableaux.cpp
-    modules/LRATwoModule/UpperBound.cpp
+	modules/LRAModule/Bound.cpp
+	modules/LRAModule/Tableau.cpp
+	modules/LRAModule/Value.cpp
+	modules/LRAModule/Variable.cpp
 )
 
 # Nullstellensatz module variables
@@ -276,6 +236,4 @@ install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/lib/mo
 install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/VSModule )
 install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SATModule )
 install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/LRAModule )
-install( FILES ${lib_LRAOneModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/LRAOneModule )
-install( FILES ${lib_LRATwoModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/LRATwoModule )
 install( FILES ${lib_SingleVSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SingleVSModule )

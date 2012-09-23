@@ -40,7 +40,7 @@ using namespace GiNaC;
 #define LRA_USE_THETA_STRATEGY
 #endif
 
-namespace lraone
+namespace lra
 {
     Tableau::Tableau():
         mHeight( 0 ),

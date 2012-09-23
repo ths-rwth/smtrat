@@ -523,16 +523,6 @@ namespace smtrat
                 mPropositions |= PROP_CANNOT_BE_SOLVED_BY_LRAMODULE;
                 break;
             }
-            case MT_LRAOneModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE;
-                break;
-            }
-            case MT_LRATwoModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE;
-                break;
-            }
             case MT_PreProModule:
             {
                 mPropositions |= PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE;

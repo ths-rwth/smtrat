@@ -54,10 +54,6 @@ namespace smtrat
         MT_SATModule,
         /// type of class LRAModule
         MT_LRAModule,
-        /// type of class LRAModule
-        MT_LRAOneModule,
-        /// type of class LRAModule
-        MT_LRATwoModule,
         /// type of class PreProModule
         MT_PreProModule,
         /// type of class CNFerModule

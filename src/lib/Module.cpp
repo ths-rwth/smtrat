@@ -694,14 +694,6 @@ namespace smtrat
             {
                 return "LRAModule";
             }
-            case MT_LRAOneModule:
-            {
-                return "LRAOneModule";
-            }
-            case MT_LRATwoModule:
-            {
-                return "LRATwoModule";
-            }
             case MT_PreProModule:
             {
                 return "PreProModule";

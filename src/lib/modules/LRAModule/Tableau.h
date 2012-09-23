@@ -39,7 +39,7 @@
 #define LRA_USE_PIVOTING_STRATEGY
 #define LRA_REFINEMENT
 
-namespace lraone
+namespace lra
 {
     typedef unsigned EntryID;
 

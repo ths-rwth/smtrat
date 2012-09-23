@@ -51,8 +51,6 @@
 
 #include "SATModule.h"
 #include "LRAModule.h"
-#include "LRAOneModule.h"
-#include "LRATwoModule.h"
 #include "PreProModule.h"
 #include "CNFerModule.h"
 #include "SingleVSModule.h"

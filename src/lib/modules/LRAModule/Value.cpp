@@ -13,7 +13,7 @@
 
 using namespace std;
 
-namespace lraone
+namespace lra
 {
     Value::Value():
         mMainPart( 0 ),

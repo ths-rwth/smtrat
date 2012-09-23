@@ -9,7 +9,7 @@
 
 using namespace std;
 
-namespace lraone
+namespace lra
 {
     Bound::Bound():
         mLimit( NULL ),

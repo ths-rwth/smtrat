@@ -12,7 +12,7 @@
 #include "../../Formula.h"
 #include <stddef.h>
 
-namespace lraone
+namespace lra
 {
     class Variable;
 

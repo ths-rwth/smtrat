@@ -81,8 +81,7 @@ namespace smtrat
         addModuleType( MT_SATModule, new StandardModuleFactory<SATModule>() );
         addModuleType( MT_PreProModule, new StandardModuleFactory<PreProModule>() );
         addModuleType( MT_CNFerModule, new StandardModuleFactory<CNFerModule>() );
-        addModuleType( MT_LRAOneModule, new StandardModuleFactory<LRAOneModule>() );
-        addModuleType( MT_LRATwoModule, new StandardModuleFactory<LRATwoModule>() );
+        addModuleType( MT_LRAModule, new StandardModuleFactory<LRAModule>() );
         addModuleType( MT_SingleVSModule, new StandardModuleFactory<SingleVSModule>() );
         addModuleType( MT_FourierMotzkinSimplifier, new StandardModuleFactory<FourierMotzkinSimplifier>() );
     }

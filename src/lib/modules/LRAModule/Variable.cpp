@@ -35,7 +35,7 @@
 using namespace std;
 using namespace GiNaC;
 
-namespace lraone
+namespace lra
 {
     Variable::Variable():
         mBasic( true ),

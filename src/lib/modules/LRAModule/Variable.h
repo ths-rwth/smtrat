@@ -35,7 +35,7 @@
 #include <vector>
 #include <map>
 
-namespace lraone
+namespace lra
 {
     struct boundComp
     {
