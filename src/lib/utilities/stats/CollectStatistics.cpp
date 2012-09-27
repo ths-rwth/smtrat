@@ -39,11 +39,29 @@ CollectStatistics::CollectStatistics( )
    
 }
 
+void CollectStatistics::registerStats(Statistics* _stats) {
+    stats.push_back(_stats);
+}
+
+
 void CollectStatistics::print(std::ostream& os) {
 #ifdef USE_GB
     GroebnerModuleStats::printAll();
 #endif
 }
+
+void CollectStatistics::exportXML() {
+    std::stringstream stream;
+    for(auto it = stats.begin(); it != stats.end(); ++it) {
+        std::cout << "Generate xml: " << *it << std::endl;
+        (*it)->collect();
+        (*it)->generateXML(stream);
+    }
+}
+
+
+std::vector<Statistics*> CollectStatistics::stats = std::vector<Statistics*>();
+
 
 }
 
