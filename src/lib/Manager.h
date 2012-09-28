@@ -106,6 +106,11 @@ namespace smtrat
                 return mBackendsOfModules[_module];
             }
 
+            const Formula& formula() const
+            {
+                return *mpPassedFormula;
+            }
+
             unsigned uniqueModuleNumber( const Module* const _module )
             {
                 unsigned                             result     = 0;

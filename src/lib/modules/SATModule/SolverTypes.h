@@ -133,9 +133,9 @@ class Clause {
 
     // NOTE: This constructor cannot be used directly (doesn't allocate enough memory).
     template<class V>
-    Clause(const V& ps, bool use_extra, bool learnt) {
+    Clause(const V& ps, bool use_extra, bool learnt, bool theoryDeduction) {
         header.mark      = 0;
-        header.learnt    = learnt;
+        header.learnt    = (theoryDeduction ? 2 : learnt);
         header.has_extra = use_extra;
         header.reloced   = 0;
         header.size      = ps.size();
@@ -173,6 +173,7 @@ public:
     void         shrink      (int i)         { assert(i <= size()); if (header.has_extra) data[header.size-i] = data[header.size]; header.size -= i; }
     void         pop         ()              { shrink(1); }
     bool         learnt      ()      const   { return header.learnt; }
+    bool         theoryDeduction()   const   { return header.learnt > 1; }
     bool         has_extra   ()      const   { return header.has_extra; }
     uint32_t     mark        ()      const   { return header.mark; }
     void         mark        (uint32_t m)    { header.mark = m; }
@@ -216,14 +217,14 @@ class ClauseAllocator : public RegionAllocator<uint32_t>
         RegionAllocator<uint32_t>::moveTo(to); }
 
     template<class Lits>
-    CRef alloc(const Lits& ps, bool learnt = false)
+    CRef alloc(const Lits& ps, bool learnt = false, bool theoryDeduction = false )
     {
         assert(sizeof(Lit)      == sizeof(uint32_t));
         assert(sizeof(float)    == sizeof(uint32_t));
         bool use_extra = learnt | extra_clause_field;
 
         CRef cid = RegionAllocator<uint32_t>::alloc(clauseWord32Size(ps.size(), use_extra));
-        new (lea(cid)) Clause(ps, use_extra, learnt);
+        new (lea(cid)) Clause(ps, use_extra, learnt, theoryDeduction);
 
         return cid;
     }

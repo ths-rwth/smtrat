@@ -35,6 +35,7 @@
 using namespace std;
 using namespace GiNaC;
 
+//#define LRA_PRINT_STATS
 //#define LRA_USE_OCCURENCE_STRATEGY
 #ifndef LRA_USE_OCCURENCE_STRATEGY
 #define LRA_USE_THETA_STRATEGY
@@ -53,7 +54,8 @@ namespace lra
         #endif
         mUnusedIDs(),
         mRows(),
-        mColumns()
+        mColumns(),
+        mActiveRows()
         #ifdef LRA_REFINEMENT
         ,
         mLearnedBounds()
@@ -66,6 +68,11 @@ namespace lra
 
     Tableau::~Tableau()
     {
+        #ifdef LRA_PRINT_STATS
+        cout << "#Pivoting steps:  " << mPivotingSteps << endl;
+        cout << "#Tableus entries: " << mpEntries->size()-1 << endl;
+        cout << "Tableau coverage: " << (double)(mpEntries->size()-1)/(double)(mRows.size()*mColumns.size())*100 << "%" << endl;
+        #endif
         while( !mRows.empty() )
         {
             Variable* varToDel = mRows.back().mName;
@@ -117,32 +124,39 @@ namespace lra
      */
     void Tableau::removeEntry( EntryID _entryID )
     {
-        if( (*mpEntries)[_entryID].up() != 0 )
+        TableauEntry& entry = (*mpEntries)[_entryID];
+        TableauHead& rowHead = mRows[entry.rowNumber()];
+        TableauHead& columnHead = mColumns[entry.columnNumber()];
+        const EntryID& up = entry.up();
+        const EntryID& down = entry.down();
+        if( up != 0 )
         {
-            (*mpEntries)[(*mpEntries)[_entryID].up()].setDown( (*mpEntries)[_entryID].down() );
+            (*mpEntries)[up].setDown( down );
         }
-        if( (*mpEntries)[_entryID].down() != 0 )
+        if( down != 0 )
         {
-            (*mpEntries)[(*mpEntries)[_entryID].down()].setUp( (*mpEntries)[_entryID].up() );
-        }
-        else
-        {
-            mColumns[(*mpEntries)[_entryID].columnNumber()].mStartEntry = (*mpEntries)[_entryID].up();
-        }
-        if( (*mpEntries)[_entryID].left() != 0 )
-        {
-            (*mpEntries)[(*mpEntries)[_entryID].left()].setRight( (*mpEntries)[_entryID].right() );
+            (*mpEntries)[down].setUp( up );
         }
         else
         {
-            mRows[(*mpEntries)[_entryID].rowNumber()].mStartEntry = (*mpEntries)[_entryID].right();
+            columnHead.mStartEntry = up;
         }
-        if( (*mpEntries)[_entryID].right() != 0 )
+        const EntryID& left = entry.left();
+        const EntryID& right = entry.right();
+        if( left != 0 )
         {
-            (*mpEntries)[(*mpEntries)[_entryID].right()].setLeft( (*mpEntries)[_entryID].left() );
+            (*mpEntries)[left].setRight( right );
         }
-        --mRows[(*mpEntries)[_entryID].rowNumber()].mSize;
-        --mColumns[(*mpEntries)[_entryID].columnNumber()].mSize;
+        else
+        {
+            rowHead.mStartEntry = right;
+        }
+        if( right != 0 )
+        {
+            (*mpEntries)[right].setLeft( left );
+        }
+        --rowHead.mSize;
+        --columnHead.mSize;
         mUnusedIDs.push( _entryID );
     }
 
@@ -178,64 +192,68 @@ namespace lra
         vector< numeric >::iterator coeff = _coefficients.begin();
         while( basicVar != _nonbasicVariables.end() )
         {
-            EntryID entry = newTableauEntry();
+            EntryID entryID = newTableauEntry();
+            TableauEntry& entry = (*mpEntries)[entryID];
             // Fix the position.
-            (*mpEntries)[entry].setColumnNumber( (*basicVar)->position() );
-            (*mpEntries)[entry].setRowNumber( mHeight-1 );
+            entry.setColumnNumber( (*basicVar)->position() );
+            entry.setRowNumber( mHeight-1 );
             // Set the content.
-            (*mpEntries)[entry].rContent() = *coeff;
+            entry.rContent() = *coeff;
+            TableauHead& columnHead = mColumns[entry.columnNumber()];
+            EntryID& columnStart = columnHead.mStartEntry;
             // Set it as column end.
-            if( mColumns[(*mpEntries)[entry].columnNumber()].mStartEntry != 0 )
+            if( columnStart != 0 )
             {
-                (*mpEntries)[mColumns[(*mpEntries)[entry].columnNumber()].mStartEntry].setDown( entry );
+                (*mpEntries)[columnStart].setDown( entryID );
             }
-            (*mpEntries)[entry].setUp( mColumns[(*mpEntries)[entry].columnNumber()].mStartEntry );
-            mColumns[(*mpEntries)[entry].columnNumber()].mStartEntry = entry;
-            ++mColumns[(*mpEntries)[entry].columnNumber()].mSize;
-            (*mpEntries)[entry].setDown( 0 );
+            entry.setUp( columnStart );
+            columnStart = entryID;
+            ++columnHead.mSize;
+            entry.setDown( 0 );
             // Put it in the row.
             if( currentStartEntryOfRow == 0 )
             {
-                currentStartEntryOfRow = entry;
+                currentStartEntryOfRow = entryID;
             }
             else
             {
                 Iterator rowIter = Iterator( currentStartEntryOfRow, mpEntries );
-                while( !rowIter.rowEnd() && (*rowIter).columnNumber() < (*mpEntries)[entry].columnNumber() )
+                while( !rowIter.rowEnd() && (*rowIter).columnNumber() < entry.columnNumber() )
                 {
                     rowIter.right();
                 }
-                assert( (*rowIter).columnNumber() !=  (*mpEntries)[entry].columnNumber() );
-                if( (*rowIter).columnNumber() > (*mpEntries)[entry].columnNumber() )
+                assert( (*rowIter).columnNumber() !=  entry.columnNumber() );
+                if( (*rowIter).columnNumber() > entry.columnNumber() )
                 {
                     // Entry horizontally between two entries.
                     EntryID leftEntryID = (*rowIter).left();
                     if( leftEntryID != 0 )
                     {
-                        (*mpEntries)[leftEntryID].setRight( entry );
+                        (*mpEntries)[leftEntryID].setRight( entryID );
                     }
-                    (*rowIter).setLeft( entry );
-                    (*mpEntries)[entry].setLeft( leftEntryID );
-                    (*mpEntries)[entry].setRight( rowIter.entryID() );
+                    (*rowIter).setLeft( entryID );
+                    entry.setLeft( leftEntryID );
+                    entry.setRight( rowIter.entryID() );
                     if( leftEntryID == 0 )
                     {
-                        currentStartEntryOfRow = entry;
+                        currentStartEntryOfRow = entryID;
                     }
                 }
                 else
                 {
                     // Entry will be the rightmost in this row.
-                    (*rowIter).setRight( entry );
-                    (*mpEntries)[entry].setLeft( rowIter.entryID() );
-                    (*mpEntries)[entry].setRight( 0 );
+                    (*rowIter).setRight( entryID );
+                    entry.setLeft( rowIter.entryID() );
+                    entry.setRight( 0 );
                 }
             }
             ++basicVar;
             ++coeff;
         }
-        mRows[mHeight-1].mStartEntry = currentStartEntryOfRow;
-        mRows[mHeight-1].mSize = _nonbasicVariables.size();
-        mRows[mHeight-1].mName = var;
+        TableauHead& rowHead = mRows[mHeight-1];
+        rowHead.mStartEntry = currentStartEntryOfRow;
+        rowHead.mSize = _nonbasicVariables.size();
+        rowHead.mName = var;
         return var;
     }
 
@@ -287,11 +305,11 @@ namespace lra
             #endif
             EntryID beginOfBestRow = 0;
             EntryID beginOfFirstConflictRow = 0;
-            for( unsigned rowNumber = 0; rowNumber < mRows.size(); ++rowNumber )
+            *mpTheta = Value( 0 );
+            for( auto rowNumber = mActiveRows.begin(); rowNumber != mActiveRows.end(); ++rowNumber )
             {
-                *mpTheta = Value( 0 );
                 Value theta = Value();
-                pair<EntryID,bool> result = isSuitable( rowNumber, theta );
+                pair<EntryID,bool> result = isSuitable( *rowNumber, theta );
                 if( !result.second )
                 {
                     // Found a conflicting row.
@@ -304,7 +322,7 @@ namespace lra
                 else if( result.first != 0 )
                 {
                     #ifdef LRA_USE_THETA_STRATEGY
-                    if( abs( theta.getmainP() ) > abs( mpTheta->getmainP() ) )
+                    if( beginOfBestRow == 0 || abs( theta.getmainP() ) > abs( mpTheta->getmainP() ) )
                     {
                         beginOfBestRow = result.first;
                         *mpTheta = theta;
@@ -356,9 +374,9 @@ namespace lra
 //                cout << "Next restart range = [" << mNextRestartBegin << "," << mNextRestartEnd << "]" << endl;
 //            }
         #endif
-            for( unsigned rowNumber = 0; rowNumber < mRows.size(); ++rowNumber )
+            for( auto rowNumber = mActiveRows.begin(); rowNumber != mActiveRows.end(); ++rowNumber )
             {
-                pair<EntryID,bool> result = isSuitable( rowNumber, *mpTheta );
+                pair<EntryID,bool> result = isSuitable( *rowNumber, *mpTheta );
                 if( !result.second )
                 {
                     // Found a conflicting row.
@@ -385,35 +403,42 @@ namespace lra
     pair<EntryID,bool> Tableau::isSuitable( unsigned _rowNumber, Value& _theta ) const
     {
         EntryID bestEntry = 0;
+        const TableauHead& _rowHead = mRows[_rowNumber];
+        const Variable& basicVar = *_rowHead.mName;
+        const Bound& basicVarSupremum = basicVar.supremum();
+        const Value& basicVarAssignment = basicVar.assignment();
+        const Bound& basicVarInfimum = basicVar.infimum();
+        const EntryID& rowStartEntry = _rowHead.mStartEntry;
         // Upper bound is violated
-        if( mRows[_rowNumber].mName->supremum() < mRows[_rowNumber].mName->assignment() )
+        if( basicVarSupremum < basicVarAssignment )
         {
-            // Check all entries in the row / basic variables
-            Iterator rowIter = Iterator( mRows[_rowNumber].mStartEntry, mpEntries );
+            // Check all entries in the row / nonbasic variables
+            Iterator rowIter = Iterator( rowStartEntry, mpEntries );
             while( true )
             {
+                const Variable& nonBasicVar = *mColumns[(*rowIter).columnNumber()].mName;
                 if( (*rowIter).content().info( info_flags::negative ) )
                 {
-                    if( mColumns[(*rowIter).columnNumber()].mName->supremum() > mColumns[(*rowIter).columnNumber()].mName->assignment() )
+                    if( nonBasicVar.supremum() > nonBasicVar.assignment() )
                     {
-                        // Basic variable suitable
+                        // Nonbasic variable suitable
                         assert( (*rowIter).content() != 0 );
                         if( betterEntry( rowIter.entryID(), bestEntry ) )
                         {
-                            _theta = (mRows[_rowNumber].mName->supremum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
+                            _theta = (basicVarSupremum.limit() - basicVarAssignment)/(*rowIter).content();
                             bestEntry = rowIter.entryID();
                         }
                     }
                 }
                 else
                 {
-                    if( mColumns[(*rowIter).columnNumber()].mName->infimum() < mColumns[(*rowIter).columnNumber()].mName->assignment()  )
+                    if( nonBasicVar.infimum() < nonBasicVar.assignment()  )
                     {
-                        // Basic variable suitable
+                        // Nonbasic variable suitable
                         assert( (*rowIter).content() != 0 );
                         if( betterEntry( rowIter.entryID(), bestEntry ) )
                         {
-                            _theta = (mRows[_rowNumber].mName->supremum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
+                            _theta = (basicVarSupremum.limit() - basicVarAssignment)/(*rowIter).content();
                             bestEntry = rowIter.entryID();
                         }
                     }
@@ -422,8 +447,8 @@ namespace lra
                 {
                     if( bestEntry == 0 )
                     {
-                        _theta = mRows[_rowNumber].mName->assignment() - mRows[_rowNumber].mName->supremum().limit();
-                        return pair<EntryID,bool>( mRows[_rowNumber].mStartEntry, false );
+                        _theta = basicVarAssignment - basicVarSupremum.limit();
+                        return pair<EntryID,bool>( rowStartEntry, false );
                     }
                     break;
                 }
@@ -434,34 +459,35 @@ namespace lra
             }
         }
         // Lower bound is violated
-        else if( mRows[_rowNumber].mName->infimum() > mRows[_rowNumber].mName->assignment() )
+        else if( basicVarInfimum > basicVarAssignment )
         {
-            // Check all entries in the row / basic variables
-            Iterator rowIter = Iterator( mRows[_rowNumber].mStartEntry, mpEntries );
+            // Check all entries in the row / nonbasic variables
+            Iterator rowIter = Iterator( rowStartEntry, mpEntries );
             while( true )
             {
+                const Variable& nonBasicVar = *mColumns[(*rowIter).columnNumber()].mName;
                 if( (*rowIter).content().info( info_flags::positive ) )
                 {
-                    if( mColumns[(*rowIter).columnNumber()].mName->supremum() > mColumns[(*rowIter).columnNumber()].mName->assignment() )
+                    if( nonBasicVar.supremum() > nonBasicVar.assignment() )
                     {
-                        // Basic variable suitable
+                        // Nonbasic variable suitable
                         assert( (*rowIter).content() != 0 );
                         if( betterEntry( rowIter.entryID(), bestEntry ) )
                         {
-                            _theta = (mRows[_rowNumber].mName->infimum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
+                            _theta = (basicVarInfimum.limit() - basicVarAssignment)/(*rowIter).content();
                             bestEntry = rowIter.entryID();
                         }
                     }
                 }
                 else
                 {
-                    if( mColumns[(*rowIter).columnNumber()].mName->infimum() < mColumns[(*rowIter).columnNumber()].mName->assignment() )
+                    if( nonBasicVar.infimum() < nonBasicVar.assignment() )
                     {
-                        // Basic variable suitable
+                        // Nonbasic variable suitable
                         assert( (*rowIter).content() != 0 );
                         if( betterEntry( rowIter.entryID(), bestEntry ) )
                         {
-                            _theta = (mRows[_rowNumber].mName->infimum().limit() - mRows[_rowNumber].mName->assignment())/(*rowIter).content();
+                            _theta = (basicVarInfimum.limit() - basicVarAssignment)/(*rowIter).content();
                             bestEntry = rowIter.entryID();
                         }
                     }
@@ -470,8 +496,8 @@ namespace lra
                 {
                     if( bestEntry == 0 )
                     {
-                        _theta = mRows[_rowNumber].mName->infimum().limit() - mRows[_rowNumber].mName->assignment();
-                        return pair<EntryID,bool>( mRows[_rowNumber].mStartEntry, false );
+                        _theta = basicVarInfimum.limit() - basicVarAssignment;
+                        return pair<EntryID,bool>( rowStartEntry, false );
                     }
                     break;
                 }
@@ -685,7 +711,7 @@ namespace lra
             while( true )
             {
                 Variable& basic = *mRows[(*columnIter).rowNumber()].mName;
-                basic.rAssignment() = basic.assignment() + (_change * (*columnIter).content());
+                basic.rAssignment() += (_change * (*columnIter).content());
                 if( columnIter.columnBegin() )
                 {
                     break;
@@ -708,11 +734,13 @@ namespace lra
         // Find all columns having "a nonzero entry in the pivoting row"**, update this entry and store it.
         // First the column with ** left to the pivoting column until the leftmost column with **.
         vector<Iterator> pivotingRowLeftSide = vector<Iterator>();
+        TableauEntry& pivotEntry = (*mpEntries)[_pivotingElement];
+        numeric& pivotContent = pivotEntry.rContent();
         Iterator iterTemp = Iterator( _pivotingElement, mpEntries );
         while( !iterTemp.rowBegin() )
         {
             iterTemp.left();
-            (*iterTemp).rContent() = -(*iterTemp).content()/(*mpEntries)[_pivotingElement].content();
+            (*iterTemp).rContent() /= -pivotContent;
             pivotingRowLeftSide.push_back( iterTemp );
         }
         // Then the column with ** right to the pivoting column until the rightmost column with **.
@@ -721,41 +749,52 @@ namespace lra
         while( !iterTemp.rowEnd() )
         {
             iterTemp.right();
-            (*iterTemp).rContent() = -(*iterTemp).content()/(*mpEntries)[_pivotingElement].content();
+            (*iterTemp).rContent() /= -pivotContent;
             pivotingRowRightSide.push_back( iterTemp );
         }
-        Variable* nameTmp = mRows[(*mpEntries)[_pivotingElement].rowNumber()].mName;
+
+        TableauHead& rowHead = mRows[pivotEntry.rowNumber()];
+        TableauHead& columnHead = mColumns[pivotEntry.columnNumber()];
+        Variable* nameTmp = rowHead.mName;
         // Update the assignments of the pivoting variables
-        nameTmp->rAssignment() = nameTmp->assignment() + (*mpTheta) * (*mpEntries)[_pivotingElement].content();
-        mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mName->rAssignment() = mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mName->assignment() + (*mpTheta);
+        nameTmp->rAssignment() += (*mpTheta) * pivotContent;
+        columnHead.mName->rAssignment() += (*mpTheta);
         // Swap the row and the column head.
-        mRows[(*mpEntries)[_pivotingElement].rowNumber()].mName = mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mName;
-        mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mName = nameTmp;
-        unsigned activityTmp = mRows[(*mpEntries)[_pivotingElement].rowNumber()].mActivity;
-        mRows[(*mpEntries)[_pivotingElement].rowNumber()].mActivity = mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mActivity;
-        mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mActivity = activityTmp;
+        rowHead.mName = columnHead.mName;
+        columnHead.mName = nameTmp;
+        unsigned activityTmp = rowHead.mActivity;
+        rowHead.mActivity = columnHead.mActivity;
+        if( activityTmp == 0 && rowHead.mActivity > 0 )
+        {
+            mActiveRows.insert( pivotEntry.rowNumber() );
+        }
+        else if( activityTmp > 0 && rowHead.mActivity == 0 )
+        {
+            mActiveRows.erase( pivotEntry.rowNumber() );
+        }
+        columnHead.mActivity = activityTmp;
         // Adapt both variables.
-        Variable& basicVar = *mRows[(*mpEntries)[_pivotingElement].rowNumber()].mName;
-        basicVar.rPosition() = (*mpEntries)[_pivotingElement].rowNumber();
+        Variable& basicVar = *rowHead.mName;
+        basicVar.rPosition() = pivotEntry.rowNumber();
         basicVar.setBasic( true );
-        Variable& nonbasicVar = *mColumns[(*mpEntries)[_pivotingElement].columnNumber()].mName;
-        nonbasicVar.rPosition() = (*mpEntries)[_pivotingElement].columnNumber();
+        Variable& nonbasicVar = *columnHead.mName;
+        nonbasicVar.rPosition() = pivotEntry.columnNumber();
         nonbasicVar.setBasic( false );
         // Update the content of the pivoting entry
-        (*mpEntries)[_pivotingElement].rContent() = 1/(*mpEntries)[_pivotingElement].content();
+        pivotContent = 1/pivotContent;
         #ifdef LRA_REFINEMENT
-        upperRefinement( mRows[(*mpEntries)[_pivotingElement].rowNumber()] );
-        lowerRefinement( mRows[(*mpEntries)[_pivotingElement].rowNumber()] );
+        upperRefinement( rowHead );
+        lowerRefinement( rowHead );
         #endif
         // Let (p_r,p_c,p_e) be the pivoting entry, where p_r is the row number, p_c the column number and p_e the content.
         // For all rows R having a nonzero entry in the pivoting column:
         //    For all columns C having a nonzero entry (r_r,r_c,r_e) in the pivoting row:
         //        Update the entry (t_r,t_c,t_e) of the intersection of R and C to (t_r,t_c,t_e+r_e).
-        if( (*mpEntries)[_pivotingElement].up() == 0 )
+        if( pivotEntry.up() == 0 )
         {
             updateDownwards( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
         }
-        else if( (*mpEntries)[_pivotingElement].down() == 0 )
+        else if( pivotEntry.down() == 0 )
         {
             updateUpwards( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
         }
@@ -789,8 +828,8 @@ namespace lra
                 break;
             }
             // Update the assignment of the basic variable corresponding to this row
-            mRows[(*pivotingColumnIter).rowNumber()].mName->rAssignment() = mRows[(*pivotingColumnIter).rowNumber()].mName->assignment()
-                                                                            + (*mpTheta) * (*pivotingColumnIter).content();
+            numeric& currentContent = (*pivotingColumnIter).rContent();
+            mRows[(*pivotingColumnIter).rowNumber()].mName->rAssignment() += (*mpTheta) * currentContent;
             // Update the row
             Iterator currentRowIter = pivotingColumnIter;
             auto pivotingRowIter = _pivotingRowLeftSide.begin();
@@ -809,8 +848,9 @@ namespace lra
                 if( (*currentColumnIter) == currentRowIter )
                 {
                     // Entry already exists, so update it only and maybe remove it.
-                    (*currentRowIter).rContent() = (*currentRowIter).content() + (*pivotingColumnIter).content()*(**pivotingRowIter).content();
-                    if( (*currentRowIter).content() == 0 )
+                    numeric& currentRowContent = (*currentRowIter).rContent();
+                    currentRowContent += currentContent * (**pivotingRowIter).content();
+                    if( currentRowContent == 0 )
                     {
                         EntryID toRemove = currentRowIter.entryID();
                         (*currentColumnIter).up();
@@ -821,9 +861,10 @@ namespace lra
                 else
                 {
                     EntryID entryID = newTableauEntry();
+                    TableauEntry& entry = (*mpEntries)[entryID];
                     // Set the position.
-                    (*mpEntries)[entryID].setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
-                    (*mpEntries)[entryID].setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
+                    entry.setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
+                    entry.setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
                     if( (**currentColumnIter).rowNumber() > (*pivotingColumnIter).rowNumber() )
                     {
                         // Entry vertically between two entries.
@@ -833,16 +874,16 @@ namespace lra
                             (*mpEntries)[upperEntryID].setDown( entryID );
                         }
                         (**currentColumnIter).setUp( entryID );
-                        (*mpEntries)[entryID].setUp( upperEntryID );
-                        (*mpEntries)[entryID].setDown( (*currentColumnIter).entryID() );
+                        entry.setUp( upperEntryID );
+                        entry.setDown( (*currentColumnIter).entryID() );
                     }
                     else
                     {
                         // Entry will be the lowest in this column.
                         (**currentColumnIter).setDown( entryID );
-                        (*mpEntries)[entryID].setUp( (*currentColumnIter).entryID() );
-                        (*mpEntries)[entryID].setDown( 0 );
-                        mColumns[(*mpEntries)[entryID].columnNumber()].mStartEntry = entryID;
+                        entry.setUp( (*currentColumnIter).entryID() );
+                        entry.setDown( 0 );
+                        mColumns[entry.columnNumber()].mStartEntry = entryID;
                     }
                     if( (*currentRowIter).columnNumber() < (**currentColumnIter).columnNumber() )
                     {
@@ -853,21 +894,21 @@ namespace lra
                             (*mpEntries)[rightEntryID].setLeft( entryID );
                         }
                         (*currentRowIter).setRight( entryID );
-                        (*mpEntries)[entryID].setRight( rightEntryID );
-                        (*mpEntries)[entryID].setLeft( currentRowIter.entryID() );
+                        entry.setRight( rightEntryID );
+                        entry.setLeft( currentRowIter.entryID() );
                     }
                     else
                     {
                         // Entry will be the leftmost in this row.
                         (*currentRowIter).setLeft( entryID );
-                        (*mpEntries)[entryID].setRight( currentRowIter.entryID() );
-                        (*mpEntries)[entryID].setLeft( 0 );
-                        mRows[(*mpEntries)[entryID].rowNumber()].mStartEntry = entryID;
+                        entry.setRight( currentRowIter.entryID() );
+                        entry.setLeft( 0 );
+                        mRows[entry.rowNumber()].mStartEntry = entryID;
                     }
                     // Set the content of the entry.
-                    ++mRows[(*mpEntries)[entryID].rowNumber()].mSize;
-                    ++mColumns[(*mpEntries)[entryID].columnNumber()].mSize;
-                    (*mpEntries)[entryID].rContent() = (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                    ++mRows[entry.rowNumber()].mSize;
+                    ++mColumns[entry.columnNumber()].mSize;
+                    entry.rContent() = currentContent * (**pivotingRowIter).content();
                 }
                 ++pivotingRowIter;
             }
@@ -888,8 +929,9 @@ namespace lra
                 if( (*currentColumnIter) == currentRowIter )
                 {
                     // Entry already exists, so update it only and maybe remove it.
-                    (*currentRowIter).rContent() = (*currentRowIter).content() + (*pivotingColumnIter).content()*(**pivotingRowIter).content();
-                    if( (*currentRowIter).content() == 0 )
+                    numeric& currentRowContent = (*currentRowIter).rContent();
+                    currentRowContent += currentContent * (**pivotingRowIter).content();
+                    if( currentRowContent == 0 )
                     {
                         EntryID toRemove = currentRowIter.entryID();
                         (*currentColumnIter).up();
@@ -900,9 +942,10 @@ namespace lra
                 else
                 {
                     EntryID entryID = newTableauEntry();
+                    TableauEntry& entry = (*mpEntries)[entryID];
                     // Set the position.
-                    (*mpEntries)[entryID].setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
-                    (*mpEntries)[entryID].setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
+                    entry.setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
+                    entry.setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
                     if( (**currentColumnIter).rowNumber() > (*pivotingColumnIter).rowNumber() )
                     {
                         // Entry vertically between two entries.
@@ -912,16 +955,16 @@ namespace lra
                             (*mpEntries)[upperEntryID].setDown( entryID );
                         }
                         (**currentColumnIter).setUp( entryID );
-                        (*mpEntries)[entryID].setUp( upperEntryID );
-                        (*mpEntries)[entryID].setDown( (*currentColumnIter).entryID() );
+                        entry.setUp( upperEntryID );
+                        entry.setDown( (*currentColumnIter).entryID() );
                     }
                     else
                     {
                         // Entry will be the lowest in this column.
                         (**currentColumnIter).setDown( entryID );
-                        (*mpEntries)[entryID].setUp( (*currentColumnIter).entryID() );
-                        (*mpEntries)[entryID].setDown( 0 );
-                        mColumns[(*mpEntries)[entryID].columnNumber()].mStartEntry = entryID;
+                        entry.setUp( (*currentColumnIter).entryID() );
+                        entry.setDown( 0 );
+                        mColumns[entry.columnNumber()].mStartEntry = entryID;
                     }
                     if( (*currentRowIter).columnNumber() > (**currentColumnIter).columnNumber() )
                     {
@@ -932,24 +975,24 @@ namespace lra
                             (*mpEntries)[leftEntryID].setRight( entryID );
                         }
                         (*currentRowIter).setLeft( entryID );
-                        (*mpEntries)[entryID].setLeft( leftEntryID );
-                        (*mpEntries)[entryID].setRight( currentRowIter.entryID() );
+                        entry.setLeft( leftEntryID );
+                        entry.setRight( currentRowIter.entryID() );
                     }
                     else
                     {
                         // Entry will be the rightmost in this row.
                         (*currentRowIter).setRight( entryID );
-                        (*mpEntries)[entryID].setLeft( currentRowIter.entryID() );
-                        (*mpEntries)[entryID].setRight( 0 );
+                        entry.setLeft( currentRowIter.entryID() );
+                        entry.setRight( 0 );
                     }
                     // Set the content of the entry.
-                    ++mRows[(*mpEntries)[entryID].rowNumber()].mSize;
-                    ++mColumns[(*mpEntries)[entryID].columnNumber()].mSize;
-                    (*mpEntries)[entryID].rContent() = (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                    ++mRows[entry.rowNumber()].mSize;
+                    ++mColumns[entry.columnNumber()].mSize;
+                    entry.rContent() = currentContent * (**pivotingRowIter).content();
                 }
                 ++pivotingRowIter;
             }
-            (*pivotingColumnIter).rContent() = (*pivotingColumnIter).content() * (*mpEntries)[_pivotingElement].content();
+            currentContent *= (*mpEntries)[_pivotingElement].content();
             #ifdef LRA_REFINEMENT
             upperRefinement( mRows[(*pivotingColumnIter).rowNumber()] );
             lowerRefinement( mRows[(*pivotingColumnIter).rowNumber()] );
@@ -979,8 +1022,8 @@ namespace lra
                 break;
             }
             // Update the assignment of the basic variable corresponding to this row
-            mRows[(*pivotingColumnIter).rowNumber()].mName->rAssignment() = mRows[(*pivotingColumnIter).rowNumber()].mName->assignment()
-                                                                            + (*mpTheta) * (*pivotingColumnIter).content();
+            numeric& currentContent = (*pivotingColumnIter).rContent();
+            mRows[(*pivotingColumnIter).rowNumber()].mName->rAssignment() += (*mpTheta) * currentContent;
             // Update the row
             Iterator currentRowIter = pivotingColumnIter;
             auto pivotingRowIter = _pivotingRowLeftSide.begin();
@@ -999,8 +1042,9 @@ namespace lra
                 if( (*currentColumnIter) == currentRowIter )
                 {
                     // Entry already exists, so update it only and maybe remove it.
-                    (*currentRowIter).rContent() = (*currentRowIter).content() + (*pivotingColumnIter).content()*(**pivotingRowIter).content();
-                    if( (*currentRowIter).content() == 0 )
+                    numeric& currentRowContent = (*currentRowIter).rContent();
+                    currentRowContent += currentContent * (**pivotingRowIter).content();
+                    if( currentRowContent == 0 )
                     {
                         EntryID toRemove = currentRowIter.entryID();
                         (*currentColumnIter).down();
@@ -1011,9 +1055,10 @@ namespace lra
                 else
                 {
                     EntryID entryID = newTableauEntry();
+                    TableauEntry& entry = (*mpEntries)[entryID];
                     // Set the position.
-                    (*mpEntries)[entryID].setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
-                    (*mpEntries)[entryID].setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
+                    entry.setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
+                    entry.setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
                     if( (**currentColumnIter).rowNumber() < (*pivotingColumnIter).rowNumber() )
                     {
                         // Entry vertically between two entries.
@@ -1023,14 +1068,14 @@ namespace lra
                             (*mpEntries)[lowerEntryID].setUp( entryID );
                         }
                         (**currentColumnIter).setDown( entryID );
-                        (*mpEntries)[entryID].setDown( lowerEntryID );
-                        (*mpEntries)[entryID].setUp( (*currentColumnIter).entryID() );
+                        entry.setDown( lowerEntryID );
+                        entry.setUp( (*currentColumnIter).entryID() );
                     }
                     else
                     {
                         (**currentColumnIter).setUp( entryID );
-                        (*mpEntries)[entryID].setDown( (*currentColumnIter).entryID() );
-                        (*mpEntries)[entryID].setUp( 0 );
+                        entry.setDown( (*currentColumnIter).entryID() );
+                        entry.setUp( 0 );
                     }
                     if( (*currentRowIter).columnNumber() < (**currentColumnIter).columnNumber() )
                     {
@@ -1041,20 +1086,20 @@ namespace lra
                             (*mpEntries)[rightEntryID].setLeft( entryID );
                         }
                         (*currentRowIter).setRight( entryID );
-                        (*mpEntries)[entryID].setRight( rightEntryID );
-                        (*mpEntries)[entryID].setLeft( currentRowIter.entryID() );
+                        entry.setRight( rightEntryID );
+                        entry.setLeft( currentRowIter.entryID() );
                     }
                     else
                     {
                         (*currentRowIter).setLeft( entryID );
-                        (*mpEntries)[entryID].setRight( currentRowIter.entryID() );
-                        (*mpEntries)[entryID].setLeft( 0 );
-                        mRows[(*mpEntries)[entryID].rowNumber()].mStartEntry = entryID;
+                        entry.setRight( currentRowIter.entryID() );
+                        entry.setLeft( 0 );
+                        mRows[entry.rowNumber()].mStartEntry = entryID;
                     }
                     // Set the content of the entry.
-                    ++mRows[(*mpEntries)[entryID].rowNumber()].mSize;
-                    ++mColumns[(*mpEntries)[entryID].columnNumber()].mSize;
-                    (*mpEntries)[entryID].rContent() = (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                    ++mRows[entry.rowNumber()].mSize;
+                    ++mColumns[entry.columnNumber()].mSize;
+                    entry.rContent() = currentContent * (**pivotingRowIter).content();
                 }
                 ++pivotingRowIter;
             }
@@ -1075,8 +1120,9 @@ namespace lra
                 if( (*currentColumnIter) == currentRowIter )
                 {
                     // Entry already exists, so update it only and maybe remove it.
-                    (*currentRowIter).rContent() = (*currentRowIter).content() + (*pivotingColumnIter).content()*(**pivotingRowIter).content();
-                    if( (*currentRowIter).content() == 0 )
+                    numeric& currentRowContent = (*currentRowIter).rContent();
+                    currentRowContent += currentContent*(**pivotingRowIter).content();
+                    if( currentRowContent == 0 )
                     {
                         EntryID toRemove = currentRowIter.entryID();
                         (*currentColumnIter).down();
@@ -1087,9 +1133,10 @@ namespace lra
                 else
                 {
                     EntryID entryID = newTableauEntry();
+                    TableauEntry& entry = (*mpEntries)[entryID];
                     // Set the position.
-                    (*mpEntries)[entryID].setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
-                    (*mpEntries)[entryID].setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
+                    entry.setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
+                    entry.setColumnNumber( (*mpEntries)[(*currentColumnIter).entryID()].columnNumber() );
                     if( (**currentColumnIter).rowNumber() < (*pivotingColumnIter).rowNumber() )
                     {
                         // Entry vertically between two entries.
@@ -1099,15 +1146,15 @@ namespace lra
                             (*mpEntries)[lowerEntryID].setUp( entryID );
                         }
                         (**currentColumnIter).setDown( entryID );
-                        (*mpEntries)[entryID].setDown( lowerEntryID );
-                        (*mpEntries)[entryID].setUp( (*currentColumnIter).entryID() );
+                        entry.setDown( lowerEntryID );
+                        entry.setUp( (*currentColumnIter).entryID() );
                     }
                     else
                     {
                         // Entry will be the uppermost in this column.
                         (**currentColumnIter).setUp( entryID );
-                        (*mpEntries)[entryID].setDown( (*currentColumnIter).entryID() );
-                        (*mpEntries)[entryID].setUp( 0 );
+                        entry.setDown( (*currentColumnIter).entryID() );
+                        entry.setUp( 0 );
                     }
                     if( (*currentRowIter).columnNumber() > (**currentColumnIter).columnNumber() )
                     {
@@ -1118,24 +1165,24 @@ namespace lra
                             (*mpEntries)[leftEntryID].setRight( entryID );
                         }
                         (*currentRowIter).setLeft( entryID );
-                        (*mpEntries)[entryID].setLeft( leftEntryID );
-                        (*mpEntries)[entryID].setRight( currentRowIter.entryID() );
+                        entry.setLeft( leftEntryID );
+                        entry.setRight( currentRowIter.entryID() );
                     }
                     else
                     {
                         // Entry will be the rightmost in this row.
                         (*currentRowIter).setRight( entryID );
-                        (*mpEntries)[entryID].setLeft( currentRowIter.entryID() );
-                        (*mpEntries)[entryID].setRight( 0 );
+                        entry.setLeft( currentRowIter.entryID() );
+                        entry.setRight( 0 );
                     }
                     // Set the content of the entry.
-                    ++mRows[(*mpEntries)[entryID].rowNumber()].mSize;
-                    ++mColumns[(*mpEntries)[entryID].columnNumber()].mSize;
-                    (*mpEntries)[entryID].rContent() = (*pivotingColumnIter).content()*(**pivotingRowIter).content();
+                    ++mRows[entry.rowNumber()].mSize;
+                    ++mColumns[entry.columnNumber()].mSize;
+                    entry.rContent() = currentContent*(**pivotingRowIter).content();
                 }
                 ++pivotingRowIter;
             }
-            (*pivotingColumnIter).rContent() = (*pivotingColumnIter).content() * (*mpEntries)[_pivotingElement].content();
+            currentContent *= (*mpEntries)[_pivotingElement].content();
             #ifdef LRA_REFINEMENT
             upperRefinement( mRows[(*pivotingColumnIter).rowNumber()] );
             lowerRefinement( mRows[(*pivotingColumnIter).rowNumber()] );
@@ -1157,7 +1204,7 @@ namespace lra
                 const Value* limit = sup->pLimit();
                 if( limit != NULL )
                 {
-                    *newlimit = (*newlimit) + (*limit) * (*rowEntry).content();
+                    *newlimit += (*limit) * (*rowEntry).content();
                     premise->push_back( sup );
                 }
                 else
@@ -1172,7 +1219,7 @@ namespace lra
                 const Value* limit = inf->pLimit();
                 if( limit != NULL )
                 {
-                    *newlimit = (*newlimit) + (*limit) * (*rowEntry).content();
+                    *newlimit += (*limit) * (*rowEntry).content();
                     premise->push_back( inf );
                 }
                 else
@@ -1190,14 +1237,14 @@ namespace lra
         auto ubound = upperBounds.begin();
         while( ubound != upperBounds.end() )
         {
-            if( **ubound > *newlimit )
+            if( **ubound > *newlimit && (*ubound)->type() != Bound::EQUAL )
             {
                 break;
             }
             if( *ubound == bvar.pSupremum() ) return;
             ++ubound;
         }
-        if( ubound != --upperBounds.end() )
+        if( ubound != --upperBounds.end() && (*ubound)->type() != Bound::EQUAL )
         {
             mLearnedBounds.push_back( pair< const Bound*, vector< const Bound* >* >( *ubound, premise ) );
         }
@@ -1223,7 +1270,7 @@ namespace lra
                 const Value* limit = inf->pLimit();
                 if( limit != NULL )
                 {
-                    *newlimit = (*newlimit) + (*limit) * (*rowEntry).content();
+                    *newlimit += (*limit) * (*rowEntry).content();
                     premise->push_back( inf );
                 }
                 else
@@ -1238,7 +1285,7 @@ namespace lra
                 const Value* limit = sup->pLimit();
                 if( limit != NULL )
                 {
-                    *newlimit = (*newlimit) + (*limit) * (*rowEntry).content();
+                    *newlimit += (*limit) * (*rowEntry).content();
                     premise->push_back( sup );
                 }
                 else
@@ -1256,14 +1303,14 @@ namespace lra
         auto lbound = lowerBounds.rbegin();
         while( lbound != lowerBounds.rend() )
         {
-            if( **lbound < *newlimit )
+            if( **lbound < *newlimit && (*lbound)->type() != Bound::EQUAL )
             {
                 break;
             }
             if( *lbound == bvar.pInfimum()  ) return;
             ++lbound;
         }
-        if( lbound != --lowerBounds.rend() )
+        if( lbound != --lowerBounds.rend() && (*lbound)->type() != Bound::EQUAL )
         {
             mLearnedBounds.push_back( pair< const Bound*, vector<const Bound*>* >( *lbound, premise ) );
         }

@@ -58,9 +58,9 @@ namespace smtrat
 
     struct strCmp
     {
-        bool operator ()( std::string s1, std::string s2 ) const
+        bool operator ()( const std::string& _stringA, const std::string& _stringB ) const
         {
-            return strcmp( s1.c_str(), s2.c_str() ) < 0;
+            return _stringA.compare( _stringB ) < 0;
         }
     };
 

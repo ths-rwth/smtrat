@@ -60,9 +60,9 @@ namespace smtrat
                     return (*pConstraintA) < (*pConstraintB);
                 }
             };
-            typedef std::map<const GiNaC::ex*, lra::Variable*, exPointerComp>                                 ExVariableMap;
-            typedef std::pair<const Constraint* const , std::vector<const lra::Bound*> >                      ConstraintBoundPair;
-            typedef std::map<const Constraint* const , std::vector<const lra::Bound*>, constraintPointerComp> ConstraintBoundMap;
+            typedef std::map<const GiNaC::ex*, lra::Variable*, exPointerComp>                    ExVariableMap;
+            typedef std::pair<const Constraint* const , const lra::Bound* >                      ConstraintBoundPair;
+            typedef std::map<const Constraint* const , const lra::Bound*, constraintPointerComp> ConstraintBoundMap;
 
         private:
 

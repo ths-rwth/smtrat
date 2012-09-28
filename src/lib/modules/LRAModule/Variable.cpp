@@ -66,7 +66,7 @@ namespace lra
         {
             const Bound* b = *mLowerbounds.begin();
             mLowerbounds.erase( mLowerbounds.begin() );
-            delete b;
+            if( !b->type() == Bound::EQUAL ) delete b;
         }
         while( !mUpperbounds.empty() )
         {
@@ -81,43 +81,9 @@ namespace lra
      * @param _val
      * @return
      */
-    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addLowerBound( Value* const _val, const smtrat::Constraint* _constraint )
-    {
-        const Bound*                 newBound = new Bound( _val, this, false, _constraint );
-        pair<BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
-        if( !result.second )
-        {
-            delete newBound;
-            return pair<const Bound*,pair<const Bound*, const Bound*> >( *result.first, pair<const Bound*, const Bound*>( NULL, NULL ) );
-        }
-        else
-        {
-            const Bound* nextStrongerBound = NULL;
-            const Bound* nextWeakerBound = NULL;
-            ++result.first;
-            if( result.first != mLowerbounds.end() )
-            {
-                nextStrongerBound = *result.first;
-            }
-            --result.first;
-            if( result.first != mLowerbounds.begin() )
-            {
-                --result.first;
-                nextWeakerBound = *result.first;
-                ++result.first;
-            }
-            return pair<const Bound*,pair<const Bound*, const Bound*> >( *result.first, pair<const Bound*, const Bound*>( nextStrongerBound, nextWeakerBound ) );
-        }
-    }
-
-    /**
-     *
-     * @param _val
-     * @return
-     */
     pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addUpperBound( Value* const _val, const smtrat::Constraint* _constraint )
     {
-        const Bound*                 newBound = new Bound( _val, this, true, _constraint );
+        const Bound* newBound = new Bound( _val, this, Bound::UPPER, _constraint );
         pair<BoundSet::iterator, bool> result = mUpperbounds.insert( newBound );
         if( !result.second )
         {
@@ -135,13 +101,97 @@ namespace lra
             }
             if( result.first != mUpperbounds.end() )
             {
-                if( ++result.first != mUpperbounds.end() )
+                ++result.first;
+                while( result.first != mUpperbounds.end() )
+                {
+                    if( (*result.first)->type() != Bound::EQUAL )
+                    {
+                        nextWeakerBound = *result.first;
+                        break;
+                    }
+                    ++result.first;
+                }
+            }
+            return pair<const Bound*,pair<const Bound*, const Bound*> >( newBound, pair<const Bound*, const Bound*>( nextStrongerBound, nextWeakerBound ) );
+        }
+    }
+
+    /**
+     *
+     * @param _val
+     * @return
+     */
+    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addLowerBound( Value* const _val, const smtrat::Constraint* _constraint )
+    {
+        const Bound* newBound = new Bound( _val, this, Bound::LOWER, _constraint );
+        pair<BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
+        if( !result.second )
+        {
+            delete newBound;
+            return pair<const Bound*,pair<const Bound*, const Bound*> >( *result.first, pair<const Bound*, const Bound*>( NULL, NULL ) );
+        }
+        else
+        {
+            const Bound* nextStrongerBound = NULL;
+            const Bound* nextWeakerBound = NULL;
+            ++result.first;
+            if( result.first != mLowerbounds.end() )
+            {
+                nextStrongerBound = *result.first;
+            }
+            --result.first;
+            while( result.first != mLowerbounds.begin() )
+            {
+                --result.first;
+                if( (*result.first)->type() != Bound::EQUAL )
                 {
                     nextWeakerBound = *result.first;
+                    break;
                 }
-                --result.first;
             }
-            return pair<const Bound*,pair<const Bound*, const Bound*> >( *result.first, pair<const Bound*, const Bound*>( nextStrongerBound, nextWeakerBound ) );
+            return pair<const Bound*,pair<const Bound*, const Bound*> >( newBound, pair<const Bound*, const Bound*>( nextStrongerBound, nextWeakerBound ) );
+        }
+    }
+
+    /**
+     *
+     * @param _val
+     * @return
+     */
+    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addEqualBound( Value* const _val, const smtrat::Constraint* _constraint )
+    {
+        const Bound* newBound = new Bound( _val, this, Bound::EQUAL, _constraint );
+        pair<BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
+        if( !result.second )
+        {
+            delete newBound;
+            return pair<const Bound*,pair<const Bound*, const Bound*> >( *result.first, pair<const Bound*, const Bound*>( NULL, NULL ) );
+        }
+        else
+        {
+            const Bound* nextWeakerLowerBound = NULL;
+            while( result.first != mLowerbounds.begin() )
+            {
+                --result.first;
+                if( (*result.first)->type() != Bound::EQUAL )
+                {
+                    nextWeakerLowerBound = *result.first;
+                    break;
+                }
+            }
+            result = mUpperbounds.insert( newBound );
+            ++result.first;
+            const Bound* nextWeakerUpperBound = NULL;
+            while( result.first != mUpperbounds.end() )
+            {
+                if( (*result.first)->type() != Bound::EQUAL )
+                {
+                    nextWeakerUpperBound = *result.first;
+                    break;
+                }
+                ++result.first;
+            }
+            return pair<const Bound*,pair<const Bound*, const Bound*> >( newBound, pair<const Bound*, const Bound*>( nextWeakerLowerBound, nextWeakerUpperBound ) );
         }
     }
 
@@ -151,7 +201,7 @@ namespace lra
      */
     void Variable::deactivateBound( const Bound* bound )
     {
-        if( bound->isUpper() )
+        if( bound->isUpperBound() )
         {
             //check if it is the supremum
             if( mpSupremum == bound )
@@ -170,7 +220,7 @@ namespace lra
                 assert( newBound != mUpperbounds.end() );
             }
         }
-        else
+        if( bound->isLowerBound() )
         {
             //check if it is the infimum
             if( mpInfimum == bound )
@@ -219,7 +269,7 @@ namespace lra
             _out << endl;
         }
         _out << _init << " Lower bounds: " << endl;
-        for( BoundSet::const_iterator bIter = mLowerbounds.begin(); bIter != mLowerbounds.end(); ++bIter )
+        for( BoundSet::const_reverse_iterator bIter = mLowerbounds.rbegin(); bIter != mLowerbounds.rend(); ++bIter )
         {
             _out << _init << "     ";
             (*bIter)->print( _out, true, true );

@@ -34,9 +34,10 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
-#define LOG_THEORY_CALLS
-#define LOG_INFEASIBLE_SUBSETS
-#define LOG_LEMMATA
+//#define LOG_ON
+//#define LOG_THEORY_CALLS
+//#define LOG_INFEASIBLE_SUBSETS
+//#define LOG_LEMMATA
 
 #include <vector>
 #include <map>
@@ -209,7 +210,7 @@ namespace smtrat
             static void addAssumptionToCheck( const Formula&, bool, const std::string );
             static void addAssumptionToCheck( const std::set<const Formula*>&, bool, const std::string );
             static void addAssumptionToCheck( const std::set<const Constraint*>&, bool, const std::string );
-            static void storeAssumptionsToCheck( const std::string = "assumptions_to_check.smt2" );
+            static void storeAssumptionsToCheck( const Manager&, const std::string = "assumptions_to_check.smt2" );
             static const std::string moduleName( const ModuleType );
             //SMT
 
@@ -222,7 +223,6 @@ namespace smtrat
             Answer specialCaseConsistencyCheck() const;
             void getInfeasibleSubsets();
             Answer runBackends();
-            Formula::iterator removeSubformulaFromPassedFormulaOnly( Formula::iterator );
             Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator );
             Formula::iterator pruneSubformulaFromPassedFormula( Formula::iterator );
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;

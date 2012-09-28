@@ -60,7 +60,7 @@
 #include <math.h>
 #include "../Module.h"
 
-//#define SAT_MODULE_THEORY_PROPAGATION
+#define SAT_MODULE_THEORY_PROPAGATION
 
 namespace smtrat
 {
@@ -81,10 +81,17 @@ namespace smtrat
                     return (_formulaA->constraint() < _formulaB->constraint());
                 }
             };
-            typedef std::map<const Constraint* const , Minisat::Lit>        ConstraintLiteralMap;
-            typedef std::map<const std::string, Minisat::Var>               BooleanVarMap;
-            typedef Minisat::vec<std::pair<Formula*, const Formula*> >      BooleanConstraintMap;
-            typedef std::map<const Formula*, const Formula*, formulaCmp>    ConstraintOriginMap;
+            struct Abstraction
+            {
+                Formula::iterator position;
+                Formula* formula;
+                const Formula* origin;
+                int updateInfo;
+            };
+            typedef std::map<const Constraint* const , Minisat::Lit>     ConstraintLiteralMap;
+            typedef std::map<const std::string, Minisat::Var>            BooleanVarMap;
+            typedef Minisat::vec< Abstraction >                          BooleanConstraintMap;
+            typedef std::map<const Formula*, const Formula*, formulaCmp> ConstraintOriginMap;
 
             /*
              * Helper structures:
@@ -247,10 +254,6 @@ namespace smtrat
             bool                  asynch_interrupt;
 
             BooleanConstraintMap  mBooleanConstraintMap;
-            #ifdef SAT_MODULE_THEORY_PROPAGATION
-            // A heuristic measurement of the activity of a variable.
-            Minisat::vec<bool>    mDeduced;
-            #endif
             ConstraintLiteralMap  mConstraintLiteralMap;
             BooleanVarMap         mBooleanVarMap;
             std::vector<unsigned> mBacktrackpointInSatSolver;
@@ -321,7 +324,7 @@ namespace smtrat
             // Removes already satisfied clauses.
             bool simplify();
             // Learns a clause.
-            Minisat::CRef addLearnedClause( Minisat::vec<Minisat::Lit>&, bool );
+            Minisat::CRef addLearnedClause( Minisat::vec<Minisat::Lit>&, bool, bool );
             // Finds the best two candidates for watching
             void arangeForWatches( Minisat::Clause& );
             // Search for a model that respects a given set of assumptions.
@@ -407,7 +410,7 @@ namespace smtrat
             // (helper method for 'analyze()')
             bool litRedundant( Minisat::Lit p, uint32_t abstract_levels );
             //
-            Minisat::CRef learnTheoryReason( const std::set<const Formula*>& );
+            Minisat::CRef learnTheoryConflict( const std::set<const Formula*>& );
             // Search for a given number of conflicts.
             Minisat::lbool search( int nof_conflicts = 100 );
             // Main solve method (assumptions given in 'assumptions').
@@ -478,7 +481,7 @@ namespace smtrat
             }
 
             Minisat::CRef addFormula( Formula* );
-            Minisat::CRef addClause( const Formula*, bool );
+            Minisat::CRef addClause( const Formula*, bool, bool = false );
             Minisat::Lit getLiteral( const Formula&, const Formula* = NULL );
             Minisat::Lit getLiteral( const Constraint*, const Formula* = NULL, double = 0 );
             bool adaptPassedFormula();

@@ -80,9 +80,9 @@ namespace smtrat
      */
     bool LRAModule::inform( const Constraint* const _constraint )
     {
-//        #ifdef DEBUG_LRA_MODULE
+        #ifdef DEBUG_LRA_MODULE
         cout << "inform about " << *_constraint << endl;
-//        #endif
+        #endif
         if( _constraint->isConsistent() == 2 && _constraint->isLinear() )
         {
             mLinearConstraints.insert( _constraint );
@@ -99,9 +99,9 @@ namespace smtrat
     {
         assert( (*_subformula)->getType() == REALCONSTRAINT );
         assert( (*_subformula)->constraint().relation() != CR_NEQ );
-//        #ifdef DEBUG_LRA_MODULE
+        #ifdef DEBUG_LRA_MODULE
         cout << "assert " << (*_subformula)->constraint() << endl;
-//        #endif
+        #endif
         if( !mInitialized ) initialize();
         Module::assertSubformula( _subformula );
 
@@ -113,16 +113,17 @@ namespace smtrat
             {
                 ConstraintBoundMap::iterator iter = mConstraintToBound.find( constraint );
 
+                if( iter == mConstraintToBound.end() )
+                {
+                    storeAssumptionsToCheck( *mpManager );
+                    cout << **_subformula << endl;
+                }
                 assert( iter != mConstraintToBound.end() );
 
-                vector<const Bound*> boundL = (*iter).second;
+                set<const Formula*> originSet = set<const Formula*>();
+                originSet.insert( *_subformula );
+                activateBound( (*iter).second, originSet );
 
-                for( vector<const Bound*>::const_iterator bIter = boundL.begin(); bIter != boundL.end(); ++bIter )
-                {
-                    set<const Formula*> originSet = set<const Formula*>();
-                    originSet.insert( *_subformula );
-                    activateBound( *bIter, originSet );
-                }
                 assert( mInfeasibleSubsets.empty() || !mInfeasibleSubsets.begin()->empty() );
                 return mInfeasibleSubsets.empty() || !mNonlinearConstraints.empty();
             }
@@ -162,28 +163,24 @@ namespace smtrat
             // Deactivate the bounds regarding the given constraint
             ConstraintBoundMap::iterator iter = mConstraintToBound.find( constraint );
             assert( iter != mConstraintToBound.end() );
-            vector<const Bound*> boundL = (*iter).second;
-            for( vector<const Bound*>::const_iterator bIter = boundL.begin(); bIter != boundL.end(); ++bIter )
+            auto originSet = (*iter).second->pOrigins()->begin();
+            while(  originSet != (*iter).second->pOrigins()->end() )
             {
-                auto originSet = (*bIter)->pOrigins()->begin();
-                while(  originSet != (*bIter)->pOrigins()->end() )
+                if( originSet->find( *_subformula ) != originSet->end() ) originSet = (*iter).second->pOrigins()->erase( originSet );
+                else ++originSet;
+            }
+            if( (*iter).second->origins().empty() )
+            {
+                (*iter).second->pVariable()->deactivateBound( (*iter).second );
+                if( ((*iter).second->isUpperBound() && (*iter).second->variable().pSupremum()->isInfinite()) || ((*iter).second->isLowerBound() && (*iter).second->variable().pInfimum()->isInfinite()) )
                 {
-                    if( originSet->find( *_subformula ) != originSet->end() ) originSet = (*bIter)->pOrigins()->erase( originSet );
-                    else ++originSet;
-                }
-                if( (*bIter)->origins().empty() )
-                {
-                    (*bIter)->pVariable()->deactivateBound( *bIter );
-                    if( ((*bIter)->isUpper() && (*bIter)->variable().pSupremum()->isInfinite()) || (!(*bIter)->isUpper() && (*bIter)->variable().pInfimum()->isInfinite()) )
+                    if( (*iter).second->variable().isBasic() )
                     {
-                        if( (*bIter)->variable().isBasic() )
-                        {
-                            mTableau.decrementBasicActivity( *(*bIter)->pVariable() );
-                        }
-                        else
-                        {
-                            mTableau.decrementNonbasicActivity( *(*bIter)->pVariable() );
-                        }
+                        mTableau.decrementBasicActivity( *(*iter).second->pVariable() );
+                    }
+                    else
+                    {
+                        mTableau.decrementNonbasicActivity( *(*iter).second->pVariable() );
                     }
                 }
             }
@@ -353,7 +350,7 @@ namespace smtrat
     {
         bound->pOrigins()->push_back( _formulas );
         const Variable& var = bound->variable();
-        if( (bound->isUpper() && var.pSupremum()->isInfinite()) || (!bound->isUpper() && var.pInfimum()->isInfinite()) )
+        if( (bound->isUpperBound() && var.pSupremum()->isInfinite()) || (bound->isLowerBound() && var.pInfimum()->isInfinite()) )
         {
             if( var.isBasic() )
             {
@@ -364,10 +361,9 @@ namespace smtrat
                 mTableau.incrementNonbasicActivity( var );
             }
         }
-        bool isUpper = bound->isUpper();
-        if( isUpper )
+        if( bound->isUpperBound() )
         {
-            if( *var.pInfimum() > *bound )
+            if( *var.pInfimum() > bound->limit() )
             {
                 set<const Formula*> infsubset = set<const Formula*>();
                 infsubset.insert( bound->pOrigins()->begin()->begin(), bound->pOrigins()->begin()->end() );
@@ -386,9 +382,9 @@ namespace smtrat
                 }
             }
         }
-        else
+        if( bound->isLowerBound() )
         {
-            if( *var.pSupremum() < *bound )
+            if( *var.pSupremum() < bound->limit() )
             {
                 set<const Formula*> infsubset = set<const Formula*>();
                 infsubset.insert( bound->pOrigins()->begin()->begin(), bound->pOrigins()->begin()->end() );
@@ -422,65 +418,45 @@ namespace smtrat
     {
         if( rel == CR_EQ )
         {
-            Value* valueA  = new Value( boundValue );
-            Value* valueB  = new Value( boundValue );
-            const Constraint* constraintA = Formula::newConstraint( _constraint->lhs(), CR_LEQ );
-            const Constraint* constraintB = Formula::newConstraint( _constraint->lhs(), CR_GEQ );
-            pair<const Bound*,pair<const Bound*, const Bound*> > resultA = var.addUpperBound( valueA, constraintA );
+            Value* value  = new Value( boundValue );
+            pair<const Bound*,pair<const Bound*, const Bound*> > result = var.addEqualBound( value, _constraint );
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
-            findSimpleConflicts( *resultA.first );
+            findSimpleConflicts( *result.first );
             #endif
-            pair<const Bound*,pair<const Bound*, const Bound*> > resultB = var.addLowerBound( valueB, constraintB );
-            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
-            findSimpleConflicts( *resultB.first );
-            #endif
-            vector<const Bound*> eqBounds = vector<const Bound*>();
-            eqBounds.push_back( resultA.first );
-            eqBounds.push_back( resultB.first );
-            ConstraintBoundPair p = ConstraintBoundPair( _constraint, eqBounds );
+            ConstraintBoundPair p = ConstraintBoundPair( _constraint, result.first );
             mConstraintToBound.insert( p );
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            if( resultA.second.first != NULL && resultA.second.first->pAsConstraint() != NULL )
+            if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
             {
                 Formula* deduction = new Formula( OR );
                 deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( resultA.second.first->pAsConstraint() );
-                deduction->addSubformula( constraintA );
+                deduction->back()->addSubformula( _constraint );
+                deduction->addSubformula( result.second.first->pAsConstraint() );
                 addDeduction( deduction );
             }
-            if( resultB.second.first != NULL && resultB.second.first->pAsConstraint() != NULL )
+            if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
             {
                 Formula* deduction = new Formula( OR );
                 deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( resultB.second.first->pAsConstraint() );
-                deduction->addSubformula( constraintB );
+                deduction->back()->addSubformula( _constraint );
+                deduction->addSubformula( result.second.first->pAsConstraint() );
                 addDeduction( deduction );
             }
-            if( resultA.second.second != NULL && resultA.second.second->pAsConstraint() != NULL )
+            if( result.second.second != NULL && result.second.second->pAsConstraint() != NULL )
             {
-                Formula* deductionA = new Formula( OR );
-                deductionA->addSubformula( new Formula( NOT ) );
-                deductionA->back()->addSubformula( _constraint );
-                deductionA->addSubformula( resultA.second.second->pAsConstraint() );
-                addDeduction( deductionA );
-                Formula* deductionB = new Formula( OR );
-                deductionB->addSubformula( new Formula( NOT ) );
-                deductionB->back()->addSubformula( constraintA );
-                deductionB->addSubformula( resultA.second.second->pAsConstraint() );
-                addDeduction( deductionB );
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( _constraint );
+                deduction->addSubformula( result.second.second->pAsConstraint() );
+                addDeduction( deduction );
             }
-            if( resultB.second.second != NULL && resultB.second.second->pAsConstraint() != NULL )
+            if( result.second.second != NULL && result.second.second->pAsConstraint() != NULL )
             {
-                Formula* deductionA = new Formula( OR );
-                deductionA->addSubformula( new Formula( NOT ) );
-                deductionA->back()->addSubformula( _constraint );
-                deductionA->addSubformula( resultB.second.second->pAsConstraint() );
-                addDeduction( deductionA );
-                Formula* deductionB = new Formula( OR );
-                deductionB->addSubformula( new Formula( NOT ) );
-                deductionB->back()->addSubformula( constraintB );
-                deductionB->addSubformula( resultB.second.second->pAsConstraint() );
-                addDeduction( deductionB );
+                Formula* deduction = new Formula( OR );
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( _constraint );
+                deduction->addSubformula( result.second.second->pAsConstraint() );
+                addDeduction( deduction );
             }
             #endif
         }
@@ -491,9 +467,7 @@ namespace smtrat
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
             #endif
-            vector<const Bound*> vecto = vector<const Bound*>();
-            vecto.push_back( result.first );
-            ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
+            ConstraintBoundPair p = ConstraintBoundPair( _constraint, result.first );
             mConstraintToBound.insert( p );
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
             if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
@@ -521,9 +495,7 @@ namespace smtrat
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
             #endif
-            vector<const Bound*> vecto = vector<const Bound*>();
-            vecto.push_back( result.first );
-            ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
+            ConstraintBoundPair p = ConstraintBoundPair( _constraint, result.first );
             mConstraintToBound.insert( p );
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
             if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
@@ -551,9 +523,7 @@ namespace smtrat
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
             #endif
-            vector<const Bound*> vecto = vector<const Bound*>();
-            vecto.push_back( result.first );
-            ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
+            ConstraintBoundPair p = ConstraintBoundPair( _constraint, result.first );
             mConstraintToBound.insert( p );
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
             if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
@@ -581,9 +551,7 @@ namespace smtrat
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
             #endif
-            vector<const Bound*> vecto = vector<const Bound*>();
-            vecto.push_back( result.first );
-            ConstraintBoundPair p = ConstraintBoundPair( _constraint, vecto );
+            ConstraintBoundPair p = ConstraintBoundPair( _constraint, result.first );
             mConstraintToBound.insert( p );
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
             if( result.second.first != NULL && result.second.first->pAsConstraint() != NULL )
@@ -613,11 +581,12 @@ namespace smtrat
      */
     void LRAModule::findSimpleConflicts( const Bound& _bound )
     {
-        if( _bound.isUpper() )
+        if( _bound.isUpperBound() )
         {
-            for( auto lbound = _bound.variable().lowerbounds().rbegin(); lbound != --_bound.variable().lowerbounds().rend(); ++lbound )
+            const BoundSet& lbounds = _bound.variable().lowerbounds();
+            for( auto lbound = lbounds.rbegin(); lbound != --lbounds.rend(); ++lbound )
             {
-                if( **lbound > _bound )
+                if( **lbound > _bound.limit() )
                 {
                     Formula* deduction = new Formula( OR );
                     deduction->addSubformula( new Formula( NOT ) );
@@ -632,11 +601,12 @@ namespace smtrat
                 }
             }
         }
-        else
+        if( _bound.isLowerBound() )
         {
-            for( auto ubound = _bound.variable().upperbounds().begin(); ubound != --_bound.variable().upperbounds().end(); ++ubound )
+            const BoundSet& ubounds = _bound.variable().upperbounds();
+            for( auto ubound = ubounds.begin(); ubound != --ubounds.end(); ++ubound )
             {
-                if( **ubound < _bound )
+                if( **ubound < _bound.limit() )
                 {
                     Formula* deduction = new Formula( OR );
                     deduction->addSubformula( new Formula( NOT ) );
@@ -674,10 +644,10 @@ namespace smtrat
             --currentCoeff;
             while( currentCoeff != coeffs.end() )
             {
-                currentCoeff->second = currentCoeff->second / highestCoeff;
+                currentCoeff->second /= highestCoeff;
                 ++currentCoeff;
             }
-            *linearPart = *linearPart / highestCoeff;
+            *linearPart /= highestCoeff;
             if( coeffs.size() == 2 )
             {
                 // constraint has one variable
@@ -743,7 +713,7 @@ namespace smtrat
             }
         }
         #ifdef LRA_USE_PIVOTING_STRATEGY
-        mTableau.setBlandsRuleStart( mTableau.columns().size() * 4 );
+        mTableau.setBlandsRuleStart( mTableau.columns().size() );
         #endif
     }
 

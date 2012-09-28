@@ -180,8 +180,9 @@ namespace lra
             unsigned                   mNextRestartEnd;
             #endif
             std::stack<EntryID>        mUnusedIDs;
-            std::vector<TableauHead>   mRows;    // First element is the head of the row and the second the length of the row.
+            std::vector<TableauHead>   mRows;       // First element is the head of the row and the second the length of the row.
             std::vector<TableauHead>   mColumns;    // First element is the end of the column and the second the length of the column.
+            std::set< unsigned >       mActiveRows;
             std::vector<TableauEntry>* mpEntries;
             Value*                     mpTheta;
             #ifdef LRA_REFINEMENT
@@ -306,7 +307,10 @@ namespace lra
 
             void incrementBasicActivity( const Variable& _var )
             {
-                ++mRows[_var.position()].mActivity;
+                if( mRows[_var.position()].mActivity++ == 0 )
+                {
+                    mActiveRows.insert( _var.position() );
+                }
             }
 
             void incrementNonbasicActivity( const Variable& _var )
@@ -317,7 +321,10 @@ namespace lra
             void decrementBasicActivity( const Variable& _var )
             {
                 assert( mRows[_var.position()].mActivity != 0 );
-                --mRows[_var.position()].mActivity;
+                if( --mRows[_var.position()].mActivity == 0 )
+                {
+                    mActiveRows.erase( _var.position() );
+                }
             }
 
             void decrementNonbasicActivity( const Variable& _var )

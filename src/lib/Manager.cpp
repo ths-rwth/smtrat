@@ -92,7 +92,7 @@ namespace smtrat
 
     Manager::~Manager()
     {
-        Module::storeAssumptionsToCheck();
+        Module::storeAssumptionsToCheck( *this );
         while( !mGeneratedModules.empty() )
         {
             Module* ptsmodule = mGeneratedModules.back();

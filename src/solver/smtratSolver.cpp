@@ -44,9 +44,9 @@ int main( int argc, char* argv[] )
 
     #ifdef GATHER_STATS
     bool printStats = false;
-    bool exportStats = false; 
-    #endif //GATHER_STATS 
-   
+    bool exportStats = false;
+    #endif //GATHER_STATS
+
     if(argc == 1) {
         std::cout << "This is " << PROJECT_NAME << "." <<  std::endl;
         std::cout << "Version: " << VERSION << std::endl;
@@ -95,7 +95,7 @@ int main( int argc, char* argv[] )
                     {
                         if( driver.status == 0 )
                         {
-                            std::cout << "error, expected sat, but returned unsat" << std::endl;
+                            std::cout << "error, expected unsat, but returned sat" << std::endl;
                             error = true;
                         }
                         else
@@ -108,7 +108,7 @@ int main( int argc, char* argv[] )
                     {
                         if( driver.status == 1 )
                         {
-                            std::cout << "error, expected unsat, but returned sat" << std::endl;
+                            std::cout << "error, expected sat, but returned unsat" << std::endl;
                             error = true;
                         }
                         else
@@ -129,7 +129,7 @@ int main( int argc, char* argv[] )
                 }
                 delete nratSolver;
                 delete form;
-                
+
                 #ifdef GATHER_STATS
                 if(printStats) smtrat::CollectStatistics::print(std::cout);
                 #endif //GATHER_STATS
