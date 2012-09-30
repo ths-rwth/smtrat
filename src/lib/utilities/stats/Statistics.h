@@ -25,13 +25,14 @@ public :
         CollectStatistics::registerStats(child);
     }
     virtual void collect() {}
+    virtual void print() {}
     void generateXML(std::stringstream & filestream) {
-        
+        filestream << "\t<module name=\"" << mName << "\">\n"; 
         for(unsigned i = 0; i < mKeyValuePairs.size(); ++i) {
             
-            std::cout << "<stat name=\"" << mKeyValuePairs[i].first << "\" value=\"" << mKeyValuePairs[i].second << "\" />\n";
+            filestream << "\t\t<stat name=\"" << mKeyValuePairs[i].first << "\" value=\"" << mKeyValuePairs[i].second << "\" />\n";
         }
-//        std::stringstream str;
+        filestream << "\t</module>\n";
         
     }
 private:
@@ -40,6 +41,16 @@ private:
 protected:
     void addKeyValuePair(const std::string& key, const std::string& value) {
         mKeyValuePairs.push_back(std::pair<std::string, std::string>(key, value));
+    }
+    
+    void addKeyValuePair(const std::string & key, unsigned value) {
+        std::stringstream convert;
+        convert << value;
+        addKeyValuePair(key, convert.str());
+    }
+    
+    void addKeyValuePair(const std::string & key, float value) {
+        
     }
 };
 }

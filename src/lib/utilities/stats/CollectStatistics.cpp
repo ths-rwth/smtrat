@@ -28,6 +28,9 @@
  * 
  */
 
+#include <fstream>
+#include <iostream>
+
 #include "../../config.h"
 #ifdef GATHER_STATS
 #include "CollectStatistics.h"
@@ -45,18 +48,27 @@ void CollectStatistics::registerStats(Statistics* _stats) {
 
 
 void CollectStatistics::print(std::ostream& os) {
-#ifdef USE_GB
-    GroebnerModuleStats::printAll();
-#endif
+    for(auto it = stats.begin(); it != stats.end(); ++it) {
+        (*it)->print();
+    }
+    
 }
 
 void CollectStatistics::exportXML() {
     std::stringstream stream;
+    stream << "<runtimestatistics>\n";
     for(auto it = stats.begin(); it != stats.end(); ++it) {
-        std::cout << "Generate xml: " << *it << std::endl;
+        
         (*it)->collect();
         (*it)->generateXML(stream);
     }
+    stream << "</runtimestatistics>";
+    
+    std::ofstream file;
+    file.open("stats.xml", std::ios::out | std::ios::app );
+    file << stream.str() << std::endl;
+    file.close();
+    
 }
 
 
