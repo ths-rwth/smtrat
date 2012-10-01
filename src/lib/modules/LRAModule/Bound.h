@@ -12,26 +12,29 @@
 #include "../../Formula.h"
 #include <stddef.h>
 
-namespace lraone
+namespace lra
 {
     class Variable;
 
     class Bound
     {
+        public:
+        enum Type{ LOWER, UPPER, EQUAL };
+
         private:
 
             /**
              * Members.
              */
+            Type                                                mType;
             Value*                                              mLimit;
-            bool                                                mIsUpper;
             Variable* const                                     mVar;
             const smtrat::Constraint*                           mpAsConstraint;
             std::vector<std::set< const smtrat::Formula* > >*   mpOrigins;
 
         public:
             Bound();
-            Bound( Value* const , Variable* const , bool, const smtrat::Constraint* );
+            Bound( Value* const , Variable* const, Type, const smtrat::Constraint* );
             ~Bound();
 
             bool operator >( const Value& ) const;
@@ -68,19 +71,19 @@ namespace lraone
                 return *mVar;
             }
 
-            bool isUpper() const
+            Type type() const
             {
-                return mIsUpper;
+                return mType;
             }
 
-            void setUpper()
+            bool isUpperBound() const
             {
-                mIsUpper = true;
+                return mType != LOWER;
             }
 
-            void setLower()
+            bool isLowerBound() const
             {
-                mIsUpper = false;
+                return mType != UPPER;
             }
 
             const smtrat::Constraint* const pAsConstraint() const

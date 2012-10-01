@@ -38,9 +38,9 @@ using namespace GiNaC;
 //#define ADD_LEARNING_CLAUSES                                   // Adds learning clauses
 //#define ADD_NEGATED_LEARNING_CLAUSES                           // Adds negated learning clauses
 //#define PROCEED_SUBSTITUTION                                   // Substitutes variables ( ONlY USABLE FOR FORMULAS WITH XOR (before CNF) )
-#define ASSIGN_ACTIVITIES                                      // Assigns activities between 0 and 1
+#define ASSIGN_ACTIVITIES                                        // Assigns activities between 0 and 1
 
-#define CONSIDER_ONLY_HIGHEST_DEGREE_FOR_VAR_ACTIVITY          // Requires ASSIGN_ACTIVITIES ( ONLYO USABLE FOR FORMULAS WITH CONSTRAINTS WITH DEGREE > 1 )
+#define CONSIDER_ONLY_HIGHEST_DEGREE_FOR_VAR_ACTIVITY            // Requires ASSIGN_ACTIVITIES ( ONLYO USABLE FOR FORMULAS WITH CONSTRAINTS WITH DEGREE > 1 )
 //#define CHECK_FOR_TAUTOLOGIES                                  // Requires SIMPLIFY_CLAUSES ( ONLY USABLE FOR FORMULAS WITH CONJUNCTED SINGLE CONSTRAINTS )
 //#define DIVIDE_VAR_ACTIVITIES_BY_QUANTITY_OF_SUMMANDS          // Instead of sum of variable degrees
 #define DIVIDE_VAR_ACTIVITIES_BY_SUM_OF_VARIABLE_DEGREES
@@ -49,23 +49,23 @@ using namespace GiNaC;
 //#define PRINT_CONSTRAINTS                                      // Requires ASSIGN_ACTIVITIES
 
 //-------------------------------------------------------------
-static const double scale = 100;                               // Value to scale the balance between the activities
+static const double scale = 100;                                 // Value to scale the balance between the activities
 //------------------VarActivities------------------------------
-static const double weightOfVarDegrees = -2;                   // The highes degree which appears variable x in whole formula
-static const double weightOfVarQuantities = 2;                 // The number of constraints where variable x appears
-static const double lowerBoundForVarActivity = 1.5;            // Influences reaction on variable with higher degrees
+static const double weightOfVarDegrees = 0;                      // The highes degree which appears variable x in whole formula
+static const double weightOfVarQuantities = 2;                   // The number of constraints where variable x appears
+static const double lowerBoundForVarActivity = 1.5;              // Influences reaction on variable with higher degrees
 static const double upperBoundForVarActivity = 2;
 //------------------ConstraintActivities-----------------------
-static const double weightOfVarActivities = 4;                 // Weight of Variable Activities
-static const double weightOfHPDegrees = -6;                    // Weight of highest product degree of constraints
-static const double weightOfHVDegrees = -6;                    // Weight of highest
+static const double weightOfVarActivities = 1;                 // Weight of Variable Activities
+static const double weightOfHPDegrees = 0;                    // Weight of highest product degree of constraints
+static const double weightOfHVDegrees = 0;                    // Weight of highest
 static const double weightOfConQuantities = 1;                 // Weight of quantity of constraints
-static const double weightOfVarQuantitiesInConstraint = -1;
+static const double weightOfVarQuantitiesInConstraint = 3;
 static const double weightOfRelationSymbols = 1;               // Weight of relation symbols
 //------------------RelationSymbols----------------------------
-static const double weight_CR_EQ = 2;
-static const double weight_CR_LESS = 1;
-static const double weight_CR_GREATER = 1;
+static const double weight_CR_EQ = 3;
+static const double weight_CR_LESS = 2;
+static const double weight_CR_GREATER = 2;
 static const double weight_CR_LEQ = 1;
 static const double weight_CR_GEQ = 1;
 

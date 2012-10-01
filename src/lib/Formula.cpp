@@ -47,6 +47,7 @@ namespace smtrat
         mActivity( 0 ),
         mType( TTRUE ),
         mRealValuedVars(),
+        mBooleanVars(),
         mpSubformulas( NULL ),
         mpFather( NULL ),
         mPropositions(),
@@ -57,6 +58,7 @@ namespace smtrat
         mActivity( 0 ),
         mType( _type ),
         mRealValuedVars(),
+        mBooleanVars(),
         mpSubformulas( (_type != TTRUE && _type != FFALSE) ? new list<Formula*>() : NULL ),
         mpFather( NULL ),
         mPropositions(),
@@ -69,16 +71,20 @@ namespace smtrat
         mActivity( 0 ),
         mType( BOOL ),
         mRealValuedVars(),
+        mBooleanVars(),
         mpIdentifier( new string( _id ) ),
         mpFather( NULL ),
         mPropositions(),
         mPropositionsUptodate( false )
-    {}
+    {
+        mBooleanVars.insert( _id );
+    }
 
     Formula::Formula( const Constraint* _constraint ):
         mActivity( 0 ),
         mType( REALCONSTRAINT ),
         mRealValuedVars( _constraint->variables() ),
+        mBooleanVars(),
         mpConstraint( _constraint ),
         mpFather( NULL ),
         mPropositions(),
@@ -91,6 +97,7 @@ namespace smtrat
         mActivity( 0 ),
         mType( _formula.getType() ),
         mRealValuedVars( _formula.realValuedVars() ),
+        mBooleanVars( _formula.booleanVars() ),
         mpFather( NULL ),
         mPropositions(),
         mPropositionsUptodate( false )
@@ -271,6 +278,7 @@ namespace smtrat
          * Add the variables of the formula to add to this formula.
          */
         mRealValuedVars.insert( _formula->realValuedVars().begin(), _formula->realValuedVars().end() );
+        mBooleanVars.insert( _formula->booleanVars().begin(), _formula->booleanVars().end() );
 
         /*
          * Add the formula.
@@ -521,16 +529,6 @@ namespace smtrat
             case MT_LRAModule:
             {
                 mPropositions |= PROP_CANNOT_BE_SOLVED_BY_LRAMODULE;
-                break;
-            }
-            case MT_LRAOneModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE;
-                break;
-            }
-            case MT_LRATwoModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE;
                 break;
             }
             case MT_PreProModule:

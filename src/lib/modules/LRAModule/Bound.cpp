@@ -9,11 +9,11 @@
 
 using namespace std;
 
-namespace lraone
+namespace lra
 {
     Bound::Bound():
+        mType( UPPER ),
         mLimit( NULL ),
-        mIsUpper( true ),
         mVar( NULL ),
         mpAsConstraint( NULL )
     {
@@ -23,9 +23,9 @@ namespace lraone
         mpOrigins->push_back( originSet );
     }
 
-    Bound::Bound( Value* const _limit, Variable* const _var, bool _isUpper, const smtrat::Constraint* _constraint ):
+    Bound::Bound( Value* const _limit, Variable* const _var, Type _type, const smtrat::Constraint* _constraint ):
+        mType( _type ),
         mLimit( _limit ),
-        mIsUpper( _isUpper ),
         mVar( _var ),
         mpAsConstraint( _constraint )
     {
@@ -53,33 +53,27 @@ namespace lraone
     {
         if( mLimit == NULL && _bound.pLimit() == NULL )
         {
-            return (!mIsUpper && _bound.isUpper());
+            return (mType == LOWER  && _bound.type() == LOWER);
         }
         else if( mLimit == NULL && _bound.pLimit() != NULL )
         {
-            if( mIsUpper )
-            {
-                return false;
-            }
-            else
-            {
-                return true;
-            }
+            return mType == LOWER;
         }
         else if( mLimit != NULL && _bound.pLimit() == NULL )
         {
-            if( _bound.mIsUpper )
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return _bound.type() == UPPER;
         }
         else
         {
-            return (*mLimit) < _bound.limit();
+            if( (*mLimit) < _bound.limit() )
+            {
+                return true;
+            }
+            else if( (*mLimit) == _bound.limit() )
+            {
+                if( mType == EQUAL && _bound.type() != EQUAL ) return true;
+            }
+            return false;
         }
     }
 
@@ -92,33 +86,27 @@ namespace lraone
     {
         if( mLimit == NULL && _bound.pLimit() == NULL )
         {
-            return (mIsUpper && !_bound.isUpper());
+            return (mType == UPPER && _bound.type() == LOWER);
         }
         else if( mLimit == NULL && _bound.pLimit() != NULL )
         {
-            if( mIsUpper )
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return mType == UPPER;
         }
         else if( mLimit != NULL && _bound.pLimit() == NULL )
         {
-            if( _bound.mIsUpper )
-            {
-                return false;
-            }
-            else
-            {
-                return true;
-            }
+            return _bound.type() == LOWER;
         }
         else
         {
-            return (*mLimit) > _bound.limit();
+            if( (*mLimit) > _bound.limit() )
+            {
+                return true;
+            }
+            else if( (*mLimit) == _bound.limit() )
+            {
+                if( mType != EQUAL && _bound.type() == EQUAL ) return true;
+            }
+            return false;
         }
     }
 
@@ -129,11 +117,11 @@ namespace lraone
      */
     bool Bound::operator <( const Value& v ) const
     {
-        if( mLimit == NULL && mIsUpper )
+        if( mLimit == NULL && mType == UPPER )
         {
             return false;
         }
-        else if( mLimit == NULL &&!mIsUpper )
+        else if( mLimit == NULL && mType == LOWER )
         {
             return true;
         }
@@ -150,11 +138,11 @@ namespace lraone
      */
     bool Bound::operator >( const Value& v ) const
     {
-        if( mLimit == NULL && mIsUpper )
+        if( mLimit == NULL && mType == UPPER )
         {
             return true;
         }
-        else if( mLimit == NULL &&!mIsUpper )
+        else if( mLimit == NULL && mType == LOWER )
         {
             return false;
         }
@@ -184,11 +172,11 @@ namespace lraone
      */
     const string Bound::toString() const
     {
-        if( mLimit == NULL && mIsUpper )
+        if( mLimit == NULL && mType == UPPER )
         {
             return "inf";
         }
-        else if( mLimit == NULL &&!mIsUpper )
+        else if( mLimit == NULL && mType == LOWER )
         {
             return "-inf";
         }
@@ -218,20 +206,24 @@ namespace lraone
     {
         if( _printType )
         {
-            if( mIsUpper )
+            if( mType == UPPER )
             {
                 _out << "<";
             }
-            else
+            else if( mType == LOWER )
             {
                 _out << ">";
             }
+            else
+            {
+                _out << "==";
+            }
         }
-        if( mLimit == NULL && mIsUpper )
+        if( mLimit == NULL && mType == UPPER )
         {
             _out << "inf";
         }
-        else if( mLimit == NULL &&!mIsUpper )
+        else if( mLimit == NULL && mType == LOWER )
         {
             _out << "-inf";
         }

@@ -32,9 +32,9 @@
 #ifndef SMTRAT_FORMULA_H
 #define SMTRAT_FORMULA_H
 
-#include <vector>
 #include <string.h>
 #include <string>
+#include <set>
 #include "Condition.h"
 #include "ModuleType.h"
 #include "ConstraintPool.h"
@@ -58,8 +58,10 @@ namespace smtrat
             double mActivity;
             /// The type of this formula.
             Type mType;
-            /// All real valued variables used within this formula (and its subformulas).
+            /// All real valued variables used within this formula (and its sub formulas).
             GiNaC::symtab mRealValuedVars;
+            /// All Boolean variables used within this formula (and its sub formulas).
+            std::set< std::string, strCmp > mBooleanVars;
 
             /// The content of this formula.
             union
@@ -68,7 +70,7 @@ namespace smtrat
                 const Constraint*    mpConstraint;
                 const std::string*   mpIdentifier;
             };
-            /// The formula which contains this formula as subformula.
+            /// The formula which contains this formula as sub formula.
             Formula* mpFather;
             /// The propositions of this formula.
             Condition mPropositions;
@@ -195,7 +197,7 @@ namespace smtrat
                 return mPropositions;
             }
 
-            unsigned numberOfVariables() const
+            unsigned numberOfRealVariables() const
             {
                 return mRealValuedVars.size();
             }
@@ -208,6 +210,16 @@ namespace smtrat
             GiNaC::symtab& rRealValuedVars()
             {
                 return mRealValuedVars;
+            }
+
+            unsigned numberOfBooleanVariables() const
+            {
+                return mBooleanVars.size();
+            }
+
+            const std::set< std::string, strCmp >& booleanVars() const
+            {
+                return mBooleanVars;
             }
 
             std::list<Formula*>* const pSubformulas()

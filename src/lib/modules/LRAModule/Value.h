@@ -12,7 +12,7 @@
 #include <ginac/ginac.h>
 #include <assert.h>
 
-namespace lraone
+namespace lra
 {
     class Value
     {
@@ -28,14 +28,18 @@ namespace lraone
             Value();
             Value( GiNaC::numeric );
             Value( GiNaC::numeric, GiNaC::numeric );
-            Value( int, int, int, int );
+//            Value( int, int, int, int );
             Value( const Value& orig );
             virtual ~Value();
 
             Value operator +( const Value& ) const;
+            void operator +=( const Value& );
             Value operator -( const Value& ) const;
+            void operator -=( const Value& );
             Value operator *( const GiNaC::numeric& ) const;
+            void operator *=( const Value& );
             Value operator /( const GiNaC::numeric& ) const;
+            void operator /=( const GiNaC::numeric& );
             bool operator <( const Value& ) const;
             bool operator >( const Value& ) const;
             bool operator <=( const Value& ) const;

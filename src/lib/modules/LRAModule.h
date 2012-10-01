@@ -22,34 +22,66 @@
 
 /**
  * @file LRAModule.h
- * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
+ * @author name surname <emailadress>
  *
- * @version 2012-02-10
- * Created on January 18, 2012, 3:51 PM
+ * @version 2012-04-05
+ * Created on April 5th, 2012, 3:22 PM
  */
 
-#ifndef SMTRAT_LRAMODULE_H
-#define SMTRAT_LRAMODULE_H
+#ifndef LRAMODULE_H
+#define LRAMODULE_H
 
 #include "../Module.h"
-#include "LRAModule/LRASolverA.h"
+#include "LRAModule/Value.h"
+#include "LRAModule/Variable.h"
+#include "LRAModule/Bound.h"
+#include "LRAModule/Tableau.h"
+#include <stdio.h>
+
+#define LRA_SIMPLE_CONFLICT_SEARCH
 
 namespace smtrat
 {
     class LRAModule:
         public Module
     {
+        public:
+            struct exPointerComp
+            {
+                bool operator ()( const GiNaC::ex* const pExA, const GiNaC::ex* const pExB ) const
+                {
+                    return GiNaC::ex_is_less()( *pExA, *pExB );
+                }
+            };
+            struct constraintPointerComp
+            {
+                bool operator ()( const Constraint* const pConstraintA, const Constraint* const pConstraintB ) const
+                {
+                    return (*pConstraintA) < (*pConstraintB);
+                }
+            };
+            typedef std::map<const GiNaC::ex*, lra::Variable*, exPointerComp>                    ExVariableMap;
+            typedef std::pair<const Constraint* const , const lra::Bound* >                      ConstraintBoundPair;
+            typedef std::map<const Constraint* const , const lra::Bound*, constraintPointerComp> ConstraintBoundMap;
+
         private:
-            typedef std::pair<const Constraint*, bool>                     cons_bool_pair;
-            typedef std::vector<cons_bool_pair>                            cons_bool_pair_vec;
-            typedef std::map<const Constraint* const , cons_bool_pair_vec> cons_to_cons_bool_pair_vec_map;
+
+            /**
+             * Members:
+             */
+            bool                        mInitialized;
+            lra::Tableau                mTableau;
+            std::set<const Constraint*, constraintPointerComp > mLinearConstraints;
+            std::set<const Constraint*, constraintPointerComp > mNonlinearConstraints;
+            ExVariableMap               mExistingVars;
+            ConstraintBoundMap          mConstraintToBound;
 
         public:
 
             /**
              * Constructors:
              */
-            LRAModule( Manager* const _tsManager, const Formula* const );
+            LRAModule( Manager* const _tsManager, const Formula* const _formula );
 
             /**
              * Destructor:
@@ -61,20 +93,25 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool assertSubformula( Formula::const_iterator );
             bool inform( const Constraint* const );
-            Answer isConsistent();
+            bool assertSubformula( Formula::const_iterator );
             void removeSubformula( Formula::const_iterator );
+            Answer isConsistent();
 
         private:
-            lraone::LRASolverA*               mpLRASolver;
-            cons_to_cons_bool_pair_vec_map mLRASolverConstraints;
-            unsigned                       mNumAddedNonlinearConstraints;
-
             /**
              * Methods:
              */
-            cons_to_cons_bool_pair_vec_map::const_iterator addConstraintToLRASolverConstraints( const Constraint* const );
+            #ifdef LRA_REFINEMENT
+            void learnRefinements();
+            #endif
+            bool checkAssignmentForNonlinearConstraint() const;
+            bool activateBound( const lra::Bound*, std::set<const Formula*>& );
+            void setBound( lra::Variable&, const Constraint_Relation&, bool, const GiNaC::numeric&, const Constraint* );
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
+            void findSimpleConflicts( const lra::Bound& );
+            #endif
+            void initialize();
     };
 
 }    // namespace smtrat

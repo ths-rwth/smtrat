@@ -390,16 +390,20 @@ namespace smtrat
         if( mFirstSubformulaToPass != mpPassedFormula->end() )
         {
             assert( checkFirstSubformulaToPassValidity() );
+            bool assertionFailed = false;
             for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
             {
                 for( Formula::const_iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
                 {
                     if( !(*module)->assertSubformula( subformula ) )
                     {
-                        mFirstSubformulaToPass = ++subformula;
-                        return False;
+                        assertionFailed = true;
                     }
                 }
+            }
+            if( assertionFailed )
+            {
+                return False;
             }
         }
         mFirstSubformulaToPass = mpPassedFormula->end();
@@ -429,22 +433,6 @@ namespace smtrat
         cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : "Unknown")) << endl;
         #endif
         return result;
-    }
-
-    /**
-     *
-     * @param _subformula
-     * @return
-     */
-    Formula::iterator Module::removeSubformulaFromPassedFormulaOnly( Formula::iterator _subformula )
-    {
-        assert( _subformula != mpPassedFormula->end() );
-        if( _subformula == mFirstSubformulaToPass )
-        {
-            mFirstSubformulaToPass++;
-        }
-        mPassedformulaOrigins.erase( *_subformula );
-        return mpPassedFormula->erase( _subformula );
     }
 
     /**
@@ -616,7 +604,7 @@ namespace smtrat
      * Prints the collected assumptions in the assumption vector into _filename with an appropriate smt2 header including all variables used.
      * @param _filename
      */
-    void Module::storeAssumptionsToCheck( const string _filename )
+    void Module::storeAssumptionsToCheck( const Manager& _manager, const string _filename )
     {
         if( !Module::mAssumptionToCheck.empty() )
         {
@@ -634,6 +622,11 @@ namespace smtrat
                     var != Formula::mConstraintPool.variables().end(); ++var )
                 {
                     smtlibFile << "(declare-fun " << var->first << " () Real)\n";
+                }
+                // add all Boolean variables
+                for( auto var = _manager.formula().booleanVars().begin(); var != _manager.formula().booleanVars().end(); ++var )
+                {
+                    smtlibFile << "(declare-fun " << *var << " () Bool)\n";
                 }
                 // add all Boolean auxiliary variables
                 for( unsigned auxIndex = 0; auxIndex < Formula::mAuxiliaryBooleanCounter; ++auxIndex )
@@ -693,14 +686,6 @@ namespace smtrat
             case MT_LRAModule:
             {
                 return "LRAModule";
-            }
-            case MT_LRAOneModule:
-            {
-                return "LRAOneModule";
-            }
-            case MT_LRATwoModule:
-            {
-                return "LRATwoModule";
             }
             case MT_PreProModule:
             {

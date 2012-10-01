@@ -13,7 +13,7 @@
 
 using namespace std;
 
-namespace lraone
+namespace lra
 {
     Value::Value():
         mMainPart( 0 ),
@@ -21,33 +21,25 @@ namespace lraone
     {}
 
     Value::Value( GiNaC::numeric _num ):
-        mMainPart( 0 ),
+        mMainPart( _num ),
         mDeltaPart( 0 )
-    {
-        assert( _num.is_rational() );
-        mDeltaPart = 0;    // if we have one argument, delta part is 0
-        mMainPart  = _num;
-    }
+    {}
 
-    Value::Value( GiNaC::numeric _num1, GiNaC::numeric _num2 )
-    {
-        assert( _num1.is_rational() );
-        assert( _num2.is_rational() );
-        mDeltaPart = _num2;
-        mMainPart  = _num1;
-    }
+    Value::Value( GiNaC::numeric _num1, GiNaC::numeric _num2 ):
+        mMainPart( _num1 ),
+        mDeltaPart( _num2 )
+    {}
 
-    Value::Value( int _mainPnum, int _mainPdenom, int _deltaPnum, int _deltaPdenom )
-    {
-        mMainPart  = GiNaC::numeric( _mainPnum ) / _mainPdenom;
-        mDeltaPart = GiNaC::numeric( _deltaPnum ) / _deltaPdenom;
-    }
+//    Value::Value( int _mainPnum, int _mainPdenom, int _deltaPnum, int _deltaPdenom )
+//    {
+//        mMainPart  = GiNaC::numeric( _mainPnum ) / _mainPdenom;
+//        mDeltaPart = GiNaC::numeric( _deltaPnum ) / _deltaPdenom;
+//    }
 
-    Value::Value( const Value& orig )
-    {
-        mMainPart  = GiNaC::numeric( orig.getmainP() );
-        mDeltaPart = GiNaC::numeric( orig.getdeltaP() );
-    }
+    Value::Value( const Value& orig ):
+        mMainPart( orig.getmainP() ),
+        mDeltaPart( orig.getdeltaP() )
+    {}
 
     Value::~Value(){}
 
@@ -66,6 +58,16 @@ namespace lraone
     /**
      *
      * @param val
+     */
+    void Value::operator +=( const Value& val )
+    {
+        mMainPart += val.getmainP();
+        mDeltaPart += val.getdeltaP();
+    }
+
+    /**
+     *
+     * @param val
      * @return
      */
     Value Value::operator -( const Value& val ) const
@@ -73,6 +75,16 @@ namespace lraone
         GiNaC::numeric num1 = mMainPart - val.getmainP();
         GiNaC::numeric num2 = mDeltaPart - val.getdeltaP();
         return Value( num1, num2 );
+    }
+
+    /**
+     *
+     * @param val
+     */
+    void Value::operator -=( const Value& val )
+    {
+        mMainPart -= val.getmainP();
+        mDeltaPart -= val.getdeltaP();
     }
 
     /**
@@ -89,6 +101,16 @@ namespace lraone
 
     /**
      *
+     * @param val
+     */
+    void Value::operator *=( const Value& val )
+    {
+        mMainPart *= val.getmainP();
+        mDeltaPart *= val.getdeltaP();
+    }
+
+    /**
+     *
      * @param a
      * @return
      */
@@ -97,6 +119,16 @@ namespace lraone
         GiNaC::numeric num1 = GiNaC::numeric( mMainPart ) / a;
         GiNaC::numeric num2 = GiNaC::numeric( mDeltaPart ) / a;
         return Value( num1, num2 );
+    }
+
+    /**
+     *
+     * @param a
+     */
+    void Value::operator /=( const GiNaC::numeric& a )
+    {
+        mMainPart /= a;
+        mDeltaPart /= a;
     }
 
     /**

@@ -109,7 +109,7 @@ namespace smtrat
                 mIDCounter = 0;
                 mInfeasibleSubsets.clear();
                 mInfeasibleSubsets.push_back( set<const Formula*>() );
-                mInfeasibleSubsets.back().insert( mpReceivedFormula->back() );
+                mInfeasibleSubsets.back().insert( *_subformula );
                 mInconsistentConstraintAdded = true;
                 //cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
                 return false;
@@ -162,8 +162,8 @@ namespace smtrat
      */
     Answer VSModule::isConsistent()
     {
-        //        printReceivedFormula();
-        //cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
+//        cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << endl;
+//        printReceivedFormula();
         if( debugmethods )
         {
             cout << __func__ << endl;
@@ -972,7 +972,7 @@ namespace smtrat
         }
 
         /*
-         * Create a vector to store the results of each single substitution. Each entry correponds to
+         * Create a vector to store the results of each single substitution. Each entry corresponds to
          * the results of a single substitution. These results can be considered as a disjunction of
          * conjunctions of constraints.
          */

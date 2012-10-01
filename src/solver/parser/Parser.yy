@@ -198,7 +198,7 @@ command:
     }
 	|	OB DECLARECONST SYM REAL CB
 	{
-		GiNaC::parser reader( driver.formulaRoot->rRealValuedVars() );
+		GiNaC::parser reader( driver.formulaRoot->realValuedVars() );
 		try
 		{
             for( std::map< const std::string, const std::string >::const_iterator iter = driver.realsymbolpartsToReplace.begin();
@@ -224,7 +224,7 @@ command:
 	}
 	| 	OB DECLAREFUN SYM OB CB REAL CB
 	{
-		GiNaC::parser reader( driver.formulaRoot->rRealValuedVars() );
+		GiNaC::parser reader( driver.formulaRoot->realValuedVars() );
 		try
 		{
             for( std::map< const std::string, const std::string >::const_iterator iter = driver.realsymbolpartsToReplace.begin();
@@ -298,7 +298,7 @@ expr:
         delete $2;
         delete $3;
         delete $4;
-		driver.formulaRoot->rRealValuedVars().insert( constraint->variables().begin(), constraint->variables().end() );
+		//driver.formulaRoot->rRealValuedVars().insert( constraint->variables().begin(), constraint->variables().end() );
 		$$ = new smtrat::Formula( constraint );
 	}
 	| 	SYM

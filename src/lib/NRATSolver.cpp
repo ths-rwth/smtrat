@@ -47,9 +47,7 @@ namespace smtrat
         position = rStrategyGraph().addModuleType( position, MT_CNFerModule );
         position = rStrategyGraph().addModuleType( position, MT_PreProModule );
         position = rStrategyGraph().addModuleType( position, MT_SATModule );
-//      position = rStrategyGraph().addSuccessor( position, MT_LRAOneModule );
-//	position = rStrategyGraph().addSuccessor( position, MT_FourierMotzkinSimplifier );
-//	position = rStrategyGraph().addSuccessor( position, MT_SmartSimplifier );
+        //position = rStrategyGraph().addModuleType( position, MT_LRAModule );
         #ifdef USE_GB
         position = rStrategyGraph().addModuleType( position, MT_GroebnerModule );
         position = rStrategyGraph().addModuleType( position, MT_VSModule );
@@ -57,10 +55,9 @@ namespace smtrat
         position = rStrategyGraph().addModuleType( position, MT_VSModule );
         #endif
         #ifdef USE_CAD
-//      position = rStrategyGraph().addSuccessor( position, MT_CADModule );
         position = rStrategyGraph().addModuleType( position, MT_CADModule );
-        #endif    
-      
+        #endif
+
     }
 
     NRATSolver::~NRATSolver(){}

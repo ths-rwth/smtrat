@@ -108,8 +108,6 @@ namespace smtrat
     static const Condition PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE        = Condition( 55 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE     = Condition( 57 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE         = Condition( 56 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE        = Condition( 57 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE        = Condition( 58 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE      = Condition( 59 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_FOURIERMOTZKINSIMPLIFIER  = Condition( 60 );
     static const Condition SOLVABLE_CONDITIONS                          = PROP_CANNOT_BE_SOLVED_BY_SMARTSIMPLIFIER | PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE
@@ -117,7 +115,6 @@ namespace smtrat
                                                  | PROP_CANNOT_BE_SOLVED_BY_CADMODULE | PROP_CANNOT_BE_SOLVED_BY_SATMODULE
                                                  | PROP_CANNOT_BE_SOLVED_BY_LRAMODULE | PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE
                                                  | PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE | PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_LRAONEMODULE | PROP_CANNOT_BE_SOLVED_BY_LRATWOMODULE
                                                  | PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE | PROP_CANNOT_BE_SOLVED_BY_FOURIERMOTZKINSIMPLIFIER;
 }     // namespace smtrat
 
