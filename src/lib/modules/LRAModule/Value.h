@@ -14,6 +14,7 @@
 
 namespace lra
 {
+    // TODO: Take a faster datatype the GiNaC::numeric.
     class Value
     {
         private:
@@ -28,7 +29,6 @@ namespace lra
             Value();
             Value( GiNaC::numeric );
             Value( GiNaC::numeric, GiNaC::numeric );
-//            Value( int, int, int, int );
             Value( const Value& orig );
             virtual ~Value();
 

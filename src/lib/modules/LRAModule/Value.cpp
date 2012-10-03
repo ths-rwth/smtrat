@@ -30,12 +30,6 @@ namespace lra
         mDeltaPart( _num2 )
     {}
 
-//    Value::Value( int _mainPnum, int _mainPdenom, int _deltaPnum, int _deltaPdenom )
-//    {
-//        mMainPart  = GiNaC::numeric( _mainPnum ) / _mainPdenom;
-//        mDeltaPart = GiNaC::numeric( _deltaPnum ) / _deltaPdenom;
-//    }
-
     Value::Value( const Value& orig ):
         mMainPart( orig.getmainP() ),
         mDeltaPart( orig.getdeltaP() )

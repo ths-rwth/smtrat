@@ -44,7 +44,8 @@ namespace vs
     /**
      * Constructors:
      */
-    State::State()
+    State::State():
+        mVariableBounds()
     {
         mRoot                       = true;
         mHasRecentlyAddedConditions = false;
@@ -70,7 +71,8 @@ namespace vs
         mpSubResultCombination      = NULL;
     }
 
-    State::State( State* const _father, const Substitution& _substitution )
+    State::State( State* const _father, const Substitution& _substitution ):
+        mVariableBounds()
     {
         mRoot                       = false;
         mHasRecentlyAddedConditions = false;

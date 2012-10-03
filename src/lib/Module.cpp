@@ -187,7 +187,7 @@ namespace smtrat
      * @param _formula
      * @param _origins
      */
-    void Module::addSubformulaToPassedFormula( Formula* _formula, vec_set_const_pFormula& _origins )
+    void Module::addSubformulaToPassedFormula( Formula* _formula, const vec_set_const_pFormula& _origins )
     {
         assert( mpReceivedFormula->size() != UINT_MAX );
         mpPassedFormula->addSubformula( _formula );
@@ -360,6 +360,7 @@ namespace smtrat
                     }
                     ++originSet;
                 }
+                assert( smallestOriginSet != formOrigins.end() );
 
                 /*
                  * Add its formulas to the infeasible subset.
@@ -748,9 +749,11 @@ namespace smtrat
         for( Formula::const_iterator receivedSubformula = mpReceivedFormula->begin(); receivedSubformula != mpReceivedFormula->end();
                 ++receivedSubformula )
         {
-//            _out << _initiation << "   " << "[" << *receivedSubformula << "]" << endl;
-            (*receivedSubformula)->print( _out, _initiation + "   ", false );
-            _out << endl;
+            _out << _initiation << "  ";
+            _out << setw( 30 ) << (*receivedSubformula)->toString( true );
+            stringstream out;
+            out << "  [" << *receivedSubformula << "]";
+            _out << setw( 15 ) << out.str() << endl;
         }
     }
 
@@ -762,12 +765,16 @@ namespace smtrat
      */
     void Module::printPassedFormula( ostream& _out, const string _initiation ) const
     {
-        _out << _initiation << "Passed formula:";
+        _out << _initiation << "Passed formula:" << endl;
         for( Formula::const_iterator passedSubformula = mpPassedFormula->begin(); passedSubformula != mpPassedFormula->end(); ++passedSubformula )
         {
             FormulaOrigins::const_iterator formulaOrigins = mPassedformulaOrigins.find( *passedSubformula );
             assert( formulaOrigins != mPassedformulaOrigins.end() );
-            _out << endl << _initiation << "  [" << *passedSubformula << "]" << " from " << "(";
+            _out << _initiation << "  ";
+            _out << setw( 30 ) << (*passedSubformula)->toString( true );
+            stringstream out;
+            out << "  [" << *passedSubformula << "]" << " from " << "(";
+            _out << setw( 22 ) << out.str();
             for( vec_set_const_pFormula::const_iterator oSubformulas = formulaOrigins->second.begin(); oSubformulas != formulaOrigins->second.end();
                     ++oSubformulas )
             {
@@ -779,8 +786,6 @@ namespace smtrat
                 _out << " }";
             }
             _out << " )" << endl;
-            (*passedSubformula)->print( _out, _initiation + "   ", false );
-            _out << endl;
         }
     }
 

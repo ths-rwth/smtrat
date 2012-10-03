@@ -60,9 +60,8 @@ namespace smtrat
                     return (*pConstraintA) < (*pConstraintB);
                 }
             };
-            typedef std::map<const GiNaC::ex*, lra::Variable*, exPointerComp>                    ExVariableMap;
-            typedef std::pair<const Constraint* const , const lra::Bound* >                      ConstraintBoundPair;
-            typedef std::map<const Constraint* const , const lra::Bound*, constraintPointerComp> ConstraintBoundMap;
+            typedef std::map<const GiNaC::ex*, lra::Variable*, exPointerComp>   ExVariableMap;
+            typedef std::vector< std::vector< const lra::Bound* >* >            ConstraintBoundsMap;
 
         private:
 
@@ -70,11 +69,13 @@ namespace smtrat
              * Members:
              */
             bool                        mInitialized;
+            unsigned                    mMaxConstraintId;
             lra::Tableau                mTableau;
             std::set<const Constraint*, constraintPointerComp > mLinearConstraints;
             std::set<const Constraint*, constraintPointerComp > mNonlinearConstraints;
             ExVariableMap               mExistingVars;
-            ConstraintBoundMap          mConstraintToBound;
+            ConstraintBoundsMap         mConstraintToBound;
+            std::vector<const lra::Bound* >  mBoundCandidatesToPass;
 
         public:
 
@@ -105,6 +106,7 @@ namespace smtrat
             #ifdef LRA_REFINEMENT
             void learnRefinements();
             #endif
+            void adaptPassedFormula();
             bool checkAssignmentForNonlinearConstraint() const;
             bool activateBound( const lra::Bound*, std::set<const Formula*>& );
             void setBound( lra::Variable&, const Constraint_Relation&, bool, const GiNaC::numeric&, const Constraint* );

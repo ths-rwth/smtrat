@@ -216,7 +216,7 @@ namespace smtrat
 
         protected:
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );
-            void addSubformulaToPassedFormula( Formula*, vec_set_const_pFormula& );
+            void addSubformulaToPassedFormula( Formula*, const vec_set_const_pFormula& );
             void addSubformulaToPassedFormula( Formula*, const Formula* );
             void setOrigins( const Formula* const , vec_set_const_pFormula& );
             void getOrigins( const Formula* const , vec_set_const_pFormula& ) const;

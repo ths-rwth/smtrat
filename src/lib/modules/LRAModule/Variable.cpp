@@ -37,18 +37,7 @@ using namespace GiNaC;
 
 namespace lra
 {
-    Variable::Variable():
-        mBasic( true ),
-        mPosition( 0 ),
-        mUpperbounds( BoundSet() ),
-        mLowerbounds( BoundSet() ),
-        mAssignment()
-    {
-        mpSupremum = addUpperBound( NULL ).first;
-        mpInfimum  = addLowerBound( NULL ).first;
-    }
-
-    Variable::Variable( unsigned _position, bool _basic, const ex* _expression ):
+    Variable::Variable( unsigned _position, bool _basic, const ex* _expression, smtrat::Formula::iterator _defaultBoundPosition ):
         mBasic( _basic ),
         mPosition( _position ),
         mUpperbounds( BoundSet() ),
@@ -56,8 +45,8 @@ namespace lra
         mExpression( _expression),
         mAssignment()
     {
-        mpSupremum = addUpperBound( NULL ).first;
-        mpInfimum  = addLowerBound( NULL ).first;
+        mpSupremum = addUpperBound( NULL, _defaultBoundPosition ).first;
+        mpInfimum  = addLowerBound( NULL, _defaultBoundPosition ).first;
     }
 
     Variable::~Variable()
@@ -81,9 +70,12 @@ namespace lra
      * @param _val
      * @return
      */
-    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addUpperBound( Value* const _val, const smtrat::Constraint* _constraint )
+    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addUpperBound( Value* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
     {
-        const Bound* newBound = new Bound( _val, this, Bound::UPPER, _constraint );
+        Bound::Info* boundInfo = new Bound::Info();
+        boundInfo->updated = 0;
+        boundInfo->position = _position;
+        const Bound* newBound = new Bound( _val, this, Bound::UPPER, _constraint, boundInfo, _deduced );
         pair<BoundSet::iterator, bool> result = mUpperbounds.insert( newBound );
         if( !result.second )
         {
@@ -121,9 +113,12 @@ namespace lra
      * @param _val
      * @return
      */
-    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addLowerBound( Value* const _val, const smtrat::Constraint* _constraint )
+    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addLowerBound( Value* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
     {
-        const Bound* newBound = new Bound( _val, this, Bound::LOWER, _constraint );
+        Bound::Info* boundInfo = new Bound::Info();
+        boundInfo->updated = 0;
+        boundInfo->position = _position;
+        const Bound* newBound = new Bound( _val, this, Bound::LOWER, _constraint, boundInfo, _deduced );
         pair<BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
         if( !result.second )
         {
@@ -158,9 +153,12 @@ namespace lra
      * @param _val
      * @return
      */
-    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addEqualBound( Value* const _val, const smtrat::Constraint* _constraint )
+    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addEqualBound( Value* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint )
     {
-        const Bound* newBound = new Bound( _val, this, Bound::EQUAL, _constraint );
+        Bound::Info* boundInfo = new Bound::Info();
+        boundInfo->updated = 0;
+        boundInfo->position = _position;
+        const Bound* newBound = new Bound( _val, this, Bound::EQUAL, _constraint, boundInfo );
         pair<BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
         if( !result.second )
         {
@@ -179,7 +177,7 @@ namespace lra
                     break;
                 }
             }
-            result = mUpperbounds.insert( newBound );
+            pair<BoundSet::iterator, bool> result = mUpperbounds.insert( newBound );
             ++result.first;
             const Bound* nextWeakerUpperBound = NULL;
             while( result.first != mUpperbounds.end() )
@@ -199,8 +197,12 @@ namespace lra
      *
      * @param bound
      */
-    void Variable::deactivateBound( const Bound* bound )
+    void Variable::deactivateBound( const Bound* bound, smtrat::Formula::iterator _position )
     {
+        assert( !bound->isInfinite() );
+        assert( !bound->isActive() );
+        bound->pInfo()->updated = 0;
+        bound->pInfo()->position = _position;
         if( bound->isUpperBound() )
         {
             //check if it is the supremum
@@ -208,18 +210,20 @@ namespace lra
             {
                 //find the supremum
                 BoundSet::iterator newBound = mUpperbounds.begin();
-                while( newBound != mUpperbounds.end() )
+                while( newBound != --mUpperbounds.end() )
                 {
                     if( (*newBound)->isActive() )
                     {
+                        ++(*newBound)->pInfo()->updated;
                         mpSupremum = *newBound;
-                        break;
+                        goto LowerBounds;
                     }
                     ++newBound;
                 }
-                assert( newBound != mUpperbounds.end() );
+                mpSupremum = *newBound;
             }
         }
+LowerBounds:
         if( bound->isLowerBound() )
         {
             //check if it is the infimum
@@ -227,16 +231,17 @@ namespace lra
             {
                 //find the infimum
                 BoundSet::reverse_iterator newBound = mLowerbounds.rbegin();
-                while( newBound != mLowerbounds.rend() )
+                while( newBound != --mLowerbounds.rend() )
                 {
                     if( (*newBound)->isActive() )
                     {
+                        ++(*newBound)->pInfo()->updated;
                         mpInfimum = *newBound;
-                        break;
+                        return;
                     }
                     ++newBound;
                 }
-                assert( newBound != mLowerbounds.rend() );
+                mpInfimum = *newBound;
             }
         }
     }
@@ -265,15 +270,15 @@ namespace lra
         for( BoundSet::const_iterator bIter = mUpperbounds.begin(); bIter != mUpperbounds.end(); ++bIter )
         {
             _out << _init << "     ";
-            (*bIter)->print( _out, true, true );
-            _out << endl;
+            (*bIter)->print( true, _out, true );
+            _out << " [" << (*bIter)->pInfo()->updated << "]" << endl;
         }
         _out << _init << " Lower bounds: " << endl;
         for( BoundSet::const_reverse_iterator bIter = mLowerbounds.rbegin(); bIter != mLowerbounds.rend(); ++bIter )
         {
             _out << _init << "     ";
-            (*bIter)->print( _out, true, true );
-            _out << endl;
+            (*bIter)->print( true, _out, true );
+            _out << " [" << (*bIter)->pInfo()->updated << "]" << endl;
         }
     }
 }    // end namspace lra

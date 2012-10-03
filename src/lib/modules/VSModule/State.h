@@ -30,6 +30,7 @@
 
 #include <map>
 #include <limits.h>
+#include <ginacra/ginacra.h>
 #include "Substitution.h"
 #include "Tools.h"
 
@@ -205,6 +206,43 @@ typedef std::vector	< const smtrat::Constraint* > TS_ConstraintConjunction			;
 class State
 {
 public:
+	/*
+	 * Intern type structure:
+	 */
+	typedef std::map	< const Substitution* const, ConditionSetSetSet, subComp > 	ConflictSets		;
+	typedef std::vector	< State* >													StateVector			;
+	typedef std::vector < std::pair< ConditionVector, bool > > 						SubstitutionResult	;
+	typedef std::vector < SubstitutionResult > 										SubstitutionResults	;
+	typedef std::vector < std::pair< unsigned, unsigned  > >						SubResultCombination;
+private:
+
+	/**
+	 * Attributes:
+	 */
+	bool					 mConditionsSimplified		;
+	bool					 mHasChildrenToInsert		;
+	bool					 mHasRecentlyAddedConditions;
+	bool					 mInconsistent				;
+	bool					 mMarkedAsDeleted			;
+	bool			    	 mRoot						;
+	bool					 mSubResultsSimplified		;
+	bool					 mTakeSubResultCombAgain	;
+	bool					 mToHighDegree				;
+	bool					 mTryToRefreshIndex			;
+	unsigned		    	 mID						;
+	unsigned		    	 mValuation					;
+	StateType				 mStateType					;
+	std::string*			 mpIndex					;
+	Condition*				 mpOriginalCondition		;
+	State*					 mpFather					;
+	Substitution*			 mpSubstitution				;
+	SubstitutionResults* 	 mpSubstitutionResults		;
+	SubResultCombination*	 mpSubResultCombination		;
+	ConditionVector* 		 mpConditions				;
+	ConflictSets*			 mpConflictSets				;
+	StateVector* 			 mpChildren					;
+    GiNaCRA::evalintervalmap mVariableBounds            ;
+public:
 
 	/**
 	 * Constructors:
@@ -217,15 +255,6 @@ public:
 	 * Destructor:
 	 */
 	~State	( )	;
-
-	/*
-	 * Intern type structure:
-	 */
-	typedef std::map	< const Substitution* const, ConditionSetSetSet, subComp > 	ConflictSets		 ;
-	typedef std::vector	< State* >													StateVector			 ;
-	typedef std::vector < std::pair< ConditionVector, bool > > 						SubstitutionResult	 ;
-	typedef std::vector < SubstitutionResult > 										SubstitutionResults	 ;
-	typedef std::vector < std::pair< unsigned, unsigned  > >						SubResultCombination;
 
 	/**
 	 * Methods:
@@ -372,33 +401,6 @@ public:
 	static signed 							compareConstraints					( const smtrat::Constraint&,
 																				  const smtrat::Constraint& )										;
 
-private:
-
-	/**
-	 * Attributes:
-	 */
-	bool			    	mRoot						;
-	bool					mHasRecentlyAddedConditions	;
-	bool					mInconsistent				;
-	bool					mToHighDegree				;
-	bool					mMarkedAsDeleted			;
-	bool					mHasChildrenToInsert		;
-	bool					mConditionsSimplified		;
-	bool					mSubResultsSimplified		;
-	bool					mTakeSubResultCombAgain		;
-	bool					mTryToRefreshIndex			;
-	unsigned		    	mValuation					;
-	unsigned		    	mID							;
-	StateType				mStateType					;
-	std::string*			mpIndex						;
-	Condition*				mpOriginalCondition			;
-	ConditionVector* 		mpConditions				;
-	StateVector* 			mpChildren					;
-	State*					mpFather					;
-	ConflictSets*			mpConflictSets				;
-	Substitution*			mpSubstitution				;
-	SubstitutionResults* 	mpSubstitutionResults		;
-	SubResultCombination*	mpSubResultCombination		;
 };
 
 typedef std::map	< const Substitution* const, ConditionSetSetSet, subComp > 	ConflictSets		;

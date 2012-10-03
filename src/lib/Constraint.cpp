@@ -303,19 +303,56 @@ namespace smtrat
         return result;
     }
 
+    signed maxDegree( const ex& _subex )
+    {
+        if( is_exactly_a<add>( _subex ) )
+        {
+            signed d = 0;
+            for( GiNaC::const_iterator summand = _subex.begin(); summand != _subex.end(); ++summand )
+            {
+                signed sd = maxDegree( *summand );
+                if( sd > d ) d = sd;
+            }
+            return d;
+        }
+        else if( is_exactly_a<mul>( _subex ) )
+        {
+            signed d = 0;
+            for( GiNaC::const_iterator factor = _subex.begin(); factor != _subex.end(); ++factor )
+            {
+                d += maxDegree( *factor );
+            }
+            return d;
+        }
+        else if( is_exactly_a<symbol>( _subex ) )
+        {
+            return 1;
+        }
+        else if( is_exactly_a<numeric>( _subex ) )
+        {
+            return 0;
+        }
+        else if( is_exactly_a<power>( _subex ) )
+        {
+            const ex& exponent = *(++_subex.begin());
+            const ex& subterm = *_subex.begin();
+            assert( exponent.info( info_flags::nonnegative ) );
+            return exponent.integer_content().to_int() * maxDegree( subterm );
+        }
+        else
+        {
+            cerr << "The left hand side of a constraint must be a polynomial!" << endl;
+            assert( false );
+        }
+        return 0;
+    }
+
     /**
      * Checks whether the constraint is linear in all variables.
      */
     bool Constraint::isLinear() const
     {
-        for( symtab::const_iterator var = variables().begin(); var != variables().end(); ++var )
-        {
-            if( lhs().degree( ex( var->second ) ) > 1 )
-            {
-                return false;
-            }
-        }
-        return true;
+        return maxDegree( lhs() ) < 2;
     }
 
     /**
@@ -698,25 +735,25 @@ namespace smtrat
         switch( relation() )
         {
             case CR_EQ:
-                result += "=";
+                result += "  = ";
                 break;
             case CR_NEQ:
-                result += "<>";
+                result += " <> ";
                 break;
             case CR_LESS:
-                result += "<";
+                result += "  < ";
                 break;
             case CR_GREATER:
-                result += ">";
+                result += "  > ";
                 break;
             case CR_LEQ:
-                result += "<=";
+                result += " <= ";
                 break;
             case CR_GEQ:
-                result += ">=";
+                result += " >= ";
                 break;
             default:
-                result += "~";
+                result += "  ~ ";
         }
         result += "0";
         return result;
