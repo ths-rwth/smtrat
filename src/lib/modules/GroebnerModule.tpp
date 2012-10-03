@@ -60,7 +60,6 @@ mStateHistory( )
 
 {
     mModuleType = MT_GroebnerModule;
-    mPopCausesRecalc = false;
     pushBacktrackPoint( mpReceivedFormula->end( ) );
 }
 
@@ -82,7 +81,7 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
     Module::assertSubformula( _formula );
 
     const Constraint& constraint = (*_formula)->constraint( );
-
+    // add variables
     for( GiNaC::symtab::const_iterator it = constraint.variables( ).begin( ); it != constraint.variables( ).end( ); ++it )
     {
         VariableListPool::addVariable( ex_to<symbol > (it->second) );
@@ -105,8 +104,7 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
         }
     }
     else 
-    {
-        
+    {   
         if( Settings::transformIntoEqualities == ALL_INEQUALITIES ||
                 (Settings::transformIntoEqualities == ONLY_NONSTRICT && (constraint.relation( ) == CR_GEQ || constraint.relation( ) == CR_LEQ)) )
         {
@@ -148,7 +146,6 @@ Answer GroebnerModule<Settings>::isConsistent( )
     mStats->called();
     #endif
     
-    
     assert( mBacktrackPoints.size( ) - 1 == mBasis.nrOriginalConstraints( ) );
     assert( mInfeasibleSubsets.empty( ) );
  
@@ -158,9 +155,8 @@ Answer GroebnerModule<Settings>::isConsistent( )
         mBasis.reduceInput( );
     }
     //If no equalities are added, we do not know anything 
-    if( !mBasis.inputEmpty( ) || (mPopCausesRecalc && mBasis.nrOriginalConstraints( ) > 0) )
+    if( !mBasis.inputEmpty( ) )
     {
-      mPopCausesRecalc = false;
         //now, we calculate the groebner basis
         mBasis.calculate( );
         Polynomial witness;
@@ -216,6 +212,8 @@ Answer GroebnerModule<Settings>::isConsistent( )
             auto it = mBacktrackPoints.begin( );
             for( ++it; it != mBacktrackPoints.end( ); ++it )
             {
+                assert(it != mBacktrackPoints.end());
+                
                 assert( (**it)->getType( ) == REALCONSTRAINT );
                 assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (**it)->constraint( ).relation( ) == CR_EQ );
                                
@@ -333,7 +331,7 @@ void GroebnerModule<Settings>::pushBacktrackPoint( Formula::const_iterator btpoi
 {
     assert( mBacktrackPoints.empty( ) || (*btpoint)->getType( ) == REALCONSTRAINT );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
-  
+    
     if( !mBacktrackPoints.empty( ) )
     {
         saveState( );
@@ -357,15 +355,15 @@ void GroebnerModule<Settings>::pushBacktrackPoint( Formula::const_iterator btpoi
 template<class Settings>
 void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoint )
 {
-    assert( validityCheck( ) );
+    //assert( validityCheck( ) );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
     assert( !mBacktrackPoints.empty( ) );
-
-    // We have to do a consistency check
-    mPopCausesRecalc = true;
-
+    
     //We first count how far we have to backtrack.
+    //Because the polynomials have to be added again afterwards, we save them in a list.
     unsigned nrOfBacktracks = 1;
+    std::list<Formula::const_iterator> rescheduled;
+    //TODO efficiency improvement by removing at once.
     while( !mBacktrackPoints.empty( ) )
     {
         if( mBacktrackPoints.back( ) == btpoint )
@@ -373,8 +371,12 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
             mBacktrackPoints.pop_back( );
             break;
         }
-        ++nrOfBacktracks;
-        mBacktrackPoints.pop_back( );
+        else 
+        {
+            ++nrOfBacktracks;
+            rescheduled.push_front(mBacktrackPoints.back());
+            mBacktrackPoints.pop_back( );
+        }
     }
     
     #ifdef GATHER_STATS
@@ -398,24 +400,24 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
         mInequalities.popBacktrackPoint( nrOfBacktracks );
     }
 
-    //We should not add this one again (it is the end)
-    btpoint++;
     //Add all others
-    for( Formula::const_iterator it = btpoint; it != mpReceivedFormula->end( ); ++it )
+    for( auto it = rescheduled.begin(); it != rescheduled.end(); ++it )
     {
-        assert( (*it)->getType( ) == REALCONSTRAINT );
-        Constraint_Relation relation = (*it)->constraint( ).relation( );
+        assert( (**it)->getType( ) == REALCONSTRAINT );
+        Constraint_Relation relation = (**it)->constraint( ).relation( );
         bool isInGb = Settings::transformIntoEqualities == ALL_INEQUALITIES || relation == CR_EQ
                 || (Settings::transformIntoEqualities == ONLY_NONSTRICT && relation != CR_GREATER && relation != CR_LESS);
         if( isInGb )
         {
-            pushBacktrackPoint( it );
-            mBasis.addPolynomial( relation == CR_EQ ? Polynomial( (*it)->constraint( ).lhs( ) ) : transformIntoEquality( it ) );
+            pushBacktrackPoint( *it );
+            mBasis.addPolynomial( relation == CR_EQ ? Polynomial( (**it)->constraint( ).lhs( ) ) : transformIntoEquality( *it ) );
             // and save them
             saveState( );
         }
     }
     assert( mBasis.nrOriginalConstraints( ) == mBacktrackPoints.size( ) - 1 );
+    
+   
 }
 
 /**
@@ -597,7 +599,7 @@ bool GroebnerModule<Settings>::validityCheck( )
             {
                 print( );
                 printStateHistory( );
-                std::cout << *it << " != " << **btp << std::endl;
+                std::cout << *it << " (Element in received formula) != " << **btp << "(Backtrackpoint)" << std::endl;
                 return false;
             }
             ++btp;
