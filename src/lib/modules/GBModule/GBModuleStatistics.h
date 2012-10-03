@@ -23,18 +23,31 @@
 #ifndef GBMODULESTATISTICS_H
 #define	GBMODULESTATISTICS_H
 
+#include "../../config.h"
+#ifdef GATHER_STATS
 #include <vector>
 #include <map>
 #include <iostream>
 
 #include "../../Constraint.h"
+#include "../../utilities/stats/Statistics.h"
 namespace smtrat {
-class GroebnerModuleStats
+class GroebnerModuleStats : public Statistics
 {
    public:
      static GroebnerModuleStats* getInstance(unsigned key);
      
      static void printAll(std::ostream& = std::cout);
+     
+     /**
+      * Override Statistics::collect
+      */
+     void collect() {
+         std::cout << "Collect gb stats"<< std::endl;
+         Statistics::addKeyValuePair("Constant GB", "blaa");
+         Statistics::addKeyValuePair("Number calls", "many");
+         
+     }
      
      /**
       *  Count how often the module is called
@@ -134,7 +147,7 @@ class GroebnerModuleStats
      void print(std::ostream& os = std::cout);
      void exportKeyValue(std::ostream& os = std::cout);
    protected:
-    GroebnerModuleStats() : mNrCalls(0), mNrConstantGBs(0),
+    GroebnerModuleStats() : Statistics("GroebnerBasis", this), mNrCalls(0), mNrConstantGBs(0),
             mNrInfeasibleInequalities(0), mNrBackendReturnsFalse(0), mNrOfStrictInequalitiesAdded(0),
             mNrOfNonStrictInequalitiesAdded(0), mNrOfEqualitiesAdded(0), mNrOfStrictInequalitiesRemoved(0),
             mNrOfNonStrictInequalitiesRemoved(0), mNrOfEqualitiesRemoved(0)
@@ -160,6 +173,6 @@ class GroebnerModuleStats
 
 }
 
-
+#endif
 #endif	/* GBMODULESTATISTICS_H */
 

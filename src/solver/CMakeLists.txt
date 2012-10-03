@@ -44,6 +44,11 @@ add_executable( smtratSolver
 	${CMAKE_BINARY_DIR}/src/solver/lex.smtrat.cc
 )
 
+#TODO: Dependencies do not work correctly, rebuilding parser is not triggered!
+add_dependencies( smtratSolver
+	${CMAKE_BINARY_DIR}/src/solver/parser/Scanner.ll
+	${CMAKE_BINARY_DIR}/src/solver/parser/Parser.yy
+)
 target_link_libraries( smtratSolver
 		       lib_${PROJECT_NAME}
 		       ${libraries} # libraries definied in top-level CMakeLists.txt

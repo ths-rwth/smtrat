@@ -28,12 +28,14 @@ set( smtrat_NAME "SMT-RAT" )
 set( smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 
 # options
-option( STATICLIB_SWITCH "Compile a statically linked version of the library." )
-option( GATHER_STATS "Gather statistics during the calculation" )
-option(USE_NSS "Compile the NSS Module")
-option(USE_GINACRA "Compile modules using GiNaCRA")
-option(USE_GB "Compile modules using GroebnerBasis")
-option(USE_CAD "Compile modules using CAD")
+option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
+option(BUILD_SOLVER "Build the SMT-RAT Solver" ON)
+option(GATHER_STATS "Gather statistics during the calculation" OFF)
+option(USE_NSS "Compile the NSS Module" OFF)
+option(USE_GINACRA "Compile modules using GiNaCRA" ON)
+option(USE_GB "Compile modules using GroebnerBasis" OFF)
+option(USE_CAD "Compile modules using CAD" ON)
+
 if(NOT USE_GINACRA)
 	if(USE_GB)
 		message(WARNING, "GB is automatically switched off when GiNaCRA is not available")
@@ -88,8 +90,10 @@ find_package(CPPUnit)
 find_package(Ant) # for building the GUI
 find_package(Java) # for building the GUI
 find_package(Java COMPONENTS Development) # for building the GUI
+if(BUILD_SOLVER)
 find_package(BISON) # for building the parser
 find_package(FLEX) # for building the parser
+endif()
 # LAPACK and BLAS are both needed for successfull using CSDP
 # todo: maybe CLAPACK would also do?
 if(USE_NSS)

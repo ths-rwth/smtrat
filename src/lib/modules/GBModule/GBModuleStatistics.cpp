@@ -18,7 +18,9 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
 #include "GBModuleStatistics.h"
+#ifdef GATHER_STATS
 
 #include <algorithm>
 namespace smtrat 
@@ -58,3 +60,4 @@ void GroebnerModuleStats::print(std::ostream& os) {
 
 }
 
+#endif

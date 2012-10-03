@@ -34,18 +34,25 @@
 
 #ifdef GATHER_STATS
 
+#include <vector>
 #include <iostream>
 
 namespace smtrat {
+
+    class Statistics;
+    
     class CollectStatistics
     {
     public:
         CollectStatistics( );
         virtual ~CollectStatistics( ) {};
+        
+        static void registerStats(Statistics* _stats);
         static void print(std::ostream& os = std::cout);
         static void exportKeyValue(std::string path);
+        static void exportXML();
     private:
-
+        static std::vector<Statistics*> stats;
     };
 }
 #endif

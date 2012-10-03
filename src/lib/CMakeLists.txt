@@ -156,6 +156,7 @@ set(lib_LinAlg
 endif()
 set(lib_Utilities_headers
 	utilities/debug/debug.h
+	utilities/stats/Statistics.h
 	utilities/stats/CollectStatistics.h
 )
 set(lib_Utilities_src
