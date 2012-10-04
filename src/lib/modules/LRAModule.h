@@ -36,6 +36,7 @@
 #include "LRAModule/Variable.h"
 #include "LRAModule/Bound.h"
 #include "LRAModule/Tableau.h"
+#include <ginacra/ginacra.h>
 #include <stdio.h>
 
 #define LRA_SIMPLE_CONFLICT_SEARCH
@@ -73,7 +74,8 @@ namespace smtrat
             lra::Tableau                mTableau;
             std::set<const Constraint*, constraintPointerComp > mLinearConstraints;
             std::set<const Constraint*, constraintPointerComp > mNonlinearConstraints;
-            ExVariableMap               mExistingVars;
+            ExVariableMap               mOriginalVars;
+            ExVariableMap               mSlackVars;
             ConstraintBoundsMap         mConstraintToBound;
             std::vector<const lra::Bound* >  mBoundCandidatesToPass;
 
@@ -107,7 +109,7 @@ namespace smtrat
             void learnRefinements();
             #endif
             void adaptPassedFormula();
-            bool checkAssignmentForNonlinearConstraint() const;
+            bool checkAssignmentForNonlinearConstraint();
             bool activateBound( const lra::Bound*, std::set<const Formula*>& );
             void setBound( lra::Variable&, const Constraint_Relation&, bool, const GiNaC::numeric&, const Constraint* );
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH

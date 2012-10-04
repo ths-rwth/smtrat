@@ -314,7 +314,7 @@ namespace lra
                 if( !result.second )
                 {
                     // Found a conflicting row.
-                    if( beginOfFirstConflictRow == 0 || theta.getmainP() > mpTheta->getmainP() )
+                    if( beginOfFirstConflictRow == 0 || theta.mainPart() > mpTheta->mainPart() )
                     {
                         *mpTheta = theta;
                         beginOfFirstConflictRow = result.first;
@@ -323,7 +323,7 @@ namespace lra
                 else if( result.first != 0 )
                 {
                     #ifdef LRA_USE_THETA_STRATEGY
-                    if( beginOfBestRow == 0 || abs( theta.getmainP() ) > abs( mpTheta->getmainP() ) )
+                    if( beginOfBestRow == 0 || abs( theta.mainPart() ) > abs( mpTheta->mainPart() ) )
                     {
                         beginOfBestRow = result.first;
                         *mpTheta = theta;
@@ -784,7 +784,7 @@ namespace lra
         // Update the content of the pivoting entry
         pivotContent = 1/pivotContent;
         #ifdef LRA_REFINEMENT
-        refinement( rowHead );
+        rowRefinement( rowHead );
         #endif
         // Let (p_r,p_c,p_e) be the pivoting entry, where p_r is the row number, p_c the column number and p_e the content.
         // For all rows R having a nonzero entry in the pivoting column:
@@ -994,7 +994,7 @@ namespace lra
             }
             currentContent *= (*mpEntries)[_pivotingElement].content();
             #ifdef LRA_REFINEMENT
-            refinement( mRows[(*pivotingColumnIter).rowNumber()] );
+            rowRefinement( mRows[(*pivotingColumnIter).rowNumber()] );
             #endif
         }
     }
@@ -1183,13 +1183,13 @@ namespace lra
             }
             currentContent *= (*mpEntries)[_pivotingElement].content();
             #ifdef LRA_REFINEMENT
-            refinement( mRows[(*pivotingColumnIter).rowNumber()] );
+            rowRefinement( mRows[(*pivotingColumnIter).rowNumber()] );
             #endif
         }
     }
 
     #ifdef LRA_REFINEMENT
-    void Tableau::refinement( const TableauHead& _row )
+    void Tableau::rowRefinement( const TableauHead& _row )
     {
         /*
          * Collect the bounds which form an upper resp. lower refinement.
@@ -1310,8 +1310,8 @@ namespace lra
                     learnedBound.nextWeakerBound = NULL;
                 }
                 learnedBound.premise = uPremise;
-                ex lhs = (*ubound)->variable().expression() - newlimit->getmainP();
-                smtrat::Constraint_Relation rel = newlimit->getdeltaP() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
+                ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
+                smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
                 const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
                 learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                 mLearnedBounds.push_back( learnedBound );
@@ -1369,8 +1369,8 @@ CheckLowerPremise:
                     learnedBound.nextWeakerBound = NULL;
                 }
                 learnedBound.premise = lPremise;
-                ex lhs = (*lbound)->variable().expression() - newlimit->getmainP();
-                smtrat::Constraint_Relation rel = newlimit->getdeltaP() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
+                ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
+                smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
                 const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
                 learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                 mLearnedBounds.push_back( learnedBound );
@@ -1380,6 +1380,266 @@ CheckLowerPremise:
                 delete newlimit;
                 delete lPremise;
             }
+        }
+    }
+
+    void Tableau::columnRefinement( const TableauHead& _column )
+    {
+        /*
+         * Collect the bounds which form an upper resp. lower refinement.
+         */
+        vector<const Bound*>* uPremise = new vector<const Bound*>();
+        vector<const Bound*>* lPremise = new vector<const Bound*>();
+        Iterator columnEntry = Iterator( _column.mStartEntry, mpEntries );
+        while( true )
+        {
+            if( (*columnEntry).content().is_positive() )
+            {
+                if( uPremise != NULL )
+                {
+                    const Bound* sup = mColumns[(*columnEntry).columnNumber()].mName->pSupremum();
+                    if( sup->pLimit() != NULL )
+                    {
+                        uPremise->push_back( sup );
+                    }
+                    else
+                    {
+                        delete uPremise;
+                        uPremise = NULL;
+                        if( lPremise == NULL ) return;
+                    }
+                }
+                if( lPremise != NULL )
+                {
+                    const Bound* inf = mColumns[(*columnEntry).columnNumber()].mName->pInfimum();
+                    if( inf->pLimit() != NULL )
+                    {
+                        lPremise->push_back( inf );
+                    }
+                    else
+                    {
+                        delete lPremise;
+                        lPremise = NULL;
+                        if( uPremise == NULL ) return;
+                    }
+                }
+            }
+            else
+            {
+                if( uPremise != NULL )
+                {
+                    const Bound* inf = mColumns[(*columnEntry).columnNumber()].mName->pInfimum();
+                    if( inf->pLimit() != NULL )
+                    {
+                        uPremise->push_back( inf );
+                    }
+                    else
+                    {
+                        delete uPremise;
+                        uPremise = NULL;
+                        if( lPremise == NULL ) return;
+                    }
+                }
+                if( lPremise != NULL )
+                {
+                    const Bound* sup = mColumns[(*columnEntry).columnNumber()].mName->pSupremum();
+                    if( sup->pLimit() != NULL )
+                    {
+                        lPremise->push_back( sup );
+                    }
+                    else
+                    {
+                        delete lPremise;
+                        lPremise = NULL;
+                        if( uPremise == NULL ) return;
+                    }
+                }
+            }
+            if( columnEntry.columnBegin() ) break;
+            else columnEntry.up();
+        }
+        if( uPremise != NULL )
+        {
+            /*
+             * Found an upper refinement.
+             */
+            Value* newlimit = new Value();
+            vector< const Bound* >::iterator bound = uPremise->begin();
+            Iterator columnEntry = Iterator( _column.mStartEntry, mpEntries );
+            while( true )
+            {
+                *newlimit += (*bound)->limit() * (*columnEntry).content();
+                ++bound;
+                if( !columnEntry.columnBegin() ) columnEntry.up();
+                else break;
+            }
+            /*
+             * Learn that the strongest weaker upper bound should be activated.
+             */
+            Variable& bvar = *_column.mName;
+            const BoundSet& upperBounds = bvar.upperbounds();
+            auto ubound = upperBounds.begin();
+            while( ubound != upperBounds.end() )
+            {
+                if( **ubound > *newlimit && (*ubound)->type() != Bound::EQUAL && !(*ubound)->deduced() )
+                {
+                    break;
+                }
+                if( *ubound == bvar.pSupremum() )
+                {
+                    delete uPremise;
+                    goto CheckLowerPremise;
+                }
+                ++ubound;
+            }
+            if( ubound != --upperBounds.end() )
+            {
+                LearnedBound learnedBound = LearnedBound();
+                if( (*ubound)->type() != Bound::EQUAL && !(*ubound)->deduced() )
+                {
+                    learnedBound.nextWeakerBound = *ubound;
+                }
+                else
+                {
+                    learnedBound.nextWeakerBound = NULL;
+                }
+                learnedBound.premise = uPremise;
+                ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
+                smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
+                const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
+                learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
+                mLearnedBounds.push_back( learnedBound );
+            }
+            else
+            {
+                delete newlimit;
+                delete uPremise;
+            }
+        }
+CheckLowerPremise:
+        if( lPremise != NULL )
+        {
+            /*
+             * Found an lower refinement.
+             */
+            Value* newlimit = new Value();
+            vector< const Bound* >::iterator bound = lPremise->begin();
+            Iterator columnEntry = Iterator( _column.mStartEntry, mpEntries );
+            while( true )
+            {
+                *newlimit += (*bound)->limit() * (*columnEntry).content();
+                ++bound;
+                if( !columnEntry.columnBegin() ) columnEntry.up();
+                else break;
+            }
+            /*
+             * Learn that the strongest weaker lower bound should be activated.
+             */
+            Variable& bvar = *_column.mName;
+            const BoundSet& lowerBounds = bvar.lowerbounds();
+            auto lbound = lowerBounds.rbegin();
+            while( lbound != lowerBounds.rend() )
+            {
+                if( **lbound < *newlimit && (*lbound)->type() != Bound::EQUAL && !(*lbound)->deduced() )
+                {
+                    break;
+                }
+                if( *lbound == bvar.pInfimum()  )
+                {
+                    delete lPremise;
+                    return;
+                }
+                ++lbound;
+            }
+            if( lbound != --lowerBounds.rend() )
+            {
+                LearnedBound learnedBound = LearnedBound();
+                if( (*lbound)->type() != Bound::EQUAL && !(*lbound)->deduced() )
+                {
+                    learnedBound.nextWeakerBound = *lbound;
+                }
+                else
+                {
+                    learnedBound.nextWeakerBound = NULL;
+                }
+                learnedBound.premise = lPremise;
+                ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
+                smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
+                const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
+                learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
+                mLearnedBounds.push_back( learnedBound );
+            }
+            else
+            {
+                delete newlimit;
+                delete lPremise;
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    void Tableau::exhaustiveRefinement()
+    {
+        // TODO: Make this always terminating.
+        set< unsigned > rowsToRefine = set< unsigned >();
+        for( unsigned pos = 0; pos < mRows.size(); ++pos )
+        {
+            rowsToRefine.insert( pos );
+        }
+        set< unsigned > columnsToRefine = set< unsigned >();
+        for( unsigned pos = 0; pos < mColumns.size(); ++pos )
+        {
+            columnsToRefine.insert( pos );
+        }
+        unsigned learnedBoundsSizeBefore = mLearnedBounds.size();
+        while( !rowsToRefine.empty() || !columnsToRefine.empty() )
+        {
+            /*
+             * Refine all remaining rows.
+             */
+            for( auto rowPosition = rowsToRefine.begin(); rowPosition != rowsToRefine.end(); ++rowPosition )
+            {
+                rowRefinement( mRows[*rowPosition] );
+                if( learnedBoundsSizeBefore < mLearnedBounds.size() )
+                {
+                    /*
+                     * If refinement took place, refine all columns where this row has a non zero entry.
+                     */
+                    Iterator rowEntry = Iterator( mRows[*rowPosition].mStartEntry, mpEntries );
+                    while( true )
+                    {
+                        columnsToRefine.insert( (*rowEntry).columnNumber() );
+                        if( !rowEntry.rowEnd() ) rowEntry.right();
+                        else break;
+                    }
+                    learnedBoundsSizeBefore = mLearnedBounds.size();
+                }
+            }
+            rowsToRefine.clear();
+            /*
+             * Refine all remaining columns.
+             */
+            for( auto columnPosition = columnsToRefine.begin(); columnPosition != columnsToRefine.end(); ++columnPosition )
+            {
+                if( learnedBoundsSizeBefore < mLearnedBounds.size() )
+                {
+                    /*
+                     * If refinement took place, refine all rows where this column has a non zero entry.
+                     */
+                    Iterator columnEntry = Iterator( mColumns[*columnPosition].mStartEntry, mpEntries );
+                    while( true )
+                    {
+                        rowsToRefine.insert( (*columnEntry).rowNumber() );
+                        if( !columnEntry.columnBegin() ) columnEntry.up();
+                        else break;
+                    }
+                    learnedBoundsSizeBefore = mLearnedBounds.size();
+                }
+                columnRefinement( mColumns[*columnPosition] );
+            }
+            columnsToRefine.clear();
         }
     }
     #endif

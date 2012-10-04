@@ -37,6 +37,7 @@
 using namespace std;
 using namespace lra;
 using namespace GiNaC;
+using namespace GiNaCRA;
 
 namespace smtrat
 {
@@ -50,7 +51,8 @@ namespace smtrat
         mTableau( mpPassedFormula->end() ),
         mLinearConstraints(),
         mNonlinearConstraints(),
-        mExistingVars(),
+        mOriginalVars(),
+        mSlackVars(),
         mConstraintToBound( mMaxConstraintId, NULL ),
         mBoundCandidatesToPass()
     {
@@ -68,10 +70,16 @@ namespace smtrat
             mConstraintToBound.pop_back();
             if( toDelete != NULL ) delete toDelete;
         }
-        while( !mExistingVars.empty() )
+        while( !mOriginalVars.empty() )
         {
-            const ex* exToDelete = mExistingVars.begin()->first;
-            mExistingVars.erase( mExistingVars.begin() );
+            const ex* exToDelete = mOriginalVars.begin()->first;
+            mOriginalVars.erase( mOriginalVars.begin() );
+            delete exToDelete;
+        }
+        while( !mSlackVars.empty() )
+        {
+            const ex* exToDelete = mSlackVars.begin()->first;
+            mSlackVars.erase( mSlackVars.begin() );
             delete exToDelete;
         }
     }
@@ -421,7 +429,7 @@ namespace smtrat
      *
      * @return
      */
-    bool LRAModule::checkAssignmentForNonlinearConstraint() const
+    bool LRAModule::checkAssignmentForNonlinearConstraint()
     {
         if( mNonlinearConstraints.empty() )
         {
@@ -429,9 +437,186 @@ namespace smtrat
         }
         else
         {
-            // TODO: check whether the found satisfying assignment is by coincidence a
-            // satisfying assignment of the non linear constraints
-            return false;
+            /*
+             * Check whether the found satisfying assignment is by coincidence a
+             * satisfying assignment of the non linear constraints
+             */
+            #ifdef LRA_INTERVAL_CHECK
+            mTableau.exhaustiveRefinement();
+            GiNaCRA::evalintervalmap variableBounds = GiNaCRA::evalintervalmap();
+            for( auto var = mOriginalVars.begin(); var != mOriginalVars.end(); ++var )
+            {
+                var->second->print();
+                cout << endl;
+                numeric lowerBound;
+                Interval::BoundType lbType;
+                numeric upperBound;
+                Interval::BoundType ubType;
+                if( var->second->infimum().isInfinite() )
+                {
+                    lowerBound = 0;
+                    lbType = Interval::INFINITY_BOUND;
+                }
+                else
+                {
+                    lowerBound = var->second->infimum().limit().mainPart();
+                    lbType = var->second->supremum().limit().deltaPart() != 0 ? Interval::STRICT_BOUND : Interval::WEAK_BOUND;
+                }
+                if( var->second->supremum().isInfinite() )
+                {
+                    upperBound = 0;
+                    ubType = Interval::INFINITY_BOUND;
+                }
+                else
+                {
+                    upperBound = var->second->supremum().limit().mainPart();
+                    lbType = var->second->supremum().limit().deltaPart() != 0 ? Interval::STRICT_BOUND : Interval::WEAK_BOUND;
+                }
+                Interval varBounds = Interval( lowerBound, lbType, upperBound, ubType );
+                variableBounds.insert( pair< symbol, Interval >( ex_to<symbol>( *var->first ), varBounds ) );
+            }
+            Interval solutionSpace = Interval();
+            cout << "solutionSpace:        " << solutionSpace << endl;
+            for( auto constraint = mNonlinearConstraints.begin(); constraint != mNonlinearConstraints.end(); ++constraint )
+            {
+                cout << "Constraint:           " << **constraint << endl;
+                numeric bound = -(*constraint)->constantPart();
+                Interval constraintAsInterval;
+                switch( (*constraint)->relation() )
+                {
+                    case CR_EQ:
+                    {
+                        constraintAsInterval = Interval( bound );
+                        break;
+                    }
+                    case CR_LEQ:
+                    {
+                        constraintAsInterval = Interval( 0, Interval::INFINITY_BOUND, bound, Interval::WEAK_BOUND );
+                        break;
+                    }
+                    case CR_LESS:
+                    {
+                        constraintAsInterval = Interval( 0, Interval::INFINITY_BOUND, bound, Interval::STRICT_BOUND );
+                        break;
+                    }
+                    case CR_GEQ:
+                    {
+                        constraintAsInterval = Interval( bound, Interval::WEAK_BOUND, 0, Interval::INFINITY_BOUND );
+                        break;
+                    }
+                    case CR_GREATER:
+                    {
+                        constraintAsInterval = Interval( bound, Interval::STRICT_BOUND, 0, Interval::INFINITY_BOUND );
+                        break;
+                    }
+                    case CR_NEQ:
+                    {
+                        //TODO: Consider this case.
+                        assert( false );
+                        constraintAsInterval = Interval( );
+                        break;
+                    }
+                    default:
+                    {
+                        cerr << "Unknown relation symbol!" << endl;
+                        assert( false );
+                        constraintAsInterval = Interval( );
+                    }
+                }
+                cout << "constraintAsInterval: " << constraintAsInterval << endl;
+                cout << "evaluation:           " << Interval::evaluate( (*constraint)->lhs() + bound, variableBounds ) << endl;
+                solutionSpace = solutionSpace.intersect( constraintAsInterval );
+                cout << "solutionSpace:        " << solutionSpace << endl;
+                solutionSpace = solutionSpace.intersect( Interval::evaluate( (*constraint)->lhs() + bound, variableBounds ) );
+                cout << "solutionSpace:        " << solutionSpace << endl;
+                if( solutionSpace.empty() ) return false;
+            }
+            return true;
+            #else
+            numeric minDelta = 0;
+            numeric maxDelta = 0;
+            numeric curDelta = 0;
+            Value curBound = Value();
+            Variable* variable = NULL;
+
+            //
+            // For all columns check the min/max value for delta
+            // Note, it should be always that min > 0 and max < 0
+            //
+            for( auto column = mTableau.columns().begin(); column != mTableau.columns().end(); ++column )
+            {
+                variable = column->mName;
+
+                // Check if the lower bound can be used and at least one of delta and real parts are not 0
+                const Value& assValue = variable->assignment();
+                const Bound& inf = variable->infimum();
+                if( !inf.isInfinite() )
+                {
+                    const Value& infValue = inf.limit();
+                    if( ( infValue.deltaPart() != 0 || assValue.deltaPart() != 0 ) && ( infValue.mainPart() != 0 || assValue.mainPart() != 0 ) )
+                    {
+                        curBound = infValue - assValue;
+
+                        // if denominator is >0 than use delta for min
+                        if( curBound.deltaPart() > 0 )
+                        {
+                            curDelta = -( curBound.mainPart() / curBound.deltaPart() );
+                            if( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) ) minDelta = curDelta;
+                        }
+                        // if denominator is <0 than use delta for max
+                        else if( curBound.deltaPart() < 0 )
+                        {
+                            curDelta = -( curBound.mainPart() / curBound.deltaPart() );
+                            if( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) ) maxDelta = curDelta;
+                        }
+                    }
+                }
+                // Check if the upper bound can be used and at least one of delta and real parts are not 0
+                const Bound& sup = variable->supremum();
+                if( !sup.isInfinite() )
+                {
+                    const Value& supValue = sup.limit();
+                    if( ( supValue.deltaPart() != 0 || assValue.deltaPart() != 0 ) && ( supValue.mainPart() != 0 || assValue.mainPart() != 0 ) )
+                    {
+                        curBound = assValue - supValue;
+
+                        // if denominator is >0 than use delta for min
+                        if( curBound.deltaPart() > 0 )
+                        {
+                            curDelta = -( curBound.mainPart() / curBound.deltaPart() );
+                            if( curDelta != 0 && ( minDelta == 0 || minDelta > curDelta ) ) minDelta = curDelta;
+                        }
+                        // if denominator is <0 than use delta for max
+                        else if( curBound.deltaPart() < 0 )
+                        {
+                            curDelta = -( curBound.mainPart() / curBound.deltaPart() );
+                            if( curDelta != 0 && ( maxDelta == 0 || maxDelta < curDelta ) ) maxDelta = curDelta;
+                        }
+                    }
+                }
+            }
+
+            // TODO: check if it is it really true :)
+            assert( minDelta >= 0 );
+            assert( maxDelta <= 0 );
+            curDelta = ( minDelta ) / 2;
+
+            exmap assignments = exmap();
+            // Compute the value for each variable. Delta is taken into account.
+            for( auto var = mOriginalVars.begin(); var != mOriginalVars.end(); ++var )
+            {
+                const Value& value = var->second->assignment();
+                assignments.insert( pair< ex, ex >( *var->first, ex( value.mainPart() + value.deltaPart() * curDelta ) ) );
+            }
+            for( auto constraint = mNonlinearConstraints.begin(); constraint != mNonlinearConstraints.end(); ++constraint )
+            {
+                if( !(*constraint)->satisfiedBy( assignments ) )
+                {
+                    return false;
+                }
+            }
+            return true;
+            #endif
         }
     }
 
@@ -776,12 +961,12 @@ namespace smtrat
             {
                 // constraint has one variable
                 ex* var = new ex( (*(*constraint)->variables().begin()).second );
-                ExVariableMap::iterator basicIter = mExistingVars.find( var );
+                ExVariableMap::iterator basicIter = mOriginalVars.find( var );
                 // constraint not found, add new nonbasic variable
-                if( basicIter == mExistingVars.end() )
+                if( basicIter == mOriginalVars.end() )
                 {
                     Variable* nonBasic = mTableau.newNonbasicVariable( var );
-                    mExistingVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
+                    mOriginalVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
                     setBound( *nonBasic, (*constraint)->relation(), highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
                 }
                 else
@@ -794,8 +979,8 @@ namespace smtrat
             }
             else
             {
-                ExVariableMap::iterator slackIter = mExistingVars.find( linearPart );
-                if( slackIter == mExistingVars.end() )
+                ExVariableMap::iterator slackIter = mSlackVars.find( linearPart );
+                if( slackIter == mSlackVars.end() )
                 {
                     vector< Variable* > nonbasics = vector< Variable* >();
                     vector< numeric > numCoeffs = vector< numeric >();
@@ -806,11 +991,11 @@ namespace smtrat
                     {
                         assert( coeffIt != coeffs.end() );
                         ex* var = new ex( varIt->second );
-                        ExVariableMap::iterator nonBasicIter = mExistingVars.find( var );
-                        if( mExistingVars.end() == nonBasicIter )
+                        ExVariableMap::iterator nonBasicIter = mOriginalVars.find( var );
+                        if( mOriginalVars.end() == nonBasicIter )
                         {
                             Variable* nonBasic = mTableau.newNonbasicVariable( var );
-                            mExistingVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
+                            mOriginalVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
                             nonbasics.push_back( nonBasic );
                         }
                         else
@@ -825,7 +1010,7 @@ namespace smtrat
 
                     Variable* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );
 
-                    mExistingVars.insert( pair<const ex*, Variable*>( linearPart, slackVar ) );
+                    mSlackVars.insert( pair<const ex*, Variable*>( linearPart, slackVar ) );
                     setBound( *slackVar, (*constraint)->relation(), highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
                 }
                 else

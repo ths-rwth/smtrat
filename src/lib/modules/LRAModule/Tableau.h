@@ -371,7 +371,9 @@ namespace lra
             void updateDownwards( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
             void updateUpwards( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
             #ifdef LRA_REFINEMENT
-            void refinement( const TableauHead& );
+            void rowRefinement( const TableauHead& );
+            void columnRefinement( const TableauHead& );
+            void exhaustiveRefinement();
             #endif
             unsigned checkCorrectness() const;
             bool rowCorrect( unsigned _rowNumber ) const;

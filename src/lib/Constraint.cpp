@@ -138,6 +138,48 @@ namespace smtrat
         return false;
     }
 
+    bool evaluate( const numeric& _value, Constraint_Relation _relation )
+    {
+        switch( _relation )
+        {
+            case CR_EQ:
+            {
+                if( _value == 0 ) return true;
+                else return false;
+            }
+            case CR_NEQ:
+            {
+                if( _value != 0 ) return true;
+                else return false;
+            }
+            case CR_LESS:
+            {
+                if( _value < 0 ) return true;
+                else return false;
+            }
+            case CR_GREATER:
+            {
+                if( _value > 0 ) return true;
+                else return false;
+            }
+            case CR_LEQ:
+            {
+                if( _value <= 0 ) return true;
+                else return false;
+            }
+            case CR_GEQ:
+            {
+                if( _value >= 0 ) return true;
+                else return false;
+            }
+            default:
+            {
+                cout << "Error in isConsistent: unexpected relation symbol." << endl;
+                return false;
+            }
+        }
+    }
+
     /**
      * Checks, whether the constraint is consistent.
      * It differs between, containing variables, consistent, and inconsistent.
@@ -148,61 +190,21 @@ namespace smtrat
      */
     unsigned Constraint::isConsistent() const
     {
-        #ifdef VS_DEBUG
-        cout << "   Try: ";
-        print( cout );
-        #endif
-        unsigned result = 0;
         if( variables().size() == 0 )
         {
-            switch( relation() )
-            {
-                case CR_EQ:
-                {
-                    if( lhs() == 0 )
-                        result = 1;
-                    break;
-                }
-                case CR_NEQ:
-                {
-                    if( lhs() != 0 )
-                        result = 1;
-                    break;
-                }
-                case CR_LESS:
-                {
-                    if( lhs() < 0 )
-                        result = 1;
-                    break;
-                }
-                case CR_GREATER:
-                {
-                    if( lhs() > 0 )
-                        result = 1;
-                    break;
-                }
-                case CR_LEQ:
-                {
-                    if( lhs() <= 0 )
-                        result = 1;
-                    break;
-                }
-                case CR_GEQ:
-                {
-                    if( lhs() >= 0 )
-                        result = 1;
-                    break;
-                }
-                default:
-                    cout << "Error in isConsistent: unexpected relation symbol." << endl;
-            }
+            return evaluate( ex_to<numeric>( lhs() ), relation() ) ? 1 : 0;
         }
-        else
-            result = 2;
-        #ifdef VS_DEBUG
-        cout << " -> " << result << endl;
-        #endif
-        return result;
+        else return 2;
+    }
+
+    unsigned Constraint::satisfiedBy( exmap& _assignment ) const
+    {
+        ex tmp = lhs().subs( _assignment );
+        if( is_exactly_a<numeric>( tmp ) )
+        {
+            return evaluate( ex_to<numeric>( tmp ), relation() ) ? 1 : 0;
+        }
+        else return 2;
     }
 
     /**
@@ -345,6 +347,58 @@ namespace smtrat
             assert( false );
         }
         return 0;
+    }
+
+    numeric constPart( const ex _polynom )
+    {
+        if( is_exactly_a<add>( _polynom ) )
+        {
+            numeric result = 0;
+            for( GiNaC::const_iterator summand = _polynom.begin(); summand != _polynom.end(); ++summand )
+            {
+                result += constPart( *summand );
+            }
+            return result;
+        }
+        else if( is_exactly_a<mul>( _polynom ) )
+        {
+            numeric result = 0;
+            for( GiNaC::const_iterator factor = _polynom.begin(); factor != _polynom.end(); ++factor )
+            {
+                result *= constPart( *factor );
+            }
+            return result;
+        }
+        else if( is_exactly_a<symbol>( _polynom ) )
+        {
+            return 0;
+        }
+        else if( is_exactly_a<numeric>( _polynom ) )
+        {
+            return ex_to<numeric>( _polynom );
+        }
+        else if( is_exactly_a<power>( _polynom ) )
+        {
+            const numeric& exponent = ex_to<numeric>( *(++_polynom.begin()) );
+            const ex& subterm = *_polynom.begin();
+            assert( exponent.info( info_flags::nonnegative ) );
+            return pow( constPart( subterm ), exponent );
+        }
+        else
+        {
+            cerr << "The left hand side of a constraint must be a polynomial!" << endl;
+            assert( false );
+        }
+        return 0;
+    }
+
+    /**
+     *
+     * @return
+     */
+    numeric Constraint::constantPart() const
+    {
+        return constPart( lhs() );
     }
 
     /**
