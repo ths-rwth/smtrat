@@ -58,7 +58,6 @@ void CollectStatistics::exportXML() {
     std::stringstream stream;
     stream << "<runtimestatistics>\n";
     for(auto it = stats.begin(); it != stats.end(); ++it) {
-        
         (*it)->collect();
         (*it)->generateXML(stream);
     }

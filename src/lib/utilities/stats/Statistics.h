@@ -12,8 +12,8 @@
 
 #ifdef GATHER_STATS
 
-#include <string>
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "CollectStatistics.h"
