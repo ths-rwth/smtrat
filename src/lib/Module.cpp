@@ -60,7 +60,8 @@ namespace smtrat
         mPassedformulaOrigins(),
         mDeductions(),
         mFirstSubformulaToPass( mpPassedFormula->end() ),
-        mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() )
+        mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
+        mSmallerMusesCheckCounter(0)
     {}
 
     Module::~Module()
@@ -646,6 +647,80 @@ namespace smtrat
         }
     }
 
+    /**
+     * Store subsets as smt2 files in order to check them later.
+     * @param 
+     * @param 
+     */
+    void Module::storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> & subformulae, const std::string filename) const {
+        stringstream _filename;
+        _filename << filename << "_" << moduleName(mModuleType) << "_" << mSmallerMusesCheckCounter << ".smt2";
+        ofstream smtlibFile;
+        smtlibFile.open( _filename.str() );
+        for( vector< Formula >::const_iterator subformula = subformulae.begin();
+             subformula != subformulae.end(); ++subformula )
+        { // for each assumption add a new solver-call by resetting the search state
+            smtlibFile << "(reset)\n";
+            smtlibFile << "(set-logic QF_NRA)\n";
+            smtlibFile << "(set-option :interactive-mode true)\n";
+            smtlibFile << "(set-info :smt-lib-version 2.0)\n";
+            // add all real-valued variables
+            for( GiNaC::symtab::const_iterator var = Formula::mConstraintPool.variables().begin();
+                var != Formula::mConstraintPool.variables().end(); ++var )
+            {
+                smtlibFile << "(declare-fun " << var->first << " () Real)\n";
+            }
+            string assumption = "";
+            assumption += "(set-info :status sat)\n";
+            assumption += "(assert (and ";
+            assumption += subformula->toString();
+            assumption += "))\n";
+            assumption += "(get-assertions)\n";
+            assumption += "(check-sat)\n";
+            smtlibFile << assumption;
+        }
+        smtlibFile << "(exit)";
+        smtlibFile.close();
+        ++mSmallerMusesCheckCounter;
+    }
+    
+     /**
+     * Generates all subformulae of the given size
+     * @param size the number of constraints
+     * @return A set of subformulae
+     */
+    std::vector<Formula> Module::generateSubformulaeOfInfeasibleSubset(unsigned infeasibleset, unsigned size ) const {
+        std::cout << "size" << size << std::endl;
+        assert(size < mInfeasibleSubsets[infeasibleset].size());
+        
+        //000000....000011111 (size-many ones)
+        unsigned bitvector = (1 << size) - 1;
+        std::cout << bitvector << std::endl;
+        //000000....100000000
+        unsigned limit = (1 << mInfeasibleSubsets[infeasibleset].size());
+        unsigned nextbitvector;
+        
+        std::vector<Formula> subformulae;
+        while(bitvector < limit) {
+            std::cout << bitvector << std::endl;
+            Formula formula(AND);
+            // compute lexicographical successor of the bitvector 
+            unsigned int tmp = (bitvector | (bitvector - 1)) + 1;  
+            nextbitvector = tmp | ((((tmp & -tmp) / (bitvector & -bitvector)) >> 1) - 1); 
+
+            // fill formula
+            for(auto it = mInfeasibleSubsets[infeasibleset].begin(); it != mInfeasibleSubsets[infeasibleset].end(); ++it) {
+                if(bitvector & 1) {
+                    formula.addSubformula((*it)->pConstraint());
+                }
+                bitvector >>= 1;
+            }
+            // add subformulae
+            subformulae.push_back(formula);
+            bitvector = nextbitvector;
+        }
+        return subformulae;
+    }
     /**
      *
      * @param _moduleType

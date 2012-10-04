@@ -96,6 +96,8 @@ namespace smtrat
             Formula::const_iterator mFirstSubformulaToPass;
             ///
             Formula::const_iterator mFirstUncheckedReceivedSubformula;
+            /// Counter used for the generation of the smt2 files to check for smaller muses.
+            mutable unsigned mSmallerMusesCheckCounter;
 
             bool checkFirstSubformulaToPassValidity() const;
 
@@ -213,7 +215,11 @@ namespace smtrat
             static void storeAssumptionsToCheck( const Manager&, const std::string = "assumptions_to_check.smt2" );
             static const std::string moduleName( const ModuleType );
             //SMT
-
+            
+            
+            void storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> &, const std::string= "smaller_muses") const;
+            
+            std::vector<Formula> generateSubformulaeOfInfeasibleSubset( unsigned infeasiblesubset, unsigned size ) const;
         protected:
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );
             void addSubformulaToPassedFormula( Formula*, vec_set_const_pFormula& );
