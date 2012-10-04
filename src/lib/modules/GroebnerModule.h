@@ -49,6 +49,7 @@
 
 #ifdef GATHER_STATS
 #include "GBModule/GBModuleStatistics.h"
+#include "GBModule/GBCalculationStatistics.h"
 #endif 
 
 
@@ -195,6 +196,7 @@ protected:
 private:
     #ifdef GATHER_STATS
     GroebnerModuleStats* mStats;
+    GBCalculationStats* mGBStats;
     #endif //GATHER_STATS
     typedef Module super;
 };

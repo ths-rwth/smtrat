@@ -37,6 +37,8 @@
 #include "NSSModule/GroebnerToSDP.h"
 #endif
 
+//#define CHECK_SMALLER_MUSES
+
 
 using std::set;
 using GiNaC::ex_to;
@@ -55,7 +57,8 @@ mBasis( ),
 mInequalities( this ),
 mStateHistory( )
 #ifdef GATHER_STATS
-    , mStats(GroebnerModuleStats::getInstance(Settings::identifier))
+    , mStats(GroebnerModuleStats::getInstance(Settings::identifier)),
+        mGBStats(GBCalculationStats::getInstance(Settings::identifier))
 #endif
 
 {
@@ -234,6 +237,16 @@ Answer GroebnerModule<Settings>::isConsistent( )
             #ifdef GATHER_STATS
             mStats->EffectivenessOfConflicts(mInfeasibleSubsets.back().size()/mpReceivedFormula->size());
             #endif
+
+            #ifdef CHECK_SMALLER_MUSES
+            unsigned infsubsetsize = mInfeasibleSubsets.front().size();
+            if(infsubsetsize > 1) {
+                std::vector<Formula> infsubset = generateSubformulaeOfInfeasibleSubset(0, infsubsetsize-1);
+                storeSmallerInfeasibleSubsetsCheck(infsubset);
+            }
+            
+            #endif
+
             return False;
         }
         saveState( );
