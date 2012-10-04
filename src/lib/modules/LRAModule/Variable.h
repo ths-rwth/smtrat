@@ -64,8 +64,7 @@ namespace lra
             Value            mAssignment;
 
         public:
-            Variable();
-            Variable( unsigned, bool, const GiNaC::ex* );
+            Variable( unsigned, bool, const GiNaC::ex*, smtrat::Formula::iterator );
             virtual ~Variable();
 
             const Value& assignment() const
@@ -90,7 +89,16 @@ namespace lra
 
             void setSupremum( const Bound* _supremum )
             {
+                assert( _supremum->isActive() );
+                assert( mpSupremum->isActive() );
+
+                if( !mpSupremum->isInfinite() )
+                {
+                    --mpSupremum->pInfo()->updated;
+                }
+                ++_supremum->pInfo()->updated;
                 mpSupremum = _supremum;
+
             }
 
             const Bound* pSupremum() const
@@ -107,6 +115,14 @@ namespace lra
 
             void setInfimum( const Bound* _infimum )
             {
+                assert( _infimum->isActive() );
+                assert( mpInfimum->isActive() );
+
+                if( !mpInfimum->isInfinite() )
+                {
+                    --mpInfimum->pInfo()->updated;
+                }
+                ++_infimum->pInfo()->updated;
                 mpInfimum = _infimum;
             }
 
@@ -147,6 +163,16 @@ namespace lra
                 return mLowerbounds;
             }
 
+            BoundSet& rUpperbounds()
+            {
+                return mUpperbounds;
+            }
+
+            BoundSet& rLowerbounds()
+            {
+                return mLowerbounds;
+            }
+
             unsigned& rPosition()
             {
                 return mPosition;
@@ -157,10 +183,15 @@ namespace lra
                 return mExpression;
             }
 
-            std::pair<const Bound*, std::pair<const Bound*, const Bound*> > addUpperBound( Value* const, const smtrat::Constraint* = NULL );
-            std::pair<const Bound*, std::pair<const Bound*, const Bound*> > addLowerBound( Value* const, const smtrat::Constraint* = NULL );
-            std::pair<const Bound*, std::pair<const Bound*, const Bound*> > addEqualBound( Value* const, const smtrat::Constraint* = NULL );
-            void deactivateBound( const Bound* );
+            const GiNaC::ex expression() const
+            {
+                return *mExpression;
+            }
+
+            std::pair<const Bound*, std::pair<const Bound*, const Bound*> > addUpperBound( Value* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
+            std::pair<const Bound*, std::pair<const Bound*, const Bound*> > addLowerBound( Value* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
+            std::pair<const Bound*, std::pair<const Bound*, const Bound*> > addEqualBound( Value* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL );
+            void deactivateBound( const Bound*, smtrat::Formula::iterator );
 
             void print( std::ostream& = std::cout ) const;
             void printAllBounds( std::ostream& = std::cout, const std::string = "" ) const;

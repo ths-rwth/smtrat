@@ -12,10 +12,12 @@ using namespace std;
 namespace lra
 {
     Bound::Bound():
+        mDeduced( false ),
         mType( UPPER ),
         mLimit( NULL ),
         mVar( NULL ),
-        mpAsConstraint( NULL )
+        mpAsConstraint( NULL ),
+        mpInfo( NULL )
     {
         mpOrigins = new vector<set< const smtrat::Formula* > >();
         set< const smtrat::Formula* > originSet = set< const smtrat::Formula* >();
@@ -23,11 +25,13 @@ namespace lra
         mpOrigins->push_back( originSet );
     }
 
-    Bound::Bound( Value* const _limit, Variable* const _var, Type _type, const smtrat::Constraint* _constraint ):
+    Bound::Bound( Value* const _limit, Variable* const _var, Type _type, const smtrat::Constraint* _constraint, Bound::Info* _boundInfo, bool _deduced ):
+        mDeduced( _deduced ),
         mType( _type ),
         mLimit( _limit ),
         mVar( _var ),
-        mpAsConstraint( _constraint )
+        mpAsConstraint( _constraint ),
+        mpInfo( _boundInfo )
     {
         mpOrigins = new vector<set< const smtrat::Formula* > >();
         if( _limit == NULL )
@@ -40,6 +44,7 @@ namespace lra
 
     Bound::~Bound()
     {
+        delete mpInfo;
         delete mpOrigins;
         delete mLimit;
     }
@@ -194,7 +199,7 @@ namespace lra
      */
     ostream& operator <<( ostream& _ostream, const Bound& _bound )
     {
-        _bound.print( _ostream, false );
+        _bound.print( false, _ostream, false );
         return _ostream;
     }
 
@@ -202,17 +207,17 @@ namespace lra
      *
      * @param _out
      */
-    void Bound::print( std::ostream& _out, bool _printType, bool _withOrigins ) const
+    void Bound::print( bool _withOrigins, std::ostream& _out, bool _printType ) const
     {
         if( _printType )
         {
             if( mType == UPPER )
             {
-                _out << "<";
+                _out << "<=";
             }
             else if( mType == LOWER )
             {
-                _out << ">";
+                _out << ">=";
             }
             else
             {
@@ -230,8 +235,8 @@ namespace lra
         else
         {
             limit().print();
-            assert( mpAsConstraint != NULL );
-            _out << "  from  " << *mpAsConstraint;
+            if( _withOrigins && mpAsConstraint != NULL )
+                _out << "  from  " << *mpAsConstraint;
         }
         if( _withOrigins )
         {

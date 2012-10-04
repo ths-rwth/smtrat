@@ -39,6 +39,10 @@
 #define LRA_USE_PIVOTING_STRATEGY
 #define LRA_REFINEMENT
 
+// TODO: Make it templated, such that the coefficients, bounds and assignments can be any kind of arithmetic data type.
+//       You could also use double, once assuring they underapproximate and a satisfiable result is indeed satisfiable,
+//       and once assuring they overapproximate and a unsatisfiable result is indeed unsatisfiable.
+
 namespace lra
 {
     typedef unsigned EntryID;
@@ -163,6 +167,13 @@ namespace lra
 
     class Tableau
     {
+        public:
+            struct LearnedBound
+            {
+                const Bound* newBound;
+                const Bound* nextWeakerBound;
+                std::vector< const Bound*>* premise;
+            };
         private:
             struct TableauHead
             {
@@ -179,6 +190,7 @@ namespace lra
             unsigned                   mNextRestartBegin;
             unsigned                   mNextRestartEnd;
             #endif
+            smtrat::Formula::iterator  mDefaultBoundPosition;
             std::stack<EntryID>        mUnusedIDs;
             std::vector<TableauHead>   mRows;       // First element is the head of the row and the second the length of the row.
             std::vector<TableauHead>   mColumns;    // First element is the end of the column and the second the length of the column.
@@ -186,7 +198,7 @@ namespace lra
             std::vector<TableauEntry>* mpEntries;
             Value*                     mpTheta;
             #ifdef LRA_REFINEMENT
-            std::vector<std::pair<const Bound*, std::vector< const Bound*>* > >  mLearnedBounds;
+            std::vector<LearnedBound>  mLearnedBounds;
             #endif
 
             class Iterator
@@ -278,7 +290,7 @@ namespace lra
             };    /* class Tableau::Iterator */
 
         public:
-            Tableau();
+            Tableau( smtrat::Formula::iterator );
             ~Tableau();
 
             void setSize( unsigned _expectedHeight, unsigned _expectedWidth )
@@ -339,7 +351,7 @@ namespace lra
             }
 
             #ifdef LRA_REFINEMENT
-            std::vector<std::pair<const Bound*, std::vector<const Bound*>* > >& rLearnedBounds()
+            std::vector<LearnedBound>& rLearnedBounds()
             {
                 return mLearnedBounds;
             }
@@ -359,14 +371,16 @@ namespace lra
             void updateDownwards( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
             void updateUpwards( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
             #ifdef LRA_REFINEMENT
-            void upperRefinement( const TableauHead& );
-            void lowerRefinement( const TableauHead& );
+            void rowRefinement( const TableauHead& );
+            void columnRefinement( const TableauHead& );
+            void exhaustiveRefinement();
             #endif
             unsigned checkCorrectness() const;
             bool rowCorrect( unsigned _rowNumber ) const;
             void printHeap( std::ostream& = std::cout, unsigned = 30, const std::string = "" ) const;
             void printEntry( std::ostream& = std::cout, EntryID = 0, unsigned = 20 ) const;
             void printVariables( std::ostream& = std::cout, const std::string = "" ) const;
+            void printLearnedBounds( const std::string = "", std::ostream& = std::cout ) const;
             void print( std::ostream& = std::cout, unsigned = 28, const std::string = "" ) const;
 
     };

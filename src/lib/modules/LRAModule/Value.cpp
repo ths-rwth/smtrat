@@ -30,15 +30,9 @@ namespace lra
         mDeltaPart( _num2 )
     {}
 
-//    Value::Value( int _mainPnum, int _mainPdenom, int _deltaPnum, int _deltaPdenom )
-//    {
-//        mMainPart  = GiNaC::numeric( _mainPnum ) / _mainPdenom;
-//        mDeltaPart = GiNaC::numeric( _deltaPnum ) / _deltaPdenom;
-//    }
-
     Value::Value( const Value& orig ):
-        mMainPart( orig.getmainP() ),
-        mDeltaPart( orig.getdeltaP() )
+        mMainPart( orig.mainPart() ),
+        mDeltaPart( orig.deltaPart() )
     {}
 
     Value::~Value(){}
@@ -50,8 +44,8 @@ namespace lra
      */
     Value Value::operator +( const Value& val ) const
     {
-        GiNaC::numeric num1 = mMainPart + val.getmainP();
-        GiNaC::numeric num2 = mDeltaPart + val.getdeltaP();
+        GiNaC::numeric num1 = mMainPart + val.mainPart();
+        GiNaC::numeric num2 = mDeltaPart + val.deltaPart();
         return Value( num1, num2 );
     }
 
@@ -61,8 +55,8 @@ namespace lra
      */
     void Value::operator +=( const Value& val )
     {
-        mMainPart += val.getmainP();
-        mDeltaPart += val.getdeltaP();
+        mMainPart += val.mainPart();
+        mDeltaPart += val.deltaPart();
     }
 
     /**
@@ -72,8 +66,8 @@ namespace lra
      */
     Value Value::operator -( const Value& val ) const
     {
-        GiNaC::numeric num1 = mMainPart - val.getmainP();
-        GiNaC::numeric num2 = mDeltaPart - val.getdeltaP();
+        GiNaC::numeric num1 = mMainPart - val.mainPart();
+        GiNaC::numeric num2 = mDeltaPart - val.deltaPart();
         return Value( num1, num2 );
     }
 
@@ -83,8 +77,8 @@ namespace lra
      */
     void Value::operator -=( const Value& val )
     {
-        mMainPart -= val.getmainP();
-        mDeltaPart -= val.getdeltaP();
+        mMainPart -= val.mainPart();
+        mDeltaPart -= val.deltaPart();
     }
 
     /**
@@ -105,8 +99,8 @@ namespace lra
      */
     void Value::operator *=( const Value& val )
     {
-        mMainPart *= val.getmainP();
-        mDeltaPart *= val.getdeltaP();
+        mMainPart *= val.mainPart();
+        mDeltaPart *= val.deltaPart();
     }
 
     /**
@@ -138,13 +132,13 @@ namespace lra
      */
     bool Value::operator <( const Value& _val ) const
     {
-        if( mMainPart < _val.getmainP() )
+        if( mMainPart < _val.mainPart() )
         {
             return true;
         }
-        else if( mMainPart == _val.getmainP() )
+        else if( mMainPart == _val.mainPart() )
         {
-            if( mDeltaPart < _val.getdeltaP() )
+            if( mDeltaPart < _val.deltaPart() )
             {
                 return true;
             }
@@ -159,13 +153,13 @@ namespace lra
      */
     bool Value::operator >( const Value& _val ) const
     {
-        if( mMainPart > _val.getmainP() )
+        if( mMainPart > _val.mainPart() )
         {
             return true;
         }
-        else if( mMainPart == _val.getmainP() )
+        else if( mMainPart == _val.mainPart() )
         {
-            if( mDeltaPart > _val.getdeltaP() )
+            if( mDeltaPart > _val.deltaPart() )
             {
                 return true;
             }
@@ -181,7 +175,7 @@ namespace lra
     bool Value::operator <=( const Value& val ) const
     {
         bool b = false;
-        if( (mMainPart < val.getmainP()) || (mMainPart == val.getmainP() && mDeltaPart <= val.getdeltaP()) )
+        if( (mMainPart < val.mainPart()) || (mMainPart == val.mainPart() && mDeltaPart <= val.deltaPart()) )
             b = true;
         return b;
     }
@@ -194,7 +188,7 @@ namespace lra
     bool Value::operator ==( const Value& val ) const
     {
         bool b = false;
-        if( (mMainPart == val.getmainP()) && (mDeltaPart == val.getdeltaP()) )
+        if( (mMainPart == val.mainPart()) && (mDeltaPart == val.deltaPart()) )
             b = true;
         return b;
     }

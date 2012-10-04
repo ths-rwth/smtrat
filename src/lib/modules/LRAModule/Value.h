@@ -14,6 +14,7 @@
 
 namespace lra
 {
+    // TODO: Take a faster datatype the GiNaC::numeric.
     class Value
     {
         private:
@@ -28,7 +29,6 @@ namespace lra
             Value();
             Value( GiNaC::numeric );
             Value( GiNaC::numeric, GiNaC::numeric );
-//            Value( int, int, int, int );
             Value( const Value& orig );
             virtual ~Value();
 
@@ -47,34 +47,17 @@ namespace lra
 
             const std::string toString() const;
 
-            void setmainP( int _num, int _denom )
+            const GiNaC::numeric& mainPart() const
             {
-                mMainPart = GiNaC::numeric( _num ) / _denom;
+                return mMainPart;
             }
 
-            void setInteger( int _int1 )
+            const GiNaC::numeric& deltaPart() const
             {
-                mMainPart  = _int1;
-                mDeltaPart = 0;
-            }
-
-            GiNaC::numeric getmainP() const
-            {
-                return GiNaC::numeric( mMainPart );
-            }
-
-            void setdeltaP( int _num, int _denom )
-            {
-                mDeltaPart = GiNaC::numeric( _num ) / _denom;
-            }
-
-            GiNaC::numeric getdeltaP() const
-            {
-                return GiNaC::numeric( mDeltaPart );
+                return mDeltaPart;
             }
 
             void print( std::ostream& = std::cout ) const;
-//            friend std::ostream& operator <<( std::ostream&, const Value& );
     };
 }    // end namspace lra
 #endif   /* _VALUE_H */

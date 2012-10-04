@@ -222,7 +222,7 @@ namespace smtrat
             std::vector<Formula> generateSubformulaeOfInfeasibleSubset( unsigned infeasiblesubset, unsigned size ) const;
         protected:
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );
-            void addSubformulaToPassedFormula( Formula*, vec_set_const_pFormula& );
+            void addSubformulaToPassedFormula( Formula*, const vec_set_const_pFormula& );
             void addSubformulaToPassedFormula( Formula*, const Formula* );
             void setOrigins( const Formula* const , vec_set_const_pFormula& );
             void getOrigins( const Formula* const , vec_set_const_pFormula& ) const;

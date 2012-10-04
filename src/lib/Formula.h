@@ -527,7 +527,7 @@ namespace smtrat
             void notSolvableBy( ModuleType );
             void print( std::ostream& = std::cout, const std::string = "", bool = false ) const;
             friend std::ostream& operator <<( std::ostream&, const Formula& );
-            std::string toString() const;
+            std::string toString( bool = false ) const;
             void getConstraints( std::vector<const Constraint*>& ) const;
             static void toCNF( Formula&, bool = true );
             static bool resolveNegation( Formula&, bool = true );

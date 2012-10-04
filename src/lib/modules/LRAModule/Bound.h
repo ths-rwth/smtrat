@@ -21,20 +21,28 @@ namespace lra
         public:
         enum Type{ LOWER, UPPER, EQUAL };
 
+        struct Info
+        {
+            int                       updated;
+            smtrat::Formula::iterator position;
+        };
+
         private:
 
             /**
              * Members.
              */
+            bool                                                mDeduced;
             Type                                                mType;
             Value*                                              mLimit;
             Variable* const                                     mVar;
             const smtrat::Constraint*                           mpAsConstraint;
             std::vector<std::set< const smtrat::Formula* > >*   mpOrigins;
+            Info*                                               mpInfo;
 
         public:
             Bound();
-            Bound( Value* const , Variable* const, Type, const smtrat::Constraint* );
+            Bound( Value* const , Variable* const, Type, const smtrat::Constraint*, Info* = NULL, bool = false );
             ~Bound();
 
             bool operator >( const Value& ) const;
@@ -44,7 +52,12 @@ namespace lra
             bool operator >( const Bound& ) const;
             const std::string toString() const;
             friend std::ostream& operator <<( std::ostream&, const Bound& );
-            void print( std::ostream& = std::cout, bool = false, bool = false ) const;
+            void print( bool = false, std::ostream& = std::cout, bool = false ) const;
+
+            bool deduced() const
+            {
+                return mDeduced;
+            }
 
             Value& limit() const
             {
@@ -104,6 +117,11 @@ namespace lra
             bool isActive() const
             {
                 return !mpOrigins->empty();
+            }
+
+            Info* const pInfo() const
+            {
+                return mpInfo;
             }
     };
 

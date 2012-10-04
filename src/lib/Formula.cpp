@@ -749,7 +749,7 @@ namespace smtrat
         return _ostream;
     }
 
-    string Formula::toString() const
+    string Formula::toString( bool _infix ) const
     {
         string result = "";
         switch( mType )
@@ -791,7 +791,14 @@ namespace smtrat
             }
             case REALCONSTRAINT:
             {
-                result += mpConstraint->smtlibString();
+                if( _infix )
+                {
+                    result += mpConstraint->toString();
+                }
+                else
+                {
+                    result += mpConstraint->smtlibString();
+                }
                 break;
             }
             case TTRUE:

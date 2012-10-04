@@ -154,10 +154,12 @@ namespace smtrat
             bool variable( const std::string&, GiNaC::symbol& ) const;
             bool hasVariable( const std::string& ) const;
             unsigned isConsistent() const;
+            unsigned satisfiedBy( GiNaC::exmap& ) const;
             bool hasFinitelyManySolutionsIn( const std::string& ) const;
             void getCoefficients( const GiNaC::symbol&, std::vector<GiNaC::ex>& ) const;
             signed degree( const std::string& ) const;
             signed highestDegree() const;
+            GiNaC::numeric constantPart() const;
             bool isLinear() const;
             std::map<const std::string, GiNaC::numeric, strCmp> linearAndConstantCoefficients() const;
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
