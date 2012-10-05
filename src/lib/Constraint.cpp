@@ -362,7 +362,7 @@ namespace smtrat
         }
         else if( is_exactly_a<mul>( _polynom ) )
         {
-            numeric result = 0;
+            numeric result = 1;
             for( GiNaC::const_iterator factor = _polynom.begin(); factor != _polynom.end(); ++factor )
             {
                 result *= constPart( *factor );

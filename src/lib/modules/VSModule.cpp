@@ -45,7 +45,8 @@ namespace smtrat
      */
 
     VSModule::VSModule( Manager* const _tsManager, const Formula* const _formula ):
-        Module( _tsManager, _formula )
+        Module( _tsManager, _formula ),
+        mVariableBounds()
     {
         mModuleType                      = MT_VSModule;
         #ifdef VS_DEBUG
@@ -121,6 +122,10 @@ namespace smtrat
             }
             case 2:
             {
+//                mVariableBounds.addBound( constraint );
+////                mVariableBounds.print();
+//                const GiNaCRA::evalintervalmap evalIntervalMap = mVariableBounds.getEvalIntervalMap();
+//                GiNaCRA::Interval result = GiNaCRA::Interval::evaluate( constraint->lhs(), evalIntervalMap );
                 eraseDTsOfRanking( *mpStateTree );
                 mIDCounter = 0;
                 symtab::const_iterator var = constraint->variables().begin();
@@ -611,6 +616,7 @@ namespace smtrat
         vs::Condition*    pCondition = mReceivedConstraintsAsConditions[constraint];
         mReceivedConstraintsAsConditions.erase( constraint );
         delete pCondition;
+//        mVariableBounds.removeBound( constraint );
         Module::removeSubformula( _subformula );
         #ifdef VS_BACKTRACKING
         bool firstConstraintToRemoveFound = false;

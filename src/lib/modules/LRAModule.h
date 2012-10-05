@@ -54,13 +54,6 @@ namespace smtrat
                     return GiNaC::ex_is_less()( *pExA, *pExB );
                 }
             };
-            struct constraintPointerComp
-            {
-                bool operator ()( const Constraint* const pConstraintA, const Constraint* const pConstraintB ) const
-                {
-                    return (*pConstraintA) < (*pConstraintB);
-                }
-            };
             typedef std::map<const GiNaC::ex*, lra::Variable*, exPointerComp>   ExVariableMap;
             typedef std::vector< std::vector< const lra::Bound* >* >            ConstraintBoundsMap;
 
@@ -72,8 +65,8 @@ namespace smtrat
             bool                        mInitialized;
             unsigned                    mMaxConstraintId;
             lra::Tableau                mTableau;
-            std::set<const Constraint*, constraintPointerComp > mLinearConstraints;
-            std::set<const Constraint*, constraintPointerComp > mNonlinearConstraints;
+            ConstraintSet               mLinearConstraints;
+            ConstraintSet               mNonlinearConstraints;
             ExVariableMap               mOriginalVars;
             ExVariableMap               mSlackVars;
             ConstraintBoundsMap         mConstraintToBound;

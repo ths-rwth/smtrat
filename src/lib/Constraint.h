@@ -194,7 +194,14 @@ namespace smtrat
     typedef std::vector<const Constraint*>                                vec_const_pConstraint;
     typedef std::vector<std::set<const Constraint*> >                     vec_set_const_pConstraint;
     typedef std::map<const Constraint* const , vec_set_const_pConstraint> constraintOriginsMap;
-
+    struct constraintPointerComp
+    {
+        bool operator ()( const Constraint* const pConstraintA, const Constraint* const pConstraintB ) const
+        {
+            return (*pConstraintA) < (*pConstraintB);
+        }
+    };
+    typedef std::set< const Constraint*, constraintPointerComp > ConstraintSet;
 }    // namespace smtrat
 
 #endif

@@ -260,19 +260,19 @@ public:
 	 * Methods:
 	 */
 
-	const bool&					isRoot		        		( ) const 	{ return mRoot	   					 									; }
-	const bool&					toHighDegree        		( ) const 	{ return mToHighDegree				 									; }
+	bool					isRoot		        		( ) const 	{ return mRoot	   					 									; }
+	bool					toHighDegree        		( ) const 	{ return mToHighDegree				 									; }
 	bool&						rToHighDegree        		( ) 		{ return mToHighDegree				 									; }
 #ifndef VS_USE_REDLOG
-	const bool&					markedAsDeleted        		( ) const 	{ return mMarkedAsDeleted			 									; }
+	bool					markedAsDeleted        		( ) const 	{ return mMarkedAsDeleted			 									; }
 	bool&						rMarkedAsDeleted        	( ) 	 	{ return mMarkedAsDeleted			 									; }
 #endif
-	const bool&					hasChildrenToInsert    		( ) const 	{ return mHasChildrenToInsert		 									; }
+	bool					hasChildrenToInsert    		( ) const 	{ return mHasChildrenToInsert		 									; }
 	bool&						rHasChildrenToInsert       	( ) 	 	{ return mHasChildrenToInsert		 									; }
 	const std::string& 			index		        		( ) const 	{ return *mpIndex	   				 									; }
 	unsigned&					rValuation	        		( )       	{ return mValuation	   				 									; }
-	const unsigned&				valuation	        		( ) const 	{ return mValuation	   				 									; }
-	const unsigned&				id	        				( ) const 	{ return mID	   					 									; }
+	unsigned				valuation	        		( ) const 	{ return mValuation	   				 									; }
+	unsigned				id	        				( ) const 	{ return mID	   					 									; }
 	StateVector&				rChildren	        		( )       	{ return *mpChildren	   			 									; }
 	const StateVector& 			children 	        		( ) const 	{ return *mpChildren	   			 									; }
 	State* const				pFather						( ) const  	{ return mpFather	   				 									; }
@@ -281,9 +281,9 @@ public:
 	ConflictSets&				rConflictSets 				( )       	{ return *mpConflictSets			 									; }
 	const ConflictSets& 		conflictSets				( ) const 	{ return *mpConflictSets			 									; }
 	bool&						rHasRecentlyAddedConditions ( )  		{ return mHasRecentlyAddedConditions 									; }
-	const bool					hasRecentlyAddedConditions  ( ) const 	{ return mHasRecentlyAddedConditions 									; }
+	bool					hasRecentlyAddedConditions  ( ) const 	{ return mHasRecentlyAddedConditions 									; }
 	bool&						rInconsistent				( ) 	 	{ return mInconsistent				 									; }
-	const bool					isInconsistent				( ) const 	{ return mInconsistent				 									; }
+	bool					isInconsistent				( ) const 	{ return mInconsistent				 									; }
 	ConditionVector&			rConditions	        		( )       	{ return *mpConditions	   			 									; }
 	const ConditionVector&		conditions	      			( ) const 	{ return *mpConditions	   			 									; }
 	Substitution&				rSubstitution				( )       	{ return *mpSubstitution 			 									; }
@@ -293,15 +293,15 @@ public:
 	SubResultCombination&		rSubResultCombination		( )       	{ return *mpSubResultCombination	 									; }
 	const SubResultCombination&	subResultCombination		( ) const 	{ return *mpSubResultCombination	 									; }
 	const Substitution* const	pSubstitution 				( ) const 	{ return mpSubstitution 			 									; }
-	const bool					conditionsSimplified		( ) const	{ return mConditionsSimplified		 									; }
-	const bool					subResultsSimplified		( ) const	{ return mSubResultsSimplified		 									; }
+	bool					conditionsSimplified		( ) const	{ return mConditionsSimplified		 									; }
+	bool					subResultsSimplified		( ) const	{ return mSubResultsSimplified		 									; }
 	bool&						rSubResultsSimplified		( ) 		{ return mSubResultsSimplified		 									; }
-	const bool					takeSubResultCombAgain		( ) const	{ return mTakeSubResultCombAgain	 									; }
+	bool					takeSubResultCombAgain		( ) const	{ return mTakeSubResultCombAgain	 									; }
 	bool&						rTakeSubResultCombAgain		( ) 		{ return mTakeSubResultCombAgain	 									; }
-	const bool					tryToRefreshIndex			( ) const	{ return mTryToRefreshIndex			 									; }
-	const bool					hasSubResultsCombination	( ) const	{ return mpSubResultCombination!=NULL									; }
-	const bool					hasSubstitutionResults		( ) const	{ return mpSubstitutionResults!=NULL 									; }
-	const bool					unfinished					( ) const	{ return (mpSubstitutionResults->size()>mpSubResultCombination->size())	; }
+	bool					tryToRefreshIndex			( ) const	{ return mTryToRefreshIndex			 									; }
+	bool					hasSubResultsCombination	( ) const	{ return mpSubResultCombination!=NULL									; }
+	bool					hasSubstitutionResults		( ) const	{ return mpSubstitutionResults!=NULL 									; }
+	bool					unfinished					( ) const	{ return (mpSubstitutionResults->size()>mpSubResultCombination->size())	; }
 	const StateType				stateType					( ) const	{ return mStateType														; }
 	StateType&					rStateType					( ) 		{ return mStateType														; }
 	Condition*		 			pOriginalCondition			( )	const 	{ return mpOriginalCondition											; }
