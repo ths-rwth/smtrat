@@ -49,6 +49,7 @@
 
 #ifdef GATHER_STATS
 #include "GBModule/GBModuleStatistics.h"
+#include "GBModule/GBCalculationStatistics.h"
 #endif 
 
 
@@ -174,8 +175,8 @@ protected:
     std::vector<Formula::const_iterator> mBacktrackPoints;
     /// Saves the relevant history to support backtracking
     std::list<GroebnerModuleState<Settings> > mStateHistory;
-    /// Flag indicating there was no consistency check after the last removal of inequalities.
-    bool mPopCausesRecalc;
+    
+    
 
     /// A list of inequalities which were added after the last consistency check. 
     std::list<typename InequalitiesTable<Settings>::Rows::iterator> mNewInequalities;
@@ -195,6 +196,7 @@ protected:
 private:
     #ifdef GATHER_STATS
     GroebnerModuleStats* mStats;
+    GBCalculationStats* mGBStats;
     #endif //GATHER_STATS
     typedef Module super;
 };

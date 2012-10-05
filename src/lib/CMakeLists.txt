@@ -69,8 +69,8 @@ set(lib_modules_src
 )
 
 if(USE_GB)
-	set(lib_GBModule_headers modules/GBModule/GBSettings.h modules/GBModule/GBModuleStatistics.h)
-	set(lib_GBModule_src modules/GBModule/GBModuleStatistics.cpp)
+	set(lib_GBModule_headers modules/GBModule/GBSettings.h modules/GBModule/GBModuleStatistics.h modules/GBModule/GBCalculationStatistics.h)
+	set(lib_GBModule_src modules/GBModule/GBModuleStatistics.cpp modules/GBModule/GBCalculationStatistics.cpp)
 	set(lib_modules_headers ${lib_modules_headers} modules/GroebnerModule.h modules/GroebnerModule.tpp)
 endif()
 

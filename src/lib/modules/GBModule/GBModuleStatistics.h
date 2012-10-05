@@ -31,6 +31,7 @@
 
 #include "../../Constraint.h"
 #include "../../utilities/stats/Statistics.h"
+
 namespace smtrat {
 class GroebnerModuleStats : public Statistics
 {
@@ -43,10 +44,10 @@ class GroebnerModuleStats : public Statistics
       * Override Statistics::collect
       */
      void collect() {
-         std::cout << "Collect gb stats"<< std::endl;
-         Statistics::addKeyValuePair("Constant GB", "blaa");
-         Statistics::addKeyValuePair("Number calls", "many");
-         
+         Statistics::addKeyValuePair("Number calls", mNrCalls);
+         Statistics::addKeyValuePair("Constant GB", mNrConstantGBs);
+         Statistics::addKeyValuePair("Infeasible inequalities", mNrInfeasibleInequalities);
+         Statistics::addKeyValuePair("Backend false", mNrBackendReturnsFalse);
      }
      
      /**
@@ -166,7 +167,7 @@ class GroebnerModuleStats : public Statistics
     std::vector<unsigned> mNrOfConflictSets;
     std::vector<float> mEffectivenessOfConflicts;
     std::vector<unsigned> mPopLevel;
-
+    
    private:
      static std::map<unsigned,GroebnerModuleStats*> instances;
 };
