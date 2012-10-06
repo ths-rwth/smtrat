@@ -547,7 +547,7 @@ namespace smtrat
              */
             for( auto constraint = mNonlinearConstraints.begin(); constraint != mNonlinearConstraints.end(); ++constraint )
             {
-                if( !(*constraint)->satisfiedBy( assignments ) )
+                if( (*constraint)->satisfiedBy( assignments ) != 1 )
                 {
                     return false;
                 }
