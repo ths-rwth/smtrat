@@ -33,6 +33,7 @@
 #include <ginacra/ginacra.h>
 #include "Substitution.h"
 #include "Tools.h"
+#include "../../VariableBounds.h"
 
 namespace vs
 {
@@ -241,7 +242,7 @@ private:
 	ConditionVector* 		 mpConditions				;
 	ConflictSets*			 mpConflictSets				;
 	StateVector* 			 mpChildren					;
-    GiNaCRA::evalintervalmap mVariableBounds            ;
+    smtrat::VariableBounds   mVariableBounds            ;
 public:
 
 	/**

@@ -215,10 +215,10 @@ namespace smtrat
             static void storeAssumptionsToCheck( const Manager&, const std::string = "assumptions_to_check.smt2" );
             static const std::string moduleName( const ModuleType );
             //SMT
-            
-            
+
+
             void storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> &, const std::string= "smaller_muses") const;
-            
+
             std::vector<Formula> generateSubformulaeOfInfeasibleSubset( unsigned infeasiblesubset, unsigned size ) const;
         protected:
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );
