@@ -126,8 +126,6 @@ namespace smtrat
 
                     bool activate() const
                     {
-                        cout << mpInfo << endl;
-                        cout << mpInfo->activity << endl;
                         return mpInfo->activity++ == 0;
                     }
 
