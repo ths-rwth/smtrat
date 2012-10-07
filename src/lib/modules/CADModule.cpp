@@ -292,6 +292,11 @@ namespace smtrat
         return GiNaCRA::Constraint( Polynomial( c.lhs() ), signForConstraint, variables, cadConstraintNegated );
     }
 
+    /**
+     *
+     * @param conflictGraph
+     * @return
+     */
     inline vec_set_const_pFormula CADModule::extractMinimalInfeasibleSubsets( const ConflictGraph& conflictGraph )
     {
         // create list of vertices sorted by descending degree
@@ -322,6 +327,29 @@ namespace smtrat
         return mis;
     }
 
+//    void CADModule::addDeductions( const list<list<Constraint> >& deductions )
+//    {
+//        Formula* deduction = new Formula( OR );
+//        for( auto bound = lBs.back().premise->begin(); bound != lBs.back().premise->end(); ++bound )
+//        {
+//            auto originIterB = (*bound)->origins().begin()->begin();
+//            while( originIterB != (*bound)->origins().begin()->end() )
+//            {
+//                deduction->addSubformula( new Formula( NOT ) );
+//                deduction->back()->addSubformula( (*originIterB)->pConstraint() );
+//                ++originIterB;
+//            }
+//        }
+//        deduction->addSubformula( (*originIterA)->pConstraint() );
+//        addDeduction( deduction );
+//        ++originIterA;
+//    }
+
+    /**
+     *
+     * @param index
+     * @return
+     */
     inline const Formula* CADModule::getConstraintAt( unsigned index )
     {
         for( ConstraintIndexMap::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
@@ -334,6 +362,11 @@ namespace smtrat
         return NULL;
     }
 
+    /**
+     *
+     * @param index
+     * @param decrement
+     */
     inline void CADModule::updateConstraintMap( unsigned index, bool decrement )
     {
         for( ConstraintIndexMap::iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )

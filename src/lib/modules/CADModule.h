@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-02-04
- * @version 2012-08-01
+ * @version 2012-10-07
  *
  */
 #ifndef SMTRAT_CADMODULE_H
@@ -89,10 +89,11 @@ namespace smtrat
             virtual Answer isConsistent();
 
         private:
-            inline const GiNaCRA::Constraint convertConstraint( const Constraint& );
-            inline vec_set_const_pFormula extractMinimalInfeasibleSubsets( const GiNaCRA::ConflictGraph& conflictGraph );
-            inline const Formula* getConstraintAt( unsigned index );
-            inline void updateConstraintMap( unsigned index, bool decrement = true );
+            const GiNaCRA::Constraint convertConstraint( const Constraint& );
+            vec_set_const_pFormula extractMinimalInfeasibleSubsets( const GiNaCRA::ConflictGraph& conflictGraph );
+//            void addDeductions( const list<list<Constraint> >& deductions );
+            const Formula* getConstraintAt( unsigned index );
+            void updateConstraintMap( unsigned index, bool decrement = true );
     };
 
 }    // namespace smtrat
