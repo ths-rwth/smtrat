@@ -126,10 +126,8 @@
 %type  <sval> 	numlistMinus
 %type  <sval> 	numlistTimes
 %type  <fval> 	expr
-%type  <fval> 	bind
 %type  <sval>   keys
 %type  <vfval>  exprlist;
-%type  <vfval>  bindlist;
 %type  <sval>  	relationSymbol;
 %type  <eval>  	unaryOperator;
 %type  <eval>  	binaryOperator;
@@ -324,26 +322,14 @@ expr:
     }
     | OB LET OB bindlist CB expr CB
     {
-        if( !$4->empty() )
+        $$ = $6;
+        while( !driver.collectedBooleanAuxilliaries.empty() )
         {
-            smtrat::Formula* formulaTmp = new smtrat::Formula( AND );
-            while( !$4->empty() )
-            {
-                if( $4->back() != NULL )
-                {
-                    formulaTmp->addSubformula( $4->back() );
-                }
-                $4->pop_back();
-            }
-            delete $4;
-            formulaTmp->addSubformula( $6 );
-            $$ = formulaTmp;
+            smtrat::Formula* formula = driver.collectedBooleanAuxilliaries.begin()->second;
+            driver.collectedBooleanAuxilliaries.erase( driver.collectedBooleanAuxilliaries.begin() );
+            delete formula;
         }
-        else
-        {
-            delete $4;
-            $$ = $6;
-        }
+        driver.collectedRealAuxilliaries.clear();
     }
     | OB expr CB
     {
@@ -625,23 +611,10 @@ numlistTimes :
 bindlist :
 		bind
 	{
-        if( $1 == NULL )
-        {
-            $$ = new std::vector< smtrat::Formula* >();
-        }
-        else
-        {
-            $$ = new std::vector< smtrat::Formula* >( 1, $1 );
-        }
 	}
 	|	bindlist bind
 	{
-        if( $2 != NULL )
-        {
-            $1->push_back( $2 );
-        }
-		$$ = $1;
-	}
+    }
     ;
 
 bind :
@@ -656,18 +629,10 @@ bind :
         }
         delete $2;
         delete $3;
-        $$ = NULL;
 	}
 	|	OB SYM expr CB
 	{
-        //river.collectedBooleans.insert( *$2 );
-		//smtrat::Formula* formulaTmp = new smtrat::Formula( IMPLIES );
-        //formulaTmp->addSubformula( new smtrat::Formula( *$2 ) );
-        //formulaTmp->addSubformula( $3 );
-        //delete $2;
-        //$$ = formulaTmp;
         driver.collectedBooleanAuxilliaries.insert( std::pair<const std::string, smtrat::Formula*>( *$2, $3 ) );
-        $$ = NULL;
         delete $2;
 	}
 	;
