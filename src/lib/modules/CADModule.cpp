@@ -25,14 +25,13 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2012-08-27
+ * @version 2012-10-08
  */
 
 //#define MODULE_VERBOSE
 
 #include "../Manager.h"
 #include "CADModule.h"
-#include "UnivariateCADModule.h"
 
 #include <ginacra/ginacra.h>
 #include <ginacra/Constraint.h>
@@ -327,9 +326,36 @@ namespace smtrat
         return mis;
     }
 
-//    void CADModule::addDeductions( const list<list<Constraint> >& deductions )
-//    {
-//        Formula* deduction = new Formula( OR );
+    void CADModule::addDeductions( const list<list<GiNaCRA::Constraint> >& deductions )
+    {
+        Formula* deduction = new Formula( OR );
+        for( list<list<GiNaCRA::Constraint> >::const_iterator clause = deductions.begin(); clause != deductions.end(); ++clause )
+        {
+            if( clause->size() > 1 )
+                deduction->addSubformula( new Formula( AND ) );
+            for( list<GiNaCRA::Constraint>::const_iterator constraint = clause->begin(); constraint != clause->end(); ++constraint )
+            {
+                // check whether the given constraint is one of the input constraints
+                unsigned index = 0;
+                for( ; index < mConstraints.size(); ++index )
+                    if( mConstraints[index] == *constraint )
+                        break;
+                if( mConstraints.size() != index )
+                { // the constraint matches the input constraint at position i
+                    for( ConstraintIndexMap::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
+                    {
+                        if( i->second == index ) // found the entry in the constraint map
+                        {
+                            deduction->addSubformula( *i->first );
+                            break;
+                        }
+                    }
+                    continue;
+                }
+                ///@todo: add a new constraint
+            }
+        }
+//        Module::addDeduction( deduction );
 //        for( auto bound = lBs.back().premise->begin(); bound != lBs.back().premise->end(); ++bound )
 //        {
 //            auto originIterB = (*bound)->origins().begin()->begin();
@@ -341,9 +367,7 @@ namespace smtrat
 //            }
 //        }
 //        deduction->addSubformula( (*originIterA)->pConstraint() );
-//        addDeduction( deduction );
-//        ++originIterA;
-//    }
+    }
 
     /**
      *
@@ -357,7 +381,7 @@ namespace smtrat
             if( i->second == index ) // found the entry in the constraint map
                 return *i->first;
         }
-        cout << "Constraint index = " << index << " of constraint " << mConstraints[index] << endl;
+//        cout << "Constraint index = " << index << " of constraint " << mConstraints[index] << endl;
         assert( false );    // The given index should match an input constraint!
         return NULL;
     }

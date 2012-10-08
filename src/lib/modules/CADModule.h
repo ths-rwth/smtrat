@@ -54,7 +54,7 @@ namespace smtrat
      *
      * @author Ulrich Loup
      * @since 2012-02-04
-     * @version 2012-07-02
+     * @version 2012-10-08
      *
      */
     class CADModule:
@@ -91,7 +91,7 @@ namespace smtrat
         private:
             const GiNaCRA::Constraint convertConstraint( const Constraint& );
             vec_set_const_pFormula extractMinimalInfeasibleSubsets( const GiNaCRA::ConflictGraph& conflictGraph );
-//            void addDeductions( const list<list<Constraint> >& deductions );
+            void addDeductions( const list<list<GiNaCRA::Constraint> >& deductions );
             const Formula* getConstraintAt( unsigned index );
             void updateConstraintMap( unsigned index, bool decrement = true );
     };
