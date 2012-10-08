@@ -199,8 +199,8 @@ struct subComp
 	}
 };
 
-typedef std::vector	< Condition* >                ConditionVector					;
-typedef std::vector	< ConditionVector >           DisjunctionOfConditionConjunctions;
+typedef std::vector	< Condition* > 			ConditionVector						;
+typedef std::vector	< ConditionVector > 	DisjunctionOfConditionConjunctions	;
 typedef std::vector	< const smtrat::Constraint* > TS_ConstraintConjunction			;
 
 
@@ -248,13 +248,14 @@ public:
 	/**
 	 * Constructors:
 	 */
-	State();
-	State( State* const, const Substitution& );
+	State	( );
+	State	( State* const		 ,
+			  const Substitution& );
 
 	/**
 	 * Destructor:
 	 */
-	~State();
+	~State	( )	;
 
 	/**
 	 * Methods:
@@ -262,30 +263,30 @@ public:
 
 	bool					isRoot		        		( ) const 	{ return mRoot	   					 									; }
 	bool					toHighDegree        		( ) const 	{ return mToHighDegree				 									; }
-	bool&                   rToHighDegree        		( ) 		{ return mToHighDegree				 									; }
+	bool&						rToHighDegree        		( ) 		{ return mToHighDegree				 									; }
 #ifndef VS_USE_REDLOG
 	bool					markedAsDeleted        		( ) const 	{ return mMarkedAsDeleted			 									; }
-	bool&					rMarkedAsDeleted        	( ) 	 	{ return mMarkedAsDeleted			 									; }
+	bool&						rMarkedAsDeleted        	( ) 	 	{ return mMarkedAsDeleted			 									; }
 #endif
 	bool					hasChildrenToInsert    		( ) const 	{ return mHasChildrenToInsert		 									; }
-	bool&					rHasChildrenToInsert       	( ) 	 	{ return mHasChildrenToInsert		 									; }
-	const std::string& 		index		        		( ) const 	{ return *mpIndex	   				 									; }
-	unsigned&				rValuation	        		( )       	{ return mValuation	   				 									; }
+	bool&						rHasChildrenToInsert       	( ) 	 	{ return mHasChildrenToInsert		 									; }
+	const std::string& 			index		        		( ) const 	{ return *mpIndex	   				 									; }
+	unsigned&					rValuation	        		( )       	{ return mValuation	   				 									; }
 	unsigned				valuation	        		( ) const 	{ return mValuation	   				 									; }
 	unsigned				id	        				( ) const 	{ return mID	   					 									; }
-	StateVector&			rChildren	        		( )       	{ return *mpChildren	   			 									; }
-	const StateVector& 		children 	        		( ) const 	{ return *mpChildren	   			 									; }
-	State* const			pFather						( ) const  	{ return mpFather	   				 									; }
-	const State& 			father						( ) const  	{ return *mpFather	   				 									; }
-	State&  				rFather						( )       	{ return *mpFather	   				 									; }
-	ConflictSets&			rConflictSets 				( )       	{ return *mpConflictSets			 									; }
-	const ConflictSets& 	conflictSets				( ) const 	{ return *mpConflictSets			 									; }
-	bool&					rHasRecentlyAddedConditions ( )  		{ return mHasRecentlyAddedConditions 									; }
+	StateVector&				rChildren	        		( )       	{ return *mpChildren	   			 									; }
+	const StateVector& 			children 	        		( ) const 	{ return *mpChildren	   			 									; }
+	State* const				pFather						( ) const  	{ return mpFather	   				 									; }
+	const State& 				father						( ) const  	{ return *mpFather	   				 									; }
+	State&  					rFather						( )       	{ return *mpFather	   				 									; }
+	ConflictSets&				rConflictSets 				( )       	{ return *mpConflictSets			 									; }
+	const ConflictSets& 		conflictSets				( ) const 	{ return *mpConflictSets			 									; }
+	bool&						rHasRecentlyAddedConditions ( )  		{ return mHasRecentlyAddedConditions 									; }
 	bool					hasRecentlyAddedConditions  ( ) const 	{ return mHasRecentlyAddedConditions 									; }
-	bool&					rInconsistent				( ) 	 	{ return mInconsistent				 									; }
+	bool&						rInconsistent				( ) 	 	{ return mInconsistent				 									; }
 	bool					isInconsistent				( ) const 	{ return mInconsistent				 									; }
-	ConditionVector&		rConditions	        		( )       	{ return *mpConditions	   			 									; }
-	const ConditionVector&	conditions	      			( ) const 	{ return *mpConditions	   			 									; }
+	ConditionVector&			rConditions	        		( )       	{ return *mpConditions	   			 									; }
+	const ConditionVector&		conditions	      			( ) const 	{ return *mpConditions	   			 									; }
 	Substitution&				rSubstitution				( )       	{ return *mpSubstitution 			 									; }
 	const Substitution&			substitution 				( ) const 	{ return *mpSubstitution 			 									; }
 	SubstitutionResults&		rSubstitutionResults		( )       	{ return *mpSubstitutionResults		 									; }
@@ -295,19 +296,19 @@ public:
 	const Substitution* const	pSubstitution 				( ) const 	{ return mpSubstitution 			 									; }
 	bool					conditionsSimplified		( ) const	{ return mConditionsSimplified		 									; }
 	bool					subResultsSimplified		( ) const	{ return mSubResultsSimplified		 									; }
-	bool&					rSubResultsSimplified		( ) 		{ return mSubResultsSimplified		 									; }
+	bool&						rSubResultsSimplified		( ) 		{ return mSubResultsSimplified		 									; }
 	bool					takeSubResultCombAgain		( ) const	{ return mTakeSubResultCombAgain	 									; }
-	bool&					rTakeSubResultCombAgain		( ) 		{ return mTakeSubResultCombAgain	 									; }
+	bool&						rTakeSubResultCombAgain		( ) 		{ return mTakeSubResultCombAgain	 									; }
 	bool					tryToRefreshIndex			( ) const	{ return mTryToRefreshIndex			 									; }
 	bool					hasSubResultsCombination	( ) const	{ return mpSubResultCombination!=NULL									; }
 	bool					hasSubstitutionResults		( ) const	{ return mpSubstitutionResults!=NULL 									; }
 	bool					unfinished					( ) const	{ return (mpSubstitutionResults->size()>mpSubResultCombination->size())	; }
-	const StateType			stateType					( ) const	{ return mStateType														; }
-	StateType&				rStateType					( ) 		{ return mStateType														; }
-	Condition*		 		pOriginalCondition			( )	const 	{ return mpOriginalCondition											; }
-	const Condition& 		originalCondition			( )	const 	{ return *mpOriginalCondition											; }
+	const StateType				stateType					( ) const	{ return mStateType														; }
+	StateType&					rStateType					( ) 		{ return mStateType														; }
+	Condition*		 			pOriginalCondition			( )	const 	{ return mpOriginalCondition											; }
+	const Condition& 			originalCondition			( )	const 	{ return *mpOriginalCondition											; }
 
-	void					setOriginalCondition		( Condition* const _pOCondition ) 	{ mpOriginalCondition=_pOCondition; }
+	void						setOriginalCondition		( Condition* const _pOCondition ) 	{ mpOriginalCondition=_pOCondition; }
 
 	// Data access methods (read only).
 	const unsigned 							treeDepth							( ) 														const	;

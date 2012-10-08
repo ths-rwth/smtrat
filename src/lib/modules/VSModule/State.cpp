@@ -1574,7 +1574,6 @@ namespace vs
 
         if( constraintConsistency != 1 )
         {
-            mVariableBounds.addBound( _constraint );
             /*
              * Check if the condition already exists.
              */
@@ -1993,7 +1992,6 @@ namespace vs
                 {
                     if( *cond == _conditionsToDelete.back() )
                     {
-                        mVariableBounds.removeBound( (*cond)->pConstraint() );
                         rConditions().erase( cond );
                         conditionDeleted = true;
                         break;
@@ -2028,7 +2026,7 @@ namespace vs
      *                              element of a substitution.
      * @param _substitutionType     The type of the substitution we create.
      *
-     * @return True, if a state was successfully added.
+     * @return True, if a state was sucessfully added.
      */
     bool State::addChild( const string& _eliminationVar, const Substitution_Type& _substitutionType, const ConditionSet& _oConditions )
     {
