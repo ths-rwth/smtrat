@@ -28,12 +28,16 @@
 #ifndef SMTRAT_VS_STATE_H
 #define SMTRAT_VS_STATE_H
 
+//#define VS_USE_VARIABLE_BOUNDS
+
 #include <map>
 #include <limits.h>
 #include <ginacra/ginacra.h>
 #include "Substitution.h"
 #include "Tools.h"
+#ifdef VS_USE_VARIABLE_BOUNDS
 #include "../../VariableBounds.h"
+#endif
 
 namespace vs
 {
@@ -242,7 +246,9 @@ private:
 	ConditionVector* 		 mpConditions				;
 	ConflictSets*			 mpConflictSets				;
 	StateVector* 			 mpChildren					;
+    #ifdef VS_USE_VARIABLE_BOUNDS
     smtrat::VariableBounds   mVariableBounds            ;
+    #endif
 public:
 
 	/**

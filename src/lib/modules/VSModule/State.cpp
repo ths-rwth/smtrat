@@ -44,8 +44,11 @@ namespace vs
     /**
      * Constructors:
      */
-    State::State():
+    State::State()
+    #ifdef VS_USE_VARIABLE_BOUNDS
+        :
         mVariableBounds()
+    #endif
     {
         mRoot                       = true;
         mHasRecentlyAddedConditions = false;
@@ -71,8 +74,11 @@ namespace vs
         mpSubResultCombination      = NULL;
     }
 
-    State::State( State* const _father, const Substitution& _substitution ):
+    State::State( State* const _father, const Substitution& _substitution )
+    #ifdef VS_USE_VARIABLE_BOUNDS
+    :
         mVariableBounds()
+    #endif
     {
         mRoot                       = false;
         mHasRecentlyAddedConditions = false;
@@ -1574,7 +1580,9 @@ namespace vs
 
         if( constraintConsistency != 1 )
         {
+            #ifdef VS_USE_VARIABLE_BOUNDS
             mVariableBounds.addBound( _constraint );
+            #endif
             /*
              * Check if the condition already exists.
              */
@@ -1993,7 +2001,11 @@ namespace vs
                 {
                     if( *cond == _conditionsToDelete.back() )
                     {
+                        #ifdef VS_USE_VARIABLE_BOUNDS
                         mVariableBounds.removeBound( (*cond)->pConstraint() );
+                        // TODO: Activate all children, which has been deactivated by reason of the test candidate
+                        // conflicting the variable bounds.
+                        #endif
                         rConditions().erase( cond );
                         conditionDeleted = true;
                         break;

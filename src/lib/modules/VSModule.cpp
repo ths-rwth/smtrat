@@ -257,6 +257,8 @@ namespace smtrat
                 }
                 else
                 {
+                    // TODO: Check whether the test candidate conflicts with the variable bounds of
+                    //       the father of this state. If so, store the according conflict.
                     switch( currentState->stateType() )
                     {
                         case SUBSTITUTION_TO_APPLY:
