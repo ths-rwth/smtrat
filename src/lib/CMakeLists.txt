@@ -111,9 +111,11 @@ set(lib_SATModule_headers
 	modules/SATModule/XAlloc.h
 	modules/SATModule/Options.h
 	modules/SATModule/SolverTypes.h
+	modules/SATModule/SATStatistics.h
 )
 set(lib_SATModule_src
 	modules/SATModule/Options.cpp
+	modules/SATModule/SATStatistics.cpp
 )
 set(lib_LRAModule_headers
 	modules/LRAModule/Bound.h

@@ -75,7 +75,7 @@ namespace smtrat
         static const check_inequalities                  checkInequalities                       = ALWAYS;
         static const pass_inequalities                   passInequalities                        = AS_RECEIVED;
         static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_INFEASIBLEANDDEDUCTION;
-        static const theory_deductions                   addTheoryDeductions                     = ONLY_INEQUALITIES;
+        static const theory_deductions                   addTheoryDeductions                     = NO_CONSTRAINTS;
         static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
         static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
         static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;

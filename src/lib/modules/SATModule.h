@@ -51,6 +51,8 @@
 #ifndef SMTRAT_SATMODULE_H
 #define SMTRAT_SATMODULE_H
 
+#include "../config.h"
+
 #include "SATModule/Vec.h"
 #include "SATModule/Heap.h"
 #include "SATModule/Alg.h"
@@ -60,6 +62,10 @@
 #include <math.h>
 #include "../Module.h"
 
+
+#ifdef GATHER_STATS
+#include "SATModule/SATStatistics.h"
+#endif 
 #define SAT_MODULE_THEORY_PROPAGATION
 
 namespace smtrat
@@ -269,6 +275,10 @@ namespace smtrat
             // this vector represent the final conflict clause expressed in the assumptions.
             std::vector< std::vector<Minisat::Lit> > mMaxSatAssigns;
 
+            #ifdef GATHER_STATS
+            SATstatistics* mStats;
+            #endif
+            
         public:
 
             /**
@@ -299,6 +309,8 @@ namespace smtrat
             void printClauses( std::ostream&, Minisat::Clause&, Minisat::vec<Minisat::Var>&, Minisat::Var& );
             void printClauses( const Minisat::vec<Minisat::CRef>&, const std::string, std::ostream& = std::cout, const std::string = "***" );
             void printDecisions( std::ostream& = std::cout, std::string = "***" ) const;
+            
+            void collectStats();
 
         private:
             // Problem specification:

@@ -100,7 +100,7 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
         pushBacktrackPoint( _formula );
         mBasis.addPolynomial( Polynomial( constraint.lhs( ) ) );
         saveState( );
-
+        
         if( !Settings::passGB )
         {
             addReceivedSubformulaToPassedFormula( _formula );
@@ -148,7 +148,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
     #ifdef GATHER_STATS
     mStats->called();
     #endif
-    
+
     assert( mBacktrackPoints.size( ) - 1 == mBasis.nrOriginalConstraints( ) );
     assert( mInfeasibleSubsets.empty( ) );
  
@@ -892,8 +892,20 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                 std::get < 0 > (it->second) = mModule->mpPassedFormula->end( );
                 if( Settings::addTheoryDeductions != NO_CONSTRAINTS )
                 {
-                    //TODO add deduction with new syntax.
-                    //mModule->addDeduction( originals, &((*(it->first))->constraint( )) );
+                    Formula* deduction = new Formula(OR);
+                    
+                    for( auto jt = originals.begin(); jt != originals.end(); ++jt )
+                    {
+                        deduction->addSubformula( new Formula( NOT ) );
+                        deduction->back()->addSubformula( (*jt)->pConstraint() );
+                    }
+                    deduction->addSubformula(((*(it->first))->pConstraint( )));
+
+                    mModule->addDeduction(deduction);
+                    #ifdef GATHER_STATS
+                    mStats->DeducedInequality();
+                    #endif
+                    
                 }
             }
             else // we have a conflict

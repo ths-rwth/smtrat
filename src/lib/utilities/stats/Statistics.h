@@ -13,6 +13,7 @@
 #ifdef GATHER_STATS
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -50,7 +51,9 @@ protected:
     }
     
     void addKeyValuePair(const std::string & key, float value) {
-        
+        std::stringstream convert;
+        convert << value;
+        addKeyValuePair(key, convert.str());
     }
 };
 }
