@@ -610,9 +610,9 @@ bool GroebnerModule<Settings>::validityCheck( )
         {
             if( it != *btp )
             {
-                print( );
-                printStateHistory( );
-                std::cout << *it << " (Element in received formula) != " << **btp << "(Backtrackpoint)" << std::endl;
+//                print( );
+//                printStateHistory( );
+//                std::cout << *it << " (Element in received formula) != " << **btp << "(Backtrackpoint)" << std::endl;
                 return false;
             }
             ++btp;
