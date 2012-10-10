@@ -859,7 +859,7 @@ namespace smtrat
         {
             return;
         }
-        else if( _formula.getType() == NOT )
+        else if( _formula.getType() == NOT && (_formula.getPropositions() | ~PROP_IS_IN_CNF) == ~PROP_TRUE )
         {
             resolveNegation( _formula );
             return;

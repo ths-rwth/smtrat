@@ -650,8 +650,8 @@ namespace smtrat
 
     /**
      * Store subsets as smt2 files in order to check them later.
-     * @param 
-     * @param 
+     * @param
+     * @param
      */
     void Module::storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> & subformulae, const std::string filename) const {
         stringstream _filename;
@@ -684,7 +684,7 @@ namespace smtrat
         smtlibFile.close();
         ++mSmallerMusesCheckCounter;
     }
-    
+
      /**
      * Generates all subformulae of the given size
      * @param size the number of constraints
@@ -692,19 +692,19 @@ namespace smtrat
      */
     std::vector<Formula> Module::generateSubformulaeOfInfeasibleSubset(unsigned infeasibleset, unsigned size ) const {
         assert(size < mInfeasibleSubsets[infeasibleset].size());
-        
+
         //000000....000011111 (size-many ones)
         unsigned bitvector = (1 << size) - 1;
         //000000....100000000
         unsigned limit = (1 << mInfeasibleSubsets[infeasibleset].size());
         unsigned nextbitvector;
-        
+
         std::vector<Formula> subformulae;
         while(bitvector < limit) {
             Formula formula(AND);
-            // compute lexicographical successor of the bitvector 
-            unsigned int tmp = (bitvector | (bitvector - 1)) + 1;  
-            nextbitvector = tmp | ((((tmp & -tmp) / (bitvector & -bitvector)) >> 1) - 1); 
+            // compute lexicographical successor of the bitvector
+            unsigned int tmp = (bitvector | (bitvector - 1)) + 1;
+            nextbitvector = tmp | ((((tmp & -tmp) / (bitvector & -bitvector)) >> 1) - 1);
 
             // fill formula
             for(auto it = mInfeasibleSubsets[infeasibleset].begin(); it != mInfeasibleSubsets[infeasibleset].end(); ++it) {

@@ -41,6 +41,10 @@ using namespace GiNaC;
 #define LRA_USE_THETA_STRATEGY
 #endif
 
+// TODO: Update only rows, which correspond to a bounded variable.
+//       It needs, that in each entry the non basic (column) variable is stored,
+//       in order to update the row belatedly.
+
 namespace lra
 {
     Tableau::Tableau( smtrat::Formula::iterator _defaultBoundPosition ):

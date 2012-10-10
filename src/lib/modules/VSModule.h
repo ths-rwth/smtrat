@@ -44,48 +44,13 @@
 #include "VSModule/Substitute.h"
 #include "VSModule/State.h"
 #include "../Module.h"
+#include "../VariableBounds.h"
 
 namespace smtrat
 {
     class VSModule:
         public Module
     {
-        public:
-
-            /*
-             * Constructors:
-             */
-            VSModule( Manager* const _tsManager, const Formula* const );
-
-            /*
-             * Destructor:
-             */
-            ~VSModule();
-
-            /*
-             * Methods:
-             */
-            bool& rDebug()
-            {
-                return debug;
-            }
-
-            bool& rDebugMethods()
-            {
-                return debugmethods;
-            }
-
-            // Interfaces.
-            bool assertSubformula( Formula::const_iterator );
-            Answer isConsistent();
-            void removeSubformula( Formula::const_iterator );
-
-            // Printing methods.
-            void printAll( std::ostream& = std::cout ) const;
-            void printRanking( std::ostream& = std::cout ) const;
-            void printRuntimes( std::ostream& = std::cout ) const;
-            void printAnswer( std::ostream& = std::cout ) const;
-
         private:
 
             /*
@@ -128,7 +93,45 @@ namespace smtrat
             ValuationMap*          mpRanking;
             ConstraintConditionMap mReceivedConstraintsAsConditions;
             GiNaC::symtab          mAllVariables;
+            VariableBounds         mVariableBounds;
 
+        public:
+
+            /*
+             * Constructors:
+             */
+            VSModule( Manager* const _tsManager, const Formula* const );
+
+            /*
+             * Destructor:
+             */
+            ~VSModule();
+
+            /*
+             * Methods:
+             */
+            bool& rDebug()
+            {
+                return debug;
+            }
+
+            bool& rDebugMethods()
+            {
+                return debugmethods;
+            }
+
+            // Interfaces.
+            bool assertSubformula( Formula::const_iterator );
+            Answer isConsistent();
+            void removeSubformula( Formula::const_iterator );
+
+            // Printing methods.
+            void printAll( std::ostream& = std::cout ) const;
+            void printRanking( std::ostream& = std::cout ) const;
+            void printRuntimes( std::ostream& = std::cout ) const;
+            void printAnswer( std::ostream& = std::cout ) const;
+
+        private:
             /*
              * Methods:
              */

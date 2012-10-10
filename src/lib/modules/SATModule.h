@@ -94,7 +94,7 @@ namespace smtrat
                 const Formula* origin;
                 int updateInfo;
             };
-            typedef std::map<const Constraint* const , Minisat::Lit>     ConstraintLiteralMap;
+            typedef std::map<const Constraint* const, Minisat::Lit>      ConstraintLiteralMap;
             typedef std::map<const std::string, Minisat::Var>            BooleanVarMap;
             typedef Minisat::vec< Abstraction >                          BooleanConstraintMap;
             typedef std::map<const Formula*, const Formula*, formulaCmp> ConstraintOriginMap;
