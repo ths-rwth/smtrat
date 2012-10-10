@@ -732,7 +732,6 @@ namespace vs
                             cond->pOriginalConditions()->insert( (**cond1).originalConditions().begin(), (**cond1).originalConditions().end() );
                             redundantConditionSet.insert( *cond1 );
                             redundantConditionSet.insert( *cond2 );
-                            _conditionVectorToSimplify.push_back( cond );
                         }
                         else if( ((**cond1).constraint().relation() == smtrat::CR_NEQ && (**cond2).constraint().relation() == smtrat::CR_GEQ)
                                  || ((**cond1).constraint().relation() == smtrat::CR_GEQ && (**cond2).constraint().relation() == smtrat::CR_NEQ) )
@@ -741,7 +740,6 @@ namespace vs
                             cond->pOriginalConditions()->insert( (**cond1).originalConditions().begin(), (**cond1).originalConditions().end() );
                             redundantConditionSet.insert( *cond1 );
                             redundantConditionSet.insert( *cond2 );
-                            _conditionVectorToSimplify.push_back( cond );
                         }
                         else if( ((**cond1).constraint().relation() == smtrat::CR_NEQ && (**cond2).constraint().relation() == smtrat::CR_LEQ)
                                  || ((**cond1).constraint().relation() == smtrat::CR_LEQ && (**cond2).constraint().relation() == smtrat::CR_NEQ) )
@@ -750,7 +748,6 @@ namespace vs
                             cond->pOriginalConditions()->insert( (**cond1).originalConditions().begin(), (**cond1).originalConditions().end() );
                             redundantConditionSet.insert( *cond1 );
                             redundantConditionSet.insert( *cond2 );
-                            _conditionVectorToSimplify.push_back( cond );
                         }
                         else
                         {

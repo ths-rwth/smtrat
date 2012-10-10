@@ -250,7 +250,6 @@ namespace smtrat
                 }
                 else
                 {
-                    #ifdef VS_USE_VARIABLE_BOUNDS
                     // TODO: Check whether the test candidate conflicts with the variable bounds of
                     //       the father of this state. If so, store the according conflict.
                     if( !currentState->checkTestCandidatesForBounds() )
@@ -260,7 +259,6 @@ namespace smtrat
                     }
                     else
                     {
-                    #endif
                         switch( currentState->stateType() )
                         {
                             case SUBSTITUTION_TO_APPLY:
@@ -588,9 +586,7 @@ namespace smtrat
                             default:
                                 assert( false );
                         }
-                    #ifdef VS_USE_VARIABLE_BOUNDS
                     }
-                    #endif
                 }
             }
         }
