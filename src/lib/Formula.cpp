@@ -821,7 +821,7 @@ namespace smtrat
             std::list<Formula*>::const_iterator subformula = mpSubformulas->begin();
             while( subformula != mpSubformulas->end() )
             {
-                result += " " + (*subformula)->toString();
+                result += " " + (*subformula)->toString( _infix );
                 ++subformula;
             }
             result += ")";
@@ -861,7 +861,7 @@ namespace smtrat
         }
         else if( _formula.getType() == NOT && (_formula.getPropositions() | ~PROP_IS_IN_CNF) == ~PROP_TRUE )
         {
-            resolveNegation( _formula );
+            resolveNegation( _formula, _keepConstraints );
             return;
         }
         else if( _formula.isAtom() )
