@@ -496,6 +496,7 @@ namespace smtrat
             {
                 addDeduction( *deduction );
             }
+            (*module)->clearDeductions();
         }
     }
 
