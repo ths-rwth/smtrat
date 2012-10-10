@@ -134,7 +134,7 @@ namespace smtrat
             /*
              * Methods:
              */
-            bool eliminate( vs::State*, const std::string&, const vs::Condition* );
+            bool eliminate( vs::State*, const std::string&, vs::Condition* );
             bool substituteAll( vs::State*, vs::ConditionVector& );
             void propagateNewConditions( vs::State* );
             void increaseIDCounter();

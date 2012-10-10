@@ -39,7 +39,6 @@ namespace vs
     Substitution::Substitution()
     {
         mpVariable 					= new string		( "RandomVariable" );
-        mpVarAsEx                   = new ex( 0 );
         mpTerm 						= new SqrtEx			( )					;
         #ifdef VS_CUBIC_CASE
         mpMultiRootLessOcond		= new ex			( 0 )				;
@@ -52,11 +51,10 @@ namespace vs
     }
 
 
-    Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const Substitution_Type& _type, const ConditionSet& _oConditions )
+    Substitution::Substitution( const string& _variable, const Substitution_Type& _type, const ConditionSet& _oConditions )
     {
         mpVariable 					= new string		( _variable )	;
-        mpVarAsEx 					= new ex            ( _varAsEx )	;
-        mpTerm 						= new SqrtEx		( )				;
+        mpTerm 						= new SqrtEx			( )				;
         #ifdef VS_CUBIC_CASE
         mpMultiRootLessOcond		= new ex			( 0 )			;
         mpFirstZeroOfDerivOfOCond	= new SqrtEx			( )				;
@@ -67,10 +65,9 @@ namespace vs
         mpOriginalConditions		= new ConditionSet	( _oConditions );
     }
 
-    Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const SqrtEx& _term, const Substitution_Type& _type, const ConditionSet& _oConditions )
+    Substitution::Substitution( const string& _variable, const SqrtEx& _term, const Substitution_Type& _type, const ConditionSet& _oConditions )
     {
         mpVariable 					= new string	( _variable )	;
-        mpVarAsEx 					= new ex            ( _varAsEx )	;
         mpTerm 						= new SqrtEx		( _term )		;
         #ifdef VS_CUBIC_CASE
         mpMultiRootLessOcond		= new ex		( 0 )			;
@@ -107,8 +104,7 @@ namespace vs
 
     Substitution::Substitution( const Substitution& _sub )
     {
-        mpVariable 					= new string	( _sub.variable() )                     ;
-        mpVarAsEx 					= new ex        ( _sub.varAsEx() )                      ;
+        mpVariable 					= new string	( _sub.variable() )					;
         mType	   					= Substitution_Type	( _sub.type() )						;
         mpTerm 						= new SqrtEx		( _sub.term() )						;
         #ifdef VS_CUBIC_CASE
@@ -116,7 +112,7 @@ namespace vs
         mpFirstZeroOfDerivOfOCond	= new SqrtEx		( _sub.firstZeroOfDerivOfOCond() )	;
         mpSecondZeroOfDerivOfOCond	= new SqrtEx		( _sub.secondZeroOfDerivOfOCond() )	;
         #endif
-        mTermVariables				= symtab	( _sub.termVariables() )					;
+        mTermVariables				= symtab	( _sub.termVariables() )									;
         mpOriginalConditions		= new ConditionSet	( _sub.originalConditions() )		;
     }
 
@@ -126,7 +122,6 @@ namespace vs
     Substitution::~Substitution()
     {
         delete mpVariable					;
-        delete mpVarAsEx                    ;
         delete mpTerm						;
         #ifdef VS_CUBIC_CASE
         delete mpMultiRootLessOcond			;
@@ -141,7 +136,7 @@ namespace vs
     */
 
     /**
-    * Valuates the substitution according to a heuristic.
+    * Valutates the substitution according to a heuristic.
     *
     * @return
     */
