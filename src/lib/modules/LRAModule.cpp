@@ -281,6 +281,7 @@ namespace smtrat
                     }
                     else
                     {
+//                        mTableau.exhaustiveRefinement();
                         adaptPassedFormula();
                         Answer a = runBackends();
                         if( a == False )

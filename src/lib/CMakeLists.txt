@@ -28,7 +28,6 @@ set(lib_core_src
     Constraint.cpp
     ConstraintPool.cpp
 	RuntimeSettings.cpp
-	VariableBounds.cpp
 )
 set(lib_core_headers
     Manager.h

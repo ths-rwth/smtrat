@@ -44,64 +44,66 @@ namespace vs
     /**
      * Constructors:
      */
-    State::State()
+    State::State():
+        mConditionsSimplified( false ),
+        mHasChildrenToInsert( false ),
+        mHasRecentlyAddedConditions( false ),
+        mInconsistent( false ),
+        mMarkedAsDeleted( false ),
+        mRoot( true ),
+        mSubResultsSimplified( false ),
+        mTakeSubResultCombAgain( false ),
+        mTestCandViolatesBounds( false ),
+        mToHighDegree( false ),
+        mTryToRefreshIndex( false ),
+        mID( 0 ),
+        mValuation( 0 ),
+        mStateType( TEST_CANDIDATE_TO_GENERATE ),
+        mpIndex( new string( "" ) ),
+        mpOriginalCondition( NULL ),
+        mpFather( NULL ),
+        mpSubstitution( NULL ),
+        mpSubstitutionResults( NULL ),
+        mpSubResultCombination( NULL ),
+        mpConditions( new ConditionVector() ),
+        mpConflictSets( new ConflictSets() ),
+        mpChildren( new StateVector() )
     #ifdef VS_USE_VARIABLE_BOUNDS
-        :
+        ,
         mVariableBounds()
     #endif
     {
-        mRoot                       = true;
-        mHasRecentlyAddedConditions = false;
-        mInconsistent               = false;
-        mToHighDegree               = false;
-        mMarkedAsDeleted            = false;
-        mHasChildrenToInsert        = false;
-        mConditionsSimplified       = false;
-        mSubResultsSimplified       = false;
-        mTakeSubResultCombAgain     = false;
-        mTryToRefreshIndex          = false;
-        mpOriginalCondition         = NULL;
-        mpSubstitution              = NULL;
-        mpConditions                = new ConditionVector();
-        mpChildren                  = new StateVector();
-        mpConflictSets              = new ConflictSets();
-        mID                         = 0;
-        mValuation                  = 0;
-        mpFather                    = NULL;
-        mpIndex                     = new string( "" );
-        mStateType                  = TEST_CANDIDATE_TO_GENERATE;
-        mpSubstitutionResults       = NULL;
-        mpSubResultCombination      = NULL;
     }
 
-    State::State( State* const _father, const Substitution& _substitution )
+    State::State( State* const _father, const Substitution& _substitution ):
+        mConditionsSimplified( false ),
+        mHasChildrenToInsert( false ),
+        mHasRecentlyAddedConditions( false ),
+        mInconsistent( false ),
+        mMarkedAsDeleted( false ),
+        mRoot( false ),
+        mSubResultsSimplified( false ),
+        mTakeSubResultCombAgain( false ),
+        mTestCandViolatesBounds( false ),
+        mToHighDegree( false ),
+        mTryToRefreshIndex( false ),
+        mID( 0 ),
+        mValuation( 0 ),
+        mStateType( SUBSTITUTION_TO_APPLY ),
+        mpIndex( new string( "" ) ),
+        mpOriginalCondition( NULL ),
+        mpFather( _father ),
+        mpSubstitution( new Substitution( _substitution ) ),
+        mpSubstitutionResults( NULL ),
+        mpSubResultCombination( NULL ),
+        mpConditions( new ConditionVector() ),
+        mpConflictSets( new ConflictSets() ),
+        mpChildren( new StateVector() )
     #ifdef VS_USE_VARIABLE_BOUNDS
-    :
+        ,
         mVariableBounds()
     #endif
     {
-        mRoot                       = false;
-        mHasRecentlyAddedConditions = false;
-        mInconsistent               = false;
-        mToHighDegree               = false;
-        mMarkedAsDeleted            = false;
-        mHasChildrenToInsert        = false;
-        mConditionsSimplified       = false;
-        mSubResultsSimplified       = false;
-        mTakeSubResultCombAgain     = false;
-        mTryToRefreshIndex          = false;
-        mpOriginalCondition         = NULL;
-        mpSubstitution              = new Substitution( _substitution );
-        mpConditions                = new ConditionVector();
-        mpChildren                  = new StateVector();
-        mpFather                    = _father;
-        mpConflictSets              = new ConflictSets();
-        mID                         = 0;
-        mValuation                  = 0;
-        mpIndex                     = new string( "" );
-        mStateType                  = SUBSTITUTION_TO_APPLY;
-        mpSubstitutionResults       = NULL;
-        mpSubResultCombination      = NULL;
     }
 
     /**
@@ -1580,9 +1582,6 @@ namespace vs
 
         if( constraintConsistency != 1 )
         {
-            #ifdef VS_USE_VARIABLE_BOUNDS
-            mVariableBounds.addBound( _constraint );
-            #endif
             /*
              * Check if the condition already exists.
              */
@@ -1616,10 +1615,16 @@ namespace vs
                         || constraintWithFinitlyManySolutionCandidatesInIndexExists )
                 {
                     rConditions().push_back( new Condition( _constraint, true, _originalConditions, _valutation, _recentlyAdded ) );
+                    #ifdef VS_USE_VARIABLE_BOUNDS
+                    mVariableBounds.addBound( _constraint, rConditions().back() );
+                    #endif
                 }
                 else
                 {
                     rConditions().push_back( new Condition( _constraint, false, _originalConditions, _valutation, _recentlyAdded ) );
+                    #ifdef VS_USE_VARIABLE_BOUNDS
+                    mVariableBounds.addBound( _constraint, rConditions().back() );
+                    #endif
                 }
             }
 
@@ -1629,6 +1634,9 @@ namespace vs
             else
             {
                 rConditions().push_back( new Condition( _constraint, false, _originalConditions, _valutation, false ) );
+                #ifdef VS_USE_VARIABLE_BOUNDS
+                mVariableBounds.addBound( _constraint, rConditions().back() );
+                #endif
             }
         }
     }
@@ -2002,7 +2010,7 @@ namespace vs
                     if( *cond == _conditionsToDelete.back() )
                     {
                         #ifdef VS_USE_VARIABLE_BOUNDS
-                        mVariableBounds.removeBound( (*cond)->pConstraint() );
+                        mVariableBounds.removeBound( (*cond)->pConstraint(), *cond );
                         // TODO: Activate all children, which has been deactivated by reason of the test candidate
                         // conflicting the variable bounds.
                         #endif
@@ -2432,6 +2440,63 @@ namespace vs
     }
 
     /**
+     *
+     * @return
+     */
+    bool State::checkTestCandidatesForBounds()
+    {
+        if( !isRoot() )
+        {
+//            for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
+//            {
+//                GiNaCRA::Interval solutionSpace = GiNaCRA::Interval::evaluate( (*cond)->constraint().lhs(), mVariableBounds.getEvalIntervalMap() );
+//
+//                switch( (*cond)->constraint().relation() )
+//                {
+//                    case smtrat::CR_EQ:
+//                    {
+//                        if( !solutionSpace.contains( 0 ) )
+//                        {
+//                            return false;
+//                        }
+//                        break;
+//                    }
+//                    case smtrat::CR_LEQ:
+//                    {
+//                        if( !solutionSpace.contains( 0 ) )
+//                        {
+//                            return false;
+//                        }
+//                        return true;
+//                    }
+//                    case smtrat::CR_GEQ:
+//                    {
+//                        return true;
+//                    }
+//                    case smtrat::CR_LESS:
+//                    {
+//                        return true;
+//                    }
+//                    case smtrat::CR_GREATER:
+//                    {
+//                        return true;
+//                    }
+//                    case smtrat::CR_NEQ:
+//                    {
+//                        return true;
+//                    }
+//                    default:
+//                    {
+//                        cerr << "Unknown relation symbol!" << endl;
+//                        assert( false );
+//                    }
+//                }
+//            }
+        }
+        return true;
+    }
+
+    /**
      * Prints the conditions and the substitution of this state and all its children.
      *
      * @param _spaces   The number of spaces at the beginning of a row.
@@ -2561,6 +2626,9 @@ namespace vs
         printSubstitutionResultCombination( _initiation + "   ", _out );
         _out << _initiation << endl;
         printConflictSets( _initiation + "   ", _out );
+        _out << _initiation << endl;
+        mVariableBounds.print( _out, _initiation );
+        _out << endl;
     }
 
     /**

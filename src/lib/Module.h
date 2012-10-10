@@ -189,8 +189,9 @@ namespace smtrat
                 }
             }
 
-            const std::vector<Formula*>& deductions() const
+            const std::vector<Formula*>& deductions()
             {
+                updateDeductions();
                 return mDeductions;
             }
 
