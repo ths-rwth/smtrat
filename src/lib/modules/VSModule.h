@@ -44,7 +44,6 @@
 #include "VSModule/Substitute.h"
 #include "VSModule/State.h"
 #include "../Module.h"
-#include "../VariableBounds.h"
 
 namespace smtrat
 {
