@@ -26,7 +26,7 @@
  * @author Ulrich Loup
  * @author Florian Corzilius
  * @since 2012-02-09
- * @version 2012-02-09
+ * @version 2012-10-10
  */
 
 #include "Formula.h"
@@ -781,7 +781,7 @@ namespace smtrat
             }
             case IMPLIES:
             {
-                result += "(implies";
+                result += "(=>";
                 break;
             }
             case BOOL:
