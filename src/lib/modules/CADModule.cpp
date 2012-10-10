@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2012-10-08
+ * @version 2012-10-10
  */
 
 //#define MODULE_VERBOSE
@@ -54,21 +54,36 @@ using GiNaC::is_exactly_a;
 
 using namespace std;
 
+// CAD settings
+//#define SMTRAT_CAD_ALTERNATIVE_SETTING
+//#define SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
+//#define SMTRAT_CAD_GENERIC_SETTING
+//#define SMTRAT_CAD_DISABLE_SMT
+
 namespace smtrat
 {
     CADModule::CADModule( Manager* const _tsManager, const Formula* const _formula ):
         Module( _tsManager, _formula ),
-        mCAD(),
+#ifdef SMTRAT_CAD_ALTERNATIVE_SETTING
+        mCAD( GiNaCRA::CADSettings::getSettings( GiNaCRA::RATIONALSAMPLE_CADSETTING ) ),
+#else
+#ifndef SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
+        mCAD( GiNaCRA::CADSettings::getSettings() ),
+#else
+#ifdef SMTRAT_CAD_GENERIC_SETTING
+        mCAD( GiNaCRA::CADSettings::getSettings( GiNaCRA::GENERIC_CADSETTING ) ),
+#else
+	mCAD(),
+#endif
+#endif
+#endif
+
         mConstraints(),
         mConstraintsMap(),
         mSatisfiable( true )
     {
         mModuleType = MT_CADModule;
         mInfeasibleSubsets.clear();    // initially everything is satisfied
-        GiNaCRA::CADSettings setting = GiNaCRA::CADSettings::getSettings();
-        setting.removeConstants = true;
-        setting.preferNRSamples = true;
-        mCAD.alterSetting( setting );
     }
 
     CADModule::~CADModule(){}
@@ -129,12 +144,24 @@ namespace smtrat
         // check the extended constraints for satisfiability
         GiNaCRA::RealAlgebraicPoint r;
         ConflictGraph               conflictGraph;
-        if( !mCAD.check( mConstraints, r, conflictGraph ) )
+        list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > > deductions;
+        if( !mCAD.check( mConstraints, r, conflictGraph, deductions ) )
         {
+            #ifdef SMTRAT_CAD_DISABLE_SMT
+            // simulate non-incrementality by constructing a trivial infeasible subset and clearing all data in the CAD
+            mInfeasibleSubsets.push_back( set<const Formula*>() );
+            for( ConstraintIndexMap::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
+                mInfeasibleSubsets.back().insert( *i->first );
+            mCAD.clear();
+            // replay adding the polynomials as scheduled polynomials
+            for( vector<GiNaCRA::Constraint>::const_iterator constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
+                mCAD.addPolynomial( constraint->polynomial(), constraint->variables() );
+            #else
             vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets( conflictGraph );
             assert( !infeasibleSubsets.empty() && !infeasibleSubsets.front().empty() );
             for( vec_set_const_pFormula::const_iterator i = infeasibleSubsets.begin(); i != infeasibleSubsets.end(); ++i )
                 mInfeasibleSubsets.push_back( *i );
+            #endif
             #ifdef MODULE_VERBOSE
             cout << endl << "#Samples: " << mCAD.samples().size() << endl;
             cout << "Result: false" << endl;
@@ -150,6 +177,9 @@ namespace smtrat
         #endif
         mInfeasibleSubsets.clear();
         mSatisfiable = true;
+        #ifndef SMTRAT_CAD_DISABLE_SMT
+        this->addDeductions( deductions );
+        #endif
         return True;
     }
 
@@ -292,6 +322,48 @@ namespace smtrat
     }
 
     /**
+     * Converts the constraint types.
+     * @param c constraint of the GiNaCRA
+     * @return constraint of SMT-RAT
+     */
+    inline const Constraint* CADModule::convertConstraint( const GiNaCRA::Constraint& c )
+    {
+        Constraint_Relation relation = CR_EQ;
+        switch( c.sign() )
+        {
+            case POSITIVE_SIGN:
+            {
+                if( c.negated() )
+                    relation = CR_LEQ;
+                else
+                    relation = CR_GREATER;
+                break;
+            }
+            case ZERO_SIGN:
+            {
+                if( c.negated() )
+                    relation = CR_NEQ;
+                else
+                    relation = CR_EQ;
+                break;
+            }
+            case NEGATIVE_SIGN:
+            {
+                if( c.negated() )
+                    relation = CR_GEQ;
+                else
+                    relation = CR_LESS;
+                break;
+            }
+            default:
+            {
+                assert( false );
+            }
+        }
+        return Formula::newConstraint( c.polynomial(), relation );
+    }
+
+    /**
      *
      * @param conflictGraph
      * @return
@@ -326,15 +398,16 @@ namespace smtrat
         return mis;
     }
 
-    void CADModule::addDeductions( const list<list<GiNaCRA::Constraint> >& deductions )
+    void CADModule::addDeductions( const list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > >& deductions )
     {
-        Formula* deduction = new Formula( OR );
-        for( list<list<GiNaCRA::Constraint> >::const_iterator clause = deductions.begin(); clause != deductions.end(); ++clause )
+        Formula* deduction = new Formula( AND );
+        for( list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > >::const_iterator implication = deductions.begin(); implication != deductions.end(); ++implication )
         {
-            if( clause->size() > 1 )
-                deduction->addSubformula( new Formula( AND ) );
-            for( list<GiNaCRA::Constraint>::const_iterator constraint = clause->begin(); constraint != clause->end(); ++constraint )
-            {
+            assert( ( !implication->first.empty() && !implication->second.empty() ) || implication->first.size() > 1 || implication->second.size() > 1  );
+            deduction->addSubformula( new Formula( OR ) );
+            // process A in A => B
+            for( list<GiNaCRA::Constraint>::const_iterator constraint = implication->first.begin(); constraint != implication->first.end(); ++constraint )
+            { // negate all constraints in first
                 // check whether the given constraint is one of the input constraints
                 unsigned index = 0;
                 for( ; index < mConstraints.size(); ++index )
@@ -346,27 +419,27 @@ namespace smtrat
                     {
                         if( i->second == index ) // found the entry in the constraint map
                         {
-                            deduction->addSubformula( *i->first );
+                            deduction->back()->addSubformula( new Formula( NOT ) );
+                            deduction->back()->back()->addSubformula( (*i->first)->pConstraint() );
                             break;
                         }
                     }
-                    continue;
                 }
-                ///@todo: add a new constraint
+                else 
+                { // add a new constraint
+                    // assert( false ); // this case should be avoided due to efficiency reasons
+                    // add a new constraint
+                    deduction->back()->addSubformula( convertConstraint( *constraint ) );
+                }
+            }
+            // process B in A => B
+            for( list<GiNaCRA::Constraint>::const_iterator constraint = implication->second.begin(); constraint != implication->second.end(); ++constraint )
+            {
+                // add a new constraint
+                deduction->back()->addSubformula( convertConstraint( *constraint ) );
             }
         }
-//        Module::addDeduction( deduction );
-//        for( auto bound = lBs.back().premise->begin(); bound != lBs.back().premise->end(); ++bound )
-//        {
-//            auto originIterB = (*bound)->origins().begin()->begin();
-//            while( originIterB != (*bound)->origins().begin()->end() )
-//            {
-//                deduction->addSubformula( new Formula( NOT ) );
-//                deduction->back()->addSubformula( (*originIterB)->pConstraint() );
-//                ++originIterB;
-//            }
-//        }
-//        deduction->addSubformula( (*originIterA)->pConstraint() );
+        Module::addDeduction( deduction );
     }
 
     /**
