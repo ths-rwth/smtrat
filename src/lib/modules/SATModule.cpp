@@ -1530,6 +1530,7 @@ Propagation:
                                 /*
                                  * Learn the deductions.
                                  */
+                                (*backend)->updateDeductions();
                                 if( !(*backend)->deductions().empty() ) theoryPropagationApplied = true;
                                 for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
                                         deduction != (*backend)->deductions().end(); ++deduction )

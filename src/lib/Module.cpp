@@ -491,12 +491,11 @@ namespace smtrat
         for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
         {
             (*module)->updateDeductions();
-            for( vector<Formula*>::const_iterator deduction = (*module)->deductions().begin(); deduction != (*module)->deductions().end();
-                    ++deduction )
+            while( !(*module)->deductions().empty() )
             {
-                addDeduction( *deduction );
+                addDeduction( (*module)->rDeductions().back() );
+                (*module)->rDeductions().pop_back();
             }
-            (*module)->clearDeductions();
         }
     }
 
