@@ -39,29 +39,32 @@ namespace vs
      */
     Condition::Condition()
     {
-        mpConstraint         = smtrat::Formula::newConstraint( 0, smtrat::CR_EQ );
-        mFlag                = false;
-        mRecentlyAdded       = false;
-        mpOriginalConditions = new ConditionSet();
-        mValuation           = 0;
+        mpConstraint          = smtrat::Formula::newConstraint( 0, smtrat::CR_EQ );
+        mpOriginalConditions  = new ConditionSet();
+        mpInfo                = new Info();
+        mpInfo->flag          = false;
+        mpInfo->recentlyAdded = false;
+        mpInfo->valuation     = 0;
     }
 
     Condition::Condition( const smtrat::Constraint* _constraint )
     {
         mpConstraint         = _constraint;
-        mFlag                = false;
-        mRecentlyAdded       = false;
         mpOriginalConditions = new ConditionSet();
-        mValuation           = 0;
+        mpInfo                = new Info();
+        mpInfo->flag          = false;
+        mpInfo->recentlyAdded = false;
+        mpInfo->valuation     = 0;
     }
 
     Condition::Condition( const smtrat::Constraint* _constraint, const unsigned _valuation )
     {
         mpConstraint         = _constraint;
-        mFlag                = false;
-        mRecentlyAdded       = false;
         mpOriginalConditions = new ConditionSet();
-        mValuation           = _valuation;
+        mpInfo                = new Info();
+        mpInfo->flag          = false;
+        mpInfo->recentlyAdded = false;
+        mpInfo->valuation     = _valuation;
     }
 
     Condition::Condition( const smtrat::Constraint* _constraint,
@@ -70,10 +73,11 @@ namespace vs
                           const unsigned _valuation )
     {
         mpConstraint         = _constraint;
-        mFlag                = _flag;
-        mRecentlyAdded       = false;
         mpOriginalConditions = new ConditionSet( _originalConditions );
-        mValuation           = _valuation;
+        mpInfo                = new Info();
+        mpInfo->flag          = _flag;
+        mpInfo->recentlyAdded = false;
+        mpInfo->valuation     = _valuation;
     }
 
     Condition::Condition( const smtrat::Constraint* _constraint,
@@ -83,19 +87,21 @@ namespace vs
                           const bool _recentlyAdded )
     {
         mpConstraint         = _constraint;
-        mFlag                = _flag;
-        mRecentlyAdded       = _recentlyAdded;
         mpOriginalConditions = new ConditionSet( _originalConditions );
-        mValuation           = _valuation;
+        mpInfo                = new Info();
+        mpInfo->flag          = _flag;
+        mpInfo->recentlyAdded = _recentlyAdded;
+        mpInfo->valuation     = _valuation;
     }
 
     Condition::Condition( const Condition& _condition )
     {
         mpConstraint         = _condition.pConstraint();
-        mFlag                = _condition.flag();
-        mRecentlyAdded       = false;
         mpOriginalConditions = new ConditionSet( _condition.originalConditions() );
-        mValuation           = _condition.valuation();
+        mpInfo                = new Info();
+        mpInfo->flag          = _condition.flag();
+        mpInfo->recentlyAdded = false;
+        mpInfo->valuation     = _condition.valuation();
     }
 
     /**
@@ -121,7 +127,7 @@ namespace vs
      *
      * @return A valuation of the constraint according to an heuristic.
      */
-    unsigned Condition::valuate( const string _consideredVariable, const unsigned _maxNumberOfVars, const bool _forElimination )
+    unsigned Condition::valuate( const string _consideredVariable, const unsigned _maxNumberOfVars, const bool _forElimination ) const
     {
         symtab::const_iterator var = mpConstraint->variables().find( _consideredVariable );
         if( var != mpConstraint->variables().end() )

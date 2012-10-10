@@ -233,14 +233,14 @@ namespace smtrat
         {
 
                 typedef std::map< const Constraint*, const Bound<T>*, constraintPointerComp > ConstraintBoundMap;
-                struct exPointerComp
+                struct exComp
                 {
-                    bool operator ()( const GiNaC::ex* const pExA, const GiNaC::ex* const pExB ) const
+                    bool operator ()( const GiNaC::ex& exA, const GiNaC::ex& exB ) const
                     {
-                        return GiNaC::ex_is_less()( *pExA, *pExB );
+                        return GiNaC::ex_is_less()( exA, exB );
                     }
                 };
-                typedef std::map<const GiNaC::ex*, Variable<T>*, exPointerComp> ExVariableMap;
+                typedef std::map<const GiNaC::ex, Variable<T>*, exComp> ExVariableMap;
             private:
                 /*
                  * Attributes:
@@ -554,8 +554,8 @@ namespace smtrat
         {
             if( _constraint->variables().size() == 1 )
             {
-                ex* var = new ex( _constraint->variables().begin()->second );
-                if( _constraint->lhs().degree( *var ) == 1 )
+                const ex& var = _constraint->variables().begin()->second;
+                if( _constraint->lhs().degree( var ) == 1 )
                 {
                     class VariableBounds<T>::ConstraintBoundMap::iterator cbPair = mpConstraintBoundMap->find( _constraint );
                     if( cbPair != mpConstraintBoundMap->end() )
@@ -570,15 +570,14 @@ namespace smtrat
                         class VariableBounds<T>::ExVariableMap::iterator evPair = mpExVariableMap->find( var );
                         if( evPair != mpExVariableMap->end() )
                         {
-                            delete var;
                             variable = evPair->second;
-                            bound = variable->addBound( _constraint, *evPair->first, _origin );
+                            bound = variable->addBound( _constraint, evPair->first, _origin );
                         }
                         else
                         {
                             variable = new Variable<T>();
                             (*mpExVariableMap)[var] = variable;
-                            bound = variable->addBound( _constraint, *var, _origin );
+                            bound = variable->addBound( _constraint, var, _origin );
                         }
                         mpConstraintBoundMap->insert( pair< const Constraint*, const Bound<T>* >( _constraint, bound ) );
                         variable->updateBounds( *bound );
@@ -587,15 +586,14 @@ namespace smtrat
                 }
                 else
                 {
-                    mpExVariableMap->insert( pair< const ex*, Variable<T>* >( var, new Variable<T>() ) );
+                    mpExVariableMap->insert( pair< const ex, Variable<T>* >( var, new Variable<T>() ) );
                 }
             }
             else
             {
                 for( auto sym = _constraint->variables().begin(); sym !=  _constraint->variables().end(); ++sym )
                 {
-                    ex* var = new ex( sym->second );
-                    mpExVariableMap->insert( pair< const ex*, Variable<T>* >( var, new Variable<T>() ) );
+                    mpExVariableMap->insert( pair< const ex, Variable<T>* >( sym->second, new Variable<T>() ) );
                 }
             }
             return false;
@@ -665,7 +663,7 @@ namespace smtrat
                         upperBoundType = var.supremum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::Interval::STRICT_BOUND : GiNaCRA::Interval::WEAK_BOUND;
                         upperBoundValue = var.supremum().limit();
                     }
-                    mEvalIntervalMap[ex_to<symbol>( *exVarPair->first )] = GiNaCRA::Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+                    mEvalIntervalMap[ex_to<symbol>( exVarPair->first )] = GiNaCRA::Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
                     var.hasBeenUpdated();
                 }
             }
@@ -725,14 +723,13 @@ namespace smtrat
         template<class T>
         std::set< const T* > VariableBounds<T>::getOriginsOfBounds( const GiNaC::symtab& _variables ) const
         {
-            std::set< T* > originsOfBounds = std::set< T* >();
+            std::set< const T* > originsOfBounds = std::set< const T* >();
             for( auto var = _variables.begin(); var != _variables.end(); ++var )
             {
-                class ExVariableMap::iterator exVarPair = mpExVariableMap->find( var );
+                class ExVariableMap::iterator exVarPair = mpExVariableMap->find( var->second );
                 assert( exVarPair != mpExVariableMap->end() );
-                const Variable<T>& var = *exVarPair->second;
-                if( !var.infimum().isInfinite() ) originsOfBounds.insert( *var.infimum().origins().begin() );
-                if( !var.supremum().isInfinite() ) originsOfBounds.insert( *var.supremum().origins().begin() );
+                if( !exVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *exVarPair->second->infimum().origins().begin() );
+                if( !exVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *exVarPair->second->supremum().origins().begin() );
             }
             return originsOfBounds;
         }
@@ -767,7 +764,7 @@ namespace smtrat
             {
                 _out << _init;
                 std::stringstream outA;
-                outA << *exVarPair->first;
+                outA << exVarPair->first;
                 _out << std::setw( 15 ) << outA.str();
                 _out << "  in  ";
                 if( exVarPair->second->infimum().type() == Bound<T>::STRICT_LOWER_BOUND )

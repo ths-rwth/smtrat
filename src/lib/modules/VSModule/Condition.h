@@ -48,6 +48,12 @@ namespace vs
             /*
              * Intern type structur:
              */
+            struct Info
+            {
+                bool flag;
+                bool recentlyAdded;
+                unsigned valuation;
+            };
             struct condComp
             {
                 bool operator ()( const Condition* const pCondA, const Condition* const pCondB ) const
@@ -55,18 +61,16 @@ namespace vs
                     return (*pCondA).constraint() < (*pCondB).constraint();
                 }
             };
-            typedef std::set<Condition*, condComp> ConditionSet;
+            typedef std::set<const Condition*, condComp> ConditionSet;
 
         private:
 
             /**
              * Members:
              */
-            bool                mFlag;
-            bool                mRecentlyAdded;
-            unsigned            mValuation;
+            Info*                     mpInfo;
             const smtrat::Constraint* mpConstraint;
-            ConditionSet*       mpOriginalConditions;
+            ConditionSet*             mpOriginalConditions;
 
         public:
 
@@ -95,34 +99,34 @@ namespace vs
              * Methods:
              */
 
-            bool& rFlag()
+            bool& rFlag() const
             {
-                return mFlag;
+                return mpInfo->flag;
             }
 
-            const bool flag() const
+            bool flag() const
             {
-                return mFlag;
+                return mpInfo->flag;
             }
 
-            bool& rRecentlyAdded()
+            bool& rRecentlyAdded() const
             {
-                return mRecentlyAdded;
+                return mpInfo->recentlyAdded;
             }
 
             const bool recentlyAdded() const
             {
-                return mRecentlyAdded;
+                return mpInfo->recentlyAdded;
             }
 
-            unsigned& rValuation()
+            unsigned& rValuation() const
             {
-                return mValuation;
+                return mpInfo->valuation;
             }
 
-            const unsigned valuation() const
+            unsigned valuation() const
             {
-                return mValuation;
+                return mpInfo->valuation;
             }
 
             const smtrat::Constraint& constraint() const
@@ -135,9 +139,9 @@ namespace vs
                 return mpConstraint;
             }
 
-            ConditionSet& rOriginalConditions()
+            ConditionSet* const pOriginalConditions() const
             {
-                return *mpOriginalConditions;
+                return mpOriginalConditions;
             }
 
             const ConditionSet& originalConditions() const
@@ -145,12 +149,7 @@ namespace vs
                 return *mpOriginalConditions;
             }
 
-            void changeRelationTo( smtrat::Constraint_Relation _relation )
-            {
-                mpConstraint = smtrat::Formula::newConstraint( mpConstraint->lhs(), _relation );
-            }
-
-            unsigned valuate( const std::string, const unsigned, const bool );
+            unsigned valuate( const std::string, const unsigned, const bool ) const;
             bool bestVariable( std::string& ) const;
             unsigned bestVariable2( std::string& ) const;
             bool operator ==( const Condition& ) const;
@@ -158,7 +157,7 @@ namespace vs
             void print( std::ostream& ) const;
     };
 
-    typedef std::set<Condition*, Condition::condComp> ConditionSet;
+    typedef std::set<const Condition*, Condition::condComp> ConditionSet;
 
 }    // end namspace vs
 

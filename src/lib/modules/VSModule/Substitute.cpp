@@ -774,7 +774,7 @@ namespace vs
         /*
          * Create a substitution formed by the given one without an addition of epsilon.
          */
-        Substitution substitution1 = Substitution( _substitution.variable(), _substitution.term(), ST_NORMAL, _substitution.originalConditions() );
+        Substitution substitution1 = Substitution( _substitution.variable(), sym, _substitution.term(), ST_NORMAL, _substitution.originalConditions() );
 
         /*
          * Create the vector of constraints which serves as a collection of the necessary constraints.

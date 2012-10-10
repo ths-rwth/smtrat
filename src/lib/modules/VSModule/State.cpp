@@ -53,7 +53,6 @@ namespace vs
         mRoot( true ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
-        mTestCandViolatesBounds( false ),
         mToHighDegree( false ),
         mTryToRefreshIndex( false ),
         mID( 0 ),
@@ -68,10 +67,10 @@ namespace vs
         mpConditions( new ConditionVector() ),
         mpConflictSets( new ConflictSets() ),
         mpChildren( new StateVector() )
-    #ifdef VS_USE_VARIABLE_BOUNDS
+        #ifdef VS_USE_VARIABLE_BOUNDS
         ,
         mVariableBounds()
-    #endif
+        #endif
     {
     }
 
@@ -84,7 +83,6 @@ namespace vs
         mRoot( false ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
-        mTestCandViolatesBounds( false ),
         mToHighDegree( false ),
         mTryToRefreshIndex( false ),
         mID( 0 ),
@@ -137,7 +135,7 @@ namespace vs
         }
         while( !conditions().empty() )
         {
-            Condition*& rpCond = rConditions().back();
+            const Condition*& rpCond = rConditions().back();
             rConditions().pop_back();
             delete rpCond;
         }
@@ -152,7 +150,7 @@ namespace vs
                 {
                     while( !(*mpSubstitutionResults).back().back().first.empty() )
                     {
-                        Condition*& rpCond = (*mpSubstitutionResults).back().back().first.back();
+                        const Condition*& rpCond = (*mpSubstitutionResults).back().back().first.back();
                         (*mpSubstitutionResults).back().back().first.pop_back();
                         delete rpCond;
                     }
@@ -430,7 +428,7 @@ namespace vs
      * @return true     ,if it has a condition and a variable in it to generate test candidates for;
      *         false    ,otherwise.
      */
-    bool State::bestCondition( Condition*& _bestCondition, const unsigned _numberOfAllVariables )
+    bool State::bestCondition( const Condition*& _bestCondition, const unsigned _numberOfAllVariables )
     {
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
@@ -659,7 +657,7 @@ namespace vs
         #endif
         if( _conditionVectorToSimplify.size() > 1 )
         {
-            set<Condition*>           redundantConditionSet = set<Condition*>();
+            set<const Condition*>           redundantConditionSet = set<const Condition*>();
             ConditionVector::iterator cond1                 = _conditionVectorToSimplify.begin();
 
             /*
@@ -698,13 +696,13 @@ namespace vs
                              */
                             if( (**cond2).valuation() < (**cond1).valuation() )
                             {
-                                (**cond1).rOriginalConditions() = ConditionSet( (**cond2).originalConditions() );
+                                *(**cond1).pOriginalConditions() = ConditionSet( (**cond2).originalConditions() );
                                 (**cond1).rValuation()          = (**cond2).valuation();
                             }
                         }
                         else
                         {
-                            (**cond1).rOriginalConditions().insert( (**cond2).originalConditions().begin(), (**cond2).originalConditions().end() );
+                            (**cond1).pOriginalConditions()->insert( (**cond2).originalConditions().begin(), (**cond2).originalConditions().end() );
                         }
 
                         redundantConditionSet.insert( *cond2 );
@@ -730,32 +728,31 @@ namespace vs
                                 || ((**cond1).constraint().relation() == smtrat::CR_LEQ && (**cond2).constraint().relation() == smtrat::CR_GEQ)
                                 || ((**cond1).constraint().relation() == smtrat::CR_LEQ && (**cond2).constraint().relation() == smtrat::CR_LEQ) )
                         {
-                            (**cond2).changeRelationTo( smtrat::CR_EQ );
-                            (**cond2).rRecentlyAdded()          = true;
+                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( (**cond2).constraint().lhs(), smtrat::CR_EQ ), (*cond2)->flag(), (*cond2)->originalConditions(),  (*cond2)->valuation(), true );
+                            cond->pOriginalConditions()->insert( (**cond1).originalConditions().begin(), (**cond1).originalConditions().end() );
+                            redundantConditionSet.insert( *cond1 );
+                            redundantConditionSet.insert( *cond2 );
                         }
                         else if( ((**cond1).constraint().relation() == smtrat::CR_NEQ && (**cond2).constraint().relation() == smtrat::CR_GEQ)
                                  || ((**cond1).constraint().relation() == smtrat::CR_GEQ && (**cond2).constraint().relation() == smtrat::CR_NEQ) )
                         {
-                            (**cond2).changeRelationTo( smtrat::CR_GREATER );
-                            (**cond2).rRecentlyAdded()          = true;
+                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( (**cond2).constraint().lhs(), smtrat::CR_GREATER ), (*cond2)->flag(), (*cond2)->originalConditions(),  (*cond2)->valuation(), true );
+                            cond->pOriginalConditions()->insert( (**cond1).originalConditions().begin(), (**cond1).originalConditions().end() );
+                            redundantConditionSet.insert( *cond1 );
+                            redundantConditionSet.insert( *cond2 );
                         }
                         else if( ((**cond1).constraint().relation() == smtrat::CR_NEQ && (**cond2).constraint().relation() == smtrat::CR_LEQ)
                                  || ((**cond1).constraint().relation() == smtrat::CR_LEQ && (**cond2).constraint().relation() == smtrat::CR_NEQ) )
                         {
-                            (**cond2).changeRelationTo( smtrat::CR_LESS );
-                            (**cond2).rRecentlyAdded()          = true;
+                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( (**cond2).constraint().lhs(), smtrat::CR_LESS ), (*cond2)->flag(), (*cond2)->originalConditions(),  (*cond2)->valuation(), true );
+                            cond->pOriginalConditions()->insert( (**cond1).originalConditions().begin(), (**cond1).originalConditions().end() );
+                            redundantConditionSet.insert( *cond1 );
+                            redundantConditionSet.insert( *cond2 );
                         }
                         else
                         {
                             assert( false );
                         }
-                        (**cond2).rOriginalConditions().insert( (**cond1).originalConditions().begin(), (**cond1).originalConditions().end() );
-
-                        /*
-                         * Remove cond2 from the set of redundant conditions, if it is insight
-                         */
-                        redundantConditionSet.erase( *cond2 );
-                        redundantConditionSet.insert( *cond1 );
                     }
 
                     /*
@@ -822,7 +819,7 @@ namespace vs
             {
                 if( redundantConditionSet.find( *cond ) != redundantConditionSet.end() )
                 {
-                    Condition* pCond = *cond;
+                    const Condition* pCond = *cond;
                     cond = _conditionVectorToSimplify.erase( cond );
                     delete pCond;
                 }
@@ -832,7 +829,7 @@ namespace vs
                 }
             }
             //cout << "Redundant conditions:" << endl;
-            for( set<Condition*>::iterator redundantCond = redundantConditionSet.begin(); redundantCond != redundantConditionSet.end();
+            for( set<const Condition*>::iterator redundantCond = redundantConditionSet.begin(); redundantCond != redundantConditionSet.end();
                     ++redundantCond )
             {
                 _redundantConditions.push_back( *redundantCond );
@@ -1320,15 +1317,15 @@ namespace vs
                              */
                             if( (**newCond).valuation() < (**cond).valuation() )
                             {
-                                (**cond).rOriginalConditions() = ConditionSet( (**newCond).originalConditions() );
+                                *(**cond).pOriginalConditions() = ConditionSet( (**newCond).originalConditions() );
                                 (**cond).rValuation()          = (**newCond).valuation();
                             }
                         }
                         else
                         {
-                            (**cond).rOriginalConditions().insert( (**newCond).originalConditions().begin(), (**newCond).originalConditions().end() );
+                            (**cond).pOriginalConditions()->insert( (**newCond).originalConditions().begin(), (**newCond).originalConditions().end() );
                         }
-                        Condition* pCond = *newCond;
+                        const Condition* pCond = *newCond;
                         newCombination.erase( newCond );
                         delete pCond;
                         condOccursInNewConds = true;
@@ -1373,7 +1370,7 @@ namespace vs
             }
             while( !newCombination.empty() )
             {
-                Condition*& rpCond = newCombination.back();
+                const Condition*& rpCond = newCombination.back();
                 newCombination.pop_back();
                 delete rpCond;
             }
@@ -1713,7 +1710,7 @@ namespace vs
                                 while( cond != condConj->first.end() )
                                 {
                                     bool                   oCondsDeleted = false;
-                                    ConditionSet::iterator oCond         = (**cond).rOriginalConditions().begin();
+                                    ConditionSet::iterator oCond         = (**cond).pOriginalConditions()->begin();
                                     while( oCond != (**cond).originalConditions().end() )
                                     {
                                         ConditionVector::const_iterator condToDel = _conditionsToDelete.begin();
@@ -1727,7 +1724,7 @@ namespace vs
                                         }
                                         if( condToDel != _conditionsToDelete.end() )
                                         {
-                                            (**cond).rOriginalConditions().erase( oCond++ );
+                                            (**cond).pOriginalConditions()->erase( oCond++ );
                                             oCondsDeleted = true;
                                         }
                                         else
@@ -1737,7 +1734,7 @@ namespace vs
                                     }
                                     if( oCondsDeleted )
                                     {
-                                        oCond = (**cond).rOriginalConditions().begin();
+                                        oCond = (**cond).pOriginalConditions()->begin();
                                         while( oCond != (**cond).originalConditions().end() )
                                         {
                                             ConditionSet oConds = ConditionSet();
@@ -1745,7 +1742,7 @@ namespace vs
                                             conditionsToAdd.push_back( new Condition( (**oCond).pConstraint(), false, oConds, (**cond).valuation() ) );
                                             ++oCond;
                                         }
-                                        Condition* rpCond = *cond;
+                                        const Condition* rpCond = *cond;
                                         cond             = condConj->first.erase( cond );
                                         condConj->second = false;
                                         delete rpCond;
@@ -1845,7 +1842,7 @@ namespace vs
                     for( ConditionVector::iterator cond = (**child).rConditions().begin(); cond != (**child).conditions().end(); ++cond )
                     {
                         bool                   originalConditionDeleted = false;
-                        ConditionSet::iterator oCond                    = (**cond).rOriginalConditions().begin();
+                        ConditionSet::iterator oCond                    = (**cond).pOriginalConditions()->begin();
                         while( oCond != (**cond).originalConditions().end() )
                         {
                             ConditionVector::const_iterator condToDel = _conditionsToDelete.begin();
@@ -2050,13 +2047,13 @@ namespace vs
      *
      * @return True, if a state was successfully added.
      */
-    bool State::addChild( const string& _eliminationVar, const Substitution_Type& _substitutionType, const ConditionSet& _oConditions )
+    bool State::addChild( const string& _eliminationVar, const ex& _elimVarAsEx, const Substitution_Type& _substitutionType, const ConditionSet& _oConditions )
     {
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
         #endif
         Substitution * sub;
-        sub = new Substitution( _eliminationVar, _substitutionType, _oConditions );
+        sub = new Substitution( _eliminationVar, _elimVarAsEx, _substitutionType, _oConditions );
 
         if( !updateOCondsOfSubstitutions( *sub ) )
         {
@@ -2093,6 +2090,7 @@ namespace vs
     bool State::addChild( const ex& _lhsCondition,
                           const smtrat::Constraint_Relation& _relationCondition,
                           const string& _eliminationVar,
+                          const ex& _elimVarAsEx,
                           const ex& _subTermConstPart,
                           const ex& _subTermFactor,
                           const ex& _subTermDenom,
@@ -2110,7 +2108,7 @@ namespace vs
             SqrtEx * sqEx;
             sqEx = new SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand );
             Substitution * sub;
-            sub = new Substitution( _eliminationVar, *sqEx, _substitutionType, _oConditions );
+            sub = new Substitution( _eliminationVar, _elimVarAsEx, *sqEx, _substitutionType, _oConditions );
             if( !updateOCondsOfSubstitutions( *sub ) )
             {
                 State* state = new State( this, *sub );
@@ -2170,6 +2168,7 @@ namespace vs
                           const ex& _lhsCondition2,
                           const smtrat::Constraint_Relation& _relationCondition2,
                           const string& _eliminationVar,
+                          const ex& _elimVarAsEx,
                           const ex& _subTermConstPart,
                           const ex& _subTermFactor,
                           const ex& _subTermDenom,
@@ -2191,7 +2190,7 @@ namespace vs
                 SqrtEx * sqEx;
                 sqEx = new SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand );
                 Substitution * sub;
-                sub = new Substitution( _eliminationVar, *sqEx, _substitutionType, _oConditions );
+                sub = new Substitution( _eliminationVar, _elimVarAsEx, *sqEx, _substitutionType, _oConditions );
                 if( !updateOCondsOfSubstitutions( *sub ) )
                 {
                     State * state;
@@ -2416,7 +2415,7 @@ namespace vs
 
         while( !conditions().empty() )
         {
-            Condition* rpCond = rConditions().back();
+            const Condition* rpCond = rConditions().back();
             rConditions().pop_back();
             delete rpCond;
         }
@@ -2447,51 +2446,29 @@ namespace vs
     {
         if( !isRoot() )
         {
-//            for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
-//            {
-//                GiNaCRA::Interval solutionSpace = GiNaCRA::Interval::evaluate( (*cond)->constraint().lhs(), mVariableBounds.getEvalIntervalMap() );
-//
-//                switch( (*cond)->constraint().relation() )
-//                {
-//                    case smtrat::CR_EQ:
-//                    {
-//                        if( !solutionSpace.contains( 0 ) )
-//                        {
-//                            return false;
-//                        }
-//                        break;
-//                    }
-//                    case smtrat::CR_LEQ:
-//                    {
-//                        if( !solutionSpace.contains( 0 ) )
-//                        {
-//                            return false;
-//                        }
-//                        return true;
-//                    }
-//                    case smtrat::CR_GEQ:
-//                    {
-//                        return true;
-//                    }
-//                    case smtrat::CR_LESS:
-//                    {
-//                        return true;
-//                    }
-//                    case smtrat::CR_GREATER:
-//                    {
-//                        return true;
-//                    }
-//                    case smtrat::CR_NEQ:
-//                    {
-//                        return true;
-//                    }
-//                    default:
-//                    {
-//                        cerr << "Unknown relation symbol!" << endl;
-//                        assert( false );
-//                    }
-//                }
-//            }
+            #ifdef VS_USE_VARIABLE_BOUNDS
+            cout << substitution().term().expression() << "  substituted by " << endl;
+            father().variableBounds().print( cout, "          " );
+            cout << endl;
+            GiNaCRA::Interval solutionSpaceConst = GiNaCRA::Interval::evaluate( substitution().term().constantPart(), rFather().rVariableBounds().getEvalIntervalMap() );
+            GiNaCRA::Interval solutionSpaceFactor = GiNaCRA::Interval::evaluate( substitution().term().factor(), rFather().rVariableBounds().getEvalIntervalMap() );
+            GiNaCRA::Interval solutionSpaceRadicand = GiNaCRA::Interval::evaluate( substitution().term().radicand(), rFather().rVariableBounds().getEvalIntervalMap() );
+            GiNaCRA::Interval solutionSpaceDenom = GiNaCRA::Interval::evaluate( substitution().term().denominator(), rFather().rVariableBounds().getEvalIntervalMap() );
+            GiNaCRA::Interval solutionSpace = solutionSpaceFactor * solutionSpaceRadicand;
+            solutionSpace = solutionSpace + solutionSpaceConst;
+            cout << " results in   " << solutionSpace << endl;
+            solutionSpace.intersect( rFather().rVariableBounds().getInterval( substitution().varAsEx() ) );
+            if( solutionSpace.empty() )
+            {
+
+                set< const Condition* > conflictingBounds = father().variableBounds().getOriginsOfBounds( substitution().termVariables() );
+                ConditionSet conflict = ConditionSet();
+                conflict.insert( conflictingBounds.begin(), conflictingBounds.end() );
+                ConditionSetSet conflicts = ConditionSetSet();
+                conflicts.insert( conflict );
+                this->addConflictSet( pSubstitution(), conflicts );
+            }
+            #endif
         }
         return true;
     }
@@ -2626,9 +2603,11 @@ namespace vs
         printSubstitutionResultCombination( _initiation + "   ", _out );
         _out << _initiation << endl;
         printConflictSets( _initiation + "   ", _out );
+        #ifdef VS_USE_VARIABLE_BOUNDS
         _out << _initiation << endl;
         mVariableBounds.print( _out, _initiation );
         _out << endl;
+        #endif
     }
 
     /**

@@ -28,7 +28,7 @@
 #ifndef SMTRAT_VS_STATE_H
 #define SMTRAT_VS_STATE_H
 
-#define VS_USE_VARIABLE_BOUNDS
+//#define VS_USE_VARIABLE_BOUNDS
 
 #include <map>
 #include <limits.h>
@@ -203,7 +203,7 @@ struct subComp
 	}
 };
 
-typedef std::vector	< Condition* >                ConditionVector					;
+typedef std::vector	< const Condition* >          ConditionVector					;
 typedef std::vector	< ConditionVector >           DisjunctionOfConditionConjunctions;
 typedef std::vector	< const smtrat::Constraint* > TS_ConstraintConjunction			;
 
@@ -219,6 +219,9 @@ public:
 	typedef std::vector < std::pair< ConditionVector, bool > > 						SubstitutionResult	;
 	typedef std::vector < SubstitutionResult > 										SubstitutionResults	;
 	typedef std::vector < std::pair< unsigned, unsigned  > >						SubResultCombination;
+    #ifdef VS_USE_VARIABLE_BOUNDS
+    typedef smtrat::vb::VariableBounds< Condition >                                 VariableBounds      ;
+    #endif
 private:
 
 	/**
@@ -232,14 +235,13 @@ private:
 	bool			    	 mRoot						;
 	bool					 mSubResultsSimplified		;
 	bool					 mTakeSubResultCombAgain	;
-    bool                     mTestCandViolatesBounds    ;
 	bool					 mToHighDegree				;
 	bool					 mTryToRefreshIndex			;
 	unsigned		    	 mID						;
 	unsigned		    	 mValuation					;
 	StateType				 mStateType					;
 	std::string*			 mpIndex					;
-	Condition*				 mpOriginalCondition		;
+	const Condition*         mpOriginalCondition		;
 	State*					 mpFather					;
 	Substitution*			 mpSubstitution				;
 	SubstitutionResults* 	 mpSubstitutionResults		;
@@ -248,7 +250,7 @@ private:
 	ConflictSets*			 mpConflictSets				;
 	StateVector* 			 mpChildren					;
     #ifdef VS_USE_VARIABLE_BOUNDS
-    smtrat::vb::VariableBounds< Condition >   mVariableBounds;
+    VariableBounds           mVariableBounds            ;
     #endif
 public:
 
@@ -311,10 +313,14 @@ public:
 	bool					unfinished					( ) const	{ return (mpSubstitutionResults->size()>mpSubResultCombination->size())	; }
 	const StateType			stateType					( ) const	{ return mStateType														; }
 	StateType&				rStateType					( ) 		{ return mStateType														; }
-	Condition*		 		pOriginalCondition			( )	const 	{ return mpOriginalCondition											; }
+	const Condition*		pOriginalCondition			( )	const 	{ return mpOriginalCondition											; }
 	const Condition& 		originalCondition			( )	const 	{ return *mpOriginalCondition											; }
+    #ifdef VS_USE_VARIABLE_BOUNDS
+	const VariableBounds&   variableBounds  			( )	const 	{ return mVariableBounds    											; }
+	VariableBounds&         rVariableBounds  			( )      	{ return mVariableBounds    											; }
+    #endif
 
-	void					setOriginalCondition		( Condition* const _pOCondition ) 	{ mpOriginalCondition=_pOCondition; }
+	void					setOriginalCondition		( const Condition* const _pOCondition ) 	{ mpOriginalCondition=_pOCondition; }
 
 	// Data access methods (read only).
 	const unsigned 							treeDepth							( ) 														const	;
@@ -332,7 +338,7 @@ public:
 	// Data access methods (read and write).
 	State&									root								( )																	;
 	bool									unfinishedAncestor					( State*& )															;
-	bool 									bestCondition						( Condition*&,
+	bool 									bestCondition						( const Condition*&,
 																				  unsigned 		 )													;
 	ConditionVector::iterator 				constraintExists 					( const smtrat::Constraint& )										;
 
@@ -361,11 +367,13 @@ public:
 																				  const bool 				)										;
 	void									deleteConditions					( ConditionVector& )												;
 	bool									addChild							( const std::string& 	   ,
+																				  const GiNaC::ex&         ,
 																				  const Substitution_Type& ,
 																				  const ConditionSet&	)										;
 	bool									addChild							( const GiNaC::ex& 			,
 																				  const smtrat::Constraint_Relation&,
 																				  const std::string& 		,
+																				  const GiNaC::ex&			,
 																				  const GiNaC::ex&			,
 																				  const GiNaC::ex&			,
 																				  const GiNaC::ex&			,
@@ -377,6 +385,7 @@ public:
 																				  const GiNaC::ex& 			,
 																				  const smtrat::Constraint_Relation&,
 																				  const std::string& 		,
+																				  const GiNaC::ex&			,
 																				  const GiNaC::ex&			,
 																				  const GiNaC::ex&			,
 																				  const GiNaC::ex&			,

@@ -341,7 +341,7 @@ namespace smtrat
                                 /*
                                 * Find the most adequate conditions to continue.
                                 */
-                                vs::Condition * currentCondition;
+                                const vs::Condition * currentCondition;
                                 if( !currentState->bestCondition( currentCondition, mAllVariables.size() ) )
                                 {
                                     /*
@@ -722,7 +722,7 @@ namespace smtrat
      *              already served to eliminate for the respective variable in this
      *              state.
      */
-    bool VSModule::eliminate( State* _currentState, const string& _eliminationVar, vs::Condition* _condition )
+    bool VSModule::eliminate( State* _currentState, const string& _eliminationVar, const vs::Condition* _condition )
     {
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << " " << _eliminationVar << " in ";
@@ -797,7 +797,7 @@ namespace smtrat
                 /*
                  * Create state ({b!=0} + oldConditions, [x -> -c/b]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 1 ), CR_NEQ,_eliminationVar, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, oConditions ) )
+                if( (*_currentState).addChild( coeffs.at( 1 ), CR_NEQ, _eliminationVar, sym, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, oConditions ) )
                 {
                     if( constraint.relation() == CR_EQ )
                     {
@@ -829,7 +829,7 @@ namespace smtrat
                 /*
                  * Create state ({a==0, b!=0} + oldConditions, [x -> -c/b]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_EQ, coeffs.at( 1 ), CR_NEQ, _eliminationVar, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, oConditions ) )
+                if( (*_currentState).addChild( coeffs.at( 2 ), CR_EQ, coeffs.at( 1 ), CR_NEQ, _eliminationVar, sym, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, oConditions ) )
                 {
                     if( constraint.relation() == CR_EQ )
                     {
@@ -854,7 +854,7 @@ namespace smtrat
                 /*
                  * Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, -coeffs.at( 1 ), 1, 2 * coeffs.at( 2 ), radicand, subType, oConditions ) )
+                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, sym, -coeffs.at( 1 ), 1, 2 * coeffs.at( 2 ), radicand, subType, oConditions ) )
                 {
                     if( constraint.relation() == CR_EQ )
                     {
@@ -879,7 +879,7 @@ namespace smtrat
                 /*
                  * Create state ({a!=0, b^2-4ac>0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GREATER, _eliminationVar, -coeffs.at( 1 ), -1, 2 * coeffs.at( 2 ), radicand, subType, oConditions ) )
+                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GREATER, _eliminationVar, sym, -coeffs.at( 1 ), -1, 2 * coeffs.at( 2 ), radicand, subType, oConditions ) )
                 {
                     if( constraint.relation() == CR_EQ )
                     {
@@ -921,7 +921,7 @@ namespace smtrat
             /*
              * Create state ( Conditions, [x -> -infinity]):
              */
-            if( (*_currentState).addChild( _eliminationVar, ST_MINUS_INFINITY, oConditions ) )
+            if( (*_currentState).addChild( _eliminationVar, sym, ST_MINUS_INFINITY, oConditions ) )
             {
                 /*
                  * Add its valuation to the current ranking.
@@ -1028,7 +1028,7 @@ namespace smtrat
                      * states we create.
                      */
                     oldConditions.push_back( new vs::Condition( currentConstraint, (**cond).valuation() ) );
-                    oldConditions.back()->rOriginalConditions().insert( *cond );
+                    oldConditions.back()->pOriginalConditions()->insert( *cond );
                 }
             }
             else
@@ -1079,7 +1079,7 @@ namespace smtrat
                                 if( (**cons).isConsistent() != 1 )
                                 {
                                     currentConjunction.push_back( new vs::Condition( *cons, _currentState->treeDepth() ) );
-                                    currentConjunction.back()->rOriginalConditions().insert( *cond );
+                                    currentConjunction.back()->pOriginalConditions()->insert( *cond );
                                 }
                             }
                         }
@@ -1123,7 +1123,7 @@ namespace smtrat
              */
             while( !_currentState->conditions().empty() )
             {
-                vs::Condition* rpCond = _currentState->rConditions().back();
+                const vs::Condition* rpCond = _currentState->rConditions().back();
                 _currentState->rConditions().pop_back();
                 delete rpCond;
             }
@@ -1133,7 +1133,7 @@ namespace smtrat
              */
             while( !oldConditions.empty() )
             {
-                vs::Condition* rpCond = oldConditions.back();
+                const vs::Condition* rpCond = oldConditions.back();
                 oldConditions.pop_back();
                 delete rpCond;
             }
@@ -1147,7 +1147,7 @@ namespace smtrat
                 {
                     while( !disjunctionsOfCondConj.back().back().empty() )
                     {
-                        vs::Condition* rpCond = disjunctionsOfCondConj.back().back().back();
+                        const vs::Condition* rpCond = disjunctionsOfCondConj.back().back().back();
                         disjunctionsOfCondConj.back().back().pop_back();
                         delete rpCond;
                     }
