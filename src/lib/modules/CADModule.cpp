@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2012-10-10
+ * @version 2012-10-11
  */
 
 //#define MODULE_VERBOSE
@@ -125,11 +125,11 @@ namespace smtrat
         mCAD.eliminate( );
         #ifdef MODULE_VERBOSE
         cout << "Checking constraint set " << endl;
-        for( auto k = mConstraints.begin(); k != mConstraints.end(); ++k )
+        for( vector<GiNaCRA::Constraint>::const_iterator k = mConstraints.begin(); k != mConstraints.end(); ++k )
             cout << " " << *k << endl;
         cout << "over the variables " << endl;
         vector<symbol> vars = mCAD.variables();
-        for( auto k = vars.begin(); k != vars.end(); ++k )
+        for( vector<GiNaC::symbol>::const_iterator k = vars.begin(); k != vars.end(); ++k )
             cout << " " << *k << endl;
         cout << "Elimination sets:" << endl;
         vector<EliminationSet> elimSets = mCAD.eliminationSets();
@@ -404,10 +404,11 @@ namespace smtrat
         for( list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > >::const_iterator implication = deductions.begin(); implication != deductions.end(); ++implication )
         {
             assert( ( !implication->first.empty() && !implication->second.empty() ) || implication->first.size() > 1 || implication->second.size() > 1  );
-            deduction->addSubformula( new Formula( OR ) );
+            Formula* deduction = new Formula( OR );
             // process A in A => B
             for( list<GiNaCRA::Constraint>::const_iterator constraint = implication->first.begin(); constraint != implication->first.end(); ++constraint )
             { // negate all constraints in first
+                deduction->addSubformula( new Formula( NOT ) );
                 // check whether the given constraint is one of the input constraints
                 unsigned index = 0;
                 for( ; index < mConstraints.size(); ++index )
@@ -419,27 +420,38 @@ namespace smtrat
                     {
                         if( i->second == index ) // found the entry in the constraint map
                         {
-                            deduction->back()->addSubformula( new Formula( NOT ) );
-                            deduction->back()->back()->addSubformula( (*i->first)->pConstraint() );
+                            deduction->back()->addSubformula( (*i->first)->pConstraint() );
                             break;
                         }
                     }
                 }
-                else 
-                { // add a new constraint
-                    // assert( false ); // this case should be avoided due to efficiency reasons
-                    // add a new constraint
+                else // add a new constraint
                     deduction->back()->addSubformula( convertConstraint( *constraint ) );
-                }
             }
             // process B in A => B
             for( list<GiNaCRA::Constraint>::const_iterator constraint = implication->second.begin(); constraint != implication->second.end(); ++constraint )
-            {
-                // add a new constraint
-                deduction->back()->addSubformula( convertConstraint( *constraint ) );
+            { // take the constraints in second as they are
+                // check whether the given constraint is one of the input constraints
+                unsigned index = 0;
+                for( ; index < mConstraints.size(); ++index )
+                    if( mConstraints[index] == *constraint )
+                        break;
+                if( mConstraints.size() != index )
+                { // the constraint matches the input constraint at position i
+                    for( ConstraintIndexMap::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
+                    {
+                        if( i->second == index ) // found the entry in the constraint map
+                        {
+                            deduction->addSubformula( (*i->first)->pConstraint() );
+                            break;
+                        }
+                    }
+                }
+                else // add a new constraint
+                    deduction->addSubformula( convertConstraint( *constraint ) );
             }
+            Module::addDeduction( deduction );
         }
-        Module::addDeduction( deduction );
     }
 
     /**
