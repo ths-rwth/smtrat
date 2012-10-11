@@ -1433,5 +1433,108 @@ namespace smtrat
         }
         _formula.getPropositions();
     }
+    
+    std::string Formula::FormulaTypeToString(Type type)
+    {
+        string oper = "";
+        switch( type )
+        {
+            case AND:
+            {
+                oper = "and";
+                break;
+            }
+            case OR:
+            {
+                oper = "or";
+                break;
+            }
+            case NOT:
+            {
+                oper = "not";
+                break;
+            }
+            case IFF:
+            {
+                oper = "iff";
+                break;
+            }
+            case XOR:
+            {
+                oper = "xor";
+                break;
+            }
+            case IMPLIES:
+            {
+                oper = "implies";
+                break;
+            }
+            case TTRUE:
+            {
+                oper = "true";
+                break;
+            }
+            case FFALSE:
+            {
+                oper = "false";
+                break;
+            }
+            default:
+            {
+                oper = "";
+            }
+        }
+    
+        return oper;
+    }
+        
+    
+    std::string Formula::variableListToString(std::string seperator) const {
+        GiNaC::symtab::const_iterator i = mRealValuedVars.begin();
+        string result = "";
+        result += i->first;
+        for(++i ; i != mRealValuedVars.end(); ++i )
+        {
+            result += "," + i->first;;
+        }
+        return result;
+    }
+    /**
+     * Generates a string displaying the formula as a redlog formula.
+     * @return 
+     */
+    std::string Formula::toRedlogFormat(bool withVariables) const {
+        std::string result = "";
+        // add the variables;
+        if(withVariables) 
+        {
+            result += "(ex({";
+            result += variableListToString(",");
+            result += "}(";
+        }
+        else 
+        {
+            result += "(";
+        }
+        if(mType == REALCONSTRAINT) {
+            result += constraint().toString();
+        } 
+        else
+        {
+            // recursive print of the subformulas;
+            string oper = Formula::FormulaTypeToString(mType);
+            auto it = mpSubformulas->begin();
+            // do not quantify variables again.
+            result += (*it)->toRedlogFormat(false);
+            for(++it; it != mpSubformulas->end(); ++it) 
+            {
+                // do not quantify variables again.
+                result += oper + (*it)->toRedlogFormat(false);
+            }
+        }    
+        result += ")";
+        return result;
+        
+    }
 }    // namespace smtrat
 
