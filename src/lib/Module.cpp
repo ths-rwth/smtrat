@@ -491,9 +491,16 @@ namespace smtrat
         for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
         {
             (*module)->updateDeductions();
+            
             while( !(*module)->deductions().empty() )
             {
                 addDeduction( (*module)->rDeductions().back() );
+                #ifdef LOG_LEMMATA
+                Formula notLemma = Formula( NOT );
+                notLemma.addSubformula( new Formula( *(*module)->rDeductions().back() ) );
+                addAssumptionToCheck( notLemma, false, moduleName( (*module)->type() ) + "_lemma" );
+                notLemma.pruneBack();
+                #endif
                 (*module)->rDeductions().pop_back();
             }
         }
