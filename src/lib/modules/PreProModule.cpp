@@ -51,23 +51,23 @@ using namespace GiNaC;
 //-------------------------------------------------------------
 static const double scale = 100;                                 // Value to scale the balance between the activities
 //------------------VarActivities------------------------------
-static const double weightOfVarDegrees = 0;                      // The highes degree which appears variable x in whole formula
+static const double weightOfVarDegrees = -2;                      // The highest degree which appears variable x in whole formula
 static const double weightOfVarQuantities = 2;                   // The number of constraints where variable x appears
 static const double lowerBoundForVarActivity = 1.5;              // Influences reaction on variable with higher degrees
 static const double upperBoundForVarActivity = 2;
 //------------------ConstraintActivities-----------------------
-static const double weightOfVarActivities = 1;                 // Weight of Variable Activities
-static const double weightOfHPDegrees = 0;                    // Weight of highest product degree of constraints
-static const double weightOfHVDegrees = 0;                    // Weight of highest
+static const double weightOfVarActivities = 15;                 // Weight of Variable Activities
+static const double weightOfHPDegrees = -15;                    // Weight of highest product degree of constraints
+static const double weightOfHVDegrees = -3;                    // Weight of highest
 static const double weightOfConQuantities = 1;                 // Weight of quantity of constraints
-static const double weightOfVarQuantitiesInConstraint = 3;
+static const double weightOfVarQuantitiesInConstraint = -5;
 static const double weightOfRelationSymbols = 1;               // Weight of relation symbols
 //------------------RelationSymbols----------------------------
 static const double weight_CR_EQ = 3;
-static const double weight_CR_LESS = 2;
-static const double weight_CR_GREATER = 2;
-static const double weight_CR_LEQ = 1;
-static const double weight_CR_GEQ = 1;
+static const double weight_CR_LESS = 1;
+static const double weight_CR_GREATER = 1;
+static const double weight_CR_LEQ = 2;
+static const double weight_CR_GEQ = 2;
 
 namespace smtrat
 {

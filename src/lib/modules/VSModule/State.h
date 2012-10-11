@@ -28,12 +28,16 @@
 #ifndef SMTRAT_VS_STATE_H
 #define SMTRAT_VS_STATE_H
 
+#define VS_USE_VARIABLE_BOUNDS
+
 #include <map>
 #include <limits.h>
 #include <ginacra/ginacra.h>
 #include "Substitution.h"
 #include "Tools.h"
+#ifdef VS_USE_VARIABLE_BOUNDS
 #include "../../VariableBounds.h"
+#endif
 
 namespace vs
 {
@@ -228,6 +232,7 @@ private:
 	bool			    	 mRoot						;
 	bool					 mSubResultsSimplified		;
 	bool					 mTakeSubResultCombAgain	;
+    bool                     mTestCandViolatesBounds    ;
 	bool					 mToHighDegree				;
 	bool					 mTryToRefreshIndex			;
 	unsigned		    	 mID						;
@@ -242,7 +247,9 @@ private:
 	ConditionVector* 		 mpConditions				;
 	ConflictSets*			 mpConflictSets				;
 	StateVector* 			 mpChildren					;
-    smtrat::VariableBounds   mVariableBounds            ;
+    #ifdef VS_USE_VARIABLE_BOUNDS
+    smtrat::vb::VariableBounds< Condition >   mVariableBounds;
+    #endif
 public:
 
 	/**
@@ -285,15 +292,15 @@ public:
 	bool					hasRecentlyAddedConditions  ( ) const 	{ return mHasRecentlyAddedConditions 									; }
 	bool&						rInconsistent				( ) 	 	{ return mInconsistent				 									; }
 	bool					isInconsistent				( ) const 	{ return mInconsistent				 									; }
-	ConditionVector&			rConditions	        		( )       	{ return *mpConditions	   			 									; }
-	const ConditionVector&		conditions	      			( ) const 	{ return *mpConditions	   			 									; }
-	Substitution&				rSubstitution				( )       	{ return *mpSubstitution 			 									; }
-	const Substitution&			substitution 				( ) const 	{ return *mpSubstitution 			 									; }
-	SubstitutionResults&		rSubstitutionResults		( )       	{ return *mpSubstitutionResults		 									; }
-	const SubstitutionResults&	substitutionResults			( ) const 	{ return *mpSubstitutionResults		 									; }
-	SubResultCombination&		rSubResultCombination		( )       	{ return *mpSubResultCombination	 									; }
-	const SubResultCombination&	subResultCombination		( ) const 	{ return *mpSubResultCombination	 									; }
-	const Substitution* const	pSubstitution 				( ) const 	{ return mpSubstitution 			 									; }
+	ConditionVector&		rConditions	        		( )       	{ return *mpConditions	   			 									; }
+	const ConditionVector&	conditions	      			( ) const 	{ return *mpConditions	   			 									; }
+	Substitution&				rSubstitution			( )       	{ return *mpSubstitution 			 									; }
+	const Substitution&			substitution 			( ) const 	{ return *mpSubstitution 			 									; }
+	SubstitutionResults&		rSubstitutionResults	( )       	{ return *mpSubstitutionResults		 									; }
+	const SubstitutionResults&	substitutionResults		( ) const 	{ return *mpSubstitutionResults		 									; }
+	SubResultCombination&		rSubResultCombination	( )       	{ return *mpSubResultCombination	 									; }
+	const SubResultCombination&	subResultCombination	( ) const 	{ return *mpSubResultCombination	 									; }
+	const Substitution* const	pSubstitution 			( ) const 	{ return mpSubstitution 			 									; }
 	bool					conditionsSimplified		( ) const	{ return mConditionsSimplified		 									; }
 	bool					subResultsSimplified		( ) const	{ return mSubResultsSimplified		 									; }
 	bool&						rSubResultsSimplified		( ) 		{ return mSubResultsSimplified		 									; }
@@ -379,6 +386,7 @@ public:
 																				  const ConditionSet&	 )										;
 	void									updateValuation						( )	      			       											;
 	bool									passConflictToFather				( )																	;
+    bool                                    checkTestCandidatesForBounds        ( )                                                                 ;
 
 	// Printing methods.
 	void 									print								( const std::string = "***",

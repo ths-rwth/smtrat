@@ -132,7 +132,10 @@ int main( int argc, char* argv[] )
 
                 #ifdef GATHER_STATS
                 if(printStats) smtrat::CollectStatistics::print(std::cout);
-                if(exportStats) smtrat::CollectStatistics::exportXML();
+                if(exportStats) 
+                {   
+                    smtrat::CollectStatistics::exportXML();
+                }
                 #endif //GATHER_STATS
 
                 if(error) return EXIT_FAILURE;

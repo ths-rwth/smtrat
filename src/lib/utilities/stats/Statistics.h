@@ -12,8 +12,9 @@
 
 #ifdef GATHER_STATS
 
-#include <string>
 #include <iostream>
+#include <sstream>
+#include <string>
 #include <vector>
 
 #include "CollectStatistics.h"
@@ -50,7 +51,9 @@ protected:
     }
     
     void addKeyValuePair(const std::string & key, float value) {
-        
+        std::stringstream convert;
+        convert << value;
+        addKeyValuePair(key, convert.str());
     }
 };
 }

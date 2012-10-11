@@ -48,6 +48,7 @@ class GroebnerModuleStats : public Statistics
          Statistics::addKeyValuePair("Constant GB", mNrConstantGBs);
          Statistics::addKeyValuePair("Infeasible inequalities", mNrInfeasibleInequalities);
          Statistics::addKeyValuePair("Backend false", mNrBackendReturnsFalse);
+         Statistics::addKeyValuePair("Deduced inequalities", mNrDeducedInequalities);
      }
      
      /**
@@ -129,6 +130,11 @@ class GroebnerModuleStats : public Statistics
       * Count the number of equalities removed
       */
      void EqualityRemoved() { mNrOfEqualitiesRemoved++; }
+     
+     /**
+      * Record how many deductions for inequalities have been found
+      */
+     void DeducedInequality() { mNrDeducedInequalities++; }
      /**
       * Record how many conflict sets were returned in each call.
       * @param nrInfeasibles the number of conflict sets before we return.
@@ -149,13 +155,14 @@ class GroebnerModuleStats : public Statistics
      void exportKeyValue(std::ostream& os = std::cout);
    protected:
     GroebnerModuleStats() : Statistics("GroebnerBasis", this), mNrCalls(0), mNrConstantGBs(0),
-            mNrInfeasibleInequalities(0), mNrBackendReturnsFalse(0), mNrOfStrictInequalitiesAdded(0),
+            mNrInfeasibleInequalities(0), mNrDeducedInequalities(0),mNrBackendReturnsFalse(0), mNrOfStrictInequalitiesAdded(0),
             mNrOfNonStrictInequalitiesAdded(0), mNrOfEqualitiesAdded(0), mNrOfStrictInequalitiesRemoved(0),
             mNrOfNonStrictInequalitiesRemoved(0), mNrOfEqualitiesRemoved(0)
     {}
     unsigned mNrCalls;
     unsigned mNrConstantGBs;
     unsigned mNrInfeasibleInequalities;
+    unsigned mNrDeducedInequalities;
     unsigned mNrBackendReturnsFalse;
     unsigned mNrOfStrictInequalitiesAdded;
     unsigned mNrOfNonStrictInequalitiesAdded;

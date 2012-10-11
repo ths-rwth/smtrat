@@ -26,7 +26,7 @@
  * @author Ulrich Loup
  * @author Florian Corzilius
  * @since 2012-02-09
- * @version 2012-02-09
+ * @version 2012-10-10
  */
 
 #include "Formula.h"
@@ -781,7 +781,7 @@ namespace smtrat
             }
             case IMPLIES:
             {
-                result += "(implies";
+                result += "(=>";
                 break;
             }
             case BOOL:
@@ -821,7 +821,7 @@ namespace smtrat
             std::list<Formula*>::const_iterator subformula = mpSubformulas->begin();
             while( subformula != mpSubformulas->end() )
             {
-                result += " " + (*subformula)->toString();
+                result += " " + (*subformula)->toString( _infix );
                 ++subformula;
             }
             result += ")";
@@ -861,7 +861,7 @@ namespace smtrat
         }
         else if( _formula.getType() == NOT && (_formula.getPropositions() | ~PROP_IS_IN_CNF) == ~PROP_TRUE )
         {
-            resolveNegation( _formula );
+            resolveNegation( _formula, _keepConstraints );
             return;
         }
         else if( _formula.isAtom() )
@@ -1432,6 +1432,109 @@ namespace smtrat
             }
         }
         _formula.getPropositions();
+    }
+    
+    std::string Formula::FormulaTypeToString(Type type)
+    {
+        string oper = "";
+        switch( type )
+        {
+            case AND:
+            {
+                oper = "and";
+                break;
+            }
+            case OR:
+            {
+                oper = "or";
+                break;
+            }
+            case NOT:
+            {
+                oper = "not";
+                break;
+            }
+            case IFF:
+            {
+                oper = "iff";
+                break;
+            }
+            case XOR:
+            {
+                oper = "xor";
+                break;
+            }
+            case IMPLIES:
+            {
+                oper = "implies";
+                break;
+            }
+            case TTRUE:
+            {
+                oper = "true";
+                break;
+            }
+            case FFALSE:
+            {
+                oper = "false";
+                break;
+            }
+            default:
+            {
+                oper = "";
+            }
+        }
+    
+        return oper;
+    }
+        
+    
+    std::string Formula::variableListToString(std::string seperator) const {
+        GiNaC::symtab::const_iterator i = mRealValuedVars.begin();
+        string result = "";
+        result += i->first;
+        for(++i ; i != mRealValuedVars.end(); ++i )
+        {
+            result += "," + i->first;;
+        }
+        return result;
+    }
+    /**
+     * Generates a string displaying the formula as a redlog formula.
+     * @return 
+     */
+    std::string Formula::toRedlogFormat(bool withVariables) const {
+        std::string result = "";
+        // add the variables;
+        if(withVariables) 
+        {
+            result += "(ex({";
+            result += variableListToString(",");
+            result += "}(";
+        }
+        else 
+        {
+            result += "(";
+        }
+        if(mType == REALCONSTRAINT) {
+            result += constraint().toString();
+        } 
+        else
+        {
+            // recursive print of the subformulas;
+            string oper = Formula::FormulaTypeToString(mType);
+            auto it = mpSubformulas->begin();
+            // do not quantify variables again.
+            result += (*it)->toRedlogFormat(false);
+            for(++it; it != mpSubformulas->end(); ++it) 
+            {
+                // do not quantify variables again.
+                result += oper + (*it)->toRedlogFormat(false);
+            }
+        }    
+        result += ")";
+        return result;
+        
     }
 }    // namespace smtrat
 

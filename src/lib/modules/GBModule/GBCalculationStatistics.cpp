@@ -49,6 +49,8 @@ void GBCalculationStats::print(std::ostream& os) {
 
 void GBCalculationStats::collect() {
     Statistics::addKeyValuePair("TSQ with constant", mBuchbergerStats->getNrTSQWithConstant());
+    Statistics::addKeyValuePair("TSQ without constant", mBuchbergerStats->getNrTSQWithoutConstant());
+    Statistics::addKeyValuePair("Single term seperable", mBuchbergerStats->getSingleTermSFP());
 }
 
 }

@@ -30,7 +30,7 @@
 #ifndef SMTRAT_VSMODULE_H
 #define SMTRAT_VSMODULE_H
 
-//#define VS_INCREMENTAL
+#define VS_INCREMENTAL
 //#define VS_BACKTRACKING
 #define VS_INFEASIBLE_SUBSET_GENERATION
 //#define VS_USE_DEDUCTIONS
@@ -93,7 +93,6 @@ namespace smtrat
             ValuationMap*          mpRanking;
             ConstraintConditionMap mReceivedConstraintsAsConditions;
             GiNaC::symtab          mAllVariables;
-            VariableBounds         mVariableBounds;
 
         public:
 

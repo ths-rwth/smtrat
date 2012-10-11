@@ -148,6 +148,9 @@ namespace smtrat
         mBooleanVarMap(),
         mBacktrackpointInSatSolver(),
         mMaxSatAssigns()
+        #ifdef GATHER_STATS
+        , mStats(new SATstatistics())
+        #endif
     {
         this->mModuleType = MT_SATModule;
     }
@@ -216,8 +219,13 @@ namespace smtrat
         model.clear();
         conflict.clear();
         if( !ok )
+        {
+            #ifdef GATHER_STATS
+            collectStats();
+            #endif
             return False;
-
+        }
+            
         solves++;
 
         max_learnts             = nClauses() * learntsize_factor;
@@ -245,6 +253,9 @@ namespace smtrat
 
         if( result == l_True )
         {
+            #ifdef GATHER_STATS
+            collectStats();
+            #endif
             return True;
         }
         else if( result == l_False )
@@ -260,10 +271,17 @@ namespace smtrat
                 infeasibleSubset.insert( *subformula );
             }
             mInfeasibleSubsets.push_back( infeasibleSubset );
+            
+            #ifdef GATHER_STATS
+            collectStats();
+            #endif
             return False;
         }
         else
         {
+            #ifdef GATHER_STATS
+            collectStats();
+            #endif
             return Unknown;
         }
     }
@@ -1250,6 +1268,9 @@ NextClause:
     CRef SATModule::addLearnedClause( vec<Lit>& _clause, bool _withNewVariable, bool _theoryDeduction )
     {
         assert( _clause.size() != 0 );
+        #ifdef GATHER_STATS
+        mStats->lemmaLearned();
+        #endif        
         // Do not store theory lemma
         if( _clause.size() == 1 )
         {
@@ -1530,18 +1551,13 @@ Propagation:
                                 /*
                                  * Learn the deductions.
                                  */
+                                (*backend)->updateDeductions();
                                 if( !(*backend)->deductions().empty() ) theoryPropagationApplied = true;
                                 for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
                                         deduction != (*backend)->deductions().end(); ++deduction )
                                 {
                                     #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                                     cout << "Learned a theory deduction from a backend module!" << endl;
-                                    #endif
-                                    #ifdef LOG_LEMMATA
-                                    Formula notLemma = Formula( NOT );
-                                    notLemma.addSubformula( *deduction );
-                                    addAssumptionToCheck( notLemma, false, moduleName( (*backend)->type() ) + "_lemma" );
-                                    notLemma.pruneBack();
                                     #endif
                                     CRef ct = addFormula( *deduction );
                                     if( ct != CRef_Undef ) confl = ct;
@@ -2219,6 +2235,12 @@ Propagation:
             signed tmp = (sign( trail[pos] ) ? -1 : 1) * var( trail[pos] );
             _out << setw( 6 ) << tmp << " @ " << level << endl;
         }
+    }
+    
+    void SATModule::collectStats() {
+        mStats->nrTotalVariables = nVars();
+        mStats->nrUnassignedVariables = nFreeVars();
+        mStats->nrClauses = nClauses();
     }
 }    // namespace smtrat
 

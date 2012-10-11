@@ -531,6 +531,10 @@ namespace smtrat
             void getConstraints( std::vector<const Constraint*>& ) const;
             static void toCNF( Formula&, bool = true );
             static bool resolveNegation( Formula&, bool = true );
+            static std::string FormulaTypeToString( Type type);
+            
+            std::string variableListToString(std::string seperator) const;
+            std::string toRedlogFormat(bool withVariables = true) const;
 
         private:
 

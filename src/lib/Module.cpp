@@ -488,34 +488,22 @@ namespace smtrat
      */
     void Module::updateDeductions()
     {
-//        for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
-//        {
-//            for( vector<TheoryDeduction>::const_iterator deduction = (*module)->deductions().begin(); deduction != (*module)->deductions().end();
-//                    ++deduction )
-//            {
-//                /*
-//                 * Projects backends deductions (passed formula) to the  in the received formula.
-//                 */
-//                vec_set_const_pFormula deductionsToAdd = vec_set_const_pFormula();
-//                deductionsToAdd.push_back( set<const Formula*>() );
-//
-//                for( FormulaOrigins::const_iterator origins = mPassedformulaOrigins.begin(); origins != mPassedformulaOrigins.end(); ++origins )
-//                {
-//                    vec_set_const_pFormula tmpContainer = vec_set_const_pFormula();
-//                    tmpContainer.swap( deductionsToAdd );
-//                    vec_set_const_pFormula::const_iterator origin = origins->second.begin();
-//                    while( origin != origins->second.end() )
-//                    {
-//                        for( vec_set_const_pFormula::iterator tmpDeduction = tmpContainer.begin(); tmpDeduction != tmpContainer.end();
-//                                ++tmpDeduction )
-//                        {
-//                            tmpDeduction->insert( origin->begin(), origin->end() );
-//                            deductionsToAdd.push_back( *tmpDeduction );
-//                        }
-//                    }
-//                }
-//            }
-//        }
+        for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+        {
+            (*module)->updateDeductions();
+            
+            while( !(*module)->deductions().empty() )
+            {
+                addDeduction( (*module)->rDeductions().back() );
+                #ifdef LOG_LEMMATA
+                Formula notLemma = Formula( NOT );
+                notLemma.addSubformula( new Formula( *(*module)->rDeductions().back() ) );
+                addAssumptionToCheck( notLemma, false, moduleName( (*module)->type() ) + "_lemma" );
+                notLemma.pruneBack();
+                #endif
+                (*module)->rDeductions().pop_back();
+            }
+        }
     }
 
     /**
@@ -691,19 +679,16 @@ namespace smtrat
      * @return A set of subformulae
      */
     std::vector<Formula> Module::generateSubformulaeOfInfeasibleSubset(unsigned infeasibleset, unsigned size ) const {
-        std::cout << "size" << size << std::endl;
         assert(size < mInfeasibleSubsets[infeasibleset].size());
 
         //000000....000011111 (size-many ones)
         unsigned bitvector = (1 << size) - 1;
-        std::cout << bitvector << std::endl;
         //000000....100000000
         unsigned limit = (1 << mInfeasibleSubsets[infeasibleset].size());
         unsigned nextbitvector;
 
         std::vector<Formula> subformulae;
         while(bitvector < limit) {
-            std::cout << bitvector << std::endl;
             Formula formula(AND);
             // compute lexicographical successor of the bitvector
             unsigned int tmp = (bitvector | (bitvector - 1)) + 1;

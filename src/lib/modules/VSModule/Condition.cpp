@@ -136,6 +136,7 @@ namespace vs
             }
 
             vector<ex> coeffs = vector<ex>();
+            #ifdef VS_ELIMINATE_MULTI_ROOTS
             if( _forElimination )
             {
                 for( int i = 0; i <= mpConstraint->multiRootLessLhs( ex_to<symbol>( var->second ) ).degree( ex( var->second ) ); ++i )
@@ -145,8 +146,11 @@ namespace vs
             }
             else
             {
+            #endif
                 mpConstraint->getCoefficients( ex_to<symbol>( var->second ), coeffs );
+            #ifdef VS_ELIMINATE_MULTI_ROOTS
             }
+            #endif
 
             /*
              * Check the relation symbol.
