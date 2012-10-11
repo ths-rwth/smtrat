@@ -8,7 +8,7 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2012-07-30                                         #
+# Version: 2012-10-09                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 # common settings
@@ -108,10 +108,10 @@ if(USE_NSS)
 	)
 endif()
 
-SET( libraries ${libraries} ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} )
+set( libraries ${libraries} ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} )
 
 if(USE_GINACRA)
-        SET( libraries ${GINACRA_LIBRARY} ${libraries} )
+        set( libraries ${GINACRA_LIBRARY} ${libraries} )
 endif()
 if(USE_NSS)
         add_library(csdp UNKNOWN IMPORTED)
@@ -119,7 +119,7 @@ if(USE_NSS)
 
         #Csdp should be automatically compiled whenever we compile smtrat
         add_dependencies(csdp csdp_lib)
-        SET( libraries ${libraries} csdp ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES}  )
+        set( libraries ${libraries} csdp ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES}  )
 endif()
 
 

@@ -488,34 +488,22 @@ namespace smtrat
      */
     void Module::updateDeductions()
     {
-//        for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
-//        {
-//            for( vector<TheoryDeduction>::const_iterator deduction = (*module)->deductions().begin(); deduction != (*module)->deductions().end();
-//                    ++deduction )
-//            {
-//                /*
-//                 * Projects backends deductions (passed formula) to the  in the received formula.
-//                 */
-//                vec_set_const_pFormula deductionsToAdd = vec_set_const_pFormula();
-//                deductionsToAdd.push_back( set<const Formula*>() );
-//
-//                for( FormulaOrigins::const_iterator origins = mPassedformulaOrigins.begin(); origins != mPassedformulaOrigins.end(); ++origins )
-//                {
-//                    vec_set_const_pFormula tmpContainer = vec_set_const_pFormula();
-//                    tmpContainer.swap( deductionsToAdd );
-//                    vec_set_const_pFormula::const_iterator origin = origins->second.begin();
-//                    while( origin != origins->second.end() )
-//                    {
-//                        for( vec_set_const_pFormula::iterator tmpDeduction = tmpContainer.begin(); tmpDeduction != tmpContainer.end();
-//                                ++tmpDeduction )
-//                        {
-//                            tmpDeduction->insert( origin->begin(), origin->end() );
-//                            deductionsToAdd.push_back( *tmpDeduction );
-//                        }
-//                    }
-//                }
-//            }
-//        }
+        for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+        {
+            (*module)->updateDeductions();
+            
+            while( !(*module)->deductions().empty() )
+            {
+                addDeduction( (*module)->rDeductions().back() );
+                #ifdef LOG_LEMMATA
+                Formula notLemma = Formula( NOT );
+                notLemma.addSubformula( new Formula( *(*module)->rDeductions().back() ) );
+                addAssumptionToCheck( notLemma, false, moduleName( (*module)->type() ) + "_lemma" );
+                notLemma.pruneBack();
+                #endif
+                (*module)->rDeductions().pop_back();
+            }
+        }
     }
 
     /**

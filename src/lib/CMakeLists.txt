@@ -28,7 +28,6 @@ set(lib_core_src
     Constraint.cpp
     ConstraintPool.cpp
 	RuntimeSettings.cpp
-	VariableBounds.cpp
 )
 set(lib_core_headers
     Manager.h
@@ -225,7 +224,11 @@ set_target_properties( lib_${PROJECT_NAME} PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
         ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
-
+if(${STATICLIB_SWITCH} STREQUAL "ON")
+  set_target_properties( lib_${PROJECT_NAME} PROPERTIES LINK_SEARCH_END_STATIC TRUE )
+  set_target_properties( lib_${PROJECT_NAME} PROPERTIES LINK_SEARCH_START_STATIC TRUE )
+endif()
+target_link_libraries( lib_${PROJECT_NAME} ${libraries} ) # libraries definied in top-level CMakeLists.txt
 
 
 # Install destination and permissions for the library

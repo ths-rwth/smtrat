@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-02-04
- * @version 2012-10-07
+ * @version 2012-10-09
  *
  */
 #ifndef SMTRAT_CADMODULE_H
@@ -75,8 +75,6 @@ namespace smtrat
         /// the GiNaCRA constraints' indices assigned to the received constraints
         ConstraintIndexMap mConstraintsMap;
         /// the GiNaCRA constraints' polynomials not yet added to the CAD object
-        std::list<GiNaCRA::Polynomial> mNewPolynomials;
-        /// flag storing global satisfiability status
         bool mSatisfiable;
 
         public:
@@ -90,8 +88,9 @@ namespace smtrat
 
         private:
             const GiNaCRA::Constraint convertConstraint( const Constraint& );
+            const Constraint* convertConstraint( const GiNaCRA::Constraint& );
             vec_set_const_pFormula extractMinimalInfeasibleSubsets( const GiNaCRA::ConflictGraph& conflictGraph );
-            void addDeductions( const list<list<GiNaCRA::Constraint> >& deductions );
+            void addDeductions( const list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > >& deductions );
             const Formula* getConstraintAt( unsigned index );
             void updateConstraintMap( unsigned index, bool decrement = true );
     };

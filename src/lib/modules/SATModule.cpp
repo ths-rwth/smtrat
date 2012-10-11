@@ -1551,18 +1551,13 @@ Propagation:
                                 /*
                                  * Learn the deductions.
                                  */
+                                (*backend)->updateDeductions();
                                 if( !(*backend)->deductions().empty() ) theoryPropagationApplied = true;
                                 for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
                                         deduction != (*backend)->deductions().end(); ++deduction )
                                 {
                                     #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                                     cout << "Learned a theory deduction from a backend module!" << endl;
-                                    #endif
-                                    #ifdef LOG_LEMMATA
-                                    Formula notLemma = Formula( NOT );
-                                    notLemma.addSubformula( *deduction );
-                                    addAssumptionToCheck( notLemma, false, moduleName( (*backend)->type() ) + "_lemma" );
-                                    notLemma.pruneBack();
                                     #endif
                                     CRef ct = addFormula( *deduction );
                                     if( ct != CRef_Undef ) confl = ct;

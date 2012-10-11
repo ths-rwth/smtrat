@@ -30,6 +30,8 @@
 #ifndef SMTRAT_VS_CONDITION_H
 #define SMTRAT_VS_CONDITION_H
 
+#define VS_ELIMINATE_MULTI_ROOTS
+
 #include <set>
 #include "../../Formula.h"
 

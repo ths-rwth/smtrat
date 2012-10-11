@@ -3,11 +3,13 @@
 
 #define PACKAGE_NAME "smtrat"
 #define PROJECT_NAME "SMT-RAT"
-#define VERSION "0.2.1"
+#define VERSION "0.3.0"
 
 /* #undef USE_NSS */
 #define USE_GINACRA
-/* #undef USE_GB */
+#define USE_GB
 #define USE_CAD
+
+/* #undef GATHER_STATS */
 
 #endif

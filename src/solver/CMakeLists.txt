@@ -8,7 +8,7 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2012-10-07                                         #
+# Version: 2012-10-10                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 #TODO: are all these directories really necessary?
@@ -55,8 +55,8 @@ target_link_libraries( smtratSolver
 )
 set_target_properties( smtratSolver PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 if(${STATICLIB_SWITCH} STREQUAL "ON")
-  set_target_properties( smtratSolver PROPERTIES LINK_SEARCH_START_STATIC TRUE )
   set_target_properties( smtratSolver PROPERTIES LINK_SEARCH_END_STATIC TRUE )
+  set_target_properties( smtratSolver PROPERTIES LINK_SEARCH_START_STATIC TRUE )
 endif()
 
 add_library( smtlibParser 

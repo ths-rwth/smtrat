@@ -34,10 +34,10 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
-//#define LOG_ON
-//#define LOG_THEORY_CALLS
-//#define LOG_INFEASIBLE_SUBSETS
-//#define LOG_LEMMATA
+#define LOG_ON
+#define LOG_THEORY_CALLS
+#define LOG_INFEASIBLE_SUBSETS
+#define LOG_LEMMATA
 
 #include <vector>
 #include <map>
@@ -194,6 +194,11 @@ namespace smtrat
                 return mDeductions;
             }
 
+            std::vector<Formula*>& rDeductions()
+            {
+                return mDeductions;
+            }
+
             Formula::const_iterator firstUncheckedReceivedSubformula() const
             {
                 return mFirstUncheckedReceivedSubformula;
@@ -220,6 +225,7 @@ namespace smtrat
             void storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> &, const std::string= "smaller_muses") const;
 
             std::vector<Formula> generateSubformulaeOfInfeasibleSubset( unsigned infeasiblesubset, unsigned size ) const;
+            void updateDeductions();
         protected:
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );
             void addSubformulaToPassedFormula( Formula*, const vec_set_const_pFormula& );
@@ -235,11 +241,6 @@ namespace smtrat
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
             const std::set<const Formula*>& getOrigins( Formula::const_iterator ) const;
-
-        private:
-            void updateDeductions();
-
-            //Printing
 
         public:
             void print( std::ostream& = std::cout, const std::string = "***" ) const;
