@@ -26,12 +26,16 @@ public:
     void lemmaLearned() {
         mNrLearnedLemmas++;
     }
+    void initialTrue() {
+        mInitialTrue++;
+    }
 public:
     unsigned nrTotalVariables;
     unsigned nrUnassignedVariables;
     unsigned nrClauses;
 protected:
     unsigned mNrLearnedLemmas;
+    unsigned mInitialTrue;
 private:
 
 };

@@ -559,6 +559,9 @@ namespace smtrat
             Var constraintAbstraction;
             if( _activity > Formula::mSumOfAllActivities*FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY/Formula::mNumberOfNonZeroActivities )
             {
+                #ifdef GATHER_STATS
+                mStats->initialTrue();
+                #endif
                 constraintAbstraction = newVar( false, true, _activity, new Formula( _constraint ), _origin );
             }
             else
