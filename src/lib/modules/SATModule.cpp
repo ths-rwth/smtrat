@@ -2241,9 +2241,11 @@ Propagation:
     }
     
     void SATModule::collectStats() {
+        #ifdef GATHER_STATS
         mStats->nrTotalVariables = nVars();
         mStats->nrUnassignedVariables = nFreeVars();
         mStats->nrClauses = nClauses();
+        #endif
     }
 }    // namespace smtrat
 
