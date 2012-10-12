@@ -1466,7 +1466,7 @@ namespace smtrat
             }
             case IMPLIES:
             {
-                oper = "implies";
+                oper = "=>";
                 break;
             }
             case TTRUE:
