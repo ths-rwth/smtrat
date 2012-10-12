@@ -26,7 +26,7 @@
  * @author Ulrich Loup
  * @author Florian Corzilius
  * @since 2012-02-09
- * @version 2012-10-10
+ * @version 2012-10-12
  */
 
 #include "Formula.h"
@@ -1433,7 +1433,7 @@ namespace smtrat
         }
         _formula.getPropositions();
     }
-    
+
     std::string Formula::FormulaTypeToString(Type type)
     {
         string oper = "";
@@ -1484,11 +1484,11 @@ namespace smtrat
                 oper = "";
             }
         }
-    
+
         return oper;
     }
-        
-    
+
+
     std::string Formula::variableListToString(std::string seperator) const {
         GiNaC::symtab::const_iterator i = mRealValuedVars.begin();
         string result = "";
@@ -1501,24 +1501,24 @@ namespace smtrat
     }
     /**
      * Generates a string displaying the formula as a redlog formula.
-     * @return 
+     * @return
      */
     std::string Formula::toRedlogFormat(bool withVariables) const {
         std::string result = "";
         // add the variables;
-        if(withVariables) 
+        if(withVariables)
         {
             result += "(ex({";
             result += variableListToString(",");
-            result += "}(";
+            result += "}, (";
         }
-        else 
+        else
         {
             result += "(";
         }
         if(mType == REALCONSTRAINT) {
             result += constraint().toString();
-        } 
+        }
         else
         {
             // recursive print of the subformulas;
@@ -1526,15 +1526,15 @@ namespace smtrat
             auto it = mpSubformulas->begin();
             // do not quantify variables again.
             result += (*it)->toRedlogFormat(false);
-            for(++it; it != mpSubformulas->end(); ++it) 
+            for(++it; it != mpSubformulas->end(); ++it)
             {
                 // do not quantify variables again.
                 result += oper + (*it)->toRedlogFormat(false);
             }
-        }    
+        }
         result += ")";
         return result;
-        
+
     }
 }    // namespace smtrat
 

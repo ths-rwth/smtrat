@@ -44,7 +44,7 @@
  * @file SATModule.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  *
- * @version 2012-02-10
+ * @version 2012-10-10
  * Created on January 18, 2012, 3:51 PM
  */
 
@@ -65,7 +65,7 @@
 
 #ifdef GATHER_STATS
 #include "SATModule/SATStatistics.h"
-#endif 
+#endif
 #define SAT_MODULE_THEORY_PROPAGATION
 
 namespace smtrat
@@ -278,7 +278,7 @@ namespace smtrat
             #ifdef GATHER_STATS
             SATstatistics* mStats;
             #endif
-            
+
         public:
 
             /**
@@ -309,7 +309,7 @@ namespace smtrat
             void printClauses( std::ostream&, Minisat::Clause&, Minisat::vec<Minisat::Var>&, Minisat::Var& );
             void printClauses( const Minisat::vec<Minisat::CRef>&, const std::string, std::ostream& = std::cout, const std::string = "***" );
             void printDecisions( std::ostream& = std::cout, std::string = "***" ) const;
-            
+
             void collectStats();
 
         private:
