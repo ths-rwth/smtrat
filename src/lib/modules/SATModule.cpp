@@ -46,7 +46,7 @@
  * @author Ulrich Loup
  *
  * @since 2012-01-18
- * @version 2012-08-15
+ * @version 2012-11-12
  */
 
 #include "SATModule.h"
@@ -225,7 +225,7 @@ namespace smtrat
             #endif
             return False;
         }
-            
+
         solves++;
 
         max_learnts             = nClauses() * learntsize_factor;
@@ -271,7 +271,7 @@ namespace smtrat
                 infeasibleSubset.insert( *subformula );
             }
             mInfeasibleSubsets.push_back( infeasibleSubset );
-            
+
             #ifdef GATHER_STATS
             collectStats();
             #endif
@@ -1273,7 +1273,7 @@ NextClause:
         assert( _clause.size() != 0 );
         #ifdef GATHER_STATS
         mStats->lemmaLearned();
-        #endif        
+        #endif
         // Do not store theory lemma
         if( _clause.size() == 1 )
         {
@@ -2239,7 +2239,7 @@ Propagation:
             _out << setw( 6 ) << tmp << " @ " << level << endl;
         }
     }
-    
+
     void SATModule::collectStats() {
         #ifdef GATHER_STATS
         mStats->nrTotalVariables = nVars();
