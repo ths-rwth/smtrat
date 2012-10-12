@@ -1531,6 +1531,8 @@ namespace smtrat
                 // do not quantify variables again.
                 result += oper + (*it)->toRedlogFormat(false);
             }
+            if(withVariables)
+                result += "))";
         }
         result += ")";
         return result;
