@@ -25,8 +25,9 @@
  *
  * @author Ulrich Loup
  * @author Florian Corzilius
+ * @author Sebastian Junges
  * @since 2012-02-09
- * @version 2012-10-10
+ * @version 2012-10-12
  */
 
 #include "Formula.h"

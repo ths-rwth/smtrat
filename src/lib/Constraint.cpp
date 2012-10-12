@@ -21,10 +21,11 @@
 
 
 /**
- * Class to create a constraint object.
+ * Constraint.cpp
  * @author Florian Corzilius
+ * @author Sebastian Junges
  * @since 2010-04-26
- * @version 2011-12-05
+ * @version 2012-10-12
  */
 
 //#define VS_DEBUG
@@ -304,15 +305,21 @@ namespace smtrat
         }
         return result;
     }
+    
 
-    signed maxDegree( const ex& _subex )
+    /**
+     * TODO Florian is maxdegree equal total degree.
+     * @param _subex
+     * @return 
+     */
+    signed _maxDegree( const ex& _subex )
     {
         if( is_exactly_a<add>( _subex ) )
         {
             signed d = 0;
             for( GiNaC::const_iterator summand = _subex.begin(); summand != _subex.end(); ++summand )
             {
-                signed sd = maxDegree( *summand );
+                signed sd = _maxDegree( *summand );
                 if( sd > d ) d = sd;
             }
             return d;
@@ -322,7 +329,7 @@ namespace smtrat
             signed d = 0;
             for( GiNaC::const_iterator factor = _subex.begin(); factor != _subex.end(); ++factor )
             {
-                d += maxDegree( *factor );
+                d += _maxDegree( *factor );
             }
             return d;
         }
@@ -339,7 +346,7 @@ namespace smtrat
             const ex& exponent = *(++_subex.begin());
             const ex& subterm = *_subex.begin();
             assert( exponent.info( info_flags::nonnegative ) );
-            return exponent.integer_content().to_int() * maxDegree( subterm );
+            return exponent.integer_content().to_int() * _maxDegree( subterm );
         }
         else
         {
@@ -401,12 +408,17 @@ namespace smtrat
         return constPart( lhs() );
     }
 
+    
+    unsigned Constraint::maxDegree() const 
+    {
+        return _maxDegree( lhs() );
+    }
     /**
      * Checks whether the constraint is linear in all variables.
      */
     bool Constraint::isLinear() const
     {
-        return maxDegree( lhs() ) < 2;
+        return _maxDegree( lhs() ) < 2;
     }
 
     /**

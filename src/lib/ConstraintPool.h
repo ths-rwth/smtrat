@@ -19,7 +19,13 @@
  *
  */
 
-
+/**
+ * @file ConstraintPool.h
+ *
+ * @author Florian Corzilius
+ * @author Sebastian Junges
+ * @version 2012-10-12
+ */
 #include "Constraint.h"
 #include <unordered_set>
 
@@ -128,6 +134,13 @@ namespace smtrat
             unsigned size() const
             {
                 return mAllConstraints.size();
+            }
+            
+            void clear() {
+                mAllVariables.clear();
+                mAllConstraints.clear();
+                mAllVariableFreeConstraints.clear();
+                mIdAllocator = 1;
             }
 
             const GiNaC::symtab& variables() const
@@ -242,6 +255,9 @@ namespace smtrat
                 }
                 _out << "---------------------------------------------------" << std::endl;
             }
+            
+            unsigned maxDegree() const;
+            unsigned nrNonLinearConstraints() const;
     };
 }    // namespace smtrat
 

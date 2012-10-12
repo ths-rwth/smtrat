@@ -20,6 +20,15 @@
  */
 
 
+/**
+ * Constraint.h
+ * @author Florian Corzilius
+ * @author Sebastian Junges
+ * @since 2010-04-26
+ * @version 2012-10-12
+ */
+
+
 #ifndef SMTRAT_TS_CONSTRAINT_H
 #define SMTRAT_TS_CONSTRAINT_H
 
@@ -161,6 +170,7 @@ namespace smtrat
             signed highestDegree() const;
             GiNaC::numeric constantPart() const;
             bool isLinear() const;
+            unsigned maxDegree() const;
             std::map<const std::string, GiNaC::numeric, strCmp> linearAndConstantCoefficients() const;
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
 

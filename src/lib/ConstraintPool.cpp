@@ -20,6 +20,14 @@
  */
 
 
+/**
+ * @file ConstraintPool.cpp
+ *
+ * @author Florian Corzilius
+ * @author Sebastian Junges
+ * @version 2012-10-12
+ */
+
 #include "ConstraintPool.h"
 
 using namespace std;
@@ -312,6 +320,30 @@ namespace smtrat
             assert( _prefixRep.find( ")", 0 ) == string::npos );
             return _prefixRep;
         }
+    }
+    
+    
+    unsigned ConstraintPool::maxDegree() const 
+    {
+        unsigned result;
+        for( fcs_const_iterator constraint = mAllConstraints.begin();
+             constraint != mAllConstraints.end(); ++constraint )
+        {
+            unsigned maxdeg = (*constraint)->maxDegree();
+            if(maxdeg > result) result = maxdeg;
+        }
+        return result;
+    }
+
+    unsigned ConstraintPool::nrNonLinearConstraints() const
+    {
+        unsigned nonlinear;
+        for( fcs_const_iterator constraint = mAllConstraints.begin();
+             constraint != mAllConstraints.end(); ++constraint )
+        {
+            if(!(*constraint)->isLinear()) ++nonlinear;
+        }
+        return nonlinear;
     }
 
 }    // namespace smtrat
