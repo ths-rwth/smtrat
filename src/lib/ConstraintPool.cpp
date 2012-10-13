@@ -25,7 +25,8 @@
  *
  * @author Florian Corzilius
  * @author Sebastian Junges
- * @version 2012-10-12
+ * @author Ulrich Loup
+ * @version 2012-10-13
  */
 
 #include "ConstraintPool.h"
@@ -321,15 +322,15 @@ namespace smtrat
             return _prefixRep;
         }
     }
-    
-    
-    unsigned ConstraintPool::maxDegree() const 
+
+
+    int ConstraintPool::maxDegree() const
     {
-        unsigned result;
+        int result;
         for( fcs_const_iterator constraint = mAllConstraints.begin();
              constraint != mAllConstraints.end(); ++constraint )
         {
-            unsigned maxdeg = (*constraint)->maxDegree();
+            int maxdeg = (*constraint)->maxDegree();
             if(maxdeg > result) result = maxdeg;
         }
         return result;

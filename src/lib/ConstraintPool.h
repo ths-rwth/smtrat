@@ -24,7 +24,8 @@
  *
  * @author Florian Corzilius
  * @author Sebastian Junges
- * @version 2012-10-12
+ * @author Ulrich Loup
+ * @version 2012-10-13
  */
 #include "Constraint.h"
 #include <unordered_set>
@@ -135,7 +136,7 @@ namespace smtrat
             {
                 return mAllConstraints.size();
             }
-            
+
             void clear() {
                 mAllVariables.clear();
                 mAllConstraints.clear();
@@ -255,8 +256,8 @@ namespace smtrat
                 }
                 _out << "---------------------------------------------------" << std::endl;
             }
-            
-            unsigned maxDegree() const;
+
+            int maxDegree() const;
             unsigned nrNonLinearConstraints() const;
     };
 }    // namespace smtrat
