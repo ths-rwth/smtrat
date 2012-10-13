@@ -326,11 +326,12 @@ namespace smtrat
 
     int ConstraintPool::maxDegree() const
     {
-        int result;
+        int result = 0;
         for( fcs_const_iterator constraint = mAllConstraints.begin();
              constraint != mAllConstraints.end(); ++constraint )
         {
             int maxdeg = (*constraint)->maxDegree();
+            cout << "maxdeg " << maxdeg << endl;
             if(maxdeg > result) result = maxdeg;
         }
         return result;
@@ -338,7 +339,7 @@ namespace smtrat
 
     unsigned ConstraintPool::nrNonLinearConstraints() const
     {
-        unsigned nonlinear;
+        unsigned nonlinear = 0;
         for( fcs_const_iterator constraint = mAllConstraints.begin();
              constraint != mAllConstraints.end(); ++constraint )
         {
