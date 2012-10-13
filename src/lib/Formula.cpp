@@ -27,7 +27,7 @@
  * @author Florian Corzilius
  * @author Sebastian Junges
  * @since 2012-02-09
- * @version 2012-10-12
+ * @version 2012-10-13
  */
 
 #include "Formula.h"
@@ -73,7 +73,7 @@ namespace smtrat
         mType( BOOL ),
         mRealValuedVars(),
         mBooleanVars(),
-        mpIdentifier( new string( _id ) ),
+        mpIdentifier( new string( _id )),
         mpFather( NULL ),
         mPropositions(),
         mPropositionsUptodate( false )
@@ -114,7 +114,7 @@ namespace smtrat
             mpSubformulas = new list<Formula*>();
             for( const_iterator subFormula = _formula.subformulas().begin(); subFormula != _formula.subformulas().end(); ++subFormula )
             {
-                addSubformula( new Formula( **subFormula ) );
+                addSubformula( new Formula( **subFormula ));
             }
         }
         else if( _formula.getType() == BOOL )
@@ -371,7 +371,7 @@ namespace smtrat
         assert( isBooleanCombination() );
         assert( _position < mpSubformulas->size() );
         iterator subFormula = mpSubformulas->begin();
-        unsigned pos = 0;
+        unsigned pos        = 0;
         while( subFormula != mpSubformulas->end() )
         {
             if( pos == _position )
@@ -413,7 +413,7 @@ namespace smtrat
         assert( isBooleanCombination() );
         assert( _subformula != mpSubformulas->end() );
         Formula* pSubFormula = *_subformula;
-        iterator result = mpSubformulas->erase( _subformula );
+        iterator result      = mpSubformulas->erase( _subformula );
         delete pSubFormula;
         mPropositionsUptodate = false;
         return result;
@@ -444,7 +444,7 @@ namespace smtrat
         assert( isBooleanCombination() );
         assert( _position < mpSubformulas->size() );
         iterator subFormula = mpSubformulas->begin();
-        unsigned pos = 0;
+        unsigned pos        = 0;
         while( subFormula != mpSubformulas->end() )
         {
             if( pos == _position )
@@ -691,7 +691,7 @@ namespace smtrat
             {
                 _out << _init;
                 mpConstraint->print( _out );
-                                _out << " (" << mActivity << ")";
+                _out << " (" << mActivity << ")";
                 break;
             }
             case TTRUE:
@@ -819,12 +819,8 @@ namespace smtrat
         }
         if( isBooleanCombination() )
         {
-            std::list<Formula*>::const_iterator subformula = mpSubformulas->begin();
-            while( subformula != mpSubformulas->end() )
-            {
+            for( std::list<Formula*>::const_iterator subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
                 result += " " + (*subformula)->toString( _infix );
-                ++subformula;
-            }
             result += ")";
         }
         return result;
@@ -874,7 +870,7 @@ namespace smtrat
         {
             copy->addSubformula( _formula.pruneBack() );
         }
-        _formula.copyAndDelete( new Formula( AND ) );
+        _formula.copyAndDelete( new Formula( AND ));
         vector<Formula*> subformulasToTransform = vector<Formula*>();
         subformulasToTransform.push_back( copy );
         while( !subformulasToTransform.empty() )
@@ -925,7 +921,7 @@ namespace smtrat
                     /*
                      * Try to resolve this negation.
                      */
-                    if( !Formula::resolveNegation( *currentFormula, _keepConstraints ) )
+                    if( !Formula::resolveNegation( *currentFormula, _keepConstraints ))
                     {
                         /*
                          * It is a literal.
@@ -1011,7 +1007,7 @@ namespace smtrat
                                 /*
                                  * Try to resolve this negation.
                                  */
-                                if( Formula::resolveNegation( *currentSubformula, _keepConstraints ) )
+                                if( Formula::resolveNegation( *currentSubformula, _keepConstraints ))
                                 {
                                     phis.push_back( currentSubformula );
                                 }
@@ -1031,8 +1027,8 @@ namespace smtrat
                                 while( !currentSubformula->empty() )
                                 {
                                     Formula* formulaToAssert = new Formula( OR );
-                                    formulaToAssert->addSubformula( new Formula( NOT ) );
-                                    formulaToAssert->back()->addSubformula( new Formula( *hi ) );
+                                    formulaToAssert->addSubformula( new Formula( NOT ));
+                                    formulaToAssert->back()->addSubformula( new Formula( *hi ));
                                     formulaToAssert->addSubformula( currentSubformula->pruneBack() );
                                     subformulasToTransform.push_back( formulaToAssert );
                                 }
@@ -1057,7 +1053,7 @@ namespace smtrat
                                 Formula* rhs = currentSubformula->pruneBack();
                                 Formula* lhs = currentSubformula->pruneBack();
                                 delete currentSubformula;
-                                phis.push_back( new Formula( NOT ) );
+                                phis.push_back( new Formula( NOT ));
                                 phis.back()->addSubformula( lhs );
                                 phis.push_back( rhs );
                                 break;
@@ -1073,24 +1069,24 @@ namespace smtrat
                                 Formula* lhs_i = currentSubformula->pruneBack();
                                 delete currentSubformula;
 
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
+                                phis.push_back( new Formula( OR ));
+                                phis.back()->addSubformula( new Formula( NOT ));
+                                phis.back()->back()->addSubformula( new Formula( *h_i1 ));
                                 phis.back()->addSubformula( lhs_i );
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
+                                phis.push_back( new Formula( OR ));
+                                phis.back()->addSubformula( new Formula( NOT ));
+                                phis.back()->back()->addSubformula( new Formula( *h_i1 ));
                                 phis.back()->addSubformula( rhs_i );
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *lhs_i ) );
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *rhs_i ) );
+                                phis.push_back( new Formula( OR ));
+                                phis.back()->addSubformula( new Formula( NOT ));
+                                phis.back()->back()->addSubformula( new Formula( *h_i2 ));
+                                phis.back()->addSubformula( new Formula( NOT ));
+                                phis.back()->back()->addSubformula( new Formula( *lhs_i ));
+                                phis.push_back( new Formula( OR ));
+                                phis.back()->addSubformula( new Formula( NOT ));
+                                phis.back()->back()->addSubformula( new Formula( *h_i2 ));
+                                phis.back()->addSubformula( new Formula( NOT ));
+                                phis.back()->back()->addSubformula( new Formula( *rhs_i ));
 
                                 currentFormula->addSubformula( h_i1 );
                                 currentFormula->addSubformula( h_i2 );
@@ -1107,24 +1103,24 @@ namespace smtrat
                                 Formula* lhs_i = currentSubformula->pruneBack();
                                 delete currentSubformula;
 
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
+                                phis.push_back( new Formula( OR ));
+                                phis.back()->addSubformula( new Formula( NOT ));
+                                phis.back()->back()->addSubformula( new Formula( *h_i1 ));
+                                phis.back()->addSubformula( new Formula( NOT ));
                                 phis.back()->back()->addSubformula( lhs_i );
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i1 ) );
+                                phis.push_back( new Formula( OR ));
+                                phis.back()->addSubformula( new Formula( NOT ));
+                                phis.back()->back()->addSubformula( new Formula( *h_i1 ));
                                 phis.back()->addSubformula( rhs_i );
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
-                                phis.back()->addSubformula( new Formula( *lhs_i ) );
-                                phis.push_back( new Formula( OR ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *h_i2 ) );
-                                phis.back()->addSubformula( new Formula( NOT ) );
-                                phis.back()->back()->addSubformula( new Formula( *rhs_i ) );
+                                phis.push_back( new Formula( OR ));
+                                phis.back()->addSubformula( new Formula( NOT ));
+                                phis.back()->back()->addSubformula( new Formula( *h_i2 ));
+                                phis.back()->addSubformula( new Formula( *lhs_i ));
+                                phis.push_back( new Formula( OR ));
+                                phis.back()->addSubformula( new Formula( NOT ));
+                                phis.back()->back()->addSubformula( new Formula( *h_i2 ));
+                                phis.back()->addSubformula( new Formula( NOT ));
+                                phis.back()->back()->addSubformula( new Formula( *rhs_i ));
 
                                 currentFormula->addSubformula( h_i1 );
                                 currentFormula->addSubformula( h_i2 );
@@ -1151,7 +1147,7 @@ namespace smtrat
                     Formula* lhs = currentFormula->pruneBack();
                     delete currentFormula;
                     currentFormula = new Formula( OR );
-                    currentFormula->addSubformula( new Formula( NOT ) );
+                    currentFormula->addSubformula( new Formula( NOT ));
                     currentFormula->back()->addSubformula( lhs );
                     currentFormula->addSubformula( rhs );
                     subformulasToTransform.push_back( currentFormula );
@@ -1176,26 +1172,26 @@ namespace smtrat
                     _formula.addSubformula( clause );
                     // Append (or (not h1) lhs), (or (not h1) rhs), (or (not h2) (not lhs)) and (or (not h2) (not rhs)) to _formulasToAssert.
                     Formula* formulaToAssertA = new Formula( OR );
-                    formulaToAssertA->addSubformula( new Formula( NOT ) );
-                    formulaToAssertA->back()->addSubformula( new Formula( *h1 ) );
+                    formulaToAssertA->addSubformula( new Formula( NOT ));
+                    formulaToAssertA->back()->addSubformula( new Formula( *h1 ));
                     formulaToAssertA->addSubformula( lhs );    // Once it can be used, otherwise copy it,
                     subformulasToTransform.push_back( formulaToAssertA );
                     Formula* formulaToAssertB = new Formula( OR );
-                    formulaToAssertB->addSubformula( new Formula( NOT ) );
-                    formulaToAssertB->back()->addSubformula( new Formula( *h1 ) );
+                    formulaToAssertB->addSubformula( new Formula( NOT ));
+                    formulaToAssertB->back()->addSubformula( new Formula( *h1 ));
                     formulaToAssertB->addSubformula( rhs );    // Once it can be used, otherwise copy it,
                     subformulasToTransform.push_back( formulaToAssertB );
                     Formula* formulaToAssertC = new Formula( OR );
-                    formulaToAssertC->addSubformula( new Formula( NOT ) );
-                    formulaToAssertC->back()->addSubformula( new Formula( *h2 ) );
-                    formulaToAssertC->addSubformula( new Formula( NOT ) );
-                    formulaToAssertC->back()->addSubformula( new Formula( *lhs ) );
+                    formulaToAssertC->addSubformula( new Formula( NOT ));
+                    formulaToAssertC->back()->addSubformula( new Formula( *h2 ));
+                    formulaToAssertC->addSubformula( new Formula( NOT ));
+                    formulaToAssertC->back()->addSubformula( new Formula( *lhs ));
                     subformulasToTransform.push_back( formulaToAssertC );
                     Formula* formulaToAssertD = new Formula( OR );
-                    formulaToAssertD->addSubformula( new Formula( NOT ) );
-                    formulaToAssertD->back()->addSubformula( new Formula( *h2 ) );
-                    formulaToAssertD->addSubformula( new Formula( NOT ) );
-                    formulaToAssertD->back()->addSubformula( new Formula( *rhs ) );
+                    formulaToAssertD->addSubformula( new Formula( NOT ));
+                    formulaToAssertD->back()->addSubformula( new Formula( *h2 ));
+                    formulaToAssertD->addSubformula( new Formula( NOT ));
+                    formulaToAssertD->back()->addSubformula( new Formula( *rhs ));
                     subformulasToTransform.push_back( formulaToAssertD );
                     break;
                 }
@@ -1218,26 +1214,26 @@ namespace smtrat
                     _formula.addSubformula( clause );
                     // Append (or (not h1) (not lhs)), (or (not h1) rhs), (or (not h2) lhs) and (or (not h2) (not rhs)) to _formulasToAssert.
                     Formula* formulaToAssertA = new Formula( OR );
-                    formulaToAssertA->addSubformula( new Formula( NOT ) );
-                    formulaToAssertA->back()->addSubformula( new Formula( *h1 ) );
-                    formulaToAssertA->addSubformula( new Formula( NOT ) );
+                    formulaToAssertA->addSubformula( new Formula( NOT ));
+                    formulaToAssertA->back()->addSubformula( new Formula( *h1 ));
+                    formulaToAssertA->addSubformula( new Formula( NOT ));
                     formulaToAssertA->back()->addSubformula( lhs );    // Once it can be used, otherwise copy it,
                     subformulasToTransform.push_back( formulaToAssertA );
                     Formula* formulaToAssertB = new Formula( OR );
-                    formulaToAssertB->addSubformula( new Formula( NOT ) );
-                    formulaToAssertB->back()->addSubformula( new Formula( *h1 ) );
+                    formulaToAssertB->addSubformula( new Formula( NOT ));
+                    formulaToAssertB->back()->addSubformula( new Formula( *h1 ));
                     formulaToAssertB->addSubformula( rhs );    // Once it can be used, otherwise copy it,
                     subformulasToTransform.push_back( formulaToAssertB );
                     Formula* formulaToAssertC = new Formula( OR );
-                    formulaToAssertC->addSubformula( new Formula( NOT ) );
-                    formulaToAssertC->back()->addSubformula( new Formula( *h2 ) );
-                    formulaToAssertC->addSubformula( new Formula( *lhs ) );
+                    formulaToAssertC->addSubformula( new Formula( NOT ));
+                    formulaToAssertC->back()->addSubformula( new Formula( *h2 ));
+                    formulaToAssertC->addSubformula( new Formula( *lhs ));
                     subformulasToTransform.push_back( formulaToAssertC );
                     Formula* formulaToAssertD = new Formula( OR );
-                    formulaToAssertD->addSubformula( new Formula( NOT ) );
-                    formulaToAssertD->back()->addSubformula( new Formula( *h2 ) );
-                    formulaToAssertD->addSubformula( new Formula( NOT ) );
-                    formulaToAssertD->back()->addSubformula( new Formula( *rhs ) );
+                    formulaToAssertD->addSubformula( new Formula( NOT ));
+                    formulaToAssertD->back()->addSubformula( new Formula( *h2 ));
+                    formulaToAssertD->addSubformula( new Formula( NOT ));
+                    formulaToAssertD->back()->addSubformula( new Formula( *rhs ));
                     subformulasToTransform.push_back( formulaToAssertD );
                     break;
                 }
@@ -1250,7 +1246,7 @@ namespace smtrat
         }
         if( _formula.empty() )
         {
-            _formula.copyAndDelete( new Formula( TTRUE ) );
+            _formula.copyAndDelete( new Formula( TTRUE ));
         }
         _formula.getPropositions();
     }
@@ -1284,24 +1280,24 @@ namespace smtrat
                     {
                         case CR_EQ:
                         {
-                            _formula.copyAndDelete( new Formula( OR ) );
-                            _formula.addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS ) ) );
-                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS ) ) );
+                            _formula.copyAndDelete( new Formula( OR ));
+                            _formula.addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS )));
+                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS )));
                             return true;
                         }
                         case CR_LEQ:
                         {
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS ) ) );
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS )));
                             return false;
                         }
                         case CR_LESS:
                         {
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LEQ ) ) );
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LEQ )));
                             return false;
                         }
                         case CR_NEQ:
                         {
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ ) ) );
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ )));
                             return false;
                         }
                         default:
@@ -1350,10 +1346,10 @@ namespace smtrat
                     subsubformulas.push_back( subformula->pruneBack() );
                 }
                 _formula.pop_back();
-                _formula.copyAndDelete( new Formula( OR ) );
+                _formula.copyAndDelete( new Formula( OR ));
                 while( !subsubformulas.empty() )
                 {
-                    _formula.addSubformula( new Formula( NOT ) );
+                    _formula.addSubformula( new Formula( NOT ));
                     _formula.back()->addSubformula( subsubformulas.back() );
                     subsubformulas.pop_back();
                 }
@@ -1370,10 +1366,10 @@ namespace smtrat
                     subsubformulas.push_back( subformula->pruneBack() );
                 }
                 _formula.pop_back();
-                _formula.copyAndDelete( new Formula( AND ) );
+                _formula.copyAndDelete( new Formula( AND ));
                 while( !subsubformulas.empty() )
                 {
-                    _formula.addSubformula( new Formula( NOT ) );
+                    _formula.addSubformula( new Formula( NOT ));
                     _formula.back()->addSubformula( subsubformulas.back() );
                     subsubformulas.pop_back();
                 }
@@ -1389,9 +1385,9 @@ namespace smtrat
                 Formula* rhsOfSubformula = subformula->pruneBack();
                 Formula* lhsOfSubformula = subformula->pruneBack();
                 _formula.pop_back();
-                _formula.copyAndDelete( new Formula( AND ) );
+                _formula.copyAndDelete( new Formula( AND ));
                 _formula.addSubformula( lhsOfSubformula );
-                _formula.addSubformula( new Formula( NOT ) );
+                _formula.addSubformula( new Formula( NOT ));
                 _formula.back()->addSubformula( rhsOfSubformula );
                 return true;
             }
@@ -1405,7 +1401,7 @@ namespace smtrat
                 Formula* rhsOfSubformula = subformula->pruneBack();
                 Formula* lhsOfSubformula = subformula->pruneBack();
                 _formula.pop_back();
-                _formula.copyAndDelete( new Formula( XOR ) );
+                _formula.copyAndDelete( new Formula( XOR ));
                 _formula.addSubformula( lhsOfSubformula );
                 _formula.addSubformula( rhsOfSubformula );
                 return true;
@@ -1420,7 +1416,7 @@ namespace smtrat
                 Formula* rhsOfSubformula = subformula->pruneBack();
                 Formula* lhsOfSubformula = subformula->pruneBack();
                 _formula.pop_back();
-                _formula.copyAndDelete( new Formula( IFF ) );
+                _formula.copyAndDelete( new Formula( IFF ));
                 _formula.addSubformula( lhsOfSubformula );
                 _formula.addSubformula( rhsOfSubformula );
                 return true;
@@ -1435,7 +1431,7 @@ namespace smtrat
         _formula.getPropositions();
     }
 
-    std::string Formula::FormulaTypeToString(Type type)
+    std::string Formula::FormulaTypeToString( Type type )
     {
         string oper = "";
         switch( type )
@@ -1485,59 +1481,67 @@ namespace smtrat
                 oper = "";
             }
         }
-
         return oper;
     }
 
-
-    std::string Formula::variableListToString(std::string seperator) const {
-        GiNaC::symtab::const_iterator i = mRealValuedVars.begin();
-        string result = "";
+    std::string Formula::variableListToString( std::string seperator ) const
+    {
+        GiNaC::symtab::const_iterator i      = mRealValuedVars.begin();
+        string                        result = "";
         result += i->first;
-        for(++i ; i != mRealValuedVars.end(); ++i )
+        for( ++i; i != mRealValuedVars.end(); ++i )
         {
             result += "," + i->first;;
         }
         return result;
     }
+
     /**
      * Generates a string displaying the formula as a redlog formula.
      * @return
      */
-    std::string Formula::toRedlogFormat(bool withVariables) const {
+    std::string Formula::toRedlogFormat( bool withVariables ) const
+    {
         std::string result = "";
-        // add the variables;
-        if(withVariables)
+        string oper = Formula::FormulaTypeToString( mType );
+        switch( mType )
         {
-            result += "(ex({";
-            result += variableListToString(",");
-            result += "}, (";
-        }
-        else
-        {
-            result += "(";
-        }
-        if(mType == REALCONSTRAINT) {
+            // unary cases
+        case TTRUE:
+        case FFALSE:
+            result += " " + oper + " ";
+            break;
+        case NOT:
+            result += " " + oper + "( " + (*mpSubformulas->begin())->toRedlogFormat( withVariables ) + " )";
+            break;
+        case REALCONSTRAINT:
             result += constraint().toString();
-        }
-        else
-        {
-            // recursive print of the subformulas;
-            string oper = Formula::FormulaTypeToString(mType);
-            auto it = mpSubformulas->begin();
+            break;
+        default:
+            // recursive print of the subformulas
+            if( withVariables )
+            { // add the variables
+                result += "( ex( {";
+                result += variableListToString( "," );
+                result += "}, ( ";
+            }
+            else
+            {
+                result += "( ";
+            }
+            std::list<Formula*>::const_iterator it = mpSubformulas->begin();
             // do not quantify variables again.
-            result += (*it)->toRedlogFormat(false);
-            for(++it; it != mpSubformulas->end(); ++it)
+            result += (*it)->toRedlogFormat( false );
+            for( ++it; it != mpSubformulas->end(); ++it )
             {
                 // do not quantify variables again.
-                result += oper + (*it)->toRedlogFormat(false);
+                result += " " + oper + " " + (*it)->toRedlogFormat( false );
             }
-            if(withVariables)
-                result += "))";
+            if( withVariables )
+                result += " ) )";
+            result += " )";
         }
-        result += ")";
         return result;
-
     }
 }    // namespace smtrat
 

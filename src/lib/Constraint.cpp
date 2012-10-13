@@ -24,8 +24,9 @@
  * Constraint.cpp
  * @author Florian Corzilius
  * @author Sebastian Junges
+ * @author Ulrich Loup
  * @since 2010-04-26
- * @version 2012-10-12
+ * @version 2012-10-13
  */
 
 //#define VS_DEBUG
@@ -305,12 +306,12 @@ namespace smtrat
         }
         return result;
     }
-    
+
 
     /**
      * TODO Florian is maxdegree equal total degree.
      * @param _subex
-     * @return 
+     * @return
      */
     signed _maxDegree( const ex& _subex )
     {
@@ -408,8 +409,8 @@ namespace smtrat
         return constPart( lhs() );
     }
 
-    
-    unsigned Constraint::maxDegree() const 
+
+    unsigned Constraint::maxDegree() const
     {
         return _maxDegree( lhs() );
     }
@@ -900,7 +901,6 @@ namespace smtrat
      */
     string Constraint::smtlibString() const
     {
-        string result = "";
         switch( relation() )
         {
             case CR_EQ:
