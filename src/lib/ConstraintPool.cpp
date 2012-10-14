@@ -331,7 +331,6 @@ namespace smtrat
              constraint != mAllConstraints.end(); ++constraint )
         {
             int maxdeg = (*constraint)->maxDegree();
-            cout << "maxdeg " << maxdeg << endl;
             if(maxdeg > result) result = maxdeg;
         }
         return result;

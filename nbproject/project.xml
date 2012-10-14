@@ -6,7 +6,7 @@
             <name>smtrat</name>
             <c-extensions>c,m</c-extensions>
             <cpp-extensions>cc,cpp</cpp-extensions>
-            <header-extensions>h,hh</header-extensions>
+            <header-extensions>h,hh,ll,tpp,yy</header-extensions>
             <sourceEncoding>UTF-8</sourceEncoding>
             <make-dep-projects/>
             <sourceRootList>
