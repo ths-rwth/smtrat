@@ -19,45 +19,31 @@
  *
  */
 
-
-/**
- * @file Modules.h
+/* 
+ * @file   ICPModule.h
+ * @author name surname <emailadress>
  *
- * @author Ulrich Loup
- * @author Sebastian Junges
- * @since 2012-01-18
- * @version 2012-07-02
+ * Created on October 16, 2012, 1:07 PM
  */
 
-#ifndef SMTRAT_MODULES_H
-#define SMTRAT_MODULES_H
+#ifndef ICPMODULE_H
+#define	ICPMODULE_H
 
-#include "VSModule.h"
-#include "SmartSimplifier.h"
-#include "FourierMotzkinSimplifier.h"
+#include "../Module.h"
 
-#ifdef USE_GB
+namespace smtrat
+{
+    class ICPModule:
+        public Module
+    {
+        public:
+            // Interfaces.
+            bool inform( const Constraint* const );
+            bool assertSubformula( Formula::const_iterator );
+            void removeSubformula( Formula::const_iterator );
+            Answer isConsistent();
+    };
+}//namespace smtrat
 
-#include "GroebnerModule.h"
-
-#endif
-
-#ifdef USE_CAD
-//#include "UnivariateCADModule.h"
-
-#include "CADModule.h"
-
-#endif
-
-#include "SATModule.h"
-#include "LRAModule.h"
-#include "PreProModule.h"
-#include "CNFerModule.h"
-#include "SingleVSModule.h"
-#include "ICPModule.h"
-
-#include "StandardModuleFactory.h"
-
-#endif   // SMTRAT_MODULES_H
-
+#endif	/* ICPMODULE_H */
 

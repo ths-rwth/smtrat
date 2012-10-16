@@ -764,6 +764,10 @@ namespace smtrat
             {
                 return "FourierMotzkinSimplifier";
             }
+            case MT_ICPModule:
+            {
+                return "ICPModule";
+            }
             case MT_NoModule:
             {
                 return "NoModule";
