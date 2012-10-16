@@ -29,6 +29,7 @@
 #include "ICPModule.h"
 
 using namespace GiNaC;
+using namespace std;
 
 namespace smtrat{
     /**
@@ -47,6 +48,13 @@ namespace smtrat{
             item.first = constr;
             item.second = ex_to<symbol > (it->second);
             mTableau.addEntry(item, constr.diff(item.second));
+            cout << "Constraint: " << endl;
+            constr.dbgprint();
+            cout << "Symbol: " << endl;
+            it->second.dbgprint();
+            cout << "Derivative: " << endl;
+            constr.diff(item.second).dbgprint(); 
+            
          }
          return true; 
      }
