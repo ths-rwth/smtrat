@@ -132,6 +132,12 @@ set(lib_LRAModule_src
 	modules/LRAModule/Value.cpp
 	modules/LRAModule/Variable.cpp
 )
+set(lib_ICPModule_headers
+    modules/ICPModule/DerivativeTable.h
+)
+set(lib_ICPModule_src
+    
+)
 
 # Nullstellensatz module variables
 
@@ -200,6 +206,8 @@ set(lib_${PROJECT_NAME}_SRCS
 	${lib_Utilities_src}
     ${lib_SingleVSModule_headers}
     ${lib_SingleVSModule_src}
+    ${lib_ICPModule_headers}
+    ${lib_ICPModule_src}
 )
 
 # set linking flags
@@ -247,3 +255,4 @@ install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/m
 install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SATModule )
 install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/LRAModule )
 install( FILES ${lib_SingleVSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SingleVSModule )
+install( FILES ${lib_ICPModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/ICPModule )

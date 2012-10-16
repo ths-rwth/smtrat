@@ -20,52 +20,60 @@
  */
 
 /* 
- * @file   ICPModule.h
- * @author name surname <emailadress>
+ * @file   DerivativeTable.h
+ * @author stefan schupp
  *
- * Created on October 16, 2012, 1:07 PM
+ * Created on October 16, 2012, 1:22 PM
  */
 
-#ifndef ICPMODULE_H
-#define	ICPMODULE_H
-
-#include "../Module.h"
-#include "ICPModule/DerivativeTable.h"
+#ifndef DERIVATIVETABLE_H
+#define	DERIVATIVETABLE_H
 
 namespace smtrat
 {
-    class ICPModule:
-        public Module
-    {
+    class DerivativeTable{
+        public:
+            /**
+             * Typedefs:
+             */
+            typedef std::map<std::pair<GiNaC::ex,GiNaC::symbol>, GiNaC::ex> Table;
+    
         private:
             /**
              * Members:
              */
-            
-            DerivativeTable mTableau;
+            Table mTable;
+             
         public:
             /**
              * Constructors:
              */
-            ICPModule();
+            DerivativeTable(){
+                mTable = Table();
+            }
             
             /**
             * Destructor:
             */
-            ~ICPModule();
+            ~DerivativeTable();
             
-            // Interfaces.
-            bool inform( const Constraint* const );
-            bool assertSubformula( Formula::const_iterator );
-            void removeSubformula( Formula::const_iterator );
-            Answer isConsistent();
+            /**
+             * Functions:
+             */
+            void addEntry(std::pair<GiNaC::ex,GiNaC::symbol> key, GiNaC::ex value){
+                mTable[key] = value;
+            }
+            
+            GiNaC::ex getEntry(std::pair<GiNaC::ex,GiNaC::symbol> key){
+                return mTable[key];
+            }
             
         private:
             /**
              * Methods:
              */
     };
-}//namespace smtrat
+}
 
-#endif	/* ICPMODULE_H */
+#endif	/* DERIVATIVETABLE_H */
 
