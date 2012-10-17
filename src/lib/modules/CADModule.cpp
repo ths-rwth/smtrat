@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2012-10-11
+ * @version 2012-10-12
  */
 
 //#define MODULE_VERBOSE
@@ -67,17 +67,12 @@ namespace smtrat
 #ifdef SMTRAT_CAD_ALTERNATIVE_SETTING
         mCAD( GiNaCRA::CADSettings::getSettings( GiNaCRA::RATIONALSAMPLE_CADSETTING ) ),
 #else
-#ifndef SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
-        mCAD( GiNaCRA::CADSettings::getSettings() ),
-#else
-#ifdef SMTRAT_CAD_GENERIC_SETTING
+#ifdef SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
         mCAD( GiNaCRA::CADSettings::getSettings( GiNaCRA::GENERIC_CADSETTING ) ),
 #else
-	mCAD(),
+	mCAD(), // default: equation detect
 #endif
 #endif
-#endif
-
         mConstraints(),
         mConstraintsMap(),
         mSatisfiable( true )
@@ -178,7 +173,9 @@ namespace smtrat
         mInfeasibleSubsets.clear();
         mSatisfiable = true;
         #ifndef SMTRAT_CAD_DISABLE_SMT
+        #ifndef SMTRAT_CAD_DISABLE_THEORYPROPAGATION
         this->addDeductions( deductions );
+        #endif
         #endif
         return True;
     }
@@ -400,7 +397,6 @@ namespace smtrat
 
     void CADModule::addDeductions( const list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > >& deductions )
     {
-        Formula* deduction = new Formula( AND );
         for( list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > >::const_iterator implication = deductions.begin(); implication != deductions.end(); ++implication )
         {
             assert( ( !implication->first.empty() && !implication->second.empty() ) || implication->first.size() > 1 || implication->second.size() > 1  );
