@@ -46,33 +46,90 @@ namespace smtrat{
     ICPModule::~ICPModule(){}
     
      bool ICPModule::inform( const Constraint* const _constraint){
-         GiNaC::ex constr = GiNaC::ex(_constraint->lhs());
-         GiNaC::symtab::const_iterator it;
-         std::pair<GiNaC::ex, GiNaC::symbol> item;
-         for (it = _constraint->variables().begin(); it != _constraint->variables().end(); it++) {
-            item.first = constr;
-            item.second = ex_to<symbol > (it->second);
-            mTableau.addEntry(item, constr.diff(item.second));
-            cout << "Constraint: " << endl;
-            constr.dbgprint();
-            cout << "Symbol: " << endl;
-            it->second.dbgprint();
-            cout << "Derivative: " << endl;
-            constr.diff(item.second).dbgprint(); 
-            
+         //TODO: preprocessing
+         const ex constr = _constraint->lhs();
+         cout << "Constraint: " << endl;
+         constr.dbgprint();
+         if (isLinear(constr)){
+             cout << "is linear." << endl;
+         }else{
+             cout << "is nonlinear." << endl;
          }
+         
          return true; 
      }
      
-     bool ICPModule::assertSubformula( Formula::const_iterator ){
+     bool ICPModule::assertSubformula( Formula::const_iterator _formula){
+         Formula* f = *_formula;
+         const Constraint* constr = &f->constraint();
+         mActiveConstraints[constr] = true;
+         
+         
          return true;
      }
             
-     void ICPModule::removeSubformula( Formula::const_iterator ){
-         
+     void ICPModule::removeSubformula( Formula::const_iterator _formula){
+         Formula* f = *_formula;
+         const Constraint* constr = &f->constraint();
+         mActiveConstraints[constr] = false;
      }
      
      Answer ICPModule::isConsistent(){
+         //TODO: Intelligent choice of constraints
+         ActiveTable::iterator it = mActiveConstraints.begin();
+         std::pair<const Constraint*,symbol> tmp = chooseConstraint(it);
+         const Constraint* constr = tmp.first;
+         symbol variable = tmp.second;
+         cout << "Chosen constraint: " << endl;
+         constr->lhs().dbgprint();
+         
+         //fill table if necessary
+         if(!mTableau.contains(constr->lhs())){
+            GiNaC::symtab::const_iterator it;
+            std::pair<GiNaC::ex, GiNaC::symbol> item;
+         
+            for (it = constr->variables().begin(); it != constr->variables().end(); it++) {
+                item.first = constr->lhs();
+                item.second = ex_to<symbol > (it->second);
+                mTableau.addEntry(item, constr->lhs().diff(item.second));
+            }
+         }
+         
+         //Actual compression
+         GiNaCRA::Icp icp;
+         
+         //TODO: Validation of gained interval box
          return Answer();
+     }
+     
+     std::pair<const Constraint*,symbol> ICPModule::chooseConstraint(ActiveTable::iterator _it){
+         while (!_it->second){
+             _it++;
+         }
+         std::pair<const Constraint*, symbol> item;
+         item.first = _it->first;
+         item.second = ex_to<symbol>(_it->first->variables().begin()->second);
+         return item;
+     }
+     
+     bool ICPModule::isLinear(const ex& _expr){
+         bool isLinear = true;
+         std::vector<symbol> variables;
+         GiNaCRA::Icp icp;
+         icp.searchVariables(_expr,&variables);
+         std::vector<symbol>::iterator it;
+         
+         for(it = variables.begin(); it != variables.end(); it++){
+             for(int i = /*_expr.ldegree(*it)*/ 1;i<_expr.degree(*it);i++){
+                 cout << "Variable: " << endl;
+                 symbol s = *it;
+                 s.dbgprint();
+                 cout << "Degree: " << i << endl;
+                 cout << "Coefficient: " << _expr.coeff(*it,i) << endl;
+                 isLinear = !is_a<numeric>(_expr.coeff(*it,i)) ? false : true;
+             }
+         }
+         
+         return isLinear;
      }
 }

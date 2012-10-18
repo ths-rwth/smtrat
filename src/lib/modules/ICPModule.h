@@ -38,12 +38,24 @@ namespace smtrat
     class ICPModule:
         public Module
     {
+        public:
+            /**
+             * Typedefs:
+             */
+            typedef std::map<const Constraint*,bool> ActiveTable;
+          
         private:
             /**
              * Members:
              */
             
             DerivativeTable mTableau;
+            ActiveTable mActiveConstraints;
+            std::set<ex,ex_is_less> mLinearConstraints;
+            std::set<symbol,ex_is_less> mSlackVariables;
+            std::set<ex,ex_is_less> mNonlinearConstraints;
+            std::set<symbol,ex_is_less> mNonlinearVariables;
+            
         public:
             /**
              * Constructors:
@@ -65,6 +77,8 @@ namespace smtrat
             /**
              * Methods:
              */
+            std::pair<const Constraint*,symbol> chooseConstraint(ActiveTable::iterator _it);
+            bool isLinear(const ex& _expr);
     };
 }//namespace smtrat
 

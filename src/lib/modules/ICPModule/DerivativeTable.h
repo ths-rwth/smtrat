@@ -29,6 +29,8 @@
 #ifndef DERIVATIVETABLE_H
 #define	DERIVATIVETABLE_H
 
+#include <tuple>
+
 namespace smtrat
 {
     class DerivativeTable{
@@ -36,7 +38,7 @@ namespace smtrat
             /**
              * Typedefs:
              */
-            typedef std::map<std::pair<GiNaC::ex,GiNaC::symbol>, GiNaC::ex> Table;
+            typedef std::map<std::pair<GiNaC::ex,GiNaC::symbol>, GiNaC::ex > Table;
     
         private:
             /**
@@ -60,12 +62,23 @@ namespace smtrat
             /**
              * Functions:
              */
-            void addEntry(std::pair<GiNaC::ex,GiNaC::symbol> key, GiNaC::ex value){
-                mTable[key] = value;
+            void addEntry(const std::pair<GiNaC::ex,GiNaC::symbol>& _key, const GiNaC::ex& _value){
+                mTable[_key] = _value;
             }
             
-            GiNaC::ex getEntry(std::pair<GiNaC::ex,GiNaC::symbol> key){
-                return mTable[key];
+            GiNaC::ex getEntry(const std::pair<GiNaC::ex,GiNaC::symbol>& _key){
+                return mTable[_key];
+            }
+            
+            bool contains(const GiNaC::ex& _constraint){
+                bool contains = false;
+                Table::iterator it;
+                for(it = mTable.begin(); it != mTable.end();it++){
+                    if (it->first.first == _constraint.lhs()){
+                        contains = true;
+                    }
+                }
+                return contains;
             }
             
         private:
