@@ -35,10 +35,15 @@ namespace smtrat{
     /**
      * Constructor
      */
-    
+    ICPModule::ICPModule( Manager* const _tsManager, const Formula* const _formula ):
+        Module( _tsManager, _formula )
+    {
+        this->mModuleType = MT_ICPModule;
+    }
     /**
      * Destructor:
      */
+    ICPModule::~ICPModule(){}
     
      bool ICPModule::inform( const Constraint* const _constraint){
          GiNaC::ex constr = GiNaC::ex(_constraint->lhs());

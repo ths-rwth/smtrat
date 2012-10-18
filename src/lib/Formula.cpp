@@ -552,6 +552,11 @@ namespace smtrat
                 mPropositions |= PROP_CANNOT_BE_SOLVED_BY_FOURIERMOTZKINSIMPLIFIER;
                 break;
             }
+            case MT_ICPModule:
+            {
+                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_ICPMODULE;
+                break;
+            }
             default:
             {
             }

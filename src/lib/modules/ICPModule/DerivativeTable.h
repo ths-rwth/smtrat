@@ -55,7 +55,7 @@ namespace smtrat
             /**
             * Destructor:
             */
-            ~DerivativeTable();
+            ~DerivativeTable(){};
             
             /**
              * Functions:

@@ -31,6 +31,7 @@
 
 #include "../Module.h"
 #include "ICPModule/DerivativeTable.h"
+#include "ginacra/ginacra.h"
 
 namespace smtrat
 {
@@ -47,7 +48,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            ICPModule();
+            ICPModule(Manager* const _tsManager, const Formula* const _formula);
             
             /**
             * Destructor:
