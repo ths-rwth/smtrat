@@ -97,8 +97,8 @@ namespace smtrat
              * Constructors:
              */
             Constraint();
-            Constraint( const GiNaC::ex&, const Constraint_Relation, unsigned = 0 );
-            Constraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation&, unsigned = 0 );
+            Constraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab&, unsigned = 0 );
+            Constraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation&, const GiNaC::symtab&, unsigned = 0 );
             Constraint( const Constraint& );
 
             /*

@@ -349,7 +349,7 @@ namespace smtrat
                             getOrigins( *subformulaB, originsB );
 
                             vec_set_const_pFormula originsAB = merge( originsA, originsB );
-                            addSubformulaToPassedFormula( new Formula( Formula::newConstraint( constraintB->lhs(), rel ) ), originsAB );
+                            addSubformulaToPassedFormula( new Formula( Formula::newConstraint( constraintB->lhs(), rel, constraintB->variables() ) ), originsAB );
 
                             /*
                              * Remove condA from the set of redundant constraints, if it is insight.

@@ -491,7 +491,7 @@ namespace smtrat
         for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
         {
             (*module)->updateDeductions();
-            
+
             while( !(*module)->deductions().empty() )
             {
                 addDeduction( (*module)->rDeductions().back() );
@@ -759,10 +759,6 @@ namespace smtrat
             case MT_SingleVSModule:
             {
                 return "SingleVSModule";
-            }
-            case MT_FourierMotzkinSimplifier:
-            {
-                return "FourierMotzkinSimplifier";
             }
             case MT_ICPModule:
             {

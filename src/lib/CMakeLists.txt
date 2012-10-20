@@ -54,7 +54,6 @@ set(lib_modules_headers
     modules/PreProModule.h
     modules/CNFerModule.h
     modules/SingleVSModule.h
-    modules/FourierMotzkinSimplifier.h
     modules/ICPModule.h
 )
 set(lib_modules_src
@@ -65,7 +64,6 @@ set(lib_modules_src
     modules/PreProModule.cpp
     modules/CNFerModule.cpp
     modules/SingleVSModule.cpp
-    modules/FourierMotzkinSimplifier.cpp
     modules/ICPModule.cpp
 )
 
@@ -136,7 +134,7 @@ set(lib_ICPModule_headers
     modules/ICPModule/DerivativeTable.h
 )
 set(lib_ICPModule_src
-    
+
 )
 
 # Nullstellensatz module variables

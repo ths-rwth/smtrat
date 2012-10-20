@@ -27,6 +27,10 @@
  * @version 2011-12-05
  */
 
+#include <ginacra/FloatInterval.h>
+#include <cmath>
+#include <float.h>
+
 #include "State.h"
 #include "../../Module.h"
 
@@ -40,6 +44,9 @@ namespace vs
 {
     using namespace std;
     using namespace GiNaC;
+    #ifdef VS_USE_VARIABLE_BOUNDS
+    using namespace GiNaCRA;
+    #endif
 
     /**
      * Constructors:
@@ -53,7 +60,6 @@ namespace vs
         mRoot( true ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
-        mTestCandViolatesBounds( false ),
         mToHighDegree( false ),
         mTryToRefreshIndex( false ),
         mID( 0 ),
@@ -68,10 +74,10 @@ namespace vs
         mpConditions( new ConditionVector() ),
         mpConflictSets( new ConflictSets() ),
         mpChildren( new StateVector() )
-    #ifdef VS_USE_VARIABLE_BOUNDS
+        #ifdef VS_USE_VARIABLE_BOUNDS
         ,
         mVariableBounds()
-    #endif
+        #endif
     {
     }
 
@@ -84,7 +90,6 @@ namespace vs
         mRoot( false ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
-        mTestCandViolatesBounds( false ),
         mToHighDegree( false ),
         mTryToRefreshIndex( false ),
         mID( 0 ),
@@ -111,38 +116,25 @@ namespace vs
      */
     State::~State()
     {
+        delete mpConflictSets;
         while( !children().empty() )
         {
-            State*& rpChild = rChildren().back();
+            State* rpChild = rChildren().back();
             rChildren().pop_back();
             delete rpChild;
         }
         delete mpChildren;
-        delete mpConflictSets;
-        if( !isRoot() )
-        {
-            ConflictSets::iterator conflictSet = rFather().rConflictSets().find( mpSubstitution );
-            if( conflictSet != father().conflictSets().end() )
-            {
-                rFather().rConflictSets().erase( conflictSet );
-            }
-            for( StateVector::iterator child = mpFather->rChildren().begin(); child != mpFather->children().end(); ++child )
-            {
-                if( *child == this )
-                {
-                    mpFather->rChildren().erase( child );
-                    break;
-                }
-            }
-        }
         while( !conditions().empty() )
         {
-            Condition*& rpCond = rConditions().back();
+            const Condition* pCond = rConditions().back();
             rConditions().pop_back();
-            delete rpCond;
+            #ifdef VS_USE_VARIABLE_BOUNDS
+            mVariableBounds.removeBound( pCond->pConstraint(), pCond );
+            #endif
+            delete pCond;
         }
         delete mpConditions;
-        delete mpSubstitution;
+        if( mpSubstitution != NULL ) delete mpSubstitution;
         delete mpIndex;
         if( mpSubstitutionResults != NULL )
         {
@@ -152,7 +144,7 @@ namespace vs
                 {
                     while( !(*mpSubstitutionResults).back().back().first.empty() )
                     {
-                        Condition*& rpCond = (*mpSubstitutionResults).back().back().first.back();
+                        const Condition* rpCond = (*mpSubstitutionResults).back().back().first.back();
                         (*mpSubstitutionResults).back().back().first.pop_back();
                         delete rpCond;
                     }
@@ -430,7 +422,7 @@ namespace vs
      * @return true     ,if it has a condition and a variable in it to generate test candidates for;
      *         false    ,otherwise.
      */
-    bool State::bestCondition( Condition*& _bestCondition, const unsigned _numberOfAllVariables )
+    bool State::bestCondition( const Condition*& _bestCondition, const unsigned _numberOfAllVariables )
     {
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
@@ -659,27 +651,28 @@ namespace vs
         #endif
         if( _conditionVectorToSimplify.size() > 1 )
         {
-            set<Condition*>           redundantConditionSet = set<Condition*>();
-            ConditionVector::iterator cond1                 = _conditionVectorToSimplify.begin();
-
+            set<const Condition*> redundantConditionSet = set<const Condition*>();
+            unsigned posA = 0;
+            unsigned posB = 0;
             /*
              * Check all condition combinations.
              */
-            while( cond1 != _conditionVectorToSimplify.end() )
+            while( posA < _conditionVectorToSimplify.size() )
             {
-                ConditionVector::iterator cond2 = cond1;
-                ++cond2;
-                while( cond2 != _conditionVectorToSimplify.end() )
+                posB = posA + 1;
+                while( posB < _conditionVectorToSimplify.size() )
                 {
+                    const Condition* condA = _conditionVectorToSimplify[posA];
+                    const Condition* condB = _conditionVectorToSimplify[posB];
                     //cout << "### Compare: " << endl;
                     //cout << "###         ";
-                    //(**cond1).print( cout );
+                    //condA->print( cout );
                     //cout << endl;
                     //cout << "###         ";
-                    //(**cond2).print( cout );
+                    //condB->print( cout );
                     //cout << endl;
                     //cout << "### Results in:   ";
-                    signed strongProp = smtrat::Constraint::compare( (**cond1).constraint(), (**cond2).constraint() );
+                    signed strongProp = smtrat::Constraint::compare( condA->constraint(), condB->constraint() );
                     //cout << strongProp << endl;
 
                     /*
@@ -690,24 +683,24 @@ namespace vs
                         /*
                          * Choose original conditions.
                          */
-                        if( !(**cond1).originalConditions().empty() &&!(**cond2).originalConditions().empty() )
+                        if( !condA->originalConditions().empty() &&!condB->originalConditions().empty() )
                         {
                             /*
                              * If we have to choose which original conditions to take,
                              * choose those, which have been created earlier.
                              */
-                            if( (**cond2).valuation() < (**cond1).valuation() )
+                            if( condB->valuation() < condA->valuation() )
                             {
-                                (**cond1).rOriginalConditions() = ConditionSet( (**cond2).originalConditions() );
-                                (**cond1).rValuation()          = (**cond2).valuation();
+                                *condA->pOriginalConditions() = ConditionSet( condB->originalConditions() );
+                                condA->rValuation()          = condB->valuation();
                             }
                         }
                         else
                         {
-                            (**cond1).rOriginalConditions().insert( (**cond2).originalConditions().begin(), (**cond2).originalConditions().end() );
+                            condA->pOriginalConditions()->insert( condB->originalConditions().begin(), condB->originalConditions().end() );
                         }
 
-                        redundantConditionSet.insert( *cond2 );
+                        redundantConditionSet.insert( condB );
 
                     }
 
@@ -716,7 +709,7 @@ namespace vs
                      */
                     else if( strongProp == 1 )
                     {
-                        redundantConditionSet.insert( *cond2 );
+                        redundantConditionSet.insert( condB );
                     }
 
                     /*
@@ -725,37 +718,39 @@ namespace vs
                      */
                     else if( strongProp == -3 )
                     {
-                        if( ((**cond1).constraint().relation() == smtrat::CR_GEQ && (**cond2).constraint().relation() == smtrat::CR_GEQ)
-                                || ((**cond1).constraint().relation() == smtrat::CR_GEQ && (**cond2).constraint().relation() == smtrat::CR_LEQ)
-                                || ((**cond1).constraint().relation() == smtrat::CR_LEQ && (**cond2).constraint().relation() == smtrat::CR_GEQ)
-                                || ((**cond1).constraint().relation() == smtrat::CR_LEQ && (**cond2).constraint().relation() == smtrat::CR_LEQ) )
+                        if( (condA->constraint().relation() == smtrat::CR_GEQ && condB->constraint().relation() == smtrat::CR_GEQ)
+                                || (condA->constraint().relation() == smtrat::CR_GEQ && condB->constraint().relation() == smtrat::CR_LEQ)
+                                || (condA->constraint().relation() == smtrat::CR_LEQ && condB->constraint().relation() == smtrat::CR_GEQ)
+                                || (condA->constraint().relation() == smtrat::CR_LEQ && condB->constraint().relation() == smtrat::CR_LEQ) )
                         {
-                            (**cond2).changeRelationTo( smtrat::CR_EQ );
-                            (**cond2).rRecentlyAdded()          = true;
+                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condB->constraint().lhs(), smtrat::CR_EQ, condB->constraint().variables() ), condB->flag(), condB->originalConditions(),  condB->valuation(), true );
+                            cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
+                            redundantConditionSet.insert( condA );
+                            redundantConditionSet.insert( condB );
+                            _conditionVectorToSimplify.push_back( cond );
                         }
-                        else if( ((**cond1).constraint().relation() == smtrat::CR_NEQ && (**cond2).constraint().relation() == smtrat::CR_GEQ)
-                                 || ((**cond1).constraint().relation() == smtrat::CR_GEQ && (**cond2).constraint().relation() == smtrat::CR_NEQ) )
+                        else if( (condA->constraint().relation() == smtrat::CR_NEQ && condB->constraint().relation() == smtrat::CR_GEQ)
+                                 || (condA->constraint().relation() == smtrat::CR_GEQ && condB->constraint().relation() == smtrat::CR_NEQ) )
                         {
-                            (**cond2).changeRelationTo( smtrat::CR_GREATER );
-                            (**cond2).rRecentlyAdded()          = true;
+                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condB->constraint().lhs(), smtrat::CR_GREATER, condB->constraint().variables() ), condB->flag(), condB->originalConditions(),  condB->valuation(), true );
+                            cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
+                            redundantConditionSet.insert( condA );
+                            redundantConditionSet.insert( condB );
+                            _conditionVectorToSimplify.push_back( cond );
                         }
-                        else if( ((**cond1).constraint().relation() == smtrat::CR_NEQ && (**cond2).constraint().relation() == smtrat::CR_LEQ)
-                                 || ((**cond1).constraint().relation() == smtrat::CR_LEQ && (**cond2).constraint().relation() == smtrat::CR_NEQ) )
+                        else if( (condA->constraint().relation() == smtrat::CR_NEQ && condB->constraint().relation() == smtrat::CR_LEQ)
+                                 || (condA->constraint().relation() == smtrat::CR_LEQ && condB->constraint().relation() == smtrat::CR_NEQ) )
                         {
-                            (**cond2).changeRelationTo( smtrat::CR_LESS );
-                            (**cond2).rRecentlyAdded()          = true;
+                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condB->constraint().lhs(), smtrat::CR_LESS, condB->constraint().variables() ), condB->flag(), condB->originalConditions(),  condB->valuation(), true );
+                            cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
+                            redundantConditionSet.insert( condA );
+                            redundantConditionSet.insert( condB );
+                            _conditionVectorToSimplify.push_back( cond );
                         }
                         else
                         {
                             assert( false );
                         }
-                        (**cond2).rOriginalConditions().insert( (**cond1).originalConditions().begin(), (**cond1).originalConditions().end() );
-
-                        /*
-                         * Remove cond2 from the set of redundant conditions, if it is insight
-                         */
-                        redundantConditionSet.erase( *cond2 );
-                        redundantConditionSet.insert( *cond1 );
                     }
 
                     /*
@@ -763,7 +758,7 @@ namespace vs
                      */
                     else if( strongProp == -1 )
                     {
-                        redundantConditionSet.insert( *cond1 );
+                        redundantConditionSet.insert( condA );
                     }
 
                     /*
@@ -773,8 +768,8 @@ namespace vs
                     {
                         ConditionSet condSet = ConditionSet();
 
-                        condSet.insert( *cond1 );
-                        condSet.insert( *cond2 );
+                        condSet.insert( condA );
+                        condSet.insert( condB );
 
                         _conflictSet.insert( condSet );
                     }
@@ -794,9 +789,9 @@ namespace vs
                     //}
                     //cout << endl;
 
-                    ++cond2;
+                    ++posB;
                 }
-                ++cond1;
+                ++posA;
             }
 
             /*
@@ -822,7 +817,7 @@ namespace vs
             {
                 if( redundantConditionSet.find( *cond ) != redundantConditionSet.end() )
                 {
-                    Condition* pCond = *cond;
+                    const Condition* pCond = *cond;
                     cond = _conditionVectorToSimplify.erase( cond );
                     delete pCond;
                 }
@@ -832,7 +827,7 @@ namespace vs
                 }
             }
             //cout << "Redundant conditions:" << endl;
-            for( set<Condition*>::iterator redundantCond = redundantConditionSet.begin(); redundantCond != redundantConditionSet.end();
+            for( set<const Condition*>::iterator redundantCond = redundantConditionSet.begin(); redundantCond != redundantConditionSet.end();
                     ++redundantCond )
             {
                 _redundantConditions.push_back( *redundantCond );
@@ -959,6 +954,20 @@ namespace vs
             ConditionSetSetSet condSetSetSet = ConditionSetSetSet();
             condSetSetSet.insert( _condSetSet );
             mpConflictSets->insert( pair<const Substitution* const , ConditionSetSetSet>( _substitution, condSetSetSet ) );
+        }
+    }
+
+    void State::resetConflictSets()
+    {
+        if( !mpConflictSets->empty() )
+        {
+
+            auto conflictSet = mpConflictSets->begin();
+            if( conflictSet->first == NULL )
+            {
+                ++conflictSet;
+            }
+            mpConflictSets->erase( conflictSet, mpConflictSets->end() );
         }
     }
 
@@ -1320,15 +1329,15 @@ namespace vs
                              */
                             if( (**newCond).valuation() < (**cond).valuation() )
                             {
-                                (**cond).rOriginalConditions() = ConditionSet( (**newCond).originalConditions() );
+                                *(**cond).pOriginalConditions() = ConditionSet( (**newCond).originalConditions() );
                                 (**cond).rValuation()          = (**newCond).valuation();
                             }
                         }
                         else
                         {
-                            (**cond).rOriginalConditions().insert( (**newCond).originalConditions().begin(), (**newCond).originalConditions().end() );
+                            (**cond).pOriginalConditions()->insert( (**newCond).originalConditions().begin(), (**newCond).originalConditions().end() );
                         }
-                        Condition* pCond = *newCond;
+                        const Condition* pCond = *newCond;
                         newCombination.erase( newCond );
                         delete pCond;
                         condOccursInNewConds = true;
@@ -1373,7 +1382,7 @@ namespace vs
             }
             while( !newCombination.empty() )
             {
-                Condition*& rpCond = newCombination.back();
+                const Condition*& rpCond = newCombination.back();
                 newCombination.pop_back();
                 delete rpCond;
             }
@@ -1691,7 +1700,14 @@ namespace vs
                     {
                         constraintWithFinitlyManySolutionCandidatesInIndexExists = true;
                     }
-                    delete *child;
+                    ConflictSets::iterator conflictSet = rConflictSets().find( (**child).pSubstitution() );
+                    if( conflictSet != conflictSets().end() )
+                    {
+                        rConflictSets().erase( conflictSet );
+                    }
+                    State* toDelete = *child;
+                    child = rChildren().erase( child );
+                    delete toDelete;
                 }
                 else
                 {
@@ -1713,7 +1729,7 @@ namespace vs
                                 while( cond != condConj->first.end() )
                                 {
                                     bool                   oCondsDeleted = false;
-                                    ConditionSet::iterator oCond         = (**cond).rOriginalConditions().begin();
+                                    ConditionSet::iterator oCond         = (**cond).pOriginalConditions()->begin();
                                     while( oCond != (**cond).originalConditions().end() )
                                     {
                                         ConditionVector::const_iterator condToDel = _conditionsToDelete.begin();
@@ -1727,7 +1743,7 @@ namespace vs
                                         }
                                         if( condToDel != _conditionsToDelete.end() )
                                         {
-                                            (**cond).rOriginalConditions().erase( oCond++ );
+                                            (**cond).pOriginalConditions()->erase( oCond++ );
                                             oCondsDeleted = true;
                                         }
                                         else
@@ -1737,7 +1753,7 @@ namespace vs
                                     }
                                     if( oCondsDeleted )
                                     {
-                                        oCond = (**cond).rOriginalConditions().begin();
+                                        oCond = (**cond).pOriginalConditions()->begin();
                                         while( oCond != (**cond).originalConditions().end() )
                                         {
                                             ConditionSet oConds = ConditionSet();
@@ -1745,7 +1761,7 @@ namespace vs
                                             conditionsToAdd.push_back( new Condition( (**oCond).pConstraint(), false, oConds, (**cond).valuation() ) );
                                             ++oCond;
                                         }
-                                        Condition* rpCond = *cond;
+                                        const Condition* rpCond = *cond;
                                         cond             = condConj->first.erase( cond );
                                         condConj->second = false;
                                         delete rpCond;
@@ -1845,7 +1861,7 @@ namespace vs
                     for( ConditionVector::iterator cond = (**child).rConditions().begin(); cond != (**child).conditions().end(); ++cond )
                     {
                         bool                   originalConditionDeleted = false;
-                        ConditionSet::iterator oCond                    = (**cond).rOriginalConditions().begin();
+                        ConditionSet::iterator oCond                    = (**cond).pOriginalConditions()->begin();
                         while( oCond != (**cond).originalConditions().end() )
                         {
                             ConditionVector::const_iterator condToDel = _conditionsToDelete.begin();
@@ -2011,8 +2027,6 @@ namespace vs
                     {
                         #ifdef VS_USE_VARIABLE_BOUNDS
                         mVariableBounds.removeBound( (*cond)->pConstraint(), *cond );
-                        // TODO: Activate all children, which has been deactivated by reason of the test candidate
-                        // conflicting the variable bounds.
                         #endif
                         rConditions().erase( cond );
                         conditionDeleted = true;
@@ -2048,28 +2062,23 @@ namespace vs
      *                              element of a substitution.
      * @param _substitutionType     The type of the substitution we create.
      *
-     * @return True, if a state was sucessfully added.
+     * @return True, if a state was successfully added.
      */
-    bool State::addChild( const string& _eliminationVar, const Substitution_Type& _substitutionType, const ConditionSet& _oConditions )
+    bool State::addChild( const string& _eliminationVar, const ex& _elimVarAsEx, const Substitution_Type& _substitutionType, const ConditionSet& _oConditions )
     {
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
         #endif
-        Substitution * sub;
-        sub = new Substitution( _eliminationVar, _substitutionType, _oConditions );
-
-        if( !updateOCondsOfSubstitutions( *sub ) )
+        Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, _substitutionType, _oConditions );
+        if( !updateOCondsOfSubstitutions( sub ) )
         {
-            State * dt;
-            dt = new State( this, *sub );
+            State * dt = new State( this, sub );
             (*dt).updateValuation();
             rChildren().push_back( dt );
-            delete sub;
             return true;
         }
         else
         {
-            delete sub;
             return false;
         }
     }
@@ -2088,33 +2097,32 @@ namespace vs
      * @param _subTermDenom         The denominator of the term to which the variable is mapped.
      * @param _substitutionType     The type of the substitution we create.
      *
-     * @return True, if a state was sucessfully added.
+     * @return True, if a state was successfully added.
      */
     bool State::addChild( const ex& _lhsCondition,
                           const smtrat::Constraint_Relation& _relationCondition,
                           const string& _eliminationVar,
+                          const ex& _elimVarAsEx,
                           const ex& _subTermConstPart,
                           const ex& _subTermFactor,
                           const ex& _subTermDenom,
                           const ex& _subTermRadicand,
                           const Substitution_Type& _substitutionType,
+                          const symtab& _variables,
                           const ConditionSet& _oConditions )
     {
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
         #endif
-        const smtrat::Constraint * cons = smtrat::Formula::newConstraint( _lhsCondition, _relationCondition );
+        const smtrat::Constraint * cons = smtrat::Formula::newConstraint( _lhsCondition, _relationCondition, _variables );
         unsigned isConsConsistent = (*cons).isConsistent();
         if( isConsConsistent != 0 )
         {
-            SqrtEx * sqEx;
-            sqEx = new SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand );
-            Substitution * sub;
-            sub = new Substitution( _eliminationVar, *sqEx, _substitutionType, _oConditions );
-            if( !updateOCondsOfSubstitutions( *sub ) )
+            SqrtEx sqEx = SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand, _variables );
+            Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, sqEx, _substitutionType, _oConditions );
+            if( !updateOCondsOfSubstitutions( sub ) )
             {
-                State* state = new State( this, *sub );
-
+                State* state = new State( this, sub );
                 if( isConsConsistent != 1 )
                 {
                     std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
@@ -2128,14 +2136,10 @@ namespace vs
                 }
                 (*state).updateValuation();
                 rChildren().push_back( state );
-                delete sqEx;
-                delete sub;
                 return true;
             }
             else
             {
-                delete sqEx;
-                delete sub;
                 return false;
             }
         }
@@ -2170,33 +2174,31 @@ namespace vs
                           const ex& _lhsCondition2,
                           const smtrat::Constraint_Relation& _relationCondition2,
                           const string& _eliminationVar,
+                          const ex& _elimVarAsEx,
                           const ex& _subTermConstPart,
                           const ex& _subTermFactor,
                           const ex& _subTermDenom,
                           const ex& _subTermRadicand,
                           const Substitution_Type& _substitutionType,
+                          const symtab& _variables,
                           const ConditionSet& _oConditions )
     {
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
         #endif
-        const smtrat::Constraint* cons1 = smtrat::Formula::newConstraint( _lhsCondition1, _relationCondition1 );
+        const smtrat::Constraint* cons1 = smtrat::Formula::newConstraint( _lhsCondition1, _relationCondition1, _variables );
         unsigned isCons1Consistent = (*cons1).isConsistent();
         if( isCons1Consistent != 0 )
         {
-            const smtrat::Constraint* cons2 = smtrat::Formula::newConstraint( _lhsCondition2, _relationCondition2 );
+            const smtrat::Constraint* cons2 = smtrat::Formula::newConstraint( _lhsCondition2, _relationCondition2, _variables );
             unsigned isCons2Consistent = (*cons2).isConsistent();
             if( isCons2Consistent != 0 )
             {
-                SqrtEx * sqEx;
-                sqEx = new SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand );
-                Substitution * sub;
-                sub = new Substitution( _eliminationVar, *sqEx, _substitutionType, _oConditions );
-                if( !updateOCondsOfSubstitutions( *sub ) )
+                SqrtEx sqEx = SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand, _variables );
+                Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, sqEx, _substitutionType, _oConditions );
+                if( !updateOCondsOfSubstitutions( sub ) )
                 {
-                    State * state;
-                    state = new State( this, *sub );
-
+                    State* state = new State( this, sub );
                     std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
                     subResults.push_back( DisjunctionOfConditionConjunctions() );
                     subResults.back().push_back( ConditionVector() );
@@ -2216,14 +2218,10 @@ namespace vs
                     }
                     state->updateValuation();
                     rChildren().push_back( state );
-                    delete sqEx;
-                    delete sub;
                     return true;
                 }
                 else
                 {
-                    delete sqEx;
-                    delete sub;
                     return false;
                 }
             }
@@ -2408,17 +2406,22 @@ namespace vs
         /*
          * Delete all children, the conflict sets and the conditions of this state.
          */
+        mpConflictSets->clear();
         while( !children().empty() )
         {
-            delete rChildren().back();
+            State* toDelete = rChildren().back();
+            rChildren().pop_back();
+            delete toDelete;
         }
-        rConflictSets().clear();
 
         while( !conditions().empty() )
         {
-            Condition* rpCond = rConditions().back();
+            const Condition* pCond = rConditions().back();
             rConditions().pop_back();
-            delete rpCond;
+            #ifdef VS_USE_VARIABLE_BOUNDS
+            mVariableBounds.removeBound( pCond->pConstraint(), pCond );
+            #endif
+            delete pCond;
         }
 
         /*
@@ -2439,62 +2442,166 @@ namespace vs
         }
     }
 
+    #ifdef VS_USE_VARIABLE_BOUNDS
+//    #define VS_VB_DEBUG
     /**
      *
      * @return
      */
     bool State::checkTestCandidatesForBounds()
     {
+        if( variableBounds().isConflicting() )
+        {
+            #ifdef VS_VB_DEBUG
+            cout << "case 1" << endl;
+            printAlone();
+            #endif
+            set< const Condition* > conflictingBounds = variableBounds().getConflict();
+            ConditionSet conflict = ConditionSet();
+            conflict.insert( conflictingBounds.begin(), conflictingBounds.end() );
+            ConditionSetSet conflicts = ConditionSetSet();
+            conflicts.insert( conflict );
+            addConflictSet( NULL, conflicts );
+            #ifdef VS_VB_DEBUG
+            printAlone( ">>>>    ", cout );
+            #endif
+            if( !isRoot() ) passConflictToFather();
+            #ifdef VS_VB_DEBUG
+            father().printAlone( ">>>>    ", cout );
+            #endif
+            return false;
+        }
         if( !isRoot() )
         {
-//            for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
-//            {
-//                GiNaCRA::Interval solutionSpace = GiNaCRA::Interval::evaluate( (*cond)->constraint().lhs(), mVariableBounds.getEvalIntervalMap() );
-//
-//                switch( (*cond)->constraint().relation() )
-//                {
-//                    case smtrat::CR_EQ:
-//                    {
-//                        if( !solutionSpace.contains( 0 ) )
-//                        {
-//                            return false;
-//                        }
-//                        break;
-//                    }
-//                    case smtrat::CR_LEQ:
-//                    {
-//                        if( !solutionSpace.contains( 0 ) )
-//                        {
-//                            return false;
-//                        }
-//                        return true;
-//                    }
-//                    case smtrat::CR_GEQ:
-//                    {
-//                        return true;
-//                    }
-//                    case smtrat::CR_LESS:
-//                    {
-//                        return true;
-//                    }
-//                    case smtrat::CR_GREATER:
-//                    {
-//                        return true;
-//                    }
-//                    case smtrat::CR_NEQ:
-//                    {
-//                        return true;
-//                    }
-//                    default:
-//                    {
-//                        cerr << "Unknown relation symbol!" << endl;
-//                        assert( false );
-//                    }
-//                }
-//            }
+            if( substitution().type() == ST_MINUS_INFINITY )
+            {
+                if( rFather().rVariableBounds().getFloatInterval( substitution().varAsEx() ).leftType() != FloatInterval::INFINITY_BOUND )
+                {
+                    set< const Condition* > conflictingBounds = father().variableBounds().getOriginsOfBounds( ex_to<symbol>( substitution().varAsEx() ) );
+                    ConditionSet conflict = ConditionSet();
+                    conflict.insert( conflictingBounds.begin(), conflictingBounds.end() );
+                    ConditionSetSet conflicts = ConditionSetSet();
+                    conflicts.insert( conflict );
+                    pFather()->addConflictSet( pSubstitution(), conflicts );
+                    #ifdef VS_VB_DEBUG
+                    father().printAlone( ">>>>    ", cout );
+                    #endif
+                    return false;
+                }
+            }
+            else
+            {
+                #ifdef VS_VB_DEBUG
+                cout << "case 2" << endl;
+                printAlone();
+                cout << substitution().term().expression() << "  substituted by " << endl;
+                father().variableBounds().print( cout, "          " );
+                cout << endl;
+                #endif
+                FloatInterval solutionSpaceConst = FloatInterval::evaluate( substitution().term().constantPart(), rFather().rVariableBounds().getIntervalMap() );
+                FloatInterval solutionSpaceFactor = FloatInterval::evaluate( substitution().term().factor(), rFather().rVariableBounds().getIntervalMap() );
+                FloatInterval solutionSpaceRadicand = FloatInterval::evaluate( substitution().term().radicand(), rFather().rVariableBounds().getIntervalMap() );
+                if( solutionSpaceRadicand.left() < 0 )
+                {
+                    solutionSpaceRadicand.setLeftType( FloatInterval::WEAK_BOUND );
+                    solutionSpaceRadicand.setLeft( 0 );
+                }
+                if( solutionSpaceRadicand.right() > 0 && solutionSpaceRadicand.leftType() != FloatInterval::INFINITY_BOUND )
+                {
+                    solutionSpaceRadicand.setRight( sqrt( solutionSpaceRadicand.right() ) + DBL_MIN );
+                }
+                FloatInterval solutionSpaceDenom = FloatInterval::evaluate( substitution().term().denominator(), rFather().rVariableBounds().getIntervalMap() );
+                FloatInterval solutionSpace = solutionSpaceFactor * solutionSpaceRadicand;
+                solutionSpace = solutionSpace + solutionSpaceConst;
+                FloatInterval divisionResultA;
+                FloatInterval divisionResultB;
+                if( solutionSpace.div_ext( divisionResultA, divisionResultB, solutionSpaceDenom ) )
+                {
+                    #ifdef VS_VB_DEBUG
+                    cout << " results in   ";
+                    divisionResultA.dbgprint();
+                    cout << "  and  ";
+                    divisionResultB.dbgprint();
+                    cout << endl;
+                    cout << endl << "intersect first interval with  ";
+                    FloatInterval variableDomain = rFather().rVariableBounds().getFloatInterval( substitution().varAsEx() );
+                    variableDomain.dbgprint();
+                    cout << endl;
+                    #endif
+                    if( substitution().type() == ST_PLUS_EPSILON ) divisionResultA.setLeftType( FloatInterval::STRICT_BOUND );
+                    solutionSpace = divisionResultA.intersect( rFather().rVariableBounds().getFloatInterval( substitution().varAsEx() ) );
+                    #ifdef VS_VB_DEBUG
+                    cout << " results in   ";
+                    solutionSpace.dbgprint();
+                    cout << endl;
+                    #endif
+                    if( solutionSpace.empty() )
+                    {
+                        #ifdef VS_VB_DEBUG
+                        cout << endl << "intersect first interval with  ";
+                        FloatInterval variableDomain = rFather().rVariableBounds().getFloatInterval( substitution().varAsEx() );
+                        variableDomain.dbgprint();
+                        cout << endl;
+                        #endif
+                        if( substitution().type() == ST_PLUS_EPSILON ) divisionResultB.setLeftType( FloatInterval::STRICT_BOUND );
+                        solutionSpace = divisionResultB.intersect( rFather().rVariableBounds().getFloatInterval( substitution().varAsEx() ) );
+                        #ifdef VS_VB_DEBUG
+                        cout << " results in   ";
+                        solutionSpace.dbgprint();
+                        cout << endl;
+                        #endif
+                        if( solutionSpace.empty() )
+                        {
+                            set< const Condition* > conflictingBounds = father().variableBounds().getOriginsOfBounds( substitution().termVariables() );
+                            ConditionSet conflict = ConditionSet();
+                            conflict.insert( conflictingBounds.begin(), conflictingBounds.end() );
+                            ConditionSetSet conflicts = ConditionSetSet();
+                            conflicts.insert( conflict );
+                            pFather()->addConflictSet( pSubstitution(), conflicts );
+                            #ifdef VS_VB_DEBUG
+                            father().printAlone( ">>>>    ", cout );
+                            #endif
+                            return false;
+                        }
+                    }
+                }
+                else
+                {
+                    #ifdef VS_VB_DEBUG
+                    cout << " results in   ";
+                    divisionResultA.dbgprint();
+                    cout << endl;
+                    cout << endl << "intersect with  ";
+                    FloatInterval variableDomain = rFather().rVariableBounds().getFloatInterval( substitution().varAsEx() );
+                    variableDomain.dbgprint();
+                    cout << endl;
+                    #endif
+                    if( substitution().type() == ST_PLUS_EPSILON ) divisionResultA.setLeftType( FloatInterval::STRICT_BOUND );
+                    solutionSpace = divisionResultA.intersect( rFather().rVariableBounds().getFloatInterval( substitution().varAsEx() ) );
+                    #ifdef VS_VB_DEBUG
+                    cout << " results in   ";
+                    solutionSpace.dbgprint();
+                    cout << endl;
+                    #endif
+                    if( solutionSpace.empty() )
+                    {
+                        set< const Condition* > conflictingBounds = father().variableBounds().getOriginsOfBounds( substitution().termVariables() );
+                        ConditionSet conflict = ConditionSet();
+                        conflict.insert( conflictingBounds.begin(), conflictingBounds.end() );
+                        ConditionSetSet conflicts = ConditionSetSet();
+                        conflicts.insert( conflict );
+                        pFather()->addConflictSet( pSubstitution(), conflicts );
+                        #ifdef VS_VB_DEBUG
+                        father().printAlone( ">>>>    ", cout );
+                        #endif
+                        return false;
+                    }
+                }
+            }
         }
         return true;
     }
+    #endif
 
     /**
      * Prints the conditions and the substitution of this state and all its children.
@@ -2626,9 +2733,11 @@ namespace vs
         printSubstitutionResultCombination( _initiation + "   ", _out );
         _out << _initiation << endl;
         printConflictSets( _initiation + "   ", _out );
+        #ifdef VS_USE_VARIABLE_BOUNDS
         _out << _initiation << endl;
         mVariableBounds.print( _out, _initiation );
         _out << endl;
+        #endif
     }
 
     /**

@@ -33,18 +33,18 @@
 #define VS_INCREMENTAL
 //#define VS_BACKTRACKING
 #define VS_INFEASIBLE_SUBSET_GENERATION
-//#define VS_USE_DEDUCTIONS
 
 //#define VS_DELAY_BACKEND_CALL
 #define VS_WITH_BACKEND
 
 //#define VS_DEBUG
-//#define VS_DEBUG_METHODS
+#define VS_STATISTICS
+//#define VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+//#define VS_LOG_INFSUBSETS_OF_BACKEND
 
 #include "VSModule/Substitute.h"
 #include "VSModule/State.h"
 #include "../Module.h"
-#include "../VariableBounds.h"
 
 namespace smtrat
 {
@@ -56,9 +56,10 @@ namespace smtrat
             /*
              * Type and object definitions:
              */
-            struct unsignedIntPairCmp
+            typedef std::pair<unsigned, unsigned> UnsignedPair;
+            struct unsignedPairCmp
             {
-                bool operator ()( std::pair<unsigned, unsigned> n1, std::pair<unsigned, unsigned> n2 ) const
+                bool operator ()( UnsignedPair n1, UnsignedPair n2 ) const
                 {
                     if( n1.first > n2.first )
                     {
@@ -75,24 +76,23 @@ namespace smtrat
                 }
             };
 
-            typedef std::pair<std::pair<unsigned, unsigned>, vs::State*>                    ValStatePair;
-            typedef std::map<std::pair<unsigned, unsigned>, vs::State*, unsignedIntPairCmp> ValuationMap;
-            typedef std::pair<vs::Substitution, vs::StateVector>                            ChildrenGroup;
-            typedef std::vector<ChildrenGroup>                                              ChildrenGroups;
-            typedef std::map<const Constraint* const , vs::Condition*>                      ConstraintConditionMap;
+            typedef std::pair<UnsignedPair, vs::State*>                 ValStatePair;
+            typedef std::map<UnsignedPair, vs::State*, unsignedPairCmp> ValuationMap;
+            typedef std::map<const Constraint* const , vs::Condition*>  ConstraintConditionMap;
 
             /*
              * Attributes:
              */
-            bool                   debug;
-            bool                   debugmethods;
-            bool                   mInconsistentConstraintAdded;
             bool                   mFreshConstraintReceived;
+            bool                   mInconsistentConstraintAdded;
             unsigned               mIDCounter;
+            #ifdef VS_STATISTICS
+            unsigned               mStepCounter;
+            #endif
             vs::State*             mpStateTree;
-            ValuationMap*          mpRanking;
-            ConstraintConditionMap mReceivedConstraintsAsConditions;
             GiNaC::symtab          mAllVariables;
+            ConstraintConditionMap mConstraintConditionMap;
+            ValuationMap           mRanking;
 
         public:
 
@@ -109,16 +109,6 @@ namespace smtrat
             /*
              * Methods:
              */
-            bool& rDebug()
-            {
-                return debug;
-            }
-
-            bool& rDebugMethods()
-            {
-                return debugmethods;
-            }
-
             // Interfaces.
             bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
@@ -127,14 +117,20 @@ namespace smtrat
             // Printing methods.
             void printAll( std::ostream& = std::cout ) const;
             void printRanking( std::ostream& = std::cout ) const;
-            void printRuntimes( std::ostream& = std::cout ) const;
             void printAnswer( std::ostream& = std::cout ) const;
 
         private:
+
+            /*
+             * Some more type definitions.
+             */
+            typedef std::pair<vs::Substitution, vs::StateVector> ChildrenGroup;
+            typedef std::vector<ChildrenGroup>                   ChildrenGroups;
+
             /*
              * Methods:
              */
-            bool eliminate( vs::State*, const std::string&, vs::Condition* );
+            bool eliminate( vs::State*, const std::string&, const vs::Condition* );
             bool substituteAll( vs::State*, vs::ConditionVector& );
             void propagateNewConditions( vs::State* );
             void increaseIDCounter();
@@ -144,16 +140,13 @@ namespace smtrat
             void eraseDTsOfRanking( vs::State& );
             void updateInfeasibleSubset();
             void reset();
-            #ifdef VS_USE_DEDUCTIONS
-            void updateDeductions();
-            std::vector<std::pair<std::string, GiNaC::numeric> > getNumericAssignment( const unsigned = 10 ) const;
-            #endif
             std::vector<std::pair<std::string, std::pair<vs::Substitution_Type, GiNaC::ex> > > getSymbolicAssignment() const;
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
             bool adaptPassedFormula( const vs::State& );
             Answer runBackendSolvers( vs::State* );
-            vec_set_const_pFormula getOriginsOfCondition( const vs::Condition*, const vs::State* ) const;
+            #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
             void checkAnswer() const;
+            #endif
     };
 
 }    // end namespace smtrat

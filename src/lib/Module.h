@@ -34,10 +34,10 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
-#define LOG_ON
-#define LOG_THEORY_CALLS
-#define LOG_INFEASIBLE_SUBSETS
-#define LOG_LEMMATA
+//#define LOG_ON
+//#define LOG_THEORY_CALLS
+//#define LOG_INFEASIBLE_SUBSETS
+//#define LOG_LEMMATA
 
 #include <vector>
 #include <map>
@@ -220,10 +220,7 @@ namespace smtrat
             static void storeAssumptionsToCheck( const Manager&, const std::string = "assumptions_to_check.smt2" );
             static const std::string moduleName( const ModuleType );
             //SMT
-
-
             void storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> &, const std::string= "smaller_muses") const;
-
             std::vector<Formula> generateSubformulaeOfInfeasibleSubset( unsigned infeasiblesubset, unsigned size ) const;
             void updateDeductions();
         protected:

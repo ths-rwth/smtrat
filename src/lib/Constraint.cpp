@@ -52,7 +52,7 @@ namespace smtrat
         normalize( rLhs() );
     }
 
-    Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, unsigned _id ):
+    Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _variables, unsigned _id ):
         pLhs( new ex( _lhs ) ),
         mVariables(),
         mRelation( _cr ),
@@ -63,11 +63,16 @@ namespace smtrat
         {
             mID = 0;
         }
-        getVariables( rLhs(), mVariables );
-        simplify();
+        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+        {
+            if( pLhs->has( var->second ) )
+            {
+                mVariables.insert( *var );
+            }
+        }
     }
 
-    Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, unsigned _id ):
+    Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _variables, unsigned _id ):
         pLhs( new ex( _lhs - _rhs ) ),
         mVariables(),
         mRelation( _cr ),
@@ -78,8 +83,13 @@ namespace smtrat
         {
             mID = 0;
         }
-        getVariables( rLhs(), mVariables );
-        simplify();
+        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+        {
+            if( pLhs->has( var->second ) )
+            {
+                mVariables.insert( *var );
+            }
+        }
     }
 
     Constraint::Constraint( const Constraint& _constraint ):
@@ -1783,13 +1793,13 @@ namespace smtrat
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
+                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ, _constraintA->variables() );
                             }
                             ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
+                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ, _constraintA->variables() );
                             }
                             return NULL;
                         }
@@ -1799,13 +1809,13 @@ namespace smtrat
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
+                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ, _constraintA->variables() );
                             }
                             ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
+                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ, _constraintA->variables() );
                             }
                             return NULL;
                         }
@@ -1815,13 +1825,13 @@ namespace smtrat
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
+                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ, _constraintA->variables() );
                             }
                             ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
+                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ, _constraintA->variables() );
                             }
                             return NULL;
                         }
@@ -1831,13 +1841,13 @@ namespace smtrat
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ );
+                                return Formula::newConstraint( _constraintA->lhs(), CR_GEQ, _constraintA->variables() );
                             }
                             ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ );
+                                return Formula::newConstraint( _constraintA->lhs(), CR_LEQ, _constraintA->variables() );
                             }
                             return NULL;
                         }
@@ -1855,13 +1865,13 @@ namespace smtrat
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( 0, CR_EQ );
+                                return Formula::newConstraint( 0, CR_EQ, symtab() );
                             }
                             ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( 0, CR_EQ );
+                                return Formula::newConstraint( 0, CR_EQ, symtab() );
                             }
                             return NULL;
                         }
@@ -1923,13 +1933,13 @@ namespace smtrat
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( _constraintB->lhs(), CR_LEQ );
+                                return Formula::newConstraint( _constraintB->lhs(), CR_LEQ, _constraintB->variables() );
                             }
                             ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintB->lhs(), CR_GEQ );
+                                return Formula::newConstraint( _constraintB->lhs(), CR_GEQ, _constraintB->variables() );
                             }
                             return NULL;
                         }
@@ -1967,13 +1977,13 @@ namespace smtrat
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( _constraintB->lhs(), CR_GEQ );
+                                return Formula::newConstraint( _constraintB->lhs(), CR_GEQ, _constraintB->variables() );
                             }
                             ex result2 = _constraintA->lhs() + _constraintB->lhs();
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintB->lhs(), CR_LEQ );
+                                return Formula::newConstraint( _constraintB->lhs(), CR_LEQ, _constraintB->variables() );
                             }
                             return NULL;
                         }
@@ -2017,7 +2027,7 @@ namespace smtrat
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintB->lhs(), CR_GEQ );
+                                return Formula::newConstraint( _constraintB->lhs(), CR_GEQ, _constraintB->variables() );
                             }
                             return NULL;
                         }
@@ -2061,7 +2071,7 @@ namespace smtrat
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintB->lhs(), CR_LEQ );
+                                return Formula::newConstraint( _constraintB->lhs(), CR_LEQ, _constraintB->variables() );
                             }
                             return NULL;
                         }

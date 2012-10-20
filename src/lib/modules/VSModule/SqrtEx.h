@@ -41,14 +41,23 @@ namespace vs
 {
     class SqrtEx
     {
-        public:
+        private:
+            /**
+             * Attributes:
+             */
+            GiNaC::ex* mpConstantPart;
+            GiNaC::ex* mpFactor;
+            GiNaC::ex* mpRadicand;
+            GiNaC::ex* mpDenominator;
+            GiNaC::symtab mVariables;
 
+        public:
             /**
              * Constructors:
              */
             SqrtEx();
-            SqrtEx( const GiNaC::ex& );
-            SqrtEx( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex& );
+            SqrtEx( const GiNaC::ex&, const GiNaC::symtab& );
+            SqrtEx( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::symtab& );
             SqrtEx( const SqrtEx& );
 
             /**
@@ -99,6 +108,11 @@ namespace vs
                 return *mpDenominator;
             }
 
+            const GiNaC::symtab& variables() const
+            {
+                return mVariables;
+            }
+
             bool hasSqrt() const
             {
                 return *mpFactor != 0;
@@ -120,7 +134,7 @@ namespace vs
             }
 
             // Data access methods (read only).
-            bool hasVariable( const GiNaC::ex& ) const;
+            bool hasVariable( const std::string& ) const;
             GiNaC::ex expression() const;
 
             // Operators.
@@ -132,18 +146,9 @@ namespace vs
             friend SqrtEx operator *( const SqrtEx&, const SqrtEx& );
             friend SqrtEx operator /( const SqrtEx&, const SqrtEx& );
             friend std::ostream& operator <<( std::ostream&, const SqrtEx& );
-
-        private:
-
-            /**
-             * Attributes:
-             */
-            GiNaC::ex* mpConstantPart;
-            GiNaC::ex* mpFactor;
-            GiNaC::ex* mpRadicand;
-            GiNaC::ex* mpDenominator;
     };
-    SqrtEx subBySqrtEx( const GiNaC::ex&, const GiNaC::ex&, const SqrtEx& );
+    void simplify( GiNaC::ex&, const GiNaC::ex& );
+    SqrtEx subBySqrtEx( const GiNaC::ex&, const GiNaC::ex&, const SqrtEx&, const GiNaC::symtab& );
 }    // end namspace vs
 
 #endif

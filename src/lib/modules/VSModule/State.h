@@ -203,8 +203,8 @@ struct subComp
 	}
 };
 
-typedef std::vector	< Condition* > 			ConditionVector						;
-typedef std::vector	< ConditionVector > 	DisjunctionOfConditionConjunctions	;
+typedef std::vector	< const Condition* >          ConditionVector					;
+typedef std::vector	< ConditionVector >           DisjunctionOfConditionConjunctions;
 typedef std::vector	< const smtrat::Constraint* > TS_ConstraintConjunction			;
 
 
@@ -219,6 +219,9 @@ public:
 	typedef std::vector < std::pair< ConditionVector, bool > > 						SubstitutionResult	;
 	typedef std::vector < SubstitutionResult > 										SubstitutionResults	;
 	typedef std::vector < std::pair< unsigned, unsigned  > >						SubResultCombination;
+    #ifdef VS_USE_VARIABLE_BOUNDS
+    typedef smtrat::vb::VariableBounds< Condition >                                 VariableBounds      ;
+    #endif
 private:
 
 	/**
@@ -232,14 +235,13 @@ private:
 	bool			    	 mRoot						;
 	bool					 mSubResultsSimplified		;
 	bool					 mTakeSubResultCombAgain	;
-    bool                     mTestCandViolatesBounds    ;
 	bool					 mToHighDegree				;
 	bool					 mTryToRefreshIndex			;
 	unsigned		    	 mID						;
 	unsigned		    	 mValuation					;
 	StateType				 mStateType					;
 	std::string*			 mpIndex					;
-	Condition*				 mpOriginalCondition		;
+	const Condition*         mpOriginalCondition		;
 	State*					 mpFather					;
 	Substitution*			 mpSubstitution				;
 	SubstitutionResults* 	 mpSubstitutionResults		;
@@ -248,21 +250,20 @@ private:
 	ConflictSets*			 mpConflictSets				;
 	StateVector* 			 mpChildren					;
     #ifdef VS_USE_VARIABLE_BOUNDS
-    smtrat::vb::VariableBounds< Condition >   mVariableBounds;
+    VariableBounds           mVariableBounds            ;
     #endif
 public:
 
 	/**
 	 * Constructors:
 	 */
-	State	( );
-	State	( State* const		 ,
-			  const Substitution& );
+	State();
+	State( State* const, const Substitution& );
 
 	/**
 	 * Destructor:
 	 */
-	~State	( )	;
+	~State();
 
 	/**
 	 * Methods:
@@ -270,27 +271,27 @@ public:
 
 	bool					isRoot		        		( ) const 	{ return mRoot	   					 									; }
 	bool					toHighDegree        		( ) const 	{ return mToHighDegree				 									; }
-	bool&						rToHighDegree        		( ) 		{ return mToHighDegree				 									; }
+	bool&                   rToHighDegree        		( ) 		{ return mToHighDegree				 									; }
 #ifndef VS_USE_REDLOG
 	bool					markedAsDeleted        		( ) const 	{ return mMarkedAsDeleted			 									; }
-	bool&						rMarkedAsDeleted        	( ) 	 	{ return mMarkedAsDeleted			 									; }
+	bool&					rMarkedAsDeleted        	( ) 	 	{ return mMarkedAsDeleted			 									; }
 #endif
 	bool					hasChildrenToInsert    		( ) const 	{ return mHasChildrenToInsert		 									; }
-	bool&						rHasChildrenToInsert       	( ) 	 	{ return mHasChildrenToInsert		 									; }
-	const std::string& 			index		        		( ) const 	{ return *mpIndex	   				 									; }
-	unsigned&					rValuation	        		( )       	{ return mValuation	   				 									; }
+	bool&					rHasChildrenToInsert       	( ) 	 	{ return mHasChildrenToInsert		 									; }
+	const std::string& 		index		        		( ) const 	{ return *mpIndex	   				 									; }
+	unsigned&				rValuation	        		( )       	{ return mValuation	   				 									; }
 	unsigned				valuation	        		( ) const 	{ return mValuation	   				 									; }
 	unsigned				id	        				( ) const 	{ return mID	   					 									; }
-	StateVector&				rChildren	        		( )       	{ return *mpChildren	   			 									; }
-	const StateVector& 			children 	        		( ) const 	{ return *mpChildren	   			 									; }
-	State* const				pFather						( ) const  	{ return mpFather	   				 									; }
-	const State& 				father						( ) const  	{ return *mpFather	   				 									; }
-	State&  					rFather						( )       	{ return *mpFather	   				 									; }
-	ConflictSets&				rConflictSets 				( )       	{ return *mpConflictSets			 									; }
-	const ConflictSets& 		conflictSets				( ) const 	{ return *mpConflictSets			 									; }
-	bool&						rHasRecentlyAddedConditions ( )  		{ return mHasRecentlyAddedConditions 									; }
+	StateVector&			rChildren	        		( )       	{ return *mpChildren	   			 									; }
+	const StateVector& 		children 	        		( ) const 	{ return *mpChildren	   			 									; }
+	State* const			pFather						( ) const  	{ return mpFather	   				 									; }
+	const State& 			father						( ) const  	{ return *mpFather	   				 									; }
+	State&  				rFather						( )       	{ return *mpFather	   				 									; }
+	ConflictSets&			rConflictSets 				( )       	{ return *mpConflictSets			 									; }
+	const ConflictSets& 	conflictSets				( ) const 	{ return *mpConflictSets			 									; }
+	bool&					rHasRecentlyAddedConditions ( )  		{ return mHasRecentlyAddedConditions 									; }
 	bool					hasRecentlyAddedConditions  ( ) const 	{ return mHasRecentlyAddedConditions 									; }
-	bool&						rInconsistent				( ) 	 	{ return mInconsistent				 									; }
+	bool&					rInconsistent				( ) 	 	{ return mInconsistent				 									; }
 	bool					isInconsistent				( ) const 	{ return mInconsistent				 									; }
 	ConditionVector&		rConditions	        		( )       	{ return *mpConditions	   			 									; }
 	const ConditionVector&	conditions	      			( ) const 	{ return *mpConditions	   			 									; }
@@ -303,19 +304,23 @@ public:
 	const Substitution* const	pSubstitution 			( ) const 	{ return mpSubstitution 			 									; }
 	bool					conditionsSimplified		( ) const	{ return mConditionsSimplified		 									; }
 	bool					subResultsSimplified		( ) const	{ return mSubResultsSimplified		 									; }
-	bool&						rSubResultsSimplified		( ) 		{ return mSubResultsSimplified		 									; }
+	bool&					rSubResultsSimplified		( ) 		{ return mSubResultsSimplified		 									; }
 	bool					takeSubResultCombAgain		( ) const	{ return mTakeSubResultCombAgain	 									; }
-	bool&						rTakeSubResultCombAgain		( ) 		{ return mTakeSubResultCombAgain	 									; }
+	bool&					rTakeSubResultCombAgain		( ) 		{ return mTakeSubResultCombAgain	 									; }
 	bool					tryToRefreshIndex			( ) const	{ return mTryToRefreshIndex			 									; }
 	bool					hasSubResultsCombination	( ) const	{ return mpSubResultCombination!=NULL									; }
 	bool					hasSubstitutionResults		( ) const	{ return mpSubstitutionResults!=NULL 									; }
 	bool					unfinished					( ) const	{ return (mpSubstitutionResults->size()>mpSubResultCombination->size())	; }
-	const StateType				stateType					( ) const	{ return mStateType														; }
-	StateType&					rStateType					( ) 		{ return mStateType														; }
-	Condition*		 			pOriginalCondition			( )	const 	{ return mpOriginalCondition											; }
-	const Condition& 			originalCondition			( )	const 	{ return *mpOriginalCondition											; }
+	const StateType			stateType					( ) const	{ return mStateType														; }
+	StateType&				rStateType					( ) 		{ return mStateType														; }
+	const Condition*		pOriginalCondition			( )	const 	{ return mpOriginalCondition											; }
+	const Condition& 		originalCondition			( )	const 	{ return *mpOriginalCondition											; }
+    #ifdef VS_USE_VARIABLE_BOUNDS
+	const VariableBounds&   variableBounds  			( )	const 	{ return mVariableBounds    											; }
+	VariableBounds&         rVariableBounds  			( )      	{ return mVariableBounds    											; }
+    #endif
 
-	void						setOriginalCondition		( Condition* const _pOCondition ) 	{ mpOriginalCondition=_pOCondition; }
+	void					setOriginalCondition		( const Condition* const _pOCondition ) 	{ mpOriginalCondition=_pOCondition; }
 
 	// Data access methods (read only).
 	const unsigned 							treeDepth							( ) 														const	;
@@ -333,7 +338,7 @@ public:
 	// Data access methods (read and write).
 	State&									root								( )																	;
 	bool									unfinishedAncestor					( State*& )															;
-	bool 									bestCondition						( Condition*&,
+	bool 									bestCondition						( const Condition*&,
 																				  unsigned 		 )													;
 	ConditionVector::iterator 				constraintExists 					( const smtrat::Constraint& )										;
 
@@ -348,6 +353,7 @@ public:
 																				  ConditionSetSet&		   )										;
 	void 									addConflicts						( const Substitution* const,
 																				  ConditionSetSet&		   )										;
+    void                                    resetConflictSets                   ( )                                                                 ;
 	bool									updateOCondsOfSubstitutions 		( const Substitution& )												;
 	void 									addSubstitutionResults				( std::vector< DisjunctionOfConditionConjunctions >& )				;
 	bool 									extendSubResultCombination			( )																	;
@@ -362,6 +368,7 @@ public:
 																				  const bool 				)										;
 	void									deleteConditions					( ConditionVector& )												;
 	bool									addChild							( const std::string& 	   ,
+																				  const GiNaC::ex&         ,
 																				  const Substitution_Type& ,
 																				  const ConditionSet&	)										;
 	bool									addChild							( const GiNaC::ex& 			,
@@ -371,7 +378,9 @@ public:
 																				  const GiNaC::ex&			,
 																				  const GiNaC::ex&			,
 																				  const GiNaC::ex&			,
+																				  const GiNaC::ex&			,
 																				  const Substitution_Type& 	,
+                                                                                  const GiNaC::symtab&      ,
 																				  const ConditionSet&	 )										;
 	bool									addChild							( const GiNaC::ex& 			,
 																				  const smtrat::Constraint_Relation&,
@@ -382,11 +391,15 @@ public:
 																				  const GiNaC::ex&			,
 																				  const GiNaC::ex&			,
 																				  const GiNaC::ex&			,
+																				  const GiNaC::ex&			,
 																				  const Substitution_Type& 	,
+                                                                                  const GiNaC::symtab&      ,
 																				  const ConditionSet&	 )										;
 	void									updateValuation						( )	      			       											;
 	bool									passConflictToFather				( )																	;
+    #ifdef VS_USE_VARIABLE_BOUNDS
     bool                                    checkTestCandidatesForBounds        ( )                                                                 ;
+    #endif
 
 	// Printing methods.
 	void 									print								( const std::string = "***",
