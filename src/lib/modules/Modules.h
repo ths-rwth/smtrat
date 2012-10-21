@@ -54,7 +54,7 @@
 #include "PreProModule.h"
 #include "CNFerModule.h"
 #include "SingleVSModule.h"
-#include "ICPModule.h"
+//#include "ICPModule.h"
 
 #include "StandardModuleFactory.h"
 
