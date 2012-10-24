@@ -445,9 +445,10 @@ namespace smtrat
     Formula::iterator Module::removeSubformulaFromPassedFormula( Formula::iterator _subformula )
     {
         assert( _subformula != mpPassedFormula->end() );
+        if( _subformula == mpPassedFormula->end() ) cout << "Error!" << endl;
         if( _subformula == mFirstSubformulaToPass )
         {
-            mFirstSubformulaToPass++;
+            ++mFirstSubformulaToPass;
         }
 
         /*

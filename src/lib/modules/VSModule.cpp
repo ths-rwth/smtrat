@@ -34,6 +34,7 @@ using namespace std;
 using namespace GiNaC;
 using namespace vs;
 
+
 namespace smtrat
 {
     /**
@@ -268,6 +269,9 @@ namespace smtrat
                 #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
                 checkAnswer();
                 #endif
+                #ifdef VS_PRINT_ANSWERS
+                printAnswer();
+                #endif
                 return True;
             }
             else
@@ -283,6 +287,9 @@ namespace smtrat
         {
             #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
             checkAnswer();
+            #endif
+            #ifdef VS_PRINT_ANSWERS
+            printAnswer();
             #endif
             return True;
         }
@@ -472,6 +479,9 @@ namespace smtrat
                                             #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
                                             checkAnswer();
                                             #endif
+                                            #ifdef VS_PRINT_ANSWERS
+                                            printAnswer();
+                                            #endif
                                             return True;
                                         }
                                     }
@@ -573,6 +583,12 @@ namespace smtrat
                                                 * If we need to involve a complete approach.
                                                 */
                                                 #ifdef VS_WITH_BACKEND
+                                                for( ValuationMap::const_iterator valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
+                                                {
+                                                    (*(*valDTPair).second).printConditions( "", cout, true );
+                                                    cout << endl;
+                                                }
+//                                                printAll();
                                                 switch( runBackendSolvers( currentState ) )
                                                 {
                                                     case True:
@@ -607,6 +623,9 @@ namespace smtrat
                                                             #endif
                                                             #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
                                                             checkAnswer();
+                                                            #endif
+                                                            #ifdef VS_PRINT_ANSWERS
+                                                            printAnswer();
                                                             #endif
                                                             return True;
                                                         }
@@ -716,23 +735,11 @@ namespace smtrat
             subType = ST_NORMAL;
         }
 
-        ex lhs = constraint.lhs();
         #ifdef VS_ELIMINATE_MULTI_ROOTS
-        if( lhs.degree( ex( sym ) ) > 1 )
-        {
-            ex derivate            = lhs.diff( sym, 1 );
-            ex gcdOfLhsAndDerivate = gcd( lhs, derivate );
-            Constraint::normalize( gcdOfLhsAndDerivate );
-            if( gcdOfLhsAndDerivate != 1 )
-            {
-                ex quotient;
-                if( gcdOfLhsAndDerivate != 0 && divide( lhs, gcdOfLhsAndDerivate, quotient ) )
-                {
-                    Constraint::normalize( quotient );
-                    lhs = quotient;
-                }
-            }
-        }
+        const ex& lhs = constraint.multiRootLessLhs( _eliminationVar );
+        cout << constraint.lhs() << "   to   " << lhs << endl;
+        #else
+        const ex& lhs = constraint.lhs();
         #endif
 
         vector<ex> coeffs = vector<ex>();
@@ -845,9 +852,9 @@ namespace smtrat
                 }
 
                 /*
-                 * Create state ({a!=0, b^2-4ac>0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
+                 * Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GREATER, _eliminationVar, sym, -coeffs.at( 1 ), -1,
+                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, sym, -coeffs.at( 1 ), -1,
                                                2 * coeffs.at( 2 ), radicand, subType , vars, oConditions ) )
                 {
                     if( constraint.relation() == CR_EQ )

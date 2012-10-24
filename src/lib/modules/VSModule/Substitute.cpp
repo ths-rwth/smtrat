@@ -29,6 +29,8 @@
 
 #include "Substitute.h"
 
+#define VS_SUBSTITUTION_ACCORDING_PAPER
+
 namespace vs
 {
     using namespace std;

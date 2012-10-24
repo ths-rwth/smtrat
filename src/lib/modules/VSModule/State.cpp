@@ -2746,13 +2746,20 @@ namespace vs
      * @param _initiation   The initiation of each row to print.
      * @param _out          The output stream, where it should print.
      */
-    void State::printConditions( const string _initiation, ostream& _out ) const
+    void State::printConditions( const string _initiation, ostream& _out, bool _onlyAsConstraints ) const
     {
         _out << _initiation << "Condititons:" << endl;
         for( ConditionVector::const_iterator cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
             _out << _initiation << "   ";
-            (**cond).print( _out );
+            if( _onlyAsConstraints )
+            {
+                (**cond).constraint().print();
+            }
+            else
+            {
+                (**cond).print( _out );
+            }
             _out << endl;
         }
     }

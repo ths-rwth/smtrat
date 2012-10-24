@@ -407,7 +407,8 @@ public:
 	void 									printAlone							( const std::string = "***",
 								 	  											  std::ostream&	= std::cout	)								  const	;
 	void 									printConditions						( const std::string = "***",
-								 	  											  std::ostream&	= std::cout	)								  const	;
+								 	  											  std::ostream&	= std::cout,
+                                                                                  bool = false              )								  const	;
 	void 									printSubstitutionResults			( const std::string = "***",
 								 	  											  std::ostream&	= std::cout	)								  const	;
 	void 									printSubstitutionResultCombination	( const std::string = "***",

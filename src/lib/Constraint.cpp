@@ -44,19 +44,21 @@ namespace smtrat
      * Constructors:
      */
     Constraint::Constraint():
-        pLhs( new ex( 0 ) ),
-        mVariables(),
+        mID( 0 ),
         mRelation( CR_EQ ),
-        mID( 0 )
+        pLhs( new ex( 0 ) ),
+        mpMultiRootLessLhs( new map< const string, ex*, strCmp >() ),
+        mVariables()
     {
         normalize( rLhs() );
     }
 
     Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _variables, unsigned _id ):
-        pLhs( new ex( _lhs ) ),
-        mVariables(),
+        mID( _id ),
         mRelation( _cr ),
-        mID( _id )
+        pLhs( new ex( _lhs ) ),
+        mpMultiRootLessLhs( new map< const string, ex*, strCmp >() ),
+        mVariables()
     {
         normalize( rLhs() );
         if( rLhs().info( info_flags::rational ) )
@@ -73,10 +75,11 @@ namespace smtrat
     }
 
     Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _variables, unsigned _id ):
-        pLhs( new ex( _lhs - _rhs ) ),
-        mVariables(),
+        mID( _id ),
         mRelation( _cr ),
-        mID( _id )
+        pLhs( new ex( _lhs - _rhs ) ),
+        mpMultiRootLessLhs( new map< const string, ex*, strCmp >() ),
+        mVariables()
     {
         normalize( rLhs() );
         if( rLhs().info( info_flags::rational ) )
@@ -93,11 +96,17 @@ namespace smtrat
     }
 
     Constraint::Constraint( const Constraint& _constraint ):
-        pLhs( new ex( _constraint.lhs() ) ),
-        mVariables( _constraint.variables() ),
+        mID( _constraint.id() ),
         mRelation( _constraint.relation() ),
-        mID( _constraint.id() )
-    {}
+        pLhs( new ex( _constraint.lhs() ) ),
+        mpMultiRootLessLhs( new map< const string, ex*, strCmp >() ),
+        mVariables( _constraint.variables() )
+    {
+        for( auto iter = _constraint.multiRootLessLhs().begin(); iter !=  _constraint.multiRootLessLhs().end(); ++iter )
+        {
+            mpMultiRootLessLhs->insert( pair< const string, ex* >( iter->first, new ex( *iter->second ) ) );
+        }
+    }
 
     /**
      * Destructor:
@@ -105,6 +114,13 @@ namespace smtrat
     Constraint::~Constraint()
     {
         delete pLhs;
+        while( !mpMultiRootLessLhs->empty() )
+        {
+            ex* toDelete = mpMultiRootLessLhs->begin()->second;
+            mpMultiRootLessLhs->erase( mpMultiRootLessLhs->begin() );
+            delete toDelete;
+        }
+        delete mpMultiRootLessLhs;
     }
 
     /**
@@ -667,21 +683,25 @@ namespace smtrat
         }
     }
 
-    ex Constraint::multiRootLessLhs( const symbol& _variable ) const
+    const ex& Constraint::multiRootLessLhs( const string& _varName ) const
     {
-        ex derivate            = lhs().diff( _variable, 1 );
-        ex gcdOfLhsAndDerivate = gcd( lhs(), derivate );
-        normalize( gcdOfLhsAndDerivate );
-        ex quotient;
-        if( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, quotient ) )
+        map< const string, ex*, strCmp >::iterator iter = mpMultiRootLessLhs->find( _varName );
+        if( iter == mpMultiRootLessLhs->end() )
         {
-            normalize( quotient );
-            return quotient;
+            symtab::const_iterator var = mVariables.find( _varName );
+            assert( var != mVariables.end() );
+            ex derivate            = lhs().diff( ex_to<symbol>( var->second ), 1 );
+            ex gcdOfLhsAndDerivate = gcd( lhs(), derivate );
+            normalize( gcdOfLhsAndDerivate );
+            ex* quotient = new ex( 0 );
+            if( !( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, *quotient ) ) )
+            {
+                *quotient = lhs();
+            }
+            mpMultiRootLessLhs->insert( pair<const string, ex*>( _varName, quotient ) );
+            return *quotient;
         }
-        else
-        {
-            return lhs();
-        }
+        return *iter->second;
     }
 
     /**

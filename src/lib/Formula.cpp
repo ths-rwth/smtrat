@@ -131,13 +131,25 @@ namespace smtrat
         }
         else if( mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE )
         {
+//        std::cout << __func__ << ":" << __LINE__ << std::endl;
+//        print();
             while( !mpSubformulas->empty() )
             {
+//        std::cout << __func__ << ":" << __LINE__ << std::endl;
+
+
                 Formula* pSubForm = mpSubformulas->back();
+
+
+//        std::cout << __func__ << ":" << __LINE__ << std::endl;
                 mpSubformulas->pop_back();
+//        std::cout << __func__ << ":" << __LINE__ << std::endl;
                 delete pSubForm;
+//        std::cout << __func__ << ":" << __LINE__ << std::endl;
             }
+//        std::cout << __func__ << ":" << __LINE__ << std::endl;
             delete mpSubformulas;
+//        std::cout << __func__ << ":" << __LINE__ << std::endl;
         }
     }
 

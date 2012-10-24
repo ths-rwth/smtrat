@@ -357,6 +357,11 @@ namespace lra
             }
             #endif
 
+            smtrat::Formula::const_iterator defaultBoundPosition() const
+            {
+                return mDefaultBoundPosition;
+            }
+
             EntryID newTableauEntry();
             void removeEntry( EntryID );
             Variable* newNonbasicVariable( const GiNaC::ex* );
