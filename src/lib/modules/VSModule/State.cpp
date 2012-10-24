@@ -27,7 +27,7 @@
  * @version 2011-12-05
  */
 
-#include <ginacra/FloatInterval.h>
+//#include <ginacra/FloatInterval.h>
 #include <cmath>
 #include <float.h>
 
