@@ -22,7 +22,7 @@
 
 /**
  * @file   GroebnerModule.cpp
- * 
+ *
  * @author Sebastian Junges
  * @author Ulrich Loup
  *
@@ -72,7 +72,7 @@ GroebnerModule<Settings>::~GroebnerModule( )
 }
 
 /**
- * Adds the constraint to the known constraints of the module. 
+ * Adds the constraint to the known constraints of the module.
  * This includes scanning variables as well as transforming inequalities, if this is enabled.
  * @param _formula A REALCONSTRAINT which should be regarded by the next theory call.
  * @return true
@@ -90,7 +90,7 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
         VariableListPool::addVariable( ex_to<symbol > (it->second) );
         mListOfVariables.insert( *it );
     }
-    
+
     #ifdef GATHER_STATS
     mStats->constraintAdded(constraint.relation());
     #endif
@@ -100,14 +100,14 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
         pushBacktrackPoint( _formula );
         mBasis.addPolynomial( Polynomial( constraint.lhs( ) ) );
         saveState( );
-        
+
         if( !Settings::passGB )
         {
             addReceivedSubformulaToPassedFormula( _formula );
         }
     }
-    else 
-    {   
+    else
+    {
         if( Settings::transformIntoEqualities == ALL_INEQUALITIES ||
                 (Settings::transformIntoEqualities == ONLY_NONSTRICT && (constraint.relation( ) == CR_GEQ || constraint.relation( ) == CR_LEQ)) )
         {
@@ -141,29 +141,29 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
 template<class Settings>
 Answer GroebnerModule<Settings>::isConsistent( )
 {
-    
+
     // This check asserts that all the conflicts are handled by the SAT solver. (workaround)
     if( !mInfeasibleSubsets.empty() ) return False;
-    
+
     #ifdef GATHER_STATS
     mStats->called();
     #endif
 
     assert( mBacktrackPoints.size( ) - 1 == mBasis.nrOriginalConstraints( ) );
     assert( mInfeasibleSubsets.empty( ) );
- 
+
     if( !mBasis.inputEmpty( ) )
     {
         //first, we interreduce the input!
         mBasis.reduceInput( );
     }
-    //If no equalities are added, we do not know anything 
+    //If no equalities are added, we do not know anything
     if( !mBasis.inputEmpty( ) )
     {
         //now, we calculate the groebner basis
         mBasis.calculate( );
         Polynomial witness;
-        
+
 #ifdef USE_NSS
         // On linear systems, all solutions lie in Q. So we do not have to check for a solution.
         if( Settings::applyNSS && !mBasis.isConstant( ) && !mBasis.getGbIdeal( ).isLinear( ) )
@@ -216,10 +216,10 @@ Answer GroebnerModule<Settings>::isConsistent( )
             for( ++it; it != mBacktrackPoints.end( ); ++it )
             {
                 assert(it != mBacktrackPoints.end());
-                
+
                 assert( (**it)->getType( ) == REALCONSTRAINT );
                 assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (**it)->constraint( ).relation( ) == CR_EQ );
-                               
+
                 if( Settings::getReasonsForInfeasibility )
                 {
                     if( origIt.get( ) )
@@ -233,7 +233,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
                     mInfeasibleSubsets.back( ).insert( **it );
                 }
             }
-            
+
             #ifdef GATHER_STATS
             mStats->EffectivenessOfConflicts(mInfeasibleSubsets.back().size()/mpReceivedFormula->size());
             #endif
@@ -244,13 +244,13 @@ Answer GroebnerModule<Settings>::isConsistent( )
                 std::vector<Formula> infsubset = generateSubformulaeOfInfeasibleSubset(0, infsubsetsize-1);
                 storeSmallerInfeasibleSubsetsCheck(infsubset);
             }
-            
+
             #endif
 
             return False;
         }
         saveState( );
-        
+
 
         if( Settings::checkInequalities != NEVER )
         {
@@ -294,10 +294,10 @@ Answer GroebnerModule<Settings>::isConsistent( )
         mStats->backendFalse();
         #endif
         getInfeasibleSubsets( );
-        
+
         assert( !mInfeasibleSubsets.empty( ) );
     }
-    
+
     return ans;
 }
 
@@ -344,7 +344,7 @@ void GroebnerModule<Settings>::pushBacktrackPoint( Formula::const_iterator btpoi
 {
     assert( mBacktrackPoints.empty( ) || (*btpoint)->getType( ) == REALCONSTRAINT );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
-    
+
     if( !mBacktrackPoints.empty( ) )
     {
         saveState( );
@@ -361,9 +361,9 @@ void GroebnerModule<Settings>::pushBacktrackPoint( Formula::const_iterator btpoi
 
 
 /**
- * Pops all states from the stack until the state which we had before the constraint was added. 
+ * Pops all states from the stack until the state which we had before the constraint was added.
  * Then, we make new states with all equalities which were added afterwards.
- * @param a pointer in the received formula to the constraint which will be removed. 
+ * @param a pointer in the received formula to the constraint which will be removed.
  */
 template<class Settings>
 void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoint )
@@ -371,7 +371,7 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
     //assert( validityCheck( ) );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
     assert( !mBacktrackPoints.empty( ) );
-    
+
     //We first count how far we have to backtrack.
     //Because the polynomials have to be added again afterwards, we save them in a list.
     unsigned nrOfBacktracks = 1;
@@ -384,17 +384,17 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
             mBacktrackPoints.pop_back( );
             break;
         }
-        else 
+        else
         {
             ++nrOfBacktracks;
             rescheduled.push_front(mBacktrackPoints.back());
             mBacktrackPoints.pop_back( );
         }
     }
-    
+
     #ifdef GATHER_STATS
     mStats->PopLevel(nrOfBacktracks);
-    #endif 
+    #endif
 
     for( unsigned i = 0; i < nrOfBacktracks; ++i )
     {
@@ -429,8 +429,8 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
         }
     }
     assert( mBasis.nrOriginalConstraints( ) == mBacktrackPoints.size( ) - 1 );
-    
-   
+
+
 }
 
 /**
@@ -459,7 +459,7 @@ typename GroebnerModule<Settings>::Polynomial GroebnerModule<Settings>::transfor
     {
         varNr = mapentry->second;
     }
-    
+
     switch( (*constraint)->constraint( ).relation( ) )
     {
     case CR_GEQ:
@@ -487,8 +487,8 @@ typename GroebnerModule<Settings>::Polynomial GroebnerModule<Settings>::transfor
 }
 
 /**
- * 
- * @return 
+ *
+ * @return
  */
 template<class Settings>
 bool GroebnerModule<Settings>::saveState( )
@@ -540,7 +540,8 @@ void GroebnerModule<Settings>::passGB( )
             originals.front( ) = generateReasons( simplIt->getOrigins( ).getBitVector( ) );
         }
         assert( !originals.front( ).empty( ) );
-        addSubformulaToPassedFormula( new Formula( Formula::newConstraint( simplIt->toEx( ), CR_EQ ) ), originals );
+        //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "simplIt->toEx( )"
+        addSubformulaToPassedFormula( new Formula( Formula::newConstraint( simplIt->toEx( ), CR_EQ, Formula::constraintPool().variables() ) ), originals );
     }
 }
 
@@ -561,7 +562,7 @@ std::set<const Formula*> GroebnerModule<Settings>::generateReasons( const GiNaCR
     {
         assert( (**it)->getType( ) == REALCONSTRAINT );
         assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (**it)->constraint( ).relation( ) == CR_EQ );
-        //                    
+        //
         if( origIt.get( ) )
         {
             origins.insert( **it );
@@ -643,7 +644,7 @@ InequalitiesTable<Settings>::InequalitiesTable( GroebnerModule<Settings>* module
     mNewConstraints = mReducedInequalities.begin( );
     #ifdef GATHER_STATS
     mStats = GroebnerModuleStats::getInstance(Settings::identifier);
-    #endif 
+    #endif
 }
 
 /**
@@ -660,7 +661,7 @@ typename InequalitiesTable<Settings>::Rows::iterator InequalitiesTable<Settings>
     // We assume that the just added formula is the last one.
     const Formula::iterator passedEntry = mModule->mpPassedFormula->last( );
     // And we add a row to our table
-    
+
     return mReducedInequalities.insert( Row( received, RowEntry( passedEntry, (*received)->constraint( ).relation( ), std::list<CellEntry > (1, CellEntry( 0, Polynomial( (*received)->constraint( ).lhs( ) ) )) ) ) ).first;
 
 }
@@ -729,7 +730,8 @@ void InequalitiesTable<Settings>::popBacktrackPoint( unsigned nrOfBacktracks )
                         std::vector<std::set<const Formula*> > originals;
                         originals.push_back( mModule->generateReasons( std::get < 2 > (it->second).back( ).second.getOrigins( ).getBitVector( ) ) );
                         originals.front( ).insert( *(it->first) );
-                        mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( std::get < 2 > (it->second).back( ).second.toEx( ), std::get < 1 > (it->second) ) ), originals );
+                        //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "std::get < 2 > (it->second).back( ).second.toEx( )"
+                        mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( std::get < 2 > (it->second).back( ).second.toEx( ), std::get < 1 > (it->second), Formula::constraintPool().variables() ) ), originals );
 
                     }
                     else
@@ -762,7 +764,7 @@ Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const Ideal& gb )
             #ifdef GATHER_STATS
             mStats->infeasibleInequality();
             #endif
-            return False;   
+            return False;
         }
     }
     if( Settings::withInfeasibleSubset != RETURN_DIRECTLY )
@@ -893,7 +895,7 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                 if( Settings::addTheoryDeductions != NO_CONSTRAINTS )
                 {
                     Formula* deduction = new Formula(OR);
-                    
+
                     for( auto jt = originals.begin(); jt != originals.end(); ++jt )
                     {
                         deduction->addSubformula( new Formula( NOT ) );
@@ -905,12 +907,12 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                     #ifdef GATHER_STATS
                     mStats->DeducedInequality();
                     #endif
-                    
+
                 }
             }
             else // we have a conflict
             {
-                
+
                 std::set<const Formula*> infeasibleSubset( mModule->generateReasons( reduced.getOrigins( ).getBitVector( ) ) );
                 infeasibleSubset.insert( *(it->first) );
                 #ifdef GATHER_STATS
@@ -948,7 +950,8 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                 originals.front( ).insert( *(it->first) );
 
                 //pass the result
-                mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( reduced.toEx( ), relation ) ), originals );
+                //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "reduced.toEx( )"
+                mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( reduced.toEx( ), relation, Formula::constraintPool().variables() ) ), originals );
                 //set the pointer to the passed formula accordingly.
                 std::get < 0 > (it->second) = mModule->mpPassedFormula->last( );
             }

@@ -54,7 +54,7 @@ set(lib_modules_headers
     modules/PreProModule.h
     modules/CNFerModule.h
     modules/SingleVSModule.h
-    modules/ICPModule.h
+#    modules/ICPModule.h
 )
 set(lib_modules_src
     modules/SmartSimplifier.cpp
@@ -64,7 +64,7 @@ set(lib_modules_src
     modules/PreProModule.cpp
     modules/CNFerModule.cpp
     modules/SingleVSModule.cpp
-    modules/ICPModule.cpp
+#    modules/ICPModule.cpp
 )
 
 if(USE_GB)
