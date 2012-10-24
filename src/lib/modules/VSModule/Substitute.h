@@ -61,12 +61,14 @@ namespace vs
                                  const GiNaC::ex&,
                                  const GiNaC::ex&,
                                  const GiNaC::ex&,
+                                 const GiNaC::symtab&,
                                  DisjunctionOfConstraintConjunctions& );
     void substituteNormalSqrtNeq( const smtrat::Constraint&,
                                   const Substitution&,
                                   const GiNaC::ex&,
                                   const GiNaC::ex&,
                                   const GiNaC::ex&,
+                                 const GiNaC::symtab&,
                                   DisjunctionOfConstraintConjunctions& );
     void substituteNormalSqrtLess( const smtrat::Constraint&,
                                    const Substitution&,
@@ -74,6 +76,7 @@ namespace vs
                                    const GiNaC::ex&,
                                    const GiNaC::ex&,
                                    const GiNaC::ex&,
+                                 const GiNaC::symtab&,
                                    DisjunctionOfConstraintConjunctions& );
     void substituteNormalSqrtLeq( const smtrat::Constraint&,
                                   const Substitution&,
@@ -81,6 +84,7 @@ namespace vs
                                   const GiNaC::ex&,
                                   const GiNaC::ex&,
                                   const GiNaC::ex&,
+                                 const GiNaC::symtab&,
                                   DisjunctionOfConstraintConjunctions& );
     void substitutePlusEps( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteEpsGradients( const smtrat::Constraint&,

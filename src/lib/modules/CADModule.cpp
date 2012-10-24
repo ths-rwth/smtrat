@@ -357,7 +357,14 @@ namespace smtrat
                 assert( false );
             }
         }
-        return Formula::newConstraint( c.polynomial(), relation );
+        GiNaC::symtab variables = GiNaC::symtab();
+        for( auto i = c.variables().begin(); i != c.variables().end(); ++i )
+        {
+            stringstream out;
+            out << *i;
+            variables.insert( pair< string, GiNaC::ex>( out.str(), *i ) );
+        }
+        return Formula::newConstraint( c.polynomial(), relation, variables );
     }
 
     /**

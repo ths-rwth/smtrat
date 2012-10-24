@@ -619,8 +619,8 @@ namespace smtrat
                 {
                     for( unsigned j = 0; j < i; ++j )
                     {
-                        const Constraint* invConstraintA = new Constraint( (*constraints.at( i )).lhs(), getInvertedRelationSymbol( constraints.at( i ) ) );
-                        const Constraint* invConstraintB = new Constraint( (*constraints.at( j )).lhs(), getInvertedRelationSymbol( constraints.at( j ) ) );
+                        const Constraint* invConstraintA = Formula::newConstraint( (*constraints.at( i )).lhs(), getInvertedRelationSymbol( constraints.at( i ) ), (*constraints.at( i )).variables() );
+                        const Constraint* invConstraintB = Formula::newConstraint( (*constraints.at( j )).lhs(), getInvertedRelationSymbol( constraints.at( j ) ), (*constraints.at( j )).variables() );
                         Formula* newFormula = NULL;
                         switch( Constraint::compare( *invConstraintA, *invConstraintB ) )
                         {
@@ -738,7 +738,7 @@ namespace smtrat
         if( _formula->getType() == REALCONSTRAINT )
         {
             if( !isnegated ) _constraints.push_back( &_formula->constraint() );
-            else _constraints.push_back( Formula::newConstraint( _formula->constraint().lhs(), getInvertedRelationSymbol( &_formula->constraint() ) ));
+            else _constraints.push_back( Formula::newConstraint( _formula->constraint().lhs(), getInvertedRelationSymbol( &_formula->constraint() ), _formula->constraint().variables() ));
         }
         else if( _formula->getType() == NOT )
         {
@@ -1200,7 +1200,7 @@ namespace smtrat
                     Formula* newboolformula = new Formula( *boolfather );
                     newnotformula->addSubformula( newboolformula );
                     newformula->addSubformula( newnotformula );
-                    const Constraint* newconstraint        = Formula::newConstraint( substitutedExpression, CR_EQ );
+                    const Constraint* newconstraint        = Formula::newConstraint( substitutedExpression, CR_EQ, Formula::constraintPool().variables() );
                     Formula*          newconstraintformula = new Formula( newconstraint );    // Create new ConstraintFormula for Substituted constraint
                     if( constraintfather->father().getType() == NOT )
                     {

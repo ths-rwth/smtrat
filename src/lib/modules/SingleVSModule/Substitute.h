@@ -40,11 +40,11 @@ namespace svs
      * Methods:
      */
     smtrat::Formula* substituteNormal( const smtrat::Constraint*, const GiNaC::symbol&, const vs::SqrtEx& );
-    smtrat::Formula* substituteNormalSqrtEq( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex& );
-    smtrat::Formula* substituteNormalSqrtNeq( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex& );
-    smtrat::Formula* substituteNormalSqrtLess( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex& );
-    smtrat::Formula* substituteNormalSqrtLeq( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex& );
-    smtrat::Formula* substitutePlusEps( const smtrat::Constraint*, const GiNaC::symbol&, const vs::SqrtEx& );
+    smtrat::Formula* substituteNormalSqrtEq( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::symtab& );
+    smtrat::Formula* substituteNormalSqrtNeq( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::symtab& );
+    smtrat::Formula* substituteNormalSqrtLess( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::symtab& );
+    smtrat::Formula* substituteNormalSqrtLeq( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::symtab& );
+    smtrat::Formula* substitutePlusEps( const smtrat::Constraint*, const GiNaC::symbol&, const vs::SqrtEx&, const GiNaC::symtab& );
     smtrat::Formula* substituteEpsGradients( const smtrat::Constraint*,
                                              const GiNaC::symbol&,
                                              const vs::SqrtEx&,

@@ -422,9 +422,9 @@ namespace smtrat
                 mpFather = NULL;
             }
 
-            static const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel )
+            static const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
             {
-                return mConstraintPool.newConstraint( _lhs, _rel );
+                return mConstraintPool.newConstraint( _lhs, _rel, _variables );
             }
 
             static const Constraint* newConstraint( const std::string& _stringrep, const bool _infix = true, const bool _polarity = true )
@@ -533,7 +533,7 @@ namespace smtrat
             static void toCNF( Formula&, bool = true );
             static bool resolveNegation( Formula&, bool = true );
             static std::string FormulaTypeToString( Type type);
-            
+
             std::string variableListToString(std::string seperator) const;
             std::string toRedlogFormat(bool withVariables = true) const;
 

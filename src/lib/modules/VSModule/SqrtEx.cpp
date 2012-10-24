@@ -43,17 +43,26 @@ namespace vs
         mpFactor       = new ex( 0 );
         mpDenominator  = new ex( 1 );
         mpRadicand     = new ex( 0 );
+        mVariables = symtab();
     }
 
-    SqrtEx::SqrtEx( const GiNaC::ex& _ex )
+    SqrtEx::SqrtEx( const GiNaC::ex& _ex, const symtab& _variables )
     {
         mpConstantPart = new ex( _ex.numer() );
         mpFactor       = new ex( 0 );
         mpDenominator  = new ex( _ex.denom() );
         mpRadicand     = new ex( 0 );
+        mVariables = symtab();
+        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+        {
+            if( _ex.has( var->second ) )
+            {
+                mVariables.insert( *var );
+            }
+        }
     }
 
-    SqrtEx::SqrtEx( const GiNaC::ex& _constantPart, const GiNaC::ex& _factor, const GiNaC::ex& _denominator, const GiNaC::ex& _radicand )
+    SqrtEx::SqrtEx( const GiNaC::ex& _constantPart, const GiNaC::ex& _factor, const GiNaC::ex& _denominator, const GiNaC::ex& _radicand, const symtab& _variables )
     {
         assert( _denominator != 0 );
         assert( !_radicand.info( info_flags::rational ) || _radicand.info( info_flags::nonnegative ) );
@@ -82,6 +91,35 @@ namespace vs
         {
             mpDenominator = new ex( _denominator );
         }
+        mVariables = symtab();
+        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+        {
+            if( _constantPart.has( var->second ) )
+            {
+                mVariables.insert( *var );
+            }
+        }
+        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+        {
+            if( _factor.has( var->second ) )
+            {
+                mVariables.insert( *var );
+            }
+        }
+        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+        {
+            if( _denominator.has( var->second ) )
+            {
+                mVariables.insert( *var );
+            }
+        }
+        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+        {
+            if( _radicand.has( var->second ) )
+            {
+                mVariables.insert( *var );
+            }
+        }
     }
 
     SqrtEx::SqrtEx( const SqrtEx& _sqrtEx )
@@ -90,6 +128,7 @@ namespace vs
         mpFactor       = new ex( _sqrtEx.factor() );
         mpDenominator  = new ex( _sqrtEx.denominator() );
         mpRadicand     = new ex( _sqrtEx.radicand() );
+        mVariables     = symtab( _sqrtEx.variables() );
     }
 
     /**
@@ -115,22 +154,9 @@ namespace vs
      * @return  true,   if the variable occurs in this square root expression;
      *          false,  otherwise.
      */
-    bool SqrtEx::hasVariable( const ex& _variable ) const
+    bool SqrtEx::hasVariable( const string& _variable ) const
     {
-        if( constantPart().has( _variable ) )
-        {
-            return true;
-        }
-        else if( factor().has( _variable ) )
-        {
-            return true;
-        }
-        else if( radicand().has( _variable ) )
-        {
-            return true;
-        }
-        else
-            return denominator().has( _variable );
+        return mVariables.find( _variable ) != mVariables.end();
     }
 
     /**
@@ -219,10 +245,11 @@ namespace vs
     SqrtEx operator +( const SqrtEx& _sqrtEx1, const SqrtEx& _sqrtEx2 )
     {
         assert( !_sqrtEx1.hasSqrt() ||!_sqrtEx2.hasSqrt() || _sqrtEx1.radicand() == _sqrtEx2.radicand() );
-        SqrtEx
-        result = SqrtEx( _sqrtEx2.denominator() * _sqrtEx1.constantPart() + _sqrtEx2.constantPart() * _sqrtEx1.denominator(),
+        symtab vars = symtab( _sqrtEx1.variables() );
+        vars.insert( _sqrtEx2.variables().begin(), _sqrtEx2.variables().end() );
+        SqrtEx result = SqrtEx( _sqrtEx2.denominator() * _sqrtEx1.constantPart() + _sqrtEx2.constantPart() * _sqrtEx1.denominator(),
                          _sqrtEx2.denominator() * _sqrtEx1.factor() + _sqrtEx2.factor() * _sqrtEx1.denominator(),
-                         _sqrtEx1.denominator() * _sqrtEx2.denominator(), _sqrtEx1.radicand() );
+                         _sqrtEx1.denominator() * _sqrtEx2.denominator(), _sqrtEx1.radicand(), vars );
         return result;
     }
 
@@ -235,10 +262,11 @@ namespace vs
     SqrtEx operator -( const SqrtEx& _sqrtEx1, const SqrtEx& _sqrtEx2 )
     {
         assert( !_sqrtEx1.hasSqrt() ||!_sqrtEx2.hasSqrt() || _sqrtEx1.radicand() == _sqrtEx2.radicand() );
-        SqrtEx
-        result = SqrtEx( _sqrtEx2.denominator() * _sqrtEx1.constantPart() - _sqrtEx2.constantPart() * _sqrtEx1.denominator(),
+        symtab vars = symtab( _sqrtEx1.variables() );
+        vars.insert( _sqrtEx2.variables().begin(), _sqrtEx2.variables().end() );
+        SqrtEx result = SqrtEx( _sqrtEx2.denominator() * _sqrtEx1.constantPart() - _sqrtEx2.constantPart() * _sqrtEx1.denominator(),
                          _sqrtEx2.denominator() * _sqrtEx1.factor() - _sqrtEx2.factor() * _sqrtEx1.denominator(),
-                         _sqrtEx1.denominator() * _sqrtEx2.denominator(), _sqrtEx1.radicand() );
+                         _sqrtEx1.denominator() * _sqrtEx2.denominator(), _sqrtEx1.radicand(), vars );
         return result;
     }
 
@@ -251,10 +279,11 @@ namespace vs
     SqrtEx operator *( const SqrtEx& _sqrtEx1, const SqrtEx& _sqrtEx2 )
     {
         assert( !_sqrtEx1.hasSqrt() ||!_sqrtEx2.hasSqrt() || _sqrtEx1.radicand() == _sqrtEx2.radicand() );
-        SqrtEx
-        result = SqrtEx( _sqrtEx2.constantPart() * _sqrtEx1.constantPart() + _sqrtEx2.factor() * _sqrtEx1.factor() * _sqrtEx1.radicand(),
+        symtab vars = symtab( _sqrtEx1.variables() );
+        vars.insert( _sqrtEx2.variables().begin(), _sqrtEx2.variables().end() );
+        SqrtEx result = SqrtEx( _sqrtEx2.constantPart() * _sqrtEx1.constantPart() + _sqrtEx2.factor() * _sqrtEx1.factor() * _sqrtEx1.radicand(),
                          _sqrtEx2.constantPart() * _sqrtEx1.factor() + _sqrtEx2.factor() * _sqrtEx1.constantPart(),
-                         _sqrtEx1.denominator() * _sqrtEx2.denominator(), _sqrtEx1.radicand() );
+                         _sqrtEx1.denominator() * _sqrtEx2.denominator(), _sqrtEx1.radicand(), vars );
         return result;
     }
 
@@ -268,9 +297,10 @@ namespace vs
     SqrtEx operator /( const SqrtEx& _sqrtEx1, const SqrtEx& _sqrtEx2 )
     {
         assert( !_sqrtEx2.hasSqrt() );
-        SqrtEx
-        result = SqrtEx( _sqrtEx1.constantPart() * _sqrtEx2.denominator(), _sqrtEx1.factor() * _sqrtEx2.denominator(),
-                         _sqrtEx1.denominator() * _sqrtEx2.factor(), _sqrtEx1.radicand() );
+        symtab vars = symtab( _sqrtEx1.variables() );
+        vars.insert( _sqrtEx2.variables().begin(), _sqrtEx2.variables().end() );
+        SqrtEx result = SqrtEx( _sqrtEx1.constantPart() * _sqrtEx2.denominator(), _sqrtEx1.factor() * _sqrtEx2.denominator(),
+                         _sqrtEx1.denominator() * _sqrtEx2.factor(), _sqrtEx1.radicand(), vars );
         return result;
     }
 
@@ -298,6 +328,24 @@ namespace vs
     }
 
     /**
+     *
+     * @param _expression
+     * @param _var
+     */
+    void simplify( ex& _expression, const ex& _var )
+    {
+        if( _expression.has( _var ) )
+        {
+            ex un, con, prim;
+            _expression.unitcontprim( _var, un, con, prim );
+            if( con.info( info_flags::rational ) )
+            {
+                _expression = prim * un;
+            }
+        }
+    }
+
+    /**
      * Substitutes a variable in an expression by a square root expression, which
      * results in a square root expression.
      *
@@ -307,7 +355,7 @@ namespace vs
      *
      * @return The resulting square root expression.
      */
-    SqrtEx subBySqrtEx( const ex& _ex, const ex& _var, const SqrtEx& _subTerm )
+    SqrtEx subBySqrtEx( const ex& _ex, const ex& _var, const SqrtEx& _subTerm, const symtab& _variables )
     {
         #ifdef VS_DEBUG_METHODS
         cout << "subBySqrtEx" << endl;
@@ -328,7 +376,7 @@ namespace vs
         signed n = _ex.degree( _var );
         if( n == 0 )
         {
-            SqrtEx result = SqrtEx( _ex.numer(), 0, _ex.denom(), 0 );
+            SqrtEx result = SqrtEx( _ex.numer(), 0, _ex.denom(), 0, _variables );
             return result;
         }
 
@@ -359,9 +407,41 @@ namespace vs
             resConstantPart += _ex.coeff( _var, i ) * qk[i - 1] * sk[n - i];
             resFactor       += _ex.coeff( _var, i ) * rk[i - 1] * sk[n - i];
         }
-        SqrtEx result = SqrtEx( resConstantPart, resFactor, sk[n], _subTerm.radicand() );
+        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+        {
+            if( resConstantPart.has( var->second ) )
+            {
+                simplify( resConstantPart, var->second );
+                break;
+            }
+        }
+        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+        {
+            if( resFactor.has( var->second ) )
+            {
+                simplify( resFactor, var->second );
+                break;
+            }
+        }
+        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+        {
+            if( sk[n].has( var->second ) )
+            {
+                simplify( sk[n], var->second );
+                break;
+            }
+        }
+        ex radicand = _subTerm.radicand();
+        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+        {
+            if( radicand.has( var->second ) )
+            {
+                simplify( radicand, var->second );
+                break;
+            }
+        }
+        SqrtEx result = SqrtEx( resConstantPart, resFactor, sk[n], radicand, _variables );
         return result;
     }
-
 }    // end namspace vs
 

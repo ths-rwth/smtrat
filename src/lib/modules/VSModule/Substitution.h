@@ -58,13 +58,13 @@ namespace vs
              * Members:
              */
             std::string*      mpVariable;
+            GiNaC::ex*        mpVarAsEx;
             SqrtEx*           mpTerm;
             #ifdef VS_CUBIC_CASE
             GiNaC::ex*        mpMultiRootLessOcond;
             SqrtEx*           mpFirstZeroOfDerivOfOCond;
             SqrtEx*           mpSecondZeroOfDerivOfOCond;
             #endif
-            GiNaC::symtab     mTermVariables;
             Substitution_Type mType;
             ConditionSet*     mpOriginalConditions;
 
@@ -74,8 +74,8 @@ namespace vs
              * Constructors:
              */
             Substitution();
-            Substitution( const std::string&, const Substitution_Type&, const ConditionSet& );
-            Substitution( const std::string&, const SqrtEx&, const Substitution_Type&, const ConditionSet& );
+            Substitution( const std::string&, const GiNaC::ex&, const Substitution_Type&, const ConditionSet& );
+            Substitution( const std::string&, const GiNaC::ex&, const SqrtEx&, const Substitution_Type&, const ConditionSet& );
             #ifdef VS_CUBIC_CASE
             Substitution( const std::string&, const GiNaC::ex&, const SqrtEx&, const SqrtEx&, const Substitution_Type&, const ConditionSet& );
             #endif
@@ -92,6 +92,10 @@ namespace vs
             const std::string& variable() const
             {
                 return *mpVariable;
+            }
+            const GiNaC::ex& varAsEx() const
+            {
+                return *mpVarAsEx;
             }
 
             const SqrtEx& term() const
@@ -118,7 +122,7 @@ namespace vs
 
             const GiNaC::symtab& termVariables() const
             {
-                return mTermVariables;
+                return mpTerm->variables();
             }
 
             Substitution_Type& rType()

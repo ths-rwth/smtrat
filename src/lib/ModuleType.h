@@ -60,8 +60,6 @@ namespace smtrat
         MT_CNFerModule,
         /// type of class VSModule
         MT_SingleVSModule,
-        /// type of class SimplifierModule
-        MT_FourierMotzkinSimplifier,
         /// type of class ICPModule
         MT_ICPModule,
         /// type of no Module

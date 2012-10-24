@@ -131,13 +131,25 @@ namespace smtrat
         }
         else if( mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE )
         {
+//        std::cout << __func__ << ":" << __LINE__ << std::endl;
+//        print();
             while( !mpSubformulas->empty() )
             {
+//        std::cout << __func__ << ":" << __LINE__ << std::endl;
+
+
                 Formula* pSubForm = mpSubformulas->back();
+
+
+//        std::cout << __func__ << ":" << __LINE__ << std::endl;
                 mpSubformulas->pop_back();
+//        std::cout << __func__ << ":" << __LINE__ << std::endl;
                 delete pSubForm;
+//        std::cout << __func__ << ":" << __LINE__ << std::endl;
             }
+//        std::cout << __func__ << ":" << __LINE__ << std::endl;
             delete mpSubformulas;
+//        std::cout << __func__ << ":" << __LINE__ << std::endl;
         }
     }
 
@@ -545,11 +557,6 @@ namespace smtrat
             case MT_SingleVSModule:
             {
                 mPropositions |= PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE;
-                break;
-            }
-            case MT_FourierMotzkinSimplifier:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_FOURIERMOTZKINSIMPLIFIER;
                 break;
             }
             case MT_ICPModule:
@@ -1286,23 +1293,23 @@ namespace smtrat
                         case CR_EQ:
                         {
                             _formula.copyAndDelete( new Formula( OR ));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS )));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS )));
+                            _formula.addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
                             return true;
                         }
                         case CR_LEQ:
                         {
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS )));
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
                             return false;
                         }
                         case CR_LESS:
                         {
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LEQ )));
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LEQ, constraint->variables() )));
                             return false;
                         }
                         case CR_NEQ:
                         {
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ )));
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
                             return false;
                         }
                         default:

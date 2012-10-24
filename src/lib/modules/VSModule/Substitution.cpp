@@ -39,6 +39,7 @@ namespace vs
     Substitution::Substitution()
     {
         mpVariable 					= new string		( "RandomVariable" );
+        mpVarAsEx                   = new ex( 0 );
         mpTerm 						= new SqrtEx			( )					;
         #ifdef VS_CUBIC_CASE
         mpMultiRootLessOcond		= new ex			( 0 )				;
@@ -46,28 +47,28 @@ namespace vs
         mpSecondZeroOfDerivOfOCond	= new SqrtEx			( )					;
         #endif
         mType						= ST_NORMAL									;
-        mTermVariables				= symtab		( )					;
         mpOriginalConditions		= new ConditionSet	( )					;
     }
 
 
-    Substitution::Substitution( const string& _variable, const Substitution_Type& _type, const ConditionSet& _oConditions )
+    Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const Substitution_Type& _type, const ConditionSet& _oConditions )
     {
         mpVariable 					= new string		( _variable )	;
-        mpTerm 						= new SqrtEx			( )				;
+        mpVarAsEx 					= new ex            ( _varAsEx )	;
+        mpTerm 						= new SqrtEx		( )				;
         #ifdef VS_CUBIC_CASE
         mpMultiRootLessOcond		= new ex			( 0 )			;
         mpFirstZeroOfDerivOfOCond	= new SqrtEx			( )				;
         mpSecondZeroOfDerivOfOCond	= new SqrtEx			( )				;
         #endif
         mType						= Substitution_Type		( _type )		;
-        mTermVariables 				= symtab		( )				;
         mpOriginalConditions		= new ConditionSet	( _oConditions );
     }
 
-    Substitution::Substitution( const string& _variable, const SqrtEx& _term, const Substitution_Type& _type, const ConditionSet& _oConditions )
+    Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const SqrtEx& _term, const Substitution_Type& _type, const ConditionSet& _oConditions )
     {
         mpVariable 					= new string	( _variable )	;
+        mpVarAsEx 					= new ex            ( _varAsEx )	;
         mpTerm 						= new SqrtEx		( _term )		;
         #ifdef VS_CUBIC_CASE
         mpMultiRootLessOcond		= new ex		( 0 )			;
@@ -75,9 +76,7 @@ namespace vs
         mpSecondZeroOfDerivOfOCond	= new SqrtEx		( )				;
         #endif
         mType						= Substitution_Type	( _type )		;
-        mTermVariables 				= symtab		( )				;
         mpOriginalConditions		= new ConditionSet	( _oConditions );
-        getVariables( mpTerm->expression(), mTermVariables );
     }
 
     #ifdef VS_CUBIC_CASE
@@ -88,7 +87,6 @@ namespace vs
         mpFirstZeroOfDerivOfOCond	= new SqrtEx		( _firstZeroOfDerivOfOCond )	;
         mpSecondZeroOfDerivOfOCond	= new SqrtEx		( _secondZeroOfDerivOfOCond )	;
         mType						= Substitution_Type	( _type )						;
-        mTermVariables 				= symtab		( )								;
         mpOriginalConditions		= new ConditionSet	( _oConditions )				;
         for( symtab::const_iterator var = _vars.begin();
             var!= _vars.end();
@@ -104,7 +102,8 @@ namespace vs
 
     Substitution::Substitution( const Substitution& _sub )
     {
-        mpVariable 					= new string	( _sub.variable() )					;
+        mpVariable 					= new string	( _sub.variable() )                     ;
+        mpVarAsEx 					= new ex        ( _sub.varAsEx() )                      ;
         mType	   					= Substitution_Type	( _sub.type() )						;
         mpTerm 						= new SqrtEx		( _sub.term() )						;
         #ifdef VS_CUBIC_CASE
@@ -112,7 +111,6 @@ namespace vs
         mpFirstZeroOfDerivOfOCond	= new SqrtEx		( _sub.firstZeroOfDerivOfOCond() )	;
         mpSecondZeroOfDerivOfOCond	= new SqrtEx		( _sub.secondZeroOfDerivOfOCond() )	;
         #endif
-        mTermVariables				= symtab	( _sub.termVariables() )									;
         mpOriginalConditions		= new ConditionSet	( _sub.originalConditions() )		;
     }
 
@@ -122,6 +120,7 @@ namespace vs
     Substitution::~Substitution()
     {
         delete mpVariable					;
+        delete mpVarAsEx                    ;
         delete mpTerm						;
         #ifdef VS_CUBIC_CASE
         delete mpMultiRootLessOcond			;
@@ -136,7 +135,7 @@ namespace vs
     */
 
     /**
-    * Valutates the substitution according to a heuristic.
+    * Valuates the substitution according to a heuristic.
     *
     * @return
     */

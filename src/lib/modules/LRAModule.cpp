@@ -425,6 +425,13 @@ namespace smtrat
             }
             else if( bound.pInfo()->updated < 0 )
             {
+//                bound.print( true, cout, true );
+//                cout << endl;
+//                if( bound.pInfo()->position == mpPassedFormula->end() ) cout << "ERROR!!!" << endl;
+//                cout << __func__ << ":" << __LINE__ << endl;
+//                printPassedFormula();
+//                cout << endl;
+//                cout << **bound.pInfo()->position << endl;
                 removeSubformulaFromPassedFormula( bound.pInfo()->position );
                 bound.pInfo()->position = mpPassedFormula->end();
                 bound.pInfo()->updated = 0;

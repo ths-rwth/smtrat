@@ -86,10 +86,11 @@ namespace smtrat
             /*
              * Attributes:
              */
-            GiNaC::ex*           pLhs;
-            GiNaC::symtab        mVariables;
-            Constraint_Relation  mRelation;
             unsigned             mID;
+            Constraint_Relation  mRelation;
+            GiNaC::ex*           pLhs;
+            std::map< const std::string, GiNaC::ex*, strCmp >* mpMultiRootLessLhs;
+            GiNaC::symtab        mVariables;
 
         public:
 
@@ -97,8 +98,8 @@ namespace smtrat
              * Constructors:
              */
             Constraint();
-            Constraint( const GiNaC::ex&, const Constraint_Relation, unsigned = 0 );
-            Constraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation&, unsigned = 0 );
+            Constraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab&, unsigned = 0 );
+            Constraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation&, const GiNaC::symtab&, unsigned = 0 );
             Constraint( const Constraint& );
 
             /*
@@ -144,6 +145,11 @@ namespace smtrat
                 return mID;
             }
 
+            const std::map< const std::string, GiNaC::ex*, strCmp >& multiRootLessLhs() const
+            {
+                return *mpMultiRootLessLhs;
+            }
+
             static void normalize( GiNaC::ex& _exp )
             {
                 #ifdef VS_USE_GINAC_NORMAL
@@ -175,7 +181,7 @@ namespace smtrat
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
 
             // Data access methods (read and write).
-            GiNaC::ex multiRootLessLhs( const GiNaC::symbol& ) const;
+            const GiNaC::ex& multiRootLessLhs( const std::string& ) const;
 
             // Operators.
             bool operator <( const Constraint& ) const;

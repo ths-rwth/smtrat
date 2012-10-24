@@ -34,7 +34,6 @@
 
 #include "VSModule.h"
 #include "SmartSimplifier.h"
-#include "FourierMotzkinSimplifier.h"
 
 #ifdef USE_GB
 

@@ -52,10 +52,23 @@ namespace svs
         }
 
         /*
+            * Get the variables of the constraint merged with those of the substitution.
+            */
+        symtab variables = symtab();
+        for( symtab::const_iterator var = _constraint->variables().begin(); var != _constraint->variables().end(); ++var )
+        {
+            variables.insert( *var );
+        }
+        for( symtab::const_iterator var = _subterm.variables().begin(); var != _subterm.variables().end(); ++var )
+        {
+            variables.insert( *var );
+        }
+
+        /*
          * Collect all necessary left hand sides to create the new conditions of all cases
          * referring to the virtual substitution.
          */
-        vs::SqrtEx substituted = subBySqrtEx( lhs, ex( _variable ), _subterm );
+        vs::SqrtEx substituted = subBySqrtEx( lhs, ex( _variable ), _subterm, variables );
 
         /*
          *                               q
@@ -72,7 +85,7 @@ namespace svs
                 /*
                     * Add conjunction (q =/!= 0) to the substitution result.
                     */
-                return new Formula( Formula::newConstraint( substituted.constantPart(), relation ) );
+                return new Formula( Formula::newConstraint( substituted.constantPart(), relation, variables ) );
             }
             else
             {
@@ -84,8 +97,8 @@ namespace svs
                      * Add conjunction (s>0 and q </>/<=/>= 0) to the substitution result.
                      */
                     Formula* resultBackA = new Formula( AND );
-                    resultBackA->addSubformula( Formula::newConstraint( substituted.denominator(), CR_GREATER ) );
-                    resultBackA->addSubformula( Formula::newConstraint( substituted.constantPart(), relation ) );
+                    resultBackA->addSubformula( Formula::newConstraint( substituted.denominator(), CR_GREATER, variables ) );
+                    resultBackA->addSubformula( Formula::newConstraint( substituted.constantPart(), relation, variables ) );
                     result->addSubformula( resultBackA );
 
                     /*
@@ -121,8 +134,8 @@ namespace svs
                             assert( false );
                         }
                     }
-                    resultBackB->addSubformula( Formula::newConstraint( substituted.denominator(), CR_LESS ) );
-                    resultBackB->addSubformula( Formula::newConstraint( substituted.constantPart(), inverseRelation ) );
+                    resultBackB->addSubformula( Formula::newConstraint( substituted.denominator(), CR_LESS, variables ) );
+                    resultBackB->addSubformula( Formula::newConstraint( substituted.constantPart(), inverseRelation, variables ) );
                     result->addSubformula( resultBackB );
                     return result;
                 }
@@ -131,7 +144,7 @@ namespace svs
                     /*
                      * Add conjunction (f(-c/b)*b^k </>/<=/>= 0) to the substitution result.
                      */
-                    return new Formula( Formula::newConstraint( substituted.constantPart(), relation ) );
+                    return new Formula( Formula::newConstraint( substituted.constantPart(), relation, variables ) );
                 }
             }
         }
@@ -153,27 +166,27 @@ namespace svs
             {
                 case CR_EQ:
                 {
-                    return substituteNormalSqrtEq( substituted.radicand(), substituted.constantPart(), substituted.factor() );
+                    return substituteNormalSqrtEq( substituted.radicand(), substituted.constantPart(), substituted.factor(), variables );
                 }
                 case CR_NEQ:
                 {
-                    return substituteNormalSqrtNeq( substituted.radicand(), substituted.constantPart(), substituted.factor() );
+                    return substituteNormalSqrtNeq( substituted.radicand(), substituted.constantPart(), substituted.factor(), variables );
                 }
                 case CR_LESS:
                 {
-                    return substituteNormalSqrtLess( substituted.radicand(), substituted.constantPart(), substituted.factor(), s );
+                    return substituteNormalSqrtLess( substituted.radicand(), substituted.constantPart(), substituted.factor(), s, variables );
                 }
                 case CR_GREATER:
                 {
-                    return substituteNormalSqrtLess( substituted.radicand(), substituted.constantPart(), substituted.factor(), -s );
+                    return substituteNormalSqrtLess( substituted.radicand(), substituted.constantPart(), substituted.factor(), -s, variables );
                 }
                 case CR_LEQ:
                 {
-                    return substituteNormalSqrtLeq( substituted.radicand(), substituted.constantPart(), substituted.factor(), s );
+                    return substituteNormalSqrtLeq( substituted.radicand(), substituted.constantPart(), substituted.factor(), s, variables );
                 }
                 case CR_GEQ:
                 {
-                    return substituteNormalSqrtLeq( substituted.radicand(), substituted.constantPart(), substituted.factor(), -s );
+                    return substituteNormalSqrtLeq( substituted.radicand(), substituted.constantPart(), substituted.factor(), -s, variables );
                 }
                 default:
                 {
@@ -197,7 +210,7 @@ namespace svs
      * @param _q                    The summand not containing the square root.
      * @param _r                    The coefficient of the radicand.
      */
-    Formula* substituteNormalSqrtEq( const ex& _radicand, const ex& _q, const ex& _r )
+    Formula* substituteNormalSqrtEq( const ex& _radicand, const ex& _q, const ex& _r, const symtab& _variables )
     {
         Formula* result = new Formula( OR );
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
@@ -207,34 +220,34 @@ namespace svs
          * Add conjunction (q=0 and r=0) to the substitution result.
          */
         Formula* resultBackA = new Formula( AND );
-        resultBackA->addSubformula( Formula::newConstraint( _q, CR_EQ ) );
-        resultBackA->addSubformula( Formula::newConstraint( _r, CR_EQ ) );
+        resultBackA->addSubformula( Formula::newConstraint( _q, CR_EQ, _variables ) );
+        resultBackA->addSubformula( Formula::newConstraint( _r, CR_EQ, _variables ) );
         result->addSubformula( resultBackA );
 
         /*
          * Add conjunction (q=0 and radicand=0) to the substitution result.
          */
         Formula* resultBackB = new Formula( AND );
-        resultBackB->addSubformula( Formula::newConstraint( _q, CR_EQ ) );
-        resultBackB->addSubformula( Formula::newConstraint( _radicand, CR_EQ ) );
+        resultBackB->addSubformula( Formula::newConstraint( _q, CR_EQ, _variables ) );
+        resultBackB->addSubformula( Formula::newConstraint( _radicand, CR_EQ, _variables ) );
         result->addSubformula( resultBackB );
 
         /*
          * Add conjunction (q<0 and r>0 and q^2-r^2*radicand=0) to the substitution result.
          */
         Formula* resultBackC = new Formula( AND );
-        resultBackC->addSubformula( Formula::newConstraint( _q, CR_LESS ) );
-        resultBackC->addSubformula( Formula::newConstraint( _r, CR_GREATER ) );
-        resultBackC->addSubformula( Formula::newConstraint( lhs, CR_EQ ) );
+        resultBackC->addSubformula( Formula::newConstraint( _q, CR_LESS, _variables ) );
+        resultBackC->addSubformula( Formula::newConstraint( _r, CR_GREATER, _variables ) );
+        resultBackC->addSubformula( Formula::newConstraint( lhs, CR_EQ, _variables ) );
         result->addSubformula( resultBackC );
 
         /*
          * Add conjunction (q>0 and r<0 and q^2-r^2*radicand=0) to the substitution result.
          */
         Formula* resultBackD = new Formula( AND );
-        resultBackD->addSubformula( Formula::newConstraint( _q, CR_GREATER ) );
-        resultBackD->addSubformula( Formula::newConstraint( _r, CR_LESS ) );
-        resultBackD->addSubformula( Formula::newConstraint( lhs, CR_EQ ) );
+        resultBackD->addSubformula( Formula::newConstraint( _q, CR_GREATER, _variables ) );
+        resultBackD->addSubformula( Formula::newConstraint( _r, CR_LESS, _variables ) );
+        resultBackD->addSubformula( Formula::newConstraint( lhs, CR_EQ, _variables ) );
         result->addSubformula( resultBackD );
         return result;
     }
@@ -251,7 +264,7 @@ namespace svs
      * @param _q                    The summand not containing the square root.
      * @param _r                    The coefficient of the radicand.
      */
-    Formula* substituteNormalSqrtNeq( const ex& _radicand, const ex& _q, const ex& _r )
+    Formula* substituteNormalSqrtNeq( const ex& _radicand, const ex& _q, const ex& _r, const symtab& _variables )
     {
         Formula* result = new Formula( OR );
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
@@ -261,22 +274,22 @@ namespace svs
          * Add conjunction (q>0 and r>0) to the substitution result.
          */
         Formula* resultBackA = new Formula( AND );
-        resultBackA->addSubformula( Formula::newConstraint( _q, CR_GREATER ) );
-        resultBackA->addSubformula( Formula::newConstraint( _r, CR_GREATER ) );
+        resultBackA->addSubformula( Formula::newConstraint( _q, CR_GREATER, _variables ) );
+        resultBackA->addSubformula( Formula::newConstraint( _r, CR_GREATER, _variables ) );
         result->addSubformula( resultBackA );
 
         /*
          * Add conjunction (q<0 and r<0) to the substitution result.
          */
         Formula* resultBackB = new Formula( AND );
-        resultBackB->addSubformula( Formula::newConstraint( _q, CR_LESS ) );
-        resultBackB->addSubformula( Formula::newConstraint( _r, CR_LESS ) );
+        resultBackB->addSubformula( Formula::newConstraint( _q, CR_LESS, _variables ) );
+        resultBackB->addSubformula( Formula::newConstraint( _r, CR_LESS, _variables ) );
         result->addSubformula( resultBackB );
 
         /*
          * Add conjunction (q^2-r^2*radicand!=0) to the substitution result.
          */
-        result->addSubformula( Formula::newConstraint( lhs, CR_NEQ ) );
+        result->addSubformula( Formula::newConstraint( lhs, CR_NEQ, _variables ) );
         return result;
     }
 
@@ -293,7 +306,7 @@ namespace svs
      * @param _s                    The denominator of the expression containing the square root.
      * @param _substitutionResults  The vector, in which to store the results of this substitution.
      */
-    Formula* substituteNormalSqrtLess( const ex& _radicand, const ex& _q, const ex& _r, const ex& _s )
+    Formula* substituteNormalSqrtLess( const ex& _radicand, const ex& _q, const ex& _r, const ex& _s, const symtab& _variables )
     {
         Formula* result = new Formula( OR );
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
@@ -303,54 +316,54 @@ namespace svs
          * Add conjunction (q<0 and s>0 and q^2-r^2*radicand>0) to the substitution result.
          */
         Formula* resultBackA = new Formula( AND );
-        resultBackA->addSubformula( Formula::newConstraint( _q, CR_LESS ) );
-        resultBackA->addSubformula( Formula::newConstraint( _s, CR_GREATER ) );
-        resultBackA->addSubformula( Formula::newConstraint( lhs, CR_GREATER ) );
+        resultBackA->addSubformula( Formula::newConstraint( _q, CR_LESS, _variables ) );
+        resultBackA->addSubformula( Formula::newConstraint( _s, CR_GREATER, _variables ) );
+        resultBackA->addSubformula( Formula::newConstraint( lhs, CR_GREATER, _variables ) );
         result->addSubformula( resultBackA );
 
         /*
          * Add conjunction (q>0 and s<0 and q^2-r^2*radicand>0) to the substitution result.
          */
         Formula* resultBackB = new Formula( AND );
-        resultBackB->addSubformula( Formula::newConstraint( _q, CR_GREATER ) );
-        resultBackB->addSubformula( Formula::newConstraint( _s, CR_LESS ) );
-        resultBackB->addSubformula( Formula::newConstraint( lhs, CR_GREATER ) );
+        resultBackB->addSubformula( Formula::newConstraint( _q, CR_GREATER, _variables ) );
+        resultBackB->addSubformula( Formula::newConstraint( _s, CR_LESS, _variables ) );
+        resultBackB->addSubformula( Formula::newConstraint( lhs, CR_GREATER, _variables ) );
         result->addSubformula( resultBackB );
 
         /*
          * Add conjunction (r>0 and s<0 and q^2-r^2*radicand<0) to the substitution result.
          */
         Formula* resultBackC = new Formula( AND );
-        resultBackC->addSubformula( Formula::newConstraint( _r, CR_GREATER ) );
-        resultBackC->addSubformula( Formula::newConstraint( _s, CR_LESS ) );
-        resultBackC->addSubformula( Formula::newConstraint( lhs, CR_LESS ) );
+        resultBackC->addSubformula( Formula::newConstraint( _r, CR_GREATER, _variables ) );
+        resultBackC->addSubformula( Formula::newConstraint( _s, CR_LESS, _variables ) );
+        resultBackC->addSubformula( Formula::newConstraint( lhs, CR_LESS, _variables ) );
         result->addSubformula( resultBackC );
 
         /*
          * Add conjunction (r<0 and s>0 and q^2-r^2*radicand<0) to the substitution result.
          */
         Formula* resultBackD = new Formula( AND );
-        resultBackD->addSubformula( Formula::newConstraint( _r, CR_LESS ) );
-        resultBackD->addSubformula( Formula::newConstraint( _s, CR_GREATER ) );
-        resultBackD->addSubformula( Formula::newConstraint( lhs, CR_LESS ) );
+        resultBackD->addSubformula( Formula::newConstraint( _r, CR_LESS, _variables ) );
+        resultBackD->addSubformula( Formula::newConstraint( _s, CR_GREATER, _variables ) );
+        resultBackD->addSubformula( Formula::newConstraint( lhs, CR_LESS, _variables ) );
         result->addSubformula( resultBackD );
 
         /*
          * Add conjunction (r>=0 and q<0 and s>0) to the substitution result.
          */
         Formula* resultBackE = new Formula( AND );
-        resultBackE->addSubformula( Formula::newConstraint( _r, CR_GEQ ) );
-        resultBackE->addSubformula( Formula::newConstraint( _q, CR_GREATER ) );
-        resultBackE->addSubformula( Formula::newConstraint( _s, CR_LESS ) );
+        resultBackE->addSubformula( Formula::newConstraint( _r, CR_GEQ, _variables ) );
+        resultBackE->addSubformula( Formula::newConstraint( _q, CR_GREATER, _variables ) );
+        resultBackE->addSubformula( Formula::newConstraint( _s, CR_LESS, _variables ) );
         result->addSubformula( resultBackE );
 
         /*
          * Add conjunction (r<=0 and q>0 and s<0) to the substitution result.
          */
         Formula* resultBackF = new Formula( AND );
-        resultBackF->addSubformula( Formula::newConstraint( _r, CR_LEQ ) );
-        resultBackF->addSubformula( Formula::newConstraint( _q, CR_LESS ) );
-        resultBackF->addSubformula( Formula::newConstraint( _s, CR_GREATER ) );
+        resultBackF->addSubformula( Formula::newConstraint( _r, CR_LEQ, _variables ) );
+        resultBackF->addSubformula( Formula::newConstraint( _q, CR_LESS, _variables ) );
+        resultBackF->addSubformula( Formula::newConstraint( _s, CR_GREATER, _variables ) );
         result->addSubformula( resultBackF );
         return result;
     }
@@ -368,7 +381,7 @@ namespace svs
      * @param _r                    The coefficient of the radicand.
      * @param _s                    The denominator of the expression containing the square root.
      */
-    Formula* substituteNormalSqrtLeq( const ex& _radicand, const ex& _q, const ex& _r, const ex& _s )
+    Formula* substituteNormalSqrtLeq( const ex& _radicand, const ex& _q, const ex& _r, const ex& _s, const symtab& _variables )
     {
         Formula* result = new Formula( OR );
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
@@ -378,52 +391,52 @@ namespace svs
          * Add conjunction (q<0 and s>0 and q^2-r^2*radicand>=0) to the substitution result.
          */
         Formula* resultBackA = new Formula( AND );
-        resultBackA->addSubformula( Formula::newConstraint( _q, CR_LESS ) );
-        resultBackA->addSubformula( Formula::newConstraint( _s, CR_GREATER ) );
-        resultBackA->addSubformula( Formula::newConstraint( lhs, CR_GEQ ) );
+        resultBackA->addSubformula( Formula::newConstraint( _q, CR_LESS, _variables ) );
+        resultBackA->addSubformula( Formula::newConstraint( _s, CR_GREATER, _variables ) );
+        resultBackA->addSubformula( Formula::newConstraint( lhs, CR_GEQ, _variables ) );
         result->addSubformula( resultBackA );
 
         /*
          * Add conjunction (q>0 and s<0 and q^2-r^2*radicand>=0) to the substitution result.
          */
         Formula* resultBackB = new Formula( AND );
-        resultBackB->addSubformula( Formula::newConstraint( _q, CR_GREATER ) );
-        resultBackB->addSubformula( Formula::newConstraint( _s, CR_LESS ) );
-        resultBackB->addSubformula( Formula::newConstraint( lhs, CR_GEQ ) );
+        resultBackB->addSubformula( Formula::newConstraint( _q, CR_GREATER, _variables ) );
+        resultBackB->addSubformula( Formula::newConstraint( _s, CR_LESS, _variables ) );
+        resultBackB->addSubformula( Formula::newConstraint( lhs, CR_GEQ, _variables ) );
         result->addSubformula( resultBackB );
 
         /*
          * Add conjunction (r>0 and s<0 and q^2-r^2*radicand<=0) to the substitution result.
          */
         Formula* resultBackC = new Formula( AND );
-        resultBackC->addSubformula( Formula::newConstraint( _r, CR_GREATER ) );
-        resultBackC->addSubformula( Formula::newConstraint( _s, CR_LESS ) );
-        resultBackC->addSubformula( Formula::newConstraint( lhs, CR_LEQ ) );
+        resultBackC->addSubformula( Formula::newConstraint( _r, CR_GREATER, _variables ) );
+        resultBackC->addSubformula( Formula::newConstraint( _s, CR_LESS, _variables ) );
+        resultBackC->addSubformula( Formula::newConstraint( lhs, CR_LEQ, _variables ) );
         result->addSubformula( resultBackC );
 
         /*
          * Add conjunction (r<0 and s>0 and q^2-r^2*radicand<=0) to the substitution result.
          */
         Formula* resultBackD = new Formula( AND );
-        resultBackD->addSubformula( Formula::newConstraint( _r, CR_LESS ) );
-        resultBackD->addSubformula( Formula::newConstraint( _s, CR_GREATER ) );
-        resultBackD->addSubformula( Formula::newConstraint( lhs, CR_LEQ ) );
+        resultBackD->addSubformula( Formula::newConstraint( _r, CR_LESS, _variables ) );
+        resultBackD->addSubformula( Formula::newConstraint( _s, CR_GREATER, _variables ) );
+        resultBackD->addSubformula( Formula::newConstraint( lhs, CR_LEQ, _variables ) );
         result->addSubformula( resultBackD );
 
         /*
          * Add conjunction (r=0 and q=0) to the substitution result.
          */
         Formula* resultBackE = new Formula( AND );
-        resultBackE->addSubformula( Formula::newConstraint( _r, CR_EQ ) );
-        resultBackE->addSubformula( Formula::newConstraint( _q, CR_EQ ) );
+        resultBackE->addSubformula( Formula::newConstraint( _r, CR_EQ, _variables ) );
+        resultBackE->addSubformula( Formula::newConstraint( _q, CR_EQ, _variables ) );
         result->addSubformula( resultBackE );
 
         /*
          * Add conjunction (radicand=0 and q=0) to the substitution result.
          */
         Formula* resultBackF = new Formula( AND );
-        resultBackF->addSubformula( Formula::newConstraint( _radicand, CR_EQ ) );
-        resultBackF->addSubformula( Formula::newConstraint( _q, CR_EQ ) );
+        resultBackF->addSubformula( Formula::newConstraint( _radicand, CR_EQ, _variables ) );
+        resultBackF->addSubformula( Formula::newConstraint( _q, CR_EQ, _variables ) );
         result->addSubformula( resultBackF );
         return result;
     }
@@ -523,7 +536,7 @@ namespace svs
          */
         Formula* resultBack = new Formula( OR );
         ex derivative = _constraint->lhs();
-        const Constraint* currentConstraint = Formula::newConstraint( derivative, CR_EQ );
+        const Constraint* currentConstraint = Formula::newConstraint( derivative, CR_EQ, _constraint->variables() );
         bool              isAOddDerivation  = true;
         vector<string>    auxBooleans       = vector<string>();
         signed            i                 = derivative.degree( ex( _variable ) );
@@ -551,11 +564,11 @@ namespace svs
              */
             if( isAOddDerivation )
             {
-                resultBackBack->addSubformula( substituteNormal( Formula::newConstraint( derivative, _relation2 ), _variable, _subterm ) );
+                resultBackBack->addSubformula( substituteNormal( Formula::newConstraint( derivative, _relation2, _constraint->variables() ), _variable, _subterm ) );
             }
             else
             {
-                resultBackBack->addSubformula( substituteNormal( Formula::newConstraint( derivative, _relation1 ), _variable, _subterm ) );
+                resultBackBack->addSubformula( substituteNormal( Formula::newConstraint( derivative, _relation1, _constraint->variables() ), _variable, _subterm ) );
             }
             resultBack->addSubformula( resultBackBack );
 
@@ -572,7 +585,7 @@ namespace svs
             --i;
             if( i >= 0 )
             {
-                currentConstraint = Formula::newConstraint( derivative, CR_EQ );
+                currentConstraint = Formula::newConstraint( derivative, CR_EQ, _constraint->variables() );
                 isAOddDerivation  = !isAOddDerivation;
             }
         }
@@ -665,22 +678,22 @@ namespace svs
 
             for( unsigned j = coefficients.size() - 1; j > i - 1; --j )
             {
-                resultBack->addSubformula( Formula::newConstraint( coefficients.at( j ), CR_EQ ) );
+                resultBack->addSubformula( Formula::newConstraint( coefficients.at( j ), CR_EQ, _constraint.variables() ) );
             }
             if( i > 1 )
             {
                 if( fmod( i - 1, 2.0 ) != 0.0 )
                 {
-                    resultBack->addSubformula( Formula::newConstraint( coefficients.at( i - 1 ), oddRelationType ) );
+                    resultBack->addSubformula( Formula::newConstraint( coefficients.at( i - 1 ), oddRelationType, _constraint.variables() ) );
                 }
                 else
                 {
-                    resultBack->addSubformula( Formula::newConstraint( coefficients.at( i - 1 ), evenRelationType ) );
+                    resultBack->addSubformula( Formula::newConstraint( coefficients.at( i - 1 ), evenRelationType, _constraint.variables() ) );
                 }
             }
             else
             {
-                resultBack->addSubformula( Formula::newConstraint( coefficients.at( i - 1 ), _constraint.relation() ) );
+                resultBack->addSubformula( Formula::newConstraint( coefficients.at( i - 1 ), _constraint.relation(), _constraint.variables() ) );
             }
             result->addSubformula( resultBack );
         }
@@ -713,7 +726,7 @@ namespace svs
         {
             assert( !coefficients.at( i ).has( _variable ) );
 
-            result->addSubformula( Formula::newConstraint( coefficients.at( i ), CR_EQ ) );
+            result->addSubformula( Formula::newConstraint( coefficients.at( i ), CR_EQ, _constraint.variables() ) );
         }
         return result;
     }
@@ -747,7 +760,7 @@ namespace svs
             /*
              * Add (a_i!=0) to the disjunction.
              */
-            result->addSubformula( Formula::newConstraint( coefficients.at( i ), CR_NEQ ) );
+            result->addSubformula( Formula::newConstraint( coefficients.at( i ), CR_NEQ, _constraint.variables() ) );
         }
         return result;
     }
