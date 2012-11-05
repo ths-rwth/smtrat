@@ -284,7 +284,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            SATModule( Manager* const _tsManager, const Formula* const );
+            SATModule( const Formula* const, Manager* const _tsManager );
 
             /**
              * Destructor:

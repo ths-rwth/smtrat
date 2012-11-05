@@ -74,8 +74,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    PreProModule::PreProModule( Manager* const _tsManager, const Formula* const _formula ):
-        Module( _tsManager, _formula ),
+    PreProModule::PreProModule( const Formula* const _formula, Manager* const _tsManager ):
+        Module( _formula, _tsManager ),
         mConstraints( std::vector<const Constraint*>() ),
         mConstraintOrigins( std::vector< std::set<const Formula*> >() ),
         mConstraintBacktrackPoints( std::vector<pair<pair<bool, unsigned>, pair<unsigned, unsigned> > >() ),

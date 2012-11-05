@@ -62,8 +62,8 @@ using namespace std;
 
 namespace smtrat
 {
-    CADModule::CADModule( Manager* const _tsManager, const Formula* const _formula ):
-        Module( _tsManager, _formula ),
+    CADModule::CADModule( const Formula* const _formula, Manager* const _tsManager ):
+        Module( _formula, _tsManager ),
 #ifdef SMTRAT_CAD_ALTERNATIVE_SETTING
         mCAD( GiNaCRA::CADSettings::getSettings( GiNaCRA::RATIONALSAMPLE_CADSETTING ) ),
 #else
@@ -84,7 +84,7 @@ namespace smtrat
     CADModule::~CADModule(){}
 
     /**
-     * This method just adds the respective constraint of the subformula, which ought to be one real constraint,
+     * This method just adds the respective constraint of the sub formula, which ought to be one real constraint,
      * to the local list of constraints. Moreover, the list of all variables is updated accordingly.
      *
      * Note that the CAD object is not touched here, the respective calls to CAD::addPolynomial and CAD::check happen in isConsistent.

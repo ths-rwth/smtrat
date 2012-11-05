@@ -41,8 +41,8 @@ namespace smtrat
      * Constructors:
      */
 
-    VSModule::VSModule( Manager* const _tsManager, const Formula* const _formula ):
-        Module( _tsManager, _formula ),
+    VSModule::VSModule( const Formula* const _formula, Manager* const _tsManager ):
+        Module( _formula, _tsManager ),
         mFreshConstraintReceived( false ),
         mInconsistentConstraintAdded( false ),
         mIDCounter( 0 ),
@@ -316,26 +316,24 @@ namespace smtrat
                 currentState->simplify();
                 #ifdef VS_DEBUG
                 cout << "*** Considered state:" << endl;
-                currentState->printAlone( "   ", cout );
+                currentState->printAlone( "*** ", cout );
                 #endif
                 if( currentState->isInconsistent() )
                 {
+                    #ifdef VS_LOG_INTERMEDIATE_STEPS
+                    logConditions( *currentState, false, "Intermediate_conflict_of_VSModule" );
+                    #endif
                     eraseDTsOfRanking( *currentState );
                     if( currentState->isRoot() )
                     {
                         updateInfeasibleSubset();
+                        return False;
                     }
                     else
                     {
-                        if( currentState->passConflictToFather() )
-                        {
-                            insertDTinRanking( currentState );
-                        }
-                        else
-                        {
-                            eraseDTsOfRanking( currentState->rFather() );
-                            insertDTinRanking( currentState->pFather() );
-                        }
+                        currentState->passConflictToFather();
+                        eraseDTofRanking( currentState->rFather() );
+                        insertDTinRanking( currentState->pFather() );
                     }
                 }
                 else if( currentState->hasRecentlyAddedConditions() )
@@ -447,6 +445,9 @@ namespace smtrat
                                     */
                                     if( currentState->conditions().empty() )
                                     {
+                                        #ifdef VS_DEBUG
+                                        cout << "*** Check ancestors!" << endl;
+                                        #endif
                                         /*
                                         * Check if there are still conditions in any ancestor, which have not been considered.
                                         */
@@ -467,6 +468,10 @@ namespace smtrat
                                             {
                                                 insertDTsinRanking( unfinishedAncestor );
                                             }
+                                            #ifdef VS_DEBUG
+                                            cout << "*** Found an unfinished ancestor:" << endl;
+                                            unfinishedAncestor->printAlone();
+                                            #endif
                                         }
                                         else
                                         {
@@ -504,7 +509,7 @@ namespace smtrat
                                                 {
                                                     insertDTinRanking( *child );
                                                 }
-                                                if( !(**child).toHighDegree() &&!(**child).markedAsDeleted() )
+                                                if( !(**child).toHighDegree() && !(**child).markedAsDeleted() )
                                                 {
                                                     currentStateHasChildrenToConsider = true;
                                                 }
@@ -521,6 +526,9 @@ namespace smtrat
                                             if( !currentStateHasChildrenWithToHighDegree )
                                             {
                                                 currentState->rInconsistent() = true;
+                                                #ifdef VS_LOG_INTERMEDIATE_STEPS
+                                                logConditions( *currentState, false, "Intermediate_conflict_of_VSModule" );
+                                                #endif
                                                 eraseDTsOfRanking( *currentState );
                                                 if( currentState->isRoot() )
                                                 {
@@ -528,15 +536,9 @@ namespace smtrat
                                                 }
                                                 else
                                                 {
-                                                    if( currentState->passConflictToFather() )
-                                                    {
-                                                        insertDTinRanking( currentState );
-                                                    }
-                                                    else
-                                                    {
-                                                        eraseDTsOfRanking( currentState->rFather() );
-                                                        insertDTinRanking( currentState->pFather() );
-                                                    }
+                                                    currentState->passConflictToFather();
+                                                    eraseDTsOfRanking( currentState->rFather() );
+                                                    insertDTinRanking( currentState->pFather() );
                                                 }
                                             }
                                             else
@@ -575,19 +577,17 @@ namespace smtrat
                                             #ifdef VS_DEBUG
                                             cout << "*** No elimination. (Too high degree)" << endl;
                                             #endif
-                                            #ifdef VS_DELAY_BACKEND_CALL
                                             if( (*currentState).toHighDegree() )
                                             {
-                                                #endif
                                                 /*
                                                 * If we need to involve a complete approach.
                                                 */
                                                 #ifdef VS_WITH_BACKEND
-                                                for( ValuationMap::const_iterator valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
-                                                {
-                                                    (*(*valDTPair).second).printConditions( "", cout, true );
-                                                    cout << endl;
-                                                }
+//                                                for( ValuationMap::const_iterator valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
+//                                                {
+//                                                    (*(*valDTPair).second).printConditions( "", cout, true );
+//                                                    cout << endl;
+//                                                }
 //                                                printAll();
                                                 switch( runBackendSolvers( currentState ) )
                                                 {
@@ -633,21 +633,11 @@ namespace smtrat
                                                     }
                                                     case False:
                                                     {
-                                                        currentState->rToHighDegree() = true;
                                                         break;
                                                     }
                                                     case Unknown:
                                                     {
-                                                        if( !currentState->rToHighDegree() )
-                                                        {
-                                                            currentState->rToHighDegree() = true;
-                                                            insertDTinRanking( currentState );
-                                                            break;
-                                                        }
-                                                        else
-                                                        {
-                                                            return Unknown;
-                                                        }
+                                                        return Unknown;
                                                     }
                                                     default:
                                                     {
@@ -663,14 +653,12 @@ namespace smtrat
                                                 mDeductions.clear();
                                                 return Unknown;
                                                 #endif
-                                                #ifdef VS_DELAY_BACKEND_CALL
                                             }
                                             else
                                             {
                                                 currentState->rToHighDegree() = true;
                                                 insertDTinRanking( currentState );
                                             }
-                                            #endif
                                         }
                                     }
                                     else
@@ -693,7 +681,14 @@ namespace smtrat
                 }
             }
         }
+        if( mpStateTree->conflictSets().empty() ) mpStateTree->print();
+        if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
+        if( mpStateTree->conflictSets().empty() ) Module::storeAssumptionsToCheck( *mpManager );
+        assert( !mpStateTree->conflictSets().empty() );
         updateInfeasibleSubset();
+        #ifdef VS_DEBUG
+        printAll( cout );
+        #endif
         return False;
     }
 
@@ -735,17 +730,19 @@ namespace smtrat
             subType = ST_NORMAL;
         }
 
-        #ifdef VS_ELIMINATE_MULTI_ROOTS
-        const ex& lhs = constraint.multiRootLessLhs( _eliminationVar );
-        cout << constraint.lhs() << "   to   " << lhs << endl;
-        #else
-        const ex& lhs = constraint.lhs();
-        #endif
-
         vector<ex> coeffs = vector<ex>();
-        for( signed i = 0; i <= lhs.degree( ex( sym ) ); ++i )
+        #ifdef VS_ELIMINATE_MULTI_ROOTS
+        signed degree = constraint.multiRootLessLhs().degree( ex( sym ) );
+        #else
+        signed degree = constraint.lhs().degree( ex( sym ) );
+        #endif
+        for( signed i = 0; i <= degree; ++i )
         {
-            coeffs.push_back( ex( lhs.coeff( ex( sym ), i ) ) );
+            #ifdef VS_ELIMINATE_MULTI_ROOTS
+            coeffs.push_back( ex( constraint.multiRootLessLhs().coeff( ex( sym ), i ) ) );
+            #else
+            coeffs.push_back( ex( constraint.lhs().coeff( ex( sym ), i ) ) );
+            #endif
         }
 
         ConditionSet oConditions = ConditionSet();
@@ -786,10 +783,14 @@ namespace smtrat
                      * Add its valuation to the current ranking.
                      */
                     insertDTinRanking( (*_currentState).rChildren().back() );
-                    numberOfAddedChildren++;
+                    ++numberOfAddedChildren;
                     #ifdef VS_DEBUG
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
+                }
+                else if( constraint.relation() == CR_EQ && coeffs.at( 1 ).info( info_flags::rational ) )
+                {
+                    generatedTestCandidateBeingASolution = true;
                 }
                 break;
             }
@@ -818,11 +819,10 @@ namespace smtrat
                      * Add its valuation to the current ranking.
                      */
                     insertDTinRanking( (*_currentState).rChildren().back() );
-                    numberOfAddedChildren++;
+                    ++numberOfAddedChildren;
                     #ifdef VS_DEBUG
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
-                    if( generatedTestCandidateBeingASolution ) break;
                 }
 
                 /*
@@ -844,11 +844,10 @@ namespace smtrat
                      * Add its valuation to the current ranking.
                      */
                     insertDTinRanking( (*_currentState).rChildren().back() );
-                    numberOfAddedChildren++;
+                    ++numberOfAddedChildren;
                     #ifdef VS_DEBUG
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
-                    if( generatedTestCandidateBeingASolution ) break;
                 }
 
                 /*
@@ -870,10 +869,15 @@ namespace smtrat
                      * Add its valuation to the current ranking.
                      */
                     insertDTinRanking( (*_currentState).rChildren().back() );
-                    numberOfAddedChildren++;
+                    ++numberOfAddedChildren;
                     #ifdef VS_DEBUG
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
+                }
+
+                if( numberOfAddedChildren == 0 && constraint.relation() == CR_EQ && coeffs.at( 2 ).info( info_flags::rational ) && coeffs.at( 1 ).info( info_flags::rational ) )
+                {
+                    generatedTestCandidateBeingASolution = true;
                 }
                 break;
             }
@@ -914,19 +918,31 @@ namespace smtrat
             {
                 (**cond).rFlag() = true;
             }
-            assert( numberOfAddedChildren == 1 );
+            assert( numberOfAddedChildren <= _currentState->children().size() );
 
-            while( _currentState->children().size() > 1 )
+            if( numberOfAddedChildren == 0 )
             {
-                State* toDelete = *_currentState->rChildren().begin();
-//                ConflictSets::iterator conflictSet = _currentState->rConflictSets().find( toDelete->pSubstitution() );
-//                if( conflictSet != _currentState->conflictSets().end() )
-//                {
-//                    _currentState->rConflictSets().erase( conflictSet );
-//                }
-                _currentState->resetConflictSets();
-                _currentState->rChildren().erase( _currentState->rChildren().begin() );
-                delete toDelete;
+                ConditionSetSet conflictSet = ConditionSetSet();
+                ConditionSet condSet  = ConditionSet();
+                condSet.insert( _condition );
+                conflictSet.insert( condSet );
+                _currentState->addConflicts( NULL, conflictSet );
+                _currentState->rInconsistent() = true;
+            }
+            else
+            {
+                while( _currentState->children().size() > numberOfAddedChildren )
+                {
+                    State* toDelete = *_currentState->rChildren().begin();
+    //                ConflictSets::iterator conflictSet = _currentState->rConflictSets().find( toDelete->pSubstitution() );
+    //                if( conflictSet != _currentState->conflictSets().end() )
+    //                {
+    //                    _currentState->rConflictSets().erase( conflictSet );
+    //                }
+                    _currentState->resetConflictSets();
+                    _currentState->rChildren().erase( _currentState->rChildren().begin() );
+                    delete toDelete;
+                }
             }
         }
         else
@@ -1318,7 +1334,7 @@ namespace smtrat
      */
     void VSModule::insertDTinRanking( State* _state )
     {
-        if( !_state->markedAsDeleted() &&!(_state->isInconsistent() && _state->conflictSets().empty() && _state->conditionsSimplified()) )
+        if( !_state->markedAsDeleted() && !(_state->isInconsistent() && _state->conflictSets().empty() && _state->conditionsSimplified()) )
         {
             if( _state->id() != 0 )
             {
@@ -1839,28 +1855,24 @@ namespace smtrat
 
                 eraseDTsOfRanking( *_state );
 
-                /*
-                * If the considered state is the root, update the found infeasible subset as infeasible subset.
-                */
+                #ifdef VS_LOG_INTERMEDIATE_STEPS
+                logConditions( *_state, false, "Intermediate_conflict_of_VSModule" );
+                #endif
                 if( _state->isRoot() )
                 {
+                    /*
+                     * If the considered state is the root, update the found infeasible subset as infeasible subset.
+                     */
                     updateInfeasibleSubset();
                 }
-
-                /*
-                * If the considered state is not the root, pass the infeasible subset to the father.
-                */
                 else
                 {
-                    if( _state->passConflictToFather() )
-                    {
-                        insertDTinRanking( _state );
-                    }
-                    else
-                    {
-                        eraseDTsOfRanking( _state->rFather() );
-                        insertDTinRanking( _state->pFather() );
-                    }
+                    /*
+                     * If the considered state is not the root, pass the infeasible subset to the father.
+                     */
+                    _state->passConflictToFather();
+                    eraseDTsOfRanking( _state->rFather() );
+                    insertDTinRanking( _state->pFather() );
                 }
                 return False;
             }
@@ -1877,27 +1889,35 @@ namespace smtrat
         }
     }
 
-    #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+    #ifdef VS_LOG_INTERMEDIATE_STEPS
     /**
      * Checks the correctness of the symbolic assignment given by the path from the root
      * state to the satisfying state.
      */
     void VSModule::checkAnswer() const
     {
-        if( !(*mpRanking).empty() )
+        if( !mRanking.empty() )
         {
-            const State* currentState = (*(*mpRanking).begin()).second;
+            const State* currentState = mRanking.begin()->second;
             while( !(*currentState).isRoot() )
             {
-                set<const smtrat::Constraint*> constraints = set<const smtrat::Constraint*>();
-                for( ConditionVector::const_iterator cond = currentState->conditions().begin(); cond != currentState->conditions().end(); ++cond )
-                {
-                    constraints.insert( (**cond).pConstraint() );
-                }
-                smtrat::Module::addAssumptionToCheck( constraints, true, "Intermediate_result_of_VSModule" );
-                currentState = (*currentState).pFather();
+                logConditions( *currentState, true, "Intermediate_result_of_VSModule" );
+                currentState = currentState->pFather();
             }
         }
+    }
+
+    /**
+     * Checks whether the set of conditions is is consistent/inconsistent.
+     */
+    void VSModule::logConditions( const State& _state, bool _assumption, const string& _description ) const
+    {
+        set<const smtrat::Constraint*> constraints = set<const smtrat::Constraint*>();
+        for( ConditionVector::const_iterator cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
+        {
+            constraints.insert( (**cond).pConstraint() );
+        }
+        smtrat::Module::addAssumptionToCheck( constraints, _assumption, _description );
     }
     #endif
 

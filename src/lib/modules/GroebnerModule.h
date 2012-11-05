@@ -50,7 +50,7 @@
 #ifdef GATHER_STATS
 #include "GBModule/GBModuleStatistics.h"
 #include "GBModule/GBCalculationStatistics.h"
-#endif 
+#endif
 
 
 namespace smtrat
@@ -60,7 +60,7 @@ namespace smtrat
  * A class to save the current state of a GroebnerModule.
  * Used for backtracking-support
  */
-template<typename Settings> 
+template<typename Settings>
 class GroebnerModuleState
 {
 public:
@@ -143,8 +143,8 @@ private:
 };
 
 /**
- * A solver module based on Groebner basis. 
- * Details can be found in my Bachelor Thesis 
+ * A solver module based on Groebner basis.
+ * Details can be found in my Bachelor Thesis
  * "On Groebner Bases in SMT-Compliant Decision Procedures"
  * @author Sebastian Junges
  */
@@ -157,7 +157,7 @@ public:
     typedef typename Settings::Order Order;
     typedef typename Settings::Polynomial Polynomial;
 
-    GroebnerModule( Manager * const, const Formula * const );
+    GroebnerModule( const Formula * const, Manager * const );
     virtual ~GroebnerModule( );
 
     bool assertSubformula( Formula::const_iterator _formula );
@@ -175,10 +175,10 @@ protected:
     std::vector<Formula::const_iterator> mBacktrackPoints;
     /// Saves the relevant history to support backtracking
     std::list<GroebnerModuleState<Settings> > mStateHistory;
-    
-    
 
-    /// A list of inequalities which were added after the last consistency check. 
+
+
+    /// A list of inequalities which were added after the last consistency check.
     std::list<typename InequalitiesTable<Settings>::Rows::iterator> mNewInequalities;
 
     std::map<unsigned, unsigned> mAdditionalVarMap;

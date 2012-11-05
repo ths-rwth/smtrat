@@ -87,8 +87,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    SATModule::SATModule( Manager* const _tsManager, const Formula* const _formula ):
-        Module( _tsManager, _formula ),
+    SATModule::SATModule( const Formula* const _formula, Manager* const _tsManager ):
+        Module( _formula, _tsManager ),
         // Parameters (user settable):
         //
         verbosity( 0 ),

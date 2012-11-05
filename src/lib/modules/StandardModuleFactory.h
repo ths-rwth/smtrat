@@ -46,9 +46,9 @@ namespace smtrat
 
             ~StandardModuleFactory(){}
 
-            Module* create( Manager* const _tsManager, const Formula* const _formula )
+            Module* create( const Formula* const _formula, Manager* const _tsManager )
             {
-                Module* module = new Module( _tsManager, _formula );
+                Module* module = new Module( _formula, _tsManager );
                 this->mModuleType = module->type();
                 return module;
             }

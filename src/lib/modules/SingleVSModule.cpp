@@ -37,8 +37,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    SingleVSModule::SingleVSModule( Manager* const _tsManager, const Formula* const _formula ):
-        Module( _tsManager, _formula ),
+    SingleVSModule::SingleVSModule( const Formula* const _formula, Manager* const _tsManager ):
+        Module( _formula, _tsManager ),
         mNumberOfConsideredConstraints( 0 ),
         mTCRanking( TCRanking() )
     {

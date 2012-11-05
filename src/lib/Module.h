@@ -102,7 +102,7 @@ namespace smtrat
             bool checkFirstSubformulaToPassValidity() const;
 
         public:
-            Module( Manager* const , const Formula* const );
+            Module( const Formula* const, Manager* const = NULL );
             virtual ~Module();
 
             static std::vector<std::string> mAssumptionToCheck;

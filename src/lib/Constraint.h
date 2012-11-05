@@ -73,6 +73,29 @@ namespace smtrat
         }
     };
 
+    struct VarInfo
+    {
+        unsigned maxDegree;
+        unsigned minDegree;
+        unsigned occurences;
+    };
+
+    typedef std::map< std::string, VarInfo, strCmp > VarInfoMap;
+
+    typedef std::pair< std::string, signed > VarDegree;
+
+    struct varDegreeCmp
+    {
+        bool operator ()( const VarDegree& varDegreeA, const VarDegree& varDegreeB ) const
+        {
+            signed result = varDegreeA.first.compare( varDegreeB.first );
+            if( result < 0 ) return true;
+            else if ( result == 0 ) return varDegreeA.second < varDegreeB.second;
+        }
+    };
+
+    typedef std::map< VarDegree, GiNaC::ex*, varDegreeCmp > Coefficients;
+
     /**
      * Class to create a constraint object.
      * @author Florian Corzilius
@@ -82,15 +105,18 @@ namespace smtrat
     class Constraint
     {
         private:
-
             /*
              * Attributes:
              */
+            bool                 mSumOfSquares;
             unsigned             mID;
+            unsigned             mNumMonomials;
             Constraint_Relation  mRelation;
             GiNaC::ex*           pLhs;
-            std::map< const std::string, GiNaC::ex*, strCmp >* mpMultiRootLessLhs;
+            GiNaC::ex*           mpMultiRootLessLhs;
             GiNaC::symtab        mVariables;
+            VarInfoMap           mVarInfoMap;
+            Coefficients         mCoefficients;
 
         public:
 
@@ -145,7 +171,12 @@ namespace smtrat
                 return mID;
             }
 
-            const std::map< const std::string, GiNaC::ex*, strCmp >& multiRootLessLhs() const
+            const GiNaC::ex* pMultiRootLessLhs() const
+            {
+                return mpMultiRootLessLhs;
+            }
+
+            const GiNaC::ex& multiRootLessLhs() const
             {
                 return *mpMultiRootLessLhs;
             }
@@ -178,6 +209,7 @@ namespace smtrat
             bool isLinear() const;
             unsigned maxDegree() const;
             std::map<const std::string, GiNaC::numeric, strCmp> linearAndConstantCoefficients() const;
+            void init();
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
 
             // Data access methods (read and write).

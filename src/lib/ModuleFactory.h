@@ -57,7 +57,7 @@ namespace smtrat
             {}
             ~ModuleFactory(){}
 
-            virtual Module* create( Manager* const _tsManager, const Formula* const _formula ) = 0;
+            virtual Module* create( const Formula* const _formula, Manager* const _tsManager ) = 0;
 
             const ModuleType type() const
             {

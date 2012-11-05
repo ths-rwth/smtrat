@@ -44,8 +44,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    LRAModule::LRAModule( Manager* const _tsManager, const Formula* const _formula ):
-        Module( _tsManager, _formula ),
+    LRAModule::LRAModule( const Formula* const _formula, Manager* const _tsManager ):
+        Module( _formula, _tsManager ),
         mInitialized(),
         mMaxConstraintId( Formula::constraintPool().size() + 1 ),
         mTableau( mpPassedFormula->end() ),

@@ -38,7 +38,7 @@
 //#define VS_DEBUG_METHODS_X
 //#define VS_DEBUG_BACKENDS
 //#define VS_DEBUG_BACKENDS_EXTENDED
-//#define VS_LOG_INFSUBSETS
+#define VS_LOG_INFSUBSETS
 
 namespace vs
 {
@@ -664,17 +664,8 @@ namespace vs
                 {
                     const Condition* condA = _conditionVectorToSimplify[posA];
                     const Condition* condB = _conditionVectorToSimplify[posB];
-                    //cout << "### Compare: " << endl;
-                    //cout << "###         ";
-                    //condA->print( cout );
-                    //cout << endl;
-                    //cout << "###         ";
-                    //condB->print( cout );
-                    //cout << endl;
-                    //cout << "### Results in:   ";
                     signed strongProp = smtrat::Constraint::compare( condA->constraint(), condB->constraint() );
-                    //cout << strongProp << endl;
-
+//                    cout << condA->constraint() << " and " << condB->constraint() << " -> " << strongProp << endl;
                     /*
                      * If the two conditions have the same solution space.
                      */
@@ -729,8 +720,7 @@ namespace vs
                             redundantConditionSet.insert( condB );
                             _conditionVectorToSimplify.push_back( cond );
                         }
-                        else if( (condA->constraint().relation() == smtrat::CR_NEQ && condB->constraint().relation() == smtrat::CR_GEQ)
-                                 || (condA->constraint().relation() == smtrat::CR_GEQ && condB->constraint().relation() == smtrat::CR_NEQ) )
+                        else if( (condA->constraint().relation() == smtrat::CR_NEQ && condB->constraint().relation() == smtrat::CR_GEQ) )
                         {
                             const Condition* cond = new Condition( smtrat::Formula::newConstraint( condB->constraint().lhs(), smtrat::CR_GREATER, condB->constraint().variables() ), condB->flag(), condB->originalConditions(),  condB->valuation(), true );
                             cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
@@ -738,11 +728,26 @@ namespace vs
                             redundantConditionSet.insert( condB );
                             _conditionVectorToSimplify.push_back( cond );
                         }
-                        else if( (condA->constraint().relation() == smtrat::CR_NEQ && condB->constraint().relation() == smtrat::CR_LEQ)
-                                 || (condA->constraint().relation() == smtrat::CR_LEQ && condB->constraint().relation() == smtrat::CR_NEQ) )
+                        else if( (condA->constraint().relation() == smtrat::CR_GEQ && condB->constraint().relation() == smtrat::CR_NEQ) )
+                        {
+                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condA->constraint().lhs(), smtrat::CR_GREATER, condA->constraint().variables() ), condA->flag(), condA->originalConditions(),  condA->valuation(), true );
+                            cond->pOriginalConditions()->insert( condB->originalConditions().begin(), condB->originalConditions().end() );
+                            redundantConditionSet.insert( condA );
+                            redundantConditionSet.insert( condB );
+                            _conditionVectorToSimplify.push_back( cond );
+                        }
+                        else if( (condA->constraint().relation() == smtrat::CR_NEQ && condB->constraint().relation() == smtrat::CR_LEQ) )
                         {
                             const Condition* cond = new Condition( smtrat::Formula::newConstraint( condB->constraint().lhs(), smtrat::CR_LESS, condB->constraint().variables() ), condB->flag(), condB->originalConditions(),  condB->valuation(), true );
                             cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
+                            redundantConditionSet.insert( condA );
+                            redundantConditionSet.insert( condB );
+                            _conditionVectorToSimplify.push_back( cond );
+                        }
+                        else if( (condA->constraint().relation() == smtrat::CR_LEQ && condB->constraint().relation() == smtrat::CR_NEQ) )
+                        {
+                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condA->constraint().lhs(), smtrat::CR_LESS, condA->constraint().variables() ), condA->flag(), condA->originalConditions(),  condA->valuation(), true );
+                            cond->pOriginalConditions()->insert( condB->originalConditions().begin(), condB->originalConditions().end() );
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                             _conditionVectorToSimplify.push_back( cond );
@@ -2288,11 +2293,8 @@ namespace vs
 
     /**
      * Passes the original conditions of the covering set of the conflicts of this state to its father.
-     *
-     * @return  true,   if the conflict which is passed to the father contains the variable represented by its index;
-     *          false,  otherwise.
      */
-    bool State::passConflictToFather()
+    void State::passConflictToFather()
     {
         #ifdef VS_DEBUG_METHODS_X
         cout << __func__ << endl;
@@ -2429,16 +2431,13 @@ namespace vs
          */
         rHasRecentlyAddedConditions() = false;
         rTakeSubResultCombAgain()     = false;
+        rFather().rMarkedAsDeleted() = false;
 
         if( coverSetOCondsContainIndexOfFather )
         {
+            rMarkedAsDeleted() = false;
             rInconsistent() = false;
             rStateType()    = COMBINE_SUBRESULTS;
-            return true;
-        }
-        else
-        {
-            return false;
         }
     }
 

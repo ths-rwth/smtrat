@@ -407,40 +407,40 @@ namespace vs
             resConstantPart += _ex.coeff( _var, i ) * qk[i - 1] * sk[n - i];
             resFactor       += _ex.coeff( _var, i ) * rk[i - 1] * sk[n - i];
         }
-        for( auto var = _variables.begin(); var != _variables.end(); ++var )
-        {
-            if( resConstantPart.has( var->second ) )
-            {
-                simplify( resConstantPart, var->second );
-                break;
-            }
-        }
-        for( auto var = _variables.begin(); var != _variables.end(); ++var )
-        {
-            if( resFactor.has( var->second ) )
-            {
-                simplify( resFactor, var->second );
-                break;
-            }
-        }
-        for( auto var = _variables.begin(); var != _variables.end(); ++var )
-        {
-            if( sk[n].has( var->second ) )
-            {
-                simplify( sk[n], var->second );
-                break;
-            }
-        }
-        ex radicand = _subTerm.radicand();
-        for( auto var = _variables.begin(); var != _variables.end(); ++var )
-        {
-            if( radicand.has( var->second ) )
-            {
-                simplify( radicand, var->second );
-                break;
-            }
-        }
-        SqrtEx result = SqrtEx( resConstantPart, resFactor, sk[n], radicand, _variables );
+//        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+//        {
+//            if( resConstantPart.has( var->second ) )
+//            {
+//                simplify( resConstantPart, var->second );
+//                break;
+//            }
+//        }
+//        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+//        {
+//            if( resFactor.has( var->second ) )
+//            {
+//                simplify( resFactor, var->second );
+//                break;
+//            }
+//        }
+//        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+//        {
+//            if( sk[n].has( var->second ) )
+//            {
+//                simplify( sk[n], var->second );
+//                break;
+//            }
+//        }
+//        ex radicand = _subTerm.radicand();
+//        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+//        {
+//            if( radicand.has( var->second ) )
+//            {
+//                simplify( radicand, var->second );
+//                break;
+//            }
+//        }
+        SqrtEx result = SqrtEx( resConstantPart, resFactor, sk[n], _subTerm.radicand(), _variables );
         return result;
     }
 }    // end namspace vs

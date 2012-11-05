@@ -34,13 +34,12 @@
 //#define VS_BACKTRACKING
 #define VS_INFEASIBLE_SUBSET_GENERATION
 
-#define VS_DELAY_BACKEND_CALL
 #define VS_WITH_BACKEND
 
 //#define VS_DEBUG
-#define VS_STATISTICS
+//#define VS_STATISTICS
 //#define VS_PRINT_ANSWERS
-//#define VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+#define VS_LOG_INTERMEDIATE_STEPS
 //#define VS_LOG_INFSUBSETS_OF_BACKEND
 
 #include "VSModule/Substitute.h"
@@ -100,7 +99,7 @@ namespace smtrat
             /*
              * Constructors:
              */
-            VSModule( Manager* const _tsManager, const Formula* const );
+            VSModule( const Formula* const, Manager* const _tsManager );
 
             /*
              * Destructor:
@@ -145,8 +144,9 @@ namespace smtrat
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
             bool adaptPassedFormula( const vs::State& );
             Answer runBackendSolvers( vs::State* );
-            #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+            #ifdef VS_LOG_INTERMEDIATE_STEPS
             void checkAnswer() const;
+            void logConditions( const vs::State&, bool, const std::string& ) const;
             #endif
     };
 

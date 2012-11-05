@@ -47,7 +47,7 @@ namespace smtrat
         mID( 0 ),
         mRelation( CR_EQ ),
         pLhs( new ex( 0 ) ),
-        mpMultiRootLessLhs( new map< const string, ex*, strCmp >() ),
+        mpMultiRootLessLhs( pLhs ),
         mVariables()
     {
         normalize( rLhs() );
@@ -57,7 +57,7 @@ namespace smtrat
         mID( _id ),
         mRelation( _cr ),
         pLhs( new ex( _lhs ) ),
-        mpMultiRootLessLhs( new map< const string, ex*, strCmp >() ),
+        mpMultiRootLessLhs( pLhs ),
         mVariables()
     {
         normalize( rLhs() );
@@ -70,6 +70,17 @@ namespace smtrat
             if( pLhs->has( var->second ) )
             {
                 mVariables.insert( *var );
+            }
+        }
+        if( mVariables.size() == 1 )
+        {
+            ex derivate            = lhs().diff( ex_to<symbol>( mVariables.begin()->second ), 1 );
+            ex gcdOfLhsAndDerivate = gcd( lhs(), derivate );
+            normalize( gcdOfLhsAndDerivate );
+            ex quotient;
+            if( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, quotient ) )
+            {
+                mpMultiRootLessLhs = new ex( quotient );
             }
         }
     }
@@ -78,7 +89,7 @@ namespace smtrat
         mID( _id ),
         mRelation( _cr ),
         pLhs( new ex( _lhs - _rhs ) ),
-        mpMultiRootLessLhs( new map< const string, ex*, strCmp >() ),
+        mpMultiRootLessLhs( pLhs ),
         mVariables()
     {
         normalize( rLhs() );
@@ -93,34 +104,34 @@ namespace smtrat
                 mVariables.insert( *var );
             }
         }
+        if( mVariables.size() == 1 )
+        {
+            ex derivate            = lhs().diff( ex_to<symbol>( mVariables.begin()->second ), 1 );
+            ex gcdOfLhsAndDerivate = gcd( lhs(), derivate );
+            normalize( gcdOfLhsAndDerivate );
+            ex quotient;
+            if( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, quotient ) )
+            {
+                mpMultiRootLessLhs = new ex( quotient );
+            }
+        }
     }
 
     Constraint::Constraint( const Constraint& _constraint ):
         mID( _constraint.id() ),
         mRelation( _constraint.relation() ),
         pLhs( new ex( _constraint.lhs() ) ),
-        mpMultiRootLessLhs( new map< const string, ex*, strCmp >() ),
+        mpMultiRootLessLhs( _constraint.pMultiRootLessLhs() != _constraint.pLhs ? _constraint.mpMultiRootLessLhs : pLhs ),
         mVariables( _constraint.variables() )
-    {
-        for( auto iter = _constraint.multiRootLessLhs().begin(); iter !=  _constraint.multiRootLessLhs().end(); ++iter )
-        {
-            mpMultiRootLessLhs->insert( pair< const string, ex* >( iter->first, new ex( *iter->second ) ) );
-        }
-    }
+    {}
 
     /**
      * Destructor:
      */
     Constraint::~Constraint()
     {
+//        if( mpMultiRootLessLhs != pLhs ) delete mpMultiRootLessLhs;
         delete pLhs;
-        while( !mpMultiRootLessLhs->empty() )
-        {
-            ex* toDelete = mpMultiRootLessLhs->begin()->second;
-            mpMultiRootLessLhs->erase( mpMultiRootLessLhs->begin() );
-            delete toDelete;
-        }
-        delete mpMultiRootLessLhs;
     }
 
     /**
@@ -570,6 +581,114 @@ namespace smtrat
         return result;
     }
 
+    void Constraint::init()
+    {
+//        if( is_exactly_a<add>( linearterm ) )
+//        {
+//            for( GiNaC::const_iterator summand = linearterm.begin(); summand != linearterm.end(); ++summand )
+//            {
+//                assert( is_exactly_a<mul>( *summand ) || is_exactly_a<symbol>( *summand ) || is_exactly_a<numeric>( *summand ) );
+//                if( is_exactly_a<mul>( *summand ) )
+//                {
+//                    for( GiNaC::const_iterator factor = summand->begin(); factor != summand->end(); ++factor )
+//                    {
+//                        assert( is_exactly_a<symbol>( *factor ) || is_exactly_a<numeric>( *factor ) );
+//                        if( is_exactly_a<symbol>( *factor ) )
+//                        {
+//                            stringstream out;
+//                            out << *factor;
+//                            symbolName  = out.str();
+//                            symbolFound = true;
+//                        }
+//                        else if( is_exactly_a<numeric>( *factor ) )
+//                        {
+//                            coefficient *= ex_to<numeric>( *factor );
+//                            coeffFound  = true;
+//                        }
+//                        if( symbolFound && coeffFound )
+//                            break;    // Workaround, as it appears that GiNaC allows a product of infinitely many factors ..
+//                    }
+//                    map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
+//                    if( iter == result.end() )
+//                    {
+//                        result.insert( pair<const string, numeric>( symbolName, coefficient ) );
+//                    }
+//                    else
+//                    {
+//                        iter->second += coefficient;
+//                    }
+//                }
+//                else if( is_exactly_a<symbol>( *summand ) )
+//                {
+//                    stringstream out;
+//                    out << *summand;
+//                    string symbolName = out.str();
+//                    map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
+//                    if( iter == result.end() )
+//                    {
+//                        result.insert( pair<const string, numeric>( symbolName, numeric( 1 ) ) );
+//                    }
+//                    else
+//                    {
+//                        iter->second += 1;
+//                    }
+//                }
+//                else if( is_exactly_a<numeric>( *summand ) )
+//                {
+//                    result[""] += ex_to<numeric>( *summand );
+//                }
+//            }
+//        }
+//        else if( is_exactly_a<mul>( linearterm ) )
+//        {
+//            string symbolName   = "";
+//            numeric coefficient = 1;
+//            for( GiNaC::const_iterator factor = linearterm.begin(); factor != linearterm.end(); ++factor )
+//            {
+//                assert( is_exactly_a<symbol>( *factor ) || is_exactly_a<numeric>( *factor ) );
+//                if( is_exactly_a<symbol>( *factor ) )
+//                {
+//                    stringstream out;
+//                    out << *factor;
+//                    symbolName = out.str();
+//                }
+//                else if( is_exactly_a<numeric>( *factor ) )
+//                {
+//                    coefficient *= ex_to<numeric>( *factor );
+//                }
+//            }
+//            map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
+//            if( iter == result.end() )
+//            {
+//                result.insert( pair<const string, numeric>( symbolName, coefficient ) );
+//            }
+//            else
+//            {
+//                iter->second += coefficient;
+//            }
+//        }
+//        else if( is_exactly_a<symbol>( linearterm ) )
+//        {
+//            stringstream out;
+//            out << linearterm;
+//            string symbolName = out.str();
+//            map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
+//            if( iter == result.end() )
+//            {
+//                result.insert( pair<const string, numeric>( symbolName, numeric( 1 ) ) );
+//            }
+//            else
+//            {
+//                iter->second += 1;
+//            }
+//        }
+//        else if( is_exactly_a<numeric>( linearterm ) )
+//        {
+//            result[""] += ex_to<numeric>( linearterm );
+//        }
+//        return result;
+    }
+
     /**
      * Compares whether the two expressions are the same.
      *
@@ -681,27 +800,6 @@ namespace smtrat
                 return 0;
             }
         }
-    }
-
-    const ex& Constraint::multiRootLessLhs( const string& _varName ) const
-    {
-        map< const string, ex*, strCmp >::iterator iter = mpMultiRootLessLhs->find( _varName );
-        if( iter == mpMultiRootLessLhs->end() )
-        {
-            symtab::const_iterator var = mVariables.find( _varName );
-            assert( var != mVariables.end() );
-            ex derivate            = lhs().diff( ex_to<symbol>( var->second ), 1 );
-            ex gcdOfLhsAndDerivate = gcd( lhs(), derivate );
-            normalize( gcdOfLhsAndDerivate );
-            ex* quotient = new ex( 0 );
-            if( !( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, *quotient ) ) )
-            {
-                *quotient = lhs();
-            }
-            mpMultiRootLessLhs->insert( pair<const string, ex*>( _varName, quotient ) );
-            return *quotient;
-        }
-        return *iter->second;
     }
 
     /**

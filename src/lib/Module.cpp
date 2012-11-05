@@ -48,7 +48,7 @@ namespace smtrat
     vector<string> Module::mAssumptionToCheck = vector<string>();
     set<string, strcomp> Module::mVariablesInAssumptionToCheck = set<string, strcomp>();
 
-    Module::Module( Manager* const _tsManager, const Formula* const _formula ):
+    Module::Module( const Formula* const _formula, Manager* const _tsManager ):
         mInfeasibleSubsets(),
         mpManager( _tsManager ),
         mModuleType( MT_Module ),
@@ -115,7 +115,8 @@ namespace smtrat
          * Check if the constraint to delete is an original constraint of constraints in the vector
          * of passed constraints.
          */
-        for( Formula::iterator passedSubformula = mpPassedFormula->begin(); passedSubformula != mpPassedFormula->end(); )
+        Formula::iterator passedSubformula = mpPassedFormula->begin();
+        while( passedSubformula != mpPassedFormula->end() )
         {
             /*
              * Remove the received formula from the set of origins.
@@ -387,6 +388,8 @@ namespace smtrat
     {
         passedFormulaCannotBeSolved();
 
+        if( mpManager == NULL ) return Unknown;
+
         mUsedBackends = mpManager->getBackends( mpPassedFormula, this );
 
         if( mFirstSubformulaToPass != mpPassedFormula->end() )
@@ -454,13 +457,17 @@ namespace smtrat
         /*
          * Delete the sub formula from the passed formula.
          */
-        mAllBackends = mpManager->getAllBackends( this );
-        for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+        if( mpManager != NULL )
         {
-            (*module)->removeSubformula( _subformula );
+            mAllBackends = mpManager->getAllBackends( this );
+            for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+            {
+                (*module)->removeSubformula( _subformula );
+            }
         }
         mPassedformulaOrigins.erase( *_subformula );
-        return mpPassedFormula->erase( _subformula );
+        Formula::iterator result = mpPassedFormula->erase( _subformula );
+        return result;
     }
 
     /**
@@ -475,10 +482,13 @@ namespace smtrat
         /*
          * Delete the sub formula from the passed formula.
          */
-        mAllBackends = mpManager->getAllBackends( this );
-        for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+        if( mpManager != NULL )
         {
-            (*module)->removeSubformula( _subformula );
+            mAllBackends = mpManager->getAllBackends( this );
+            for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+            {
+                (*module)->removeSubformula( _subformula );
+            }
         }
         mPassedformulaOrigins.erase( *_subformula );
         return mpPassedFormula->prune( _subformula );
@@ -832,6 +842,8 @@ namespace smtrat
             FormulaOrigins::const_iterator formulaOrigins = mPassedformulaOrigins.find( *passedSubformula );
             assert( formulaOrigins != mPassedformulaOrigins.end() );
             _out << _initiation << "  ";
+//            if( formulaOrigins == mPassedformulaOrigins.end() ){
+//                _out << *passedSubformula << endl; _out << mpPassedFormula->size() << endl;_out << endl;  assert( false ); }
             _out << setw( 30 ) << (*passedSubformula)->toString( true );
             stringstream out;
             out << "  [" << *passedSubformula << "]" << " from " << "(";

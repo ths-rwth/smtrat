@@ -396,7 +396,7 @@ public:
                                                                                   const GiNaC::symtab&      ,
 																				  const ConditionSet&	 )										;
 	void									updateValuation						( )	      			       											;
-	bool									passConflictToFather				( )																	;
+	void									passConflictToFather				( )																	;
     #ifdef VS_USE_VARIABLE_BOUNDS
     bool                                    checkTestCandidatesForBounds        ( )                                                                 ;
     #endif

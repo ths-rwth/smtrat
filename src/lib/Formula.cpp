@@ -403,7 +403,7 @@ namespace smtrat
     void Formula::erase( const Formula* _formula )
     {
         assert( isBooleanCombination() );
-        iterator subFormula = mpSubformulas->begin();
+        Formula::iterator subFormula = mpSubformulas->begin();
         while( subFormula != mpSubformulas->end() )
         {
             if( *subFormula == _formula )
@@ -425,7 +425,7 @@ namespace smtrat
         assert( isBooleanCombination() );
         assert( _subformula != mpSubformulas->end() );
         Formula* pSubFormula = *_subformula;
-        iterator result      = mpSubformulas->erase( _subformula );
+        Formula::iterator result = mpSubformulas->erase( _subformula );
         delete pSubFormula;
         mPropositionsUptodate = false;
         return result;

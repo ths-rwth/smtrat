@@ -42,7 +42,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            PreProModule( Manager* const _tsManager, const Formula* const _formula );
+            PreProModule( const Formula* const _formula, Manager* const _tsManager );
 
             /**
              * Destructor:
@@ -68,7 +68,7 @@ namespace smtrat
             double getConstraintActivitiy( GiNaC::ex );
             double normalizeValue( double, double, double );
             void assignActivitiesFromDatabase( Formula* );
-            
+
             std::pair< const Formula*, const Formula* > isCandidateforSubstitution( Formula::const_iterator ) const;
             Formula::iterator substituteConstraint( Formula::iterator, std::pair< std::pair< std::string, bool >,
                     std::pair< std::pair<GiNaC::symtab, GiNaC::symtab>, std::pair< GiNaC::ex, GiNaC::ex> > >,
@@ -78,14 +78,14 @@ namespace smtrat
             void getConstraints( Formula*, std::vector<const Constraint*>&, bool);
             Formula::iterator interfaceRemoveSubformulaFromPassedFormula( Formula::iterator );
             Formula* removeConstraint(Formula*, GiNaC::ex, Constraint_Relation);
-    
+
 
         private:
 
             // Members for AddLearningClauses()
             std::vector<const Constraint*>                                      mConstraints;
             std::vector< std::set<const Formula*> >                             mConstraintOrigins;
-            std::vector<std::pair<std::pair<bool, unsigned>, 
+            std::vector<std::pair<std::pair<bool, unsigned>,
             std::pair<unsigned, unsigned> > >                                   mConstraintBacktrackPoints;
 
             // Members for proceedSubstitution()
@@ -94,18 +94,18 @@ namespace smtrat
             std::list<Formula*>::iterator                                       mLastCheckedFormula;
             std::vector< vec_set_const_pFormula >                               mSubstitutionOrigins;
             std::map< std::string, unsigned >                                   mNumberOfVariables;
-            std::vector< std::pair< std::pair< std::string, bool >, 
-            std::pair< std::pair<GiNaC::symtab, GiNaC::symtab>, 
+            std::vector< std::pair< std::pair< std::string, bool >,
+            std::pair< std::pair<GiNaC::symtab, GiNaC::symtab>,
             std::pair< GiNaC::ex, GiNaC::ex> > > >                              mSubstitutions;
-            
+
             // Members for assignActivities()
-            std::map< std::string, 
+            std::map< std::string,
             std::pair<double, double> >                                         mVariableDegNQuantActivities;
             std::map< std::string, double>                                      mVariableActivities;
             std::pair<double, double>                                           mVarDegreeActivityIntervall;
             std::pair<double, double>                                           mVarQuantityActivityIntervall;
             std::map< const Constraint*, std::pair< std::pair<double, double>,
-            std::pair< std::pair<double, double >, double > > >                 mConstraintActivities; 
+            std::pair< std::pair<double, double >, double > > >                 mConstraintActivities;
             std::pair<double, double>                                           mVarActivityIntervall;
             std::pair<double, double>                                           mHPDegreeActivityIntervall;
             std::pair<double, double>                                           mHVDegreeActivityIntervall;

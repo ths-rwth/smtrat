@@ -78,7 +78,7 @@ namespace smtrat
         bool mSatisfiable;
 
         public:
-            CADModule( Manager* const _tsmanager, const Formula* const );
+            CADModule( const Formula* const, Manager* const _tsmanager );
 
             virtual ~CADModule();
 

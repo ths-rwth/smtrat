@@ -137,6 +137,7 @@ namespace vs
     #endif
 
     void simplify( DisjunctionOfConstraintConjunctions& );
+    GiNaC::ex simplify( const GiNaC::ex&, const GiNaC::symtab&  );
     void print( DisjunctionOfConstraintConjunctions& );
 }    // end namspace vs
 

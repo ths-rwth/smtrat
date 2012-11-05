@@ -50,7 +50,7 @@ namespace smtrat
 
     Manager::Manager( Formula* _inputFormula ):
         mpPassedFormula( _inputFormula ),
-        mGeneratedModules( vector<Module*>( 1, new Module( this, mpPassedFormula ) ) ),
+        mGeneratedModules( vector<Module*>( 1, new Module( mpPassedFormula, this ) ) ),
         mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
         mBackTrackPoints(),
@@ -241,7 +241,7 @@ namespace smtrat
                 auto backendFactory = mpModulFactories->find( iter->second );
                 assert( backendFactory != mpModulFactories->end() );
                 // backend does not exist => create it
-                Module* pBackend = backendFactory->second->create( this, _requiredBy->pPassedFormula() );
+                Module* pBackend = backendFactory->second->create( _requiredBy->pPassedFormula(), this );
                 mGeneratedModules.push_back( pBackend );
                 allBackends.push_back( pBackend );
                 backends.push_back( pBackend );

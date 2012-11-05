@@ -34,8 +34,8 @@ using namespace std;
 
 namespace smtrat
 {
-    CNFerModule::CNFerModule( Manager* const _tsManager, const Formula* const _formula ):
-        Module( _tsManager, _formula ),
+    CNFerModule::CNFerModule( const Formula* const _formula, Manager* const _tsManager ):
+        Module( _formula, _tsManager ),
         mFirstNotCheckedFormula()
     {
         this->mModuleType = MT_CNFerModule;

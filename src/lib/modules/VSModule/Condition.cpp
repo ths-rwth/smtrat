@@ -193,42 +193,12 @@ namespace vs
             else if( degree == 2 )
             {
                 #ifdef VS_ELIMINATE_MULTI_ROOTS
-                if( _forElimination )
-                {
-                    const ex& mrl = mpConstraint->multiRootLessLhs( var->first );
-                    bool hasRationalLeadingCoefficient = mrl.coeff( ex( var->second ), degree ).info( info_flags::rational );
-                    if( hasRationalLeadingCoefficient && mrl.info( info_flags::rational ) )
-                    {
-                        lCoeffWeight += 3;
-                    }
-                    else if( hasRationalLeadingCoefficient )
-                    {
-                        lCoeffWeight += 2;
-                    }
-                    else
-                    {
-                        lCoeffWeight += 1;
-                    }
-                }
-                else
-                {
-                    bool hasRationalLeadingCoefficient = mpConstraint->lhs().coeff( var->second, degree ).info( info_flags::rational );
-                    if( hasRationalLeadingCoefficient && mpConstraint->lhs().coeff( var->second, degree - 1 ).info( info_flags::rational ) )
-                    {
-                        lCoeffWeight += 3;
-                    }
-                    else if( hasRationalLeadingCoefficient )
-                    {
-                        lCoeffWeight += 2;
-                    }
-                    else
-                    {
-                        lCoeffWeight += 1;
-                    }
-                }
+                const ex& lhs = mpConstraint->multiRootLessLhs();
                 #else
-                bool hasRationalLeadingCoefficient = mpConstraint->lhs().coeff( var->second, degree ).info( info_flags::rational );
-                if( hasRationalLeadingCoefficient && mpConstraint->lhs().coeff( var->second, degree - 1 ).info( info_flags::rational ) )
+                const ex& lhs = mpConstraint->lhs();
+                #endif
+                bool hasRationalLeadingCoefficient = lhs.coeff( var->second, degree ).info( info_flags::rational );
+                if( hasRationalLeadingCoefficient && lhs.coeff( var->second, degree - 1 ).info( info_flags::rational ) )
                 {
                     lCoeffWeight += 3;
                 }
@@ -240,7 +210,6 @@ namespace vs
                 {
                     lCoeffWeight += 1;
                 }
-                #endif
             }
 
             /*
