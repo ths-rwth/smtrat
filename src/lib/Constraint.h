@@ -80,21 +80,28 @@ namespace smtrat
         unsigned occurences;
     };
 
-    typedef std::map< std::string, VarInfo, strCmp > VarInfoMap;
+    typedef std::map< const GiNaC::ex, VarInfo, GiNaC::ex_is_less > VarInfoMap;
 
-    typedef std::pair< std::string, signed > VarDegree;
+    typedef std::pair< const GiNaC::ex, signed > VarDegree;
 
     struct varDegreeCmp
     {
         bool operator ()( const VarDegree& varDegreeA, const VarDegree& varDegreeB ) const
         {
             signed result = varDegreeA.first.compare( varDegreeB.first );
-            if( result < 0 ) return true;
-            else if ( result == 0 ) return varDegreeA.second < varDegreeB.second;
+            if( result < 0 )
+            {
+                return true;
+            }
+            else if ( result == 0 )
+            {
+                return varDegreeA.second < varDegreeB.second;
+            }
+            return false;
         }
     };
 
-    typedef std::map< VarDegree, GiNaC::ex*, varDegreeCmp > Coefficients;
+    typedef std::map< VarDegree, const GiNaC::ex, varDegreeCmp > Coefficients;
 
     /**
      * Class to create a constraint object.
@@ -108,15 +115,20 @@ namespace smtrat
             /*
              * Attributes:
              */
-            bool                 mSumOfSquares;
             unsigned             mID;
+            bool                 mIsAlwaysNegative;
+            bool                 mIsAlwaysPositive;
+            bool                 mCannotBeZero;
             unsigned             mNumMonomials;
+            unsigned             mMaxMonomeDegree;
+            unsigned             mMinMonomeDegree;
             Constraint_Relation  mRelation;
             GiNaC::ex*           pLhs;
             GiNaC::ex*           mpMultiRootLessLhs;
+            Coefficients*        mpCoefficients;
+            GiNaC::numeric       mConstantPart;
             GiNaC::symtab        mVariables;
             VarInfoMap           mVarInfoMap;
-            Coefficients         mCoefficients;
 
         public:
 
@@ -181,6 +193,11 @@ namespace smtrat
                 return *mpMultiRootLessLhs;
             }
 
+            const GiNaC::numeric& constantPart() const
+            {
+                return mConstantPart;
+            }
+
             static void normalize( GiNaC::ex& _exp )
             {
                 #ifdef VS_USE_GINAC_NORMAL
@@ -202,14 +219,16 @@ namespace smtrat
             unsigned isConsistent() const;
             unsigned satisfiedBy( GiNaC::exmap& ) const;
             bool hasFinitelyManySolutionsIn( const std::string& ) const;
-            void getCoefficients( const GiNaC::symbol&, std::vector<GiNaC::ex>& ) const;
-            signed degree( const std::string& ) const;
+            const GiNaC::ex& coefficient( const GiNaC::ex&, int ) const;
+            unsigned maxDegree( const GiNaC::ex& ) const;
+            unsigned minDegree( const GiNaC::ex& ) const;
+            unsigned occurences( const GiNaC::ex& ) const;
+            const VarInfo& varInfo( const GiNaC::ex& ) const;
             signed highestDegree() const;
-            GiNaC::numeric constantPart() const;
             bool isLinear() const;
             unsigned maxDegree() const;
             std::map<const std::string, GiNaC::numeric, strCmp> linearAndConstantCoefficients() const;
-            void init();
+            void collectProperties();
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
 
             // Data access methods (read and write).

@@ -100,7 +100,7 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "inform about " << *_constraint << endl;
         #endif
-        if( _constraint->isConsistent() == 2 && _constraint->isLinear() )
+        if( !_constraint->variables().empty() && _constraint->isLinear() )
         {
             mLinearConstraints.insert( _constraint );
             if( _constraint->id() > mMaxConstraintId ) mMaxConstraintId = _constraint->id();

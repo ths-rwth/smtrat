@@ -546,7 +546,6 @@ namespace svs
              * Form the derivate of the left hand side of the last added constraint.
              */
             derivative = derivative.diff( _variable, 1 );
-
             /*
              * Add the conjunction ( h_1 and ... and h_k and (f^{i+1}(x)~0)[x -> t] ) to the back of the result.
              */
@@ -557,7 +556,6 @@ namespace svs
             {
                 resultBackBack->addSubformula( new Formula( *auxBoolean ) );
             }
-
             /*
              * Add a constraint, which has the just formed derivate as left hand side and the
              * relation corresponding to the number of the derivate.
@@ -571,7 +569,6 @@ namespace svs
                 resultBackBack->addSubformula( substituteNormal( Formula::newConstraint( derivative, _relation1, _constraint->variables() ), _variable, _subterm ) );
             }
             resultBack->addSubformula( resultBackBack );
-
             /*
              * Add the disjunction ( ~h_k or (f^i(x)=0)[x -> t] ) to the result.
              */
@@ -581,7 +578,6 @@ namespace svs
             resultBackB->addSubformula( resultBackBFirst );
             resultBackB->addSubformula( substituteNormal( currentConstraint, _variable, _subterm ) );
             result->addSubformula( resultBackB );
-
             --i;
             if( i >= 0 )
             {
@@ -642,15 +638,7 @@ namespace svs
     {
         assert( _constraint.relation() != CR_EQ );
         assert( _constraint.relation() != CR_NEQ );
-
         Formula* result = new Formula( OR );
-
-        /*
-         * Get the coefficients.
-         */
-        vector<ex> coefficients;
-        _constraint.getCoefficients( _variable, coefficients );
-
         /*
          * Determine the relation for the coefficients of the odd and even degrees.
          */
@@ -661,14 +649,14 @@ namespace svs
             oddRelationType  = CR_LESS;
             evenRelationType = CR_GREATER;
         }
-
         /*
-         * Create the decision tuples:
+         * Check all cases according to the substitution rules.
          */
-        assert( coefficients.size() > 0 );
-        for( unsigned i = coefficients.size(); i > 0; --i )
+        unsigned varDegree = _constraint.maxDegree( _variable );
+        assert( varDegree > 0 );
+        for( unsigned i = varDegree + 1; i > 0; --i )
         {
-            assert( !coefficients.at( i - 1 ).has( _variable ) );
+            assert( !_constraint.coefficient( _variable, i - 1 ).has( _variable ) );
 
             /*
              * Add conjunction (a_n=0 and ... and a_i~0) to the substitution result.
@@ -676,24 +664,24 @@ namespace svs
 
             Formula* resultBack = new Formula( AND );
 
-            for( unsigned j = coefficients.size() - 1; j > i - 1; --j )
+            for( unsigned j = varDegree; j > i - 1; --j )
             {
-                resultBack->addSubformula( Formula::newConstraint( coefficients.at( j ), CR_EQ, _constraint.variables() ) );
+                resultBack->addSubformula( Formula::newConstraint( _constraint.coefficient( _variable, j ), CR_EQ, _constraint.variables() ) );
             }
             if( i > 1 )
             {
                 if( fmod( i - 1, 2.0 ) != 0.0 )
                 {
-                    resultBack->addSubformula( Formula::newConstraint( coefficients.at( i - 1 ), oddRelationType, _constraint.variables() ) );
+                    resultBack->addSubformula( Formula::newConstraint( _constraint.coefficient( _variable, i - 1 ), oddRelationType, _constraint.variables() ) );
                 }
                 else
                 {
-                    resultBack->addSubformula( Formula::newConstraint( coefficients.at( i - 1 ), evenRelationType, _constraint.variables() ) );
+                    resultBack->addSubformula( Formula::newConstraint( _constraint.coefficient( _variable, i - 1 ), evenRelationType, _constraint.variables() ) );
                 }
             }
             else
             {
-                resultBack->addSubformula( Formula::newConstraint( coefficients.at( i - 1 ), _constraint.relation(), _constraint.variables() ) );
+                resultBack->addSubformula( Formula::newConstraint( _constraint.coefficient( _variable, i - 1 ), _constraint.relation(), _constraint.variables() ) );
             }
             result->addSubformula( resultBack );
         }
@@ -713,20 +701,14 @@ namespace svs
     Formula* substituteTrivialCase( const Constraint& _constraint, const symbol& _variable, const vs::SqrtEx& _subterm )
     {
         assert( _constraint.relation() == CR_EQ || _constraint.relation() == CR_LEQ || _constraint.relation() == CR_GEQ );
-
-        vector<ex> coefficients;
-        _constraint.getCoefficients( _variable, coefficients );
-
         /*
          * Create decision tuple (a_0=0 and ... and a_n=0)
          */
         Formula* result = new Formula( AND );
-
-        for( unsigned i = 0; i < coefficients.size(); i++ )
+        for( unsigned i = 0; i <= _constraint.maxDegree( _variable ); i++ )
         {
-            assert( !coefficients.at( i ).has( _variable ) );
-
-            result->addSubformula( Formula::newConstraint( coefficients.at( i ), CR_EQ, _constraint.variables() ) );
+            assert( !_constraint.coefficient( _variable, i ).has( _variable ) );
+            result->addSubformula( Formula::newConstraint( _constraint.coefficient( _variable, i ), CR_EQ, _constraint.variables() ) );
         }
         return result;
     }
@@ -747,20 +729,14 @@ namespace svs
          * Check whether the relation is "!=".
          */
         assert( _constraint.relation() == CR_NEQ );
-
         Formula*   result = new Formula( OR );
-
-        vector<ex> coefficients;
-        _constraint.getCoefficients( _variable, coefficients );
-
-        for( unsigned i = 0; i < coefficients.size(); i++ )
+        for( unsigned i = 0; i <= _constraint.maxDegree( _variable ); i++ )
         {
-            assert( !coefficients.at( i ).has( _variable ) );
-
+            assert( !_constraint.coefficient( _variable, i ).has( _variable ) );
             /*
              * Add (a_i!=0) to the disjunction.
              */
-            result->addSubformula( Formula::newConstraint( coefficients.at( i ), CR_NEQ, _constraint.variables() ) );
+            result->addSubformula( Formula::newConstraint( _constraint.coefficient( _variable, i ), CR_NEQ, _constraint.variables() ) );
         }
         return result;
     }

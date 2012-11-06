@@ -45,20 +45,36 @@ namespace smtrat
      */
     Constraint::Constraint():
         mID( 0 ),
+        mIsAlwaysNegative( false ),
+        mIsAlwaysPositive( false ),
+        mCannotBeZero( false ),
+        mNumMonomials( 0 ),
+        mMaxMonomeDegree( 0 ),
+        mMinMonomeDegree( 0 ),
         mRelation( CR_EQ ),
         pLhs( new ex( 0 ) ),
         mpMultiRootLessLhs( pLhs ),
-        mVariables()
+        mpCoefficients( new Coefficients() ),
+        mVariables(),
+        mVarInfoMap()
     {
         normalize( rLhs() );
     }
 
     Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _variables, unsigned _id ):
         mID( _id ),
+        mIsAlwaysNegative( false ),
+        mIsAlwaysPositive( false ),
+        mCannotBeZero( false ),
+        mNumMonomials( 0 ),
+        mMaxMonomeDegree( 0 ),
+        mMinMonomeDegree( 0 ),
         mRelation( _cr ),
         pLhs( new ex( _lhs ) ),
         mpMultiRootLessLhs( pLhs ),
-        mVariables()
+        mpCoefficients( new Coefficients() ),
+        mVariables(),
+        mVarInfoMap()
     {
         normalize( rLhs() );
         if( rLhs().info( info_flags::rational ) )
@@ -87,10 +103,18 @@ namespace smtrat
 
     Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _variables, unsigned _id ):
         mID( _id ),
+        mIsAlwaysNegative( false ),
+        mIsAlwaysPositive( false ),
+        mCannotBeZero( false ),
+        mNumMonomials( 0 ),
+        mMaxMonomeDegree( 0 ),
+        mMinMonomeDegree( 0 ),
         mRelation( _cr ),
         pLhs( new ex( _lhs - _rhs ) ),
         mpMultiRootLessLhs( pLhs ),
-        mVariables()
+        mpCoefficients( new Coefficients() ),
+        mVariables(),
+        mVarInfoMap()
     {
         normalize( rLhs() );
         if( rLhs().info( info_flags::rational ) )
@@ -119,10 +143,18 @@ namespace smtrat
 
     Constraint::Constraint( const Constraint& _constraint ):
         mID( _constraint.id() ),
+        mIsAlwaysNegative( _constraint.mIsAlwaysNegative ),
+        mIsAlwaysPositive( _constraint.mIsAlwaysPositive ),
+        mCannotBeZero( _constraint.mCannotBeZero ),
+        mNumMonomials( _constraint.mNumMonomials ),
+        mMaxMonomeDegree( _constraint.mMaxMonomeDegree ),
+        mMinMonomeDegree( _constraint.mMinMonomeDegree ),
         mRelation( _constraint.relation() ),
         pLhs( new ex( _constraint.lhs() ) ),
         mpMultiRootLessLhs( _constraint.pMultiRootLessLhs() != _constraint.pLhs ? _constraint.mpMultiRootLessLhs : pLhs ),
-        mVariables( _constraint.variables() )
+        mpCoefficients( new Coefficients( *_constraint.mpCoefficients ) ),
+        mVariables( _constraint.variables() ),
+        mVarInfoMap( _constraint.mVarInfoMap )
     {}
 
     /**
@@ -233,9 +265,59 @@ namespace smtrat
         {
             return evaluate( ex_to<numeric>( lhs() ), relation() ) ? 1 : 0;
         }
-        else return 2;
+        else
+        {
+//            switch( relation() )
+//            {
+//                case CR_EQ:
+//                {
+//                    if( mCannotBeZero ) return 0;
+//                    break;
+//                }
+//                case CR_NEQ:
+//                {
+//                    if( mCannotBeZero ) return 1;
+//                    break;
+//                }
+//                case CR_LESS:
+//                {
+//                    if( mCannotBeZero && mIsAlwaysNegative ) return 1;
+//                    if( mIsAlwaysPositive ) return 0;
+//                    break;
+//                }
+//                case CR_GREATER:
+//                {
+//                    if( mCannotBeZero && mIsAlwaysPositive ) return 1;
+//                    if( mIsAlwaysNegative ) return 0;
+//                    break;
+//                }
+//                case CR_LEQ:
+//                {
+//                    if( mIsAlwaysNegative ) return 1;
+//                    if( mCannotBeZero && mIsAlwaysPositive ) return 0;
+//                    break;
+//                }
+//                case CR_GEQ:
+//                {
+//                    if( mIsAlwaysPositive ) return 1;
+//                    if( mCannotBeZero && mIsAlwaysNegative ) return 0;
+//                    break;
+//                }
+//                default:
+//                {
+//                    cout << "Error in isConsistent: unexpected relation symbol." << endl;
+//                    return false;
+//                }
+//            }
+            return 2;
+        }
     }
 
+    /**
+     *
+     * @param _assignment
+     * @return
+     */
     unsigned Constraint::satisfiedBy( exmap& _assignment ) const
     {
         ex tmp = lhs().subs( _assignment );
@@ -265,13 +347,9 @@ namespace smtrat
             symtab::const_iterator var = variables().find( _variableName );
             if( var != variables().end() )
             {
-                vector<ex> coeffs = vector<ex>();
-                getCoefficients( ex_to<symbol>( var->second ), coeffs );
-                signed i = coeffs.size() - 1;
-
-                for( ; i > 0; --i )
+                for( unsigned i = maxDegree( var->second ); i > 0; --i )
                 {
-                    if( !coeffs.at( i ).info( info_flags::rational ) )
+                    if( !coefficient( var->second, i ).info( info_flags::rational ) )
                     {
                         return false;
                     }
@@ -284,34 +362,38 @@ namespace smtrat
             }
         }
     }
-
+    
     /**
-     * Calculates the coefficients of the given variable in this constraint.
      *
-     * @param _variable         The variable of which you want to find the coefficients.
-     * @param _coefficients     A vector of the coefficients corresponding the given variable.
-     *                      The ith entry of the vector contains the coefficient of the ith
-     *                      power of the variable.
+     * @param _variable
+     * @param _degree
+     * @return
      */
-    void Constraint::getCoefficients( const symbol& _variable, vector<GiNaC::ex>& _coefficients ) const
+    const ex& Constraint::coefficient( const ex& _variable, int _degree ) const
     {
-        for( int i = 0; i <= lhs().degree( ex( _variable ) ); ++i )
+        VarDegree vd = VarDegree( _variable, _degree );
+        Coefficients::const_iterator coeffIter = mpCoefficients->find( vd );
+        if( coeffIter != mpCoefficients->end() )
         {
-            _coefficients.push_back( ex( lhs().coeff( ex( _variable ), i ) ) );
+            return coeffIter->second;
+        }
+        else
+        {
+            return mpCoefficients->insert( pair< VarDegree, ex >( vd, lhs().coeff( _variable, _degree ) ) ).first->second;
         }
     }
 
     /**
-     * Determines the degree of the variable in this constraint.
      *
-     * @param _variableName The name of the variable of which you want to have the degree.
+     * @param _variable
+     * @return
      */
-    signed Constraint::degree( const std::string& _variableName ) const
+    unsigned Constraint::maxDegree( const ex& _variable ) const
     {
-        symbol sym;
-        if( variable( _variableName, sym ) )
+        VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
+        if( varInfo != mVarInfoMap.end() )
         {
-            return lhs().degree( ex( sym ) );
+            return varInfo->second.maxDegree;
         }
         else
         {
@@ -320,7 +402,55 @@ namespace smtrat
     }
 
     /**
-     * true if 0 -rel- 0 yields false
+     *
+     * @param _variable
+     * @return
+     */
+    unsigned Constraint::minDegree( const ex& _variable ) const
+    {
+        VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
+        if( varInfo != mVarInfoMap.end() )
+        {
+            return varInfo->second.minDegree;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    /**
+     *
+     * @param _variable
+     * @return
+     */
+    unsigned Constraint::occurences( const ex& _variable ) const
+    {
+        VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
+        if( varInfo != mVarInfoMap.end() )
+        {
+            return varInfo->second.occurences;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    /**
+     *
+     * @param _variable
+     * @return
+     */
+    const VarInfo& Constraint::varInfo( const ex& _variable ) const
+    {
+        VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
+        assert( varInfo != mVarInfoMap.end() );
+        return varInfo->second;
+    }
+
+    /**
+     *
      * @param The relation
      * @return
      */
@@ -344,119 +474,21 @@ namespace smtrat
         return result;
     }
 
-
-    /**
-     * TODO Florian is maxdegree equal total degree.
-     * @param _subex
-     * @return
-     */
-    signed _maxDegree( const ex& _subex )
-    {
-        if( is_exactly_a<add>( _subex ) )
-        {
-            signed d = 0;
-            for( GiNaC::const_iterator summand = _subex.begin(); summand != _subex.end(); ++summand )
-            {
-                signed sd = _maxDegree( *summand );
-                if( sd > d ) d = sd;
-            }
-            return d;
-        }
-        else if( is_exactly_a<mul>( _subex ) )
-        {
-            signed d = 0;
-            for( GiNaC::const_iterator factor = _subex.begin(); factor != _subex.end(); ++factor )
-            {
-                d += _maxDegree( *factor );
-            }
-            return d;
-        }
-        else if( is_exactly_a<symbol>( _subex ) )
-        {
-            return 1;
-        }
-        else if( is_exactly_a<numeric>( _subex ) )
-        {
-            return 0;
-        }
-        else if( is_exactly_a<power>( _subex ) )
-        {
-            const ex& exponent = *(++_subex.begin());
-            const ex& subterm = *_subex.begin();
-            assert( exponent.info( info_flags::nonnegative ) );
-            return exponent.integer_content().to_int() * _maxDegree( subterm );
-        }
-        else
-        {
-            cerr << "The left hand side of a constraint must be a polynomial!" << endl;
-            assert( false );
-        }
-        return 0;
-    }
-
-    numeric constPart( const ex _polynom )
-    {
-        if( is_exactly_a<add>( _polynom ) )
-        {
-            numeric result = 0;
-            for( GiNaC::const_iterator summand = _polynom.begin(); summand != _polynom.end(); ++summand )
-            {
-                result += constPart( *summand );
-            }
-            return result;
-        }
-        else if( is_exactly_a<mul>( _polynom ) )
-        {
-            numeric result = 1;
-            for( GiNaC::const_iterator factor = _polynom.begin(); factor != _polynom.end(); ++factor )
-            {
-                result *= constPart( *factor );
-            }
-            return result;
-        }
-        else if( is_exactly_a<symbol>( _polynom ) )
-        {
-            return 0;
-        }
-        else if( is_exactly_a<numeric>( _polynom ) )
-        {
-            return ex_to<numeric>( _polynom );
-        }
-        else if( is_exactly_a<power>( _polynom ) )
-        {
-            const numeric& exponent = ex_to<numeric>( *(++_polynom.begin()) );
-            const ex& subterm = *_polynom.begin();
-            assert( exponent.info( info_flags::nonnegative ) );
-            return pow( constPart( subterm ), exponent );
-        }
-        else
-        {
-            cerr << "The left hand side of a constraint must be a polynomial!" << endl;
-            assert( false );
-        }
-        return 0;
-    }
-
     /**
      *
      * @return
      */
-    numeric Constraint::constantPart() const
-    {
-        return constPart( lhs() );
-    }
-
-
     unsigned Constraint::maxDegree() const
     {
-        return _maxDegree( lhs() );
+        return mMaxMonomeDegree;
     }
+
     /**
      * Checks whether the constraint is linear in all variables.
      */
     bool Constraint::isLinear() const
     {
-        return _maxDegree( lhs() ) < 2;
+        return mMaxMonomeDegree < 2;
     }
 
     /**
@@ -475,30 +507,26 @@ namespace smtrat
         {
             for( GiNaC::const_iterator summand = linearterm.begin(); summand != linearterm.end(); ++summand )
             {
-                assert( is_exactly_a<mul>( *summand ) || is_exactly_a<symbol>( *summand ) || is_exactly_a<numeric>( *summand ) );
+                const ex summandEx = *summand;
+                assert( is_exactly_a<mul>( summandEx ) || is_exactly_a<symbol>( summandEx ) || is_exactly_a<numeric>( summandEx ) );
                 if( is_exactly_a<mul>( *summand ) )
                 {
                     string symbolName   = "";
                     numeric coefficient = 1;
-                    bool symbolFound = false;
-                    bool coeffFound  = false;
-                    for( GiNaC::const_iterator factor = summand->begin(); factor != summand->end(); ++factor )
+                    for( GiNaC::const_iterator factor = summandEx.begin(); factor != summandEx.end(); ++factor )
                     {
-                        assert( is_exactly_a<symbol>( *factor ) || is_exactly_a<numeric>( *factor ) );
-                        if( is_exactly_a<symbol>( *factor ) )
+                        const ex factorEx = *factor;
+                        assert( is_exactly_a<symbol>( factorEx ) || is_exactly_a<numeric>( factorEx ) );
+                        if( is_exactly_a<symbol>( factorEx ) )
                         {
                             stringstream out;
-                            out << *factor;
+                            out << factorEx;
                             symbolName  = out.str();
-                            symbolFound = true;
                         }
-                        else if( is_exactly_a<numeric>( *factor ) )
+                        else if( is_exactly_a<numeric>( factorEx ) )
                         {
-                            coefficient *= ex_to<numeric>( *factor );
-                            coeffFound  = true;
+                            coefficient *= ex_to<numeric>( factorEx );
                         }
-                        if( symbolFound && coeffFound )
-                            break;    // Workaround, as it appears that GiNaC allows a product of infinitely many factors ..
                     }
                     map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
                     if( iter == result.end() )
@@ -510,10 +538,10 @@ namespace smtrat
                         iter->second += coefficient;
                     }
                 }
-                else if( is_exactly_a<symbol>( *summand ) )
+                else if( is_exactly_a<symbol>( summandEx ) )
                 {
                     stringstream out;
-                    out << *summand;
+                    out << summandEx;
                     string symbolName = out.str();
                     map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
                     if( iter == result.end() )
@@ -525,9 +553,9 @@ namespace smtrat
                         iter->second += 1;
                     }
                 }
-                else if( is_exactly_a<numeric>( *summand ) )
+                else if( is_exactly_a<numeric>( summandEx ) )
                 {
-                    result[""] += ex_to<numeric>( *summand );
+                    result[""] += ex_to<numeric>( summandEx );
                 }
             }
         }
@@ -537,16 +565,17 @@ namespace smtrat
             numeric coefficient = 1;
             for( GiNaC::const_iterator factor = linearterm.begin(); factor != linearterm.end(); ++factor )
             {
-                assert( is_exactly_a<symbol>( *factor ) || is_exactly_a<numeric>( *factor ) );
-                if( is_exactly_a<symbol>( *factor ) )
+                const ex factorEx = *factor;
+                assert( is_exactly_a<symbol>( factorEx ) || is_exactly_a<numeric>( factorEx ) );
+                if( is_exactly_a<symbol>( factorEx ) )
                 {
                     stringstream out;
-                    out << *factor;
+                    out << factorEx;
                     symbolName = out.str();
                 }
-                else if( is_exactly_a<numeric>( *factor ) )
+                else if( is_exactly_a<numeric>( factorEx ) )
                 {
-                    coefficient *= ex_to<numeric>( *factor );
+                    coefficient *= ex_to<numeric>( factorEx );
                 }
             }
             map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
@@ -581,112 +610,245 @@ namespace smtrat
         return result;
     }
 
-    void Constraint::init()
+    /**
+     *
+     */
+    void Constraint::collectProperties()
     {
-//        if( is_exactly_a<add>( linearterm ) )
+//        cout << endl << "initialize " << lhs() << endl;
+        mIsAlwaysNegative = true;
+        mIsAlwaysPositive = true;
+        mCannotBeZero = false;
+        mMaxMonomeDegree = 1;
+        mMinMonomeDegree = -1;
+        mNumMonomials = 0;
+        mConstantPart = 0;
+        for( auto var = variables().begin(); var != variables().end(); ++var )
+        {
+            VarInfo varInfo = VarInfo();
+            varInfo.maxDegree = 1;
+            varInfo.minDegree = -1;
+            varInfo.occurences = 0;
+            mVarInfoMap.insert( pair< const ex, VarInfo >( var->second, varInfo ) );
+        }
+        if( is_exactly_a<add>( lhs() ) )
+        {
+            for( GiNaC::const_iterator summand = lhs().begin(); summand != lhs().end(); ++summand )
+            {
+                const ex summandEx = *summand;
+                if( is_exactly_a<mul>( summandEx ) )
+                {
+                    unsigned monomDegree = 0;
+                    ++mNumMonomials;
+                    for( GiNaC::const_iterator factor = summandEx.begin(); factor != summandEx.end(); ++factor )
+                    {
+                        const ex factorEx = *factor;
+                        if( is_exactly_a<symbol>( factorEx ) )
+                        {
+                            mIsAlwaysNegative = false;
+                            mIsAlwaysPositive = false;
+                            VarInfo& varInfo = mVarInfoMap[factorEx];
+                            ++varInfo.occurences;
+                            varInfo.minDegree = 1;
+                            ++monomDegree;
+                        }
+                        else if( is_exactly_a<numeric>( factorEx ) )
+                        {
+                            if( factorEx.info( info_flags::negative ) )
+                            {
+                                mIsAlwaysPositive = false;
+                            }
+                            else
+                            {
+                                mIsAlwaysNegative = false;
+                            }
+                        }
+                        else if( is_exactly_a<power>( factorEx ) )
+                        {
+                            assert( factorEx.nops() == 2 );
+                            ex exponent = *(++(factorEx.begin()));
+                            assert( !exponent.info( info_flags::negative ) );
+                            unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
+                            if( fmod( exp, 2.0 ) != 0.0 )
+                            {
+                                mIsAlwaysNegative = false;
+                                mIsAlwaysPositive = false;
+                            }
+                            ex subterm = *factorEx.begin();
+                            assert( is_exactly_a<symbol>( subterm ) );
+                            VarInfo& varInfo = mVarInfoMap[subterm];
+                            ++varInfo.occurences;
+                            if( exp > varInfo.maxDegree ) varInfo.maxDegree = exp;
+                            if( exp < varInfo.minDegree ) varInfo.minDegree = exp;
+                            monomDegree += exp;
+                        }
+                        else assert( false );
+                    }
+                    if( monomDegree > mMaxMonomeDegree ) mMaxMonomeDegree = monomDegree;
+                    if( monomDegree < mMinMonomeDegree && monomDegree != 0 ) mMinMonomeDegree = monomDegree;
+                }
+                else if( is_exactly_a<symbol>( summandEx ) )
+                {
+                    ++mNumMonomials;
+                    mIsAlwaysNegative = false;
+                    mIsAlwaysPositive = false;
+                    VarInfo& varInfo = mVarInfoMap[summandEx];
+                    ++varInfo.occurences;
+                    varInfo.minDegree = 1;
+                    mMinMonomeDegree = 1;
+                }
+                else if( is_exactly_a<numeric>( summandEx ) )
+                {
+                    mConstantPart += ex_to<numeric>( summandEx );
+                    if( summandEx.info( info_flags::negative ) )
+                    {
+                        mIsAlwaysPositive = false;
+                    }
+                    else
+                    {
+                        mIsAlwaysNegative = false;
+                    }
+                }
+                else if( is_exactly_a<power>( summandEx ) )
+                {
+                    ++mNumMonomials;
+                    assert( summandEx.nops() == 2 );
+                    ex exponent = *(++(summandEx.begin()));
+                    assert( !exponent.info( info_flags::negative ) );
+                    unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
+                    mIsAlwaysNegative = false;
+                    if( fmod( exp, 2.0 ) != 0.0 )
+                    {
+                        mIsAlwaysPositive = false;
+                    }
+                    ex subterm = *summandEx.begin();
+                    assert( is_exactly_a<symbol>( subterm ) );
+                    VarInfo& varInfo = mVarInfoMap[subterm];
+                    ++varInfo.occurences;
+                    if( exp > varInfo.maxDegree ) varInfo.maxDegree = exp;
+                    if( exp < varInfo.minDegree ) varInfo.minDegree = exp;
+                    if( exp > mMaxMonomeDegree ) mMaxMonomeDegree = exp;
+                    if( exp < mMinMonomeDegree ) mMinMonomeDegree = exp;
+                }
+                else assert( false );
+            }
+        }
+        else if( is_exactly_a<mul>( lhs() ) )
+        {
+            unsigned monomDegree = 0;
+            for( GiNaC::const_iterator factor = lhs().begin(); factor != lhs().end(); ++factor )
+            {
+                const ex factorEx = *factor;
+                if( is_exactly_a<symbol>( factorEx ) )
+                {
+                    mIsAlwaysNegative = false;
+                    mIsAlwaysPositive = false;
+                    mNumMonomials = 1;
+                    VarInfo& varInfo = mVarInfoMap[factorEx];
+                    ++varInfo.occurences;
+                    varInfo.minDegree = 1;
+                    ++monomDegree;
+                }
+                else if( is_exactly_a<numeric>( factorEx ) )
+                {
+                    if( factorEx.info( info_flags::negative ) )
+                    {
+                        mIsAlwaysPositive = false;
+                    }
+                    else
+                    {
+                        mIsAlwaysNegative = false;
+                    }
+                }
+                else if( is_exactly_a<power>( factorEx ) )
+                {
+                    mNumMonomials = 1;
+                    assert( factorEx.nops() == 2 );
+                    ex exponent = *(++factorEx.begin());
+                    assert( !exponent.info( info_flags::negative ) );
+                    unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
+                    if( fmod( exp, 2.0 ) != 0.0 )
+                    {
+                        mIsAlwaysNegative = false;
+                        mIsAlwaysPositive = false;
+                    }
+                    ex subterm = *factorEx.begin();
+                    assert( is_exactly_a<symbol>( subterm ) );
+                    VarInfo& varInfo = mVarInfoMap[subterm];
+                    ++varInfo.occurences;
+                    if( exp > varInfo.maxDegree ) varInfo.maxDegree = exp;
+                    if( exp < varInfo.minDegree ) varInfo.minDegree = exp;
+                    monomDegree += exp;
+                }
+                else assert( false );
+            }
+            if( monomDegree > mMaxMonomeDegree ) mMaxMonomeDegree = monomDegree;
+            if( monomDegree < mMinMonomeDegree && monomDegree != 0 ) mMinMonomeDegree = monomDegree;
+        }
+        else if( is_exactly_a<symbol>( lhs() ) )
+        {
+            mNumMonomials = 1;
+            mIsAlwaysNegative = false;
+            mIsAlwaysPositive = false;
+            VarInfo& varInfo = mVarInfoMap[lhs()];
+            ++varInfo.occurences;
+            varInfo.minDegree = 1;
+            mMinMonomeDegree = 1;
+        }
+        else if( is_exactly_a<numeric>( lhs() ) )
+        {
+            mConstantPart += ex_to<numeric>( lhs() );
+            if( lhs().info( info_flags::negative ) )
+            {
+                mIsAlwaysPositive = false;
+            }
+            else
+            {
+                mIsAlwaysNegative = false;
+            }
+        }
+        else if( is_exactly_a<power>( lhs() ) )
+        {
+            assert( lhs().nops() == 2 );
+            ex exponent = *(++lhs().begin());
+            assert( !exponent.info( info_flags::negative ) );
+            unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
+            mNumMonomials = 1;
+            mIsAlwaysNegative = false;
+            if( fmod( exp, 2.0 ) != 0.0 )
+            {
+                mIsAlwaysPositive = false;
+            }
+            ex subterm = *lhs().begin();
+            assert( is_exactly_a<symbol>( subterm ) );
+            VarInfo& varInfo = mVarInfoMap[subterm];
+            ++varInfo.occurences;
+            if( exp > varInfo.maxDegree ) varInfo.maxDegree = exp;
+            if( exp < varInfo.minDegree ) varInfo.minDegree = exp;
+            if( exp > mMaxMonomeDegree ) mMaxMonomeDegree = exp;
+            if( exp < mMinMonomeDegree ) mMinMonomeDegree = exp;
+        }
+        else assert( false );
+        if( ( mConstantPart.is_negative() < 0 && mIsAlwaysNegative ) || ( mConstantPart.is_positive() > 0 && mIsAlwaysPositive ) )
+        {
+            mCannotBeZero = true;
+        }
+
+//        cout << "mIsAlwaysNegative: " << mIsAlwaysNegative << endl;
+//        cout << "mIsAlwaysPositive: " << mIsAlwaysPositive << endl;
+//        cout << "mCannotBeZero    : " << mCannotBeZero << endl;
+//        cout << "mNumMonomials    : " << mNumMonomials << endl;
+//        cout << "mMaxMonomeDegree : " << mMaxMonomeDegree << endl;
+//        cout << "mMinMonomeDegree : " << mMinMonomeDegree << endl;
+//        cout << "mConstantPart    : " << mConstantPart << endl;
+//        cout << "Variables:" << endl;
+//        for( auto var = variables().begin(); var != variables().end(); ++var )
 //        {
-//            for( GiNaC::const_iterator summand = linearterm.begin(); summand != linearterm.end(); ++summand )
-//            {
-//                assert( is_exactly_a<mul>( *summand ) || is_exactly_a<symbol>( *summand ) || is_exactly_a<numeric>( *summand ) );
-//                if( is_exactly_a<mul>( *summand ) )
-//                {
-//                    for( GiNaC::const_iterator factor = summand->begin(); factor != summand->end(); ++factor )
-//                    {
-//                        assert( is_exactly_a<symbol>( *factor ) || is_exactly_a<numeric>( *factor ) );
-//                        if( is_exactly_a<symbol>( *factor ) )
-//                        {
-//                            stringstream out;
-//                            out << *factor;
-//                            symbolName  = out.str();
-//                            symbolFound = true;
-//                        }
-//                        else if( is_exactly_a<numeric>( *factor ) )
-//                        {
-//                            coefficient *= ex_to<numeric>( *factor );
-//                            coeffFound  = true;
-//                        }
-//                        if( symbolFound && coeffFound )
-//                            break;    // Workaround, as it appears that GiNaC allows a product of infinitely many factors ..
-//                    }
-//                    map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
-//                    if( iter == result.end() )
-//                    {
-//                        result.insert( pair<const string, numeric>( symbolName, coefficient ) );
-//                    }
-//                    else
-//                    {
-//                        iter->second += coefficient;
-//                    }
-//                }
-//                else if( is_exactly_a<symbol>( *summand ) )
-//                {
-//                    stringstream out;
-//                    out << *summand;
-//                    string symbolName = out.str();
-//                    map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
-//                    if( iter == result.end() )
-//                    {
-//                        result.insert( pair<const string, numeric>( symbolName, numeric( 1 ) ) );
-//                    }
-//                    else
-//                    {
-//                        iter->second += 1;
-//                    }
-//                }
-//                else if( is_exactly_a<numeric>( *summand ) )
-//                {
-//                    result[""] += ex_to<numeric>( *summand );
-//                }
-//            }
+//            VarInfo& varInfo = mVarInfoMap[var->second];
+//            cout << "     occurences of " << var->first << " : " << varInfo.occurences << endl;
+//            cout << "     maxDegree of " << var->first << "  : " << varInfo.maxDegree << endl;
+//            cout << "     minDegree of " << var->first << "  : " << varInfo.minDegree << endl;
 //        }
-//        else if( is_exactly_a<mul>( linearterm ) )
-//        {
-//            string symbolName   = "";
-//            numeric coefficient = 1;
-//            for( GiNaC::const_iterator factor = linearterm.begin(); factor != linearterm.end(); ++factor )
-//            {
-//                assert( is_exactly_a<symbol>( *factor ) || is_exactly_a<numeric>( *factor ) );
-//                if( is_exactly_a<symbol>( *factor ) )
-//                {
-//                    stringstream out;
-//                    out << *factor;
-//                    symbolName = out.str();
-//                }
-//                else if( is_exactly_a<numeric>( *factor ) )
-//                {
-//                    coefficient *= ex_to<numeric>( *factor );
-//                }
-//            }
-//            map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
-//            if( iter == result.end() )
-//            {
-//                result.insert( pair<const string, numeric>( symbolName, coefficient ) );
-//            }
-//            else
-//            {
-//                iter->second += coefficient;
-//            }
-//        }
-//        else if( is_exactly_a<symbol>( linearterm ) )
-//        {
-//            stringstream out;
-//            out << linearterm;
-//            string symbolName = out.str();
-//            map<const string, numeric, strCmp>::iterator iter = result.find( symbolName );
-//            if( iter == result.end() )
-//            {
-//                result.insert( pair<const string, numeric>( symbolName, numeric( 1 ) ) );
-//            }
-//            else
-//            {
-//                iter->second += 1;
-//            }
-//        }
-//        else if( is_exactly_a<numeric>( linearterm ) )
-//        {
-//            result[""] += ex_to<numeric>( linearterm );
-//        }
-//        return result;
     }
 
     /**

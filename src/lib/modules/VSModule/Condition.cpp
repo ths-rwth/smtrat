@@ -172,7 +172,7 @@ namespace vs
             /*
              * Check the degree of the variable.
              */
-            unsigned degree = mpConstraint->lhs().degree( var->second );
+            unsigned degree = mpConstraint->maxDegree( var->second );
 
             /*
              * Check the leading coefficient of the  given variable.
@@ -181,7 +181,7 @@ namespace vs
 
             if( degree <= 1 )
             {
-                if( mpConstraint->lhs().coeff( var->second, degree ).info( info_flags::rational ) )
+                if( mpConstraint->coefficient( var->second, degree ).info( info_flags::rational ) )
                 {
                     lCoeffWeight += 3;
                 }
@@ -194,9 +194,6 @@ namespace vs
             {
                 #ifdef VS_ELIMINATE_MULTI_ROOTS
                 const ex& lhs = mpConstraint->multiRootLessLhs();
-                #else
-                const ex& lhs = mpConstraint->lhs();
-                #endif
                 bool hasRationalLeadingCoefficient = lhs.coeff( var->second, degree ).info( info_flags::rational );
                 if( hasRationalLeadingCoefficient && lhs.coeff( var->second, degree - 1 ).info( info_flags::rational ) )
                 {
@@ -210,6 +207,21 @@ namespace vs
                 {
                     lCoeffWeight += 1;
                 }
+                #else
+                bool hasRationalLeadingCoefficient = mpConstraint->coefficient( var->second, degree ).info( info_flags::rational );
+                if( hasRationalLeadingCoefficient && mpConstraint->coefficient( var->second, degree - 1 ).info( info_flags::rational ) )
+                {
+                    lCoeffWeight += 3;
+                }
+                else if( hasRationalLeadingCoefficient )
+                {
+                    lCoeffWeight += 2;
+                }
+                else
+                {
+                    lCoeffWeight += 1;
+                }
+                #endif
             }
 
             /*

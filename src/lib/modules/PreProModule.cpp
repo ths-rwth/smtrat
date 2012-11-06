@@ -330,8 +330,8 @@ namespace smtrat
                 {
                     for( GiNaC::symtab::const_iterator it = t_constraint->variables().begin(); it != t_constraint->variables().end(); ++it )
                     {
-                        if( mConstraintActivities[ t_constraint ].second.first.first < t_constraint->degree( (*it).first ) )
-                            mConstraintActivities[ t_constraint ].second.first.first = t_constraint->degree( (*it).first );
+                        if( mConstraintActivities[ t_constraint ].second.first.first < t_constraint->maxDegree( (*it).second ) )
+                            mConstraintActivities[ t_constraint ].second.first.first = t_constraint->maxDegree( (*it).second );
                         mConstraintActivities[ t_constraint].second.second += 1;
                     }
                 }

@@ -175,6 +175,7 @@ namespace smtrat
                     else
                     {
                         ++mIdAllocator;
+                        constraint->collectProperties();
                     }
                     return *iterBoolPair.first;
                 }
@@ -215,6 +216,7 @@ namespace smtrat
                     else
                     {
                         ++mIdAllocator;
+                        constraint->collectProperties();
                     }
                     return *iterBoolPair.first;
                 }

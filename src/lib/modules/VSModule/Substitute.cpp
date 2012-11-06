@@ -677,7 +677,7 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << "substitutePlusEps" << endl;
         #endif
-        if( _constraint->isConsistent() == 2 )
+        if( !_constraint->variables().empty() )
         {
             if( _constraint->variables().find( _substitution.variable() ) != _constraint->variables().end() )
             {
@@ -871,7 +871,7 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << "substituteMinusInf: " << endl;
         #endif
-        if( _constraint->isConsistent() == 2 )
+        if( !_constraint->variables().empty() )
         {
             if( _constraint->variables().find( _substitution.variable() ) != _constraint->variables().end() )
             {
@@ -917,22 +917,13 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << "substituteInfLessGreater: " << endl;
         #endif
-
         /*
          * Check whether the relation is not "=" or "!=".
          */
         assert( _constraint.relation() != smtrat::CR_EQ );
         assert( _constraint.relation() != smtrat::CR_NEQ );
-
         symbol sym;
         _constraint.variable( _substitution.variable(), sym );
-
-        /*
-         * Get the coefficients.
-         */
-        vector<ex> coefficients;
-        _constraint.getCoefficients( sym, coefficients );
-
         /*
          * Determine the relation for the coefficients of the odd and even degrees.
          */
@@ -943,18 +934,18 @@ namespace vs
             oddRelationType  = smtrat::CR_LESS;
             evenRelationType = smtrat::CR_GREATER;
         }
-
         /*
-         * Create the decision tuples:
+         * Check all cases according to the substitution rules.
          */
-        assert( coefficients.size() > 0 );
-        for( unsigned i = coefficients.size(); i > 0; --i )
+        unsigned varDegree = _constraint.maxDegree( sym );
+        assert( varDegree > 0 );
+        for( unsigned i = varDegree + 1; i > 0; --i )
         {
             /*
              * Check, whether the variable to substitute, does not occur in the
              * conditions we substituted in.
              */
-            assert( !coefficients.at( i - 1 ).has( ex( sym ) ) );
+            assert( !_constraint.coefficient( sym, i - 1 ).has( ex( sym ) ) );
 
             /*
              * Add conjunction (a_n=0 and ... and a_i~0) to the substitution result.
@@ -962,24 +953,24 @@ namespace vs
 
             _substitutionResults.push_back( TS_ConstraintConjunction() );
 
-            for( unsigned j = coefficients.size() - 1; j > i - 1; --j )
+            for( unsigned j = varDegree; j > i - 1; --j )
             {
-                _substitutionResults.back().push_back( smtrat::Formula::newConstraint( coefficients.at( j ), smtrat::CR_EQ, _constraint.variables() ) );
+                _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint.coefficient( sym, j ), smtrat::CR_EQ, _constraint.variables() ) );
             }
             if( i > 1 )
             {
                 if( fmod( i - 1, 2.0 ) != 0.0 )
                 {
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( coefficients.at( i - 1 ), oddRelationType, _constraint.variables() ) );
+                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint.coefficient( sym, i - 1 ), oddRelationType, _constraint.variables() ) );
                 }
                 else
                 {
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( coefficients.at( i - 1 ), evenRelationType, _constraint.variables() ) );
+                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint.coefficient( sym, i - 1 ), evenRelationType, _constraint.variables() ) );
                 }
             }
             else
             {
-                _substitutionResults.back().push_back( smtrat::Formula::newConstraint( coefficients.at( i - 1 ), _constraint.relation(), _constraint.variables() ) );
+                _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint.coefficient( sym, i - 1 ), _constraint.relation(), _constraint.variables() ) );
             }
         }
     }
@@ -1001,33 +992,25 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << "substituteTrivialCase" << endl;
         #endif
-
         /*
          * Check whether the relation is "=", "<=" or ">=".
          */
         assert( _constraint.relation() == smtrat::CR_EQ || _constraint.relation() == smtrat::CR_LEQ || _constraint.relation() == smtrat::CR_GEQ );
-
         symbol sym;
         _constraint.variable( _substitution.variable(), sym );
-
-        vector<ex> coefficients;
-        _constraint.getCoefficients( sym, coefficients );
-
+        unsigned varDegree = _constraint.maxDegree( sym );
         /*
-         * Create decision tuple (a_0=0 and ... and a_n=0)
+         * Check the cases (a_0=0 and ... and a_n=0)
          */
-
         _substitutionResults.push_back( TS_ConstraintConjunction() );
-
-        for( unsigned i = 0; i < coefficients.size(); i++ )
+        for( unsigned i = 0; i <= varDegree; ++i )
         {
             /*
              * Check, whether the variable to substitute, does not occur in the
              * conditions we substituted in.
              */
-            assert( !coefficients.at( i ).has( ex( sym ) ) );
-
-            _substitutionResults.back().push_back( smtrat::Formula::newConstraint( coefficients.at( i ), smtrat::CR_EQ, _constraint.variables() ) );
+            assert( !_constraint.coefficient( sym, i ).has( ex( sym ) ) );
+            _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint.coefficient( sym, i ), smtrat::CR_EQ, _constraint.variables() ) );
         }
     }
 
@@ -1048,31 +1031,21 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << "substituteNotTrivialCase" << endl;
         #endif
-
         /*
          * Check whether the relation is "!=".
          */
         assert( _constraint.relation() == smtrat::CR_NEQ );
-
         symbol sym;
         _constraint.variable( _substitution.variable(), sym );
-
-        vector<ex> coefficients;
-        _constraint.getCoefficients( sym, coefficients );
-
-        for( unsigned i = 0; i < coefficients.size(); i++ )
+        unsigned varDegree = _constraint.maxDegree( sym );
+        for( unsigned i = 0; i <= varDegree; ++i )
         {
-            /*
-             * Check, whether the variable to substitute, does not occur in the
-             * conditions we substituted in.
-             */
-            assert( !coefficients.at( i ).has( ex( sym ) ) );
-
+            assert( !_constraint.coefficient( sym, i ).has( ex( sym ) ) );
             /*
              * Add conjunction (a_i!=0) to the substitution result.
              */
             _substitutionResults.push_back( TS_ConstraintConjunction() );
-            _substitutionResults.back().push_back( smtrat::Formula::newConstraint( coefficients.at( i ), smtrat::CR_NEQ, _constraint.variables() ) );
+            _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint.coefficient( sym, i ), smtrat::CR_NEQ, _constraint.variables() ) );
         }
     }
 
