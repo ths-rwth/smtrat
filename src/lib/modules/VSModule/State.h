@@ -176,6 +176,15 @@ struct unsignedGreater
 	}
 };
 
+struct unsignedSmaller
+{
+	bool operator()
+	( const unsigned& lhs, const unsigned& rhs ) const
+	{
+		return lhs<rhs;
+	}
+};
+
 struct subComp
 {
 	bool operator()

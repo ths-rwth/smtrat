@@ -38,7 +38,7 @@
 //#define VS_DEBUG_METHODS_X
 //#define VS_DEBUG_BACKENDS
 //#define VS_DEBUG_BACKENDS_EXTENDED
-#define VS_LOG_INFSUBSETS
+//#define VS_LOG_INFSUBSETS
 
 namespace vs
 {
@@ -434,18 +434,14 @@ namespace vs
         }
         else
         {
-            /*
-             * For the root possible no index is choosen.
-             */
             assert( index() != "" );
-
             /*
              * Find the best condition.
              */
             _bestCondition = *cond;
             ++cond;
-            unsigned bestConditionValuation    = _bestCondition->valuate( index(), _numberOfAllVariables, true );
-            unsigned currentConditionValuation = 0;
+            double bestConditionValuation    = _bestCondition->valuate( index(), _numberOfAllVariables, true );
+            double currentConditionValuation = 0;
             while( cond != conditions().end() )
             {
                 if( !(**cond).flag() )
@@ -458,7 +454,7 @@ namespace vs
                     else
                     {
                         currentConditionValuation = (**cond).valuate( index(), _numberOfAllVariables, true );
-                        if( currentConditionValuation > bestConditionValuation )
+                        if( currentConditionValuation != 0 && ( currentConditionValuation < bestConditionValuation || bestConditionValuation == 0 ) )
                         {
                             _bestCondition         = *cond;
                             bestConditionValuation = currentConditionValuation;
@@ -467,7 +463,7 @@ namespace vs
                 }
                 ++cond;
             }
-
+            assert( bestConditionValuation != 0 );
             /*
              * If all constraints were considered to yield test candidates, return false
              * which means that there is no condition in general. Otherwise return true.
@@ -1446,10 +1442,10 @@ namespace vs
             return false;
         }
 
-        map<string, multiset<unsigned, unsignedGreater> > varVals = map<string, multiset<unsigned, unsignedGreater> >();
+        map<string, multiset<double> > varVals = map<string, multiset<double> >();
         for( symtab::const_iterator var = _allVariables.begin(); var != _allVariables.end(); ++var )
         {
-            varVals.insert( pair<string, multiset<unsigned, unsignedGreater> >( var->first, multiset<unsigned, unsignedGreater>() ) );
+            varVals.insert( pair<string, multiset<double> >( var->first, multiset<double>() ) );
         }
 
         /*
@@ -1460,9 +1456,9 @@ namespace vs
             /*
              * Check for all variables their valuation for the given constraint.
              */
-            for( map<string, multiset<unsigned, unsignedGreater> >::iterator var = varVals.begin(); var != varVals.end(); ++var )
+            for( map<string, multiset<double> >::iterator var = varVals.begin(); var != varVals.end(); ++var )
             {
-                unsigned varInConsVal = (**cond).valuate( var->first, _allVariables.size(), true );
+                double varInConsVal = (**cond).valuate( var->first, _allVariables.size(), true );
                 if( varInConsVal != 0 )
                 {
                     varVals.at( var->first ).insert( varInConsVal );
@@ -1471,12 +1467,12 @@ namespace vs
         }
 
         #ifdef VS_DEBUG_METHODS_X
-        for( map<string, multiset<unsigned, unsignedGreater> >::const_iterator var = varVals.begin(); var != varVals.end(); ++var )
+        for( map<string, multiset<double> >::const_iterator var = varVals.begin(); var != varVals.end(); ++var )
         {
             cout << var->first << ":  ";
-            for( multiset<unsigned, unsignedGreater>::const_iterator varVal = var->second.begin(); varVal != var->second.end(); ++varVal )
+            for( multiset<double>::const_iterator varVal = var->second.begin(); varVal != var->second.end(); ++varVal )
             {
-                cout << *varVal << " | ";
+                cout <<  setprecision(10) << *varVal << " | ";
             }
             cout << endl;
         }
@@ -1485,10 +1481,10 @@ namespace vs
         /*
          * Find the variable which has in a constraint the best valuation. If more than one
          * have the highest valuation, then choose the one having the higher valuation
-         * accoridng to the method argument "_allVariables".
+         * according to the method argument "_allVariables".
          */
-        map<string, multiset<unsigned, unsignedGreater> >::const_iterator bestVar = varVals.begin();
-        map<string, multiset<unsigned, unsignedGreater> >::const_iterator var     = varVals.begin();
+        map<string, multiset<double> >::const_iterator bestVar = varVals.begin();
+        map<string, multiset<double> >::const_iterator var     = varVals.begin();
         ++var;
         while( var != varVals.end() )
         {
@@ -1496,17 +1492,10 @@ namespace vs
             {
                 if( var->second.size() == 1 && bestVar->second.size() == 1 )
                 {
-                    if( *var->second.begin() > *bestVar->second.begin() )
+                    if( *var->second.begin() < *bestVar->second.begin() )
                     {
                         bestVar = var;
                     }
-                    //              else if( *var->second.begin()==*bestVar->second.begin() )
-                    //              {
-                    //                  if( var->first.compare( bestVar->first )<0 )
-                    //                  {
-                    //                      bestVar = var;
-                    //                  }
-                    //              }
                 }
                 else if( var->second.size() == 1 )
                 {
@@ -1514,16 +1503,16 @@ namespace vs
                 }
                 else
                 {
-                    multiset<unsigned, unsignedGreater>::const_iterator varInConsVal     = var->second.begin();
-                    multiset<unsigned, unsignedGreater>::const_iterator bestVarInConsVal = bestVar->second.begin();
+                    multiset<double>::const_iterator varInConsVal     = var->second.begin();
+                    multiset<double>::const_iterator bestVarInConsVal = bestVar->second.begin();
                     while( varInConsVal != var->second.end() && bestVarInConsVal != bestVar->second.end() )
                     {
-                        if( *varInConsVal > *bestVarInConsVal )
+                        if( *varInConsVal < *bestVarInConsVal )
                         {
                             bestVar = var;
                             break;
                         }
-                        else if( *varInConsVal < *bestVarInConsVal )
+                        else if( *varInConsVal > *bestVarInConsVal )
                         {
                             break;
                         }
@@ -1535,13 +1524,6 @@ namespace vs
                     {
                         bestVar = var;
                     }
-                    //              else if( varInConsVal==var->second.end() && bestVarInConsVal==bestVar->second.end() )
-                    //              {
-                    //                  if( var->first.compare( bestVar->first )<0 )
-                    //                  {
-                    //                      bestVar = var;
-                    //                  }
-                    //              }
                 }
             }
             else if( !var->second.empty() && bestVar->second.empty() )
@@ -1554,6 +1536,7 @@ namespace vs
         if( index() == "0" || (isRoot() && index() == "") )
         {
             setIndex( (*bestVar).first );
+//            cout << __func__ << "  ->  " << (*bestVar).first << endl;
             return true;
         }
         else
@@ -1561,6 +1544,7 @@ namespace vs
             if( index().compare( (*bestVar).first ) != 0 )
             {
                 setIndex( (*bestVar).first );
+//                cout << __func__ << "  ->  " << (*bestVar).first << endl;
                 return true;
             }
             return false;

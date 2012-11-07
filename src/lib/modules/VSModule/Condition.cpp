@@ -127,130 +127,113 @@ namespace vs
      *
      * @return A valuation of the constraint according to an heuristic.
      */
-    unsigned Condition::valuate( const string _consideredVariable, const unsigned _maxNumberOfVars, const bool _forElimination ) const
+    double Condition::valuate( const string _consideredVariable, const unsigned _maxNumberOfVars, const bool _forElimination ) const
     {
+//        cout << "valuate( " << constraint() << " )  =  ";
         symtab::const_iterator var = mpConstraint->variables().find( _consideredVariable );
         if( var != mpConstraint->variables().end() )
         {
-            /*
-             * Round the maximal number of variables.
-             */
-            unsigned roundedMaxNumberOfVars = 1;
-            while( roundedMaxNumberOfVars <= _maxNumberOfVars )
-            {
-                roundedMaxNumberOfVars *= 10;
-            }
-
-            /*
-             * Check the relation symbol.
-             */
-            unsigned relationSymbolWeight = 0;
+            smtrat::VarInfo varInfo = constraint().varInfo( var->second );
+            double maximum = 0;
+            if( _maxNumberOfVars < 4 ) maximum = 16;
+            else maximum = _maxNumberOfVars * _maxNumberOfVars;
+            //Check the relation symbol.
+            double relationSymbolWeight = 0;
             switch( mpConstraint->relation() )
             {
                 case smtrat::CR_EQ:
-                    relationSymbolWeight += 4;
+                    relationSymbolWeight += 1;
                     break;
                 case smtrat::CR_GEQ:
-                    relationSymbolWeight += 3;
+                    relationSymbolWeight += 2;
                     break;
                 case smtrat::CR_LEQ:
-                    relationSymbolWeight += 3;
+                    relationSymbolWeight += 2;
                     break;
                 case smtrat::CR_LESS:
-                    relationSymbolWeight += 2;
+                    relationSymbolWeight += 4;
                     break;
                 case smtrat::CR_GREATER:
-                    relationSymbolWeight += 2;
+                    relationSymbolWeight += 4;
                     break;
                 case smtrat::CR_NEQ:
-                    relationSymbolWeight += 1;
+                    relationSymbolWeight += 3;
                     break;
                 default:
                     return 0;
             }
-
-            /*
-             * Check the degree of the variable.
-             */
-            unsigned degree = mpConstraint->maxDegree( var->second );
-
-            /*
-             * Check the leading coefficient of the  given variable.
-             */
+            //Check the degree of the variable.
+            double degreeWeight = varInfo.maxDegree;
+            if( maximum <= degreeWeight ) degreeWeight = maximum - 1;
+            //Check the leading coefficient of the  given variable.
             unsigned lCoeffWeight = 0;
-
-            if( degree <= 1 )
+            if( degreeWeight <= 1 )
             {
-                if( mpConstraint->coefficient( var->second, degree ).info( info_flags::rational ) )
+                if( mpConstraint->coefficient( var->second, degreeWeight ).info( info_flags::rational ) )
                 {
-                    lCoeffWeight += 3;
+                    lCoeffWeight = 1;
                 }
                 else
                 {
-                    lCoeffWeight += 1;
+                    lCoeffWeight = 3;
                 }
             }
-            else if( degree == 2 )
+            else if( degreeWeight == 2 )
             {
                 #ifdef VS_ELIMINATE_MULTI_ROOTS
                 const ex& lhs = mpConstraint->multiRootLessLhs();
-                bool hasRationalLeadingCoefficient = lhs.coeff( var->second, degree ).info( info_flags::rational );
-                if( hasRationalLeadingCoefficient && lhs.coeff( var->second, degree - 1 ).info( info_flags::rational ) )
+                bool hasRationalLeadingCoefficient = lhs.coeff( var->second, degreeWeight ).info( info_flags::rational );
+                if( hasRationalLeadingCoefficient && lhs.coeff( var->second, degreeWeight - 1 ).info( info_flags::rational ) )
                 {
-                    lCoeffWeight += 3;
+                    lCoeffWeight = 1;
                 }
                 else if( hasRationalLeadingCoefficient )
                 {
-                    lCoeffWeight += 2;
+                    lCoeffWeight = 2;
                 }
                 else
                 {
-                    lCoeffWeight += 1;
+                    lCoeffWeight = 3;
                 }
                 #else
-                bool hasRationalLeadingCoefficient = mpConstraint->coefficient( var->second, degree ).info( info_flags::rational );
-                if( hasRationalLeadingCoefficient && mpConstraint->coefficient( var->second, degree - 1 ).info( info_flags::rational ) )
+                bool hasRationalLeadingCoefficient = mpConstraint->coefficient( var->second, degreeWeight ).info( info_flags::rational );
+                if( hasRationalLeadingCoefficient && mpConstraint->coefficient( var->second, degreeWeight - 1 ).info( info_flags::rational ) )
                 {
-                    lCoeffWeight += 3;
+                    lCoeffWeight = 1;
                 }
                 else if( hasRationalLeadingCoefficient )
                 {
-                    lCoeffWeight += 2;
+                    lCoeffWeight = 2;
                 }
                 else
                 {
-                    lCoeffWeight += 1;
+                    lCoeffWeight = 3;
                 }
                 #endif
             }
-
-            /*
-             * Check the number of variables.
-             */
-            unsigned numberOfVariableWeight = roundedMaxNumberOfVars - mpConstraint->variables().size();
-
-            unsigned result;
-            if( degree <= 2 )
-            {
-                if( mpConstraint->variables().size() == 1 )
-                {
-                    result = 100 * roundedMaxNumberOfVars * relationSymbolWeight + 10 * roundedMaxNumberOfVars * lCoeffWeight
-                             + 3 * roundedMaxNumberOfVars * (3 - degree);
-                }
-                else
-                {
-                    result = 100 * roundedMaxNumberOfVars * relationSymbolWeight + 10 * roundedMaxNumberOfVars * lCoeffWeight
-                             + roundedMaxNumberOfVars * (3 - degree) + numberOfVariableWeight;
-                }
-            }
-            else
-            {
-                result = 10 * roundedMaxNumberOfVars * relationSymbolWeight + roundedMaxNumberOfVars * lCoeffWeight + numberOfVariableWeight;
-            }
+            // Check the number of variables.
+            double numberOfVariableWeight = mpConstraint->variables().size();
+            // Check how in how many monomials the variable occurs.
+            double numberOfVariableOccurencesWeight = varInfo.occurences;
+            if( maximum <= numberOfVariableOccurencesWeight ) numberOfVariableOccurencesWeight = maximum - 1;
+            // Check the number of variables.
+            double weightFactorTmp = maximum;
+            double result = ( degreeWeight <= 2 ? 1 : 2);
+            result += relationSymbolWeight/weightFactorTmp;
+            weightFactorTmp *= maximum;
+            result += lCoeffWeight/weightFactorTmp;
+            weightFactorTmp *= maximum;
+            result += degreeWeight/weightFactorTmp;
+            weightFactorTmp *= maximum;
+            result += numberOfVariableWeight/weightFactorTmp;
+            weightFactorTmp *= maximum;
+            result += numberOfVariableOccurencesWeight/weightFactorTmp;
+//            cout << setprecision(10) << result << endl;
             return result;
         }
         else
         {
+//            cout << setprecision(10) << 0 << endl;
             return 0;
         }
     }

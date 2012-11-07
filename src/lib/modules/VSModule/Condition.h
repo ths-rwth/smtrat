@@ -149,7 +149,7 @@ namespace vs
                 return *mpOriginalConditions;
             }
 
-            unsigned valuate( const std::string, const unsigned, const bool ) const;
+            double valuate( const std::string, const unsigned, const bool ) const;
             bool bestVariable( std::string& ) const;
             unsigned bestVariable2( std::string& ) const;
             bool operator ==( const Condition& ) const;

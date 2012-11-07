@@ -193,6 +193,21 @@ namespace smtrat
                 return *mpMultiRootLessLhs;
             }
 
+            unsigned numMonomials() const
+            {
+                return mNumMonomials;
+            }
+
+            unsigned minMonomeDegree() const
+            {
+                return mMinMonomeDegree;
+            }
+
+            unsigned maxMonomeDegree() const
+            {
+                return mMaxMonomeDegree;
+            }
+
             const GiNaC::numeric& constantPart() const
             {
                 return mConstantPart;

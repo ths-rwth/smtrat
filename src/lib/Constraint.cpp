@@ -162,7 +162,7 @@ namespace smtrat
      */
     Constraint::~Constraint()
     {
-//        if( mpMultiRootLessLhs != pLhs ) delete mpMultiRootLessLhs;
+        if( mpMultiRootLessLhs != pLhs ) delete mpMultiRootLessLhs;
         delete pLhs;
     }
 
@@ -267,48 +267,48 @@ namespace smtrat
         }
         else
         {
-//            switch( relation() )
-//            {
-//                case CR_EQ:
-//                {
-//                    if( mCannotBeZero ) return 0;
-//                    break;
-//                }
-//                case CR_NEQ:
-//                {
-//                    if( mCannotBeZero ) return 1;
-//                    break;
-//                }
-//                case CR_LESS:
-//                {
-//                    if( mCannotBeZero && mIsAlwaysNegative ) return 1;
-//                    if( mIsAlwaysPositive ) return 0;
-//                    break;
-//                }
-//                case CR_GREATER:
-//                {
-//                    if( mCannotBeZero && mIsAlwaysPositive ) return 1;
-//                    if( mIsAlwaysNegative ) return 0;
-//                    break;
-//                }
-//                case CR_LEQ:
-//                {
-//                    if( mIsAlwaysNegative ) return 1;
-//                    if( mCannotBeZero && mIsAlwaysPositive ) return 0;
-//                    break;
-//                }
-//                case CR_GEQ:
-//                {
-//                    if( mIsAlwaysPositive ) return 1;
-//                    if( mCannotBeZero && mIsAlwaysNegative ) return 0;
-//                    break;
-//                }
-//                default:
-//                {
-//                    cout << "Error in isConsistent: unexpected relation symbol." << endl;
-//                    return false;
-//                }
-//            }
+            switch( relation() )
+            {
+                case CR_EQ:
+                {
+                    if( mCannotBeZero ) return 0;
+                    break;
+                }
+                case CR_NEQ:
+                {
+                    if( mCannotBeZero ) return 1;
+                    break;
+                }
+                case CR_LESS:
+                {
+                    if( mCannotBeZero && mIsAlwaysNegative ) return 1;
+                    if( mIsAlwaysPositive ) return 0;
+                    break;
+                }
+                case CR_GREATER:
+                {
+                    if( mCannotBeZero && mIsAlwaysPositive ) return 1;
+                    if( mIsAlwaysNegative ) return 0;
+                    break;
+                }
+                case CR_LEQ:
+                {
+                    if( mIsAlwaysNegative ) return 1;
+                    if( mCannotBeZero && mIsAlwaysPositive ) return 0;
+                    break;
+                }
+                case CR_GEQ:
+                {
+                    if( mIsAlwaysPositive ) return 1;
+                    if( mCannotBeZero && mIsAlwaysNegative ) return 0;
+                    break;
+                }
+                default:
+                {
+                    cout << "Error in isConsistent: unexpected relation symbol." << endl;
+                    return false;
+                }
+            }
             return 2;
         }
     }
@@ -362,7 +362,7 @@ namespace smtrat
             }
         }
     }
-    
+
     /**
      *
      * @param _variable
