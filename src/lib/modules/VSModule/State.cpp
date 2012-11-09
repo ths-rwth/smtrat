@@ -463,7 +463,6 @@ namespace vs
                 }
                 ++cond;
             }
-            assert( bestConditionValuation != 0 );
             /*
              * If all constraints were considered to yield test candidates, return false
              * which means that there is no condition in general. Otherwise return true.
