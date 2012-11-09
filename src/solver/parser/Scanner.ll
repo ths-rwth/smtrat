@@ -94,6 +94,8 @@ typedef smtrat::Parser::token_type token_type;
 "set-info"          { return token::SETINFO; }
 "check-sat"         { return token::CHECKSAT; }
 "get-model"         { return token::GETMODEL; }
+"push"              { return token::PUSH; }
+"pop"               { return token::POP; }
 "QF_NRA"            { return token::QFNRA; }
 "QF_LRA"            { return token::QFLRA; }
 ";".*\n             { }

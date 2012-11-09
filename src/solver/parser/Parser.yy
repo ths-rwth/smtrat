@@ -111,6 +111,8 @@
 %token SETINFO
 %token CHECKSAT
 %token GETMODEL
+%token PUSH
+%token POP
 %token <sval> SYM
 %token <sval> NUM
 %token <sval> DEC
@@ -194,7 +196,26 @@ command:
 	}
 	|	OB CHECKSAT CB
     {
+        if( driver.check )
+        {
+            std::string errstr = std::string( "Only one (check) is supported!");
+            error( yyloc, errstr );
+        }
+        else
+        {
+            driver.check = true;
+        }
     }
+	|	OB PUSH KEY CB
+	{
+        std::string errstr = std::string( "(push) is not supported!");
+        error( yyloc, errstr );
+	}
+	|	OB POP KEY CB
+	{
+        std::string errstr = std::string( "(pop) is not is supported!");
+        error( yyloc, errstr );
+	}
 	|	OB GETMODEL CB
     {
         driver.printAssignment = true;
