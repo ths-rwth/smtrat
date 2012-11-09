@@ -184,9 +184,9 @@ namespace smtrat
     vector<vector<unsigned> > Manager::getReasons() const
     {
         vector<vector<unsigned> > infeasibleSubsets = vector<vector<unsigned> >();
-        assert( !mpPrimaryBackend->rInfeasibleSubsets().empty() );
-        for( vec_set_const_pFormula::const_iterator infSubSet = mpPrimaryBackend->rInfeasibleSubsets().begin();
-                infSubSet != mpPrimaryBackend->rInfeasibleSubsets().end(); ++infSubSet )
+        assert( !mpPrimaryBackend->infeasibleSubsets().empty() );
+        for( vec_set_const_pFormula::const_iterator infSubSet = mpPrimaryBackend->infeasibleSubsets().begin();
+                infSubSet != mpPrimaryBackend->infeasibleSubsets().end(); ++infSubSet )
         {
             assert( !infSubSet->empty() );
             infeasibleSubsets.push_back( vector<unsigned>() );
@@ -206,6 +206,19 @@ namespace smtrat
             }
         }
         return infeasibleSubsets;
+    }
+
+    void Manager::printModel( ostream& _out ) const
+    {
+        mpPrimaryBackend->updateModel();
+        if( !mpPrimaryBackend->model().empty() )
+        {
+            _out << "Model:" << endl;
+            for( Module::Model::const_iterator assignment = mpPrimaryBackend->model().begin(); assignment != mpPrimaryBackend->model().end(); ++assignment )
+            {
+                _out << "  " << assignment->first << " -> " << assignment->second << endl;
+            }
+        }
     }
 
     /**
@@ -243,6 +256,7 @@ namespace smtrat
                 // backend does not exist => create it
                 Module* pBackend = backendFactory->second->create( _requiredBy->pPassedFormula(), this );
                 mGeneratedModules.push_back( pBackend );
+                pBackend->setId( mGeneratedModules.size()-1 );
                 allBackends.push_back( pBackend );
                 backends.push_back( pBackend );
                 mModulePositionInStrategy[pBackend] = iter->first;

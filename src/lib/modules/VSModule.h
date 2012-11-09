@@ -118,6 +118,7 @@ namespace smtrat
             void printAll( std::ostream& = std::cout ) const;
             void printRanking( std::ostream& = std::cout ) const;
             void printAnswer( std::ostream& = std::cout ) const;
+            void updateModel();
 
         private:
 

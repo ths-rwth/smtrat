@@ -46,15 +46,18 @@ using namespace std;
 namespace smtrat
 {
     vector<string> Module::mAssumptionToCheck = vector<string>();
-    set<string, strcomp> Module::mVariablesInAssumptionToCheck = set<string, strcomp>();
+    set<string> Module::mVariablesInAssumptionToCheck = set<string>();
 
     Module::Module( const Formula* const _formula, Manager* const _tsManager ):
+        mSolverState( Unknown ),
+        mId( 0 ),
         mInfeasibleSubsets(),
         mpManager( _tsManager ),
         mModuleType( MT_Module ),
         mConstraintsToInform(),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),
+        mModel(),
         mUsedBackends(),
         mAllBackends(),
         mPassedformulaOrigins(),
@@ -96,6 +99,7 @@ namespace smtrat
         {
             getInfeasibleSubsets();
         }
+        mSolverState = a;
         return a;
     }
 
@@ -172,6 +176,19 @@ namespace smtrat
             {
                 ++infSubSet;
             }
+        }
+        if( mInfeasibleSubsets.empty() ) mSolverState = Unknown;
+    }
+
+    /**
+     *
+     */
+    void Module::updateModel()
+    {
+        mModel.clear();
+        if( mSolverState == True )
+        {
+            getBackendsModel();
         }
     }
 
@@ -308,12 +325,73 @@ namespace smtrat
         vector<Module*>::const_iterator backend = mUsedBackends.begin();
         while( backend != mUsedBackends.end() )
         {
-            if( !(*backend)->rInfeasibleSubsets().empty() )
+            if( !(*backend)->infeasibleSubsets().empty() )
             {
                 mInfeasibleSubsets = getInfeasibleSubsets( **backend );
                 return;
             }
             ++backend;
+        }
+    }
+
+    /**
+     *
+     * @param _modelA
+     * @param _modelB
+     * @return
+     */
+    bool Module::modelsDisjoint( const Model& _modelA, const Model& _modelB )
+    {
+        Model::const_iterator assignment = _modelA.begin();
+        while( assignment != _modelA.end() )
+        {
+            if( _modelB.find( assignment->first ) != _modelB.end() ) return false;
+            ++assignment;
+        }
+        assignment = _modelB.begin();
+        while( assignment != _modelB.end() )
+        {
+            if( _modelA.find( assignment->first ) != _modelA.end() ) return false;
+            ++assignment;
+        }
+        return true;
+    }
+
+    /**
+     *
+     * @param _model
+     * @return
+     */
+    bool modelVariablesExist( const Module::Model& _model )
+    {
+        Module::Model::const_iterator assignment = _model.begin();
+        while( assignment != _model.end() )
+        {
+            GiNaC::symtab allVars = Formula::constraintPool().variables();
+            if( allVars.find( assignment->first ) == allVars.end() ) return false;
+            ++assignment;
+        }
+        return true;
+    }
+
+    /**
+     *
+     */
+    void Module::getBackendsModel()
+    {
+        vector<Module*>::iterator module = mUsedBackends.begin();
+        while( module != mUsedBackends.end() )
+        {
+            assert( (*module)->solverState() != False );
+            if( (*module)->solverState() == True )
+            {
+                assert( modelsDisjoint( mModel, (*module)->model() ) );
+                assert( modelVariablesExist( (*module)->model() ) );
+                (*module)->updateModel();
+                mModel.insert( (*module)->model().begin(), (*module)->model().end() );
+                break;
+            }
+            ++module;
         }
     }
 
@@ -330,7 +408,7 @@ namespace smtrat
     vec_set_const_pFormula Module::getInfeasibleSubsets( const Module& _backend ) const
     {
         vec_set_const_pFormula result = vec_set_const_pFormula();
-        const vec_set_const_pFormula& backendsInfsubsets = _backend.rInfeasibleSubsets();
+        const vec_set_const_pFormula& backendsInfsubsets = _backend.infeasibleSubsets();
         assert( !backendsInfsubsets.empty() );
         for( vec_set_const_pFormula::const_iterator infSubSet = backendsInfsubsets.begin(); infSubSet != backendsInfsubsets.end(); ++infSubSet )
         {
@@ -635,7 +713,7 @@ namespace smtrat
                     smtlibFile << "(declare-fun " << Formula::mAuxiliaryBooleanNamePrefix << auxIndex << " () Bool)\n";
                 }
                 // add module name variables
-                for( set<string, strcomp>::const_iterator involvedModule = Module::mVariablesInAssumptionToCheck.begin();
+                for( set<string>::const_iterator involvedModule = Module::mVariablesInAssumptionToCheck.begin();
                      involvedModule != Module::mVariablesInAssumptionToCheck.end(); ++involvedModule )
                 {
                     smtlibFile << "(declare-fun " << *involvedModule << " () Bool)\n";

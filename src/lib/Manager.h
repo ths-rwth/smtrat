@@ -111,27 +111,11 @@ namespace smtrat
                 return *mpPassedFormula;
             }
 
-            unsigned uniqueModuleNumber( const Module* const _module )
-            {
-                unsigned                             result     = 0;
-                std::vector<Module*>::const_iterator moduleIter = mGeneratedModules.begin();
-                while( moduleIter != mGeneratedModules.end() )
-                {
-                    if( *moduleIter == _module )
-                    {
-                        return result;
-                    }
-                    ++moduleIter;
-                    ++result;
-                }
-                assert( false );
-                return 0;
-            }
-
             bool inform( const std::string&, bool );
             void popBacktrackPoint();
             bool addConstraint( const std::string&, const bool, const bool );
             std::vector<std::vector<unsigned> > getReasons() const;
+            void printModel( std::ostream& ) const;
             std::vector<Module*> getBackends( Formula*, Module* );
     };
 

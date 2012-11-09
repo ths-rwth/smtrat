@@ -82,6 +82,7 @@ namespace smtrat
                 mInfeasibleSubsets.push_back( set<const Formula*>() );
                 mInfeasibleSubsets.back().insert( mpReceivedFormula->back() );
                 mInconsistentConstraintAdded = true;
+                mSolverState = False;
                 return false;
             }
             case 1:
@@ -123,20 +124,24 @@ namespace smtrat
         {
             if( mInfeasibleSubsets.empty() )
             {
+                mSolverState = True;
                 return True;
             }
             else
             {
+                mSolverState = False;
                 return False;
             }
         }
         mFreshConstraintReceived = false;
         if( mpReceivedFormula->empty() )
         {
+            mSolverState = True;
             return True;
         }
         if( mInconsistentConstraintAdded )
         {
+            mSolverState = False;
             return False;
         }
         else if( mpReceivedFormula->size() > 1 )
@@ -390,10 +395,12 @@ namespace smtrat
                 {
                     getInfeasibleSubsets();
                 }
+                mSolverState = a;
                 return a;
             }
             else
             {
+                mSolverState = False;
                 return False;
             }
         }
@@ -406,10 +413,12 @@ namespace smtrat
             {
                 case 0:
                 {
+                    mSolverState = False;
                     return False;
                 }
                 case 1:
                 {
+                    mSolverState = True;
                     return True;
                 }
                 case 2:
@@ -420,11 +429,13 @@ namespace smtrat
                     {
                         getInfeasibleSubsets();
                     }
+                    mSolverState = a;
                     return a;
                 }
                 default:
                 {
                     assert( false );
+                    mSolverState = Unknown;
                     return Unknown;
                 }
             }

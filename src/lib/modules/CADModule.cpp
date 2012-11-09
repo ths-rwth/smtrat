@@ -97,7 +97,10 @@ namespace smtrat
         Module::assertSubformula( _subformula );
 
         if( !mSatisfiable )
+        {
+            mSolverState = False;
             return false;
+        }
         // add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
         if( mConstraintsMap.find( _subformula ) != mConstraintsMap.end() )
             return true;    // the exact constraint was already considered
@@ -164,6 +167,7 @@ namespace smtrat
             cout << "Performance gain: " << (mpReceivedFormula->size() - mInfeasibleSubsets.front().size()) << endl << endl;
             #endif
             mSatisfiable = false;
+            mSolverState = False;
             return False;
         }
         #ifdef MODULE_VERBOSE
@@ -177,6 +181,7 @@ namespace smtrat
         this->addDeductions( deductions );
         #endif
         #endif
+        mSolverState = True;
         return True;
     }
 

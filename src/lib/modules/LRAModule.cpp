@@ -37,7 +37,9 @@
 using namespace std;
 using namespace lra;
 using namespace GiNaC;
+#ifdef LRA_USE_GINACRA
 using namespace GiNaCRA;
+#endif
 
 namespace smtrat
 {
@@ -46,7 +48,8 @@ namespace smtrat
      */
     LRAModule::LRAModule( const Formula* const _formula, Manager* const _tsManager ):
         Module( _formula, _tsManager ),
-        mInitialized(),
+        mInitialized( false ),
+        mAssignmentFullfilsNonlinearConstraints( false ),
         mMaxConstraintId( Formula::constraintPool().size() + 1 ),
         mTableau( mpPassedFormula->end() ),
         mLinearConstraints(),
@@ -129,6 +132,7 @@ namespace smtrat
         int               consistency = constraint->isConsistent();
         if( consistency == 2 )
         {
+            mAssignmentFullfilsNonlinearConstraints = false;
             if( constraint->isLinear() )
             {
                 vector< const Bound* >& bounds = *mConstraintToBound[constraint->id()];
@@ -151,6 +155,7 @@ namespace smtrat
             set< const Formula* > infSubSet = set< const Formula* >();
             infSubSet.insert( *_subformula );
             mInfeasibleSubsets.push_back( infSubSet );
+            mSolverState = False;
             return false;
         }
         else
@@ -277,6 +282,7 @@ namespace smtrat
                     if( checkAssignmentForNonlinearConstraint() )
                     {
                         learnRefinements();
+                        mSolverState = True;
                         return True;
                     }
                     else
@@ -288,6 +294,7 @@ namespace smtrat
                             getInfeasibleSubsets();
                         }
                         learnRefinements();
+                        mSolverState = a;
                         return a;
                     }
                 }
@@ -319,6 +326,7 @@ namespace smtrat
                     if( !mInfeasibleSubsets.empty() )
                     {
                         learnRefinements();
+                        mSolverState = False;
                         return False;
                     }
                 }
@@ -352,13 +360,196 @@ namespace smtrat
                 #ifdef DEBUG_LRA_MODULE
                 cout << "False" << endl;
                 #endif
+                mSolverState = False;
                 return False;
             }
         }
         assert( false );
         learnRefinements();
+        mSolverState = True;
         return True;
     }
+
+    /**
+     *
+     */
+    void LRAModule::updateModel()
+    {
+        mModel.clear();
+        if( mSolverState == True )
+        {
+            if( mAssignmentFullfilsNonlinearConstraints )
+            {
+                for( ExVariableMap::const_iterator originalVar = mOriginalVars.begin(); originalVar != mOriginalVars.end(); ++originalVar )
+                {
+                    stringstream outA;
+                    outA << *originalVar->first;
+                    stringstream outB;
+                    outB << originalVar->second->assignment().mainPart();
+                    if( originalVar->second->assignment().deltaPart() != 0 )
+                    {
+                        outB << "+delta_" << mId << "*" << originalVar->second->assignment().deltaPart();
+                    }
+                    mModel.insert( pair< const string, string >( outA.str(), outB.str() ) );
+                }
+            }
+            else
+            {
+                Module::getBackendsModel();
+            }
+        }
+    }
+
+    /**
+     * Gives a rational model if the received formula is satisfiable. Note, that it
+     * is calculated from scratch every time you call this method.
+     *
+     * @return The rational model.
+     */
+    exmap LRAModule::getRationalModel() const
+    {
+        exmap result = exmap();
+        if( mInfeasibleSubsets.empty() )
+        {
+            /*
+            * Check whether the found satisfying assignment is by coincidence a
+            * satisfying assignment of the non linear constraints
+            */
+            numeric minDelta = -1;
+            numeric curDelta = 0;
+            Variable* variable = NULL;
+            /*
+            * For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
+            */
+            for( auto originalVar = mOriginalVars.begin(); originalVar != mOriginalVars.end(); ++originalVar )
+            {
+                variable = originalVar->second;
+                const Value& assValue = variable->assignment();
+                const Bound& inf = variable->infimum();
+                if( !inf.isInfinite() )
+                {
+                    /*
+                    * .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
+                    */
+                    if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
+                    {
+                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
+                        if( minDelta < 0 || curDelta < minDelta )
+                        {
+                            minDelta = curDelta;
+                        }
+                    }
+                }
+                const Bound& sup = variable->supremum();
+                if( !sup.isInfinite() )
+                {
+                    /*
+                    * .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
+                    */
+                    if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
+                    {
+                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
+                        if( minDelta < 0 || curDelta < minDelta )
+                        {
+                            minDelta = curDelta;
+                        }
+                    }
+                }
+            }
+            /*
+            * For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
+            */
+            for( auto slackVar = mSlackVars.begin(); slackVar != mSlackVars.end(); ++slackVar )
+            {
+                variable = slackVar->second;
+                const Value& assValue = variable->assignment();
+                const Bound& inf = variable->infimum();
+                if( !inf.isInfinite() )
+                {
+                    /*
+                    * .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
+                    */
+                    if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
+                    {
+                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
+                        if( minDelta < 0 || curDelta < minDelta )
+                        {
+                            minDelta = curDelta;
+                        }
+                    }
+                }
+                const Bound& sup = variable->supremum();
+                if( !sup.isInfinite() )
+                {
+                    /*
+                    * .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
+                    */
+                    if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
+                    {
+                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
+                        if( minDelta < 0 || curDelta < minDelta )
+                        {
+                            minDelta = curDelta;
+                        }
+                    }
+                }
+            }
+
+            curDelta = minDelta < 0 ? 1 : minDelta;
+            /*
+            * Calculate the rational assignment of all original variables.
+            */
+            for( auto var = mOriginalVars.begin(); var != mOriginalVars.end(); ++var )
+            {
+                const Value& value = var->second->assignment();
+                result.insert( pair< ex, ex >( *var->first, ex( value.mainPart() + value.deltaPart() * curDelta ) ) );
+            }
+        }
+        return result;
+    }
+
+    #ifdef LRA_USE_GINACRA
+    /**
+     * Returns the bounds of the variables as intervals.
+     *
+     * @return The bounds of the variables as intervals.
+     */
+    evalintervalmap LRAModule::getVariableBounds() const
+    {
+        evalintervalmap result = evalintervalmap();
+        for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
+        {
+            const Variable& var = *iter->second;
+            Interval::BoundType lowerBoundType;
+            numeric lowerBoundValue;
+            Interval::BoundType upperBoundType;
+            numeric upperBoundValue;
+            if( var.infimum().isInfinite() )
+            {
+                lowerBoundType = Interval::INFINITY_BOUND;
+                lowerBoundValue = 0;
+            }
+            else
+            {
+                lowerBoundType = var.infimum().isWeak() ? Interval::WEAK_BOUND : Interval::STRICT_BOUND;
+                lowerBoundValue = var.infimum().limit().mainPart();
+            }
+            if( var.supremum().isInfinite() )
+            {
+                upperBoundType = Interval::INFINITY_BOUND;
+                upperBoundValue = 0;
+            }
+            else
+            {
+                upperBoundType = var.supremum().isWeak() ? Interval::WEAK_BOUND : Interval::STRICT_BOUND;
+                upperBoundValue = var.supremum().limit().mainPart();
+            }
+            Interval interval = Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+            result.insert( pair< symbol, Interval >( ex_to< symbol >( *iter->first ), interval ) );
+        }
+        return result;
+    }
+    #endif
 
     #ifdef LRA_REFINEMENT
     /**
@@ -425,13 +616,6 @@ namespace smtrat
             }
             else if( bound.pInfo()->updated < 0 )
             {
-//                bound.print( true, cout, true );
-//                cout << endl;
-//                if( bound.pInfo()->position == mpPassedFormula->end() ) cout << "ERROR!!!" << endl;
-//                cout << __func__ << ":" << __LINE__ << endl;
-//                printPassedFormula();
-//                cout << endl;
-//                cout << **bound.pInfo()->position << endl;
                 removeSubformulaFromPassedFormula( bound.pInfo()->position );
                 bound.pInfo()->position = mpPassedFormula->end();
                 bound.pInfo()->updated = 0;
@@ -450,105 +634,12 @@ namespace smtrat
     {
         if( mNonlinearConstraints.empty() )
         {
+            mAssignmentFullfilsNonlinearConstraints = true;
             return true;
         }
         else
         {
-            /*
-             * Check whether the found satisfying assignment is by coincidence a
-             * satisfying assignment of the non linear constraints
-             */
-            numeric minDelta = -1;
-            numeric curDelta = 0;
-            Variable* variable = NULL;
-            /*
-             * For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
-             */
-            for( auto originalVar = mOriginalVars.begin(); originalVar != mOriginalVars.end(); ++originalVar )
-            {
-                variable = originalVar->second;
-                const Value& assValue = variable->assignment();
-                const Bound& inf = variable->infimum();
-                if( !inf.isInfinite() )
-                {
-                    /*
-                     * .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
-                     */
-                    if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
-                    {
-                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                        {
-                            minDelta = curDelta;
-                        }
-                    }
-                }
-                const Bound& sup = variable->supremum();
-                if( !sup.isInfinite() )
-                {
-                    /*
-                     * .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
-                     */
-                    if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
-                    {
-                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                        {
-                            minDelta = curDelta;
-                        }
-                    }
-                }
-            }
-            /*
-             * For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
-             */
-            for( auto slackVar = mSlackVars.begin(); slackVar != mSlackVars.end(); ++slackVar )
-            {
-                variable = slackVar->second;
-                const Value& assValue = variable->assignment();
-                const Bound& inf = variable->infimum();
-                if( !inf.isInfinite() )
-                {
-                    /*
-                     * .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
-                     */
-                    if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
-                    {
-                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                        {
-                            minDelta = curDelta;
-                        }
-                    }
-                }
-                const Bound& sup = variable->supremum();
-                if( !sup.isInfinite() )
-                {
-                    /*
-                     * .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
-                     */
-                    if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
-                    {
-                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                        {
-                            minDelta = curDelta;
-                        }
-                    }
-                }
-            }
-
-            curDelta = minDelta < 0 ? 1 : minDelta;
-
-            exmap assignments = exmap();
-            /*
-             * Calculate the rational assignment of all original variables.
-             */
-            for( auto var = mOriginalVars.begin(); var != mOriginalVars.end(); ++var )
-            {
-                const Value& value = var->second->assignment();
-                assignments.insert( pair< ex, ex >( *var->first, ex( value.mainPart() + value.deltaPart() * curDelta ) ) );
-            }
+            exmap assignments = getRationalModel();
             /*
              * Check whether the assignment satisfies the non linear constraints.
              */
@@ -559,6 +650,7 @@ namespace smtrat
                     return false;
                 }
             }
+            mAssignmentFullfilsNonlinearConstraints = true;
             return true;
         }
     }

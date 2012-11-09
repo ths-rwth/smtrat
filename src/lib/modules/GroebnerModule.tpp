@@ -143,7 +143,11 @@ Answer GroebnerModule<Settings>::isConsistent( )
 {
 
     // This check asserts that all the conflicts are handled by the SAT solver. (workaround)
-    if( !mInfeasibleSubsets.empty() ) return False;
+    if( !mInfeasibleSubsets.empty() )
+    {
+        mSolverState = False;
+        return False;
+    }
 
     #ifdef GATHER_STATS
     mStats->called();
@@ -246,7 +250,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
             }
 
             #endif
-
+            mSolverState = False;
             return False;
         }
         saveState( );
@@ -258,6 +262,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
             mNewInequalities.clear( );
             if( ans != Unknown )
             {
+                mSolverState = ans;
                 return ans;
             }
         }
@@ -284,7 +289,11 @@ Answer GroebnerModule<Settings>::isConsistent( )
     {
         Answer ans = mInequalities.reduceWRTGroebnerBasis( mNewInequalities, mBasis.getGbIdeal( ) );
         mNewInequalities.clear( );
-        if( ans != Unknown ) return ans;
+        if( ans != Unknown )
+        {
+            mSolverState = ans;
+            return ans;
+        }
     }
 
     Answer ans = runBackends( );
@@ -297,7 +306,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
         assert( !mInfeasibleSubsets.empty( ) );
     }
-
+    mSolverState = ans;
     return ans;
 }
 

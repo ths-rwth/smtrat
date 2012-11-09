@@ -98,7 +98,13 @@ namespace smtrat
     {
         if( mIsUnknown )
         {
-            return runBackends();
+            Answer a = runBackends();
+            if( a == False )
+            {
+                getInfeasibleSubsets();
+            }
+            mSolverState = a;
+            return a;
         }
         for( vector<symbol>::const_iterator variable = mVariables.begin(); variable != mVariables.end(); ++variable )
         {    // collect for each variable, which shall be checked for consistency, its constraints
@@ -109,12 +115,14 @@ namespace smtrat
                 {
                     mInfeasibleSubsets.clear();
                     mInfeasibleSubsets.push_back( mSubformulaBuckets[*variable] );
+                    mSolverState = False;
                     return False;
                 }
                 else
                     mCADsToCheck[*variable] = false;    // mark checked
             }
         }
+        mSolverState = True;
         return True;
     }
 

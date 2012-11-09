@@ -223,6 +223,7 @@ namespace smtrat
             #ifdef GATHER_STATS
             collectStats();
             #endif
+            mSolverState = False;
             return False;
         }
 
@@ -256,6 +257,7 @@ namespace smtrat
             #ifdef GATHER_STATS
             collectStats();
             #endif
+            mSolverState = True;
             return True;
         }
         else if( result == l_False )
@@ -275,6 +277,7 @@ namespace smtrat
             #ifdef GATHER_STATS
             collectStats();
             #endif
+            mSolverState = False;
             return False;
         }
         else
@@ -282,6 +285,7 @@ namespace smtrat
             #ifdef GATHER_STATS
             collectStats();
             #endif
+            mSolverState = Unknown;
             return Unknown;
         }
     }
@@ -1586,12 +1590,12 @@ Propagation:
                             vector<Module*>::const_iterator backend = usedBackends().begin();
                             while( backend != usedBackends().end() )
                             {
-                                if( !(*backend)->rInfeasibleSubsets().empty() )
+                                if( !(*backend)->infeasibleSubsets().empty() )
                                 {
                                     #ifdef STORE_ONLY_ONE_REASON
-                                    vec_set_const_pFormula::const_iterator bestInfeasibleSubset = (*backend)->rInfeasibleSubsets().begin();
-                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
-                                            infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
+                                    vec_set_const_pFormula::const_iterator bestInfeasibleSubset = (*backend)->infeasibleSubsets().begin();
+                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
+                                            infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                                     {
                                         #ifdef LOG_INFEASIBLE_SUBSETS
                                         addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );

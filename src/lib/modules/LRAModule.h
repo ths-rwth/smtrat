@@ -31,13 +31,18 @@
 #ifndef LRAMODULE_H
 #define LRAMODULE_H
 
+#define LRA_USE_GINACRA
+
 #include "../Module.h"
 #include "LRAModule/Value.h"
 #include "LRAModule/Variable.h"
 #include "LRAModule/Bound.h"
 #include "LRAModule/Tableau.h"
-#include <ginacra/ginacra.h>
 #include <stdio.h>
+#ifdef LRA_USE_GINACRA
+#include <ginacra/ginacra.h>
+#endif
+
 
 #define LRA_SIMPLE_CONFLICT_SEARCH
 
@@ -63,6 +68,7 @@ namespace smtrat
              * Members:
              */
             bool                        mInitialized;
+            bool                        mAssignmentFullfilsNonlinearConstraints;
             unsigned                    mMaxConstraintId;
             lra::Tableau                mTableau;
             ConstraintSet               mLinearConstraints;
@@ -93,6 +99,11 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             void removeSubformula( Formula::const_iterator );
             Answer isConsistent();
+            void updateModel();
+            GiNaC::exmap getRationalModel() const;
+            #ifdef LRA_USE_GINACRA
+            GiNaCRA::evalintervalmap getVariableBounds() const;
+            #endif
 
         private:
             /**

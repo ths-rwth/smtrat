@@ -89,6 +89,11 @@ namespace lra
                 return mType;
             }
 
+            bool isWeak() const
+            {
+                return mLimit->deltaPart().is_zero();
+            }
+
             bool isUpperBound() const
             {
                 return mType != LOWER;

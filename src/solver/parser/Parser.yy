@@ -110,6 +110,7 @@
 %token DB
 %token SETINFO
 %token CHECKSAT
+%token GETMODEL
 %token <sval> SYM
 %token <sval> NUM
 %token <sval> DEC
@@ -193,6 +194,10 @@ command:
 	}
 	|	OB CHECKSAT CB
     {
+    }
+	|	OB GETMODEL CB
+    {
+        driver.printAssignment = true;
     }
 	|	OB DECLARECONST SYM REAL CB
 	{

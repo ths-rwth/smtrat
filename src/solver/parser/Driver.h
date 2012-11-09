@@ -115,6 +115,8 @@ namespace smtrat
 
             int status;
 
+            bool printAssignment;
+
             std::map< const std::string, const std::string > realsymbolpartsToReplace;
 
             std::map< const std::string, class Formula*> collectedBooleanAuxilliaries;

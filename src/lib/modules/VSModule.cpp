@@ -100,6 +100,7 @@ namespace smtrat
                 mInfeasibleSubsets.push_back( set<const Formula*>() );
                 mInfeasibleSubsets.back().insert( *_subformula );
                 mInconsistentConstraintAdded = true;
+                mSolverState = False;
                 return false;
             }
             case 1:
@@ -272,10 +273,12 @@ namespace smtrat
                 #ifdef VS_PRINT_ANSWERS
                 printAnswer();
                 #endif
+                mSolverState = True;
                 return True;
             }
             else
             {
+                mSolverState = False;
                 return False;
             }
         }
@@ -291,12 +294,14 @@ namespace smtrat
             #ifdef VS_PRINT_ANSWERS
             printAnswer();
             #endif
+            mSolverState = True;
             return True;
         }
         if( mInconsistentConstraintAdded )
         {
             assert( !mInfeasibleSubsets.empty() );
             assert( !mInfeasibleSubsets.back().empty() );
+            mSolverState = False;
             return False;
         }
 
@@ -327,6 +332,7 @@ namespace smtrat
                     if( currentState->isRoot() )
                     {
                         updateInfeasibleSubset();
+                        mSolverState = False;
                         return False;
                     }
                     else
@@ -487,6 +493,7 @@ namespace smtrat
                                             #ifdef VS_PRINT_ANSWERS
                                             printAnswer();
                                             #endif
+                                            mSolverState = True;
                                             return True;
                                         }
                                     }
@@ -627,6 +634,7 @@ namespace smtrat
                                                             #ifdef VS_PRINT_ANSWERS
                                                             printAnswer();
                                                             #endif
+                                                            mSolverState = True;
                                                             return True;
                                                         }
                                                         break;
@@ -637,11 +645,13 @@ namespace smtrat
                                                     }
                                                     case Unknown:
                                                     {
+                                                        mSolverState = Unknown;
                                                         return Unknown;
                                                     }
                                                     default:
                                                     {
                                                         cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
+                                                        mSolverState = Unknown;
                                                         return Unknown;
                                                     }
                                                 }
@@ -651,6 +661,7 @@ namespace smtrat
                                                 cout << "###                  Unknown!" << endl;
                                                 cout << "###" << endl;
                                                 mDeductions.clear();
+                                                mSolverState = Unknown;
                                                 return Unknown;
                                                 #endif
                                             }
@@ -689,7 +700,44 @@ namespace smtrat
         #ifdef VS_DEBUG
         printAll( cout );
         #endif
+        mSolverState = False;
         return False;
+    }
+
+    /**
+     *
+     */
+    void VSModule::updateModel()
+    {
+        mModel.clear();
+        if( mSolverState == True )
+        {
+            assert( !mRanking.empty() );
+            const State* state = mRanking.begin()->second;
+            while( !state->isRoot() )
+            {
+                stringstream outA;
+                const Substitution& sub = state->substitution();
+                if( sub.type() == ST_MINUS_INFINITY )
+                {
+                    outA << "-inf_" << mId << "_" << state->treeDepth();
+                }
+                else
+                {
+                    outA << sub.term().expression().expand().normal();
+                    if( sub.type() == ST_PLUS_EPSILON )
+                    {
+                        outA << "+eps_" << mId << "_" << state->treeDepth();
+                    }
+                }
+                mModel.insert( pair< const string, string >( state->substitution().variable(), outA.str() ) );
+                state = state->pFather();
+            }
+            if( mRanking.begin()->second->toHighDegree() )
+            {
+                Module::getBackendsModel();
+            }
+        }
     }
 
     /**
@@ -1812,10 +1860,10 @@ namespace smtrat
                 vector<Module*>::const_iterator backend = usedBackends().begin();
                 while( backend != usedBackends().end() )
                 {
-                    if( !(*backend)->rInfeasibleSubsets().empty() )
+                    if( !(*backend)->infeasibleSubsets().empty() )
                     {
-                        for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
-                                infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
+                        for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
+                                infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                         {
                             ConditionSet conflict = ConditionSet();
                             for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )

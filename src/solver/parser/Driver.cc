@@ -45,6 +45,7 @@ namespace smtrat
         collectedBooleans( std::set<std::string>() ),
         collectedRealAuxilliaries( std::map<std::string, std::string>() ),
         status( -1 ),
+        printAssignment( false ),
         realsymbolpartsToReplace(),
         collectedBooleanAuxilliaries()
     {

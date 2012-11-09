@@ -196,6 +196,7 @@ namespace smtrat
         {
             getInfeasibleSubsets();
         }
+        mSolverState = a;
         return a;
     }
 

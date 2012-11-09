@@ -89,7 +89,8 @@ int main( int argc, char* argv[] )
             {
                 bool error = false;
                 smtrat::NRATSolver* nratSolver = new smtrat::NRATSolver( form );
-                switch( nratSolver->isConsistent() )
+                smtrat::Answer answer = nratSolver->isConsistent();
+                switch( answer )
                 {
                     case smtrat::True:
                     {
@@ -127,13 +128,18 @@ int main( int argc, char* argv[] )
                         std::cerr << "Unexpected output!" << std::endl;
                     }
                 }
+                if( driver.printAssignment && answer == smtrat::True )
+                {
+                    std::cout << std::endl;
+                    nratSolver->printModel( std::cout );
+                }
                 delete nratSolver;
                 delete form;
 
                 #ifdef GATHER_STATS
                 if(printStats) smtrat::CollectStatistics::print(std::cout);
-                if(exportStats) 
-                {   
+                if(exportStats)
+                {
                     smtrat::CollectStatistics::exportXML();
                 }
                 #endif //GATHER_STATS

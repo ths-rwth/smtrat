@@ -53,23 +53,21 @@ namespace smtrat
 {
     class Manager;
 
-    typedef std::vector<std::set<const Formula*> >                      vec_set_const_pFormula;
-    typedef std::map<const Formula*, vec_set_const_pFormula>            FormulaOrigins;
-
-    struct strcomp
-    {
-        bool operator() ( const std::string& _stringA, const std::string& _stringB )
-        {
-            return (_stringA.compare( _stringB ) < 0);
-        }
-    };
+    typedef std::vector<std::set<const Formula*> >           vec_set_const_pFormula;
+    typedef std::map<const Formula*, vec_set_const_pFormula> FormulaOrigins;
 
     /**
      * A base class for all kind of theory solving methods.
      */
     class Module
     {
+        public:
+            typedef std::map< const std::string, std::string > Model;
         protected:
+            ///
+            Answer mSolverState;
+            ///
+            unsigned mId;
             /// stores the infeasible subsets
             vec_set_const_pFormula mInfeasibleSubsets;
             /// a reference to the manager
@@ -82,6 +80,8 @@ namespace smtrat
             const Formula* mpReceivedFormula;
             /// formula passed to the backends
             Formula* mpPassedFormula;
+            ///
+            Model mModel;
 
         private:
             ///
@@ -106,7 +106,7 @@ namespace smtrat
             virtual ~Module();
 
             static std::vector<std::string> mAssumptionToCheck;
-            static std::set<std::string, strcomp> mVariablesInAssumptionToCheck;
+            static std::set<std::string> mVariablesInAssumptionToCheck;
 
             // Main interfaces
             virtual bool inform( const Constraint* const _constraint )
@@ -114,7 +114,6 @@ namespace smtrat
                 mConstraintsToInform.insert( _constraint );
                 return true;
             }
-
             virtual bool assertSubformula( Formula::const_iterator _subformula )
             {
                 if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
@@ -123,12 +122,27 @@ namespace smtrat
                 }
                 return true;
             }
-
             virtual Answer isConsistent();
-
             virtual void removeSubformula( Formula::const_iterator );
+            virtual void updateModel();
 
             // Accessors
+            inline Answer solverState() const
+            {
+                return mSolverState;
+            }
+
+            inline unsigned id() const
+            {
+                return mId;
+            }
+
+            void setId( unsigned _id )
+            {
+                assert( mId == 0 && _id != 0 );
+                mId = _id;
+            }
+
             inline const Formula* const pReceivedFormula() const
             {
                 return mpReceivedFormula;
@@ -149,7 +163,12 @@ namespace smtrat
                 return *mpPassedFormula;
             }
 
-            inline const vec_set_const_pFormula& rInfeasibleSubsets() const
+            inline const Model& model() const
+            {
+                return mModel;
+            }
+
+            inline const vec_set_const_pFormula& infeasibleSubsets() const
             {
                 return mInfeasibleSubsets;
             }
@@ -231,6 +250,8 @@ namespace smtrat
             void getOrigins( const Formula* const , vec_set_const_pFormula& ) const;
             Answer specialCaseConsistencyCheck() const;
             void getInfeasibleSubsets();
+            static bool modelsDisjoint( const Model&, const Model& );
+            void getBackendsModel();
             Answer runBackends();
             Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator );
             Formula::iterator pruneSubformulaFromPassedFormula( Formula::iterator );
