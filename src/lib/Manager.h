@@ -61,8 +61,6 @@ namespace smtrat
             std::map<const Module* const, std::vector<Module*> > mBackendsOfModules;
             /// the primary backends
             Module* mpPrimaryBackend;
-            /// the backtrack points
-            std::vector<unsigned> mBackTrackPoints;
             /// a Boolean showing whether the manager has received new constraint after the last consistency check
             bool mBackendsUptodate;
             /// modules we can use
@@ -74,18 +72,41 @@ namespace smtrat
 
         public:
             Manager( Formula* = new Formula( AND ) );
-            virtual ~Manager();
+            ~Manager();
+
+            // Main interfaces
+            bool inform( const Constraint* const _constraint )
+            {
+                return mpPrimaryBackend->inform( _constraint );
+            }
+
+            bool assertSubformula( Formula::const_iterator _subformula )
+            {
+                return mpPrimaryBackend->assertSubformula( _subformula );
+            }
 
             Answer isConsistent()
             {
                 return mpPrimaryBackend->isConsistent();
             }
 
-            void pushBacktrackPoint()
+            void removeSubformula( Formula::const_iterator _subformula )
             {
-                mBackTrackPoints.push_back( mpPassedFormula->size() );
+                mpPrimaryBackend->assertSubformula( _subformula );
             }
 
+            const vec_set_const_pFormula& infeasibleSubsets() const
+            {
+                return mpPrimaryBackend->infeasibleSubsets();
+            }
+
+            const Module::Model model() const
+            {
+                mpPrimaryBackend->updateModel();
+                return mpPrimaryBackend->model();
+            }
+
+            // Internally used interfaces
             const std::map<const ModuleType, ModuleFactory*>& rModulFactories() const
             {
                 return *mpModulFactories;
@@ -111,10 +132,6 @@ namespace smtrat
                 return *mpPassedFormula;
             }
 
-            bool inform( const std::string&, bool );
-            void popBacktrackPoint();
-            bool addConstraint( const std::string&, const bool, const bool );
-            std::vector<std::vector<unsigned> > getReasons() const;
             void printModel( std::ostream& ) const;
             std::vector<Module*> getBackends( Formula*, Module* );
     };

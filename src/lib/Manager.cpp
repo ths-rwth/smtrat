@@ -53,7 +53,6 @@ namespace smtrat
         mGeneratedModules( vector<Module*>( 1, new Module( mpPassedFormula, this ) ) ),
         mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
-        mBackTrackPoints(),
         mStrategyGraph(),
         mModulePositionInStrategy()
     {
@@ -113,101 +112,10 @@ namespace smtrat
      */
 
     /**
-     * Informs the manager and all modules which will be created about the existence of the given
-     * constraint. The constraint is in form of a string either in infix or in prefix notation.
-     * If the polarity of the literal, to which the given constraint belongs to, is negative
-     * (false), the constraints is added inverted.
+     * Prints the model, if there is one.
      *
-     * @param _constraint   The constraint to add as string in either infix or prefix notation.
-     * @param _infix        A flag which is true, if the constraint is given in infix notation,
-     *                      and false, if it is given in prefix notation.
-     *
-     * @return  false,      if it is easy to decide whether the constraint is inconsistent;
-     *          true,       otherwise.
+     * @param _out The stream to print on.
      */
-    bool Manager::inform( const string& _constraint, const bool _infix )
-    {
-        return Formula::newConstraint( _constraint, _infix, true )->isConsistent();
-    }
-
-    /**
-     * Pops a backtrack point from the stack of backtrackpoints. Furthermore, it provokes popBacktrackPoint
-     * in all so far created modules.
-     */
-    void Manager::popBacktrackPoint()
-    {
-        assert( !mBackTrackPoints.empty() );
-        unsigned          pos        = 0;
-        Formula::iterator subformula = mpPassedFormula->begin();
-        while( pos <= mBackTrackPoints.back() )
-        {
-            ++subformula;
-        }
-        while( subformula != mpPassedFormula->end() )
-        {
-            mpPrimaryBackend->removeSubformula( subformula );
-            subformula = mpPassedFormula->erase( subformula );
-        }
-        mBackTrackPoints.pop_back();
-    }
-
-    /**
-     * Adds a constraint to the module of this manager. The constraint is in form of a string
-     * either in infix or in prefix notation. If the polarity of the literal, to which the given
-     * constraint belongs to, is negative (false), the constraints is added inverted.
-     *
-     * @param _constraint   The constraint to add as string in either infix or prefix notation.
-     * @param _infix        A flag which is true, if the constraint is given in infix notation,
-     *                      and false, if it is given in prefix notation.
-     * @param _polarity     The polarity if the literal the constraint belongs to.
-     *
-     * @return  false,      if it is easy to decide whether the constraint is inconsistent;
-     *          true,       otherwise.
-     */
-    bool Manager::addConstraint( const string& _constraint, const bool _infix, const bool _polarity )
-    {
-        /*
-         * Add the constraint to the primary backend module.
-         */
-        mBackendsUptodate = false;
-
-        mpPassedFormula->addSubformula( Formula::newConstraint( _constraint, _infix, _polarity ) );
-        return mpPrimaryBackend->assertSubformula( mpPassedFormula->last() );
-    }
-
-    /**
-     * Gets the infeasible subsets.
-     *
-     * @return  One or more infeasible subsets. An infeasible subset is a set of
-     *          numbers, where the number i belongs to the ith received constraint.
-     */
-    vector<vector<unsigned> > Manager::getReasons() const
-    {
-        vector<vector<unsigned> > infeasibleSubsets = vector<vector<unsigned> >();
-        assert( !mpPrimaryBackend->infeasibleSubsets().empty() );
-        for( vec_set_const_pFormula::const_iterator infSubSet = mpPrimaryBackend->infeasibleSubsets().begin();
-                infSubSet != mpPrimaryBackend->infeasibleSubsets().end(); ++infSubSet )
-        {
-            assert( !infSubSet->empty() );
-            infeasibleSubsets.push_back( vector<unsigned>() );
-            for( set<const Formula*>::const_iterator infSubFormula = infSubSet->begin(); infSubFormula != infSubSet->end(); ++infSubFormula )
-            {
-                unsigned infSubFormulaPos = 0;
-                for( Formula::const_iterator subFormula = mpPrimaryBackend->rReceivedFormula().begin();
-                        subFormula != mpPrimaryBackend->rReceivedFormula().end(); ++subFormula )
-                {
-                    if( (*subFormula)->constraint() == (*infSubFormula)->constraint() )
-                    {
-                        infeasibleSubsets.back().push_back( infSubFormulaPos );
-                        break;
-                    }
-                    ++infSubFormulaPos;
-                }
-            }
-        }
-        return infeasibleSubsets;
-    }
-
     void Manager::printModel( ostream& _out ) const
     {
         mpPrimaryBackend->updateModel();
@@ -216,7 +124,9 @@ namespace smtrat
             _out << "Model:" << endl;
             for( Module::Model::const_iterator assignment = mpPrimaryBackend->model().begin(); assignment != mpPrimaryBackend->model().end(); ++assignment )
             {
-                _out << "  " << assignment->first << " -> " << assignment->second << endl;
+                _out << "  ";
+                _out << left << setw( Formula::constraintPool().maxLenghtOfVarName() ) << assignment->first;
+                _out << " -> " << assignment->second << endl;
             }
         }
     }

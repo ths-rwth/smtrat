@@ -137,7 +137,8 @@ namespace smtrat
                 return mAllConstraints.size();
             }
 
-            void clear() {
+            void clear()
+            {
                 mAllVariables.clear();
                 mAllConstraints.clear();
                 mAllVariableFreeConstraints.clear();
@@ -147,6 +148,16 @@ namespace smtrat
             const GiNaC::symtab& variables() const
             {
                 return mAllVariables;
+            }
+
+            unsigned maxLenghtOfVarName() const
+            {
+                unsigned result = 0;
+                for( GiNaC::symtab::const_iterator var = mAllVariables.begin(); var != mAllVariables.end(); ++var )
+                {
+                    if( var->first.size() > result ) result = var->first.size();
+                }
+                return result;
             }
 
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
