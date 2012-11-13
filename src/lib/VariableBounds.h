@@ -365,7 +365,10 @@ namespace smtrat
                 }
                 else if( *mpLimit == _bound.limit() )
                 {
-                    if( mType == EQUAL_BOUND && _bound.type() != EQUAL_BOUND ) return true;
+                    if( mType == STRICT_UPPER_BOUND ) return true;
+                    if( mType == WEAK_LOWER_BOUND && _bound.type() != STRICT_UPPER_BOUND ) return true;
+                    if( mType == EQUAL_BOUND && _bound.type() != WEAK_LOWER_BOUND && _bound.type() != STRICT_UPPER_BOUND ) return true;
+                    if( mType == WEAK_UPPER_BOUND && _bound.type() != EQUAL_BOUND && _bound.type() != WEAK_LOWER_BOUND && _bound.type() != STRICT_UPPER_BOUND ) return true;
                 }
                 return false;
             }
