@@ -1184,16 +1184,14 @@ namespace smtrat
         if( (constraintfather != NULL) && (boolfather != NULL) )
         {
             std::string t_identifier;
-            Constraint t_constraint = constraintfather->constraint();
             Formula* newformula = new Formula( OR );
             t_identifier = boolfather->identifier();
             if( _substitution.first.first == t_identifier && (constraintfather->father().getType() == NOT) == _substitution.first.second )
             {
-                if( !t_constraint.rLhs().coeff( _substitution.second.second.first, 1 ).is_zero() )
+                if( !constraintfather->constraint().coefficient( _substitution.second.second.first, 1 ).is_zero() )
                 {
-                    t_constraint.rLhs().subs( _substitution.second.second.first == _substitution.second.second.second );
-                    substitutedExpression = t_constraint.rLhs().subs( _substitution.second.second.first == _substitution.second.second.second );    // Substitute
-                    _newvars = t_constraint.variables();
+                    substitutedExpression = constraintfather->constraint().lhs().subs( _substitution.second.second.first == _substitution.second.second.second );    // Substitute
+                    _newvars = constraintfather->constraint().variables();
                     vec_set_const_pFormula t_origins;
                     getOrigins( (*_formula), t_origins );
                     t_origins = merge( t_origins, _suborigin );

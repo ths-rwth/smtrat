@@ -148,29 +148,14 @@ namespace smtrat
             /*
              * Methods:
              */
-            GiNaC::ex& rLhs()
-            {
-                return *pLhs;
-            }
-
             const GiNaC::ex& lhs() const
             {
                 return *pLhs;
             }
 
-            GiNaC::symtab& rVariables()
-            {
-                return mVariables;
-            }
-
             const GiNaC::symtab& variables() const
             {
                 return mVariables;
-            }
-
-            Constraint_Relation& rRelation()
-            {
-                return mRelation;
             }
 
             Constraint_Relation relation() const
@@ -181,11 +166,6 @@ namespace smtrat
             unsigned id() const
             {
                 return mID;
-            }
-
-            const GiNaC::ex* pMultiRootLessLhs() const
-            {
-                return mpMultiRootLessLhs;
             }
 
             const GiNaC::ex& multiRootLessLhs() const

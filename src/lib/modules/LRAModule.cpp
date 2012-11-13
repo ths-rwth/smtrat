@@ -103,6 +103,7 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "inform about " << *_constraint << endl;
         #endif
+        Module::inform( _constraint );
         if( !_constraint->variables().empty() && _constraint->isLinear() )
         {
             mLinearConstraints.insert( _constraint );

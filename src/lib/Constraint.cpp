@@ -58,7 +58,7 @@ namespace smtrat
         mVariables(),
         mVarInfoMap()
     {
-        normalize( rLhs() );
+        normalize( *pLhs );
     }
 
     Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _variables, unsigned _id ):
@@ -76,8 +76,8 @@ namespace smtrat
         mVariables(),
         mVarInfoMap()
     {
-        normalize( rLhs() );
-        if( rLhs().info( info_flags::rational ) )
+        normalize( *pLhs );
+        if( pLhs->info( info_flags::rational ) )
         {
             mID = 0;
         }
@@ -116,8 +116,8 @@ namespace smtrat
         mVariables(),
         mVarInfoMap()
     {
-        normalize( rLhs() );
-        if( rLhs().info( info_flags::rational ) )
+        normalize( *pLhs );
+        if( pLhs->info( info_flags::rational ) )
         {
             mID = 0;
         }
@@ -151,7 +151,7 @@ namespace smtrat
         mMinMonomeDegree( _constraint.mMinMonomeDegree ),
         mRelation( _constraint.relation() ),
         pLhs( new ex( _constraint.lhs() ) ),
-        mpMultiRootLessLhs( _constraint.pMultiRootLessLhs() != _constraint.pLhs ? _constraint.mpMultiRootLessLhs : pLhs ),
+        mpMultiRootLessLhs( _constraint.mpMultiRootLessLhs != _constraint.pLhs ? new ex( _constraint.multiRootLessLhs() ) : pLhs ),
         mpCoefficients( new Coefficients( *_constraint.mpCoefficients ) ),
         mVariables( _constraint.variables() ),
         mVarInfoMap( _constraint.mVarInfoMap )
@@ -1051,11 +1051,11 @@ namespace smtrat
             {
                 if( relation() == CR_EQ || relation() == CR_NEQ )
                 {
-                    rLhs() = prim;
+                    *pLhs = prim;
                 }
                 else
                 {
-                    rLhs() = prim * un;
+                    *pLhs = prim * un;
                 }
             }
         }
