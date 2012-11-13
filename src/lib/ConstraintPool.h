@@ -178,6 +178,10 @@ namespace smtrat
                 {
                     if( var->first.size() > result ) result = var->first.size();
                 }
+                for( std::set<std::string>::const_iterator var = mAllBooleanVariables.begin(); var != mAllBooleanVariables.end(); ++var )
+                {
+                    if( var->size() > result ) result = var->size();
+                }
                 return result;
             }
 
