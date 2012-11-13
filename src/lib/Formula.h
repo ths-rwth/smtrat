@@ -82,14 +82,6 @@ namespace smtrat
 
             /// A pool to manage all generated constraints.
             static ConstraintPool mConstraintPool;
-            /// The prefix for any auxiliary Boolean defined in this formula.
-            static const std::string mAuxiliaryBooleanNamePrefix;
-            /// A counter for the auxiliary Booleans defined in this formula.
-            static unsigned mAuxiliaryBooleanCounter;
-            /// The prefix for any auxiliary Boolean defined in this formula.
-            static const std::string mAuxiliaryRealNamePrefix;
-            /// A counter for the auxiliary Booleans defined in this formula.
-            static unsigned mAuxiliaryRealCounter;
             ///
             static double mSumOfAllActivities;
             ///
@@ -445,13 +437,11 @@ namespace smtrat
             /**
              * Generates a fresh real variable and returns its identifier.
              *
-             * @return The identifier of a fresh real variable.
+             * @return The fresh real variable.
              */
-            static std::string getAuxiliaryReal()
+            static std::pair<std::string,GiNaC::ex> newAuxiliaryReal()
             {
-                std::stringstream out;
-                out << mAuxiliaryRealNamePrefix << mAuxiliaryRealCounter++;
-                return out.str();
+                return mConstraintPool.newAuxiliaryReal();
             }
 
             /**
@@ -459,11 +449,9 @@ namespace smtrat
              *
              * @return The identifier of a fresh Boolean variable.
              */
-            static std::string getAuxiliaryBoolean()
+            static std::string newAuxiliaryBoolean()
             {
-                std::stringstream out;
-                out << mAuxiliaryBooleanNamePrefix << mAuxiliaryBooleanCounter++;
-                return out.str();
+                return mConstraintPool.newAuxiliaryBoolean();
             }
 
             bool isAtom() const

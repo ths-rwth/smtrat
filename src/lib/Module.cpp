@@ -181,7 +181,7 @@ namespace smtrat
     }
 
     /**
-     *
+     * Updates the model, if the solver has detected the consistency of the received formula
      */
     void Module::updateModel()
     {
@@ -703,14 +703,10 @@ namespace smtrat
                     smtlibFile << "(declare-fun " << var->first << " () Real)\n";
                 }
                 // add all Boolean variables
-                for( auto var = _manager.formula().booleanVars().begin(); var != _manager.formula().booleanVars().end(); ++var )
+                for( set<string>::const_iterator var = Formula::mConstraintPool.booleanVariables().begin();
+                    var != Formula::mConstraintPool.booleanVariables().end(); ++var )
                 {
                     smtlibFile << "(declare-fun " << *var << " () Bool)\n";
-                }
-                // add all Boolean auxiliary variables
-                for( unsigned auxIndex = 0; auxIndex < Formula::mAuxiliaryBooleanCounter; ++auxIndex )
-                {
-                    smtlibFile << "(declare-fun " << Formula::mAuxiliaryBooleanNamePrefix << auxIndex << " () Bool)\n";
                 }
                 // add module name variables
                 for( set<string>::const_iterator involvedModule = Module::mVariablesInAssumptionToCheck.begin();

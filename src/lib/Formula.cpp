@@ -36,11 +36,7 @@ using namespace std;
 
 namespace smtrat
 {
-    ConstraintPool Formula::mConstraintPool             = ConstraintPool( 10000 );
-    const string   Formula::mAuxiliaryBooleanNamePrefix = string( "h_b_" );
-    unsigned       Formula::mAuxiliaryBooleanCounter    = 0;
-    const string   Formula::mAuxiliaryRealNamePrefix    = string( "h_r_" );
-    unsigned       Formula::mAuxiliaryRealCounter       = 0;
+    ConstraintPool Formula::mConstraintPool             = ConstraintPool();
     double         Formula::mSumOfAllActivities         = 0;
     unsigned       Formula::mNumberOfNonZeroActivities  = 0;
 
@@ -131,25 +127,13 @@ namespace smtrat
         }
         else if( mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE )
         {
-//        std::cout << __func__ << ":" << __LINE__ << std::endl;
-//        print();
             while( !mpSubformulas->empty() )
             {
-//        std::cout << __func__ << ":" << __LINE__ << std::endl;
-
-
                 Formula* pSubForm = mpSubformulas->back();
-
-
-//        std::cout << __func__ << ":" << __LINE__ << std::endl;
                 mpSubformulas->pop_back();
-//        std::cout << __func__ << ":" << __LINE__ << std::endl;
                 delete pSubForm;
-//        std::cout << __func__ << ":" << __LINE__ << std::endl;
             }
-//        std::cout << __func__ << ":" << __LINE__ << std::endl;
             delete mpSubformulas;
-//        std::cout << __func__ << ":" << __LINE__ << std::endl;
         }
     }
 
@@ -1035,7 +1019,7 @@ namespace smtrat
                             // (and phi_i1 .. phi_ik) -> h_i, where (or (not h_i) phi_i1) .. (or (not h_i) phi_ik) is added to the queue
                             case AND:
                             {
-                                Formula* hi = new Formula( Formula::getAuxiliaryBoolean() );
+                                Formula* hi = new Formula( Formula::newAuxiliaryBoolean() );
                                 while( !currentSubformula->empty() )
                                 {
                                     Formula* formulaToAssert = new Formula( OR );
@@ -1075,8 +1059,8 @@ namespace smtrat
                             case IFF:
                             {
                                 assert( currentSubformula->back()->size() == 2 );
-                                Formula* h_i1  = new Formula( Formula::getAuxiliaryBoolean() );
-                                Formula* h_i2  = new Formula( Formula::getAuxiliaryBoolean() );
+                                Formula* h_i1  = new Formula( Formula::newAuxiliaryBoolean() );
+                                Formula* h_i2  = new Formula( Formula::newAuxiliaryBoolean() );
                                 Formula* rhs_i = currentSubformula->pruneBack();
                                 Formula* lhs_i = currentSubformula->pruneBack();
                                 delete currentSubformula;
@@ -1109,8 +1093,8 @@ namespace smtrat
                             case XOR:
                             {
                                 assert( currentSubformula->back()->size() == 2 );
-                                Formula* h_i1  = new Formula( Formula::getAuxiliaryBoolean() );
-                                Formula* h_i2  = new Formula( Formula::getAuxiliaryBoolean() );
+                                Formula* h_i1  = new Formula( Formula::newAuxiliaryBoolean() );
+                                Formula* h_i2  = new Formula( Formula::newAuxiliaryBoolean() );
                                 Formula* rhs_i = currentSubformula->pruneBack();
                                 Formula* lhs_i = currentSubformula->pruneBack();
                                 delete currentSubformula;
@@ -1176,8 +1160,8 @@ namespace smtrat
                     Formula* lhs = currentFormula->pruneBack();
                     delete currentFormula;
                     // Add (or h1 h2) to the passed formula, where h1 and h2 are fresh Boolean variables.
-                    Formula* h1     = new Formula( Formula::getAuxiliaryBoolean() );
-                    Formula* h2     = new Formula( Formula::getAuxiliaryBoolean() );
+                    Formula* h1     = new Formula( Formula::newAuxiliaryBoolean() );
+                    Formula* h2     = new Formula( Formula::newAuxiliaryBoolean() );
                     Formula* clause = new Formula( OR );
                     clause->addSubformula( h1 );
                     clause->addSubformula( h2 );
@@ -1218,8 +1202,8 @@ namespace smtrat
                     Formula* lhs = currentFormula->pruneBack();
                     delete currentFormula;
                     // Add (or h1 h2) to the passed formula, where h1 and h2 are fresh Boolean variables.
-                    Formula* h1     = new Formula( Formula::getAuxiliaryBoolean() );
-                    Formula* h2     = new Formula( Formula::getAuxiliaryBoolean() );
+                    Formula* h1     = new Formula( Formula::newAuxiliaryBoolean() );
+                    Formula* h2     = new Formula( Formula::newAuxiliaryBoolean() );
                     Formula* clause = new Formula( OR );
                     clause->addSubformula( h1 );
                     clause->addSubformula( h2 );

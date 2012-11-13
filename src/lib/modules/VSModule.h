@@ -113,12 +113,12 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
+            void updateModel();
 
             // Printing methods.
             void printAll( std::ostream& = std::cout ) const;
             void printRanking( std::ostream& = std::cout ) const;
             void printAnswer( std::ostream& = std::cout ) const;
-            void updateModel();
 
         private:
 

@@ -248,7 +248,6 @@ command:
 	}
 	| 	OB DECLAREFUN SYM OB CB REAL CB
 	{
-		GiNaC::parser reader( driver.formulaRoot->realValuedVars() );
 		try
 		{
             for( std::map< const std::string, const std::string >::const_iterator iter = driver.realsymbolpartsToReplace.begin();
@@ -262,19 +261,18 @@ command:
                 }
                 *$3 = driver.replace( *$3, iter->first, iter->second );
             }
-			std::string s = *$3;
-			reader( s );
+			driver.formulaRoot->rRealValuedVars().insert( std::pair<std::string, GiNaC::ex>( *$3, driver.formulaRoot->mConstraintPool.newVariable( *$3 ) ) );
 		}
 		catch( GiNaC::parse_error& err )
 		{
 			std::cerr << err.what() << std::endl;
 		}
-		driver.formulaRoot->rRealValuedVars().insert( reader.get_syms().begin(), reader.get_syms().end() );
         delete $3;
 	}
 	| 	OB DECLAREFUN SYM OB CB BOOL CB
 	{
         driver.collectedBooleans.insert( *$3 );
+        driver.formulaRoot->mConstraintPool.newAuxiliaryBoolean( *$3 );
         delete $3;
 	}
 	| 	OB SETLOGIC logic CB

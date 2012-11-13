@@ -162,7 +162,7 @@ namespace smtrat
          * Parse the lefthand and righthand side and store their difference as
          * lefthand side of the constraint.
          */
-        parser reader( mAllVariables );
+        parser reader( mAllRealVariables );
         ex lhs, rhs;
         string lhsString = expression.substr( 0, opPos );
         string rhsString = expression.substr( opPos + opSize );
@@ -179,7 +179,7 @@ namespace smtrat
         /*
          * Collect the new variables in the constraint:
          */
-        mAllVariables.insert( reader.get_syms().begin(), reader.get_syms().end() );
+        mAllRealVariables.insert( reader.get_syms().begin(), reader.get_syms().end() );
         Constraint* constraint;
         if( relation == CR_GREATER )
         {

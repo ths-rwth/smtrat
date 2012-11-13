@@ -290,6 +290,23 @@ namespace smtrat
         }
     }
 
+
+    /**
+     *
+     */
+    void SATModule::updateModel()
+    {
+        mModel.clear();
+        if( mSolverState == True )
+        {
+            for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
+            {
+                mModel.insert( pair< const string, string >( bVar->first, assigns[bVar->second] == l_True ? "True" : "False" ) );
+            }
+            Module::getBackendsModel();
+        }
+    }
+
     /**
      *
      * @param _formula
