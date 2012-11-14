@@ -62,6 +62,8 @@ namespace smtrat
         MT_SingleVSModule,
         /// type of class ICPModule
         MT_ICPModule,
+        /// type of class LRAModule
+        MT_ILRAModule,
         /// type of no Module
         MT_NoModule           // KEEP THIS AS THE LAST ELEMENT OF THIS ENUM!!!
     };

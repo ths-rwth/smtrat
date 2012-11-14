@@ -55,6 +55,7 @@ set(lib_modules_headers
     modules/CNFerModule.h
     modules/SingleVSModule.h
 #    modules/ICPModule.h
+    modules/ILRAModule.h
 )
 set(lib_modules_src
     modules/SmartSimplifier.cpp
@@ -65,6 +66,7 @@ set(lib_modules_src
     modules/CNFerModule.cpp
     modules/SingleVSModule.cpp
 #    modules/ICPModule.cpp
+    modules/ILRAModule.cpp
 )
 
 if(USE_GB)
@@ -123,12 +125,10 @@ set(lib_LRAModule_headers
 	modules/LRAModule/Tableau.h
 	modules/LRAModule/Value.h
 	modules/LRAModule/Variable.h
+	modules/LRAModule/Numeric.h
 )
 set(lib_LRAModule_src
-	modules/LRAModule/Bound.cpp
-	modules/LRAModule/Tableau.cpp
-	modules/LRAModule/Value.cpp
-	modules/LRAModule/Variable.cpp
+	modules/LRAModule/Numeric.cpp
 )
 set(lib_ICPModule_headers
     modules/ICPModule/DerivativeTable.h
@@ -189,10 +189,6 @@ set(lib_${PROJECT_NAME}_SRCS
 	${lib_SATModule_src}
 	${lib_LRAModule_headers}
 	${lib_LRAModule_src}
-	${lib_LRAOneModule_headers}
-	${lib_LRAOneModule_src}
-	${lib_LRATwoModule_headers}
-	${lib_LRATwoModule_src}
 	${lib_GBModule_headers}
 	${lib_GBModule_src}
 	${lib_NSSModule_headers}
@@ -251,6 +247,6 @@ install( FILES ${lib_core_headers} ${lib_nratsolver_headers} DESTINATION include
 install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/lib/modules )
 install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/VSModule )
 install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SATModule )
-install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/LRAModule )
 install( FILES ${lib_SingleVSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SingleVSModule )
 # install( FILES ${lib_ICPModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/ICPModule )
+install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/LRAModule )

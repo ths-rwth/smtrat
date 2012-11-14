@@ -18,8 +18,6 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * @file TSManager.cpp
  * @author Florian Corzilius
@@ -82,6 +80,7 @@ namespace smtrat
         addModuleType( MT_CNFerModule, new StandardModuleFactory<CNFerModule>() );
         addModuleType( MT_LRAModule, new StandardModuleFactory<LRAModule>() );
         addModuleType( MT_SingleVSModule, new StandardModuleFactory<SingleVSModule>() );
+        addModuleType( MT_ILRAModule, new StandardModuleFactory<ILRAModule>() );
 //        addModuleType( MT_ICPModule, new StandardModuleFactory<ICPModule>() );
     }
 

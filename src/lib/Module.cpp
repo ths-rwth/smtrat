@@ -833,6 +833,10 @@ namespace smtrat
             {
                 return "LRAModule";
             }
+            case MT_ILRAModule:
+            {
+                return "ILRAModule";
+            }
             case MT_PreProModule:
             {
                 return "PreProModule";

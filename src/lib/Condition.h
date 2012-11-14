@@ -110,12 +110,14 @@ namespace smtrat
     static const Condition PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE         = Condition( 56 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE      = Condition( 59 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_ICPMODULE  = Condition( 60 );
+    static const Condition PROP_CANNOT_BE_SOLVED_BY_ILRAMODULE           = Condition( 61 );
     static const Condition SOLVABLE_CONDITIONS                          = PROP_CANNOT_BE_SOLVED_BY_SMARTSIMPLIFIER | PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE
                                                  | PROP_CANNOT_BE_SOLVED_BY_VSMODULE | PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE
                                                  | PROP_CANNOT_BE_SOLVED_BY_CADMODULE | PROP_CANNOT_BE_SOLVED_BY_SATMODULE
                                                  | PROP_CANNOT_BE_SOLVED_BY_LRAMODULE | PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE
                                                  | PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE | PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE | PROP_CANNOT_BE_SOLVED_BY_ICPMODULE;
+                                                 | PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE | PROP_CANNOT_BE_SOLVED_BY_ICPMODULE
+                                                 | PROP_CANNOT_BE_SOLVED_BY_ILRAMODULE;
 }     // namespace smtrat
 
 #endif   /* CONDITION_H */

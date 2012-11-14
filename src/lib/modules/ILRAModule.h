@@ -21,35 +21,34 @@
 
 
 /**
- * @file LRAModule.h
+ * @file ILRAModule.h
  * @author name surname <emailadress>
  *
  * @version 2012-04-05
  * Created on April 5th, 2012, 3:22 PM
  */
 
-#ifndef LRAMODULE_H
-#define LRAMODULE_H
+#ifndef ILRAMODULE_H
+#define ILRAMODULE_H
 
-#define LRA_USE_GINACRA
+#define ILRA_USE_GINACRA
 
 #include "../Module.h"
-#include "LRAModule/Numeric.h"
 #include "LRAModule/Value.h"
 #include "LRAModule/Variable.h"
 #include "LRAModule/Bound.h"
 #include "LRAModule/Tableau.h"
 #include <stdio.h>
-#ifdef LRA_USE_GINACRA
+#ifdef ILRA_USE_GINACRA
 #include <ginacra/ginacra.h>
 #endif
 
-
-#define LRA_SIMPLE_CONFLICT_SEARCH
+#define ILRA_SIMPLE_CONFLICT_SEARCH
+#define ILRA_REFINEMENT
 
 namespace smtrat
 {
-    class LRAModule:
+    class ILRAModule:
         public Module
     {
         public:
@@ -60,36 +59,36 @@ namespace smtrat
                     return GiNaC::ex_is_less()( *pExA, *pExB );
                 }
             };
-            typedef std::map<const GiNaC::ex*, lra::Variable<lra::Numeric>*, exPointerComp>   ExVariableMap;
-            typedef std::vector< std::vector< const lra::Bound<lra::Numeric>* >* >            ConstraintBoundsMap;
+            typedef std::map<const GiNaC::ex*, lra::Variable<int>*, exPointerComp> ExVariableMap;
+            typedef std::vector< std::vector< const lra::Bound<int>* >* >          ConstraintBoundsMap;
 
         private:
 
             /**
              * Members:
              */
-            bool                        mInitialized;
-            bool                        mAssignmentFullfilsNonlinearConstraints;
-            unsigned                    mMaxConstraintId;
-            lra::Tableau<lra::Numeric>  mTableau;
-            ConstraintSet               mLinearConstraints;
-            ConstraintSet               mNonlinearConstraints;
-            ExVariableMap               mOriginalVars;
-            ExVariableMap               mSlackVars;
-            ConstraintBoundsMap         mConstraintToBound;
-            std::vector<const lra::Bound<lra::Numeric>* >  mBoundCandidatesToPass;
+            bool                                  mInitialized;
+            bool                                  mAssignmentFullfilsNonlinearConstraints;
+            unsigned                              mMaxConstraintId;
+            lra::Tableau<int>                    mTableau;
+            ConstraintSet                         mLinearConstraints;
+            ConstraintSet                         mNonlinearConstraints;
+            ExVariableMap                         mOriginalVars;
+            ExVariableMap                         mSlackVars;
+            ConstraintBoundsMap                   mConstraintToBound;
+            std::vector<const lra::Bound<int>* > mBoundCandidatesToPass;
 
         public:
 
             /**
              * Constructors:
              */
-            LRAModule( const Formula* const _formula, Manager* const _tsManager = NULL );
+            ILRAModule( const Formula* const _formula, Manager* const _tsManager = NULL );
 
             /**
              * Destructor:
              */
-            virtual ~LRAModule();
+            virtual ~ILRAModule();
 
             /**
              * Methods:
@@ -102,7 +101,7 @@ namespace smtrat
             Answer isConsistent();
             void updateModel();
             GiNaC::exmap getRationalModel() const;
-            #ifdef LRA_USE_GINACRA
+            #ifdef ILRA_USE_GINACRA
             GiNaCRA::evalintervalmap getVariableBounds() const;
             #endif
 
@@ -110,19 +109,19 @@ namespace smtrat
             /**
              * Methods:
              */
-            #ifdef LRA_REFINEMENT
+            #ifdef ILRA_REFINEMENT
             void learnRefinements();
             #endif
             void adaptPassedFormula();
             bool checkAssignmentForNonlinearConstraint();
-            bool activateBound( const lra::Bound<lra::Numeric>*, std::set<const Formula*>& );
-            void setBound( lra::Variable<lra::Numeric>&, bool, const lra::Numeric&, const Constraint* );
-            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
-            void findSimpleConflicts( const lra::Bound<lra::Numeric>& );
+            bool activateBound( const lra::Bound<int>*, std::set<const Formula*>& );
+            void setBound( lra::Variable<int>&, bool, const GiNaC::numeric&, const Constraint* );
+            #ifdef ILRA_SIMPLE_CONFLICT_SEARCH
+            void findSimpleConflicts( const lra::Bound<int>& );
             #endif
             void initialize();
     };
 
 }    // namespace smtrat
 
-#endif   /* LRAMODULE_H */
+#endif   /* ILRAMODULE_H */

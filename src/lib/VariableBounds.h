@@ -30,14 +30,11 @@
 #ifndef VARIABLEBOUNDS_H
 #define	VARIABLEBOUNDS_H
 
-#ifdef USE_VARIABLE_BOUNDS
-
 #include "Constraint.h"
 #include <ginacra/ginacra.h>
 
 namespace smtrat
 {
-
     namespace vb
     {
         template <class T> class Variable;
@@ -1022,7 +1019,5 @@ namespace smtrat
         }
     }   // namespace vb
 }    // namespace smtrat
-
-#endif
 
 #endif	/* VARIABLEBOUNDS_H */
