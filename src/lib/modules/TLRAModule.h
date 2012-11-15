@@ -21,34 +21,35 @@
 
 
 /**
- * @file LRAModule.h
+ * @file TLRAModule.h
  * @author name surname <emailadress>
  *
  * @version 2012-04-05
  * Created on April 5th, 2012, 3:22 PM
  */
 
-#ifndef LRAMODULE_H
-#define LRAMODULE_H
+#ifndef TLRAMODULE_H
+#define TLRAMODULE_H
 
-#define LRA_USE_GINACRA
+#define TLRA_USE_GINACRA
 
 #include "../Module.h"
-#include "LRAModule/Value.h"
-#include "LRAModule/Variable.h"
-#include "LRAModule/Bound.h"
-#include "LRAModule/Tableau.h"
+#include "TLRAModule/Numeric.h"
+#include "TLRAModule/Value.h"
+#include "TLRAModule/Variable.h"
+#include "TLRAModule/Bound.h"
+#include "TLRAModule/Tableau.h"
 #include <stdio.h>
-#ifdef LRA_USE_GINACRA
+#ifdef TLRA_USE_GINACRA
 #include <ginacra/ginacra.h>
 #endif
 
 
-#define LRA_SIMPLE_CONFLICT_SEARCH
+#define TLRA_SIMPLE_CONFLICT_SEARCH
 
 namespace smtrat
 {
-    class LRAModule:
+    class TLRAModule:
         public Module
     {
         public:
@@ -59,8 +60,8 @@ namespace smtrat
                     return GiNaC::ex_is_less()( *pExA, *pExB );
                 }
             };
-            typedef std::map<const GiNaC::ex*, lra::Variable*, exPointerComp>   ExVariableMap;
-            typedef std::vector< std::vector< const lra::Bound* >* >            ConstraintBoundsMap;
+            typedef std::map<const GiNaC::ex*, tlra::Variable<tlra::Numeric>*, exPointerComp>   ExVariableMap;
+            typedef std::vector< std::vector< const tlra::Bound<tlra::Numeric>* >* >            ConstraintBoundsMap;
 
         private:
 
@@ -70,25 +71,25 @@ namespace smtrat
             bool                        mInitialized;
             bool                        mAssignmentFullfilsNonlinearConstraints;
             unsigned                    mMaxConstraintId;
-            lra::Tableau                mTableau;
+            tlra::Tableau<tlra::Numeric>  mTableau;
             ConstraintSet               mLinearConstraints;
             ConstraintSet               mNonlinearConstraints;
             ExVariableMap               mOriginalVars;
             ExVariableMap               mSlackVars;
             ConstraintBoundsMap         mConstraintToBound;
-            std::vector<const lra::Bound* >  mBoundCandidatesToPass;
+            std::vector<const tlra::Bound<tlra::Numeric>* >  mBoundCandidatesToPass;
 
         public:
 
             /**
              * Constructors:
              */
-            LRAModule( const Formula* const _formula, Manager* const _tsManager = NULL );
+            TLRAModule( const Formula* const _formula, Manager* const _tsManager = NULL );
 
             /**
              * Destructor:
              */
-            virtual ~LRAModule();
+            virtual ~TLRAModule();
 
             /**
              * Methods:
@@ -101,7 +102,7 @@ namespace smtrat
             Answer isConsistent();
             void updateModel();
             GiNaC::exmap getRationalModel() const;
-            #ifdef LRA_USE_GINACRA
+            #ifdef TLRA_USE_GINACRA
             GiNaCRA::evalintervalmap getVariableBounds() const;
             #endif
 
@@ -109,15 +110,15 @@ namespace smtrat
             /**
              * Methods:
              */
-            #ifdef LRA_REFINEMENT
+            #ifdef TLRA_REFINEMENT
             void learnRefinements();
             #endif
             void adaptPassedFormula();
             bool checkAssignmentForNonlinearConstraint();
-            bool activateBound( const lra::Bound*, std::set<const Formula*>& );
-            void setBound( lra::Variable&, bool, const GiNaC::numeric&, const Constraint* );
-            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
-            void findSimpleConflicts( const lra::Bound& );
+            bool activateBound( const tlra::Bound<tlra::Numeric>*, std::set<const Formula*>& );
+            void setBound( tlra::Variable<tlra::Numeric>&, bool, const tlra::Numeric&, const Constraint* );
+            #ifdef TLRA_SIMPLE_CONFLICT_SEARCH
+            void findSimpleConflicts( const tlra::Bound<tlra::Numeric>& );
             #endif
             void initialize();
     };

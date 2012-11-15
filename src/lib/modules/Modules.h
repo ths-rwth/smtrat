@@ -50,6 +50,7 @@
 
 #include "SATModule.h"
 #include "LRAModule.h"
+#include "TLRAModule.h"
 #include "PreProModule.h"
 #include "CNFerModule.h"
 #include "SingleVSModule.h"

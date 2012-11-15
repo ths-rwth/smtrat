@@ -28,7 +28,7 @@
 
 #include "Numeric.h"
 
-namespace lra
+namespace tlra
 {
 
     /**
@@ -247,4 +247,4 @@ namespace lra
         _out << GiNaC::ex( _num.content() );
         return _out;
     }
-}    // end namspace lra
+}    // end namspace tlra

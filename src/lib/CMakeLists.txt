@@ -51,6 +51,7 @@ set(lib_modules_headers
     modules/VSModule.h
     modules/SATModule.h
     modules/LRAModule.h
+    modules/TLRAModule.h
     modules/PreProModule.h
     modules/CNFerModule.h
     modules/SingleVSModule.h
@@ -62,6 +63,7 @@ set(lib_modules_src
     modules/VSModule.cpp
     modules/SATModule.cpp
     modules/LRAModule.cpp
+    modules/TLRAModule.cpp
     modules/PreProModule.cpp
     modules/CNFerModule.cpp
     modules/SingleVSModule.cpp
@@ -125,10 +127,22 @@ set(lib_LRAModule_headers
 	modules/LRAModule/Tableau.h
 	modules/LRAModule/Value.h
 	modules/LRAModule/Variable.h
-	modules/LRAModule/Numeric.h
 )
 set(lib_LRAModule_src
-	modules/LRAModule/Numeric.cpp
+	modules/LRAModule/Bound.cpp
+	modules/LRAModule/Tableau.cpp
+	modules/LRAModule/Value.cpp
+	modules/LRAModule/Variable.cpp
+)
+set(lib_TLRAModule_headers
+	modules/TLRAModule/Bound.h
+	modules/TLRAModule/Tableau.h
+	modules/TLRAModule/Value.h
+	modules/TLRAModule/Variable.h
+	modules/TLRAModule/Numeric.h
+)
+set(lib_TLRAModule_src
+	modules/TLRAModule/Numeric.cpp
 )
 set(lib_ICPModule_headers
     modules/ICPModule/DerivativeTable.h
@@ -189,6 +203,8 @@ set(lib_${PROJECT_NAME}_SRCS
 	${lib_SATModule_src}
 	${lib_LRAModule_headers}
 	${lib_LRAModule_src}
+	${lib_TLRAModule_headers}
+	${lib_TLRAModule_src}
 	${lib_GBModule_headers}
 	${lib_GBModule_src}
 	${lib_NSSModule_headers}
@@ -247,6 +263,7 @@ install( FILES ${lib_core_headers} ${lib_nratsolver_headers} DESTINATION include
 install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/lib/modules )
 install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/VSModule )
 install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SATModule )
+install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/LRAModule )
 install( FILES ${lib_SingleVSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SingleVSModule )
 # install( FILES ${lib_ICPModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/ICPModule )
-install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/LRAModule )
+install( FILES ${lib_TLRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/TLRAModule )

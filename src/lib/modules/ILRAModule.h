@@ -34,10 +34,10 @@
 #define ILRA_USE_GINACRA
 
 #include "../Module.h"
-#include "LRAModule/Value.h"
-#include "LRAModule/Variable.h"
-#include "LRAModule/Bound.h"
-#include "LRAModule/Tableau.h"
+#include "TLRAModule/Value.h"
+#include "TLRAModule/Variable.h"
+#include "TLRAModule/Bound.h"
+#include "TLRAModule/Tableau.h"
 #include <stdio.h>
 #ifdef ILRA_USE_GINACRA
 #include <ginacra/ginacra.h>
@@ -59,8 +59,8 @@ namespace smtrat
                     return GiNaC::ex_is_less()( *pExA, *pExB );
                 }
             };
-            typedef std::map<const GiNaC::ex*, lra::Variable<int>*, exPointerComp> ExVariableMap;
-            typedef std::vector< std::vector< const lra::Bound<int>* >* >          ConstraintBoundsMap;
+            typedef std::map<const GiNaC::ex*, tlra::Variable<int>*, exPointerComp> ExVariableMap;
+            typedef std::vector< std::vector< const tlra::Bound<int>* >* >          ConstraintBoundsMap;
 
         private:
 
@@ -70,13 +70,13 @@ namespace smtrat
             bool                                  mInitialized;
             bool                                  mAssignmentFullfilsNonlinearConstraints;
             unsigned                              mMaxConstraintId;
-            lra::Tableau<int>                    mTableau;
+            tlra::Tableau<int>                    mTableau;
             ConstraintSet                         mLinearConstraints;
             ConstraintSet                         mNonlinearConstraints;
             ExVariableMap                         mOriginalVars;
             ExVariableMap                         mSlackVars;
             ConstraintBoundsMap                   mConstraintToBound;
-            std::vector<const lra::Bound<int>* > mBoundCandidatesToPass;
+            std::vector<const tlra::Bound<int>* > mBoundCandidatesToPass;
 
         public:
 
@@ -114,10 +114,10 @@ namespace smtrat
             #endif
             void adaptPassedFormula();
             bool checkAssignmentForNonlinearConstraint();
-            bool activateBound( const lra::Bound<int>*, std::set<const Formula*>& );
-            void setBound( lra::Variable<int>&, bool, const GiNaC::numeric&, const Constraint* );
+            bool activateBound( const tlra::Bound<int>*, std::set<const Formula*>& );
+            void setBound( tlra::Variable<int>&, bool, const GiNaC::numeric&, const Constraint* );
             #ifdef ILRA_SIMPLE_CONFLICT_SEARCH
-            void findSimpleConflicts( const lra::Bound<int>& );
+            void findSimpleConflicts( const tlra::Bound<int>& );
             #endif
             void initialize();
     };

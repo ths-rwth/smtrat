@@ -32,7 +32,7 @@
 #include <ginac/ginac.h>
 #include <sstream>
 
-namespace lra
+namespace tlra
 {
     class Numeric
     {
@@ -79,7 +79,7 @@ namespace lra
             bool operator ==( const Numeric& ) const;
             friend std::ostream& operator <<( std::ostream&, const Numeric& );
     };
-}    // end namspace lra
+}    // end namspace tlra
 
 
 #endif	/* NUMERIC_H */

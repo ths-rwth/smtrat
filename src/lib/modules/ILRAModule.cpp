@@ -35,7 +35,7 @@
 #define ILRA_ONE_REASON
 
 using namespace std;
-using namespace lra;
+using namespace tlra;
 using namespace GiNaC;
 #ifdef ILRA_USE_GINACRA
 using namespace GiNaCRA;

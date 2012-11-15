@@ -528,6 +528,11 @@ namespace smtrat
                 mPropositions |= PROP_CANNOT_BE_SOLVED_BY_LRAMODULE;
                 break;
             }
+            case MT_TLRAModule:
+            {
+                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_TLRAMODULE;
+                break;
+            }
             case MT_ILRAModule:
             {
                 mPropositions |= PROP_CANNOT_BE_SOLVED_BY_ILRAMODULE;
