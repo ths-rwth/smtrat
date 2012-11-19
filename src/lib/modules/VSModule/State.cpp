@@ -572,12 +572,7 @@ namespace vs
                                 {
                                     mTakeSubResultCombAgain = true;
                                 }
-                                if( mpSubResultCombination->size() > mpSubstitutionResults->size() )
-                                {
-                                    cout << "simplify" << endl;
-                                    printAlone( "   ", cout );
-                                    assert( false );
-                                }
+                                assert( mpSubResultCombination->size() <= mpSubstitutionResults->size() );
                             }
                         }
                     }
@@ -1005,7 +1000,6 @@ namespace vs
         #ifdef VS_DEBUG_METHODS_X
         cout << __func__ << endl;
         #endif
-
         /*
          * For each disjunction add a substitution result to the substitution results of this state.
          */
@@ -1022,21 +1016,13 @@ namespace vs
                 mpSubstitutionResults->back().push_back( pair<ConditionVector, bool>( *conjunction, false ) );
             }
         }
-
         /*
          * Mark this state as not yet simplified.
          */
         mSubResultsSimplified = false;
         mToHighDegree         = false;
         mMarkedAsDeleted      = false;
-
         mStateType            = COMBINE_SUBRESULTS;
-        //        if( checkSubResultsCombs() )
-        //        {
-        //            cout << __func__ << endl;
-        //            print( "   ", cout );
-        //            assert( false );
-        //        }
     }
 
     /**
@@ -1121,12 +1107,6 @@ namespace vs
              * Add the found substitution result to the substitution result combinations.
              */
             mpSubResultCombination->push_back( pair<unsigned, unsigned>( bestSubResultIndex, 0 ) );
-            //            if( checkSubResultsCombs() )
-            //            {
-            //                cout << __func__ << endl;
-            //                print( "   ", cout );
-            //                assert( false );
-            //            }
             return true;
         }
         else
@@ -1197,12 +1177,6 @@ namespace vs
                          */
                         if( rIterTemp == mpSubResultCombination->rend() )
                         {
-                            //                            if( checkSubResultsCombs() )
-                            //                            {
-                            //                                cout << __func__ << endl;
-                            //                                print( "   ", cout );
-                            //                                assert( false );
-                            //                            }
                             return false;
                         }
 
@@ -1227,12 +1201,6 @@ namespace vs
                      */
                     else
                     {
-                        //                        if( checkSubResultsCombs() )
-                        //                        {
-                        //                            cout << __func__ << endl;
-                        //                            print( "   ", cout );
-                        //                            assert( false );
-                        //                        }
                         return true;
                     }
                     ++rIter;
@@ -1242,12 +1210,6 @@ namespace vs
             /*
              * A valid new combination of substitution results is established.
              */
-            //            if( checkSubResultsCombs() )
-            //            {
-            //                cout << __func__ << endl;
-            //                print( "   ", cout );
-            //                assert( false );
-            //            }
             return true;
         }
     }
@@ -1387,15 +1349,7 @@ namespace vs
                 delete rpCond;
             }
         }
-
         mStateType = TEST_CANDIDATE_TO_GENERATE;
-
-        //        if( checkSubResultsCombs() )
-        //        {
-        //            cout << __func__ << endl;
-        //            print( "   ", cout );
-        //            assert( false );
-        //        }
         if( conditionsChanged )
         {
             mConditionsSimplified = false;
@@ -1834,12 +1788,6 @@ namespace vs
                                 ++subResultIndex;
                             }
                         }
-                        //                        if( (**child).checkSubResultsCombs() )
-                        //                        {
-                        //                            cout << __func__ << ":" << __LINE__ << endl;
-                        //                            (**child).print( "   ", cout );
-                        //                            assert( false );
-                        //                        }
                     }
 
                     /*
@@ -1984,12 +1932,6 @@ namespace vs
                                 }
                                 ++subResult;
                             }
-                            //                            if( (**child).checkSubResultsCombs() )
-                            //                            {
-                            //                                cout << __func__<< ":" << __LINE__ << endl;
-                            //                                (**child).print( "   ", cout );
-                            //                                assert( false );
-                            //                            }
                         }
                         (**child).rInconsistent() = false;
                     }
@@ -2370,11 +2312,7 @@ namespace vs
         ConditionSetSet conflictSet = ConditionSetSet();
         conflictSet.insert( coverSetOConds );
 
-        if( coverSetOConds.empty() )
-        {
-            printAlone( "   ", cout );
-            assert( false );
-        }
+        assert( !coverSetOConds.empty() );
 
         /*
          * Add the original conditions of the covering set as a conflict set to the father.

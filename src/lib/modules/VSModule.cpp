@@ -257,12 +257,7 @@ namespace smtrat
      */
     Answer VSModule::isConsistent()
     {
-        if( mpReceivedFormula->size() != mFormulaConditionMap.size() )
-        {
-            printReceivedFormula();
-            printAll();
-            assert( false );
-        }
+        assert( mpReceivedFormula->size() == mFormulaConditionMap.size() );
         if( !mFreshConstraintReceived )
         {
             if( mInfeasibleSubsets.empty() )
@@ -692,9 +687,9 @@ namespace smtrat
                 }
             }
         }
-        if( mpStateTree->conflictSets().empty() ) mpStateTree->print();
-        if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
-        if( mpStateTree->conflictSets().empty() ) Module::storeAssumptionsToCheck( *mpManager );
+//        if( mpStateTree->conflictSets().empty() ) mpStateTree->print();
+//        if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
+//        if( mpStateTree->conflictSets().empty() ) Module::storeAssumptionsToCheck( *mpManager );
         assert( !mpStateTree->conflictSets().empty() );
         updateInfeasibleSubset();
         #ifdef VS_DEBUG
@@ -1511,15 +1506,7 @@ namespace smtrat
                         }
                         receivedConstraint++;
                     }
-
-                    if( receivedConstraint == mpReceivedFormula->end() )
-                    {
-                        cout << "BLA1   " << (**oCond).constraint() << endl;
-                        Module::print();
-                        printAll( cout );
-                        assert( false );
-                    }
-
+                    assert( receivedConstraint != mpReceivedFormula->end() );
                     mInfeasibleSubsets.back().insert( *receivedConstraint );
                 }
             }
