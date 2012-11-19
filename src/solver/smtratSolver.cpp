@@ -29,16 +29,35 @@
 
 #include <iostream>
 #include <fstream>
+#include <signal.h>
+
+
+#include "ExitCodes.h"
 #include "parser/Driver.h"
 #include "../lib/NRATSolver.h"
 #ifdef GATHER_STATS
 #include "../lib/utilities/stats/CollectStatistics.h"
 #endif //GATHER_STATS
+
+void sighandler(int sig)
+{
+    if(sig == SIGINT) {
+        std::cout << "User Aborted" << std::endl;
+        exit(SMTRAT_EXIT_USERABORT);
+    }
+    
+    
+    exit(SMTRAT_EXIT_GENERALERROR);
+}
+
 /**
  *
  */
 int main( int argc, char* argv[] )
 {
+    // Call the sighandler code on user abort
+    signal(SIGINT, &sighandler);
+
     smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
     smtrat::Driver   driver( form );
 
@@ -81,7 +100,7 @@ int main( int argc, char* argv[] )
             if( !infile.good() )
             {
                 std::cerr << "Could not open file: " << argv[ai] << std::endl;
-                return EXIT_FAILURE;
+                return SMTRAT_EXIT_NOSUCHFILE;
             }
 
             bool result = driver.parse_stream( infile, argv[ai] );
@@ -144,12 +163,12 @@ int main( int argc, char* argv[] )
                 }
                 #endif //GATHER_STATS
 
-                if(error) return EXIT_FAILURE;
+                if(error) return SMTRAT_EXIT_UNEXPECTEDANSWER;
             } else {
                 std::cerr << "Parse error" << std::endl;
-                return EXIT_FAILURE;
+                return SMTRAT_EXIT_PARSERFAILURE;
             }
         }
     }
-    return (EXIT_SUCCESS);
+    return (SMTRAT_EXIT_SUCCESS);
 }
