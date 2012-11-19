@@ -50,13 +50,12 @@ namespace smtrat
         Module( _formula, _tsManager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
-        mMaxConstraintId( Formula::constraintPool().size() + 1 ),
         mTableau( mpPassedFormula->end() ),
         mLinearConstraints(),
         mNonlinearConstraints(),
         mOriginalVars(),
         mSlackVars(),
-        mConstraintToBound( mMaxConstraintId, NULL ),
+        mConstraintToBound(),
         mBoundCandidatesToPass()
     {
         mModuleType = MT_LRAModule;
@@ -69,8 +68,8 @@ namespace smtrat
     {
         while( !mConstraintToBound.empty() )
         {
-            vector< const Bound* >* toDelete = mConstraintToBound.back();
-            mConstraintToBound.pop_back();
+            vector< const Bound* >* toDelete = mConstraintToBound.begin()->second;
+            mConstraintToBound.erase( mConstraintToBound.begin() );
             if( toDelete != NULL ) delete toDelete;
         }
         while( !mOriginalVars.empty() )
@@ -107,7 +106,10 @@ namespace smtrat
         if( !_constraint->variables().empty() && _constraint->isLinear() )
         {
             mLinearConstraints.insert( _constraint );
-            if( _constraint->id() > mMaxConstraintId ) mMaxConstraintId = _constraint->id();
+        }
+        if( mInitialized )
+        {
+            initialize( _constraint );
         }
         return _constraint->isConsistent() != 0;
     }
@@ -757,7 +759,6 @@ namespace smtrat
      */
     void LRAModule::setBound( Variable& _var, bool _constraintInverted, const numeric& _boundValue, const Constraint* _constraint )
     {
-        assert( _constraint->id() <= mMaxConstraintId );
         if( _constraint->relation() == CR_EQ )
         {
             // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
@@ -978,90 +979,98 @@ namespace smtrat
     /**
      * Initializes the tableau according to all linear constraints, of which this module has been informed.
      */
+    void LRAModule::initialize( const Constraint* const _pConstraint )
+    {
+        map<const string, numeric, strCmp> coeffs = _pConstraint->linearAndConstantCoefficients();
+        assert( coeffs.size() > 1 );
+        map<const string, numeric, strCmp>::iterator currentCoeff = coeffs.begin();
+        ex*                                          linearPart   = new ex( _pConstraint->lhs() - currentCoeff->second );
+        ++currentCoeff;
+
+        // divide the linear Part and the _pConstraint by the highest coefficient
+        numeric highestCoeff = currentCoeff->second;
+        --currentCoeff;
+        while( currentCoeff != coeffs.end() )
+        {
+            currentCoeff->second /= highestCoeff;
+            ++currentCoeff;
+        }
+        *linearPart /= highestCoeff;
+        if( coeffs.size() == 2 )
+        {
+            // constraint has one variable
+            ex* var = new ex( (*_pConstraint->variables().begin()).second );
+            ExVariableMap::iterator basicIter = mOriginalVars.find( var );
+            // constraint not found, add new nonbasic variable
+            if( basicIter == mOriginalVars.end() )
+            {
+                Variable* nonBasic = mTableau.newNonbasicVariable( var );
+                mOriginalVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
+                setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
+            }
+            else
+            {
+                delete var;
+                Variable* nonBasic = basicIter->second;
+                setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
+            }
+
+        }
+        else
+        {
+            ExVariableMap::iterator slackIter = mSlackVars.find( linearPart );
+            if( slackIter == mSlackVars.end() )
+            {
+                vector< Variable* > nonbasics = vector< Variable* >();
+                vector< numeric > numCoeffs = vector< numeric >();
+                symtab::const_iterator varIt   = _pConstraint->variables().begin();
+                map<const string, numeric, strCmp>::iterator coeffIt = coeffs.begin();
+                ++coeffIt;
+                while( varIt != _pConstraint->variables().end() )
+                {
+                    assert( coeffIt != coeffs.end() );
+                    ex* var = new ex( varIt->second );
+                    ExVariableMap::iterator nonBasicIter = mOriginalVars.find( var );
+                    if( mOriginalVars.end() == nonBasicIter )
+                    {
+                        Variable* nonBasic = mTableau.newNonbasicVariable( var );
+                        mOriginalVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
+                        nonbasics.push_back( nonBasic );
+                    }
+                    else
+                    {
+                        delete var;
+                        nonbasics.push_back( nonBasicIter->second );
+                    }
+                    numCoeffs.push_back( coeffIt->second );
+                    ++varIt;
+                    ++coeffIt;
+                }
+
+                Variable* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );
+
+                mSlackVars.insert( pair<const ex*, Variable*>( linearPart, slackVar ) );
+                setBound( *slackVar, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
+            }
+            else
+            {
+                delete linearPart;
+                Variable* slackVar = slackIter->second;
+                setBound( *slackVar, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
+            }
+        }
+    }
+
+    /**
+     * Initializes the tableau according to all linear constraints, of which this module has been informed.
+     */
     void LRAModule::initialize()
     {
         mInitialized = true;
         //TODO: sort the constraints as a first kind of a pivoting strategy
         for( auto constraint = mLinearConstraints.begin(); constraint != mLinearConstraints.end(); ++constraint )
         {
-            map<const string, numeric, strCmp> coeffs = (*constraint)->linearAndConstantCoefficients();
-            assert( coeffs.size() > 1 );
-            map<const string, numeric, strCmp>::iterator currentCoeff = coeffs.begin();
-            ex*                                          linearPart   = new ex( (*constraint)->lhs() - currentCoeff->second );
-            ++currentCoeff;
-
-            // divide the linear Part and the constraint by the highest coefficient
-            numeric highestCoeff = currentCoeff->second;
-            --currentCoeff;
-            while( currentCoeff != coeffs.end() )
-            {
-                currentCoeff->second /= highestCoeff;
-                ++currentCoeff;
-            }
-            *linearPart /= highestCoeff;
-            if( coeffs.size() == 2 )
-            {
-                // constraint has one variable
-                ex* var = new ex( (*(*constraint)->variables().begin()).second );
-                ExVariableMap::iterator basicIter = mOriginalVars.find( var );
-                // constraint not found, add new nonbasic variable
-                if( basicIter == mOriginalVars.end() )
-                {
-                    Variable* nonBasic = mTableau.newNonbasicVariable( var );
-                    mOriginalVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
-                    setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
-                }
-                else
-                {
-                    delete var;
-                    Variable* nonBasic = basicIter->second;
-                    setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
-                }
-
-            }
-            else
-            {
-                ExVariableMap::iterator slackIter = mSlackVars.find( linearPart );
-                if( slackIter == mSlackVars.end() )
-                {
-                    vector< Variable* > nonbasics = vector< Variable* >();
-                    vector< numeric > numCoeffs = vector< numeric >();
-                    symtab::const_iterator varIt   = (*constraint)->variables().begin();
-                    map<const string, numeric, strCmp>::iterator coeffIt = coeffs.begin();
-                    ++coeffIt;
-                    while( varIt != (*constraint)->variables().end() )
-                    {
-                        assert( coeffIt != coeffs.end() );
-                        ex* var = new ex( varIt->second );
-                        ExVariableMap::iterator nonBasicIter = mOriginalVars.find( var );
-                        if( mOriginalVars.end() == nonBasicIter )
-                        {
-                            Variable* nonBasic = mTableau.newNonbasicVariable( var );
-                            mOriginalVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
-                            nonbasics.push_back( nonBasic );
-                        }
-                        else
-                        {
-                            delete var;
-                            nonbasics.push_back( nonBasicIter->second );
-                        }
-                        numCoeffs.push_back( coeffIt->second );
-                        ++varIt;
-                        ++coeffIt;
-                    }
-
-                    Variable* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );
-
-                    mSlackVars.insert( pair<const ex*, Variable*>( linearPart, slackVar ) );
-                    setBound( *slackVar, highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
-                }
-                else
-                {
-                    delete linearPart;
-                    Variable* slackVar = slackIter->second;
-                    setBound( *slackVar, highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
-                }
-            }
+            initialize( *constraint );
         }
         #ifdef LRA_USE_PIVOTING_STRATEGY
         mTableau.setBlandsRuleStart( mTableau.columns().size() );

@@ -1096,7 +1096,7 @@ namespace tlra
         while( !iterTemp.rowBegin() )
         {
             iterTemp.left();
-            (*iterTemp).rContent() /= -pivotContent;
+            (*iterTemp).rContent() /= -pivotContent; // Division
             pivotingRowLeftSide.push_back( iterTemp );
         }
         // Then the column with ** right to the pivoting column until the rightmost column with **.
@@ -1105,7 +1105,7 @@ namespace tlra
         while( !iterTemp.rowEnd() )
         {
             iterTemp.right();
-            (*iterTemp).rContent() /= -pivotContent;
+            (*iterTemp).rContent() /= -pivotContent; // Division
             pivotingRowRightSide.push_back( iterTemp );
         }
 
@@ -1137,7 +1137,7 @@ namespace tlra
         nonbasicVar.rPosition() = pivotEntry.columnNumber();
         nonbasicVar.setBasic( false );
         // Update the content of the pivoting entry
-        pivotContent = T(1)/pivotContent;
+        pivotContent = T(1)/pivotContent; // Division
         #ifdef TLRA_REFINEMENT
         rowRefinement( rowHead );
         #endif

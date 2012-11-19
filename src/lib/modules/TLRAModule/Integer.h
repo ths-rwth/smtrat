@@ -19,35 +19,36 @@
  *
  */
 /**
- * @file Numeric.h
+ * @file Integer.h
  * @author Florian Corzilius
  *
  * @version 2012-04-05
  * Created on November 14th, 2012
  */
 
-#ifndef NUMERIC_H
-#define	NUMERIC_H
+#ifndef INTEGER_H
+#define	INTEGER_H
 
 #include <ginac/ginac.h>
 #include <sstream>
 
 namespace tlra
 {
-    class Numeric
+    class Integer
     {
         private:
             /*
              * Members:
              */
-            GiNaC::numeric mContent;
+            unsigned mNumerator;
+            signed mDenominator;
 
         public:
             /*
              * Constructors and destructor:
              */
-            Numeric( const int );
-            Numeric( const GiNaC::numeric& );
+            Integer( const int );
+            Integer( const GiNaC::numeric& );
 
             bool isNegative() const;
             bool isPositive() const;
@@ -57,25 +58,25 @@ namespace tlra
             /*
              * Operators:
              */
-            Numeric operator +( const Numeric& ) const;
-            void operator +=( const Numeric& );
-            friend Numeric operator -( const Numeric& );
-            Numeric operator -( const Numeric& ) const;
-            void operator -=( const Numeric& );
-            Numeric operator *( const Numeric& ) const;
-            void operator *=( const Numeric& );
-            Numeric operator /( const Numeric& ) const;
-            void operator /=( const Numeric& );
-            bool operator <( const Numeric& ) const;
-            bool operator >( const Numeric& ) const;
-            bool operator <=( const Numeric& ) const;
-            bool operator >=( const Numeric& ) const;
-            bool operator !=( const Numeric& ) const;
-            bool operator ==( const Numeric& ) const;
-            friend std::ostream& operator <<( std::ostream&, const Numeric& );
+            Integer operator +( const Integer& ) const;
+            void operator +=( const Integer& );
+            friend Integer operator -( const Integer& );
+            Integer operator -( const Integer& ) const;
+            void operator -=( const Integer& );
+            Integer operator *( const Integer& ) const;
+            void operator *=( const Integer& );
+            Integer operator /( const Integer& ) const;
+            void operator /=( const Integer& );
+            bool operator <( const Integer& ) const;
+            bool operator >( const Integer& ) const;
+            bool operator <=( const Integer& ) const;
+            bool operator >=( const Integer& ) const;
+            bool operator !=( const Integer& ) const;
+            bool operator ==( const Integer& ) const;
+            friend std::ostream& operator <<( std::ostream&, const Integer& );
     };
 }    // end namspace tlra
 
 
-#endif	/* NUMERIC_H */
+#endif	/* INTEGER_H */
 

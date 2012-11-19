@@ -772,7 +772,7 @@ namespace smtrat
         {
             // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
             Value<Numeric>* value  = new Value<Numeric>( _boundValue );
-            pair<const Bound<Numeric>* ,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _var.addEqualBound( value, mpPassedFormula->end(), _constraint );
+            pair<const Bound<Numeric>*, pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _var.addEqualBound( value, mpPassedFormula->end(), _constraint );
             #ifdef TLRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
             #endif
@@ -1019,13 +1019,13 @@ namespace smtrat
                 {
                     Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( var );
                     mOriginalVars.insert( pair<const ex*, Variable<Numeric>*>( var, nonBasic ) );
-                    setBound( *nonBasic, highestCoeff.is_negative(), Numeric( -coeffs.begin()->second ), *constraint );
+                    setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
                 }
                 else
                 {
                     delete var;
                     Variable<Numeric>* nonBasic = basicIter->second;
-                    setBound( *nonBasic, highestCoeff.is_negative(), Numeric( -coeffs.begin()->second ), *constraint );
+                    setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
                 }
 
             }

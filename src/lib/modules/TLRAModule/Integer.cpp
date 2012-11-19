@@ -19,14 +19,14 @@
  *
  */
 /**
- * @file Numeric.cpp
+ * @file Integer.cpp
  * @author Florian Corzilius
  *
  * @version 2012-04-05
  * Created on November 14th, 2012
  */
 
-#include "Numeric.h"
+#include "Integer.h"
 
 namespace tlra
 {
@@ -35,54 +35,72 @@ namespace tlra
      *
      * @param _num
      */
-    Numeric::Numeric( const int _content )
+    Integer::Integer( const int _content )
     {
-        mContent = GiNaC::numeric( _content );
+        if( _content < 0 )
+        {
+            mNumerator = -((unsigned)(_content));
+            mDenominator = -1;
+        }
+        else
+        {
+            mNumerator = (unsigned)(_content);
+            mDenominator = 1;
+        }
     }
 
     /**
      *
      * @param _num
      */
-    Numeric::Numeric( const GiNaC::numeric& _content )
+    Integer::Integer( const GiNaC::numeric& _content )
     {
-        mContent = GiNaC::numeric( _content );
+        if( _content.is_negative() )
+        {
+            mNumerator = (unsigned)(GiNaC::abs( _content.numer() ).to_int());
+            mDenominator = -GiNaC::abs( _content.denom() ).to_int();
+        }
+        else
+        {
+            mNumerator = (unsigned)(GiNaC::abs( _content.numer() ).to_int());
+            mDenominator = GiNaC::abs( _content.denom() ).to_int();
+        }
     }
 
     /**
      *
      * @return
      */
-    bool Numeric::isNegative() const
+    bool Integer::isNegative() const
     {
-        return mContent.is_negative();
+        return mDenominator < 0;
     }
 
     /**
      *
      * @return
      */
-    bool Numeric::isPositive() const
+    bool Integer::isPositive() const
     {
-        return mContent.is_positive();
+        return mDenominator > 0;
     }
 
     /**
      *
      * @return
      */
-    bool Numeric::isZero() const
+    bool Integer::isZero() const
     {
-        return mContent.is_zero();
+        return mNumerator == 0;
     }
 
     /**
      *
      * @return
      */
-    GiNaC::numeric Numeric::ginacNumeric() const
+    GiNaC::numeric Integer::ginacNumeric() const
     {
-        return mContent;
+        return GiNaC::numeric(mNumerator)/mDenominator;
     }
 
     /**
@@ -90,9 +108,9 @@ namespace tlra
      * @param
      * @return
      */
-    Numeric Numeric::operator +( const Numeric& _num ) const
+    Integer Integer::operator +( const Integer& _num ) const
     {
-        Numeric result = mContent + _num.mContent;
+        Integer result = mContent + _num.mContent;
         return result;
     }
 
@@ -100,7 +118,7 @@ namespace tlra
      *
      * @param
      */
-    void Numeric::operator +=( const Numeric& _num )
+    void Integer::operator +=( const Integer& _num )
     {
         mContent += _num.mContent;
     }
@@ -110,9 +128,9 @@ namespace tlra
      * @param _num
      * @return
      */
-    Numeric operator -( const Numeric& _num )
+    Integer operator -( const Integer& _num )
     {
-        Numeric result = Numeric( - _num.mContent );
+        Integer result = Integer( - _num.mContent );
         return result;
     }
 
@@ -121,9 +139,9 @@ namespace tlra
      * @param
      * @return
      */
-    Numeric Numeric::operator -( const Numeric& _num ) const
+    Integer Integer::operator -( const Integer& _num ) const
     {
-        Numeric result = mContent - _num.mContent;
+        Integer result = mContent - _num.mContent;
         return result;
     }
 
@@ -131,7 +149,7 @@ namespace tlra
      *
      * @param
      */
-    void Numeric::operator -=( const Numeric& _num )
+    void Integer::operator -=( const Integer& _num )
     {
         mContent -= _num.mContent;
     }
@@ -141,9 +159,9 @@ namespace tlra
      * @param
      * @return
      */
-    Numeric Numeric::operator *( const Numeric& _num ) const
+    Integer Integer::operator *( const Integer& _num ) const
     {
-        Numeric result = mContent * _num.mContent;
+        Integer result = mContent * _num.mContent;
         return result;
     }
 
@@ -151,7 +169,7 @@ namespace tlra
      *
      * @param
      */
-    void Numeric::operator *=( const Numeric& _num )
+    void Integer::operator *=( const Integer& _num )
     {
         mContent *= _num.mContent;
     }
@@ -161,9 +179,9 @@ namespace tlra
      * @param
      * @return
      */
-    Numeric Numeric::operator /( const Numeric& _num ) const
+    Integer Integer::operator /( const Integer& _num ) const
     {
-        Numeric result = mContent / _num.mContent;
+        Integer result = mContent / _num.mContent;
         return result;
     }
 
@@ -171,7 +189,7 @@ namespace tlra
      *
      * @param
      */
-    void Numeric::operator /=( const Numeric& _num )
+    void Integer::operator /=( const Integer& _num )
     {
         mContent /= _num.mContent;
     }
@@ -181,7 +199,7 @@ namespace tlra
      * @param
      * @return
      */
-    bool Numeric::operator <( const Numeric& _num ) const
+    bool Integer::operator <( const Integer& _num ) const
     {
         return mContent < _num.mContent;
     }
@@ -191,7 +209,7 @@ namespace tlra
      * @param
      * @return
      */
-    bool Numeric::operator >( const Numeric& _num ) const
+    bool Integer::operator >( const Integer& _num ) const
     {
         return mContent > _num.mContent;
     }
@@ -201,7 +219,7 @@ namespace tlra
      * @param
      * @return
      */
-    bool Numeric::operator <=( const Numeric& _num ) const
+    bool Integer::operator <=( const Integer& _num ) const
     {
         return mContent <= _num.mContent;
     }
@@ -211,7 +229,7 @@ namespace tlra
      * @param
      * @return
      */
-    bool Numeric::operator >=( const Numeric& _num ) const
+    bool Integer::operator >=( const Integer& _num ) const
     {
         return mContent >= _num.mContent;
     }
@@ -221,7 +239,7 @@ namespace tlra
      * @param
      * @return
      */
-    bool Numeric::operator !=( const Numeric& _num ) const
+    bool Integer::operator !=( const Integer& _num ) const
     {
         return mContent != _num.mContent;
     }
@@ -231,7 +249,7 @@ namespace tlra
      * @param
      * @return
      */
-    bool Numeric::operator ==( const Numeric& _num ) const
+    bool Integer::operator ==( const Integer& _num ) const
     {
         return mContent == _num.mContent;
     }
@@ -242,7 +260,7 @@ namespace tlra
      * @param
      * @return
      */
-    std::ostream& operator <<( std::ostream& _out, const Numeric& _num )
+    std::ostream& operator <<( std::ostream& _out, const Integer& _num )
     {
         _out << GiNaC::ex( _num.mContent );
         return _out;

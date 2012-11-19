@@ -60,7 +60,7 @@ namespace smtrat
                 }
             };
             typedef std::map<const GiNaC::ex*, lra::Variable*, exPointerComp>   ExVariableMap;
-            typedef std::vector< std::vector< const lra::Bound* >* >            ConstraintBoundsMap;
+            typedef std::map< unsigned, std::vector< const lra::Bound* >* >     ConstraintBoundsMap;
 
         private:
 
@@ -69,7 +69,6 @@ namespace smtrat
              */
             bool                        mInitialized;
             bool                        mAssignmentFullfilsNonlinearConstraints;
-            unsigned                    mMaxConstraintId;
             lra::Tableau                mTableau;
             ConstraintSet               mLinearConstraints;
             ConstraintSet               mNonlinearConstraints;
@@ -119,6 +118,7 @@ namespace smtrat
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             void findSimpleConflicts( const lra::Bound& );
             #endif
+            void initialize( const Constraint* const );
             void initialize();
     };
 
