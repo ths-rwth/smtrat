@@ -41,13 +41,10 @@
 
 void sighandler(int sig)
 {
-    if(sig == SIGINT) {
-        std::cout << "User Aborted" << std::endl;
+    if(sig == SIGINT) 
+    {
         exit(SMTRAT_EXIT_USERABORT);
     }
-    
-    
-    exit(SMTRAT_EXIT_GENERALERROR);
 }
 
 /**
