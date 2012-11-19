@@ -51,7 +51,7 @@ namespace smtrat
         #endif
         mpStateTree( new State() ),
         mAllVariables(),
-        mConstraintConditionMap(),
+        mFormulaConditionMap(),
         mRanking()
     {
         mModuleType = MT_VSModule;
@@ -62,10 +62,10 @@ namespace smtrat
      */
     VSModule::~VSModule()
     {
-        while( !mConstraintConditionMap.empty() )
+        while( !mFormulaConditionMap.empty() )
         {
-            vs::Condition* pRecCond = mConstraintConditionMap.begin()->second;
-            mConstraintConditionMap.erase( mConstraintConditionMap.begin() );
+            vs::Condition* pRecCond = mFormulaConditionMap.begin()->second;
+            mFormulaConditionMap.erase( mFormulaConditionMap.begin() );
             delete pRecCond;
         }
         delete mpStateTree;
@@ -85,7 +85,7 @@ namespace smtrat
 
         const Constraint* constraint = (*_subformula)->pConstraint();
         vs::Condition*    condition  = new vs::Condition( constraint );
-        mConstraintConditionMap[constraint] = condition;
+        mFormulaConditionMap[*_subformula] = condition;
 
         /*
          * Clear the ranking.
@@ -156,9 +156,8 @@ namespace smtrat
         assert( mpStateTree->substitutionResults().back().size() == 1 );
         assert( receivedFormulaSize() == mpStateTree->substitutionResults().back().back().first.size() );
         #endif
-        const Constraint* constraint = (*_subformula)->pConstraint();
-        vs::Condition*    pCondition = mConstraintConditionMap[constraint];
-        mConstraintConditionMap.erase( constraint );
+        vs::Condition*    pCondition = mFormulaConditionMap[*_subformula];
+        mFormulaConditionMap.erase( *_subformula );
         delete pCondition;
         Module::removeSubformula( _subformula );
         #ifdef VS_BACKTRACKING
@@ -258,8 +257,9 @@ namespace smtrat
      */
     Answer VSModule::isConsistent()
     {
-        if( mpReceivedFormula->size() != mConstraintConditionMap.size() )
+        if( mpReceivedFormula->size() != mFormulaConditionMap.size() )
         {
+            printReceivedFormula();
             printAll();
             assert( false );
         }
@@ -1560,13 +1560,13 @@ namespace smtrat
         mInfeasibleSubsets.clear();
         mpStateTree = new State();
 
-        ConstraintConditionMap::iterator cons = mConstraintConditionMap.begin();
-        while( cons != mConstraintConditionMap.end() )
+        FormulaConditionMap::iterator cons = mFormulaConditionMap.begin();
+        while( cons != mFormulaConditionMap.end() )
         {
             /*
              * Check the consistency of the constraint to add.
              */
-            unsigned isConstraintConsistent = cons->first->isConsistent();
+            unsigned isConstraintConsistent = cons->first->constraint().isConsistent();
 
             /*
              * Clear the ranking.
@@ -1587,7 +1587,7 @@ namespace smtrat
                     vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
                     DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
                     ConditionVector condVector                   = ConditionVector();
-                    condVector.push_back( new vs::Condition( cons->first, false, oConds, 0 ) );
+                    condVector.push_back( new vs::Condition( cons->first->pConstraint(), false, oConds, 0 ) );
                     subResult.push_back( condVector );
                     subResults.push_back( subResult );
                     mpStateTree->addSubstitutionResults( subResults );
@@ -1597,25 +1597,8 @@ namespace smtrat
                 }
                 else if( isConstraintConsistent == 0 )
                 {
-                    Formula::const_iterator receivedConstraint = mpReceivedFormula->begin();
-                    while( receivedConstraint != mpReceivedFormula->end() )
-                    {
-                        if( cons->first == (*receivedConstraint)->pConstraint() )
-                        {
-                            break;
-                        }
-                        receivedConstraint++;
-                    }
-
-                    if( receivedConstraint == mpReceivedFormula->end() )
-                    {
-                        cout << "BLA1   " << *cons->first << endl;
-                        Module::print();
-                        printAll( cout );
-                        assert( false );
-                    }
                     mInfeasibleSubsets.push_back( set<const Formula*>() );
-                    mInfeasibleSubsets.back().insert( *receivedConstraint );
+                    mInfeasibleSubsets.back().insert( cons->first );
                     mInconsistentConstraintAdded = true;
                 }
             }
@@ -1977,7 +1960,7 @@ namespace smtrat
     void VSModule::printAll( ostream& _out ) const
     {
         _out << "*** Current solver status, where the constraints" << endl;
-        for( ConstraintConditionMap::const_iterator cond = mConstraintConditionMap.begin(); cond != mConstraintConditionMap.end(); ++cond )
+        for( FormulaConditionMap::const_iterator cond = mFormulaConditionMap.begin(); cond != mFormulaConditionMap.end(); ++cond )
         {
             _out << "***    ";
             cond->first->print( _out );
