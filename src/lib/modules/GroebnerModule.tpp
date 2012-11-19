@@ -159,7 +159,33 @@ Answer GroebnerModule<Settings>::isConsistent( )
     if( !mBasis.inputEmpty( ) )
     {
         //first, we interreduce the input!
-        mBasis.reduceInput( );
+        std::list<GiNaCRA::BitVector> results = mBasis.reduceInput( );
+        //analyze for deductions
+        auto constraint = mpReceivedFormula->rbegin();
+        for(auto it =  results.rbegin(); it != results.rend(); ++it)
+        {
+            // if the bitvector is not empty, there is a theory deduction
+            if( !it->empty() )
+            {
+                Formula* deduction = new Formula(OR);
+                
+                std::set<const Formula*> originals( generateReasons( *it ));
+
+                for( auto jt =  originals.begin(); jt != originals.end(); ++jt )
+                {
+                    deduction->addSubformula( new Formula( NOT ) );
+                    deduction->back()->addSubformula( (*jt)->pConstraint() );
+                }
+                deduction->addSubformula((*constraint)->pConstraint( ));
+
+                addDeduction(deduction);
+                #ifdef GATHER_STATS
+                
+                #endif
+                    
+            }
+            ++constraint;
+        }
     }
     //If no equalities are added, we do not know anything
     if( !mBasis.inputEmpty( ) )
@@ -458,7 +484,7 @@ typename GroebnerModule<Settings>::Polynomial GroebnerModule<Settings>::transfor
     if( mapentry == mAdditionalVarMap.end( ) )
     {
         std::stringstream stream;
-        stream << "_AddVarGB_" << constrId;
+        stream << "AddVarGB" << constrId;
         GiNaC::symbol varSym = ex_to<symbol > (Formula::newVariable( stream.str( ) ));
         mListOfVariables[stream.str()] = varSym;
         varNr = VariableListPool::addVariable( varSym );
