@@ -11,11 +11,11 @@
  *
  * SMT-RAT is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SMT-RAT. If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -24,7 +24,7 @@
  *
  * @author  Henrik Schmitz
  * @since   2012-09-10
- * @version 2012-09-19
+ * @version 2012-09-24
  */
 
 #ifndef SMTRAT_STRATEGYGRAPH_H
@@ -41,7 +41,7 @@ namespace smtrat
 
     static bool isCondition( Condition _condition )
     {
-        return true;
+        return PROP_TRUE <= _condition;
     }
 
 // Future use:
@@ -59,11 +59,11 @@ namespace smtrat
             class Edge
             {
                 private:
-                    unsigned mId;
+                    static unsigned mPriorityAllocator;
+                    
+                    unsigned mPriority;
                     unsigned mSuccessor;
                     ConditionEvaluation mpConditionEvaluation;
-
-                    static unsigned mIdAllocator;
                     
                 public:
                     Edge();
@@ -71,9 +71,9 @@ namespace smtrat
                     ~Edge();
                     
 // Future use:
-//                    const unsigned id() const
+//                    const unsigned priority() const
 //                    {
-//                        return mId;
+//                        return mPriority;
 //                    };
                     
                     const unsigned successor() const
@@ -115,7 +115,7 @@ namespace smtrat
             
             // Members
 
-            std::vector<Vertex> mStrategyGraph;
+            std::vector<Vertex*> mStrategyGraph;
 
         public:
             // [Con|De]structors

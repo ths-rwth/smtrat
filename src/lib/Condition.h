@@ -70,6 +70,30 @@ namespace smtrat
             {
                 return (*this & (~_condition)).none();
             }
+            
+            inline Condition
+            operator->(const Condition& _x, const Condition& _y)
+            {
+              Condition result(~_x);
+              result |= _y;
+              return result;
+            }
+            
+            inline Condition
+            operator--(const Condition& _x, const Condition& _y)
+            {
+              Condition result(~_x);
+              result ^= _y;
+              return result;
+            }
+            
+            inline Condition
+            operator++(const Condition& _x, const Condition& _y)
+            {
+              Condition result(_x);
+              result ^= _y;
+              return result;
+            }
     };
 
     static const Condition PROP_TRUE = Condition();
