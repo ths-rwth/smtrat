@@ -687,9 +687,11 @@ namespace smtrat
                 }
             }
         }
-        if( mpStateTree->conflictSets().empty() ) mpStateTree->print();
-        if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
-        if( mpStateTree->conflictSets().empty() ) Module::storeAssumptionsToCheck( *mpManager );
+//        if( mpStateTree->conflictSets().empty() ) mpStateTree->print();
+        #ifdef VS_LOG_INTERMEDIATE_STEPS
+//        if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
+        #endif
+//        if( mpStateTree->conflictSets().empty() ) Module::storeAssumptionsToCheck( *mpManager );
         assert( !mpStateTree->conflictSets().empty() );
         updateInfeasibleSubset();
         #ifdef VS_DEBUG
