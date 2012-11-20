@@ -35,6 +35,7 @@
 
 #include <ginacra/ginacra.h>
 #include <ginacra/Constraint.h>
+#include <iostream>
 
 using GiNaCRA::UnivariatePolynomial;
 using GiNaCRA::EliminationSet;
@@ -75,7 +76,8 @@ namespace smtrat
 #endif
         mConstraints(),
         mConstraintsMap(),
-        mSatisfiable( true )
+        mSatisfiable( true ),
+        mRealAlgebraicSolution()
     {
         mModuleType = MT_CADModule;
         mInfeasibleSubsets.clear();    // initially everything is satisfied
@@ -140,10 +142,9 @@ namespace smtrat
         }
         #endif
         // check the extended constraints for satisfiability
-        GiNaCRA::RealAlgebraicPoint r;
         ConflictGraph               conflictGraph;
         list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > > deductions;
-        if( !mCAD.check( mConstraints, r, conflictGraph, deductions ) )
+        if( !mCAD.check( mConstraints, mRealAlgebraicSolution, conflictGraph, deductions ) )
         {
             #ifdef SMTRAT_CAD_DISABLE_SMT
             // simulate non-incrementality by constructing a trivial infeasible subset and clearing all data in the CAD
@@ -168,6 +169,7 @@ namespace smtrat
             #endif
             mSatisfiable = false;
             mSolverState = False;
+            mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
             return False;
         }
         #ifdef MODULE_VERBOSE
@@ -259,6 +261,33 @@ namespace smtrat
         {
             assert( false );    // the constraint to be removed should have been put to mConstraints before
             return;
+        }
+    }
+
+    /**
+     * Updates the model.
+     */
+    void CADModule::updateModel()
+    {
+        mModel.clear();
+        if( mSolverState == True )
+        {
+            for( unsigned varID = 0; varID < mCAD.variables().size(); ++varID )
+            {
+                stringstream outA;
+                outA << mCAD.variables()[varID];
+                stringstream outB;
+                GiNaCRA::RealAlgebraicNumberIRPtr irA = std::dynamic_pointer_cast<GiNaCRA::RealAlgebraicNumberIR>( mRealAlgebraicSolution[varID] );
+                GiNaCRA::RealAlgebraicNumberNRPtr nrA = std::dynamic_pointer_cast<GiNaCRA::RealAlgebraicNumberNR>( mRealAlgebraicSolution[varID] );
+                if( irA != 0 )
+                    outB << "zero( " << irA->polynomial() << ", " << irA->order() << " )";
+                else if( nrA != 0 )
+                    outB << static_cast<GiNaCRA::RealAlgebraicNumberNR>(*nrA);
+
+                else
+                    outB << "NaN";
+                mModel.insert( pair< const string, string >( outA.str(), outB.str() ) );
+            }
         }
     }
 

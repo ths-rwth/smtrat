@@ -76,6 +76,8 @@ namespace smtrat
         ConstraintIndexMap mConstraintsMap;
         /// the GiNaCRA constraints' polynomials not yet added to the CAD object
         bool mSatisfiable;
+        /// a satisfying assignment of the received constraints if existent; otherwise it is empty
+        GiNaCRA::RealAlgebraicPoint mRealAlgebraicSolution;
 
         public:
             CADModule( const Formula* const, Manager* const _tsmanager );
@@ -85,6 +87,7 @@ namespace smtrat
             virtual bool assertSubformula( Formula::const_iterator _subformula );
             virtual void removeSubformula( Formula::const_iterator _subformula );
             virtual Answer isConsistent();
+            void updateModel();
 
         private:
             const GiNaCRA::Constraint convertConstraint( const Constraint& );

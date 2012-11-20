@@ -687,9 +687,9 @@ namespace smtrat
                 }
             }
         }
-//        if( mpStateTree->conflictSets().empty() ) mpStateTree->print();
-//        if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
-//        if( mpStateTree->conflictSets().empty() ) Module::storeAssumptionsToCheck( *mpManager );
+        if( mpStateTree->conflictSets().empty() ) mpStateTree->print();
+        if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
+        if( mpStateTree->conflictSets().empty() ) Module::storeAssumptionsToCheck( *mpManager );
         assert( !mpStateTree->conflictSets().empty() );
         updateInfeasibleSubset();
         #ifdef VS_DEBUG
@@ -1086,7 +1086,6 @@ namespace smtrat
                         ++consConj )
                 {
                     bool conjunctionConsistent = true;
-
                     /*
                      * Check if the conjunction contains any inconsistent constraint.
                      */
@@ -1101,7 +1100,6 @@ namespace smtrat
                     if( conjunctionConsistent )
                     {
                         anyConjunctionConsistent = true;
-
                         if( !anySubstitutionFailed )
                         {
                             currentDisjunction.push_back( ConditionVector() );
@@ -1830,6 +1828,7 @@ namespace smtrat
                 vector<Module*>::const_iterator backend = usedBackends().begin();
                 while( backend != usedBackends().end() )
                 {
+                    (*backend)->print();
                     if( !(*backend)->infeasibleSubsets().empty() )
                     {
                         for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
@@ -1869,8 +1868,9 @@ namespace smtrat
                         break;
                     }
                 }
+                assert( !conflictSet.empty() );
                 _state->addConflictSet( NULL, conflictSet );
-
+                _state->printAlone();
                 eraseDTsOfRanking( *_state );
 
                 #ifdef VS_LOG_INTERMEDIATE_STEPS
@@ -1891,6 +1891,7 @@ namespace smtrat
                     _state->passConflictToFather();
                     eraseDTsOfRanking( _state->rFather() );
                     insertDTinRanking( _state->pFather() );
+                    _state->father().print();
                 }
                 return False;
             }
