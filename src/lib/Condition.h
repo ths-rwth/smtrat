@@ -71,26 +71,29 @@ namespace smtrat
                 return (*this & (~_condition)).none();
             }
             
+            // Equivalence
             inline Condition
-            operator->(const Condition& _x, const Condition& _y)
+            operator%( const Condition& _y ) const
             {
-              Condition result(~_x);
+              Condition result(~*this);
               result |= _y;
               return result;
             }
             
+            // Implication
             inline Condition
-            operator--(const Condition& _x, const Condition& _y)
+            operator-( const Condition& _y ) const
             {
-              Condition result(~_x);
+              Condition result(~*this);
               result ^= _y;
               return result;
             }
             
+            // Xor
             inline Condition
-            operator++(const Condition& _x, const Condition& _y)
+            operator+( const Condition& _y ) const
             {
-              Condition result(_x);
+              Condition result(*this);
               result ^= _y;
               return result;
             }
