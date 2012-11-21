@@ -37,7 +37,7 @@
         <mkdir dir="@DOLLAR@{classes.dir}" />
         <javac srcdir="@DOLLAR@{src.dir}" destdir="@DOLLAR@{classes.dir}" classpathref="classpath" includeantruntime="false" listfiles="Yes" encoding="UTF8" deprecation="Yes" />
         <copy todir="@DOLLAR@{build.dir}">
-            <fileset dir="@DOLLAR@{src.dir}" excludes="**/*.java" />
+            <fileset dir="@DOLLAR@{src.dir}" excludes="**/*.in,**/*.java" />
         </copy>
     </target>
 
@@ -51,6 +51,7 @@
                 <attribute name="Main-Class" value="@DOLLAR@{main-class}" />
             </manifest>
         </jar>
+        <delete dir="@DOLLAR@{classes.dir}" />
     </target>
 
     <target name="all" depends="compile,pack"/>
