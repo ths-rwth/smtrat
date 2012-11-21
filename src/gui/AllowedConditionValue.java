@@ -27,7 +27,7 @@ import java.util.Arrays;
  * 
  * @author  Henrik Schmitz
  * @since   2012-11-12
- * @version 2012-11-19
+ * @version 2012-11-20
  */
 public class AllowedConditionValue
 {

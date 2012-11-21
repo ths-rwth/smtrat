@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" ?>
 <!--
 /* SMT RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
  * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
@@ -22,26 +22,19 @@
 -->
 <project name="@JAR_NAME@" basedir="." default="all">
 
-    <property name="src.dir"     value="@CMAKE_CURRENT_SOURCE_DIR@"/>
-    <property name="build.dir"   value="@CMAKE_CURRENT_BINARY_DIR@"/>
-    <property name="classes.dir" value="@CMAKE_CURRENT_BINARY_DIR@/classes"/>
-    <property name="jar.dir"     value="@CMAKE_CURRENT_BINARY_DIR@"/>
-
-    <property name="main-class"  value="GUI"/>
-
+    <property name="src.dir"     value="@CMAKE_CURRENT_SOURCE_DIR@" />
+    <property name="build.dir"   value="@CMAKE_CURRENT_BINARY_DIR@" />
+    <property name="classes.dir" value="@CMAKE_CURRENT_BINARY_DIR@/classes" />
     <property name="lib.dir"     value="@CMAKE_CURRENT_SOURCE_DIR@/lib"/>
+    <property name="jar.dir"     value="@CMAKE_CURRENT_BINARY_DIR@" />
+    <property name="main-class"  value="GUI" />
 
     <path id="classpath">
         <fileset dir="@DOLLAR@{lib.dir}" includes="**/*.jar"/>
     </path>
 
-
-    <target name="clean">
-        <delete dir="@DOLLAR@{build.dir}"/>
-    </target>
-
     <target name="compile">
-        <mkdir dir="@DOLLAR@{classes.dir}"/>
+        <mkdir dir="@DOLLAR@{classes.dir}" />
         <javac srcdir="@DOLLAR@{src.dir}" destdir="@DOLLAR@{classes.dir}" classpathref="classpath" includeantruntime="false" listfiles="Yes" encoding="UTF8" deprecation="Yes" />
         <copy todir="@DOLLAR@{build.dir}">
             <fileset dir="@DOLLAR@{src.dir}" excludes="**/*.java" />
@@ -55,7 +48,7 @@
         <jar destfile="@DOLLAR@{jar.dir}/@DOLLAR@{ant.project.name}.jar" basedir="@DOLLAR@{classes.dir}" includes="**/*.class,**/*.html">
             <manifest>
                 <attribute name="Class-Path" value="@DOLLAR@{class-path}" />
-                <attribute name="Main-Class" value="@DOLLAR@{main-class}"/>
+                <attribute name="Main-Class" value="@DOLLAR@{main-class}" />
             </manifest>
         </jar>
     </target>

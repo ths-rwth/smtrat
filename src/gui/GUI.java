@@ -57,13 +57,12 @@ import org.apache.commons.collections15.functors.ConstantTransformer;
 
 /**
  * @file GUI.java
-// Enter full path
-//       - needs file icon.png
-//       - needs file logoBig.png
+ *       - needs file "smtrat/htdocs/images/icon.png"
+ *       - needs file "smtrat/htdocs/images/logoBig.png"
  *
  * @author  Henrik Schmitz
  * @since   2012-09-21
- * @version 2012-11-19
+ * @version 2012-11-20
  */
 public class GUI extends JFrame implements WindowListener
 {
@@ -447,8 +446,6 @@ public class GUI extends JFrame implements WindowListener
                 {
 // To be implemented
                     System.out.println( "instructions" );
-// To be deleted
-                    JOptionPane.showMessageDialog( GUI.this, "Erwischt. Kommt noch...", "Information", JOptionPane.INFORMATION_MESSAGE );
                 }
                 else if( ae.getSource()==licenseMenuItem )
                 {

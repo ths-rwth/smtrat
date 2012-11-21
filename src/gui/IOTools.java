@@ -59,17 +59,15 @@ import org.xml.sax.SAXException;
 
 /**
  * @file IOTools.java
-// Enter full path
-//       - needs SMT-RAT source code
+ *       - needs SMT-RAT
  *
  * @author  Henrik Schmitz
  * @author  Ulrich Loup
  * @since   2012-02-07
- * @version 2012-11-18
+ * @version 2012-11-20
  */
 public class IOTools
 {
-// Path to be changed
     private static final File SMTRAT_BASE_DIR = new File( ".." + File.separator + ".." + File.separator + ".." + File.separator );
     public static final File SMTRAT_GRAPHICS_DIR = new File( SMTRAT_BASE_DIR + File.separator + "htdocs" + File.separator + "images" );
     private static final File SMTRAT_SOURCE_DIR = new File( SMTRAT_BASE_DIR + File.separator + "src" + File.separator + "lib" );
@@ -77,8 +75,6 @@ public class IOTools
 
     private static final File MODULE_TYPE_SOURCE_FILE = new File( SMTRAT_SOURCE_DIR + File.separator + "ModuleType.h" );
     private static final File PROPOSITION_SOURCE_FILE = new File( SMTRAT_SOURCE_DIR + File.separator + "Condition.h" );
-
-// Path to be changed
     private static final File SMTRAT_BUILDFILE = new File( SMTRAT_SOURCE_DIR + File.separator + "CMakeLists.txt" );
     
     private static final String CONDITION_CLASS = "Condition";
@@ -637,7 +633,7 @@ public class IOTools
                     }
                 }
                 implementationString.append( conditionsString );
-                implementationString.append( nl ).append( tab ).append( solverName ).append( "::" ).append( solverName ).append( "( Formula* _inputFormula ) " ).append( nl ).append( tab ).append( tab ).append( "Manager( _inputFormula )" ).append( nl ).append( tab ).append( "{" ).append( nl );
+                implementationString.append( nl ).append( tab ).append( solverName ).append( "::" ).append( solverName ).append( "( Formula* _inputFormula ):" ).append( nl ).append( tab ).append( tab ).append( "Manager( _inputFormula )" ).append( nl ).append( tab ).append( "{" ).append( nl );
                 implementationString.append( graphString );
                 implementationString.append( tab ).append( "}" ).append( nl ).append( nl ).append( tab ).append( solverName ).append( "::~" ).append( solverName ).append( "(){}" ).append( nl ).append( nl ).append( "}" ).append( tab ).append( "// namespace smtrat" );
                 

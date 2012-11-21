@@ -48,13 +48,12 @@ import javax.swing.ImageIcon;
 
 /**
  * @file EdgeLabelRendering.java
-// enter full path
-//       - needs file rectangle_green.png
-//       - needs file rectangle_orange.png
+ *       - needs file "smtrat/htdocs/images/rectangle_green.png"
+ *       - needs file "smtrat/htdocs/images/rectangle_orange.png"
  *
  * @author  Henrik Schmitz
  * @since   2012-09-21
- * @version 2012-11-13
+ * @version 2012-11-20
  */
 public class EdgeLabelRendering implements Renderer.EdgeLabel<Vertex,Edge>
 {
