@@ -99,7 +99,7 @@ public class GUI extends JFrame implements WindowListener
     private final FRLayout<Vertex,Edge> layout;
     private final VisualizationViewer<Vertex,Edge> visualization;
     private StrategyGraph graph;
-    private String graphFilePath;
+    private File graphFile;
     private String solverName;
     
     private GUI()
@@ -107,7 +107,7 @@ public class GUI extends JFrame implements WindowListener
         super( TITLE );
 
         graph = new StrategyGraph();
-        graphFilePath = null;
+        graphFile = null;
         solverName = null;
 
         // Layout
@@ -360,7 +360,7 @@ public class GUI extends JFrame implements WindowListener
             }
             else if( choice==0 )
             {
-                if( IOTools.saveGraph( graphFilePath, false )==null )
+                if( IOTools.saveGraph( graphFile, false )==null )
                 {
                     return false;
                 }
@@ -387,7 +387,7 @@ public class GUI extends JFrame implements WindowListener
                         return;
                     }
                     graph = new StrategyGraph();
-                    graphFilePath = null;
+                    graphFile = null;
                     solverName = null;
                     layout.setGraph( graph );
 // Replace VISUALIZATION_HEIGHT/2 by visualization.getHeight()/2 if GUI is resizable or scrollable
@@ -402,10 +402,10 @@ public class GUI extends JFrame implements WindowListener
                     {
                         return;
                     }
-                    String fp = IOTools.openGraph();
+                    File fp = IOTools.openGraph();
                     if( fp!=null )
                     {
-                        graphFilePath = fp;
+                        graphFile = fp;
                         graph = (StrategyGraph) layout.getGraph();
                         visualization.repaint();
                         saveMenuItem.setEnabled( false );
@@ -413,10 +413,10 @@ public class GUI extends JFrame implements WindowListener
                 }
                 else if( ae.getSource()==saveMenuItem || ae.getSource()==saveAsMenuItem )
                 {
-                    String fp = IOTools.saveGraph( graphFilePath, ae.getSource()==saveAsMenuItem );
+                    File fp = IOTools.saveGraph( graphFile, ae.getSource()==saveAsMenuItem );
                     if( fp!=null )
                     {
-                        graphFilePath = fp;
+                        graphFile = fp;
                         saveMenuItem.setEnabled( false );
                     }
                 }
@@ -426,9 +426,9 @@ public class GUI extends JFrame implements WindowListener
                 }
                 else if( ae.getSource()==manageSolversMenuItem )
                 {
-                    if( solverName==null && graphFilePath!=null )
+                    if( solverName==null && graphFile!=null )
                     {
-                        solverName = graphFilePath.substring( graphFilePath.lastIndexOf( File.separator )+1 );
+                        solverName = graphFile.getPath().substring( graphFile.getPath().lastIndexOf( File.separator )+1 );
                         solverName = solverName.substring( 0, solverName.length()-4 );
                     }
                     

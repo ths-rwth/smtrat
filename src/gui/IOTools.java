@@ -131,7 +131,7 @@ public class IOTools
         }
     }
     
-    public static String openGraph()
+    public static File openGraph()
     {
         try
         {
@@ -145,11 +145,11 @@ public class IOTools
                 int option = fileChooser.showOpenDialog( gui );
                 if( option==JFileChooser.APPROVE_OPTION )
                 {
-                    String graphFilePath = fileChooser.getSelectedFile().getPath();
-                    if( !graphFilePath.toLowerCase().endsWith( ".xml" ) )
+                    File graphFile = fileChooser.getSelectedFile();
+                    if( !graphFile.getPath().toLowerCase().endsWith( ".xml" ) )
                     {
-                        graphFilePath += ".xml";
-                        fileChooser.setSelectedFile( new File( graphFilePath ) );
+                        graphFile = new File( graphFile.getPath() + ".xml" );
+                        fileChooser.setSelectedFile( graphFile );
                     }
                     if( !fileChooser.getSelectedFile().canRead() )
                     {
@@ -158,8 +158,8 @@ public class IOTools
                     }
                     else
                     {
-                        createGraph( graphFilePath );
-                        return graphFilePath;
+                        createGraph( graphFile );
+                        return graphFile;
                     }
                 }
                 else if( option==JFileChooser.CANCEL_OPTION )
@@ -181,11 +181,11 @@ public class IOTools
         }
     }
     
-    public static String saveGraph( String graphFilePath, boolean saveAs )
+    public static File saveGraph( File graphFile, boolean saveAs )
     {
         try
         {
-            if( graphFilePath==null || saveAs )
+            if( graphFile==null || saveAs )
             {
                 JFileChooser fileChooser = new JFileChooser();
                 if( saveAs )
@@ -204,11 +204,11 @@ public class IOTools
                     int option = fileChooser.showSaveDialog( gui );
                     if( option==JFileChooser.APPROVE_OPTION )
                     {
-                        graphFilePath = fileChooser.getSelectedFile().getPath();
-                        if( !graphFilePath.toLowerCase().endsWith(".xml") )
+                        graphFile = fileChooser.getSelectedFile();
+                        if( !graphFile.getPath().toLowerCase().endsWith(".xml") )
                         {
-                            graphFilePath += ".xml";
-                            fileChooser.setSelectedFile( new File( graphFilePath ) );
+                            graphFile = new File( graphFile.getPath() + ".xml" );
+                            fileChooser.setSelectedFile( graphFile );
                         }
                         if( fileChooser.getSelectedFile().exists() )
                         {
@@ -243,8 +243,8 @@ public class IOTools
                     }
                 }
             }
-            createXML( graphFilePath );
-            return graphFilePath;
+            createXML( graphFile );
+            return graphFile;
         }
         catch( HeadlessException | TransformerException | ParserConfigurationException ex )
         {
@@ -316,14 +316,14 @@ public class IOTools
         }
     }
     
-    private static void createGraph( String graphFilePath ) throws IOException, ParserConfigurationException, SAXException, IOToolsException
+    private static void createGraph( File graphFile ) throws IOException, ParserConfigurationException, SAXException, IOToolsException
     {
         StrategyGraph graph = new StrategyGraph();
         HashMap<Integer,Vertex> vertices = new HashMap();
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         DocumentBuilder db = dbf.newDocumentBuilder();
-        Document document = db.parse( graphFilePath );
+        Document document = db.parse( graphFile.getPath() );
 
         Element rootElement = document.getDocumentElement();
         if( !rootElement.getTagName().equals( "graph" ) )
@@ -452,7 +452,7 @@ public class IOTools
         layout.setGraph( graph );
     }
     
-    private static void createXML( String graphFilePath ) throws TransformerConfigurationException, TransformerException, ParserConfigurationException
+    private static void createXML( File graphFilePath ) throws TransformerConfigurationException, TransformerException, ParserConfigurationException
     {
         StrategyGraph graph = (StrategyGraph) layout.getGraph();
         HashMap<Vertex,Integer> ids = new HashMap();
@@ -491,13 +491,13 @@ public class IOTools
             typeElement.appendChild( document.createTextNode( v.getModule().getType() ) );
             moduleElement.appendChild( typeElement );
         }
+        
+        Element edgesElement = document.createElement( "edges" );
+        rootElement.appendChild( edgesElement );
 
         Collection<Edge> edges = graph.getEdges();
         if( !edges.isEmpty() )
         {
-            Element edgesElement = document.createElement( "edges" );
-            rootElement.appendChild( edgesElement );
-
             for( Edge e : edges )
             {
                 Element edgeElement = document.createElement( "edge" );
@@ -529,7 +529,7 @@ public class IOTools
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
         DOMSource source = new DOMSource( document );
-        StreamResult result = new StreamResult( new File( graphFilePath ) );
+        StreamResult result = new StreamResult( graphFilePath );
         transformer.transform( source, result );
     }
     
