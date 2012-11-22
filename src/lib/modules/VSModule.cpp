@@ -315,6 +315,14 @@ namespace smtrat
             {
                 currentState->simplify();
                 #ifdef VS_DEBUG
+                cout << "Ranking:" << endl;
+                for( ValuationMap::const_iterator valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
+                {
+                    stringstream stream;
+                    stream << "(" << valDTPair->first.first << ", " << valDTPair->first.second << ")";
+                    cout << setw(15) << stream.str();
+                    cout << ":  " << valDTPair->second << endl;
+                }
                 cout << "*** Considered state:" << endl;
                 currentState->printAlone( "*** ", cout );
                 #endif
@@ -539,7 +547,7 @@ namespace smtrat
                                                 else
                                                 {
                                                     currentState->passConflictToFather();
-                                                    eraseDTsOfRanking( currentState->rFather() );
+                                                    eraseDTofRanking( currentState->rFather() );
                                                     insertDTinRanking( currentState->pFather() );
                                                 }
                                             }
@@ -585,12 +593,6 @@ namespace smtrat
                                                 * If we need to involve a complete approach.
                                                 */
                                                 #ifdef VS_WITH_BACKEND
-//                                                for( ValuationMap::const_iterator valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
-//                                                {
-//                                                    (*(*valDTPair).second).printConditions( "", cout, true );
-//                                                    cout << endl;
-//                                                }
-//                                                printAll();
                                                 switch( runBackendSolvers( currentState ) )
                                                 {
                                                     case True:
@@ -688,9 +690,9 @@ namespace smtrat
             }
         }
 //        if( mpStateTree->conflictSets().empty() ) mpStateTree->print();
-        #ifdef VS_LOG_INTERMEDIATE_STEPS
+//        #ifdef VS_LOG_INTERMEDIATE_STEPS
 //        if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
-        #endif
+//        #endif
 //        if( mpStateTree->conflictSets().empty() ) Module::storeAssumptionsToCheck( *mpManager );
         assert( !mpStateTree->conflictSets().empty() );
         updateInfeasibleSubset();
@@ -1830,7 +1832,6 @@ namespace smtrat
                 vector<Module*>::const_iterator backend = usedBackends().begin();
                 while( backend != usedBackends().end() )
                 {
-                    (*backend)->print();
                     if( !(*backend)->infeasibleSubsets().empty() )
                     {
                         for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
@@ -1858,12 +1859,6 @@ namespace smtrat
                             smtrat::Module::addAssumptionToCheck( constraints, false, "IS_of_Backend_of_VSModule" );
                             #endif
                             assert( conflict.size() == infsubset->size() );
-                            if( conflict.empty() )
-                            {
-                                _state->printAlone( "", cout );
-                                print();
-                                (*backend)->print();
-                            }
                             assert( !conflict.empty() );
                             conflictSet.insert( conflict );
                         }
@@ -1872,7 +1867,6 @@ namespace smtrat
                 }
                 assert( !conflictSet.empty() );
                 _state->addConflictSet( NULL, conflictSet );
-                _state->printAlone();
                 eraseDTsOfRanking( *_state );
 
                 #ifdef VS_LOG_INTERMEDIATE_STEPS
@@ -1891,9 +1885,8 @@ namespace smtrat
                      * If the considered state is not the root, pass the infeasible subset to the father.
                      */
                     _state->passConflictToFather();
-                    eraseDTsOfRanking( _state->rFather() );
+                    eraseDTofRanking( _state->rFather() );
                     insertDTinRanking( _state->pFather() );
-                    _state->father().print();
                 }
                 return False;
             }
@@ -1974,15 +1967,9 @@ namespace smtrat
     void VSModule::printRanking( ostream& _out ) const
     {
         _out << "*** Current ranking:" << endl;
-        unsigned counter = 0;
         for( ValuationMap::const_iterator valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
         {
-            counter++;
             (*(*valDTPair).second).printAlone( "   ", _out );
-            if( counter > 10 )
-            {
-                break;
-            }
         }
     }
 
