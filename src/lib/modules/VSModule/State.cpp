@@ -707,7 +707,7 @@ namespace vs
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                             _conditionVectorToSimplify.push_back( cond );
-                            if( cond->constraint().isConsistent() )
+                            if( cond->constraint().isConsistent() == 0 )
                             {
                                 ConditionSet condSet = ConditionSet();
                                 condSet.insert( condA );
