@@ -1850,13 +1850,13 @@ namespace smtrat
                                 }
                             }
 
-                            #ifdef VS_LOG_INFSUBSETS_OF_BACKEND
+                            #ifdef LOG_INFEASIBLE_SUBSETS
                             set<const smtrat::Constraint*> constraints = set<const smtrat::Constraint*>();
                             for( ConditionSet::const_iterator cond = conflict.begin(); cond != conflict.end(); ++cond )
                             {
                                 constraints.insert( (**cond).pConstraint() );
                             }
-                            smtrat::Module::addAssumptionToCheck( constraints, false, "IS_of_Backend_of_VSModule" );
+                            smtrat::Module::addAssumptionToCheck( constraints, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
                             #endif
                             assert( conflict.size() == infsubset->size() );
                             assert( !conflict.empty() );
