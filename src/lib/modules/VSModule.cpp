@@ -412,6 +412,9 @@ namespace smtrat
                                     */
                                     currentState->rInconsistent() = true;
                                     eraseDTsOfRanking( *currentState );
+                                    currentState->rFather().rMarkedAsDeleted() = false;
+                                    insertDTinRanking( currentState->pFather() );
+
                                 }
                                 #ifdef VS_DEBUG
                                 cout << "*** Conditions refreshed." << endl;
