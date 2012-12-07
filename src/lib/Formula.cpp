@@ -145,6 +145,7 @@ namespace smtrat
     {
         if( !mPropositionsUptodate )
         {
+            mPropositions = Condition();
             switch( mType )
             {
                 case TTRUE:
@@ -170,72 +171,99 @@ namespace smtrat
                 }
                 case NOT:
                 {
-                    mPropositions |= PROP_IS_A_LITERAL | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                    for( list<Formula*>::iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                    Condition subFormulaConds = (*mpSubformulas->begin())->getPropositions();
+                    if( PROP_IS_AN_ATOM <= subFormulaConds )
                     {
-                        if( ((*subFormula)->getPropositions() | ~PROP_IS_AN_ATOM) != ~PROP_TRUE )
-                        {
-                            mPropositions &= ~PROP_IS_IN_NNF;
-                        }
-                        mPropositions |= ((*subFormula)->getPropositions() & WEAK_CONDITIONS);
+                        mPropositions |= PROP_IS_A_CLAUSE | PROP_IS_A_LITERAL | PROP_IS_IN_CNF | PROP_IS_PURE_CONJUNCTION;
                     }
+                    mPropositions |= (subFormulaConds & PROP_VARIABLE_DEGREE_LESS_THAN_THREE);
+                    mPropositions |= (subFormulaConds & PROP_VARIABLE_DEGREE_LESS_THAN_FOUR);
+                    mPropositions |= (subFormulaConds & PROP_VARIABLE_DEGREE_LESS_THAN_FIVE);
+                    mPropositions |= (subFormulaConds & WEAK_CONDITIONS);
                     break;
                 }
                 case OR:
                 {
-                    mPropositions |= PROP_IS_A_CLAUSE | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                    for( list<Formula*>::iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                    mPropositions |= PROP_IS_A_CLAUSE | PROP_IS_IN_CNF | PROP_IS_IN_NNF;
+                    mPropositions |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
+                    for( iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
                     {
-                        if( ((*subFormula)->getPropositions() | ~PROP_IS_A_LITERAL) != ~PROP_TRUE )
+                        Condition subFormulaConds = (*subFormula)->getPropositions();
+                        if( !(PROP_IS_A_LITERAL<=subFormulaConds) )
                         {
                             mPropositions &= ~PROP_IS_A_CLAUSE;
+                            mPropositions &= ~PROP_IS_IN_CNF;
                         }
-                        mPropositions |= ((*subFormula)->getPropositions() & WEAK_CONDITIONS);
+                        if( !(PROP_IS_IN_NNF<=subFormulaConds) )
+                        {
+                            mPropositions &= ~PROP_IS_IN_NNF;
+                        }
+                        mPropositions |= (subFormulaConds & WEAK_CONDITIONS);
                     }
                     break;
                 }
                 case AND:
                 {
-                    mPropositions |= PROP_IS_PURE_CONJUNCTION | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                    for( list<Formula*>::iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                    mPropositions |= PROP_IS_PURE_CONJUNCTION | PROP_IS_IN_CNF | PROP_IS_IN_NNF;
+                    mPropositions |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
+                    for( iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
                     {
-                        if( ((*subFormula)->getPropositions() | ~PROP_IS_A_CLAUSE) != ~PROP_TRUE )
-                        {
-                            mPropositions &= ~PROP_IS_IN_CNF;
-                        }
-                        else if( ((*subFormula)->getPropositions() | ~PROP_IS_A_LITERAL) != ~PROP_TRUE )
+                        Condition subFormulaConds = (*subFormula)->getPropositions();
+                        if( !(PROP_IS_A_LITERAL<=subFormulaConds) )
                         {
                             mPropositions &= ~PROP_IS_PURE_CONJUNCTION;
-                            mPropositions |= PROP_IS_IN_CNF;
+                            mPropositions &= ~PROP_IS_IN_CNF;
                         }
-                        mPropositions |= ((*subFormula)->getPropositions() & WEAK_CONDITIONS);
+                        if( !(PROP_IS_IN_NNF<=subFormulaConds) )
+                        {
+                            mPropositions &= ~PROP_IS_IN_NNF;
+                        }
+                        mPropositions |= (subFormulaConds & WEAK_CONDITIONS);
                     }
                     break;
                 }
                 case IMPLIES:
                 {
-                    mPropositions |= PROP_IS_IN_NNF | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                    for( list<Formula*>::iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                    mPropositions |= PROP_IS_IN_NNF;
+                    mPropositions |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
+                    for( iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
                     {
-                        mPropositions |= ((*subFormula)->getPropositions() & WEAK_CONDITIONS);
+                        Condition subFormulaConds = (*subFormula)->getPropositions();
+                        if( !(PROP_IS_IN_NNF<=subFormulaConds) )
+                        {
+                            mPropositions &= ~PROP_IS_IN_NNF;
+                        }
+                        mPropositions |= (subFormulaConds & WEAK_CONDITIONS);
                     }
                     break;
                 }
                 case IFF:
                 {
-                    mPropositions |= PROP_IS_IN_NNF | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                    for( list<Formula*>::iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                    mPropositions |= PROP_IS_IN_NNF;
+                    mPropositions |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
+                    for( iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
                     {
-                        mPropositions |= ((*subFormula)->getPropositions() & WEAK_CONDITIONS);
+                        Condition subFormulaConds = (*subFormula)->getPropositions();
+                        if( !(PROP_IS_IN_NNF<=subFormulaConds) )
+                        {
+                            mPropositions &= ~PROP_IS_IN_NNF;
+                        }
+                        mPropositions |= (subFormulaConds & WEAK_CONDITIONS);
                     }
                     break;
                 }
                 case XOR:
                 {
-                    mPropositions |= PROP_IS_IN_NNF | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
-                    for( list<Formula*>::iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
+                    mPropositions |= PROP_IS_IN_NNF;
+                    mPropositions |= PROP_VARIABLE_DEGREE_LESS_THAN_THREE | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
+                    for( iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
                     {
-                        mPropositions |= ((*subFormula)->getPropositions() & WEAK_CONDITIONS);
+                        Condition subFormulaConds = (*subFormula)->getPropositions();
+                        if( !(PROP_IS_IN_NNF<=subFormulaConds) )
+                        {
+                            mPropositions &= ~PROP_IS_IN_NNF;
+                        }
+                        mPropositions |= (subFormulaConds & WEAK_CONDITIONS);
                     }
                     break;
                 }
@@ -285,33 +313,46 @@ namespace smtrat
         //Adapt the conditions, if they are up to date. (In this case very cheap)
         if( mPropositionsUptodate )
         {
+            Condition condOfSubformula = _formula->getPropositions();
             if( mType == AND )
             {
-                if( (_formula->getPropositions() | ~PROP_IS_A_LITERAL) != ~PROP_TRUE )
+                if( !(PROP_IS_A_LITERAL<=condOfSubformula) )
                 {
                     mPropositions &= ~PROP_IS_PURE_CONJUNCTION;
                 }
-                else if( (_formula->getPropositions() | ~PROP_IS_A_CLAUSE) != ~PROP_TRUE )
+                else if( !(PROP_IS_A_CLAUSE<=condOfSubformula) )
                 {
+                    mPropositions &= ~PROP_IS_PURE_CONJUNCTION;
                     mPropositions &= ~PROP_IS_IN_CNF;
                 }
             }
             else if( mType == OR )
             {
-                if( (_formula->getPropositions() | ~PROP_IS_A_LITERAL) != ~PROP_TRUE )
+                if( !(PROP_IS_A_LITERAL<=condOfSubformula) )
                 {
                     mPropositions &= ~PROP_IS_A_CLAUSE;
                 }
             }
-            else if( mType == NOT )
+            if( !(PROP_IS_IN_NNF<=condOfSubformula) )
             {
-                if( (_formula->getPropositions() | ~PROP_IS_AN_ATOM) != ~PROP_TRUE )
-                {
-                    mPropositions &= ~PROP_IS_IN_NNF;
-                }
+                mPropositions &= ~PROP_IS_IN_NNF;
             }
-            mPropositions &= (_formula->getPropositions() | ~STRONG_CONDITIONS);
-            mPropositions |= (_formula->getPropositions() & WEAK_CONDITIONS);
+            if( !(PROP_VARIABLE_DEGREE_LESS_THAN_FIVE<=condOfSubformula) )
+            {
+                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
+                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_FOUR;
+                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
+            }
+            else if( !(PROP_VARIABLE_DEGREE_LESS_THAN_FOUR<=condOfSubformula) )
+            {
+                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
+                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_FOUR;
+            }
+            else if( !(PROP_VARIABLE_DEGREE_LESS_THAN_THREE<=condOfSubformula) )
+            {
+                mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
+            }
+            mPropositions |= (condOfSubformula & WEAK_CONDITIONS);
             mPropositions &= ~SOLVABLE_CONDITIONS;
         }
     }
@@ -653,7 +694,7 @@ namespace smtrat
      * @param _init
      * @param _onOneLine
      */
-    void Formula::print( ostream& _out, const string _init, bool _onOneLine ) const
+    void Formula::print( ostream& _out, const string _init, bool _smtlib, bool _onOneLine ) const
     {
         string oper = "";
         switch( mType )
@@ -696,8 +737,15 @@ namespace smtrat
             case REALCONSTRAINT:
             {
                 _out << _init;
-                mpConstraint->print( _out );
-                _out << " (" << mActivity << ")";
+                if( _smtlib )
+                {
+                    _out << mpConstraint->smtlibString();
+                }
+                else
+                {
+                    mpConstraint->print( _out );
+                    _out << " (" << mActivity << ")";
+                }
                 break;
             }
             case TTRUE:
@@ -732,12 +780,12 @@ namespace smtrat
                 assert( (*subFormula)->cpFather() == this );
                 if( _onOneLine )
                 {
-                    (*subFormula)->print( _out, "", _onOneLine );
+                    (*subFormula)->print( _out, "", _smtlib, _onOneLine );
                     _out << " ";
                 }
                 else
                 {
-                    (*subFormula)->print( _out, _init + "   ", _onOneLine );
+                    (*subFormula)->print( _out, _init + "   ", _smtlib, _onOneLine );
                     _out << endl;
                 }
                 ++subFormula;

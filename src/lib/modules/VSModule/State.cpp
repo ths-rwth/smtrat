@@ -164,7 +164,7 @@ namespace vs
     /**
      * @return The depth of the subtree with this state as root node.
      */
-    const unsigned State::treeDepth() const
+    unsigned State::treeDepth() const
     {
         unsigned     depth     = 0;
         const State* currentDT = this;
