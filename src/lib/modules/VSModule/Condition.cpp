@@ -68,9 +68,9 @@ namespace vs
     }
 
     Condition::Condition( const smtrat::Constraint* _constraint,
-                          const bool _flag,
+                          bool _flag,
                           const ConditionSet& _originalConditions,
-                          const unsigned _valuation )
+                          unsigned _valuation )
     {
         mpConstraint         = _constraint;
         mpOriginalConditions = new ConditionSet( _originalConditions );
@@ -81,10 +81,10 @@ namespace vs
     }
 
     Condition::Condition( const smtrat::Constraint* _constraint,
-                          const bool _flag,
+                          bool _flag,
                           const ConditionSet& _originalConditions,
-                          const unsigned _valuation,
-                          const bool _recentlyAdded )
+                          unsigned _valuation,
+                          bool _recentlyAdded )
     {
         mpConstraint         = _constraint;
         mpOriginalConditions = new ConditionSet( _originalConditions );
@@ -127,9 +127,8 @@ namespace vs
      *
      * @return A valuation of the constraint according to an heuristic.
      */
-    double Condition::valuate( const string _consideredVariable, const unsigned _maxNumberOfVars, const bool _forElimination ) const
+    double Condition::valuate( const string& _consideredVariable, unsigned _maxNumberOfVars, bool _forElimination ) const
     {
-//        cout << "valuate( " << constraint() << " )  =  ";
         symtab::const_iterator var = mpConstraint->variables().find( _consideredVariable );
         if( var != mpConstraint->variables().end() )
         {
@@ -228,12 +227,10 @@ namespace vs
             result += numberOfVariableWeight/weightFactorTmp;
             weightFactorTmp *= maximum;
             result += numberOfVariableOccurencesWeight/weightFactorTmp;
-//            cout << setprecision(10) << result << endl;
             return result;
         }
         else
         {
-//            cout << setprecision(10) << 0 << endl;
             return 0;
         }
     }

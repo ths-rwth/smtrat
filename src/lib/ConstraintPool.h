@@ -39,7 +39,7 @@ namespace smtrat
     {
         bool operator ()( const Constraint* const _constraintA, const Constraint* const _constraintB ) const
         {
-            if( _constraintA->relation() == _constraintB->relation() )
+            if( _constraintA->secondHash() == _constraintB->secondHash() )
             {
                 return _constraintA->lhs().is_equal( _constraintB->lhs() );
             }
@@ -51,7 +51,7 @@ namespace smtrat
     {
         size_t operator ()( const Constraint* const _constraint ) const
         {
-            return _constraint->lhs().gethash() * 6 + _constraint->relation();
+            return _constraint->lhs().gethash() * 6 + _constraint->secondHash();
         }
     };
 
@@ -212,6 +212,7 @@ namespace smtrat
                     {
                         ++mIdAllocator;
                         constraint->collectProperties();
+                        constraint->updateRelation();
                     }
                     return *iterBoolPair.first;
                 }
@@ -253,6 +254,7 @@ namespace smtrat
                     {
                         ++mIdAllocator;
                         constraint->collectProperties();
+                        constraint->updateRelation();
                     }
                     return *iterBoolPair.first;
                 }

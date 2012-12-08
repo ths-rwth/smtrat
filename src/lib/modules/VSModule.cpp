@@ -656,11 +656,11 @@ namespace smtrat
                                                     }
                                                 }
                                                 #else
-                                                currentState->printAlone( "   ", cout );
-                                                cout << "###" << endl;
-                                                cout << "###                  Unknown!" << endl;
-                                                cout << "###" << endl;
-                                                mDeductions.clear();
+//                                                currentState->printAlone( "   ", cout );
+//                                                cout << "###" << endl;
+//                                                cout << "###                  Unknown!" << endl;
+//                                                cout << "###" << endl;
+//                                                mDeductions.clear();
                                                 mSolverState = Unknown;
                                                 return Unknown;
                                                 #endif
