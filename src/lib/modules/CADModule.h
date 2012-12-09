@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-02-04
- * @version 2012-10-09
+ * @version 2012-12-09
  *
  */
 #ifndef SMTRAT_CADMODULE_H
@@ -54,7 +54,7 @@ namespace smtrat
      *
      * @author Ulrich Loup
      * @since 2012-02-04
-     * @version 2012-10-08
+     * @version 2012-11-29
      *
      */
     class CADModule:
@@ -70,12 +70,8 @@ namespace smtrat
         GiNaCRA::CAD mCAD;
         /// the GiNaCRA constraints
         vector<GiNaCRA::Constraint> mConstraints;
-        /// the list of all variables
-        vector<GiNaC::symbol> mVariables;
         /// the GiNaCRA constraints' indices assigned to the received constraints
         ConstraintIndexMap mConstraintsMap;
-        /// the GiNaCRA constraints' polynomials not yet added to the CAD object
-        bool mSatisfiable;
         /// a satisfying assignment of the received constraints if existent; otherwise it is empty
         GiNaCRA::RealAlgebraicPoint mRealAlgebraicSolution;
 
@@ -92,7 +88,7 @@ namespace smtrat
         private:
             const GiNaCRA::Constraint convertConstraint( const Constraint& );
             const Constraint* convertConstraint( const GiNaCRA::Constraint& );
-            vec_set_const_pFormula extractMinimalInfeasibleSubsets( const GiNaCRA::ConflictGraph& conflictGraph );
+            vec_set_const_pFormula extractMinimalInfeasibleSubsets_GreedyHeuristics( GiNaCRA::ConflictGraph conflictGraph );
             void addDeductions( const list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > >& deductions );
             const Formula* getConstraintAt( unsigned index );
             void updateConstraintMap( unsigned index, bool decrement = true );
