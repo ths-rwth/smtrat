@@ -441,7 +441,9 @@ namespace smtrat
             setCover.push_back( vertex );
             // remove coverage information of v from conflictGraph
             conflictGraph.removeAdjacentVertices( vertex );
+            #ifdef MODULE_VERBOSE
             cout << "Conflict graph after removal of " << vertex << ": " << endl << conflictGraph << endl << endl;
+            #endif
             // get the new vertex with the biggest number of adjacent solution point vertices
             vertex = conflictGraph.maxDegreeVertex();
         }
