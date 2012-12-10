@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2012-12-09
+ * @version 2012-12-10
  */
 
 //#define MODULE_VERBOSE
@@ -106,6 +106,7 @@ namespace smtrat
             setting.computeConflictGraph = true;
         #endif
 
+        setting.trimVariables = false; // maintains the dimension important for the constraint checking
         mCAD.alterSetting( setting );
     }
 
@@ -166,7 +167,7 @@ namespace smtrat
         // check the extended constraints for satisfiability
         ConflictGraph               conflictGraph;
         list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > > deductions;
-        if( !mCAD.check( mConstraints, mRealAlgebraicSolution, conflictGraph, deductions, true, true ) )
+        if( !mCAD.check( mConstraints, mRealAlgebraicSolution, conflictGraph, deductions, false, false ) )
         {
             #ifdef SMTRAT_CAD_DISABLE_SMT
             // simulate non-incrementality by constructing a trivial infeasible subset and clearing all data in the CAD
@@ -432,26 +433,29 @@ namespace smtrat
      */
     inline vec_set_const_pFormula CADModule::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph conflictGraph )
     {
-        // construct set cover by greedy heuristic
-        list<ConflictGraph::Vertex> setCover = list<ConflictGraph::Vertex>();
-        long unsigned vertex = conflictGraph.maxDegreeVertex();
-        while( conflictGraph.degree( vertex ) > 0 )
-        {
-            // add v to the setCover
-            setCover.push_back( vertex );
-            // remove coverage information of v from conflictGraph
-            conflictGraph.removeAdjacentVertices( vertex );
-            #ifdef MODULE_VERBOSE
-            cout << "Conflict graph after removal of " << vertex << ": " << endl << conflictGraph << endl << endl;
-            #endif
-            // get the new vertex with the biggest number of adjacent solution point vertices
-            vertex = conflictGraph.maxDegreeVertex();
-        }
-        // collect constraints according to the vertex cover
+        // initialize MIS with the last constraint
         vec_set_const_pFormula mis = vec_set_const_pFormula( 1, std::set<const Formula*>() );
         mis.front().insert( getConstraintAt( mConstraints.size() - 1 ) );    // the last constraint is assumed to be always in the MIS
-        for( list<ConflictGraph::Vertex>::const_iterator v = setCover.begin(); v != setCover.end(); ++v )
-            mis.front().insert( getConstraintAt( *v ) );
+        if( mConstraints.size() > 1 )
+        { // construct set cover by greedy heuristic
+            list<ConflictGraph::Vertex> setCover = list<ConflictGraph::Vertex>();
+            long unsigned vertex = conflictGraph.maxDegreeVertex();
+            while( conflictGraph.degree( vertex ) > 0 )
+            {
+                // add v to the setCover
+                setCover.push_back( vertex );
+                // remove coverage information of v from conflictGraph
+                conflictGraph.removeAdjacentVertices( vertex );
+                #ifdef MODULE_VERBOSE
+                cout << "Conflict graph after removal of " << vertex << ": " << endl << conflictGraph << endl << endl;
+                #endif
+                // get the new vertex with the biggest number of adjacent solution point vertices
+                vertex = conflictGraph.maxDegreeVertex();
+            }
+            // collect constraints according to the vertex cover
+            for( list<ConflictGraph::Vertex>::const_iterator v = setCover.begin(); v != setCover.end(); ++v )
+                mis.front().insert( getConstraintAt( *v ) );
+        }
         return mis;
     }
 
