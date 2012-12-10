@@ -106,6 +106,7 @@ namespace smtrat
             setting.computeConflictGraph = true;
         #endif
 
+        setting.trimVariables = false; // maintains the dimension important for the constraint checking
         mCAD.alterSetting( setting );
     }
 
