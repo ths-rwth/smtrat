@@ -30,7 +30,7 @@
 #include "LRAModule.h"
 #include <iostream>
 
-//#define DEBUG_LRA_MODULE
+#define DEBUG_LRA_MODULE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_ONE_REASON
 
@@ -1066,15 +1066,18 @@ namespace smtrat
      */
     void LRAModule::initialize()
     {
-        mInitialized = true;
-        //TODO: sort the constraints as a first kind of a pivoting strategy
-        for( auto constraint = mLinearConstraints.begin(); constraint != mLinearConstraints.end(); ++constraint )
+        if( !mInitialized )
         {
-            initialize( *constraint );
+            mInitialized = true;
+            //TODO: sort the constraints as a first kind of a pivoting strategy
+            for( auto constraint = mLinearConstraints.begin(); constraint != mLinearConstraints.end(); ++constraint )
+            {
+                initialize( *constraint );
+            }
+            #ifdef LRA_USE_PIVOTING_STRATEGY
+            mTableau.setBlandsRuleStart( mTableau.columns().size() );
+            #endif
         }
-        #ifdef LRA_USE_PIVOTING_STRATEGY
-        mTableau.setBlandsRuleStart( mTableau.columns().size() );
-        #endif
     }
 
 }    // namespace smtrat
