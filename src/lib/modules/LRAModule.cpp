@@ -30,7 +30,7 @@
 #include "LRAModule.h"
 #include <iostream>
 
-#define DEBUG_LRA_MODULE
+//#define DEBUG_LRA_MODULE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_ONE_REASON
 
