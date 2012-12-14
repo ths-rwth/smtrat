@@ -1561,39 +1561,56 @@ namespace smtrat
         switch( mType )
         {
             // unary cases
-        case TTRUE:
-        case FFALSE:
-            result += " " + oper + " ";
-            break;
-        case NOT:
-            result += " " + oper + "( " + (*mpSubformulas->begin())->toRedlogFormat( withVariables ) + " )";
-            break;
-        case REALCONSTRAINT:
-            result += constraint().toString();
-            break;
-        default:
-            // recursive print of the subformulas
-            if( withVariables )
-            { // add the variables
-                result += "( ex( {";
-                result += variableListToString( "," );
-                result += "}, ( ";
-            }
-            else
+            case TTRUE:
             {
-                result += "( ";
+                result += " " + oper + " ";
+                break;
             }
-            std::list<Formula*>::const_iterator it = mpSubformulas->begin();
-            // do not quantify variables again.
-            result += (*it)->toRedlogFormat( false );
-            for( ++it; it != mpSubformulas->end(); ++it )
+            case FFALSE:
             {
+                result += " " + oper + " ";
+                break;
+            }
+            case NOT:
+            {
+                result += " " + oper + "( " + (*mpSubformulas->begin())->toRedlogFormat( withVariables ) + " )";
+                break;
+            }
+            case REALCONSTRAINT:
+            {
+                result += constraint().toString();
+                break;
+            }
+            case BOOL:
+            {
+                result += *mpIdentifier;
+                break;
+            }
+            default:
+            {
+                // recursive print of the subformulas
+                if( withVariables )
+                { // add the variables
+                    result += "( ex( {";
+                    result += variableListToString( "," );
+                    result += "}, ( ";
+                }
+                else
+                {
+                    result += "( ";
+                }
+                std::list<Formula*>::const_iterator it = mpSubformulas->begin();
                 // do not quantify variables again.
-                result += " " + oper + " " + (*it)->toRedlogFormat( false );
+                result += (*it)->toRedlogFormat( false );
+                for( ++it; it != mpSubformulas->end(); ++it )
+                {
+                    // do not quantify variables again.
+                    result += " " + oper + " " + (*it)->toRedlogFormat( false );
+                }
+                if( withVariables )
+                    result += " ) )";
+                result += " )";
             }
-            if( withVariables )
-                result += " ) )";
-            result += " )";
         }
         return result;
     }
