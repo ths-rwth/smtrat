@@ -1545,7 +1545,12 @@ namespace smtrat
         result += i->first;
         for( ++i; i != mRealValuedVars.end(); ++i )
         {
-            result += "," + i->first;;
+            result += "," + i->first;
+        }
+        std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin();
+        for( ; j != mBooleanVars.end(); ++j )
+        {
+            result += "," + *j;
         }
         return result;
     }
@@ -1556,7 +1561,7 @@ namespace smtrat
      */
     std::string Formula::toRedlogFormat( bool withVariables ) const
     {
-        std::string result = "";
+        string result = "";
         string oper = Formula::FormulaTypeToString( mType );
         switch( mType )
         {
@@ -1583,7 +1588,7 @@ namespace smtrat
             }
             case BOOL:
             {
-                result += *mpIdentifier;
+                result += *mpIdentifier + " = 1";
                 break;
             }
             default:
@@ -1593,7 +1598,12 @@ namespace smtrat
                 { // add the variables
                     result += "( ex( {";
                     result += variableListToString( "," );
-                    result += "}, ( ";
+                    result += "}, (";
+                    // Make pseudo Booleans.
+                    for( std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin(); j != mBooleanVars.end(); ++j )
+                    {
+                        result += "(" + *j + " = 0 or " + *j + " = 1) and ";
+                    }
                 }
                 else
                 {
