@@ -156,6 +156,7 @@ namespace smtrat
             void clear()
             {
                 mAllRealVariables.clear();
+                mAllBooleanVariables.clear();
                 mAllConstraints.clear();
                 mAllVariableFreeConstraints.clear();
                 mIdAllocator = 1;
