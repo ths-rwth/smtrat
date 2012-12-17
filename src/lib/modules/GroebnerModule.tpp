@@ -52,7 +52,6 @@ namespace smtrat
 template<class Settings>
 GroebnerModule<Settings>::GroebnerModule( const Formula * const _formula, Manager * const _tsManager ) :
 Module( _formula, _tsManager ),
-
 mBasis( ),
 mInequalities( this ),
 mStateHistory( )
@@ -193,7 +192,6 @@ Answer GroebnerModule<Settings>::isConsistent( )
         //now, we calculate the groebner basis
         mBasis.calculate( );
         Polynomial witness;
-
 #ifdef USE_NSS
         // On linear systems, all solutions lie in Q. So we do not have to check for a solution.
         if( Settings::applyNSS && !mBasis.isConstant( ) && !mBasis.getGbIdeal( ).isLinear( ) )
@@ -322,12 +320,14 @@ Answer GroebnerModule<Settings>::isConsistent( )
         }
     }
 
+    // call other modules as the groebner module cannot decide satisfiability.
     Answer ans = runBackends( );
     if( ans == False )
     {
         #ifdef GATHER_STATS
         mStats->backendFalse();
         #endif
+        // use the infeasible subsets from our backends.
         getInfeasibleSubsets( );
 
         assert( !mInfeasibleSubsets.empty( ) );

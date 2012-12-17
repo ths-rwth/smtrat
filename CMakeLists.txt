@@ -111,7 +111,7 @@ endif()
 set( libraries ${libraries} ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} )
 
 if(USE_GINACRA)
-        set( libraries ${GINACRA_LIBRARY} ${libraries} )
+        set( libraries ${GINACRA_LIBRARY} ${LOG4CPLUS_LIBRARIES} pthread ${libraries} )
 endif()
 if(USE_NSS)
         add_library(csdp UNKNOWN IMPORTED)

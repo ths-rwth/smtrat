@@ -42,6 +42,7 @@
 
 #include <ginacra/ginacra.h>
 
+
 #include <ginacra/mr/Buchberger.h>
 #include "../Module.h"
 #include "GBModule/GBSettings.h"
@@ -66,6 +67,7 @@ class GroebnerModuleState
 public:
     GroebnerModuleState( )
     {
+        
     }
 
     GroebnerModuleState( const GiNaCRA::Buchberger<GBSettings::Order>& basis ) :

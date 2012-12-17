@@ -32,9 +32,9 @@
 
 namespace smtrat
 {
-    struct GBSettings6;
+    struct GBSettings10;
     
-    typedef GBSettings6 GBSettings;
+    typedef GBSettings10 GBSettings;
    /**
      * Only active if we check inequalities.
      * AS_RECEIVED: Do not change the received inequalities.
@@ -201,7 +201,7 @@ namespace smtrat
         static const check_inequalities                  checkInequalities                       = ALWAYS;
         static const pass_inequalities                   passInequalities                        = FULL_REDUCED;
         static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_ALLINEQUALITIES;
-        static const theory_deductions                   addTheoryDeductions                     = NO_CONSTRAINTS;
+        static const theory_deductions                   addTheoryDeductions                     = ALL_CONSTRAINTS;
         static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
         static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
         static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
