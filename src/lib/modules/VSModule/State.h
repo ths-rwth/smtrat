@@ -332,7 +332,7 @@ public:
 	void					setOriginalCondition		( const Condition* const _pOCondition ) 	{ mpOriginalCondition=_pOCondition; }
 
 	// Data access methods (read only).
-	const unsigned 							treeDepth							( ) 														const	;
+	unsigned                                treeDepth							( ) 														const	;
 	bool									substitutionApplicable  			( )				        									const	;
 	bool									substitutionApplicable  			( const smtrat::Constraint& )								const	;
 	bool									hasNoninvolvedCondition 			( )															const	;

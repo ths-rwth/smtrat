@@ -45,9 +45,10 @@ namespace smtrat
      */
     Constraint::Constraint():
         mID( 0 ),
-        mIsAlwaysNegative( false ),
-        mIsAlwaysPositive( false ),
-        mCannotBeZero( false ),
+        mSecondHash( CR_EQ ),
+        mIsNeverPositive( false ),
+        mIsNeverNegative( false ),
+        mIsNeverZero( false ),
         mNumMonomials( 0 ),
         mMaxMonomeDegree( 0 ),
         mMinMonomeDegree( 0 ),
@@ -63,9 +64,10 @@ namespace smtrat
 
     Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _variables, unsigned _id ):
         mID( _id ),
-        mIsAlwaysNegative( false ),
-        mIsAlwaysPositive( false ),
-        mCannotBeZero( false ),
+        mSecondHash( _cr ),
+        mIsNeverPositive( false ),
+        mIsNeverNegative( false ),
+        mIsNeverZero( false ),
         mNumMonomials( 0 ),
         mMaxMonomeDegree( 0 ),
         mMinMonomeDegree( 0 ),
@@ -103,9 +105,10 @@ namespace smtrat
 
     Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _variables, unsigned _id ):
         mID( _id ),
-        mIsAlwaysNegative( false ),
-        mIsAlwaysPositive( false ),
-        mCannotBeZero( false ),
+        mSecondHash( _cr ),
+        mIsNeverPositive( false ),
+        mIsNeverNegative( false ),
+        mIsNeverZero( false ),
         mNumMonomials( 0 ),
         mMaxMonomeDegree( 0 ),
         mMinMonomeDegree( 0 ),
@@ -143,9 +146,10 @@ namespace smtrat
 
     Constraint::Constraint( const Constraint& _constraint ):
         mID( _constraint.id() ),
-        mIsAlwaysNegative( _constraint.mIsAlwaysNegative ),
-        mIsAlwaysPositive( _constraint.mIsAlwaysPositive ),
-        mCannotBeZero( _constraint.mCannotBeZero ),
+        mSecondHash( _constraint.secondHash() ),
+        mIsNeverPositive( _constraint.mIsNeverPositive ),
+        mIsNeverNegative( _constraint.mIsNeverNegative ),
+        mIsNeverZero( _constraint.mIsNeverZero ),
         mNumMonomials( _constraint.mNumMonomials ),
         mMaxMonomeDegree( _constraint.mMaxMonomeDegree ),
         mMinMonomeDegree( _constraint.mMinMonomeDegree ),
@@ -271,36 +275,36 @@ namespace smtrat
             {
                 case CR_EQ:
                 {
-                    if( mCannotBeZero ) return 0;
+                    if( mIsNeverZero ) return 0;
                     break;
                 }
                 case CR_NEQ:
                 {
-                    if( mCannotBeZero ) return 1;
+                    if( mIsNeverZero ) return 1;
                     break;
                 }
                 case CR_LESS:
                 {
-                    if( mCannotBeZero && mIsAlwaysNegative ) return 1;
-                    if( mIsAlwaysPositive ) return 0;
+                    if( mIsNeverZero && mIsNeverPositive ) return 1;
+                    if( mIsNeverNegative ) return 0;
                     break;
                 }
                 case CR_GREATER:
                 {
-                    if( mCannotBeZero && mIsAlwaysPositive ) return 1;
-                    if( mIsAlwaysNegative ) return 0;
+                    if( mIsNeverZero && mIsNeverNegative ) return 1;
+                    if( mIsNeverPositive ) return 0;
                     break;
                 }
                 case CR_LEQ:
                 {
-                    if( mIsAlwaysNegative ) return 1;
-                    if( mCannotBeZero && mIsAlwaysPositive ) return 0;
+                    if( mIsNeverPositive ) return 1;
+                    if( mIsNeverZero && mIsNeverNegative ) return 0;
                     break;
                 }
                 case CR_GEQ:
                 {
-                    if( mIsAlwaysPositive ) return 1;
-                    if( mCannotBeZero && mIsAlwaysNegative ) return 0;
+                    if( mIsNeverNegative ) return 1;
+                    if( mIsNeverZero && mIsNeverPositive ) return 0;
                     break;
                 }
                 default:
@@ -616,9 +620,9 @@ namespace smtrat
     void Constraint::collectProperties()
     {
 //        cout << endl << "initialize " << lhs() << endl;
-        mIsAlwaysNegative = true;
-        mIsAlwaysPositive = true;
-        mCannotBeZero = false;
+        mIsNeverPositive = true;
+        mIsNeverNegative = true;
+        mIsNeverZero = false;
         mMaxMonomeDegree = 1;
         mMinMonomeDegree = -1;
         mNumMonomials = 0;
@@ -645,8 +649,8 @@ namespace smtrat
                         const ex factorEx = *factor;
                         if( is_exactly_a<symbol>( factorEx ) )
                         {
-                            mIsAlwaysNegative = false;
-                            mIsAlwaysPositive = false;
+                            mIsNeverPositive = false;
+                            mIsNeverNegative = false;
                             VarInfo& varInfo = mVarInfoMap[factorEx];
                             ++varInfo.occurences;
                             varInfo.minDegree = 1;
@@ -656,11 +660,11 @@ namespace smtrat
                         {
                             if( factorEx.info( info_flags::negative ) )
                             {
-                                mIsAlwaysPositive = false;
+                                mIsNeverNegative = false;
                             }
                             else
                             {
-                                mIsAlwaysNegative = false;
+                                mIsNeverPositive = false;
                             }
                         }
                         else if( is_exactly_a<power>( factorEx ) )
@@ -671,8 +675,8 @@ namespace smtrat
                             unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
                             if( fmod( exp, 2.0 ) != 0.0 )
                             {
-                                mIsAlwaysNegative = false;
-                                mIsAlwaysPositive = false;
+                                mIsNeverPositive = false;
+                                mIsNeverNegative = false;
                             }
                             ex subterm = *factorEx.begin();
                             assert( is_exactly_a<symbol>( subterm ) );
@@ -690,8 +694,8 @@ namespace smtrat
                 else if( is_exactly_a<symbol>( summandEx ) )
                 {
                     ++mNumMonomials;
-                    mIsAlwaysNegative = false;
-                    mIsAlwaysPositive = false;
+                    mIsNeverPositive = false;
+                    mIsNeverNegative = false;
                     VarInfo& varInfo = mVarInfoMap[summandEx];
                     ++varInfo.occurences;
                     varInfo.minDegree = 1;
@@ -702,11 +706,11 @@ namespace smtrat
                     mConstantPart += ex_to<numeric>( summandEx );
                     if( summandEx.info( info_flags::negative ) )
                     {
-                        mIsAlwaysPositive = false;
+                        mIsNeverNegative = false;
                     }
                     else
                     {
-                        mIsAlwaysNegative = false;
+                        mIsNeverPositive = false;
                     }
                 }
                 else if( is_exactly_a<power>( summandEx ) )
@@ -716,10 +720,10 @@ namespace smtrat
                     ex exponent = *(++(summandEx.begin()));
                     assert( !exponent.info( info_flags::negative ) );
                     unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
-                    mIsAlwaysNegative = false;
+                    mIsNeverPositive = false;
                     if( fmod( exp, 2.0 ) != 0.0 )
                     {
-                        mIsAlwaysPositive = false;
+                        mIsNeverNegative = false;
                     }
                     ex subterm = *summandEx.begin();
                     assert( is_exactly_a<symbol>( subterm ) );
@@ -741,8 +745,8 @@ namespace smtrat
                 const ex factorEx = *factor;
                 if( is_exactly_a<symbol>( factorEx ) )
                 {
-                    mIsAlwaysNegative = false;
-                    mIsAlwaysPositive = false;
+                    mIsNeverPositive = false;
+                    mIsNeverNegative = false;
                     mNumMonomials = 1;
                     VarInfo& varInfo = mVarInfoMap[factorEx];
                     ++varInfo.occurences;
@@ -753,11 +757,11 @@ namespace smtrat
                 {
                     if( factorEx.info( info_flags::negative ) )
                     {
-                        mIsAlwaysPositive = false;
+                        mIsNeverNegative = false;
                     }
                     else
                     {
-                        mIsAlwaysNegative = false;
+                        mIsNeverPositive = false;
                     }
                 }
                 else if( is_exactly_a<power>( factorEx ) )
@@ -769,8 +773,8 @@ namespace smtrat
                     unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
                     if( fmod( exp, 2.0 ) != 0.0 )
                     {
-                        mIsAlwaysNegative = false;
-                        mIsAlwaysPositive = false;
+                        mIsNeverPositive = false;
+                        mIsNeverNegative = false;
                     }
                     ex subterm = *factorEx.begin();
                     assert( is_exactly_a<symbol>( subterm ) );
@@ -788,8 +792,8 @@ namespace smtrat
         else if( is_exactly_a<symbol>( lhs() ) )
         {
             mNumMonomials = 1;
-            mIsAlwaysNegative = false;
-            mIsAlwaysPositive = false;
+            mIsNeverPositive = false;
+            mIsNeverNegative = false;
             VarInfo& varInfo = mVarInfoMap[lhs()];
             ++varInfo.occurences;
             varInfo.minDegree = 1;
@@ -800,11 +804,11 @@ namespace smtrat
             mConstantPart += ex_to<numeric>( lhs() );
             if( lhs().info( info_flags::negative ) )
             {
-                mIsAlwaysPositive = false;
+                mIsNeverNegative = false;
             }
             else
             {
-                mIsAlwaysNegative = false;
+                mIsNeverPositive = false;
             }
         }
         else if( is_exactly_a<power>( lhs() ) )
@@ -814,10 +818,10 @@ namespace smtrat
             assert( !exponent.info( info_flags::negative ) );
             unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
             mNumMonomials = 1;
-            mIsAlwaysNegative = false;
+            mIsNeverPositive = false;
             if( fmod( exp, 2.0 ) != 0.0 )
             {
-                mIsAlwaysPositive = false;
+                mIsNeverNegative = false;
             }
             ex subterm = *lhs().begin();
             assert( is_exactly_a<symbol>( subterm ) );
@@ -829,14 +833,14 @@ namespace smtrat
             if( exp < mMinMonomeDegree ) mMinMonomeDegree = exp;
         }
         else assert( false );
-        if( ( mConstantPart.is_negative() < 0 && mIsAlwaysNegative ) || ( mConstantPart.is_positive() > 0 && mIsAlwaysPositive ) )
+        if( ( mConstantPart.is_negative() < 0 && mIsNeverPositive ) || ( mConstantPart.is_positive() > 0 && mIsNeverNegative ) )
         {
-            mCannotBeZero = true;
+            mIsNeverZero = true;
         }
 
-//        cout << "mIsAlwaysNegative: " << mIsAlwaysNegative << endl;
-//        cout << "mIsAlwaysPositive: " << mIsAlwaysPositive << endl;
-//        cout << "mCannotBeZero    : " << mCannotBeZero << endl;
+//        cout << "mIsNeverPositive: " << mIsNeverPositive << endl;
+//        cout << "mIsNeverNegative: " << mIsNeverNegative << endl;
+//        cout << "mCannotBeZero    : " << mIsNeverZero << endl;
 //        cout << "mNumMonomials    : " << mNumMonomials << endl;
 //        cout << "mMaxMonomeDegree : " << mMaxMonomeDegree << endl;
 //        cout << "mMinMonomeDegree : " << mMinMonomeDegree << endl;
@@ -849,6 +853,14 @@ namespace smtrat
 //            cout << "     maxDegree of " << var->first << "  : " << varInfo.maxDegree << endl;
 //            cout << "     minDegree of " << var->first << "  : " << varInfo.minDegree << endl;
 //        }
+    }
+
+    void Constraint::updateRelation()
+    {
+        if( (mIsNeverNegative && mRelation == CR_LEQ) || (mIsNeverPositive && mRelation == CR_GEQ) )
+        {
+            mRelation = CR_EQ;
+        }
     }
 
     /**

@@ -108,7 +108,7 @@ namespace smtrat
             }
             else
             {
-                if( formulaToAssert->isBooleanCombination() )
+                if( formulaToAssert->getType() == AND )
                 {
                     while( !formulaToAssert->empty() )
                     {

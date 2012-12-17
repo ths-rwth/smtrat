@@ -103,6 +103,19 @@ namespace smtrat
             #ifdef LRA_USE_GINACRA
             GiNaCRA::evalintervalmap getVariableBounds() const;
             #endif
+            void initialize();
+
+            const ExVariableMap& slackVariables() const
+            {
+                return mSlackVars;
+            }
+            
+            const lra::Variable* const getSlackVariable( const Constraint* const _constraint ) const
+            {
+                ConstraintBoundsMap::const_iterator iter = mConstraintToBound.find( _constraint->id() );
+                assert( iter != mConstraintToBound.end() );
+                return iter->second->back()->pVariable();
+            }
 
         private:
             /**
@@ -119,7 +132,6 @@ namespace smtrat
             void findSimpleConflicts( const lra::Bound& );
             #endif
             void initialize( const Constraint* const );
-            void initialize();
     };
 
 }    // namespace smtrat

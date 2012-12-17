@@ -1789,50 +1789,50 @@ namespace vs
      */
     void simplify( DisjunctionOfConstraintConjunctions& _toSimplify )
     {
-//        #ifdef VS_DEBUG_METHODS
-//        cout << "simplify" << endl;
-//        #endif
-//        bool                                          containsEmptyDisjunction = false;
-//        DisjunctionOfConstraintConjunctions::iterator conj                     = _toSimplify.begin();
-//        while( conj != _toSimplify.end() )
-//        {
-//            bool                               conjInconsistent = false;
-//            TS_ConstraintConjunction::iterator cons             = (*conj).begin();
-//            while( cons != (*conj).end() )
-//            {
-//                unsigned consConsistent = (**cons).isConsistent();
-//                if( consConsistent == 0 )
-//                {
-//                    conjInconsistent = true;
-//                    break;
-//                }
-//                else if( consConsistent == 1 )
-//                {
-//                    // Delete the constraint.
-//                    cons = (*conj).erase( cons );
-//                }
-//                else
-//                {
-//                    cons++;
-//                }
-//            }
-//            bool conjEmpty = (*conj).empty();
-//            if( conjInconsistent || (containsEmptyDisjunction && conjEmpty) )
-//            {
-//                // Delete the conjunction.
-//                (*conj).clear();
-//                conj = _toSimplify.erase( conj );
-//            }
-//            else
-//            {
-//                conj++;
-//            }
-//            if( !containsEmptyDisjunction && conjEmpty )
-//            {
-//                containsEmptyDisjunction = true;
-//            }
-//        }
-//
+        #ifdef VS_DEBUG_METHODS
+        cout << "simplify" << endl;
+        #endif
+        bool                                          containsEmptyDisjunction = false;
+        DisjunctionOfConstraintConjunctions::iterator conj                     = _toSimplify.begin();
+        while( conj != _toSimplify.end() )
+        {
+            bool                               conjInconsistent = false;
+            TS_ConstraintConjunction::iterator cons             = (*conj).begin();
+            while( cons != (*conj).end() )
+            {
+                unsigned consConsistent = (**cons).isConsistent();
+                if( consConsistent == 0 )
+                {
+                    conjInconsistent = true;
+                    break;
+                }
+                else if( consConsistent == 1 )
+                {
+                    // Delete the constraint.
+                    cons = (*conj).erase( cons );
+                }
+                else
+                {
+                    cons++;
+                }
+            }
+            bool conjEmpty = (*conj).empty();
+            if( conjInconsistent || (containsEmptyDisjunction && conjEmpty) )
+            {
+                // Delete the conjunction.
+                (*conj).clear();
+                conj = _toSimplify.erase( conj );
+            }
+            else
+            {
+                conj++;
+            }
+            if( !containsEmptyDisjunction && conjEmpty )
+            {
+                containsEmptyDisjunction = true;
+            }
+        }
+
 //        DisjunctionOfConstraintConjunctions::iterator conjA = _toSimplify.begin();
 //        while( conjA != _toSimplify.end() )
 //        {

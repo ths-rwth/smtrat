@@ -116,9 +116,10 @@ namespace smtrat
              * Attributes:
              */
             unsigned             mID;
-            bool                 mIsAlwaysNegative;
-            bool                 mIsAlwaysPositive;
-            bool                 mCannotBeZero;
+            unsigned             mSecondHash;
+            bool                 mIsNeverPositive;
+            bool                 mIsNeverNegative;
+            bool                 mIsNeverZero;
             unsigned             mNumMonomials;
             unsigned             mMaxMonomeDegree;
             unsigned             mMinMonomeDegree;
@@ -166,6 +167,11 @@ namespace smtrat
             unsigned id() const
             {
                 return mID;
+            }
+
+            unsigned secondHash() const
+            {
+                return mSecondHash;
             }
 
             const GiNaC::ex& multiRootLessLhs() const
@@ -224,6 +230,7 @@ namespace smtrat
             unsigned maxDegree() const;
             std::map<const std::string, GiNaC::numeric, strCmp> linearAndConstantCoefficients() const;
             void collectProperties();
+            void updateRelation();
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
 
             // Data access methods (read and write).

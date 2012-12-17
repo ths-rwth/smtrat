@@ -514,7 +514,7 @@ namespace smtrat
             iterator prune( iterator );
             void clear();
             void notSolvableBy( ModuleType );
-            void print( std::ostream& = std::cout, const std::string = "", bool = false ) const;
+            void print( std::ostream& = std::cout, const std::string = "", bool = false, bool = false ) const;
             friend std::ostream& operator <<( std::ostream&, const Formula& );
             std::string toString( bool = false ) const;
             void getConstraints( std::vector<const Constraint*>& ) const;

@@ -30,7 +30,7 @@
 #ifndef SMTRAT_VS_CONDITION_H
 #define SMTRAT_VS_CONDITION_H
 
-//#define VS_ELIMINATE_MULTI_ROOTS
+#define VS_ELIMINATE_MULTI_ROOTS
 
 #include <set>
 #include "../../Formula.h"
@@ -84,9 +84,9 @@ namespace vs
 
             Condition( const smtrat::Constraint*, unsigned );
 
-            Condition( const smtrat::Constraint*, const bool, const ConditionSet&, const unsigned );
+            Condition( const smtrat::Constraint*, bool, const ConditionSet&, unsigned );
 
-            Condition( const smtrat::Constraint*, const bool, const ConditionSet&, const unsigned, const bool );
+            Condition( const smtrat::Constraint*, bool, const ConditionSet&, unsigned, bool );
 
             Condition( const Condition& );
 
@@ -149,7 +149,7 @@ namespace vs
                 return *mpOriginalConditions;
             }
 
-            double valuate( const std::string, const unsigned, const bool ) const;
+            double valuate( const std::string&, unsigned, bool ) const;
             bool bestVariable( std::string& ) const;
             unsigned bestVariable2( std::string& ) const;
             bool operator ==( const Condition& ) const;

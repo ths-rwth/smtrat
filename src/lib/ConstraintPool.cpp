@@ -205,6 +205,7 @@ namespace smtrat
             {
                 ++mIdAllocator;
                 constraint->collectProperties();
+                constraint->updateRelation();
             }
             return *iterBoolPair.first;
         }

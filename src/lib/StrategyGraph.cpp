@@ -11,11 +11,11 @@
  *
  * SMT-RAT is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SMT-RAT. If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -24,7 +24,7 @@
  *
  * @author  Henrik Schmitz
  * @since   2012-09-10
- * @version 2012-09-19
+ * @version 2012-09-14
  */
 
 #include "StrategyGraph.h"
@@ -32,12 +32,12 @@
 using namespace std;
 
 namespace smtrat{
-    unsigned StrategyGraph::Edge::mIdAllocator = 0;
+    unsigned StrategyGraph::Edge::mPriorityAllocator = 0;
     
     StrategyGraph::Edge::Edge(){}
     
     StrategyGraph::Edge::Edge( unsigned _to, ConditionEvaluation _condition ):
-        mId( mIdAllocator++ ),
+        mPriority( mPriorityAllocator++ ),
         mSuccessor( _to ),
         mpConditionEvaluation( _condition )
     {}
@@ -55,16 +55,28 @@ namespace smtrat{
         mpEdgeList( new vector<Edge>() )
     {}
     
-    StrategyGraph::Vertex::~Vertex(){}
+    StrategyGraph::Vertex::~Vertex()
+    {   
+        mpEdgeList->clear();
+        delete mpEdgeList;
+    }
     
 
     StrategyGraph::StrategyGraph():
         mStrategyGraph()
     {
-        mStrategyGraph.push_back( Vertex() );
+        mStrategyGraph.push_back( new Vertex() );
     }
 
-    StrategyGraph::~StrategyGraph(){}
+    StrategyGraph::~StrategyGraph()
+    {
+        while( !mStrategyGraph.empty() )
+        {
+            Vertex* toDelete = mStrategyGraph.back();
+            mStrategyGraph.pop_back();
+            delete toDelete;
+        }
+    }
 
     /**
      * ...
@@ -105,8 +117,7 @@ namespace smtrat{
      */
     unsigned StrategyGraph::addModuleType( unsigned _at, ModuleType _moduleType, ConditionEvaluation _condition )
     {
-        Vertex successor = Vertex( _moduleType );
-        mStrategyGraph.push_back( successor );
+        mStrategyGraph.push_back( new Vertex( _moduleType ) );
         
         addCondition( _at, mStrategyGraph.size()-1, _condition );
         
@@ -122,7 +133,9 @@ namespace smtrat{
      */
     void StrategyGraph::addCondition( unsigned _from, unsigned _to, ConditionEvaluation _condition )
     {
-        mStrategyGraph[_from].addSuccessor( _to, _condition );
+        assert( _from < mStrategyGraph.size() );
+        assert( _to < mStrategyGraph.size() );
+        mStrategyGraph.at( _from )->addSuccessor( _to, _condition );
     }
 
     /**
@@ -136,16 +149,16 @@ namespace smtrat{
     {
         vector< pair<unsigned, ModuleType> > result = vector< pair<unsigned, ModuleType> >();
         
-        const vector<Edge>& edges = mStrategyGraph[_from].edgeList();
+        const vector<Edge>& edges = mStrategyGraph.at(_from)->edgeList();
         for( auto edge = edges.begin(); edge!=edges.end(); ++edge )
         {
             if ( edge->conditionEvaluation()( _condition ) )
             {
                 unsigned succ = edge->successor();
-                result.push_back( pair<unsigned, ModuleType>( succ, mStrategyGraph[succ].moduleType() ) );
+                assert( succ < mStrategyGraph.size() );
+                result.push_back( pair<unsigned, ModuleType>( succ, mStrategyGraph.at(succ)->moduleType() ) );
             }
         }
         return result;
     }
-
 }    // namespace smtrat

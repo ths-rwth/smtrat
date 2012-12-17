@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" ?>
 <!--
 /* SMT RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
  * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
@@ -21,45 +21,39 @@
  */
 -->
 <project name="@JAR_NAME@" basedir="." default="all">
-	<description>
-		Ant file for building the graphical user interface of SMT Real Algebra Toolkit.
-		(See http://ant.apache.org/manual/using.html.)
-		Author: Ulrich Loup
-	</description>
-	
-	<property name="srcdir" value="@CMAKE_CURRENT_SOURCE_DIR@"/>
-	<property name="builddir" value="@CMAKE_CURRENT_BINARY_DIR@"/>
-	<property name="testdir" value="@CMAKE_CURRENT_BINARY_DIR@/test"/>
-	<property name="jardir" value="@CMAKE_CURRENT_BINARY_DIR@"/>
-	<property name="mainClass" value="GUI"/>
 
-	<target name="init">
-		<tstamp/>
-		<mkdir dir="@DOLLAR@{builddir}"/>
-  	</target>
+    <property name="src.dir"     value="@CMAKE_CURRENT_SOURCE_DIR@" />
+    <property name="build.dir"   value="@CMAKE_CURRENT_BINARY_DIR@" />
+    <property name="classes.dir" value="@CMAKE_CURRENT_BINARY_DIR@/classes" />
+    <property name="lib.dir"     value="@CMAKE_CURRENT_SOURCE_DIR@/lib"/>
+    <property name="jar.dir"     value="@CMAKE_CURRENT_BINARY_DIR@" />
+    <property name="main-class"  value="GUI" />
 
-	<target name="compile" depends="init" description="Compile all sources">
-		<javac srcdir="@DOLLAR@{srcdir}" destdir="@DOLLAR@{builddir}" classpath="@DOLLAR@{builddir}" listfiles="Yes" encoding="UTF8" deprecation="Yes">
-		</javac>
-	</target>
+    <path id="classpath">
+        <fileset dir="@DOLLAR@{lib.dir}" includes="**/*.jar"/>
+    </path>
 
-	<target name="pack" depends="compile" description="Create @JAR_NAME@.jar">
-		<jar destfile="@DOLLAR@{jardir}/@JAR_NAME@.jar" basedir="@DOLLAR@{builddir}" includes="**/*.class,**/*.html">
-			<manifest>
-				<attribute name="Built-By" value="@DOLLAR@{user.name}"/>
-				<attribute name="Implementation-Version" value="@DOLLAR@{version} @DOLLAR@{TODAY}"/>
-				<attribute name="Main-Class" value="@DOLLAR@{mainClass}"/>
-			</manifest>
-		</jar>
-	</target>
+    <target name="compile">
+        <mkdir dir="@DOLLAR@{classes.dir}" />
+        <javac srcdir="@DOLLAR@{src.dir}" destdir="@DOLLAR@{classes.dir}" classpathref="classpath" includeantruntime="false" listfiles="Yes" encoding="UTF8" deprecation="Yes" />
+        <copy todir="@DOLLAR@{build.dir}">
+            <fileset dir="@DOLLAR@{src.dir}" excludes="**/*.in,**/*.java" />
+        </copy>
+    </target>
 
-	<target name="clean" description="Remove all class files" >
-		<delete includeemptydirs="true">
-			<fileset dir="@DOLLAR@{builddir}" includes="**/*"/>
-  		</delete>
-  	</target>
-  
-	<target name="all" depends="compile,pack" description="Compile and pack in one go">
-	</target>
-	
+    <target name="pack" depends="compile">
+        <pathconvert property="class-path" dirsep="/" pathsep=" " refid="classpath">
+            <map from="${lib.dir}" to="" />
+        </pathconvert>
+        <jar destfile="@DOLLAR@{jar.dir}/@DOLLAR@{ant.project.name}.jar" basedir="@DOLLAR@{classes.dir}" includes="**/*.class,**/*.html">
+            <manifest>
+                <attribute name="Class-Path" value="@DOLLAR@{class-path}" />
+                <attribute name="Main-Class" value="@DOLLAR@{main-class}" />
+            </manifest>
+        </jar>
+        <delete dir="@DOLLAR@{classes.dir}" />
+    </target>
+
+    <target name="all" depends="compile,pack"/>
+
 </project>

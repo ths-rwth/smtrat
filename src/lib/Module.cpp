@@ -468,8 +468,14 @@ namespace smtrat
 
         if( mpManager == NULL ) return Unknown;
 
+        /*
+         * Get the backends to be considered from the manager.
+         */
         mUsedBackends = mpManager->getBackends( mpPassedFormula, this );
 
+        /*
+         * Update the backends.
+         */
         if( mFirstSubformulaToPass != mpPassedFormula->end() )
         {
             assert( checkFirstSubformulaToPassValidity() );

@@ -164,7 +164,7 @@ namespace vs
     /**
      * @return The depth of the subtree with this state as root node.
      */
-    const unsigned State::treeDepth() const
+    unsigned State::treeDepth() const
     {
         unsigned     depth     = 0;
         const State* currentDT = this;
@@ -618,7 +618,6 @@ namespace vs
             }
             mConditionsSimplified = true;
         }
-        //printAlone( "      ", cout );
         #ifdef VS_DEBUG_METHODS_X
         cout << "end " << __func__ << "1" << endl;
         #endif
@@ -655,7 +654,6 @@ namespace vs
                     const Condition* condA = _conditionVectorToSimplify[posA];
                     const Condition* condB = _conditionVectorToSimplify[posB];
                     signed strongProp = smtrat::Constraint::compare( condA->constraint(), condB->constraint() );
-//                    cout << condA->constraint() << " and " << condB->constraint() << " -> " << strongProp << endl;
                     /*
                      * If the two conditions have the same solution space.
                      */
@@ -709,6 +707,13 @@ namespace vs
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                             _conditionVectorToSimplify.push_back( cond );
+                            if( cond->constraint().isConsistent() == 0 )
+                            {
+                                ConditionSet condSet = ConditionSet();
+                                condSet.insert( condA );
+                                condSet.insert( condB );
+                                _conflictSet.insert( condSet );
+                            }
                         }
                         else if( (condA->constraint().relation() == smtrat::CR_NEQ && condB->constraint().relation() == smtrat::CR_GEQ) )
                         {
@@ -717,6 +722,13 @@ namespace vs
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                             _conditionVectorToSimplify.push_back( cond );
+                            if( cond->constraint().isConsistent() == 0 )
+                            {
+                                ConditionSet condSet = ConditionSet();
+                                condSet.insert( condA );
+                                condSet.insert( condB );
+                                _conflictSet.insert( condSet );
+                            }
                         }
                         else if( (condA->constraint().relation() == smtrat::CR_GEQ && condB->constraint().relation() == smtrat::CR_NEQ) )
                         {
@@ -725,6 +737,13 @@ namespace vs
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                             _conditionVectorToSimplify.push_back( cond );
+                            if( cond->constraint().isConsistent() == 0 )
+                            {
+                                ConditionSet condSet = ConditionSet();
+                                condSet.insert( condA );
+                                condSet.insert( condB );
+                                _conflictSet.insert( condSet );
+                            }
                         }
                         else if( (condA->constraint().relation() == smtrat::CR_NEQ && condB->constraint().relation() == smtrat::CR_LEQ) )
                         {
@@ -733,6 +752,13 @@ namespace vs
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                             _conditionVectorToSimplify.push_back( cond );
+                            if( cond->constraint().isConsistent() == 0 )
+                            {
+                                ConditionSet condSet = ConditionSet();
+                                condSet.insert( condA );
+                                condSet.insert( condB );
+                                _conflictSet.insert( condSet );
+                            }
                         }
                         else if( (condA->constraint().relation() == smtrat::CR_LEQ && condB->constraint().relation() == smtrat::CR_NEQ) )
                         {
@@ -741,6 +767,13 @@ namespace vs
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                             _conditionVectorToSimplify.push_back( cond );
+                            if( cond->constraint().isConsistent() == 0 )
+                            {
+                                ConditionSet condSet = ConditionSet();
+                                condSet.insert( condA );
+                                condSet.insert( condB );
+                                _conflictSet.insert( condSet );
+                            }
                         }
                         else
                         {
@@ -768,22 +801,6 @@ namespace vs
 
                         _conflictSet.insert( condSet );
                     }
-
-                    //cout << "### Conditions now look like:" << endl;
-                    //for( ConditionVector::const_iterator cond = _conditionVectorToSimplify.begin();
-                    //                                 cond!= _conditionVectorToSimplify.end()  ;
-                    //                                 ++cond                      )
-                    //{
-                    //  cout << "###   ";
-                    //  (**cond).print( cout );
-                    //  if( redundantConditionSet.find( *cond )!=redundantConditionSet.end() )
-                    //  {
-                    //      cout << "   redundant";
-                    //  }
-                    //  cout << endl;
-                    //}
-                    //cout << endl;
-
                     ++posB;
                 }
                 ++posA;

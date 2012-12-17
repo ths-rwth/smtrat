@@ -39,8 +39,7 @@
 //#define VS_DEBUG
 //#define VS_STATISTICS
 //#define VS_PRINT_ANSWERS
-#define VS_LOG_INTERMEDIATE_STEPS
-//#define VS_LOG_INFSUBSETS_OF_BACKEND
+//#define VS_LOG_INTERMEDIATE_STEPS
 
 #include "VSModule/Substitute.h"
 #include "VSModule/State.h"

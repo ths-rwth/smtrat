@@ -32,13 +32,15 @@
 
 #include <bitset>
 #include <assert.h>
+#include <stdio.h>
+#include <iostream>
 
 static const unsigned CONDITION_SIZE = 64;
 
 namespace smtrat
 {
     class Condition:
-        public std:: bitset<CONDITION_SIZE>
+        public std::bitset<CONDITION_SIZE>
     {
         public:
             Condition():
@@ -70,46 +72,77 @@ namespace smtrat
             {
                 return (*this & (~_condition)).none();
             }
+
+            // Equivalence
+            inline Condition
+            operator%( const Condition& _y ) const
+            {
+              Condition result(~*this);
+              result |= _y;
+              return result;
+            }
+
+            // Implication
+            inline Condition
+            operator-( const Condition& _y ) const
+            {
+              Condition result(~*this);
+              result ^= _y;
+              return result;
+            }
+
+            // Xor
+            inline Condition
+            operator+( const Condition& _y ) const
+            {
+              Condition result(*this);
+              result ^= _y;
+              return result;
+            }
     };
 
     static const Condition PROP_TRUE = Condition();
 
-    //Propositions which hold, if they hold for each subformula of a formula including itself (0-15)
+    //Propositions which hold, if they hold for each sub formula of a formula including itself (0-15)
     static const Condition PROP_IS_IN_NNF                       = Condition( 0 );
-    static const Condition PROP_IS_IN_CNF                       = Condition( 1 ) | PROP_IS_IN_NNF;
-    static const Condition PROP_IS_PURE_CONJUNCTION             = Condition( 2 ) | PROP_IS_IN_CNF;
-    static const Condition PROP_IS_A_CLAUSE                     = Condition( 3 ) | PROP_IS_IN_CNF;
-    static const Condition PROP_IS_A_LITERAL                    = Condition( 4 ) | PROP_IS_A_CLAUSE | PROP_IS_PURE_CONJUNCTION;
-    static const Condition PROP_IS_AN_ATOM                      = Condition( 5 ) | PROP_IS_A_LITERAL;
+    static const Condition PROP_IS_IN_CNF                       = Condition( 1 );
+    static const Condition PROP_IS_PURE_CONJUNCTION             = Condition( 2 );
+    static const Condition PROP_IS_A_CLAUSE                     = Condition( 3 );
+    static const Condition PROP_IS_A_LITERAL                    = Condition( 4 );
+    static const Condition PROP_IS_AN_ATOM                      = Condition( 5 );
     static const Condition PROP_VARIABLE_DEGREE_LESS_THAN_FIVE  = Condition( 6 );
-    static const Condition PROP_VARIABLE_DEGREE_LESS_THAN_FOUR  = Condition( 7 ) | PROP_VARIABLE_DEGREE_LESS_THAN_FIVE;
-    static const Condition PROP_VARIABLE_DEGREE_LESS_THAN_THREE = Condition( 8 ) | PROP_VARIABLE_DEGREE_LESS_THAN_FOUR;
-    static const Condition STRONG_CONDITIONS                    = PROP_IS_AN_ATOM | PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
+    static const Condition PROP_VARIABLE_DEGREE_LESS_THAN_FOUR  = Condition( 7 );
+    static const Condition PROP_VARIABLE_DEGREE_LESS_THAN_THREE = Condition( 8 );
+    static const Condition STRONG_CONDITIONS                    = PROP_IS_IN_NNF | PROP_IS_IN_CNF | PROP_IS_PURE_CONJUNCTION |
+                                                                  PROP_IS_A_CLAUSE | PROP_IS_A_LITERAL | PROP_IS_AN_ATOM |
+                                                                  PROP_VARIABLE_DEGREE_LESS_THAN_THREE |
+                                                                  PROP_VARIABLE_DEGREE_LESS_THAN_FOUR |
+                                                                  PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
 
-    //Propositions which hold, if they hold in at least one subformula (16-31)
+    //Propositions which hold, if they hold in at least one sub formula (16-31)
     static const Condition PROP_CONTAINS_EQUATION                = Condition( 16 );
     static const Condition PROP_CONTAINS_INEQUALITY              = Condition( 17 );
-    static const Condition PROP_CONTAINS_STRICT_INEQUALITY       = Condition( 18 ) | PROP_CONTAINS_INEQUALITY;
+    static const Condition PROP_CONTAINS_STRICT_INEQUALITY       = Condition( 18 );
     static const Condition PROP_CONTAINS_LINEAR_POLYNOMIAL       = Condition( 19 );
     static const Condition PROP_CONTAINS_NONLINEAR_POLYNOMIAL    = Condition( 20 );
     static const Condition PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL = Condition( 21 );
     static const Condition WEAK_CONDITIONS                       = PROP_CONTAINS_EQUATION | PROP_CONTAINS_INEQUALITY | PROP_CONTAINS_STRICT_INEQUALITY
                                              | PROP_CONTAINS_LINEAR_POLYNOMIAL | PROP_CONTAINS_LINEAR_POLYNOMIAL | PROP_CONTAINS_NONLINEAR_POLYNOMIAL
-                                             | PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL;
+                                             | PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL | PROP_CONTAINS_INEQUALITY;
 
     //Propositions indicating that a solver cannot solve the formula
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_SMARTSIMPLIFIER    = Condition( 48 );
+    static const Condition PROP_CANNOT_BE_SOLVED_BY_SMARTSIMPLIFIER     = Condition( 48 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE      = Condition( 49 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_VSMODULE            = Condition( 50 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE = Condition( 51 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_CADMODULE           = Condition( 52 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_SATMODULE           = Condition( 53 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_LRAMODULE          = Condition( 54 );
+    static const Condition PROP_CANNOT_BE_SOLVED_BY_LRAMODULE           = Condition( 54 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE        = Condition( 55 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE     = Condition( 57 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE         = Condition( 56 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE      = Condition( 59 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_ICPMODULE  = Condition( 60 );
+    static const Condition PROP_CANNOT_BE_SOLVED_BY_ICPMODULE           = Condition( 60 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_ILRAMODULE          = Condition( 61 );
     static const Condition PROP_CANNOT_BE_SOLVED_BY_TLRAMODULE          = Condition( 62 );
     static const Condition SOLVABLE_CONDITIONS                          = PROP_CANNOT_BE_SOLVED_BY_SMARTSIMPLIFIER | PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE

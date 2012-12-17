@@ -29,23 +29,15 @@
 
 #include <iostream>
 #include <fstream>
-#include <signal.h>
-
-
 #include "ExitCodes.h"
 #include "parser/Driver.h"
 #include "../lib/NRATSolver.h"
-#ifdef GATHER_STATS
-#include "../lib/utilities/stats/CollectStatistics.h"
-#endif //GATHER_STATS
 
-void sighandler(int sig)
-{
-    if(sig == SIGINT) 
-    {
-        exit(SMTRAT_EXIT_USERABORT);
-    }
-}
+#ifdef GATHER_STATS
+
+#include "../lib/utilities/stats/CollectStatistics.h"
+
+#endif //GATHER_STATS
 
 /**
  *
@@ -63,11 +55,13 @@ int main( int argc, char* argv[] )
     bool exportStats = false;
     
 
-    if(argc == 1) {
-        std::cout << "This is " << PROJECT_NAME << "." <<  std::endl;
+    if( argc == 1 )
+    {
+        std::cout << "This is " << PROJECT_NAME << "." << std::endl;
         std::cout << "Version: " << VERSION << std::endl;
         std::cout << "For more information, run this binary with --help." << std::endl;
     }
+    int returnValue = SMTRAT_EXIT_USERABORT;
     for( int ai = 1; ai < argc; ++ai )
     {
         if( argv[ai] == std::string( "-p" ) )
@@ -99,15 +93,14 @@ int main( int argc, char* argv[] )
             if( !infile.good() )
             {
                 std::cerr << "Could not open file: " << argv[ai] << std::endl;
-                return SMTRAT_EXIT_NOSUCHFILE;
+                return SMTRAT_EXIT_UNEXPECTED_INPUT;
             }
 
             bool result = driver.parse_stream( infile, argv[ai] );
             if( result )
             {
-                bool error = false;
                 smtrat::NRATSolver* nratSolver = new smtrat::NRATSolver( form );
-                smtrat::Answer answer = nratSolver->isConsistent();
+                smtrat::Answer      answer     = nratSolver->isConsistent();
                 switch( answer )
                 {
                     case smtrat::True:
@@ -115,11 +108,12 @@ int main( int argc, char* argv[] )
                         if( driver.status == 0 )
                         {
                             std::cout << "error, expected unsat, but returned sat" << std::endl;
-                            error = true;
+                            returnValue = SMTRAT_EXIT_WRONG_ANSWER;
                         }
                         else
                         {
                             std::cout << "sat" << std::endl;
+                            returnValue = SMTRAT_EXIT_SAT;
                         }
                         break;
                     }
@@ -128,22 +122,25 @@ int main( int argc, char* argv[] )
                         if( driver.status == 1 )
                         {
                             std::cout << "error, expected sat, but returned unsat" << std::endl;
-                            error = true;
+                            returnValue = SMTRAT_EXIT_WRONG_ANSWER;
                         }
                         else
                         {
                             std::cout << "unsat" << std::endl;
+                            returnValue = SMTRAT_EXIT_UNSAT;
                         }
                         break;
                     }
                     case smtrat::Unknown:
                     {
                         std::cout << "unknown" << std::endl;
+                        returnValue = SMTRAT_EXIT_UNKNOWN;
                         break;
                     }
                     default:
                     {
                         std::cerr << "Unexpected output!" << std::endl;
+                        returnValue = SMTRAT_EXIT_UNEXPECTED_ANSWER;
                     }
                 }
                 if( driver.printAssignment && answer == smtrat::True )
@@ -155,19 +152,22 @@ int main( int argc, char* argv[] )
                 delete form;
 
                 #ifdef GATHER_STATS
-                if(printStats) smtrat::CollectStatistics::print(std::cout);
-                if(exportStats)
+                if( printStats )
+                {
+                    smtrat::CollectStatistics::print( std::cout );
+                }
+                if( exportStats )
                 {
                     smtrat::CollectStatistics::exportXML();
                 }
                 #endif //GATHER_STATS
-
-                if(error) return SMTRAT_EXIT_UNEXPECTEDANSWER;
-            } else {
+            }
+            else
+            {
                 std::cerr << "Parse error" << std::endl;
-                return SMTRAT_EXIT_PARSERFAILURE;
+                returnValue = SMTRAT_EXIT_PARSERFAILURE;
             }
         }
     }
-    return (SMTRAT_EXIT_SUCCESS);
+    return returnValue;
 }

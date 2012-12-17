@@ -145,7 +145,7 @@ template <class combineType> void combine
 					 */
 					for( unsigned j=0; j<_toCombine.at(i).at( counters.at(i) ).size(); j++ )
 					{
-						_combination.back().push_back( new combineType( *_toCombine.at(i).at( counters.at(i) ).at(j) ) );
+						_combination.back().push_back( _toCombine.at(i).at( counters.at(i) ).at(j) );
 					}
 					/*
 					 * Set the counter.

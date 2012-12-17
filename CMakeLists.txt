@@ -30,6 +30,7 @@ set( smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 # options
 option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
 option(BUILD_SOLVER "Build the SMT-RAT Solver" ON)
+option(BUILD_GUI "Build the GUI" OFF)
 option(GATHER_STATS "Gather statistics during the calculation" OFF)
 option(USE_NSS "Compile the NSS Module" OFF)
 option(USE_GINACRA "Compile modules using GiNaCRA" ON)
@@ -88,12 +89,14 @@ include( FindGMP )
 # # # # # # # # # # #
 
 find_package(CPPUnit)
-find_package(Ant) # for building the GUI
-find_package(Java) # for building the GUI
-find_package(Java COMPONENTS Development) # for building the GUI
+if( BUILD_GUI )
+    find_package(Ant REQUIRED) # for building the GUI
+    find_package(Java 1.7 REQUIRED) # for building the GUI
+    find_package(Java COMPONENTS Development REQUIRED) # for building the GUI
+endif()
 if(BUILD_SOLVER)
-find_package(BISON) # for building the parser
-find_package(FLEX) # for building the parser
+    find_package(BISON REQUIRED) # for building the parser
+    find_package(FLEX REQUIRED) # for building the parser
 endif()
 # LAPACK and BLAS are both needed for successfull using CSDP
 # todo: maybe CLAPACK would also do?

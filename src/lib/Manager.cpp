@@ -144,10 +144,16 @@ namespace smtrat
     {
         vector<Module*>        backends         = vector<Module*>();
         vector<Module*>&       allBackends      = mBackendsOfModules[_requiredBy];
+        /*
+         * Get the types of the modules, which the given module needs to call to solve its passedFormula.
+         */
         vector< pair<unsigned, ModuleType> > backendModuleTypes = mStrategyGraph.nextModuleTypes( mModulePositionInStrategy[_requiredBy], _formula->getPropositions() );
         for( auto iter = backendModuleTypes.begin(); iter != backendModuleTypes.end(); ++iter )
         {
             assert( iter->second != _requiredBy->type() );
+            /*
+             * If for this module type an instance already exists, we just add it to the modules to return.
+             */
             vector<Module*>::iterator backend = allBackends.begin();
             while( backend != allBackends.end() )
             {
@@ -159,11 +165,13 @@ namespace smtrat
                 }
                 ++backend;
             }
+            /*
+             * Otherwise, we create a new instance of this module type and add it to the modules to return.
+             */
             if( backend == allBackends.end() )
             {
                 auto backendFactory = mpModulFactories->find( iter->second );
                 assert( backendFactory != mpModulFactories->end() );
-                // backend does not exist => create it
                 Module* pBackend = backendFactory->second->create( _requiredBy->pPassedFormula(), this );
                 mGeneratedModules.push_back( pBackend );
                 pBackend->setId( mGeneratedModules.size()-1 );
