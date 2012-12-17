@@ -53,15 +53,15 @@ void sighandler(int sig)
 int main( int argc, char* argv[] )
 {
     // Call the sighandler code on user abort
-    signal(SIGINT, &sighandler);
+    // TODO update we should use sigaction() 
+    //signal(SIGINT, &sighandler);
 
     smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
     smtrat::Driver   driver( form );
 
-    #ifdef GATHER_STATS
     bool printStats = false;
     bool exportStats = false;
-    #endif //GATHER_STATS
+    
 
     if(argc == 1) {
         std::cout << "This is " << PROJECT_NAME << "." <<  std::endl;
@@ -78,14 +78,16 @@ int main( int argc, char* argv[] )
         {
             driver.trace_scanning = true;
         }
-        #ifdef GATHER_STATS
         else if( argv[ai] == std::string( "--print-stats") ) {
+            #ifdef GATHER_STATS
             printStats = true;
+            #endif
         }
         else if( argv[ai] == std::string( "--export-stats") ) {
+            #ifdef GATHER_STATS
             exportStats = true;
+            #endif
         }
-        #endif
         else if( argv[ai] == std::string( "--help") ) {
             std::cout << "The help is not yet implemented. Please visit our website ...." << std::endl;
         }

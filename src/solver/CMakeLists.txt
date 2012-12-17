@@ -49,9 +49,9 @@ add_dependencies( smtratSolver
 	${CMAKE_BINARY_DIR}/src/solver/parser/Scanner.ll
 	${CMAKE_BINARY_DIR}/src/solver/parser/Parser.yy
 )
-target_link_libraries( smtratSolver
-		       lib_${PROJECT_NAME}
-		       ${libraries} # libraries definied in top-level CMakeLists.txt
+target_link_libraries( smtratSolver 
+						lib_${PROJECT_NAME} # smtrat library
+						${libraries} # libraries definied in top-level CMakeLists.txt
 )
 set_target_properties( smtratSolver PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 if(${STATICLIB_SWITCH} STREQUAL "ON")
