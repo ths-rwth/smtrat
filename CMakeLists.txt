@@ -27,6 +27,31 @@ set( PROJECT_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAI
 set( smtrat_NAME "SMT-RAT" )
 set( smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 
+# options for the GBModule settings
+set( SMTRAT_GBSETTING "Setting 1" CACHE STRING "" )
+set( SMTRAT_GBSETTING "Setting 2" CACHE STRING "" )
+set( SMTRAT_GBSETTING "Setting 3" CACHE STRING "" )
+set( SMTRAT_GBSETTING "Setting 4" CACHE STRING "" )
+set( SMTRAT_GBSETTING "Setting 5" CACHE STRING "" )
+set( SMTRAT_GBSETTING_VALUES "Setting 1" "Setting 2" "Setting 3" "Setting 4" "Setting 5"  )
+set_property( CACHE SMTRAT_GBSETTING PROPERTY STRINGS ${SMTRAT_GBSETTING_VALUES} )
+list( FIND SMTRAT_GBSETTING_VALUES ${SMTRAT_GBSETTING} SMTRAT_GBSETTING_INDEX )
+if( ${SMTRAT_GBSETTING_INDEX} EQUAL -1 )
+    message( FATAL_ERROR "Option ${SMTRAT_GBSETTING} not supported, valid entries are ${SMTRAT_GBSETTING_VALUES}" )
+    set( SMTRAT_GBMODULE_SETTINGS "GBSettings1" )
+elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 0 )
+    set( SMTRAT_GBMODULE_SETTINGS "GBSettings1" )
+elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 1 )
+    set( SMTRAT_GBMODULE_SETTINGS "GBSettings1" )
+elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 2 )
+    set( SMTRAT_GBMODULE_SETTINGS "GBSettings1" )
+elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 3 )
+    set( SMTRAT_GBMODULE_SETTINGS "GBSettings1" )
+elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 4 )
+    set( SMTRAT_GBMODULE_SETTINGS "GBSettings5" )
+endif()
+message(${SMTRAT_GBMODULE_SETTINGS})
+
 # options
 option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
 option(BUILD_SOLVER "Build the SMT-RAT Solver" ON)
@@ -132,6 +157,12 @@ endif()
 set( JAR_NAME "SMT-XRAT" )
 set( DOLLAR "$" )
 
+# configure file specification in order to translate CMake variables to C++
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+configure_file( ${CMAKE_SOURCE_DIR}/smtrat.pc.in ${CMAKE_BINARY_DIR}/smtrat.pc )
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/config.h )
+
 # further directories to be included
 # # # # # # # # # # # # # # # # # # #
 add_subdirectory(src)
@@ -146,11 +177,6 @@ endif()
 # add_subdirectory(examples EXCLUDE_FROM_ALL) # offer as an optional target
 add_subdirectory(manual EXCLUDE_FROM_ALL)
 
-# configure file specification in order to translate CMake variables to C++
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-configure_file( ${CMAKE_SOURCE_DIR}/smtrat.pc.in ${CMAKE_BINARY_DIR}/smtrat.pc )
-configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/config.h )
 
 # [un]install targets
 # # # # # # # # # # #

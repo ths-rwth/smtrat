@@ -1,9 +1,8 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
-#define PACKAGE_NAME "@PROJECT_NAME@"
-#define PROJECT_NAME "@PROJECT_FULLNAME@"
-#define VERSION "@PROJECT_VERSION@"
+#define SMTRAT_PACKAGE_NAME "@PROJECT_NAME@"
+#define SMTRAT_PROJECT_NAME "@PROJECT_FULLNAME@"
+#define SMTRAT_VERSION "@PROJECT_VERSION@"
 
 #cmakedefine USE_NSS
 #cmakedefine USE_GINACRA
@@ -12,4 +11,6 @@
 
 #cmakedefine GATHER_STATS
 
-#endif
+// Take the GBsetting from cmake
+#define GBModuleSettings @SMTRAT_GBMODULE_SETTINGS@
+
