@@ -100,7 +100,7 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
 }
 
 template<class Settings>
-bool GroebnerModule<Settings>::processNewConstraint(Formula::const_iterator _formula)
+void GroebnerModule<Settings>::processNewConstraint(Formula::const_iterator _formula)
 {
     const Constraint& constraint = (*_formula)->constraint( );
     bool toGb = (constraint.relation( ) == CR_EQ || Settings::transformIntoEqualities == ALL_INEQUALITIES || (Settings::transformIntoEqualities == ONLY_NONSTRICT && (constraint.relation( ) == CR_GEQ || constraint.relation( ) == CR_LEQ) ) );
@@ -116,7 +116,7 @@ bool GroebnerModule<Settings>::processNewConstraint(Formula::const_iterator _for
 }
 
 template<class Settings>
-bool GroebnerModule<Settings>::handleConstraintToGBQueue(Formula::const_iterator _formula)
+void GroebnerModule<Settings>::handleConstraintToGBQueue(Formula::const_iterator _formula)
 {
     if((*_formula)->constraint( ).relation() == CR_EQ)
     {
@@ -138,7 +138,7 @@ bool GroebnerModule<Settings>::handleConstraintToGBQueue(Formula::const_iterator
 }
 
 template<class Settings>
-bool GroebnerModule<Settings>::handleConstraintToGBQueue(Formula::const_iterator _formula)
+void GroebnerModule<Settings>::handleConstraintNotToGB(Formula::const_iterator _formula)
 {
     if( Settings::checkInequalities == NEVER )
     {
@@ -253,6 +253,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
                 #endif
                 witness = mBasis.getGb( ).front( );
             }
+#ifdef USE_NSS
             else
             {
                 typename Settings::Reductor red( mBasis.getGbIdeal( ), witness );
@@ -260,6 +261,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
                 std::cout << witness << std::endl;
                 assert( witness.isZero( ) );
             }
+#endif
             mInfeasibleSubsets.push_back( set<const Formula*>() );
             // The equalities we used for the basis-computation are the infeasible subset
 
@@ -391,7 +393,7 @@ void GroebnerModule<Settings>::removeSubformula( Formula::const_iterator _formul
     {
         if( Settings::checkInequalities != NEVER )
         {
-            if (Settings::checkInequalites ==  ALWAYS) 
+            if (Settings::checkInequalities ==  ALWAYS) 
             {
                 removeReceivedFormulaFromNewInequalities( _formula );
             }
@@ -408,7 +410,7 @@ void GroebnerModule<Settings>::removeSubformula( Formula::const_iterator _formul
 template<class Settings>
 void GroebnerModule<Settings>::removeReceivedFormulaFromNewInequalities( Formula::const_iterator _formula ) 
 {
-    for(auto it = mNewInequalities.begin(); it != mNewIneqalities.end(); ++it )
+    for(auto it = mNewInequalities.begin(); it != mNewInequalities.end(); ++it )
     {
         if((*it)->first == _formula)
         {

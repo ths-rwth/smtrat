@@ -199,9 +199,9 @@ private:
     GBCalculationStats* mGBStats;
     #endif //GATHER_STATS
 
-    bool processNewConstraint( Formula::const_iterator _formula );
-    bool handleConstraintToGBQueue( Formula::const_iterator _formula );
-    bool handleConstraintNotToGB( Formula::const_iterator _formula );
+    void processNewConstraint( Formula::const_iterator _formula );
+    void handleConstraintToGBQueue( Formula::const_iterator _formula );
+    void handleConstraintNotToGB( Formula::const_iterator _formula );
     void removeReceivedFormulaFromNewInequalities( Formula::const_iterator _formula );
     typedef Module super;
 };
