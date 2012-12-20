@@ -118,18 +118,16 @@ void GroebnerModule<Settings>::processNewConstraint(Formula::const_iterator _for
 template<class Settings>
 void GroebnerModule<Settings>::handleConstraintToGBQueue(Formula::const_iterator _formula)
 {
+    pushBacktrackPoint( _formula );
     if((*_formula)->constraint( ).relation() == CR_EQ)
     {
-        pushBacktrackPoint( _formula );
         mBasis.addPolynomial( Polynomial( (*_formula)->constraint( ).lhs( ) ) );
-        saveState( );
     }
     else
     {
-        pushBacktrackPoint( _formula );
-        mBasis.addPolynomial( transformIntoEquality( _formula ) );
-        saveState( );
+        mBasis.addPolynomial( transformIntoEquality( _formula ) );   
     }
+    saveState( );
     
     if( !Settings::passGB )
     {
