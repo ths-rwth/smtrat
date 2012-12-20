@@ -34,7 +34,7 @@
  * GroebnerModule
  *
  * Since: 2012-01-18
- * Version: 2012-07-26
+ * Version: 2012-20-12
  */
 
 #ifndef SMTRAT_GROEBNERMODULE_H
@@ -178,8 +178,6 @@ protected:
     /// Saves the relevant history to support backtracking
     std::list<GroebnerModuleState<Settings> > mStateHistory;
 
-
-
     /// A list of inequalities which were added after the last consistency check.
     std::list<typename InequalitiesTable<Settings>::Rows::iterator> mNewInequalities;
 
@@ -201,6 +199,9 @@ private:
     GBCalculationStats* mGBStats;
     #endif //GATHER_STATS
 
+    bool processNewConstraint( Formula::const_iterator _formula );
+    bool handleConstraintToGBQueue( Formula::const_iterator _formula );
+    bool handleConstraintNotToGB( Formula::const_iterator _formula );
     void removeReceivedFormulaFromNewInequalities( Formula::const_iterator _formula );
     typedef Module super;
 };

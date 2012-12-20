@@ -21,12 +21,12 @@
 
 
 /**
- * @file   GroebnerModule.cpp
+ * @file   GroebnerModule.tpp
  *
  * @author Sebastian Junges
  * @author Ulrich Loup
  *
- * @version 2012-03-20
+ * @version 2012-12-20
  */
 #include "../config.h"
 
@@ -92,45 +92,70 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
     #ifdef GATHER_STATS
     mStats->constraintAdded(constraint.relation());
     #endif
-    //only equalities should be added to the gb
-    if( constraint.relation( ) == CR_EQ )
-    {
-        pushBacktrackPoint( _formula );
-        mBasis.addPolynomial( Polynomial( constraint.lhs( ) ) );
-        saveState( );
 
-        if( !Settings::passGB )
-        {
-            addReceivedSubformulaToPassedFormula( _formula );
-        }
+    processNewConstraint(_formula);
+    //only equalities should be added to the gb
+    
+    return true;
+}
+
+template<class Settings>
+bool GroebnerModule<Settings>::processNewConstraint(Formula::const_iterator _formula)
+{
+    const Constraint& constraint = (*_formula)->constraint( );
+    bool toGb = (constraint.relation( ) == CR_EQ || Settings::transformIntoEqualities == ALL_INEQUALITIES || (Settings::transformIntoEqualities == ONLY_NONSTRICT && (constraint.relation( ) == CR_GEQ || constraint.relation( ) == CR_LEQ) ) );
+    
+    if( toGb )
+    {
+        handleConstraintToGBQueue(_formula);
     }
     else
     {
-        if( Settings::transformIntoEqualities == ALL_INEQUALITIES ||
-                (Settings::transformIntoEqualities == ONLY_NONSTRICT && (constraint.relation( ) == CR_GEQ || constraint.relation( ) == CR_LEQ)) )
-        {
-            assert( Settings::transformIntoEqualities != NO_INEQUALITIES );
-            pushBacktrackPoint( _formula );
-            mBasis.addPolynomial( transformIntoEquality( _formula ) );
-            saveState( );
-
-            if( !Settings::passGB )
-            {
-                addReceivedSubformulaToPassedFormula( _formula );
-            }
-        }
-        else if( Settings::checkInequalities == NEVER )
-        {
-            addReceivedSubformulaToPassedFormula( _formula );
-        }
-        else
-        {
-            mNewInequalities.push_back( mInequalities.InsertReceivedFormula( _formula ) );
-            assert((*(mNewInequalities.back()->first))->constraint().relation() != CR_EQ);
-        }
+        handleConstraintNotToGB(_formula);
     }
-    return true;
 }
+
+template<class Settings>
+bool GroebnerModule<Settings>::handleConstraintToGBQueue(Formula::const_iterator _formula)
+{
+    if((*_formula)->constraint( ).relation() == CR_EQ)
+    {
+        pushBacktrackPoint( _formula );
+        mBasis.addPolynomial( Polynomial( (*_formula)->constraint( ).lhs( ) ) );
+        saveState( );
+    }
+    else
+    {
+        pushBacktrackPoint( _formula );
+        mBasis.addPolynomial( transformIntoEquality( _formula ) );
+        saveState( );
+    }
+    
+    if( !Settings::passGB )
+    {
+        addReceivedSubformulaToPassedFormula( _formula );
+    }
+}
+
+template<class Settings>
+bool GroebnerModule<Settings>::handleConstraintToGBQueue(Formula::const_iterator _formula)
+{
+    if( Settings::checkInequalities == NEVER )
+    {
+        addReceivedSubformulaToPassedFormula( _formula );
+    }
+    else if( Settings::checkInequalities == ALWAYS )
+    {
+        mNewInequalities.push_back( mInequalities.InsertReceivedFormula( _formula ) );
+        assert((*(mNewInequalities.back()->first))->constraint().relation() != CR_EQ);
+    }
+    else
+    {
+        assert( Settings::checkInequalities == AFTER_NEW_GB);
+        mInequalities.InsertReceivedFormula( _formula );
+    }
+}
+
 
 /**
  * A theory call to the GroebnerModule. The exact working of this module depends on the settings in GBSettings.
@@ -178,7 +203,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
                 addDeduction(deduction);
                 #ifdef GATHER_STATS
-                
+                mStats->DeducedEquality();
                 #endif
             }
             ++constraint;
@@ -606,7 +631,6 @@ void GroebnerModule<Settings>::passGB( )
  * @param reasons The reasons vector.
  * @return The reason set.
  */
-
 template<class Settings>
 std::set<const Formula*> GroebnerModule<Settings>::generateReasons( const GiNaCRA::BitVector& reasons )
 {
