@@ -39,7 +39,6 @@
 
 //#define CHECK_SMALLER_MUSES
 
-
 using std::set;
 using GiNaC::ex_to;
 
@@ -164,7 +163,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
         for(auto it =  results.rbegin(); it != results.rend(); ++it)
         {
             // if the bitvector is not empty, there is a theory deduction
-            if( !it->empty() )
+            if( Settings::addTheoryDeductions == ALL_CONSTRAINTS && !it->empty() )
             {
                 Formula* deduction = new Formula(OR);
                 
@@ -181,7 +180,6 @@ Answer GroebnerModule<Settings>::isConsistent( )
                 #ifdef GATHER_STATS
                 
                 #endif
-                    
             }
             ++constraint;
         }
@@ -191,6 +189,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
     {
         //now, we calculate the groebner basis
         mBasis.calculate( );
+        
         Polynomial witness;
 #ifdef USE_NSS
         // On linear systems, all solutions lie in Q. So we do not have to check for a solution.
@@ -282,6 +281,8 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
         if( Settings::checkInequalities != NEVER )
         {
+            printReceivedFormula();
+            mInequalities.print();
             Answer ans = mInequalities.reduceWRTGroebnerBasis( mBasis.getGbIdeal( ) );
             mNewInequalities.clear( );
             if( ans != Unknown )
@@ -311,6 +312,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
     }
     else if( Settings::checkInequalities == ALWAYS )
     {
+        //TODO check this list, as it may contain bugs with Setting 5.
         Answer ans = mInequalities.reduceWRTGroebnerBasis( mNewInequalities, mBasis.getGbIdeal( ) );
         mNewInequalities.clear( );
         if( ans != Unknown )
@@ -364,10 +366,31 @@ void GroebnerModule<Settings>::removeSubformula( Formula::const_iterator _formul
     {
         if( Settings::checkInequalities != NEVER )
         {
+            if (Settings::checkInequalites ==  ALWAYS) 
+            {
+                removeReceivedFormulaFromNewInequalities( _formula );
+            }
             mInequalities.removeInequality( _formula );
         }
     }
     super::removeSubformula( _formula );
+}
+
+/**
+ * Removes a received formula from the list of new inequalities. It assumes that there is only one such element in the list. 
+ * @param _formula
+ */
+template<class Settings>
+void GroebnerModule<Settings>::removeReceivedFormulaFromNewInequalities( Formula::const_iterator _formula ) 
+{
+    for(auto it = mNewInequalities.begin(); it != mNewIneqalities.end(); ++it )
+    {
+        if((*it)->first == _formula)
+        {
+            mNewInequalities.erase(it);
+            return;
+        }
+    }
 }
 
 /**
@@ -464,8 +487,6 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
         }
     }
     assert( mBasis.nrOriginalConstraints( ) == mBacktrackPoints.size( ) - 1 );
-
-
 }
 
 /**
@@ -665,6 +686,9 @@ bool GroebnerModule<Settings>::validityCheck( )
 template<class Settings>
 void GroebnerModule<Settings>::removeSubformulaFromPassedFormula( Formula::iterator _formula )
 {
+    std::cout << "formula remove: ";
+    (**_formula).print();
+    std::cout << "\n";
     super::removeSubformulaFromPassedFormula( _formula );
 }
 
@@ -696,9 +720,7 @@ typename InequalitiesTable<Settings>::Rows::iterator InequalitiesTable<Settings>
     // We assume that the just added formula is the last one.
     const Formula::iterator passedEntry = mModule->mpPassedFormula->last( );
     // And we add a row to our table
-
     return mReducedInequalities.insert( Row( received, RowEntry( passedEntry, (*received)->constraint( ).relation( ), std::list<CellEntry > (1, CellEntry( 0, Polynomial( (*received)->constraint( ).lhs( ) ) )) ) ) ).first;
-
 }
 
 /**
@@ -795,6 +817,7 @@ Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const Ideal& gb )
 {
     for( auto it = mReducedInequalities.begin( ); it != mReducedInequalities.end( ); ++it )
     {
+        // The formula is not passed because it is satisfiable.
         if( !reduceWRTGroebnerBasis( it, gb ) ) {
             #ifdef GATHER_STATS
             mStats->infeasibleInequality();
@@ -874,7 +897,8 @@ template<class Settings>
 bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterator it, const Ideal& gb )
 {
     assert( std::get < 1 > (it->second) != CR_EQ );
-    Polynomial& p = std::get < 2 > (it->second).back( ).second;
+    
+    Polynomial& p = std::get<2>(it->second).back( ).second;
     Polynomial reduced;
 
     bool reductionOccured = false;
@@ -888,6 +912,7 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
     Constraint_Relation relation = std::get < 1 > (it->second);
     if( reductionOccured )
     {
+        assert(std::get < 0 > (it->second) != mModule->mpPassedFormula->end());
         if( reduced.isZero( ) || reduced.isConstant( ) )
         {
             bool satisfied = false;
@@ -921,6 +946,11 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
 
             if( satisfied )
             {
+                // remove the last formula
+                mModule->printReceivedFormula();
+                std::cout << "In the row " << *(it->first) << std::endl;
+                std::cout << "Try to remove:" << *std::get<0>(it->second) << "(end =" << *mModule->mpPassedFormula->end() << ")" << std::endl;
+                print();
                 mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
 
                 std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) );
@@ -988,6 +1018,7 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                 //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "reduced.toEx( )"
                 mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( reduced.toEx( ), relation, Formula::constraintPool().variables() ) ), originals );
                 //set the pointer to the passed formula accordingly.
+                std::cout << "Set pointer to: "  << (*mModule->mpPassedFormula->last()) << std::endl;
                 std::get < 0 > (it->second) = mModule->mpPassedFormula->last( );
             }
         }

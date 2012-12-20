@@ -200,6 +200,8 @@ private:
     GroebnerModuleStats* mStats;
     GBCalculationStats* mGBStats;
     #endif //GATHER_STATS
+
+    void removeReceivedFormulaFromNewInequalities( Formula::const_iterator _formula );
     typedef Module super;
 };
 } // namespace smtrat
