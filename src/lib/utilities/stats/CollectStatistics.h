@@ -50,7 +50,7 @@ namespace smtrat {
         static void registerStats(Statistics* _stats);
         static void print(std::ostream& os = std::cout);
         static void exportKeyValue(std::string path);
-        static void exportXML();
+        static void exportXML(const std::string& filename = "stats.xml");
     private:
         static std::vector<Statistics*> stats;
     };

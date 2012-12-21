@@ -53,6 +53,7 @@ int main( int argc, char* argv[] )
 
     bool printStats = false;
     bool exportStats = false;
+    std::string pathToStatsXML;
     
 
     if( argc == 1 )
@@ -81,6 +82,8 @@ int main( int argc, char* argv[] )
             #ifdef GATHER_STATS
             exportStats = true;
             #endif
+            //TODO make this optional.
+            pathToStatsXML = argv[++ai];
         }
         else if( argv[ai] == std::string( "--gb-info") )
         {
@@ -162,7 +165,7 @@ int main( int argc, char* argv[] )
                 }
                 if( exportStats )
                 {
-                    smtrat::CollectStatistics::exportXML();
+                    smtrat::CollectStatistics::exportXML(pathToStatsXML);
                 }
                 #endif //GATHER_STATS
             }
