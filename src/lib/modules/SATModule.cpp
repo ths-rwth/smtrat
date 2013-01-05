@@ -39,7 +39,6 @@
  * OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-
 /**
  * @file   SATModule.cpp
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
@@ -51,7 +50,7 @@
 
 #include "SATModule.h"
 
-//#define DEBUG_SATMODULE
+#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 #define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
@@ -146,7 +145,7 @@ namespace smtrat
         asynch_interrupt( false ),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
-        mBacktrackpointInSatSolver(),
+        mFormulaClauseMap(),
         mMaxSatAssigns()
         #ifdef GATHER_STATS
         , mStats(new SATstatistics())
@@ -184,7 +183,8 @@ namespace smtrat
         assert( ((*_subformula)->proposition() | ~PROP_IS_A_CLAUSE) == ~PROP_TRUE );
         Module::assertSubformula( _subformula );
 
-        addClause( *_subformula, false );
+        assert( mFormulaClauseMap.find( *_subformula ) == mFormulaClauseMap.end() );
+        mFormulaClauseMap[*_subformula] = addClause( *_subformula, false );
 
         return true;
     }
@@ -196,9 +196,14 @@ namespace smtrat
      */
     void SATModule::removeSubformula( Formula::const_iterator _subformula )
     {
+        FormulaClauseMap::iterator iter = mFormulaClauseMap.find( *_subformula );
+        assert( iter != mFormulaClauseMap.end() );
+        if( iter->second != CRef_Undef )
+        {
+            cancelUntil( level( iter->second ) );
+            removeClause( iter->second );
+        }
         Module::removeSubformula( _subformula );
-
-        // TODO: something
     }
 
     /**
@@ -212,12 +217,6 @@ namespace smtrat
     {
         budgetOff();
         assumptions.clear();
-
-        //        // add the whole input formula to the assumptions
-        //        addAssumptionToCheck( *mpReceivedFormula, false, moduleName( mModuleType ) );
-
-        model.clear();
-        conflict.clear();
         if( !ok )
         {
             #ifdef GATHER_STATS
@@ -226,32 +225,15 @@ namespace smtrat
             mSolverState = False;
             return False;
         }
-
         solves++;
-
         max_learnts             = nClauses() * learntsize_factor;
         learntsize_adjust_confl = learntsize_adjust_start_confl;
         learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
-
         lbool result            = search();
-        //        printBooleanConstraintMap();
-
         #ifdef SATMODULE_WITH_CALL_NUMBER
         cout << endl << endl;
         #endif
-
-        if( result == l_True )
-        {
-            // Extend & copy model:
-            model.growTo( nVars() );
-            for( int i = 0; i < nVars(); i++ )
-                model[i] = value( i );
-        }
-        else if( result == l_False && conflict.size() == 0 )
-            ok = false;
-
         cancelUntil( 0 );
-
         if( result == l_True )
         {
             #ifdef GATHER_STATS
@@ -262,18 +244,17 @@ namespace smtrat
         }
         else if( result == l_False )
         {
+            ok = false;
             mInfeasibleSubsets.clear();
-
             /*
-            * Set the infeasible subset to the set of all received constraints.
-            */
+             * Set the infeasible subset to the set of all received constraints.
+             */
             set<const Formula*> infeasibleSubset = set<const Formula*>();
             for( Formula::const_iterator subformula = mpReceivedFormula->begin(); subformula != mpReceivedFormula->end(); ++subformula )
             {
                 infeasibleSubset.insert( *subformula );
             }
             mInfeasibleSubsets.push_back( infeasibleSubset );
-
             #ifdef GATHER_STATS
             collectStats();
             #endif
@@ -289,7 +270,6 @@ namespace smtrat
             return Unknown;
         }
     }
-
 
     /**
      *
@@ -310,27 +290,27 @@ namespace smtrat
     /**
      *
      * @param _formula
-     * @return
+     * @return The reference to the first clause which has been added.
      */
-    CRef SATModule::addFormula( Formula* _formula )
+    CRef SATModule::addFormula( Formula* _formula, unsigned _type )
     {
+        assert( _type < 2 );
         Formula::toCNF( *_formula, true );
         if( _formula->getType() == AND )
         {
             CRef c = CRef_Undef;
             for( Formula::const_iterator clause = _formula->begin(); clause != _formula->end(); ++clause )
             {
-                CRef ct = addClause( *clause, true );
+                CRef ct = addClause( *clause, _type );
                 if( c == CRef_Undef && ct != CRef_Undef ) c = ct;
             }
             return c;
         }
-        else if( _formula->getType() == OR )
+        else
         {
-            return addClause( _formula, true );
+            assert( _formula->getType() == OR );
+            return addClause( _formula, _type );
         }
-        assert( false );
-        return CRef_Undef;
     }
 
     /**
@@ -339,11 +319,11 @@ namespace smtrat
      * @param _formula  The formula to abstract and add to the SAT solver. Note, that the
      *                  formula is expected to be in CNF.
      * @param _literals The literals occurring in the added clauses.
+     * @return The reference to the added clause, if any has been added; otherwise CRef_Undef.
      */
-    CRef SATModule::addClause( const Formula* _formula, bool _learned, bool _theoryReason )
+    CRef SATModule::addClause( const Formula* _formula, unsigned _type )
     {
         assert( (_formula->proposition() | ~PROP_IS_A_CLAUSE) == ~PROP_TRUE );
-        int nVarsBefore = nVars();
         switch( _formula->getType() )
         {
             case OR:
@@ -356,7 +336,7 @@ namespace smtrat
                     {
                         case REALCONSTRAINT:
                         {
-                            clauseLits.push( getLiteral( **subformula, _learned ? NULL : _formula ) );
+                            clauseLits.push( getLiteral( **subformula, _type == NORMAL_CLAUSE ? _formula : NULL ) );
                             break;
                         }
                         case NOT:
@@ -366,13 +346,13 @@ namespace smtrat
                             {
                                 case REALCONSTRAINT:
                                 {
-                                    Lit literal = getLiteral( subsubformula, _learned ? NULL : _formula );
+                                    Lit literal = getLiteral( subsubformula, _type == NORMAL_CLAUSE ? _formula : NULL );
                                     clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
                                     break;
                                 }
                                 case BOOL:
                                 {
-                                    Lit literal = getLiteral( subsubformula, _learned ? NULL : _formula );
+                                    Lit literal = getLiteral( subsubformula, _type == NORMAL_CLAUSE ? _formula : NULL );
                                     clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
                                     break;
                                 }
@@ -394,7 +374,7 @@ namespace smtrat
                         }
                         case BOOL:
                         {
-                            clauseLits.push( getLiteral( **subformula, _learned ? NULL : _formula ) );
+                            clauseLits.push( getLiteral( **subformula, _type == NORMAL_CLAUSE ? _formula : NULL ) );
                             break;
                         }
                         case TTRUE:
@@ -412,29 +392,14 @@ namespace smtrat
                         }
                     }
                 }
-                if( _learned )
-                {
-                    return addLearnedClause( clauseLits, nVarsBefore != nVars(), _theoryReason );
-                }
-                else
-                {
-                    addClause( clauseLits );
-                }
-                return CRef_Undef;
+                addClause( clauseLits, _type );
+                return clauses.last();
             }
             case REALCONSTRAINT:
             {
-                if( _learned )
-                {
-                    vec<Lit> learned_clause;
-                    learned_clause.push( getLiteral( *_formula, _learned ? NULL : _formula ) );
-                    return addLearnedClause( learned_clause, nVarsBefore != nVars(), _theoryReason );
-                }
-                else
-                {
-                    addClause( getLiteral( *_formula, _learned ? NULL : _formula ) );
-                }
-                return CRef_Undef;
+                vec<Lit> learned_clause;
+                learned_clause.push( getLiteral( *_formula, _type == NORMAL_CLAUSE ? _formula : NULL ) );
+                return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
             }
             case NOT:
             {
@@ -443,38 +408,22 @@ namespace smtrat
                 {
                     case REALCONSTRAINT:
                     {
-                        Lit literal = getLiteral( subformula, _learned ? NULL : _formula );
-                        if( _learned )
-                        {
-                            vec<Lit> learned_clause;
-                            learned_clause.push( mkLit( var( literal ), !sign( literal ) ) );
-                            addLearnedClause( learned_clause, nVarsBefore != nVars(), _theoryReason );
-                        }
-                        else
-                        {
-                            addClause( mkLit( var( literal ), !sign( literal ) ) );
-                        }
-                        return CRef_Undef;
+                        Lit literal = getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : NULL );
+                        vec<Lit> learned_clause;
+                        learned_clause.push( mkLit( var( literal ), !sign( literal ) ) );
+                        return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
                     }
                     case BOOL:
                     {
-                        Lit literal = getLiteral( subformula, _learned ? NULL : _formula );
-                        if( _learned )
-                        {
-                            vec<Lit> learned_clause;
-                            learned_clause.push( mkLit( var( literal ), !sign( literal ) ) );
-                            addLearnedClause( learned_clause, nVarsBefore != nVars(), _theoryReason );
-                        }
-                        else
-                        {
-                            addClause( mkLit( var( literal ), !sign( literal ) ) );
-                        }
-                        return CRef_Undef;
+                        Lit literal = getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : NULL );
+                        vec<Lit> learned_clause;
+                        learned_clause.push( mkLit( var( literal ), !sign( literal ) ) );
+                        return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
                     }
                     case TTRUE:
                     {
-                        addEmptyClause();
-                        return False;
+                        ok = false;
+                        return CRef_Undef;
                     }
                     case FFALSE:
                     {
@@ -490,17 +439,9 @@ namespace smtrat
             }
             case BOOL:
             {
-                if( _learned )
-                {
-                    vec<Lit> learned_clause;
-                    learned_clause.push( getLiteral( *_formula, _learned ? NULL : _formula ) );
-                    addLearnedClause( learned_clause, nVarsBefore != nVars(), _theoryReason );
-                }
-                else
-                {
-                    addClause( getLiteral( *_formula, _learned ? NULL : _formula ) );
-                }
-                return CRef_Undef;
+                vec<Lit> learned_clause;
+                learned_clause.push( getLiteral( *_formula, _type == NORMAL_CLAUSE ? _formula : NULL ) );
+                return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
             }
             case TTRUE:
             {
@@ -508,8 +449,8 @@ namespace smtrat
             }
             case FFALSE:
             {
-                addEmptyClause();
-                return clauses.last();
+                ok = false;
+                return CRef_Undef;
             }
             default:
             {
@@ -667,7 +608,7 @@ namespace smtrat
         mBooleanConstraintMap.last().updateInfo = 0;
         vardata.push( mkVarData( CRef_Undef, 0 ) );
         activity.push( _activity );
-        //        activity.push( rnd_init_act ? drand( random_seed ) * 0.00001 : 0 );
+        // activity.push( rnd_init_act ? drand( random_seed ) * 0.00001 : 0 );
         seen.push( 0 );
         polarity.push( sign );
         decision.push();
@@ -677,44 +618,173 @@ namespace smtrat
     }
 
     /**
-     * Description.
      *
-     * @param ps
-     *
-     * @return
+     * @param _clause
+     * @param _withNewVariable
+     * @param _theoryDeduction
+     * @return  true , if a clause has been added to either to learnts or clauses;
+     *          false, otherwise.
      */
-    bool SATModule::addClause_( vec<Lit>& ps )
+    bool SATModule::addClause( vec<Lit>& _clause, unsigned _type )
     {
-        assert( decisionLevel() == 0 );
-        if( !ok )
-            return false;
-
+        assert( _clause.size() != 0 );
+        cout << "_clause size: " << _clause.size() << endl;
+        add_tmp.clear();
+        _clause.copyTo( add_tmp );
+        cout << "add_tmp size: " << add_tmp.size() << endl;
+        #ifdef GATHER_STATS
+        if( _type > NORMAL_CLAUSE ) mStats->lemmaLearned();
+        #endif
         // Check if clause is satisfied and remove false/duplicate literals:
-        sort( ps );
-        Lit p;
-        int i, j;
-        for( i = j = 0, p = lit_Undef; i < ps.size(); i++ )
-            if( value( ps[i] ) == l_True || ps[i] == ~p )
-                return true;
-            else if( value( ps[i] ) != l_False && ps[i] != p )
-                ps[j++] = p = ps[i];
-        ps.shrink( i - j );
-
-        if( ps.size() == 0 )
-            return ok = false;
-        else if( ps.size() == 1 )
+        sort( add_tmp );
+        if( _type == NORMAL_CLAUSE )
         {
-            uncheckedEnqueue( ps[0] );
-            return ok = (propagate() == CRef_Undef);
+            Lit p;
+            int i, j;
+            for( i = j = 0, p = lit_Undef; i < add_tmp.size(); i++ )
+            {
+                if( value( add_tmp[i] ) == l_True || add_tmp[i] == ~p )
+                {
+                    return false;
+                }
+                else if( value( add_tmp[i] ) != l_False && add_tmp[i] != p )
+                {
+                    add_tmp[j++] = p = add_tmp[i];
+                }
+            }
+            add_tmp.shrink( i - j );
+
+            if( add_tmp.size() == 0 )
+            {
+                ok = false;
+                return false;
+            }
         }
+        // Do not store theory lemma
+        if( add_tmp.size() == 1 )
+        {
+            if( _type == CONFLICT_CLAUSE )
+            {
+                ca.alloc( add_tmp, true );
+                return true;
+            }
+            else
+            {
+                uncheckedEnqueue( add_tmp[0] );
+                ok = (propagate() == CRef_Undef);
+                return false;
+            }
+        }
+        // Learn theory lemma
         else
         {
-            CRef cr = ca.alloc( ps, false );
-            clauses.push( cr );
-            attachClause( cr );
+            CRef result;
+            if( _type > NORMAL_CLAUSE )
+            {
+                result = ca.alloc( add_tmp, _type );
+                learnts.push( result );
+            }
+            else
+            {
+                result = ca.alloc( add_tmp, false );
+                clauses.push( result );
+            }
+            if( _type == DEDUCTED_CLAUSE ) arangeForWatches( result );
+            attachClause( result );
+            // Clause is unit
+            if( _type == DEDUCTED_CLAUSE )
+            {
+                Clause& c = ca[result];
+                if( value( c[0] ) == l_Undef && value( c[1] ) == l_False )
+                {
+                    uncheckedEnqueue( c[0], result );
+                    ok = (propagate() == CRef_Undef);
+                }
+            }
         }
-
         return true;
+    }
+
+    /**
+     * Moves two literals which are not assigned to false to the beginning of the clause.
+     * If only one literal is not assigned to false, it is moved to the beginning.
+     * If all literals are false, nothing happens.
+     *
+     * @param _clause The clause in which the literals shall be reordered.
+     */
+    void SATModule::arangeForWatches( CRef _clauseRef )
+    {
+        Clause& clause = ca[_clauseRef];
+        assert( clause.size() > 1 );
+        if( clause.size() < 3 ) return;
+        int l1 = -1;
+        int l2 = -1;
+        int i = 0;
+        for( ; i < clause.size(); ++i )
+        {
+            lbool lb = value( clause[i] );
+            if( lb == l_Undef )
+            {
+                l1 = i;
+                goto FindSecond;
+            }
+            else if( lb == l_True )
+            {
+                l1 = i;
+                break;
+            }
+        }
+        ++i;
+        for( ; i < clause.size(); ++i )
+        {
+            lbool lb = value( clause[i] );
+            if( lb == l_Undef )
+            {
+                l2 = l1;
+                l1 = i;
+                break;
+            }
+            else if( l2 < 0 && lb == l_True )
+            {
+                l2 = i;
+            }
+        }
+FindSecond:
+        ++i;
+        for( ; i < clause.size(); ++i )
+        {
+            lbool lb = value( clause[i] );
+            if( lb == l_Undef )
+            {
+                l2 = i;
+                break;
+            }
+            else if( l2 < 0 && lb == l_True )
+            {
+                l2 = i;
+            }
+        }
+        if( l1 < 0 )
+        {
+            return;
+        }
+        else if( l2 < 0 )
+        {
+            l2 = l1 != 1 ? 1 : 0;
+        }
+        Lit first = clause[l1];
+        Lit second = clause[l2];
+        if( l1 != 0 )
+        {
+            clause[l1] = clause[0];
+            clause[0] = first;
+            if( l2 == 0 ) l2 = l1;
+        }
+        if( l2 != 1 )
+        {
+            clause[l2] = clause[1];
+            clause[1] = second;
+        }
     }
 
     /**
@@ -724,12 +794,15 @@ namespace smtrat
      */
     void SATModule::attachClause( CRef cr )
     {
-        const Clause& c = ca[cr];
+        Clause& c = ca[cr];
         assert( c.size() > 1 );
         watches[~c[0]].push( Watcher( cr, c[1] ) );
         watches[~c[1]].push( Watcher( cr, c[0] ) );
         if( c.learnt() )
+        {
             learnts_literals += c.size();
+            claBumpActivity( c );
+        }
         else
             clauses_literals += c.size();
     }
@@ -820,6 +893,363 @@ namespace smtrat
 
     //=================================================================================================
     // Major methods:
+
+    /**
+     * search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
+     *
+     *  Description:
+     *    Search for a model the specified number of conflicts.
+     *    NOTE! Use negative value for 'nof_conflicts' indicate infinity.
+     *
+     *  Output:
+     *    'l_True' if a partial assignment that is consistent with respect to the clause set is found. If
+     *    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
+     *    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
+     *
+     * @param nof_conflicts
+     *
+     * @return
+     */
+    lbool SATModule::search( int nof_conflicts )
+    {
+        #ifdef DEBUG_SATMODULE
+        cout << "### search( " << nof_conflicts << " )" << endl << "###" << endl;
+        printClauses( clauses, "Clauses", cout, "### " );
+        cout << "###" << endl;
+        printClauses( learnts, "Learnts", cout, "### " );
+        cout << "###" << endl;
+        printBooleanConstraintMap( cout, "###" );
+        cout << "###" << endl;
+        printBooleanVarMap( cout, "###" );
+        cout << "###" << endl;
+        #endif
+        assert( ok );
+        int      backtrack_level;
+        int      conflictC = 0;
+        vec<Lit> learnt_clause;
+        starts++;
+        #ifdef SATMODULE_WITH_CALL_NUMBER
+        unsigned numberOfTheoryCalls = 0;
+        #ifndef DEBUG_SATMODULE
+        cout << endl << "Number of theory calls:" << endl << endl;
+        #endif
+        #endif
+
+        for( ; ; )
+        {
+#ifdef SAT_MODULE_THEORY_PROPAGATION
+Propagation:
+#endif
+            CRef confl = propagate();
+
+            if( confl == CRef_Undef )
+            {
+                // Check constraints corresponding to the positively assigned Boolean variables for consistency.
+                if( adaptPassedFormula() )
+                {
+                    #ifdef DEBUG_SATMODULE
+                    cout << "######################################################################" << endl;
+                    cout << "###" << endl;
+                    printClauses( clauses, "Clauses", cout, "### " );
+                    cout << "###" << endl;
+                    printClauses( learnts, "Learnts", cout, "### " );
+                    cout << "###" << endl;
+                    printCurrentAssignment( cout, "### " );
+                    cout << "### " << endl;
+                    printDecisions( cout, "### " );
+                    cout << "### " << endl;
+                    cout << "### Check the constraints: ";
+                    #endif
+                    #ifdef SATMODULE_WITH_CALL_NUMBER
+                    ++numberOfTheoryCalls;
+                    #ifdef DEBUG_SATMODULE
+                    cout << "#" << numberOfTheoryCalls << "  ";
+                    #endif
+                    #endif
+                    #ifdef DEBUG_SATMODULE
+                    cout << "{ ";
+                    for( Formula::const_iterator subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
+                    {
+                        cout << (*subformula)->constraint().toString() << " ";
+                    }
+                    cout << "}" << endl;
+                    #endif
+                    switch( runBackends() )
+                    {
+                        case True:
+                        {
+                            #ifdef SAT_MODULE_THEORY_PROPAGATION
+                            /*
+                             * Theory propagation.
+                             */
+                            bool theoryPropagationApplied = false;
+                            learnt_clause.clear();
+                            vector<Module*>::const_iterator backend = usedBackends().begin();
+                            while( backend != usedBackends().end() )
+                            {
+                                /*
+                                 * Learn the deductions.
+                                 */
+                                (*backend)->updateDeductions();
+                                if( !(*backend)->deductions().empty() ) theoryPropagationApplied = true;
+                                for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
+                                        deduction != (*backend)->deductions().end(); ++deduction )
+                                {
+                                    #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
+                                    cout << "Learned a theory deduction from a backend module!" << endl;
+                                    #endif
+                                    CRef ct = addFormula( *deduction, DEDUCTED_CLAUSE );
+                                    if( ct != CRef_Undef ) confl = ct;
+                                }
+                                (*backend)->clearDeductions();
+                                ++backend;
+                            }
+                            #endif
+                            #ifdef DEBUG_SATMODULE
+                            cout << "### Result: True!" << endl;
+                            #endif
+                            #ifdef SAT_MODULE_THEORY_PROPAGATION
+                            if( ok && theoryPropagationApplied ) goto Propagation;
+                            #endif
+                            break;
+                        }
+                        case False:
+                        {
+                            #ifdef DEBUG_SATMODULE
+                            cout << "### Result: False!" << endl;
+                            #endif
+                            learnt_clause.clear();
+                            vector<Module*>::const_iterator backend = usedBackends().begin();
+                            while( backend != usedBackends().end() )
+                            {
+                                if( !(*backend)->infeasibleSubsets().empty() )
+                                {
+                                    #ifdef STORE_ONLY_ONE_REASON
+                                    vec_set_const_pFormula::const_iterator bestInfeasibleSubset = (*backend)->infeasibleSubsets().begin();
+                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
+                                            infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
+                                    {
+                                        #ifdef LOG_INFEASIBLE_SUBSETS
+                                        addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
+                                        #endif
+                                        if( bestInfeasibleSubset->size() > infsubset->size() )
+                                        {
+                                            bestInfeasibleSubset = infsubset;
+                                        }
+                                    }
+                                    #ifdef DEBUG_SATMODULE
+                                    (*backend)->printInfeasibleSubsets();
+                                    cout << "### { ";
+                                    #endif
+                                    confl = learnTheoryConflict( *bestInfeasibleSubset );
+                                    #else
+                                    int conflictSize = mpPassedFormula->size() + 1;
+                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
+                                            infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
+                                    {
+                                        #ifdef DEBUG_SATMODULE
+                                        (*backend)->printInfeasibleSubsets();
+                                        cout << "### { ";
+                                        #endif
+                                        CRef tmpConfl = learnTheoryConflict( *infsubset );
+                                        if( ca[tmpConfl].size() < conflictSize )
+                                        {
+                                            confl        = tmpConfl;
+                                            conflictSize = ca[tmpConfl].size();
+                                        }
+                                    }
+                                    #endif
+                                    break;
+                                }
+                                ++backend;
+                            }
+                            assert( backend != usedBackends().end() );
+
+                            break;
+                        }
+                        case Unknown:
+                        {
+                            #ifdef DEBUG_SATMODULE
+                            cout << "### Result: Unknown!" << endl;
+                            cout << "Warning! Unknown as answer in SAT solver." << endl;
+                            #endif
+                            return l_Undef;
+                        }
+                        default:
+                        {
+                            cerr << "Unexpected output!" << endl;
+                            assert( false );
+                            return l_Undef;
+                        }
+                    }
+                }
+            }
+            #ifdef SATMODULE_WITH_CALL_NUMBER
+            #ifndef DEBUG_SATMODULE
+            #ifdef WITH_PROGRESS_ESTIMATION
+            cout << "\r" << numberOfTheoryCalls << setw( 15 ) << (progressEstimate() * 100) << "%";
+            #else
+            cout << "\r" << numberOfTheoryCalls;
+            #endif
+            cout.flush();
+            #endif
+            #endif
+
+            if( confl != CRef_Undef )
+            {
+                //                vector<Lit> maxSatAssign = vector<Lit>();
+                //                int level = 0;
+                //                for( int pos = 0; pos < trail.size(); ++pos )
+                //                {
+                //                    if( pos == trail_lim[level] )
+                //                    {
+                //                        ++level;
+                //                        if( level == trail_lim.size() - 1 )
+                //                        {
+                //                            break;
+                //                        }
+                //                    }
+                //                    maxSatAssign.push_back( trail[pos] );
+                //                }
+                //                mMaxSatAssigns.push_back( maxSatAssign );
+                // CONFLICT
+                conflicts++;
+                conflictC++;
+                if( decisionLevel() == 0 )
+                    return l_False;
+
+                learnt_clause.clear();
+                assert( confl != CRef_Undef );
+
+#ifdef DEBUG_SATMODULE
+Clause& clausel           = ca[confl];
+cout << "### Asserting clausel: ";
+for( int pos = 0; pos < clausel.size(); ++pos )
+{
+    cout << " ";
+    if( sign( clausel[pos] ) )
+    {
+        cout << "-";
+    }
+    cout << var( clausel[pos] );
+}
+cout << endl;
+cout << "###" << endl;
+#endif
+                analyze( confl, learnt_clause, backtrack_level );
+
+                #ifdef DEBUG_SATMODULE
+                cout << "### Asserting clause: ";
+                for( int pos = 0; pos < learnt_clause.size(); ++pos )
+                {
+                    cout << " ";
+                    if( sign( learnt_clause[pos] ) )
+                    {
+                        cout << "-";
+                    }
+                    cout << var( learnt_clause[pos] );
+                }
+                cout << endl;
+                cout << "### Backtrack to level " << backtrack_level << endl;
+                cout << "###" << endl;
+                #endif
+                cancelUntil( backtrack_level );
+
+                if( learnt_clause.size() == 1 )
+                {
+                    uncheckedEnqueue( learnt_clause[0] );
+                }
+                else
+                {
+                    CRef cr = ca.alloc( learnt_clause, true );
+                    learnts.push( cr );
+                    attachClause( cr );
+                    claBumpActivity( ca[cr] );
+                    uncheckedEnqueue( learnt_clause[0], cr );
+                }
+
+                varDecayActivity();
+                claDecayActivity();
+
+                if( --learntsize_adjust_cnt == 0 )
+                {
+                    learntsize_adjust_confl *= learntsize_adjust_inc;
+                    learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
+                    max_learnts             *= learntsize_inc;
+
+                    if( verbosity >= 1 )
+                        printf( "| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
+                                (int)conflicts,
+                                (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]),
+                                nClauses(),
+                                (int)clauses_literals,
+                                (int)max_learnts,
+                                nLearnts(),
+                                (double)learnts_literals / nLearnts(),
+                                progressEstimate() * 100 );
+                }
+
+            }
+            else
+            {
+                // TODO: Consider cleaning the learned clauses and restarts.
+
+                // NO CONFLICT
+                //                if( nof_conflicts >= 0 && (conflictC >= nof_conflicts ||!withinBudget()) )
+                //                {
+                //                    // Reached bound on number of conflicts:
+                //                    progress_estimate = progressEstimate();
+                //                    cancelUntil( 0 );
+                //                    return l_Undef;
+                //                }
+
+                // Simplify the set of problem clauses:
+                if( decisionLevel() == 0 && !simplify() )
+                    return l_False;
+
+//                if( learnts.size() - nAssigns() >= max_learnts )
+//                    // Reduce the set of learned clauses:
+//                    reduceDB();
+
+                Lit next = lit_Undef;
+                while( decisionLevel() < assumptions.size() )
+                {
+                    // Perform user provided assumption:
+                    Lit p = assumptions[decisionLevel()];
+                    if( value( p ) == l_True )
+                    {
+                        // Dummy decision level:
+                        newDecisionLevel();
+                    }
+                    else if( value( p ) == l_False )
+                    {
+                        return l_False;
+                    }
+                    else
+                    {
+                        next = p;
+                        break;
+                    }
+                }
+
+                if( next == lit_Undef )
+                {
+                    // New variable decision:
+                    decisions++;
+                    next = pickBranchLit();
+
+                    if( next == lit_Undef )
+                        // Model found:
+                        return l_True;
+                }
+
+                // Increase decision level and enqueue 'next'
+
+                newDecisionLevel();
+                uncheckedEnqueue( next );
+            }
+        }
+    }
 
     /**
      * Description.
@@ -1024,51 +1454,6 @@ namespace smtrat
     }
 
     /**
-     *  analyzeFinal : (p : Lit)  ->  [void]
-     *
-     *  Description:
-     *    Specialized analysis procedure to express the final conflict in terms of assumptions.
-     *    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
-     *    stores the result in 'out_conflict'.
-     *
-     * @param p
-     * @param out_conflict
-     */
-    void SATModule::analyzeFinal( Lit p, vec<Lit>& out_conflict )
-    {
-        out_conflict.clear();
-        out_conflict.push( p );
-
-        if( decisionLevel() == 0 )
-            return;
-
-        seen[var( p )] = 1;
-
-        for( int i = trail.size() - 1; i >= trail_lim[0]; i-- )
-        {
-            Var x = var( trail[i] );
-            if( seen[x] )
-            {
-                if( reason( x ) == CRef_Undef )
-                {
-                    assert( level( x ) > 0 );
-                    out_conflict.push( ~trail[i] );
-                }
-                else
-                {
-                    Clause& c = ca[reason( x )];
-                    for( int j = 1; j < c.size(); j++ )
-                        if( level( var( c[j] ) ) > 0 )
-                            seen[var( c[j] )] = 1;
-                }
-                seen[x] = 0;
-            }
-        }
-
-        seen[var( p )] = 0;
-    }
-
-    /**
      * Description.
      *
      * @param p
@@ -1087,7 +1472,7 @@ namespace smtrat
         trail.push_( p );
         #ifdef SAT_MODULE_THEORY_PROPAGATION
         // Check whether the lit is a deduction via a learned clause.
-        if( from != CRef_Undef && ca[from].theoryDeduction() && !sign( p ) && mBooleanConstraintMap[var( p )].formula != NULL  )
+        if( from != CRef_Undef && ca[from].type() == DEDUCTED_CLAUSE && !sign( p ) && mBooleanConstraintMap[var( p )].formula != NULL  )
         {
             Clause& c           = ca[from];
             bool    isDeduction = true;
@@ -1234,6 +1619,10 @@ NextClause:
         checkGarbage();
     }
 
+    /**
+     *
+     * @param cs
+     */
     void SATModule::removeSatisfied( vec<CRef>& cs )
     {
         int i, j;
@@ -1248,6 +1637,9 @@ NextClause:
         cs.shrink( i - j );
     }
 
+    /**
+     *
+     */
     void SATModule::rebuildOrderHeap()
     {
         vec<Var> vs;
@@ -1289,140 +1681,6 @@ NextClause:
         return true;
     }
 
-    CRef SATModule::addLearnedClause( vec<Lit>& _clause, bool _withNewVariable, bool _theoryDeduction )
-    {
-        assert( _clause.size() != 0 );
-        #ifdef GATHER_STATS
-        mStats->lemmaLearned();
-        #endif
-        // Do not store theory lemma
-        if( _clause.size() == 1 )
-        {
-            ca.alloc( _clause, !_withNewVariable );
-        }
-        // Learn theory lemma
-        else
-        {
-            if( _withNewVariable )
-            {
-                sort( _clause );
-                CRef result = ca.alloc( _clause, false );
-                clauses.push( result );
-                Clause& c = ca[result];
-                arangeForWatches( c );
-                watches[~c[0]].push( Watcher( result, c[1] ) );
-                watches[~c[1]].push( Watcher( result, c[0] ) );
-                clauses_literals += c.size();
-                if( value( c[0] ) == l_False )
-                {
-                    return result;
-                }
-                else if( value( c[0] ) == l_Undef && value( c[1] ) == l_False )
-                {
-                    uncheckedEnqueue( c[0], result );
-                }
-            }
-            else
-            {
-                CRef result = ca.alloc( _clause, true, _theoryDeduction );
-                learnts.push( result );
-                Clause& c = ca[result];
-                arangeForWatches( c );
-                watches[~c[0]].push( Watcher( result, c[1] ) );
-                watches[~c[1]].push( Watcher( result, c[0] ) );
-                learnts_literals += c.size();
-                claBumpActivity( c );
-                if( value( c[0] ) == l_False )
-                {
-                    return result;
-                }
-                else if( value( c[0] ) == l_Undef && value( c[1] ) == l_False )
-                {
-                    uncheckedEnqueue( c[0], result );
-                }
-            }
-        }
-        return CRef_Undef;
-    }
-
-    /**
-     *
-     * @param _clause
-     */
-    void SATModule::arangeForWatches( Clause& _clause )
-    {
-        assert( _clause.size() > 1 );
-        if( _clause.size() < 3 ) return;
-        int l1 = -1;
-        int l2 = -1;
-        int i = 0;
-        for( ; i < _clause.size(); ++i )
-        {
-            lbool lb = value( _clause[i] );
-            if( lb == l_Undef )
-            {
-                l1 = i;
-                goto FindSecond;
-            }
-            else if( lb == l_True )
-            {
-                l1 = i;
-                break;
-            }
-        }
-        ++i;
-        for( ; i < _clause.size(); ++i )
-        {
-            lbool lb = value( _clause[i] );
-            if( lb == l_Undef )
-            {
-                l2 = l1;
-                l1 = i;
-                break;
-            }
-            else if( l2 < 0 && lb == l_True )
-            {
-                l2 = i;
-            }
-        }
-FindSecond:
-        ++i;
-        for( ; i < _clause.size(); ++i )
-        {
-            lbool lb = value( _clause[i] );
-            if( lb == l_Undef )
-            {
-                l2 = i;
-                break;
-            }
-            else if( l2 < 0 && lb == l_True )
-            {
-                l2 = i;
-            }
-        }
-        if( l1 < 0 )
-        {
-            return;
-        }
-        else if( l2 < 0 )
-        {
-            l2 = l1 != 1 ? 1 : 0;
-        }
-        Lit first = _clause[l1];
-        Lit second = _clause[l2];
-        if( l1 != 0 )
-        {
-            _clause[l1] = _clause[0];
-            _clause[0] = first;
-            if( l2 == 0 ) l2 = l1;
-        }
-        if( l2 != 1 )
-        {
-            _clause[l2] = _clause[1];
-            _clause[1] = second;
-        }
-    }
-
     /**
      *
      * @param _theoryReason
@@ -1432,19 +1690,11 @@ FindSecond:
     {
         assert( !_theoryReason.empty() );
         vec<Lit> learnt_clause;
-        // Sort the constraints in a unique way. TODO: Change an infeasible subset to a formula (AND), then this method won't be necessary
-        set<const Formula*, formulaCmp> sortedConstraints = set<const Formula*, formulaCmp>();
-        for( set<const Formula*>::const_iterator subformula = _theoryReason.begin(); subformula != _theoryReason.end(); ++subformula )
-        {
-            assert( (*subformula)->getType() == REALCONSTRAINT );
-            sortedConstraints.insert( *subformula );
-        }
         // Add the according literals to the conflict clause.
-        for( set<const Formula*, formulaCmp>::const_iterator subformula = sortedConstraints.begin(); subformula != sortedConstraints.end();
-                ++subformula )
+        for( auto subformula = _theoryReason.begin(); subformula != _theoryReason.end(); ++subformula )
         {
             #ifdef DEBUG_SATMODULE
-            if( subformula != sortedConstraints.begin() )
+            if( subformula != _theoryReason.begin() )
             {
                 cout << ", ";
             }
@@ -1457,370 +1707,68 @@ FindSecond:
         cout << " }";
         cout << endl;
         #endif
-
-        CRef result;
-        if( learnt_clause.size() == 1 )
+#ifdef DEBUG_SATMODULE
+cout << "### Asserting clause: ";
+for( int pos = 0; pos < learnt_clause.size(); ++pos )
+{
+    cout << " ";
+    if( sign( learnt_clause[pos] ) )
+    {
+        cout << "-";
+    }
+    cout << var( learnt_clause[pos] );
+}
+cout << endl;
+cout << "###" << endl;
+#endif
+        if( addClause( learnt_clause, CONFLICT_CLAUSE ) )
         {
-            result = ca.alloc( learnt_clause, true );
+            CRef conflictClause = learnts.last();
+//            learnts.pop();
+#ifdef DEBUG_SATMODULE
+Clause& clausel           = ca[conflictClause];
+cout << "### Asserting clause: ";
+for( int pos = 0; pos < clausel.size(); ++pos )
+{
+    cout << " ";
+    if( sign( clausel[pos] ) )
+    {
+        cout << "-";
+    }
+    cout << var( clausel[pos] );
+}
+cout << endl;
+cout << "###" << endl;
+#endif
+            return conflictClause;
         }
-        // Learn reason.
         else
         {
-            result = ca.alloc( learnt_clause, true );
-            learnts.push( result );
-            Clause& c = ca[result];
-            watches[~c[0]].push( Watcher( result, c[1] ) );
-            watches[~c[1]].push( Watcher( result, c[0] ) );
-            learnts_literals += c.size();
-            claBumpActivity( c );
+            return CRef_Undef;
         }
+    }
 
+    /**
+     *
+     * @param _clause
+     * @return
+     */
+    int SATModule::level( CRef _clauseRef ) const
+    {
+        int result = 0;
+        const Clause& clause = ca[_clauseRef];
+        for( int i = 0; i < clause.size(); ++i )
+        {
+            int varLevel = level( var( clause[i] ) );
+            if( varLevel > result ) result = varLevel;
+        }
         return result;
     }
 
     /**
-     * search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
-     *
-     *  Description:
-     *    Search for a model the specified number of conflicts.
-     *    NOTE! Use negative value for 'nof_conflicts' indicate infinity.
-     *
-     *  Output:
-     *    'l_True' if a partial assignment that is consistent with respect to the clause set is found. If
-     *    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
-     *    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
-     *
-     * @param nof_conflicts
      *
      * @return
      */
-    lbool SATModule::search( int nof_conflicts )
-    {
-        #ifdef DEBUG_SATMODULE
-        cout << "### search( " << nof_conflicts << " )" << endl << "###" << endl;
-        printClauses( clauses, "Clauses", cout, "### " );
-        cout << "###" << endl;
-        printClauses( learnts, "Learnts", cout, "### " );
-        cout << "###" << endl;
-        printBooleanConstraintMap( cout, "###" );
-        cout << "###" << endl;
-        printBooleanVarMap( cout, "###" );
-        cout << "###" << endl;
-        #endif
-        assert( ok );
-        int      backtrack_level;
-        int      conflictC = 0;
-        vec<Lit> learnt_clause;
-        starts++;
-        #ifdef SATMODULE_WITH_CALL_NUMBER
-        unsigned numberOfTheoryCalls = 0;
-        #ifndef DEBUG_SATMODULE
-        cout << endl << "Number of theory calls:" << endl << endl;
-        #endif
-        #endif
-
-        for( ; ; )
-        {
-#ifdef SAT_MODULE_THEORY_PROPAGATION
-Propagation:
-#endif
-            CRef confl = propagate();
-
-            if( confl == CRef_Undef )
-            {
-                // Check constraints corresponding to the positively assigned Boolean variables for consistency.
-                if( adaptPassedFormula() )
-                {
-                    #ifdef DEBUG_SATMODULE
-                    cout << "######################################################################" << endl;
-                    cout << "###" << endl;
-                    printClauses( clauses, "Clauses", cout, "### " );
-                    cout << "###" << endl;
-                    printClauses( learnts, "Learnts", cout, "### " );
-                    cout << "###" << endl;
-                    printCurrentAssignment( cout, "### " );
-                    cout << "### " << endl;
-                    printDecisions( cout, "### " );
-                    cout << "### " << endl;
-                    cout << "### Check the constraints: ";
-                    #endif
-                    #ifdef SATMODULE_WITH_CALL_NUMBER
-                    ++numberOfTheoryCalls;
-                    #ifdef DEBUG_SATMODULE
-                    cout << "#" << numberOfTheoryCalls << "  ";
-                    #endif
-                    #endif
-                    #ifdef DEBUG_SATMODULE
-                    cout << "{ ";
-                    for( Formula::const_iterator subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
-                    {
-                        cout << (*subformula)->constraint().toString() << " ";
-                    }
-                    cout << "}" << endl;
-                    #endif
-                    switch( runBackends() )
-                    {
-                        case True:
-                        {
-                            #ifdef SAT_MODULE_THEORY_PROPAGATION
-
-                            /*
-                             * Theory propagation.
-                             */
-                            bool theoryPropagationApplied = false;
-                            learnt_clause.clear();
-                            vector<Module*>::const_iterator backend = usedBackends().begin();
-                            while( backend != usedBackends().end() )
-                            {
-                                /*
-                                 * Learn the deductions.
-                                 */
-                                (*backend)->updateDeductions();
-                                if( !(*backend)->deductions().empty() ) theoryPropagationApplied = true;
-                                for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
-                                        deduction != (*backend)->deductions().end(); ++deduction )
-                                {
-                                    #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
-                                    cout << "Learned a theory deduction from a backend module!" << endl;
-                                    #endif
-                                    CRef ct = addFormula( *deduction );
-                                    if( ct != CRef_Undef ) confl = ct;
-                                }
-                                (*backend)->clearDeductions();
-                                ++backend;
-                            }
-                            #endif
-                            #ifdef DEBUG_SATMODULE
-                            cout << "### Result: True!" << endl;
-                            #endif
-                            #ifdef SAT_MODULE_THEORY_PROPAGATION
-                            if( ok && theoryPropagationApplied ) goto Propagation;
-                            #endif
-                            break;
-                        }
-                        case False:
-                        {
-                            #ifdef DEBUG_SATMODULE
-                            cout << "### Result: False!" << endl;
-                            #endif
-                            learnt_clause.clear();
-                            vector<Module*>::const_iterator backend = usedBackends().begin();
-                            while( backend != usedBackends().end() )
-                            {
-                                if( !(*backend)->infeasibleSubsets().empty() )
-                                {
-                                    #ifdef STORE_ONLY_ONE_REASON
-                                    vec_set_const_pFormula::const_iterator bestInfeasibleSubset = (*backend)->infeasibleSubsets().begin();
-                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
-                                            infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
-                                    {
-                                        #ifdef LOG_INFEASIBLE_SUBSETS
-                                        addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
-                                        #endif
-                                        if( bestInfeasibleSubset->size() > infsubset->size() )
-                                        {
-                                            bestInfeasibleSubset = infsubset;
-                                        }
-                                    }
-                                    #ifdef DEBUG_SATMODULE
-                                    (*backend)->printInfeasibleSubsets();
-                                    cout << "### { ";
-                                    #endif
-                                    confl = learnTheoryConflict( *bestInfeasibleSubset );
-                                    #else
-                                    int conflictSize = mpPassedFormula->size() + 1;
-                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
-                                            infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
-                                    {
-                                        #ifdef DEBUG_SATMODULE
-                                        (*backend)->printInfeasibleSubsets();
-                                        cout << "### { ";
-                                        #endif
-                                        CRef tmpConfl = learnTheoryConflict( *infsubset );
-                                        if( ca[tmpConfl].size() < conflictSize )
-                                        {
-                                            confl        = tmpConfl;
-                                            conflictSize = ca[tmpConfl].size();
-                                        }
-                                    }
-                                    #endif
-                                    break;
-                                }
-                                ++backend;
-                            }
-                            assert( backend != usedBackends().end() );
-
-                            break;
-                        }
-                        case Unknown:
-                        {
-                            #ifdef DEBUG_SATMODULE
-                            cout << "### Result: Unknown!" << endl;
-                            cout << "Warning! Unknown as answer in SAT solver." << endl;
-                            #endif
-                            return l_Undef;
-                        }
-                        default:
-                        {
-                            cerr << "Unexpected output!" << endl;
-                            assert( false );
-                            return l_Undef;
-                        }
-                    }
-                }
-            }
-            #ifdef SATMODULE_WITH_CALL_NUMBER
-            #ifndef DEBUG_SATMODULE
-            #ifdef WITH_PROGRESS_ESTIMATION
-            cout << "\r" << numberOfTheoryCalls << setw( 15 ) << (progressEstimate() * 100) << "%";
-            #else
-            cout << "\r" << numberOfTheoryCalls;
-            #endif
-            cout.flush();
-            #endif
-            #endif
-
-            if( confl != CRef_Undef )
-            {
-                //                vector<Lit> maxSatAssign = vector<Lit>();
-                //                int level = 0;
-                //                for( int pos = 0; pos < trail.size(); ++pos )
-                //                {
-                //                    if( pos == trail_lim[level] )
-                //                    {
-                //                        ++level;
-                //                        if( level == trail_lim.size() - 1 )
-                //                        {
-                //                            break;
-                //                        }
-                //                    }
-                //                    maxSatAssign.push_back( trail[pos] );
-                //                }
-                //                mMaxSatAssigns.push_back( maxSatAssign );
-                // CONFLICT
-                conflicts++;
-                conflictC++;
-                if( decisionLevel() == 0 )
-                    return l_False;
-
-                learnt_clause.clear();
-                assert( confl != CRef_Undef );
-                analyze( confl, learnt_clause, backtrack_level );
-
-                #ifdef DEBUG_SATMODULE
-                cout << "### Asserting clause: ";
-                for( int pos = 0; pos < learnt_clause.size(); ++pos )
-                {
-                    cout << " ";
-                    if( sign( learnt_clause[pos] ) )
-                    {
-                        cout << "-";
-                    }
-                    cout << var( learnt_clause[pos] );
-                }
-                cout << endl;
-                cout << "### Backtrack to level " << backtrack_level << endl;
-                cout << "###" << endl;
-                #endif
-                cancelUntil( backtrack_level );
-
-                if( learnt_clause.size() == 1 )
-                {
-                    uncheckedEnqueue( learnt_clause[0] );
-                }
-                else
-                {
-                    CRef cr = ca.alloc( learnt_clause, true );
-                    learnts.push( cr );
-                    attachClause( cr );
-                    claBumpActivity( ca[cr] );
-                    uncheckedEnqueue( learnt_clause[0], cr );
-                }
-
-                varDecayActivity();
-                claDecayActivity();
-
-                if( --learntsize_adjust_cnt == 0 )
-                {
-                    learntsize_adjust_confl *= learntsize_adjust_inc;
-                    learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
-                    max_learnts             *= learntsize_inc;
-
-                    if( verbosity >= 1 )
-                        printf( "| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
-                                (int)conflicts,
-                                (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]),
-                                nClauses(),
-                                (int)clauses_literals,
-                                (int)max_learnts,
-                                nLearnts(),
-                                (double)learnts_literals / nLearnts(),
-                                progressEstimate() * 100 );
-                }
-
-            }
-            else
-            {
-                // TODO: Consider cleaning the learned clauses and restarts.
-
-                // NO CONFLICT
-                //                if( nof_conflicts >= 0 && (conflictC >= nof_conflicts ||!withinBudget()) )
-                //                {
-                //                    // Reached bound on number of conflicts:
-                //                    progress_estimate = progressEstimate();
-                //                    cancelUntil( 0 );
-                //                    return l_Undef;
-                //                }
-
-                // Simplify the set of problem clauses:
-                if( decisionLevel() == 0 && !simplify() )
-                    return l_False;
-
-//                if( learnts.size() - nAssigns() >= max_learnts )
-//                    // Reduce the set of learned clauses:
-//                    reduceDB();
-
-                Lit next = lit_Undef;
-                while( decisionLevel() < assumptions.size() )
-                {
-                    // Perform user provided assumption:
-                    Lit p = assumptions[decisionLevel()];
-                    if( value( p ) == l_True )
-                    {
-                        // Dummy decision level:
-                        newDecisionLevel();
-                    }
-                    else if( value( p ) == l_False )
-                    {
-                        analyzeFinal( ~p, conflict );
-                        return l_False;
-                    }
-                    else
-                    {
-                        next = p;
-                        break;
-                    }
-                }
-
-                if( next == lit_Undef )
-                {
-                    // New variable decision:
-                    decisions++;
-                    next = pickBranchLit();
-
-                    if( next == lit_Undef )
-                        // Model found:
-                        return l_True;
-                }
-
-                // Increase decision level and enqueue 'next'
-
-                newDecisionLevel();
-                uncheckedEnqueue( next );
-            }
-        }
-    }
-
     double SATModule::progressEstimate() const
     {
         double progress = 0;
@@ -1850,77 +1798,22 @@ Propagation:
      *
      * @return
      */
-    static double luby( double y, int x )
-    {
-        // Find the finite subsequence that contains index 'x', and the
-        // size of that subsequence:
-        int size, seq;
-        for( size = 1, seq = 0; size < x + 1; seq++, size = 2 * size + 1 );
-
-        while( size - 1 != x )
-        {
-            size = (size - 1) >> 1;
-            seq--;
-            x = x % size;
-        }
-
-        return pow( y, seq );
-    }
-
-    /**
-     * Description. NOTE: assumptions passed in member-variable 'assumptions'.
-     *
-     * @return
-     */
-    lbool SATModule::solve_()
-    {
-        model.clear();
-        conflict.clear();
-        if( !ok )
-            return l_False;
-
-        solves++;
-
-        max_learnts             = nClauses() * learntsize_factor;
-        learntsize_adjust_confl = learntsize_adjust_start_confl;
-        learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
-        lbool status            = l_Undef;
-
-        if( verbosity >= 1 )
-        {
-            printf( "============================[ Search Statistics ]==============================\n" );
-            printf( "| Conflicts |          ORIGINAL         |          LEARNT          | Progress |\n" );
-            printf( "|           |    Vars  Clauses Literals |    Limit  Clauses Lit/Cl |          |\n" );
-            printf( "===============================================================================\n" );
-        }
-
-        // Search:
-        int curr_restarts = 0;
-        while( status == l_Undef )
-        {
-            double rest_base = luby_restart ? luby( restart_inc, curr_restarts ) : pow( restart_inc, curr_restarts );
-            status = search( rest_base * restart_first );
-            if( !withinBudget() )
-                break;
-            curr_restarts++;
-        }
-
-        if( verbosity >= 1 )
-            printf( "===============================================================================\n" );
-
-        if( status == l_True )
-        {
-            // Extend & copy model:
-            model.growTo( nVars() );
-            for( int i = 0; i < nVars(); i++ )
-                model[i] = value( i );
-        }
-        else if( status == l_False && conflict.size() == 0 )
-            ok = false;
-
-        cancelUntil( 0 );
-        return status;
-    }
+//    static double luby( double y, int x )
+//    {
+//        // Find the finite subsequence that contains index 'x', and the
+//        // size of that subsequence:
+//        int size, seq;
+//        for( size = 1, seq = 0; size < x + 1; seq++, size = 2 * size + 1 );
+//
+//        while( size - 1 != x )
+//        {
+//            size = (size - 1) >> 1;
+//            seq--;
+//            x = x % size;
+//        }
+//
+//        return pow( y, seq );
+//    }
 
     //=================================================================================================
     // Garbage Collection methods:
@@ -2261,7 +2154,11 @@ Propagation:
         }
     }
 
-    void SATModule::collectStats() {
+    /**
+     *
+     */
+    void SATModule::collectStats()
+    {
         #ifdef GATHER_STATS
         mStats->nrTotalVariables = nVars();
         mStats->nrUnassignedVariables = nFreeVars();

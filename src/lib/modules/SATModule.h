@@ -62,7 +62,6 @@
 #include <math.h>
 #include "../Module.h"
 
-
 #ifdef GATHER_STATS
 #include "SATModule/SATStatistics.h"
 #endif
@@ -76,17 +75,14 @@ namespace smtrat
         private:
 
             /*
-             * Type definitions:
+             * Type definitions and helper structs:
              */
-            struct formulaCmp
+            struct VarData
             {
-                bool operator ()( const Formula* const _formulaA, const Formula* const _formulaB ) const
-                {
-                    assert( _formulaA->getType() == REALCONSTRAINT );
-                    assert( _formulaB->getType() == REALCONSTRAINT );
-                    return (_formulaA->constraint() < _formulaB->constraint());
-                }
+                Minisat::CRef reason;
+                int           level;
             };
+
             struct Abstraction
             {
                 Formula::iterator position;
@@ -94,24 +90,6 @@ namespace smtrat
                 const Formula* origin;
                 int updateInfo;
             };
-            typedef std::map<const Constraint* const, Minisat::Lit>      ConstraintLiteralMap;
-            typedef std::map<const std::string, Minisat::Var>            BooleanVarMap;
-            typedef Minisat::vec< Abstraction >                          BooleanConstraintMap;
-            typedef std::map<const Formula*, const Formula*, formulaCmp> ConstraintOriginMap;
-
-            /*
-             * Helper structures:
-             */
-            struct VarData
-            {
-                Minisat::CRef reason;
-                int           level;
-            };
-            static inline VarData mkVarData( Minisat::CRef cr, int l )
-            {
-                VarData d = { cr, l };
-                return d;
-            }
 
             struct Watcher
             {
@@ -159,6 +137,18 @@ namespace smtrat
                     activity( act )
                 {}
             };
+
+            typedef std::map<const Constraint* const, Minisat::Lit> ConstraintLiteralMap;
+            typedef std::map<const std::string, Minisat::Var>       BooleanVarMap;
+            typedef Minisat::vec< Abstraction >                     BooleanConstraintMap;
+            typedef std::map<const Formula*, Minisat::CRef >        FormulaClauseMap;
+            typedef std::vector< std::vector<Minisat::Lit> >        ClauseVector;
+
+            static inline VarData mkVarData( Minisat::CRef cr, int l )
+            {
+                VarData d = { cr, l };
+                return d;
+            }
 
             /**
              * Members:
@@ -256,24 +246,15 @@ namespace smtrat
 
             // Resource constraints:
             int64_t               conflict_budget;    // -1 means no budget.
-            int64_t               propagation_budget;    // -1 means no budget.
+            int64_t               propagation_budget; // -1 means no budget.
             bool                  asynch_interrupt;
 
             BooleanConstraintMap  mBooleanConstraintMap;
             ConstraintLiteralMap  mConstraintLiteralMap;
             BooleanVarMap         mBooleanVarMap;
-            std::vector<unsigned> mBacktrackpointInSatSolver;
-
-            // Extra results: (read-only member variable)
-            //
-            // If problem is satisfiable, this vector contains the model (if any).
-            Minisat::vec<Minisat::lbool> model;
-            // If problem is unsatisfiable (possibly under assumptions),
-            // this vector represent the final conflict clause expressed in the assumptions.
-            Minisat::vec<Minisat::Lit> conflict;
-            // If problem is unsatisfiable (possibly under assumptions),
-            // this vector represent the final conflict clause expressed in the assumptions.
-            std::vector< std::vector<Minisat::Lit> > mMaxSatAssigns;
+            FormulaClauseMap      mFormulaClauseMap;
+            /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
+            ClauseVector          mMaxSatAssigns;
 
             #ifdef GATHER_STATS
             SATstatistics* mStats;
@@ -318,40 +299,15 @@ namespace smtrat
             //
             // Add a new variable with parameters specifying variable mode.
             Minisat::Var newVar( bool polarity = true, bool dvar = true, double = 0, Formula* = NULL, const Formula* = NULL );
-            // Add a clause to the solver.
-            bool addClause( const Minisat::vec<Minisat::Lit>& ps );
-            // Add the empty clause, making the solver contradictory.
-            bool addEmptyClause();
-            // Add a unit clause to the solver.
-            bool addClause( Minisat::Lit p );
-            // Add a binary clause to the solver.
-            bool addClause( Minisat::Lit p, Minisat::Lit q );
-            // Add a ternary clause to the solver.
-            bool addClause( Minisat::Lit p, Minisat::Lit q, Minisat::Lit r );
-            // Add a clause to the solver without making superfluous internal copy. Will
-            bool addClause_( Minisat::vec<Minisat::Lit>& ps );
-            // change the passed vector 'ps'.
 
             // Solving:
             //
             // Removes already satisfied clauses.
             bool simplify();
             // Learns a clause.
-            Minisat::CRef addLearnedClause( Minisat::vec<Minisat::Lit>&, bool, bool );
+            bool addClause( Minisat::vec<Minisat::Lit>&, unsigned = 0 );
             // Finds the best two candidates for watching
-            void arangeForWatches( Minisat::Clause& );
-            // Search for a model that respects a given set of assumptions.
-            bool solve( const Minisat::vec<Minisat::Lit>& assumps );
-            // Search for a model that respects a given set of assumptions (With resource constraints).
-            Minisat::lbool solveLimited( const Minisat::vec<Minisat::Lit>& assumps );
-            // Search without assumptions.
-            bool solve();
-            // Search for a model that respects a single assumption.
-            bool solve( Minisat::Lit p );
-            // Search for a model that respects two assumptions.
-            bool solve( Minisat::Lit p, Minisat::Lit q );
-            // Search for a model that respects three assumptions.
-            bool solve( Minisat::Lit p, Minisat::Lit q, Minisat::Lit r );
+            void arangeForWatches( Minisat::CRef );
             // FALSE means solver is in a conflicting state
             bool okay() const;
 
@@ -368,10 +324,6 @@ namespace smtrat
             Minisat::lbool value( Minisat::Var x ) const;
             // The current value of a literal.
             Minisat::lbool value( Minisat::Lit p ) const;
-            // The value of a variable in the last model. The last call to solve must have been satisfiable.
-            Minisat::lbool modelValue( Minisat::Var x ) const;
-            // The value of a literal in the last model. The last call to solve must have been satisfiable.
-            Minisat::lbool modelValue( Minisat::Lit p ) const;
             // The current number of assigned literals.
             int nAssigns() const;
             // The current number of original clauses.
@@ -418,16 +370,12 @@ namespace smtrat
             void cancelUntil( int level );
             // (bt = backtrack)
             void analyze( Minisat::CRef confl, Minisat::vec<Minisat::Lit>& out_learnt, int& out_btlevel );
-            // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
-            void analyzeFinal( Minisat::Lit p, Minisat::vec<Minisat::Lit>& out_conflict );
             // (helper method for 'analyze()')
             bool litRedundant( Minisat::Lit p, uint32_t abstract_levels );
             //
             Minisat::CRef learnTheoryConflict( const std::set<const Formula*>& );
             // Search for a given number of conflicts.
             Minisat::lbool search( int nof_conflicts = 100 );
-            // Main solve method (assumptions given in 'assumptions').
-            Minisat::lbool solve_();
             // Reduce the set of learned clauses.
             void reduceDB();
             // Shrink 'cs' to contain only non-satisfied clauses.
@@ -471,6 +419,7 @@ namespace smtrat
             uint32_t abstractLevel( Minisat::Var x ) const;
             Minisat::CRef reason( Minisat::Var x ) const;
             int level( Minisat::Var x ) const;
+            int level( Minisat::CRef ) const;
             // DELETE THIS ?? IT'S NOT VERY USEFUL ...
             double progressEstimate() const;
             bool withinBudget() const;
@@ -493,8 +442,8 @@ namespace smtrat
                 return (int)(drand( seed ) * size);
             }
 
-            Minisat::CRef addFormula( Formula* );
-            Minisat::CRef addClause( const Formula*, bool, bool = false );
+            Minisat::CRef addFormula( Formula*, unsigned );
+            Minisat::CRef addClause( const Formula*, unsigned = 0 );
             Minisat::Lit getLiteral( const Formula&, const Formula* = NULL );
             Minisat::Lit getLiteral( const Constraint*, const Formula* = NULL, double = 0 );
             bool adaptPassedFormula();
@@ -577,42 +526,6 @@ namespace smtrat
         return value( p ) != l_Undef ? value( p ) != l_False : (uncheckedEnqueue( p, from ), true);
     }
 
-    inline bool SATModule::addClause( const Minisat::vec<Minisat::Lit>& ps )
-    {
-        ps.copyTo( add_tmp );
-        return addClause_( add_tmp );
-    }
-
-    inline bool SATModule::addEmptyClause()
-    {
-        add_tmp.clear();
-        return addClause_( add_tmp );
-    }
-
-    inline bool SATModule::addClause( Minisat::Lit p )
-    {
-        add_tmp.clear();
-        add_tmp.push( p );
-        return addClause_( add_tmp );
-    }
-
-    inline bool SATModule::addClause( Minisat::Lit p, Minisat::Lit q )
-    {
-        add_tmp.clear();
-        add_tmp.push( p );
-        add_tmp.push( q );
-        return addClause_( add_tmp );
-    }
-
-    inline bool SATModule::addClause( Minisat::Lit p, Minisat::Lit q, Minisat::Lit r )
-    {
-        add_tmp.clear();
-        add_tmp.push( p );
-        add_tmp.push( q );
-        add_tmp.push( r );
-        return addClause_( add_tmp );
-    }
-
     inline bool SATModule::locked( const Minisat::Clause& c ) const
     {
         return value( c[0] ) == l_True && reason( Minisat::var( c[0] ) ) != Minisat::CRef_Undef && ca.lea( reason( Minisat::var( c[0] ) ) ) == &c;
@@ -641,16 +554,6 @@ namespace smtrat
     inline Minisat::lbool SATModule::value( Minisat::Lit p ) const
     {
         return assigns[Minisat::var( p )] ^ Minisat::sign( p );
-    }
-
-    inline Minisat::lbool SATModule::modelValue( Minisat::Var x ) const
-    {
-        return model[x];
-    }
-
-    inline Minisat::lbool SATModule::modelValue( Minisat::Lit p ) const
-    {
-        return model[Minisat::var( p )] ^ Minisat::sign( p );
     }
 
     inline int SATModule::nAssigns() const
@@ -723,56 +626,6 @@ namespace smtrat
     {
         return !asynch_interrupt && (conflict_budget < 0 || conflicts < (uint64_t)conflict_budget)
                && (propagation_budget < 0 || propagations < (uint64_t)propagation_budget);
-    }
-
-    // FIXME: after the introduction of asynchronous interruptions the solve-versions that return a
-    // pure Boolean do not give a safe interface. Either interrupts must be possible to turn off here, or
-    // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
-    inline bool SATModule::solve()
-    {
-        budgetOff();
-        assumptions.clear();
-        return solve_() == l_True;
-    }
-
-    inline bool SATModule::solve( Minisat::Lit p )
-    {
-        budgetOff();
-        assumptions.clear();
-        assumptions.push( p );
-        return solve_() == l_True;
-    }
-
-    inline bool SATModule::solve( Minisat::Lit p, Minisat::Lit q )
-    {
-        budgetOff();
-        assumptions.clear();
-        assumptions.push( p );
-        assumptions.push( q );
-        return solve_() == l_True;
-    }
-
-    inline bool SATModule::solve( Minisat::Lit p, Minisat::Lit q, Minisat::Lit r )
-    {
-        budgetOff();
-        assumptions.clear();
-        assumptions.push( p );
-        assumptions.push( q );
-        assumptions.push( r );
-        return solve_() == l_True;
-    }
-
-    inline bool SATModule::solve( const Minisat::vec<Minisat::Lit>& assumps )
-    {
-        budgetOff();
-        assumps.copyTo( assumptions );
-        return solve_() == l_True;
-    }
-
-    inline Minisat::lbool SATModule::solveLimited( const Minisat::vec<Minisat::Lit>& assumps )
-    {
-        assumps.copyTo( assumptions );
-        return solve_();
     }
 
     inline bool SATModule::okay() const
