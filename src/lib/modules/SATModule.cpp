@@ -557,7 +557,6 @@ namespace smtrat
                     removeSubformulaFromPassedFormula( mBooleanConstraintMap[posInAssigns].position );
                     mBooleanConstraintMap[posInAssigns].position = mpPassedFormula->end();
                     if( !changedPassedFormula ) changedPassedFormula = true;
-                    mBooleanConstraintMap[posInAssigns].updateInfo = 0;
                 }
             }
             else if( mBooleanConstraintMap[posInAssigns].updateInfo > 0 )
@@ -575,9 +574,9 @@ namespace smtrat
                     assert( mpPassedFormula->last() != mpPassedFormula->end() );
                     mBooleanConstraintMap[posInAssigns].position = mpPassedFormula->last();
                 }
-                mBooleanConstraintMap[posInAssigns].updateInfo = 0;
                 if( !changedPassedFormula ) changedPassedFormula = true;
             }
+            mBooleanConstraintMap[posInAssigns].updateInfo = 0;
             ++posInAssigns;
         }
         return changedPassedFormula;
