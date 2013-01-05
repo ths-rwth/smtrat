@@ -50,7 +50,7 @@
 
 #include "SATModule.h"
 
-#define DEBUG_SATMODULE
+//#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 #define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
@@ -628,10 +628,8 @@ namespace smtrat
     bool SATModule::addClause( vec<Lit>& _clause, unsigned _type )
     {
         assert( _clause.size() != 0 );
-        cout << "_clause size: " << _clause.size() << endl;
         add_tmp.clear();
         _clause.copyTo( add_tmp );
-        cout << "add_tmp size: " << add_tmp.size() << endl;
         #ifdef GATHER_STATS
         if( _type > NORMAL_CLAUSE ) mStats->lemmaLearned();
         #endif
@@ -942,12 +940,17 @@ Propagation:
 #endif
             CRef confl = propagate();
 
+            #ifdef DEBUG_SATMODULE
+            bool madeTheoryCall = false;
+            #endif
+
             if( confl == CRef_Undef )
             {
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
                 if( adaptPassedFormula() )
                 {
                     #ifdef DEBUG_SATMODULE
+                    madeTheoryCall = true;
                     cout << "######################################################################" << endl;
                     cout << "###" << endl;
                     printClauses( clauses, "Clauses", cout, "### " );
@@ -998,8 +1001,7 @@ Propagation:
                                     #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                                     cout << "Learned a theory deduction from a backend module!" << endl;
                                     #endif
-                                    CRef ct = addFormula( *deduction, DEDUCTED_CLAUSE );
-                                    if( ct != CRef_Undef ) confl = ct;
+                                    addFormula( *deduction, DEDUCTED_CLAUSE );
                                 }
                                 (*backend)->clearDeductions();
                                 ++backend;
@@ -1121,37 +1123,25 @@ Propagation:
                 learnt_clause.clear();
                 assert( confl != CRef_Undef );
 
-#ifdef DEBUG_SATMODULE
-Clause& clausel           = ca[confl];
-cout << "### Asserting clausel: ";
-for( int pos = 0; pos < clausel.size(); ++pos )
-{
-    cout << " ";
-    if( sign( clausel[pos] ) )
-    {
-        cout << "-";
-    }
-    cout << var( clausel[pos] );
-}
-cout << endl;
-cout << "###" << endl;
-#endif
                 analyze( confl, learnt_clause, backtrack_level );
 
                 #ifdef DEBUG_SATMODULE
-                cout << "### Asserting clause: ";
-                for( int pos = 0; pos < learnt_clause.size(); ++pos )
+                if( madeTheoryCall )
                 {
-                    cout << " ";
-                    if( sign( learnt_clause[pos] ) )
+                    cout << "### Asserting clause: ";
+                    for( int pos = 0; pos < learnt_clause.size(); ++pos )
                     {
-                        cout << "-";
+                        cout << " ";
+                        if( sign( learnt_clause[pos] ) )
+                        {
+                            cout << "-";
+                        }
+                        cout << var( learnt_clause[pos] );
                     }
-                    cout << var( learnt_clause[pos] );
+                    cout << endl;
+                    cout << "### Backtrack to level " << backtrack_level << endl;
+                    cout << "###" << endl;
                 }
-                cout << endl;
-                cout << "### Backtrack to level " << backtrack_level << endl;
-                cout << "###" << endl;
                 #endif
                 cancelUntil( backtrack_level );
 
@@ -1161,7 +1151,7 @@ cout << "###" << endl;
                 }
                 else
                 {
-                    CRef cr = ca.alloc( learnt_clause, true );
+                    CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
                     learnts.push( cr );
                     attachClause( cr );
                     claBumpActivity( ca[cr] );
@@ -1707,39 +1697,10 @@ NextClause:
         cout << " }";
         cout << endl;
         #endif
-#ifdef DEBUG_SATMODULE
-cout << "### Asserting clause: ";
-for( int pos = 0; pos < learnt_clause.size(); ++pos )
-{
-    cout << " ";
-    if( sign( learnt_clause[pos] ) )
-    {
-        cout << "-";
-    }
-    cout << var( learnt_clause[pos] );
-}
-cout << endl;
-cout << "###" << endl;
-#endif
         if( addClause( learnt_clause, CONFLICT_CLAUSE ) )
         {
             CRef conflictClause = learnts.last();
-//            learnts.pop();
-#ifdef DEBUG_SATMODULE
-Clause& clausel           = ca[conflictClause];
-cout << "### Asserting clause: ";
-for( int pos = 0; pos < clausel.size(); ++pos )
-{
-    cout << " ";
-    if( sign( clausel[pos] ) )
-    {
-        cout << "-";
-    }
-    cout << var( clausel[pos] );
-}
-cout << endl;
-cout << "###" << endl;
-#endif
+            // learnts.pop();
             return conflictClause;
         }
         else
