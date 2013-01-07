@@ -34,13 +34,14 @@
  * GroebnerModule
  *
  * Since: 2012-01-18
- * Version: 2012-07-26
+ * Version: 2012-20-12
  */
 
 #ifndef SMTRAT_GROEBNERMODULE_H
 #define SMTRAT_GROEBNERMODULE_H
 
 #include <ginacra/ginacra.h>
+
 
 #include <ginacra/mr/Buchberger.h>
 #include "../Module.h"
@@ -66,6 +67,7 @@ class GroebnerModuleState
 public:
     GroebnerModuleState( )
     {
+        
     }
 
     GroebnerModuleState( const GiNaCRA::Buchberger<GBSettings::Order>& basis ) :
@@ -176,8 +178,6 @@ protected:
     /// Saves the relevant history to support backtracking
     std::list<GroebnerModuleState<Settings> > mStateHistory;
 
-
-
     /// A list of inequalities which were added after the last consistency check.
     std::list<typename InequalitiesTable<Settings>::Rows::iterator> mNewInequalities;
 
@@ -198,6 +198,11 @@ private:
     GroebnerModuleStats* mStats;
     GBCalculationStats* mGBStats;
     #endif //GATHER_STATS
+
+    void processNewConstraint( Formula::const_iterator _formula );
+    void handleConstraintToGBQueue( Formula::const_iterator _formula );
+    void handleConstraintNotToGB( Formula::const_iterator _formula );
+    void removeReceivedFormulaFromNewInequalities( Formula::const_iterator _formula );
     typedef Module super;
 };
 } // namespace smtrat

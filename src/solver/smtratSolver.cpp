@@ -44,18 +44,22 @@
  */
 int main( int argc, char* argv[] )
 {
+    // Call the sighandler code on user abort
+    // TODO update we should use sigaction() 
+    //signal(SIGINT, &sighandler);
+
     smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
     smtrat::Driver   driver( form );
 
-    #ifdef GATHER_STATS
-    bool printStats  = false;
+    bool printStats = false;
     bool exportStats = false;
-    #endif //GATHER_STATS
+    std::string pathToStatsXML;
+    
 
     if( argc == 1 )
     {
-        std::cout << "This is " << PROJECT_NAME << "." << std::endl;
-        std::cout << "Version: " << VERSION << std::endl;
+        std::cout << "This is " << SMTRAT_PROJECT_NAME << "." << std::endl;
+        std::cout << "Version: " << SMTRAT_VERSION << std::endl;
         std::cout << "For more information, run this binary with --help." << std::endl;
     }
     int returnValue = SMTRAT_EXIT_USERABORT;
@@ -69,18 +73,23 @@ int main( int argc, char* argv[] )
         {
             driver.trace_scanning = true;
         }
-        #ifdef GATHER_STATS
-        else if( argv[ai] == std::string( "--print-stats" ) )
-        {
+        else if( argv[ai] == std::string( "--print-stats") ) {
+            #ifdef GATHER_STATS
             printStats = true;
+            #endif
         }
-        else if( argv[ai] == std::string( "--export-stats" ) )
-        {
+        else if( argv[ai] == std::string( "--export-stats") ) {
+            #ifdef GATHER_STATS
             exportStats = true;
+            #endif
+            //TODO make this optional.
+            pathToStatsXML = argv[++ai];
         }
-        #endif
-        else if( argv[ai] == std::string( "--help" ) )
+        else if( argv[ai] == std::string( "--gb-info") )
         {
+            std::cout << "Groebner module settings: GBModuleSettings" << std::endl;
+        }
+        else if( argv[ai] == std::string( "--help") ) {
             std::cout << "The help is not yet implemented. Please visit our website ...." << std::endl;
         }
         else
@@ -156,7 +165,7 @@ int main( int argc, char* argv[] )
                 }
                 if( exportStats )
                 {
-                    smtrat::CollectStatistics::exportXML();
+                    smtrat::CollectStatistics::exportXML(pathToStatsXML);
                 }
                 #endif //GATHER_STATS
             }

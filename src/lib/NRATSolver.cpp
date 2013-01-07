@@ -39,15 +39,11 @@ namespace smtrat
     NRATSolver::NRATSolver( Formula* _inputFormula ):
         Manager( _inputFormula )
     {
-        #ifdef USE_GB
-        GiNaCRA::MultivariatePolynomialSettings::InitializeGiNaCRAMultivariateMR();
-        #endif
-
         unsigned position = 0;
         position = rStrategyGraph().addModuleType( position, MT_CNFerModule );
         position = rStrategyGraph().addModuleType( position, MT_PreProModule );
         position = rStrategyGraph().addModuleType( position, MT_SATModule );
-        position = rStrategyGraph().addModuleType( position, MT_LRAModule );
+        //position = rStrategyGraph().addModuleType( position, MT_LRAModule );
         #ifdef USE_GB
         position = rStrategyGraph().addModuleType( position, MT_GroebnerModule );
         position = rStrategyGraph().addModuleType( position, MT_VSModule );

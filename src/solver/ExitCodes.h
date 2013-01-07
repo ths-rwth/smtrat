@@ -21,4 +21,3 @@
 #define SMTRAT_EXIT_PARSERFAILURE       10
 
 #endif   /* EXITCODES_H */
-

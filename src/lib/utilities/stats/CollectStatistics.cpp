@@ -54,20 +54,19 @@ void CollectStatistics::print(std::ostream& os) {
     
 }
 
-void CollectStatistics::exportXML() {
+void CollectStatistics::exportXML(const std::string& pathToFile) {
     std::stringstream stream;
-    stream << "<runtimestatistics>\n";
+    stream << "<runtimestats>\n";
     for(auto it = stats.begin(); it != stats.end(); ++it) {
         (*it)->collect();
         (*it)->generateXML(stream);
     }
-    stream << "</runtimestatistics>";
+    stream << "</runtimestats>";
     
     std::ofstream file;
-    file.open("stats.xml", std::ios::out | std::ios::app );
+    file.open(pathToFile, std::ios::out | std::ios::app );
     file << stream.str() << std::endl;
     file.close();
-    
 }
 
 

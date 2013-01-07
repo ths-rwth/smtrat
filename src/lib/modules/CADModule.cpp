@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2012-12-10
+ * @version 2012-12-14
  */
 
 //#define MODULE_VERBOSE
@@ -80,14 +80,18 @@ namespace smtrat
         mInfeasibleSubsets.clear();    // initially everything is satisfied
         // CAD setting
         GiNaCRA::CADSettings setting = mCAD.setting();
+        setting.autoEliminate = false;
         // general setting set
         #ifdef SMTRAT_CAD_ALTERNATIVE_SETTING
             setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::RATIONALSAMPLE_CADSETTING );
+            setting.autoEliminate = false;
         #else
             #ifdef SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
                 setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::GENERIC_CADSETTING );
+                setting.autoEliminate = false;
             #else
                 setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::EQUATIONDETECT_CADSETTING ); // standard
+                setting.autoEliminate = false;
                 setting.warmRestart = true;
                 setting.simplifyByFactorization = true;
                 setting.simplifyByRootcounting= true;
@@ -153,16 +157,12 @@ namespace smtrat
             cout << " " << *k << endl;
         #endif
         // perform the scheduled elimination and see if there were new variables added
-        mCAD.eliminate( );
+        mCAD.prepareElimination( );
         #ifdef MODULE_VERBOSE
         cout << "over the variables " << endl;
         vector<symbol> vars = mCAD.variables();
         for( vector<GiNaC::symbol>::const_iterator k = vars.begin(); k != vars.end(); ++k )
             cout << " " << *k << endl;
-        cout << "Elimination sets:" << endl;
-        vector<EliminationSet> elimSets = mCAD.eliminationSets();
-        for( unsigned i = 0; i != elimSets.size(); ++i )
-            cout << "  Level " << i << " (" << elimSets[i].size() << "): " << elimSets[i] << endl;
         #endif
         // check the extended constraints for satisfiability
         ConflictGraph               conflictGraph;
@@ -196,6 +196,10 @@ namespace smtrat
             #endif
             #ifdef MODULE_VERBOSE
             cout << endl << "#Samples: " << mCAD.samples().size() << endl;
+            cout << "Elimination sets:" << endl;
+            vector<EliminationSet> elimSets = mCAD.eliminationSets();
+            for( unsigned i = 0; i != elimSets.size(); ++i )
+                cout << "  Level " << i << " (" << elimSets[i].size() << "): " << elimSets[i] << endl;
             cout << "Result: false" << endl;
             cout << "CAD complete: " << mCAD.isComplete() << endl;
             printInfeasibleSubsets();
@@ -208,6 +212,10 @@ namespace smtrat
         }
         #ifdef MODULE_VERBOSE
         cout << endl << "#Samples: " << mCAD.samples().size() << endl;
+        cout << "Elimination sets:" << endl;
+        vector<EliminationSet> elimSets = mCAD.eliminationSets();
+        for( unsigned i = 0; i != elimSets.size(); ++i )
+            cout << "  Level " << i << " (" << elimSets[i].size() << "): " << elimSets[i] << endl;
         cout << "Result: true" << endl;
         cout << "CAD complete: " << mCAD.isComplete() << endl;
         cout << "Solution point: " << mRealAlgebraicSolution << endl << endl;
