@@ -233,7 +233,7 @@ namespace smtrat
         learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
 
         lbool result            = search();
-        
+
         #ifdef SATMODULE_WITH_CALL_NUMBER
         cout << endl << endl;
         #endif
@@ -396,8 +396,7 @@ namespace smtrat
                         }
                     }
                 }
-                addClause( clauseLits, _type );
-                return clauses.last();
+                return addClause( clauseLits, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
             }
             case REALCONSTRAINT:
             {
