@@ -177,9 +177,13 @@ protected:
     std::vector<Formula::const_iterator> mBacktrackPoints;
     /// Saves the relevant history to support backtracking
     std::list<GroebnerModuleState<Settings> > mStateHistory;
-
+    /// After popping in the history, it might be necessary to recalculate. This flag indicates this
+    bool mRecalculateGB;
+    
     /// A list of inequalities which were added after the last consistency check.
     std::list<typename InequalitiesTable<Settings>::Rows::iterator> mNewInequalities;
+    
+    
 
     std::map<unsigned, unsigned> mAdditionalVarMap;
 

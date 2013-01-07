@@ -53,7 +53,8 @@ GroebnerModule<Settings>::GroebnerModule( const Formula * const _formula, Manage
 Module( _formula, _tsManager ),
 mBasis( ),
 mInequalities( this ),
-mStateHistory( )
+mStateHistory( ),
+mRecalculateGB(false)
 #ifdef GATHER_STATS
     , mStats(GroebnerModuleStats::getInstance(Settings::identifier)),
         mGBStats(GBCalculationStats::getInstance(Settings::identifier))
@@ -208,10 +209,11 @@ Answer GroebnerModule<Settings>::isConsistent( )
         }
     }
     //If no equalities are added, we do not know anything
-    if( !mBasis.inputEmpty( ) )
+    if( !mBasis.inputEmpty( ) || (mRecalculateGB && mBasis.nrOriginalConstraints() > 0) )
     {
         //now, we calculate the groebner basis
         mBasis.calculate( );
+        mRecalculateGB = false;
         
         Polynomial witness;
 #ifdef USE_NSS
@@ -306,18 +308,15 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
         if( Settings::checkInequalities != NEVER )
         {
-            printReceivedFormula();
-            mInequalities.print();
             Answer ans = mInequalities.reduceWRTGroebnerBasis( mBasis.getGbIdeal( ) );
             mNewInequalities.clear( );
-            if( ans != Unknown )
+            if( ans == False )
             {
                 mSolverState = ans;
                 return ans;
             }
         }
         assert( mInfeasibleSubsets.empty( ) );
-
         if( Settings::passGB )
         {
             for( Formula::iterator i = mpPassedFormula->begin( ); i != mpPassedFormula->end( ); )
@@ -356,7 +355,6 @@ Answer GroebnerModule<Settings>::isConsistent( )
         #endif
         // use the infeasible subsets from our backends.
         getInfeasibleSubsets( );
-
         assert( !mInfeasibleSubsets.empty( ) );
     }
     mSolverState = ans;
@@ -432,10 +430,11 @@ void GroebnerModule<Settings>::pushBacktrackPoint( Formula::const_iterator btpoi
     {
         saveState( );
     }
-    mBacktrackPoints.push_back( btpoint );
+    
     mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis ) );
+    mBacktrackPoints.push_back( btpoint );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
-
+    
     if( Settings::checkInequalities != NEVER )
     {
         mInequalities.pushBacktrackPoint( );
@@ -496,6 +495,7 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
         mInequalities.popBacktrackPoint( nrOfBacktracks );
     }
 
+    mRecalculateGB = true;
     //Add all others
     for( auto it = rescheduled.begin(); it != rescheduled.end(); ++it )
     {
@@ -710,9 +710,9 @@ bool GroebnerModule<Settings>::validityCheck( )
 template<class Settings>
 void GroebnerModule<Settings>::removeSubformulaFromPassedFormula( Formula::iterator _formula )
 {
-    std::cout << "formula remove: ";
-    (**_formula).print();
-    std::cout << "\n";
+    //std::cout << "formula remove: ";
+    //(**_formula).print();
+    //std::cout << "\n";
     super::removeSubformulaFromPassedFormula( _formula );
 }
 
@@ -971,10 +971,6 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
             if( satisfied )
             {
                 // remove the last formula
-                mModule->printReceivedFormula();
-                std::cout << "In the row " << *(it->first) << std::endl;
-                std::cout << "Try to remove:" << *std::get<0>(it->second) << "(end =" << *mModule->mpPassedFormula->end() << ")" << std::endl;
-                print();
                 mModule->removeSubformulaFromPassedFormula( std::get < 0 > (it->second) );
 
                 std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) );
