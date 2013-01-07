@@ -225,11 +225,15 @@ namespace smtrat
             mSolverState = False;
             return False;
         }
-        solves++;
+
+        // TODO: Is this necessary?
+        ++solves;
         max_learnts             = nClauses() * learntsize_factor;
         learntsize_adjust_confl = learntsize_adjust_start_confl;
         learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
+
         lbool result            = search();
+        
         #ifdef SATMODULE_WITH_CALL_NUMBER
         cout << endl << endl;
         #endif
@@ -667,6 +671,7 @@ namespace smtrat
             }
             else
             {
+                if( _type == DEDUCTED_CLAUSE ) cancelUntil( 0 );
                 uncheckedEnqueue( add_tmp[0] );
                 ok = (propagate() == CRef_Undef);
                 return false;
@@ -675,26 +680,33 @@ namespace smtrat
         // Learn theory lemma
         else
         {
-            CRef result;
+            CRef cr;
             if( _type > NORMAL_CLAUSE )
             {
-                result = ca.alloc( add_tmp, _type );
-                learnts.push( result );
+                cr = ca.alloc( add_tmp, _type );
+                learnts.push( cr );
             }
             else
             {
-                result = ca.alloc( add_tmp, false );
-                clauses.push( result );
+                cr = ca.alloc( add_tmp, false );
+                clauses.push( cr );
             }
-            if( _type == DEDUCTED_CLAUSE ) arangeForWatches( result );
-            attachClause( result );
+            if( _type == DEDUCTED_CLAUSE )
+            {
+                arangeForWatches( cr );
+                if( value( add_tmp[1] ) != l_Undef )
+                {
+                    cancelUntil( level( add_tmp ) );
+                }
+            }
+            attachClause( cr );
             // Clause is unit
             if( _type == DEDUCTED_CLAUSE )
             {
-                Clause& c = ca[result];
+                Clause& c = ca[cr];
                 if( value( c[0] ) == l_Undef && value( c[1] ) == l_False )
                 {
-                    uncheckedEnqueue( c[0], result );
+                    uncheckedEnqueue( c[0], cr );
                     ok = (propagate() == CRef_Undef);
                 }
             }
@@ -782,6 +794,25 @@ FindSecond:
             clause[l2] = clause[1];
             clause[1] = second;
         }
+    }
+
+    /**
+     *
+     * @param _clause
+     * @return
+     */
+    int SATModule::level( const vec< Lit >& _clause ) const
+    {
+        int result = 0;
+        for( int i = 0; i < _clause.size(); ++i )
+        {
+            if( value( _clause[i] ) != l_Undef )
+            {
+                int varLevel = level( var( _clause[i] ) );
+                if( varLevel > result ) result = varLevel;
+            }
+        }
+        return result;
     }
 
     /**
@@ -876,7 +907,11 @@ FindSecond:
             for( int c = trail.size() - 1; c >= trail_lim[level]; --c )
             {
                 Var x       = var( trail[c] );
-                if( !sign( trail[c] ) && mBooleanConstraintMap[x].formula != NULL ) --mBooleanConstraintMap[x].updateInfo;
+                if( !sign( trail[c] ) )
+                {
+                    if( mBooleanConstraintMap[x].position != mpPassedFormula->end() ) --mBooleanConstraintMap[x].updateInfo;
+                    else if( mBooleanConstraintMap[x].formula != NULL ) mBooleanConstraintMap[x].updateInfo = 0;
+                }
                 assigns[x]  = l_Undef;
                 if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
                     polarity[x] = sign( trail[c] );
@@ -946,6 +981,8 @@ Propagation:
             if( confl == CRef_Undef )
             {
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
+                // TODO: Do not call the theory solver on instances which have already been proved to be consistent.
+                //       (Happens if the Boolean assignment is extended by assignments to false only)
                 if( adaptPassedFormula() )
                 {
                     #ifdef DEBUG_SATMODULE
@@ -1706,23 +1743,6 @@ NextClause:
         {
             return CRef_Undef;
         }
-    }
-
-    /**
-     *
-     * @param _clause
-     * @return
-     */
-    int SATModule::level( CRef _clauseRef ) const
-    {
-        int result = 0;
-        const Clause& clause = ca[_clauseRef];
-        for( int i = 0; i < clause.size(); ++i )
-        {
-            int varLevel = level( var( clause[i] ) );
-            if( varLevel > result ) result = varLevel;
-        }
-        return result;
     }
 
     /**

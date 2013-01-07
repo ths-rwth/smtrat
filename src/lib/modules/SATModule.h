@@ -419,7 +419,7 @@ namespace smtrat
             uint32_t abstractLevel( Minisat::Var x ) const;
             Minisat::CRef reason( Minisat::Var x ) const;
             int level( Minisat::Var x ) const;
-            int level( Minisat::CRef ) const;
+            int level( const Minisat::vec< Minisat::Lit >& ) const;
             // DELETE THIS ?? IT'S NOT VERY USEFUL ...
             double progressEstimate() const;
             bool withinBudget() const;
