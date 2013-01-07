@@ -215,6 +215,8 @@ Answer GroebnerModule<Settings>::isConsistent( )
         mBasis.calculate( );
         mRecalculateGB = false;
         
+        searchForRadicalMembers();
+        
         Polynomial witness;
 #ifdef USE_NSS
         // On linear systems, all solutions lie in Q. So we do not have to check for a solution.
@@ -359,6 +361,15 @@ Answer GroebnerModule<Settings>::isConsistent( )
     }
     mSolverState = ans;
     return ans;
+}
+
+template<class Settings>
+void GroebnerModule<Settings>::searchForRadicalMembers() 
+{
+    //apply the rules RRI-* from the Thesis from G.O. Passmore
+    
+    
+    
 }
 
 /**

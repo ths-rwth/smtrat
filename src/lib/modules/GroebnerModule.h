@@ -46,6 +46,7 @@
 #include <ginacra/mr/Buchberger.h>
 #include "../Module.h"
 #include "GBModule/GBSettings.h"
+#include "GBModule/VariableRewriteRule.h"
 
 
 #ifdef GATHER_STATS
@@ -70,8 +71,8 @@ public:
         
     }
 
-    GroebnerModuleState( const GiNaCRA::Buchberger<GBSettings::Order>& basis ) :
-    mBasis( basis )
+    GroebnerModuleState( const GiNaCRA::Buchberger<GBSettings::Order>& basis, std::vector<VariableRewriteRule>& rewrites ) :
+    mBasis( basis ), mRewrites(rewrites)
     {
     }
 
@@ -79,10 +80,16 @@ public:
     {
         return mBasis;
     }
+    
+    std::vector<VariableRewriteRule> getRewriteRules() const
+    {
+        return mRewrites;
+    }
 
 protected:
     ///The state of the basis
     const GiNaCRA::Buchberger<typename Settings::Order> mBasis;
+    std::vector<VariableRewriteRule> mRewrites;
 };
 
 template<typename Settings>
@@ -195,6 +202,8 @@ protected:
     Polynomial transformIntoEquality( Formula::const_iterator constraint );
 
     void removeSubformulaFromPassedFormula( Formula::iterator _formula );
+    
+    bool searchForRadicalMembers();
     bool validityCheck( );
 
 private:
