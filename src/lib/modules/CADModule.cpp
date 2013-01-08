@@ -60,7 +60,7 @@ using namespace std;
 //#define SMTRAT_CAD_GENERIC_SETTING
 //#define SMTRAT_CAD_DISABLE_SMT
 //#define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
-//#define SMTRAT_CAD_DISABLE_MIS
+#define SMTRAT_CAD_DISABLE_MIS
 
 #ifdef SMTRAT_CAD_DISABLE_SMT
     #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
@@ -75,12 +75,20 @@ namespace smtrat
         mConstraints(),
         mConstraintsMap(),
         mRealAlgebraicSolution()
+        #ifdef CAD_USE_VARIABLE_BOUNDS
+        ,
+        mVariableBounds()
+        #endif
     {
         mModuleType = MT_CADModule;
         mInfeasibleSubsets.clear();    // initially everything is satisfied
         // CAD setting
         GiNaCRA::CADSettings setting = mCAD.setting();
         setting.autoEliminate = false;
+        #ifdef CAD_USE_VARIABLE_BOUNDS
+        setting.simplifyEliminationByBounds = true;
+        setting.earlyLiftingPruningByBounds = true;
+        #endif
         // general setting set
         #ifdef SMTRAT_CAD_ALTERNATIVE_SETTING
             setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::RATIONALSAMPLE_CADSETTING );
@@ -129,6 +137,11 @@ namespace smtrat
         assert( (*_subformula)->getType() == REALCONSTRAINT );
         Module::assertSubformula( _subformula );
 
+        #ifdef CAD_USE_VARIABLE_BOUNDS
+        if( !mVariableBounds.addBound( (*_subformula)->pConstraint(), *_subformula ) )
+        {
+        #endif
+
         if( mSolverState == False )
             return false;
         // add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
@@ -138,6 +151,9 @@ namespace smtrat
         mConstraints.push_back( constraint );
         mConstraintsMap[ _subformula ] = mConstraints.size() - 1;
         mCAD.addPolynomial( constraint.polynomial(), constraint.variables() );
+        #ifdef CAD_USE_VARIABLE_BOUNDS
+        }
+        #endif
         return true;
     }
 
@@ -157,7 +173,7 @@ namespace smtrat
             cout << " " << *k << endl;
         #endif
         // perform the scheduled elimination and see if there were new variables added
-        mCAD.prepareElimination( );
+        mCAD.prepareElimination();
         #ifdef MODULE_VERBOSE
         cout << "over the variables " << endl;
         vector<symbol> vars = mCAD.variables();
@@ -165,9 +181,26 @@ namespace smtrat
             cout << " " << *k << endl;
         #endif
         // check the extended constraints for satisfiability
-        ConflictGraph               conflictGraph;
+        #ifdef CAD_USE_VARIABLE_BOUNDS
+        if( variableBounds().isConflicting() )
+        {
+            mInfeasibleSubsets.push_back( variableBounds().getConflict() );
+            mSolverState = False;
+            mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
+            return False;
+        }
+        GiNaCRA::BoundMap boundMap = GiNaCRA::BoundMap();
+        GiNaCRA::evalintervalmap eiMap = mVariableBounds.getEvalIntervalMap();
+        for( auto iter = eiMap.begin(); iter != eiMap.end(); ++iter )
+        {
+            unsigned pos = mCAD.variable( iter->first );
+            assert( boundMap.find( pos ) == boundMap.end() );
+            boundMap[pos] = iter->second;
+        }
+        #endif
+        ConflictGraph conflictGraph;
         list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > > deductions;
-        if( !mCAD.check( mConstraints, mRealAlgebraicSolution, conflictGraph, deductions, false, false ) )
+        if( !mCAD.check( mConstraints, mRealAlgebraicSolution, conflictGraph, boundMap, deductions, false, false ) )
         {
             #ifdef SMTRAT_CAD_DISABLE_SMT
             // simulate non-incrementality by constructing a trivial infeasible subset and clearing all data in the CAD
@@ -237,6 +270,10 @@ namespace smtrat
     void CADModule::removeSubformula( Formula::const_iterator _subformula )
     {
         assert( (*_subformula)->getType() == REALCONSTRAINT );
+        #ifdef CAD_USE_VARIABLE_BOUNDS
+        if( mVariableBounds.removeBound( (*_subformula)->pConstraint(), *_subformula ) == 0 )
+        {
+        #endif
         try
         {
             ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find( _subformula );
@@ -292,6 +329,9 @@ namespace smtrat
             assert( false );    // the constraint to be removed should have been put to mConstraints before
             return;
         }
+        #ifdef CAD_USE_VARIABLE_BOUNDS
+        }
+        #endif
     }
 
     /**

@@ -27,7 +27,6 @@
  * @version 2011-12-05
  */
 
-//#include <ginacra/FloatInterval.h>
 #include <cmath>
 #include <float.h>
 
@@ -60,6 +59,7 @@ namespace vs
         mRoot( true ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
+        mTestCandidateCheckedForBounds( false ),
         mToHighDegree( false ),
         mTryToRefreshIndex( false ),
         mID( 0 ),
@@ -90,6 +90,7 @@ namespace vs
         mRoot( false ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
+        mTestCandidateCheckedForBounds( false ),
         mToHighDegree( false ),
         mTryToRefreshIndex( false ),
         mID( 0 ),
@@ -2380,13 +2381,15 @@ namespace vs
     }
 
     #ifdef VS_USE_VARIABLE_BOUNDS
-//    #define VS_VB_DEBUG
+    #define VS_VB_DEBUG
     /**
      *
      * @return
      */
     bool State::checkTestCandidatesForBounds()
     {
+        if( mTestCandidateCheckedForBounds ) return true;
+        mTestCandidateCheckedForBounds = true;
         if( variableBounds().isConflicting() )
         {
             #ifdef VS_VB_DEBUG
@@ -2412,7 +2415,7 @@ namespace vs
         {
             if( substitution().type() == ST_MINUS_INFINITY )
             {
-                if( rFather().rVariableBounds().getFloatInterval( substitution().varAsEx() ).leftType() != FloatInterval::INFINITY_BOUND )
+                if( rFather().rVariableBounds().getDoubleInterval( substitution().varAsEx() ).leftType() != DoubleInterval::INFINITY_BOUND )
                 {
                     set< const Condition* > conflictingBounds = father().variableBounds().getOriginsOfBounds( ex_to<symbol>( substitution().varAsEx() ) );
                     ConditionSet conflict = ConditionSet();
@@ -2435,23 +2438,23 @@ namespace vs
                 father().variableBounds().print( cout, "          " );
                 cout << endl;
                 #endif
-                FloatInterval solutionSpaceConst = FloatInterval::evaluate( substitution().term().constantPart(), rFather().rVariableBounds().getIntervalMap() );
-                FloatInterval solutionSpaceFactor = FloatInterval::evaluate( substitution().term().factor(), rFather().rVariableBounds().getIntervalMap() );
-                FloatInterval solutionSpaceRadicand = FloatInterval::evaluate( substitution().term().radicand(), rFather().rVariableBounds().getIntervalMap() );
+                DoubleInterval solutionSpaceConst = DoubleInterval::evaluate( substitution().term().constantPart(), rFather().rVariableBounds().getIntervalMap() );
+                DoubleInterval solutionSpaceFactor = DoubleInterval::evaluate( substitution().term().factor(), rFather().rVariableBounds().getIntervalMap() );
+                DoubleInterval solutionSpaceRadicand = DoubleInterval::evaluate( substitution().term().radicand(), rFather().rVariableBounds().getIntervalMap() );
                 if( solutionSpaceRadicand.left() < 0 )
                 {
-                    solutionSpaceRadicand.setLeftType( FloatInterval::WEAK_BOUND );
+                    solutionSpaceRadicand.setLeftType( DoubleInterval::WEAK_BOUND );
                     solutionSpaceRadicand.setLeft( 0 );
                 }
-                if( solutionSpaceRadicand.right() > 0 && solutionSpaceRadicand.leftType() != FloatInterval::INFINITY_BOUND )
+                if( solutionSpaceRadicand.right() > 0 && solutionSpaceRadicand.leftType() != DoubleInterval::INFINITY_BOUND )
                 {
                     solutionSpaceRadicand.setRight( sqrt( solutionSpaceRadicand.right() ) + DBL_MIN );
                 }
-                FloatInterval solutionSpaceDenom = FloatInterval::evaluate( substitution().term().denominator(), rFather().rVariableBounds().getIntervalMap() );
-                FloatInterval solutionSpace = solutionSpaceFactor * solutionSpaceRadicand;
+                DoubleInterval solutionSpaceDenom = DoubleInterval::evaluate( substitution().term().denominator(), rFather().rVariableBounds().getIntervalMap() );
+                DoubleInterval solutionSpace = solutionSpaceFactor * solutionSpaceRadicand;
                 solutionSpace = solutionSpace + solutionSpaceConst;
-                FloatInterval divisionResultA;
-                FloatInterval divisionResultB;
+                DoubleInterval divisionResultA;
+                DoubleInterval divisionResultB;
                 if( solutionSpace.div_ext( divisionResultA, divisionResultB, solutionSpaceDenom ) )
                 {
                     #ifdef VS_VB_DEBUG
@@ -2461,12 +2464,12 @@ namespace vs
                     divisionResultB.dbgprint();
                     cout << endl;
                     cout << endl << "intersect first interval with  ";
-                    FloatInterval variableDomain = rFather().rVariableBounds().getFloatInterval( substitution().varAsEx() );
+                    DoubleInterval variableDomain = rFather().rVariableBounds().getDoubleInterval( substitution().varAsEx() );
                     variableDomain.dbgprint();
                     cout << endl;
                     #endif
-                    if( substitution().type() == ST_PLUS_EPSILON ) divisionResultA.setLeftType( FloatInterval::STRICT_BOUND );
-                    solutionSpace = divisionResultA.intersect( rFather().rVariableBounds().getFloatInterval( substitution().varAsEx() ) );
+                    if( substitution().type() == ST_PLUS_EPSILON ) divisionResultA.setLeftType( DoubleInterval::STRICT_BOUND );
+                    solutionSpace = divisionResultA.intersect( rFather().rVariableBounds().getDoubleInterval( substitution().varAsEx() ) );
                     #ifdef VS_VB_DEBUG
                     cout << " results in   ";
                     solutionSpace.dbgprint();
@@ -2476,12 +2479,12 @@ namespace vs
                     {
                         #ifdef VS_VB_DEBUG
                         cout << endl << "intersect first interval with  ";
-                        FloatInterval variableDomain = rFather().rVariableBounds().getFloatInterval( substitution().varAsEx() );
+                        DoubleInterval variableDomain = rFather().rVariableBounds().getDoubleInterval( substitution().varAsEx() );
                         variableDomain.dbgprint();
                         cout << endl;
                         #endif
-                        if( substitution().type() == ST_PLUS_EPSILON ) divisionResultB.setLeftType( FloatInterval::STRICT_BOUND );
-                        solutionSpace = divisionResultB.intersect( rFather().rVariableBounds().getFloatInterval( substitution().varAsEx() ) );
+                        if( substitution().type() == ST_PLUS_EPSILON ) divisionResultB.setLeftType( DoubleInterval::STRICT_BOUND );
+                        solutionSpace = divisionResultB.intersect( rFather().rVariableBounds().getDoubleInterval( substitution().varAsEx() ) );
                         #ifdef VS_VB_DEBUG
                         cout << " results in   ";
                         solutionSpace.dbgprint();
@@ -2489,9 +2492,12 @@ namespace vs
                         #endif
                         if( solutionSpace.empty() )
                         {
-                            set< const Condition* > conflictingBounds = father().variableBounds().getOriginsOfBounds( substitution().termVariables() );
+                            symtab vars = substitution().termVariables();
+                            vars[substitution().variable()] = substitution().varAsEx();
+                            set< const Condition* > conflictingBounds = father().variableBounds().getOriginsOfBounds( vars );
                             ConditionSet conflict = ConditionSet();
                             conflict.insert( conflictingBounds.begin(), conflictingBounds.end() );
+                            conflict.insert( substitution().originalConditions().begin(), substitution().originalConditions().end() );
                             ConditionSetSet conflicts = ConditionSetSet();
                             conflicts.insert( conflict );
                             pFather()->addConflictSet( pSubstitution(), conflicts );
@@ -2509,12 +2515,12 @@ namespace vs
                     divisionResultA.dbgprint();
                     cout << endl;
                     cout << endl << "intersect with  ";
-                    FloatInterval variableDomain = rFather().rVariableBounds().getFloatInterval( substitution().varAsEx() );
+                    DoubleInterval variableDomain = rFather().rVariableBounds().getDoubleInterval( substitution().varAsEx() );
                     variableDomain.dbgprint();
                     cout << endl;
                     #endif
-                    if( substitution().type() == ST_PLUS_EPSILON ) divisionResultA.setLeftType( FloatInterval::STRICT_BOUND );
-                    solutionSpace = divisionResultA.intersect( rFather().rVariableBounds().getFloatInterval( substitution().varAsEx() ) );
+                    if( substitution().type() == ST_PLUS_EPSILON ) divisionResultA.setLeftType( DoubleInterval::STRICT_BOUND );
+                    solutionSpace = divisionResultA.intersect( rFather().rVariableBounds().getDoubleInterval( substitution().varAsEx() ) );
                     #ifdef VS_VB_DEBUG
                     cout << " results in   ";
                     solutionSpace.dbgprint();
@@ -2522,9 +2528,12 @@ namespace vs
                     #endif
                     if( solutionSpace.empty() )
                     {
-                        set< const Condition* > conflictingBounds = father().variableBounds().getOriginsOfBounds( substitution().termVariables() );
+                        symtab vars = substitution().termVariables();
+                        vars[substitution().variable()] = substitution().varAsEx();
+                        set< const Condition* > conflictingBounds = father().variableBounds().getOriginsOfBounds( vars );
                         ConditionSet conflict = ConditionSet();
                         conflict.insert( conflictingBounds.begin(), conflictingBounds.end() );
+                        conflict.insert( substitution().originalConditions().begin(), substitution().originalConditions().end() );
                         ConditionSetSet conflicts = ConditionSetSet();
                         conflicts.insert( conflict );
                         pFather()->addConflictSet( pSubstitution(), conflicts );
