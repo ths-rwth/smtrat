@@ -2381,7 +2381,7 @@ namespace vs
     }
 
     #ifdef VS_USE_VARIABLE_BOUNDS
-    #define VS_VB_DEBUG
+//    #define VS_VB_DEBUG
     /**
      *
      * @return

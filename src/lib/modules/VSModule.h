@@ -36,7 +36,7 @@
 
 #define VS_WITH_BACKEND
 
-#define VS_DEBUG
+//#define VS_DEBUG
 //#define VS_STATISTICS
 //#define VS_PRINT_ANSWERS
 //#define VS_LOG_INTERMEDIATE_STEPS
