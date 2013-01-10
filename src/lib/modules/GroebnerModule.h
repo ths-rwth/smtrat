@@ -66,12 +66,13 @@ template<typename Settings>
 class GroebnerModuleState
 {
 public:
-    GroebnerModuleState( )
+    GroebnerModuleState( ) :
+    mRewrites(std::vector<VariableRewriteRule*>())
     {
         
     }
 
-    GroebnerModuleState( const GiNaCRA::Buchberger<GBSettings::Order>& basis, std::vector<VariableRewriteRule>& rewrites ) :
+    GroebnerModuleState( const GiNaCRA::Buchberger<GBSettings::Order>& basis, const std::vector<VariableRewriteRule*>& rewrites ) :
     mBasis( basis ), mRewrites(rewrites)
     {
     }
@@ -81,7 +82,7 @@ public:
         return mBasis;
     }
     
-    std::vector<VariableRewriteRule> getRewriteRules() const
+    const std::vector<VariableRewriteRule*>& getRewriteRules() const
     {
         return mRewrites;
     }
@@ -89,7 +90,7 @@ public:
 protected:
     ///The state of the basis
     const GiNaCRA::Buchberger<typename Settings::Order> mBasis;
-    std::vector<VariableRewriteRule> mRewrites;
+    std::vector<VariableRewriteRule*> mRewrites;
 };
 
 template<typename Settings>
