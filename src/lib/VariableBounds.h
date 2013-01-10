@@ -254,12 +254,12 @@ namespace smtrat
                 /*
                  * Attributes:
                  */
-                bool                     mBoundsChanged;
-                Variable<T>*             mpConflictingVariable;
-                ExVariableMap*           mpExVariableMap;
-                ConstraintBoundMap*      mpConstraintBoundMap;
-                GiNaCRA::evalintervalmap mEvalIntervalMap;
-                GiNaCRA::intervalmap     mFloatIntervalMap;
+                bool                           mBoundsChanged;
+                Variable<T>*                   mpConflictingVariable;
+                ExVariableMap*                 mpExVariableMap;
+                ConstraintBoundMap*            mpConstraintBoundMap;
+                GiNaCRA::evalintervalmap       mEvalIntervalMap;
+                GiNaCRA::evaldoubleintervalmap mDoubleIntervalMap;
             public:
                 /*
                  * Constructors:
@@ -278,8 +278,8 @@ namespace smtrat
                 const GiNaC::ex removeBound( const Constraint*, const T* );
                 const GiNaCRA::evalintervalmap& getEvalIntervalMap();
                 const GiNaCRA::Interval& getInterval( const GiNaC::ex& );
-                const GiNaCRA::intervalmap& getIntervalMap();
-                const GiNaCRA::FloatInterval& getFloatInterval( const GiNaC::ex& );
+                const GiNaCRA::evaldoubleintervalmap& getIntervalMap();
+                const GiNaCRA::DoubleInterval& getDoubleInterval( const GiNaC::ex& );
                 std::set< const T* > getOriginsOfBounds( const GiNaC::symbol& ) const;
                 std::set< const T* > getOriginsOfBounds( const GiNaC::symtab& ) const;
                 std::set< const T* > getOriginsOfBounds() const;
@@ -595,7 +595,7 @@ namespace smtrat
             mpExVariableMap( new ExVariableMap() ),
             mpConstraintBoundMap( new ConstraintBoundMap() ),
             mEvalIntervalMap(),
-            mFloatIntervalMap()
+            mDoubleIntervalMap()
         {}
 
         /**
@@ -618,7 +618,7 @@ namespace smtrat
          * Updates the variable bounds by the given constraint.
          *
          * @param The constraint to consider.
-         * @return True, if the variable bounds had been changed;
+         * @return True, if the variable bounds have been changed;
          *         False, otherwise.
          */
         template<class T>
@@ -685,6 +685,7 @@ namespace smtrat
          *
          * @param The constraints, which effects shall be undone for the variable bounds.
          * @return A variable, if its bounds has been changed;
+         *         1         , if the constraint was a (not the strictest) bound;
          *         0         , otherwise.
          */
         template<class T>
@@ -709,6 +710,7 @@ namespace smtrat
                         }
                         return var;
                     }
+                    return 1;
                 }
             }
             return 0;
@@ -810,7 +812,7 @@ namespace smtrat
          * @return The variable bounds as an interval map.
          */
         template<class T>
-        const GiNaCRA::intervalmap& VariableBounds<T>::getIntervalMap()
+        const GiNaCRA::evaldoubleintervalmap& VariableBounds<T>::getIntervalMap()
         {
             assert( mpConflictingVariable == NULL );
             for( auto exVarPair = mpExVariableMap->begin(); exVarPair != mpExVariableMap->end(); ++exVarPair )
@@ -818,45 +820,45 @@ namespace smtrat
                 Variable<T>& var = *exVarPair->second;
                 if( var.updatedB() )
                 {
-                    GiNaCRA::FloatInterval::BoundType lowerBoundType;
+                    GiNaCRA::DoubleInterval::BoundType lowerBoundType;
                     GiNaC::numeric lowerBoundValue;
-                    GiNaCRA::FloatInterval::BoundType upperBoundType;
+                    GiNaCRA::DoubleInterval::BoundType upperBoundType;
                     GiNaC::numeric upperBoundValue;
                     if( var.infimum().isInfinite() )
                     {
-                        lowerBoundType = GiNaCRA::FloatInterval::INFINITY_BOUND;
+                        lowerBoundType = GiNaCRA::DoubleInterval::INFINITY_BOUND;
                         lowerBoundValue = 0;
                     }
                     else
                     {
-                        lowerBoundType = var.infimum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::FloatInterval::STRICT_BOUND : GiNaCRA::FloatInterval::WEAK_BOUND;
+                        lowerBoundType = var.infimum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::DoubleInterval::STRICT_BOUND : GiNaCRA::DoubleInterval::WEAK_BOUND;
                         lowerBoundValue = var.infimum().limit();
                     }
                     if( var.supremum().isInfinite() )
                     {
-                        upperBoundType = GiNaCRA::FloatInterval::INFINITY_BOUND;
+                        upperBoundType = GiNaCRA::DoubleInterval::INFINITY_BOUND;
                         upperBoundValue = 0;
                     }
                     else
                     {
-                        upperBoundType = var.supremum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::FloatInterval::STRICT_BOUND : GiNaCRA::FloatInterval::WEAK_BOUND;
+                        upperBoundType = var.supremum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::DoubleInterval::STRICT_BOUND : GiNaCRA::DoubleInterval::WEAK_BOUND;
                         upperBoundValue = var.supremum().limit();
                     }
-                    mFloatIntervalMap[GiNaC::ex_to<GiNaC::symbol>( exVarPair->first )] = GiNaCRA::FloatInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+                    mDoubleIntervalMap[GiNaC::ex_to<GiNaC::symbol>( exVarPair->first )] = GiNaCRA::DoubleInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
                     var.hasBeenUpdatedB();
                 }
             }
-            return mFloatIntervalMap;
+            return mDoubleIntervalMap;
         }
 
         /**
-         * Creates an float interval corresponding to the variable bounds of the given variable.
+         * Creates an double interval corresponding to the variable bounds of the given variable.
          *
-         * @param The variable to compute the variable bounds as float interval for.
+         * @param The variable to compute the variable bounds as double interval for.
          * @return The variable bounds as an interval.
          */
         template<class T>
-        const GiNaCRA::FloatInterval& VariableBounds<T>::getFloatInterval( const GiNaC::ex& _var )
+        const GiNaCRA::DoubleInterval& VariableBounds<T>::getDoubleInterval( const GiNaC::ex& _var )
         {
             assert( mpConflictingVariable == NULL );
             class ExVariableMap::iterator exVarPair = mpExVariableMap->find( _var );
@@ -864,34 +866,34 @@ namespace smtrat
             Variable<T>& var = *exVarPair->second;
             if( var.updatedB() )
             {
-                GiNaCRA::FloatInterval::BoundType lowerBoundType;
+                GiNaCRA::DoubleInterval::BoundType lowerBoundType;
                 GiNaC::numeric lowerBoundValue;
-                GiNaCRA::FloatInterval::BoundType upperBoundType;
+                GiNaCRA::DoubleInterval::BoundType upperBoundType;
                 GiNaC::numeric upperBoundValue;
                 if( var.infimum().isInfinite() )
                 {
-                    lowerBoundType = GiNaCRA::FloatInterval::INFINITY_BOUND;
+                    lowerBoundType = GiNaCRA::DoubleInterval::INFINITY_BOUND;
                     lowerBoundValue = 0;
                 }
                 else
                 {
-                    lowerBoundType = var.infimum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::FloatInterval::STRICT_BOUND : GiNaCRA::FloatInterval::WEAK_BOUND;
+                    lowerBoundType = var.infimum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::DoubleInterval::STRICT_BOUND : GiNaCRA::DoubleInterval::WEAK_BOUND;
                     lowerBoundValue = var.infimum().limit();
                 }
                 if( var.supremum().isInfinite() )
                 {
-                    upperBoundType = GiNaCRA::FloatInterval::INFINITY_BOUND;
+                    upperBoundType = GiNaCRA::DoubleInterval::INFINITY_BOUND;
                     upperBoundValue = 0;
                 }
                 else
                 {
-                    upperBoundType = var.supremum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::FloatInterval::STRICT_BOUND : GiNaCRA::FloatInterval::WEAK_BOUND;
+                    upperBoundType = var.supremum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::DoubleInterval::STRICT_BOUND : GiNaCRA::DoubleInterval::WEAK_BOUND;
                     upperBoundValue = var.supremum().limit();
                 }
-                mFloatIntervalMap[GiNaC::ex_to<GiNaC::symbol>( _var )] = GiNaCRA::FloatInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+                mDoubleIntervalMap[GiNaC::ex_to<GiNaC::symbol>( _var )] = GiNaCRA::DoubleInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
                 var.hasBeenUpdatedB();
             }
-            return mFloatIntervalMap[GiNaC::ex_to<GiNaC::symbol>( _var )];
+            return mDoubleIntervalMap[GiNaC::ex_to<GiNaC::symbol>( _var )];
         }
 
         /**
