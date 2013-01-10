@@ -1129,7 +1129,6 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                 //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "reduced.toEx( )"
                 mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( reduced.toEx( ), relation, Formula::constraintPool().variables() ) ), originals );
                 //set the pointer to the passed formula accordingly.
-                std::cout << "Set pointer to: "  << (*mModule->mpPassedFormula->last()) << std::endl;
                 std::get < 0 > (it->second) = mModule->mpPassedFormula->last( );
             }
         }
