@@ -29,6 +29,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <QtCore/qglobal.h>
 #include "ExitCodes.h"
 #include "parser/Driver.h"
 #include "../lib/NRATSolver.h"
@@ -39,146 +40,173 @@
 #include "RuntimeSettingsManager.h"
 #endif //GATHER_STATS
 
+
+struct Smt2Options 
+{
+    int statusFlag;
+    bool printAssignment;
+};
+
+/**
+ * Parse the file and save it in formula.
+ * @param pathToInputFile The path to the input smt2 file.
+ * @param formula A pointer to the formula object which holds the parsed input afterwards.
+ * @param options Save options from the smt2 file here.
+ */
+void parseInput(const std::string& pathToInputFile, smtrat::Formula* formula, Smt2Options& options)
+{
+    // The parser
+    smtrat::Driver   parser( formula );
+    
+    std::fstream infile( pathToInputFile.c_str() );
+    if( !infile.good() )
+    {
+        std::cerr << "Could not open file: " << pathToInputFile << std::endl;
+        exit(SMTRAT_EXIT_NOSUCHFILE);
+    }
+    bool parsingSuccessful = parser.parse_stream( infile, pathToInputFile.c_str() );
+    if(!parsingSuccessful) 
+    {
+        std::cerr << "Parse error" << std::endl;
+        exit(SMTRAT_EXIT_PARSERFAILURE);
+    }
+}
+
+/**
+ * Determine the returnvalue of the process and its output.
+ * @param status the parsed statusflag of the smt2 file.
+ * @param answer the answer from the solver
+ * @return the corresponding returnvalue.
+ */
+int determineResult(int status, smtrat::Answer answer) 
+{
+    switch( answer )
+    {
+        case smtrat::True:
+        {
+            if( status == 0 )
+            {
+                std::cout << "error, expected unsat, but returned sat" << std::endl;
+                return SMTRAT_EXIT_WRONG_ANSWER;
+            }
+            else
+            {
+                std::cout << "sat" << std::endl;
+                return SMTRAT_EXIT_SAT;
+            }
+            break;
+        }
+        case smtrat::False:
+        {
+            if( status == 1 )
+            {
+                std::cout << "error, expected sat, but returned unsat" << std::endl;
+                return SMTRAT_EXIT_WRONG_ANSWER;
+            }
+            else
+            {
+                std::cout << "unsat" << std::endl;
+                return SMTRAT_EXIT_UNSAT;
+            }
+            break;
+        }
+        case smtrat::Unknown:
+        {
+            std::cout << "unknown" << std::endl;
+            return SMTRAT_EXIT_UNKNOWN;
+            break;
+        }
+        default:
+        {
+            std::cerr << "Unexpected output!" << std::endl;
+            return SMTRAT_EXIT_UNEXPECTED_ANSWER;
+        }
+    }
+}
+
+
 /**
  *
  */
 int main( int argc, char* argv[] )
 {
-    
+    // This variable will hold the inputfile.
+    std::string pathToInputFile = "";
+    // This will point to the parsed formula;
     smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
-    smtrat::Driver   driver( form );
-
-    bool printStats = false;
-    bool exportStats = false;
-    std::string pathToStatsXML;
     
+    
+    // Construct the settingsManager
+    smtrat::RuntimeSettingsManager settingsManager;
+    // Introduce the settingsObjects to the manager
+    
+    // Parse commandline;
+    pathToInputFile = settingsManager.parseCommandline(argc, argv);
+    // Construct the statisticsManagement
+    #ifdef GATHER_STATS
 
-    if( argc == 1 )
+    #endif
+    Smt2Options smt2options;
+    // Parse input
+    parseInput(pathToInputFile, form, smt2options);
+    // Construct solver
+    smtrat::NRATSolver* nratSolver = new smtrat::NRATSolver( form );
+    // Run solver
+    smtrat::Answer      answer     = nratSolver->isConsistent();
+    // Determine result.
+    int returnValue = determineResult(smt2options.statusFlag, answer);
+    // Print assignment.
+    if(smt2options.printAssignment && answer == smtrat::True) 
     {
-        std::cout << "This is " << SMTRAT_PROJECT_NAME << "." << std::endl;
-        std::cout << "Version: " << SMTRAT_VERSION << std::endl;
-        std::cout << "For more information, run this binary with --help." << std::endl;
+        std::cout << std::endl;
+        nratSolver->printModel( std::cout );
     }
-    int returnValue = SMTRAT_EXIT_USERABORT;
-    for( int ai = 1; ai < argc; ++ai )
-    {
-        if( argv[ai] == std::string( "-p" ) )
-        {
-            driver.trace_parsing = true;
-        }
-        else if( argv[ai] == std::string( "-s" ) )
-        {
-            driver.trace_scanning = true;
-        }
-        else if( argv[ai] == std::string( "--print-stats") ) {
-            #ifdef GATHER_STATS
-            printStats = true;
-            #endif
-        }
-        else if( argv[ai] == std::string( "--export-stats") )
-        {
-            #ifdef GATHER_STATS
-            exportStats = true;
-            #endif
-            //TODO make this optional.
-            pathToStatsXML = argv[++ai];
-        }
-        else if( argv[ai] == std::string( "--validation") )
-        {
-//            smtrat::RuntimeSettings::validationSettings.enabled = true;
-//            smtrat::RuntimeSettings::validationSettings.pathToAssumptions = argv[++ai];
-        }
-        else if( argv[ai] == std::string( "--gb-info") )
-        {
-            std::cout << "Groebner module settings: " << std::endl;
-        }
-        else if( argv[ai] == std::string( "--help") ) {
-            std::cout << "The help is not yet implemented. Please visit our website ...." << std::endl;
-            exit(SMTRAT_EXIT_SUCCESS);
-        }
-        else
-        {
-            // read a file with expressions
+    // Delete the solver and the formula.
+    delete nratSolver;
+    delete form;
+    // Export statistics
+    #ifdef GATHER_STATS
 
-            std::fstream infile( argv[ai] );
-            if( !infile.good() )
-            {
-                std::cerr << "Could not open file: " << argv[ai] << std::endl;
-                return SMTRAT_EXIT_UNEXPECTED_INPUT;
-            }
+    #endif
+    
+//    for( int ai = 1; ai < argc; ++ai )
+//    {
+//        if( argv[ai] == std::string( "-p" ) )
+//        {
+//            driver.trace_parsing = true;
+//        }
+//        else if( argv[ai] == std::string( "-s" ) )
+//        {
+//            driver.trace_scanning = true;
+//        }
+//        else if( argv[ai] == std::string( "--print-stats") ) {
+//            #ifdef GATHER_STATS
+//            printStats = true;
+//            #endif
+//        }
+//        else if( argv[ai] == std::string( "--export-stats") )
+//        {
+//            #ifdef GATHER_STATS
+//            exportStats = true;
+//            #endif
+//            //TODO make this optional.
+//            pathToStatsXML = argv[++ai];
+//        }
+//        else if( argv[ai] == std::string( "--validation") )
+//        {
+////            smtrat::RuntimeSettings::validationSettings.enabled = true;
+////            smtrat::RuntimeSettings::validationSettings.pathToAssumptions = argv[++ai];
+//        }
+//        else if( argv[ai] == std::string( "--gb-info") )
+//        {
+//            std::cout << "Groebner module settings: " << std::endl;
+//        }
+//        else
+//        {
+//            // read a file with expressions
 
-            bool result = driver.parse_stream( infile, argv[ai] );
-            if( result )
-            {
-                smtrat::NRATSolver* nratSolver = new smtrat::NRATSolver( form );
-                smtrat::Answer      answer     = nratSolver->isConsistent();
-                switch( answer )
-                {
-                    case smtrat::True:
-                    {
-                        if( driver.status == 0 )
-                        {
-                            std::cout << "error, expected unsat, but returned sat" << std::endl;
-                            returnValue = SMTRAT_EXIT_WRONG_ANSWER;
-                        }
-                        else
-                        {
-                            std::cout << "sat" << std::endl;
-                            returnValue = SMTRAT_EXIT_SAT;
-                        }
-                        break;
-                    }
-                    case smtrat::False:
-                    {
-                        if( driver.status == 1 )
-                        {
-                            std::cout << "error, expected sat, but returned unsat" << std::endl;
-                            returnValue = SMTRAT_EXIT_WRONG_ANSWER;
-                        }
-                        else
-                        {
-                            std::cout << "unsat" << std::endl;
-                            returnValue = SMTRAT_EXIT_UNSAT;
-                        }
-                        break;
-                    }
-                    case smtrat::Unknown:
-                    {
-                        std::cout << "unknown" << std::endl;
-                        returnValue = SMTRAT_EXIT_UNKNOWN;
-                        break;
-                    }
-                    default:
-                    {
-                        std::cerr << "Unexpected output!" << std::endl;
-                        returnValue = SMTRAT_EXIT_UNEXPECTED_ANSWER;
-                    }
-                }
-                if( driver.printAssignment && answer == smtrat::True )
-                {
-                    std::cout << std::endl;
-                    nratSolver->printModel( std::cout );
-                }
-                delete nratSolver;
-                delete form;
+           
 
-                #ifdef GATHER_STATS
-                if( printStats )
-                {
-                    smtrat::CollectStatistics::print( std::cout );
-                }
-                if( exportStats )
-                {
-                    smtrat::CollectStatistics::exportXML( pathToStatsXML );
-                }
-                #endif //GATHER_STATS
-            }
-            else
-            {
-                std::cerr << "Parse error" << std::endl;
-                returnValue = SMTRAT_EXIT_PARSERFAILURE;
-            }
-        }
-    }
+          
     return returnValue;
 }

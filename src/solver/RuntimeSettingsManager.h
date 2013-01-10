@@ -21,7 +21,7 @@
 
 
 /** 
- * @file   RuntimeSettings.h
+ * @file   RuntimeSettingsManager.h
  * @author Sebastian Junges
  *
  * @version 10/01/2013
@@ -72,9 +72,7 @@ namespace smtrat {
         void printWarranty() const;
         void printToC() const;
         void printWelcome() const;
-    };
-    
-    
+    };  
 }
 
 

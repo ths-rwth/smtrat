@@ -19,7 +19,6 @@
  *
  */
 
-
 /** 
  * @file   RuntimeSettingsManager.cpp
  * @author Sebastian Junges
@@ -185,7 +184,9 @@ void RuntimeSettingsManager::printToC() const
  */
 void RuntimeSettingsManager::printWelcome() const 
 {
-
+    std::cout << "This is " << SMTRAT_PROJECT_NAME << "." << std::endl;
+    std::cout << "Version: " << SMTRAT_VERSION << std::endl;
+    std::cout << "For more information, run this binary with --help." << std::endl;
 }
 
         
