@@ -45,7 +45,9 @@ namespace smtrat
         position = rStrategyGraph().addModuleType( position, MT_SATModule );
         //position = rStrategyGraph().addModuleType( position, MT_LRAModule );
         #ifdef USE_GB
-        position = rStrategyGraph().addModuleType( position, MT_GroebnerModule );
+        if(smtrat::PROP_CONTAINS_EQUATION<=_inputFormula->getPropositions() ) {
+            position = rStrategyGraph().addModuleType( position, MT_GroebnerModule );
+        }
         position = rStrategyGraph().addModuleType( position, MT_VSModule );
         #else
         position = rStrategyGraph().addModuleType( position, MT_VSModule );
