@@ -9,7 +9,7 @@
 #define EXITCODES_H
 
 #define SMTRAT_EXIT_USERABORT           0
-#define SMTRAT_EXIT_SUCESS              1
+#define SMTRAT_EXIT_SUCCESS              1
 #define SMTRAT_EXIT_SAT                 2
 #define SMTRAT_EXIT_UNSAT               3
 #define SMTRAT_EXIT_UNKNOWN             4

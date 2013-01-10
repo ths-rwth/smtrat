@@ -24,22 +24,25 @@
  * @file   RuntimeSettings.h
  * @author Sebastian Junges
  *
- * Created on September 20, 2012, 5:53 PM
+ * @version 10/01/2013
  */
 
-#ifndef RUNTIMESETTINGS_H
-#define	RUNTIMESETTINGS_H
-
+#pragma once
 #include <string>
+#include <list>
 
-namespace smtrat {
-    struct RuntimeSettings {
-        static int verbosity;
-        static std::string pathToAssumptions;
+namespace smtrat{
+class RuntimeSettings 
+{
+    public:
+        void parseCmdOption(std::string keyValueString);
+        void printHelp(std::string prefix) const;
+    protected:
+        typedef std::pair<std::string, std::string> KeyValuePair;
+        std::list<KeyValuePair> splitIntoKeyValues(std::string keyValueString, std::string delimiter = ",");
         
-    };
+        
+};
 }
-
-
-#endif	/* RUNTIMESETTINGS_H */
+    
 

@@ -21,16 +21,24 @@
 
 
 /** 
- * @file   RuntimeSettings.cpp
+ * @file   RuntimeSettingsManager.cpp
  * @author Sebastian Junges
  *
- * Created on September 20, 2012, 5:53 PM
+ * @version 10/01/2013
  */
 
 #include "RuntimeSettings.h"
 
-namespace smtrat {
-    int RuntimeSettings::verbosity = 1;
-    std::string RuntimeSettings::pathToAssumptions = "tmp/";
+namespace smtrat{
+    void RuntimeSettings::parseCmdOption(std::string keyValueString) {
+        
+    }
     
+    void RuntimeSettings::printHelp(std::string prefix) const {
+        
+    }
+    
+    std::list<RuntimeSettings::KeyValuePair> RuntimeSettings::splitIntoKeyValues(std::string keyValueString, std::string delimiter) {
+        return std::list<KeyValuePair>();
+    }
 }

@@ -36,7 +36,7 @@
 #ifdef GATHER_STATS
 
 #include "../lib/utilities/stats/CollectStatistics.h"
-
+#include "RuntimeSettingsManager.h"
 #endif //GATHER_STATS
 
 /**
@@ -44,10 +44,7 @@
  */
 int main( int argc, char* argv[] )
 {
-    // Call the sighandler code on user abort
-    // TODO update we should use sigaction() 
-    //signal(SIGINT, &sighandler);
-
+    
     smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
     smtrat::Driver   driver( form );
 
@@ -78,19 +75,26 @@ int main( int argc, char* argv[] )
             printStats = true;
             #endif
         }
-        else if( argv[ai] == std::string( "--export-stats") ) {
+        else if( argv[ai] == std::string( "--export-stats") )
+        {
             #ifdef GATHER_STATS
             exportStats = true;
             #endif
             //TODO make this optional.
             pathToStatsXML = argv[++ai];
         }
+        else if( argv[ai] == std::string( "--validation") )
+        {
+//            smtrat::RuntimeSettings::validationSettings.enabled = true;
+//            smtrat::RuntimeSettings::validationSettings.pathToAssumptions = argv[++ai];
+        }
         else if( argv[ai] == std::string( "--gb-info") )
         {
-            std::cout << "Groebner module settings: GBModuleSettings" << std::endl;
+            std::cout << "Groebner module settings: " << std::endl;
         }
         else if( argv[ai] == std::string( "--help") ) {
             std::cout << "The help is not yet implemented. Please visit our website ...." << std::endl;
+            exit(SMTRAT_EXIT_SUCCESS);
         }
         else
         {
@@ -165,7 +169,7 @@ int main( int argc, char* argv[] )
                 }
                 if( exportStats )
                 {
-                    smtrat::CollectStatistics::exportXML(pathToStatsXML);
+                    smtrat::CollectStatistics::exportXML( pathToStatsXML );
                 }
                 #endif //GATHER_STATS
             }
