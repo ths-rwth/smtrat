@@ -414,14 +414,19 @@ namespace smtrat
                 mpFather = NULL;
             }
 
-            static const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
+            static const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables, bool _variablesOverApproximated = true )
             {
-                return mConstraintPool.newConstraint( _lhs, _rel, _variables );
+                return mConstraintPool.newConstraint( _lhs, _rel, _variables, _variablesOverApproximated );
             }
 
             static const Constraint* newConstraint( const std::string& _stringrep, const bool _infix = true, const bool _polarity = true )
             {
                 return mConstraintPool.newConstraint( _stringrep, _infix, _polarity );
+            }
+
+            static const Constraint* newConstraint( const std::string& _lhsRep, const std::string& _rhsRep, Constraint_Relation _rel, const std::set< std::string >& _variables )
+            {
+                return mConstraintPool.newConstraint( _lhsRep, _rhsRep, _rel, _variables );
             }
 
             static GiNaC::ex newVariable( const std::string& _name )

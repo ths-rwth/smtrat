@@ -186,21 +186,21 @@ namespace smtrat
                 return result;
             }
 
-            const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
+            const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables, bool _variablesOverApproximated = true )
             {
                 assert( hasNoOtherVariables( _lhs ) );
                 Constraint* constraint;
                 if( _rel == CR_GREATER )
                 {
-                    constraint = new Constraint( -_lhs, CR_LESS, _variables, mIdAllocator );
+                    constraint = new Constraint( -_lhs, CR_LESS, _variables, mIdAllocator, _variablesOverApproximated );
                 }
                 else if( _rel == CR_GEQ )
                 {
-                    constraint = new Constraint( -_lhs, CR_LEQ, _variables, mIdAllocator );
+                    constraint = new Constraint( -_lhs, CR_LEQ, _variables, mIdAllocator, _variablesOverApproximated );
                 }
                 else
                 {
-                    constraint = new Constraint( _lhs, _rel, _variables, mIdAllocator );
+                    constraint = new Constraint( _lhs, _rel, _variables, mIdAllocator, _variablesOverApproximated );
                 }
                 if( constraint->isConsistent() == 2 )
                 {
@@ -228,21 +228,21 @@ namespace smtrat
                 }
             }
 
-            const Constraint* newConstraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
+            const Constraint* newConstraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables, bool _variablesOverApproximated = true )
             {
                 assert( hasNoOtherVariables( _lhs ) && hasNoOtherVariables( _rhs ) );
                 Constraint* constraint;
                 if( _rel == CR_GREATER )
                 {
-                    constraint = new Constraint( -_lhs, -_rhs, CR_LESS, _variables, mIdAllocator );
+                    constraint = new Constraint( -_lhs, -_rhs, CR_LESS, _variables, mIdAllocator, _variablesOverApproximated );
                 }
                 else if( _rel == CR_GEQ )
                 {
-                    constraint = new Constraint( -_lhs, -_rhs, CR_LEQ, _variables, mIdAllocator );
+                    constraint = new Constraint( -_lhs, -_rhs, CR_LEQ, _variables, mIdAllocator, _variablesOverApproximated );
                 }
                 else
                 {
-                    constraint = new Constraint( _lhs, _rhs, _rel, _variables, mIdAllocator );
+                    constraint = new Constraint( _lhs, _rhs, _rel, _variables, mIdAllocator, _variablesOverApproximated );
                 }
                 if( constraint->isConsistent() == 2 )
                 {
@@ -270,7 +270,9 @@ namespace smtrat
                 }
             }
 
-            const Constraint* newConstraint( const std::string& _stringrep, const bool = true, const bool = true );
+            const Constraint* newConstraint( const std::string& _stringrep, bool = true, bool = true );
+
+            const Constraint* newConstraint( const std::string&, const std::string&, Constraint_Relation, const std::set< std::string >& );
 
             GiNaC::ex newVariable( const std::string& _name )
             {

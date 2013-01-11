@@ -62,7 +62,7 @@ namespace smtrat
         normalize( *pLhs );
     }
 
-    Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _variables, unsigned _id ):
+    Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _variables, unsigned _id, bool _variablesOverApproximated ):
         mID( _id ),
         mSecondHash( _cr ),
         mIsNeverPositive( false ),
@@ -83,12 +83,20 @@ namespace smtrat
         {
             mID = 0;
         }
-        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+        if( _variablesOverApproximated )
         {
-            if( pLhs->has( var->second ) )
+            mVariables = symtab();
+            for( auto var = _variables.begin(); var != _variables.end(); ++var )
             {
-                mVariables.insert( *var );
+                if( pLhs->has( var->second ) )
+                {
+                    mVariables.insert( *var );
+                }
             }
+        }
+        else
+        {
+            mVariables = symtab( _variables );
         }
         if( mVariables.size() == 1 )
         {
@@ -103,7 +111,7 @@ namespace smtrat
         }
     }
 
-    Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _variables, unsigned _id ):
+    Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _variables, unsigned _id, bool _variablesOverApproximated ):
         mID( _id ),
         mSecondHash( _cr ),
         mIsNeverPositive( false ),
@@ -116,7 +124,6 @@ namespace smtrat
         pLhs( new ex( _lhs - _rhs ) ),
         mpMultiRootLessLhs( pLhs ),
         mpCoefficients( new Coefficients() ),
-        mVariables(),
         mVarInfoMap()
     {
         normalize( *pLhs );
@@ -124,12 +131,20 @@ namespace smtrat
         {
             mID = 0;
         }
-        for( auto var = _variables.begin(); var != _variables.end(); ++var )
+        if( _variablesOverApproximated )
         {
-            if( pLhs->has( var->second ) )
+            mVariables = symtab();
+            for( auto var = _variables.begin(); var != _variables.end(); ++var )
             {
-                mVariables.insert( *var );
+                if( pLhs->has( var->second ) )
+                {
+                    mVariables.insert( *var );
+                }
             }
+        }
+        else
+        {
+            mVariables = symtab( _variables );
         }
         if( mVariables.size() == 1 )
         {
@@ -224,8 +239,8 @@ namespace smtrat
             }
             case CR_NEQ:
             {
-                if( _value != 0 ) return true;
-                else return false;
+                if( _value == 0 ) return false;
+                else return true;
             }
             case CR_LESS:
             {

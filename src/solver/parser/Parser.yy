@@ -88,6 +88,7 @@
    std::string*						sval;
    class Formula*					fval;
    std::vector< class Formula* >*	vfval;
+   unsigned                         rval;
 }
 
  /*** BEGIN EXAMPLE - Change the smtrat grammar's tokens below ***/
@@ -97,7 +98,7 @@
 %token BOOL
 %token REAL
 %token PLUS MINUS TIMES DIV
-%token EQ LEQ GEQ LESS GREATER
+%token EQ LEQ GEQ LESS GREATER NEQ
 %token AND OR NOT IFF XOR IMPLIES LET
 %token TRUE FALSE
 %token FORMULA
@@ -114,6 +115,7 @@
 %token PUSH
 %token POP
 %token <sval> SYM
+%token <sval> BINDSYM
 %token <sval> NUM
 %token <sval> DEC
 %token <sval> KEY
@@ -131,7 +133,7 @@
 %type  <fval> 	expr
 %type  <sval>   keys
 %type  <vfval>  exprlist;
-%type  <sval>  	relationSymbol;
+%type  <rval>  	relationSymbol;
 %type  <eval>  	unaryOperator;
 %type  <eval>  	binaryOperator;
 %type  <eval>  	naryOperator;
@@ -314,17 +316,35 @@ expr:
 		formulaTmp->addSubformula( $4 );
 		$$ = formulaTmp;
 	}
+	|	OB EQ expr expr CB
+	{
+		smtrat::Formula* formulaTmp = new smtrat::Formula( smtrat::IFF );
+		formulaTmp->addSubformula( $3 );
+		formulaTmp->addSubformula( $4 );
+		$$ = formulaTmp;
+    }
 	| 	OB relationSymbol term term CB
 	{
-        const smtrat::Constraint* constraint = Formula::newConstraint( *$3 + *$2 + *$4 );
-        delete $2;
+        const smtrat::Constraint* constraint = Formula::newConstraint( *$3, *$4, (smtrat::Constraint_Relation) $2, driver.mTmpCollectedVars );
         delete $3;
         delete $4;
-		//driver.formulaRoot->rRealValuedVars().insert( constraint->variables().begin(), constraint->variables().end() );
 		$$ = new smtrat::Formula( constraint );
 	}
 	| 	SYM
 	{
+        if( driver.collectedBooleans.find( *$1 ) == driver.collectedBooleans.end() )
+        {
+            std::string errstr = std::string( "The Boolean variable " + *$1 + " is not defined!");
+            error( yyloc, errstr );
+        }
+        else
+        {
+            $$ = new smtrat::Formula( *$1 );
+        }
+        delete $1;
+    }
+	|	BINDSYM
+   	{
         std::map< const std::string, smtrat::Formula*>::iterator iter = driver.collectedBooleanAuxilliaries.find( *$1 );
         if( iter != driver.collectedBooleanAuxilliaries.end() )
         {
@@ -332,15 +352,8 @@ expr:
         }
         else
         {
-            if( driver.collectedBooleans.find( *$1 ) == driver.collectedBooleans.end() )
-            {
-                std::string errstr = std::string( "The Boolean variable " + *$1 + " is not defined!");
-                error( yyloc, errstr );
-            }
-            else
-            {
-                $$ = new smtrat::Formula( *$1 );
-            }
+            std::string errstr = std::string( "The binding variable " + *$1 + " was not defined using let before!");
+            error( yyloc, errstr );
         }
         delete $1;
     }
@@ -376,23 +389,33 @@ exprlist :
 relationSymbol :
 		EQ
 	{
-		$$ = new std::string( "=" );
+        driver.mTmpCollectedVars.clear();
+		$$ = smtrat::CR_EQ;
 	}
     |	LEQ
 	{
-		$$ = new std::string( "<=" );
+        driver.mTmpCollectedVars.clear();
+		$$ = smtrat::CR_LEQ;
 	}
     |	GEQ
 	{
-		$$ = new std::string( ">=" );
+        driver.mTmpCollectedVars.clear();
+		$$ = smtrat::CR_GEQ;
 	}
     |	LESS
 	{
-		$$ = new std::string( "<" );
+        driver.mTmpCollectedVars.clear();
+		$$ = smtrat::CR_LESS;
 	}
     |	GREATER
 	{
-		$$ = new std::string( ">" );
+        driver.mTmpCollectedVars.clear();
+		$$ = smtrat::CR_GREATER;
+	}
+    |	NEQ
+	{
+        driver.mTmpCollectedVars.clear();
+		$$ = smtrat::CR_NEQ;
 	}
 	;
 
@@ -432,25 +455,32 @@ naryOperator :
 term :
 		SYM
    	{
-        std::map<std::string, std::string>::iterator iter = driver.collectedRealAuxilliaries.find( *$1 );
-   		if( iter == driver.collectedRealAuxilliaries.end() )
+        for( std::map< const std::string, const std::string >::const_iterator iter = driver.realsymbolpartsToReplace.begin();
+                iter != driver.realsymbolpartsToReplace.end(); ++iter )
+        {
+            *$1 = driver.replace( *$1, iter->first, iter->second );
+        }
+        if( driver.formulaRoot->realValuedVars().find( *$1 ) == driver.formulaRoot->realValuedVars().end() )
+        {
+            std::string errstr = std::string( "The variable " + *$1 + " is not defined!");
+            error( yyloc, errstr );
+        }
+        driver.mTmpCollectedVars.insert( *$1 );
+        $$ = $1;
+   	}
+	|	BINDSYM
+   	{
+        std::map<std::string, std::pair< std::string, std::set< std::string > > >::iterator iter = driver.collectedRealAuxilliaries.find( *$1 );
+   		if( iter != driver.collectedRealAuxilliaries.end() )
    		{
-            for( std::map< const std::string, const std::string >::const_iterator iter = driver.realsymbolpartsToReplace.begin();
-                 iter != driver.realsymbolpartsToReplace.end(); ++iter )
-            {
-                *$1 = driver.replace( *$1, iter->first, iter->second );
-            }
-            if( driver.formulaRoot->realValuedVars().find( *$1 ) == driver.formulaRoot->realValuedVars().end() )
-            {
-                std::string errstr = std::string( "The variable " + *$1 + " is not defined!");
-                error( yyloc, errstr );
-            }
-            $$ = $1;
-   		}
+            delete $1;
+            driver.mTmpCollectedVars.insert( iter->second.second.begin(), iter->second.second.end() );
+            $$ = new std::string( "(" + iter->second.first + ")" );
+        }
         else
         {
-            delete $1;
-            $$ = new std::string( "(" + iter->second + ")" );
+            std::string errstr = std::string( "The binding variable " + *$1 + " was not defined using let before!");
+            error( yyloc, errstr );
         }
    	}
     | 	NUM
@@ -642,10 +672,10 @@ bindlist :
     ;
 
 bind :
-		OB SYM term CB
+		OB BINDSYM term CB
 	{
-        std::pair<std::map<std::string, std::string>::iterator, bool> ret
-            = driver.collectedRealAuxilliaries.insert( std::pair<std::string, std::string>( *$2, *$3 ) );
+        std::pair<std::map<std::string, std::pair< std::string, std::set< std::string > > >::iterator, bool> ret
+            = driver.collectedRealAuxilliaries.insert( std::pair<std::string, std::pair< std::string, std::set< std::string > > >( *$2, std::pair< std::string, std::set< std::string > >( *$3, driver.mTmpCollectedVars ) ) );
         if( !ret.second )
         {
             std::string errstr = std::string( "The same variable is used in several let expressions!" );
@@ -654,7 +684,7 @@ bind :
         delete $2;
         delete $3;
 	}
-	|	OB SYM expr CB
+	|	OB BINDSYM expr CB
 	{
         driver.collectedBooleanAuxilliaries.insert( std::pair<const std::string, smtrat::Formula*>( *$2, $3 ) );
         delete $2;

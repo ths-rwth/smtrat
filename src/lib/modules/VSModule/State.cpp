@@ -59,7 +59,10 @@ namespace vs
         mRoot( true ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
+        #ifdef VS_USE_VARIABLE_BOUNDS
         mTestCandidateCheckedForBounds( false ),
+        mTestCandidateInBoundsCreated( false ),
+        #endif
         mToHighDegree( false ),
         mTryToRefreshIndex( false ),
         mID( 0 ),
@@ -90,7 +93,10 @@ namespace vs
         mRoot( false ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
+        #ifdef VS_USE_VARIABLE_BOUNDS
         mTestCandidateCheckedForBounds( false ),
+        mTestCandidateInBoundsCreated( false ),
+        #endif
         mToHighDegree( false ),
         mTryToRefreshIndex( false ),
         mID( 0 ),
@@ -105,10 +111,10 @@ namespace vs
         mpConditions( new ConditionVector() ),
         mpConflictSets( new ConflictSets() ),
         mpChildren( new StateVector() )
-    #ifdef VS_USE_VARIABLE_BOUNDS
+        #ifdef VS_USE_VARIABLE_BOUNDS
         ,
         mVariableBounds()
-    #endif
+        #endif
     {
     }
 
@@ -2381,7 +2387,7 @@ namespace vs
     }
 
     #ifdef VS_USE_VARIABLE_BOUNDS
-//    #define VS_VB_DEBUG
+    #define VS_VB_DEBUG
     /**
      *
      * @return

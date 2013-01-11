@@ -716,6 +716,8 @@ namespace smtrat
             return 0;
         }
 
+        #define CONVERT_BOUND(type, namesp) (type != Bound<T>::WEAK_UPPER_BOUND && type != Bound<T>::EQUAL_BOUND ) ? namesp::STRICT_BOUND : namesp::WEAK_BOUND
+
         /**
          * Creates an evalintervalmap corresponding to the variable bounds.
          *
@@ -741,7 +743,7 @@ namespace smtrat
                     }
                     else
                     {
-                        lowerBoundType = var.infimum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::Interval::STRICT_BOUND : GiNaCRA::Interval::WEAK_BOUND;
+                        lowerBoundType = CONVERT_BOUND( var.infimum().type(), GiNaCRA::Interval );
                         lowerBoundValue = var.infimum().limit();
                     }
                     if( var.supremum().isInfinite() )
@@ -751,7 +753,7 @@ namespace smtrat
                     }
                     else
                     {
-                        upperBoundType = var.supremum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::Interval::STRICT_BOUND : GiNaCRA::Interval::WEAK_BOUND;
+                        upperBoundType = CONVERT_BOUND( var.supremum().type(), GiNaCRA::Interval );
                         upperBoundValue = var.supremum().limit();
                     }
                     mEvalIntervalMap[GiNaC::ex_to<GiNaC::symbol>( exVarPair->first )] = GiNaCRA::Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
@@ -787,7 +789,7 @@ namespace smtrat
                 }
                 else
                 {
-                    lowerBoundType = var.infimum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::Interval::STRICT_BOUND : GiNaCRA::Interval::WEAK_BOUND;
+                    lowerBoundType = CONVERT_BOUND( var.infimum().type(), GiNaCRA::Interval );
                     lowerBoundValue = var.infimum().limit();
                 }
                 if( var.supremum().isInfinite() )
@@ -797,7 +799,7 @@ namespace smtrat
                 }
                 else
                 {
-                    upperBoundType = var.supremum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::Interval::STRICT_BOUND : GiNaCRA::Interval::WEAK_BOUND;
+                    upperBoundType = CONVERT_BOUND( var.supremum().type(), GiNaCRA::Interval );
                     upperBoundValue = var.supremum().limit();
                 }
                 mEvalIntervalMap[GiNaC::ex_to<GiNaC::symbol>( _var )] = GiNaCRA::Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
@@ -831,7 +833,7 @@ namespace smtrat
                     }
                     else
                     {
-                        lowerBoundType = var.infimum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::DoubleInterval::STRICT_BOUND : GiNaCRA::DoubleInterval::WEAK_BOUND;
+                        lowerBoundType = CONVERT_BOUND( var.infimum().type(), GiNaCRA::DoubleInterval );
                         lowerBoundValue = var.infimum().limit();
                     }
                     if( var.supremum().isInfinite() )
@@ -841,7 +843,7 @@ namespace smtrat
                     }
                     else
                     {
-                        upperBoundType = var.supremum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::DoubleInterval::STRICT_BOUND : GiNaCRA::DoubleInterval::WEAK_BOUND;
+                        upperBoundType = CONVERT_BOUND( var.supremum().type(), GiNaCRA::DoubleInterval );
                         upperBoundValue = var.supremum().limit();
                     }
                     mDoubleIntervalMap[GiNaC::ex_to<GiNaC::symbol>( exVarPair->first )] = GiNaCRA::DoubleInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
@@ -877,7 +879,7 @@ namespace smtrat
                 }
                 else
                 {
-                    lowerBoundType = var.infimum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::DoubleInterval::STRICT_BOUND : GiNaCRA::DoubleInterval::WEAK_BOUND;
+                    lowerBoundType = CONVERT_BOUND( var.infimum().type(), GiNaCRA::DoubleInterval );
                     lowerBoundValue = var.infimum().limit();
                 }
                 if( var.supremum().isInfinite() )
@@ -887,7 +889,7 @@ namespace smtrat
                 }
                 else
                 {
-                    upperBoundType = var.supremum().type() != Bound<T>::WEAK_UPPER_BOUND ? GiNaCRA::DoubleInterval::STRICT_BOUND : GiNaCRA::DoubleInterval::WEAK_BOUND;
+                    upperBoundType = CONVERT_BOUND( var.supremum().type(), GiNaCRA::DoubleInterval );
                     upperBoundValue = var.supremum().limit();
                 }
                 mDoubleIntervalMap[GiNaC::ex_to<GiNaC::symbol>( _var )] = GiNaCRA::DoubleInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );

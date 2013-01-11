@@ -111,6 +111,7 @@ typedef smtrat::Parser::token_type token_type;
 ">="                { return token::GEQ; }
 "<"                 { return token::LESS; }
 ">"                 { return token::GREATER; }
+"<>"                { return token::NEQ; }
 "=>"                { return token::IMPLIES; }
 "and"	            { return token::AND; }
 "or"		     	{ return token::OR; }
@@ -132,9 +133,13 @@ typedef smtrat::Parser::token_type token_type;
                         yylval->sval = new std::string (yytext);
                         return token::DEC;
                     }
-[a-zA-Z~!@\$\%\^&\*_\-\+=\<\>\.\?\"\/][a-zA-Z_0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\:\"\/]* 	{
+[a-zA-Z~!@\$\%\^&\*_\-\+=\<\>\.\"\/][a-zA-Z_0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\:\"\/]* 	{
 							yylval->sval = new std::string (yytext);
 							return token::SYM;
+						}
+\?[a-zA-Z_0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\:\"\/]* 	{
+							yylval->sval = new std::string (yytext);
+							return token::BINDSYM;
 						}
 \:[a-zA-Z0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\/]+      { yylval->sval = new std::string (yytext);
                                                   return token::KEY; }
