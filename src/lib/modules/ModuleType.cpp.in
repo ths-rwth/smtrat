@@ -34,19 +34,21 @@
 #include <string>
 
 namespace smtrat {
-	std::string moduleTypeToString(ModuleType _type)
+
+std::string moduleTypeToString(ModuleType _type)
+{
+	switch( _type )
 	{
-		switch( _type )
+		case MT_Module:
 		{
-			case MT_Module:
-			{
-				return "Module";
-			}
-			@moduleTypeToStringCases@
-			default:
-			{
-				return "UnknownModule";
-			}
+			return "Module";
+		}
+@moduleTypeToStringCases@
+		default:
+		{
+			return "UnknownModule";
 		}
 	}
+}
+
 }
