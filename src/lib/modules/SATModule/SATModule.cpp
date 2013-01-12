@@ -56,6 +56,8 @@
 //#define WITH_PROGRESS_ESTIMATION
 #define STORE_ONLY_ONE_REASON
 
+#define SATMODULE_ACTIVITYPOLARITYENCODING
+
 const static double FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY = 1.02;
 
 using namespace std;
@@ -492,7 +494,11 @@ namespace smtrat
             case REALCONSTRAINT:
             {
                 mConstraintsToInform.insert( _formula.pConstraint() );
-                return getLiteral( _formula.pConstraint(), _origin, _formula.activity() );
+                #ifdef SATMODULE_ACTIVITYPOLARITYENCODING
+                return getLiteral( _formula.pConstraint(), _origin, fabs(_formula.activity()), _formula.activity() >= 0 );
+                #else
+                return getLiteral( _formula.pConstraint(), _origin, _formula.activity(), _formula.activity() > Formula::mSumOfAllActivities*FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY/Formula::mNumberOfNonZeroActivities );
+                #endif
             }
             default:
             {
@@ -504,11 +510,11 @@ namespace smtrat
     }
 
     /**
-     *
+     * Deprecated old version, look below for new.
      * @param _formula
      * @param _origin
      * @return
-     */
+     
     Lit SATModule::getLiteral( const Constraint* _constraint, const Formula* _origin, double _activity )
     {
         ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _constraint );
@@ -520,7 +526,8 @@ namespace smtrat
         {
             /*
              * Add a fresh Boolean variable as an abstraction of the constraint.
-             */
+             
+     
             Var constraintAbstraction;
             if( _activity > Formula::mSumOfAllActivities*FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY/Formula::mNumberOfNonZeroActivities )
             {
@@ -533,6 +540,37 @@ namespace smtrat
             {
                 constraintAbstraction = newVar( true, true, _activity, new Formula( _constraint ), _origin );
             }
+            Lit lit                            = mkLit( constraintAbstraction, false );
+            mConstraintLiteralMap[_constraint] = lit;
+            return lit;
+        }
+    }
+    */
+    
+    /**
+     * New method for getLiteral, which does not mix activity and polarity.
+     * @param _constraint
+     * @param _origin
+     * @param _activity
+     * @return 
+     */
+    Lit SATModule::getLiteral( const Constraint* _constraint, const Formula* _origin, double _activity, bool _preferredToTSolver )
+    {
+        ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _constraint );
+        if( constraintLiteralPair != mConstraintLiteralMap.end() )
+        {
+            return constraintLiteralPair->second;
+        }
+        else
+        {
+            #ifdef GATHER_STATS
+            if(_preferredToTSolver) mStats->initialTrue();
+            #endif
+            //Add a fresh Boolean variable as an abstraction of the constraint.             
+            Var constraintAbstraction;
+            //if( _activity > Formula::mSumOfAllActivities*FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY/Formula::mNumberOfNonZeroActivities )
+            constraintAbstraction = newVar( !_preferredToTSolver, true, _activity, new Formula( _constraint ), _origin );
+            
             Lit lit                            = mkLit( constraintAbstraction, false );
             mConstraintLiteralMap[_constraint] = lit;
             return lit;

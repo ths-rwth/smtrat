@@ -445,7 +445,9 @@ namespace smtrat
             Minisat::CRef addFormula( Formula*, unsigned );
             Minisat::CRef addClause( const Formula*, unsigned = 0 );
             Minisat::Lit getLiteral( const Formula&, const Formula* = NULL );
-            Minisat::Lit getLiteral( const Constraint*, const Formula* = NULL, double = 0 );
+            //Deprecated method
+            //Minisat::Lit getLiteral( const Constraint*, const Formula* = NULL, double = 0 );
+            Minisat::Lit getLiteral( const Constraint*, const Formula* = NULL, double = 0, bool _preferredToTSolver=false );
             bool adaptPassedFormula();
     };
 

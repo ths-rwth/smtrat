@@ -84,7 +84,7 @@ namespace smtrat
         mInfeasibleSubsets.clear();    // initially everything is satisfied
         // CAD setting
         GiNaCRA::CADSettings setting = mCAD.setting();
-        setting.autoEliminate = false;
+      //  setting.autoEliminate = false;
         #ifdef CAD_USE_VARIABLE_BOUNDS
         setting.simplifyEliminationByBounds = true;
         setting.earlyLiftingPruningByBounds = true;
@@ -99,7 +99,7 @@ namespace smtrat
                 setting.autoEliminate = false;
             #else
                 setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::EQUATIONDETECT_CADSETTING ); // standard
-                setting.autoEliminate = false;
+              //  setting.autoEliminate = false;
                 setting.warmRestart = true;
                 setting.simplifyByFactorization = true;
                 setting.simplifyByRootcounting= true;

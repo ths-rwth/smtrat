@@ -44,14 +44,14 @@
 
 
 #include <ginacra/mr/Buchberger.h>
-#include "../Module.h"
-#include "GBModule/GBSettings.h"
-#include "GBModule/VariableRewriteRule.h"
+#include "../../Module.h"
+#include "GBSettings.h"
+#include "VariableRewriteRule.h"
 
 
 #ifdef GATHER_STATS
-#include "GBModule/GBModuleStatistics.h"
-#include "GBModule/GBCalculationStatistics.h"
+#include "GBModuleStatistics.h"
+#include "GBCalculationStatistics.h"
 #endif
 
 

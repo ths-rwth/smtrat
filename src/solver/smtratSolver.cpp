@@ -29,7 +29,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <QtCore/qglobal.h>
 #include "ExitCodes.h"
 #include "parser/Driver.h"
 #include "../lib/NRATSolver.h"
@@ -38,6 +37,7 @@
 
 #include "../lib/utilities/stats/CollectStatistics.h"
 #include "RuntimeSettingsManager.h"
+#include "../lib/modules/AddModules.h"
 #endif //GATHER_STATS
 
 
@@ -151,6 +151,9 @@ int main( int argc, char* argv[] )
     parseInput(pathToInputFile, form, smt2options);
     // Construct solver
     smtrat::NRATSolver* nratSolver = new smtrat::NRATSolver( form );
+    smtrat::addModules(nratSolver);
+    
+    
     // Run solver
     smtrat::Answer      answer     = nratSolver->isConsistent();
     // Determine result.
@@ -205,8 +208,5 @@ int main( int argc, char* argv[] )
 //        {
 //            // read a file with expressions
 
-           
-
-          
     return returnValue;
 }

@@ -33,7 +33,7 @@
 #include <vector>
 
 #include "Formula.h"
-#include "ModuleType.h"
+#include "modules/ModuleType.h"
 
 namespace smtrat
 {

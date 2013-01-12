@@ -177,6 +177,8 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "remove " << (*_subformula)->constraint() << endl;
         #endif
+
+        printReceivedFormula();
         // Remove the mapping of the constraint to the sub-formula in the received formula
         const Constraint* constraint = (*_subformula)->pConstraint();
         if( constraint->isConsistent() == 2 )

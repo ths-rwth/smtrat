@@ -805,69 +805,7 @@ namespace smtrat
      */
     const string Module::moduleName( const ModuleType _moduleType )
     {
-        switch( _moduleType )
-        {
-            case MT_Module:
-            {
-                return "Module";
-            }
-            case MT_SmartSimplifier:
-            {
-                return "SmartSimplifier";
-            }
-            case MT_GroebnerModule:
-            {
-                return "GroebnerModule";
-            }
-            case MT_VSModule:
-            {
-                return "VSModule";
-            }
-            case MT_CADModule:
-            {
-                return "CADModule";
-            }
-            case MT_UnivariateCADModule:
-            {
-                return "UnivariateCADModule";
-            }
-            case MT_SATModule:
-            {
-                return "SATModule";
-            }
-            case MT_LRAModule:
-            {
-                return "LRAModule";
-            }
-            case MT_ILRAModule:
-            {
-                return "ILRAModule";
-            }
-            case MT_PreProModule:
-            {
-                return "PreProModule";
-            }
-            case MT_CNFerModule:
-            {
-                return "CNFerModule";
-            }
-            case MT_SingleVSModule:
-            {
-                return "SingleVSModule";
-            }
-            case MT_ICPModule:
-            {
-                return "ICPModule";
-            }
-            case MT_NoModule:
-            {
-                return "NoModule";
-            }
-            default:
-            {
-                return "UnknownModule";
-            }
-        }
+        return moduleTypeToString(_moduleType);
     }
 
     /**

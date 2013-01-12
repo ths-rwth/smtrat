@@ -28,18 +28,19 @@
  *
  * @version 2012-12-20
  */
-#include "../config.h"
+#include "../../config.h"
 
-#include "NSSModule/definitions.h"
+#include "../NSSModule/definitions.h"
 #include "GroebnerModule.h"
-#include "GBModule/GBModuleStatistics.h"
-#include "GBModule/UsingDeclarations.h"
+#include "GBModuleStatistics.h"
+#include "UsingDeclarations.h"
 #ifdef USE_NSS
 #include "NSSModule/GroebnerToSDP.h"
 #endif
 
 //#define MEASURE_TIME
 //#define CHECK_SMALLER_MUSES
+//#define SEARCH_FOR_RADICALMEMBERS
 
 using std::set;
 using GiNaC::ex_to;
@@ -231,9 +232,9 @@ Answer GroebnerModule<Settings>::isConsistent( )
         //now, we calculate the groebner basis
         mBasis.calculate( );
         mRecalculateGB = false;
-        
+        #ifdef SEARCH_FOR_RADICALMEMBERS
         searchForRadicalMembers();
-        
+        #endif
         Polynomial witness;
 #ifdef USE_NSS
         // On linear systems, all solutions lie in Q. So we do not have to check for a solution.
@@ -389,9 +390,11 @@ Answer GroebnerModule<Settings>::isConsistent( )
  * With the new groebner basis, we search for radical-members which then can be added to the GB.
  * @return 
  */
+
 template<class Settings>
 bool GroebnerModule<Settings>::searchForRadicalMembers() 
 {
+    #ifdef SEARCH_FOR_RADICALMEMBERS
     std::set<unsigned> variableNumbers(mBasis.getGbIdeal().gatherVariables());
     //apply the rules RRI-* from the Thesis from G.O. Passmore
     // Iterate over all variables in the GB
@@ -432,9 +435,11 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
     
     //find variable rewrite rules
     
-    
-    
+    #else
+    return false;
+    #endif
 }
+
 
 /**
  * Removes the constraint from the GBModule.

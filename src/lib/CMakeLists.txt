@@ -17,9 +17,8 @@ include_directories( #${PROJECT_BUILD_DIR}/src
                      ${GINACRA_INCLUDE_DIR}
 )
 
-# set some variables
+# Core library
 # # # # # # # # # # #
-
 set(lib_core_src
     Manager.cpp
     Module.cpp
@@ -29,6 +28,7 @@ set(lib_core_src
     ConstraintPool.cpp
 	RuntimeSettings.cpp
 )
+
 set(lib_core_headers
     Manager.h
     Answer.h
@@ -44,32 +44,15 @@ set(lib_core_headers
 	VariableBounds.h
     smtrat.h
 )
-set(lib_modules_headers
-    modules/Modules.h
-    modules/StandardModuleFactory.h
-    modules/SmartSimplifier.h
-    modules/VSModule.h
-    modules/SATModule.h
-    modules/LRAModule.h
-    modules/TLRAModule.h
-    modules/PreProModule.h
-    modules/CNFerModule.h
-    modules/SingleVSModule.h
-#    modules/ICPModule.h
-    modules/ILRAModule.h
-)
-set(lib_modules_src
-    modules/SmartSimplifier.cpp
-    modules/VSModule.cpp
-    modules/SATModule.cpp
-    modules/LRAModule.cpp
-    modules/TLRAModule.cpp
-    modules/PreProModule.cpp
-    modules/CNFerModule.cpp
-    modules/SingleVSModule.cpp
-#    modules/ICPModule.cpp
-    modules/ILRAModule.cpp
-)
+
+# Include modules
+#######################
+add_subdirectory(modules)
+
+# Include solvers/strategies
+#######################
+add_subdirectory(strategies)
+
 
 if(USE_GB)
 	set(lib_GBModule_headers modules/GBModule/GBSettings.h modules/GBModule/GBModuleStatistics.h modules/GBModule/GBCalculationStatistics.h)
@@ -177,12 +160,12 @@ set(lib_LinAlg
 	utilities/LinAlg/FindExactSolution.h
 )
 endif()
-set(lib_Utilities_headers
+set(lib_utilities_headers
 	utilities/debug/debug.h
 	utilities/stats/Statistics.h
 	utilities/stats/CollectStatistics.h
 )
-set(lib_Utilities_src
+set(lib_utilities_src
 	utilities/stats/CollectStatistics.cpp
 )
 
@@ -191,33 +174,10 @@ set( lib_nratsolver_headers NRATSolver.h )
 set( lib_nratsolver_src NRATSolver.cpp )
 
 set(lib_${PROJECT_NAME}_SRCS
-    ${lib_nratsolver_headers}
     ${lib_nratsolver_src}
-    ${lib_core_headers}
     ${lib_core_src}
-    ${lib_modules_headers}
     ${lib_modules_src}
-    ${lib_VSModule_headers}
-    ${lib_VSModule_src}
-	${lib_SATModule_headers}
-	${lib_SATModule_src}
-	${lib_LRAModule_headers}
-	${lib_LRAModule_src}
-	${lib_TLRAModule_headers}
-	${lib_TLRAModule_src}
-	${lib_GBModule_headers}
-	${lib_GBModule_src}
-	${lib_NSSModule_headers}
-	${lib_NSSModule_src}
-	${lib_SDP_headers}
-	${lib_SDP_src}
-	${lib_LinAlg}
-	${lib_Utilities_headers}
-	${lib_Utilities_src}
-    ${lib_SingleVSModule_headers}
-    ${lib_SingleVSModule_src}
-#    ${lib_ICPModule_headers}
-#    ${lib_ICPModule_src}
+	${lib_utilities_src}
 )
 
 # set linking flags
@@ -259,11 +219,11 @@ install( TARGETS lib_${PROJECT_NAME} DESTINATION lib PERMISSIONS
     GROUP_READ GROUP_EXECUTE
     WORLD_READ WORLD_EXECUTE
 )
-install( FILES ${lib_core_headers} ${lib_nratsolver_headers} DESTINATION include/${PROJECT_NAME}/lib )
-install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/lib/modules )
-install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/VSModule )
-install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SATModule )
-install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/LRAModule )
-install( FILES ${lib_SingleVSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SingleVSModule )
+#install( FILES ${lib_core_headers} ${lib_nratsolver_headers} DESTINATION include/${PROJECT_NAME}/lib )
+#install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/lib/modules )
+#install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/VSModule )
+#install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SATModule )
+#install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/LRAModule )
+#install( FILES ${lib_SingleVSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SingleVSModule )
 # install( FILES ${lib_ICPModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/ICPModule )
-install( FILES ${lib_TLRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/TLRAModule )
+#install( FILES ${lib_TLRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/TLRAModule )

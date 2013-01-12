@@ -39,7 +39,7 @@
 #include "Answer.h"
 #include "ModuleFactory.h"
 #include "StrategyGraph.h"
-#include "ModuleType.h"
+#include "modules/ModuleType.h"
 #include "Module.h"
 #include "config.h"
 #include "modules/StandardModuleFactory.h"

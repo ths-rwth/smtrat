@@ -25,11 +25,12 @@
  *
  * @author Ulrich Loup
  * @since 2012-02-11
- * @version 2012-02-11
+ * @version 2013-01-12
  */
 
-#ifndef SMTRAT_MODULETYPE_H
-#define SMTRAT_MODULETYPE_H
+#pragma once
+
+#include <string>
 
 namespace smtrat
 {
@@ -40,35 +41,11 @@ namespace smtrat
     {
         /// type of class Module
         MT_Module,
-        /// type of class SmartSimplifier
-        MT_SmartSimplifier,
-        /// type of class GroebnerModule
-        MT_GroebnerModule,
-        /// type of class VSModule
-        MT_VSModule,
-        /// type of class CADModule
-        MT_CADModule,
-        /// type of class UnivariateCADModule
-        MT_UnivariateCADModule,
-        /// type of class SATModule
-        MT_SATModule,
-        /// type of class LRAModule
-        MT_LRAModule,
-        /// type of class TLRAModule
-        MT_TLRAModule,
-        /// type of class PreProModule
-        MT_PreProModule,
-        /// type of class CNFerModule
-        MT_CNFerModule,
-        /// type of class VSModule
-        MT_SingleVSModule,
-        /// type of class ICPModule
-        MT_ICPModule,
-        /// type of class LRAModule
-        MT_ILRAModule,
+        ///
+		@moduleTypeList@
         /// type of no Module
         MT_NoModule           // KEEP THIS AS THE LAST ELEMENT OF THIS ENUM!!!
     };
-}    // namespace smtrat
 
-#endif // SMTRAT_MODULETYPE_H
+	std::string moduleTypeToString(ModuleType _type);
+}    // namespace smtrat

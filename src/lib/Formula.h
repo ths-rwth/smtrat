@@ -37,7 +37,7 @@
 #include <string>
 #include <set>
 #include "Condition.h"
-#include "ModuleType.h"
+#include "modules/ModuleType.h"
 #include "ConstraintPool.h"
 
 namespace smtrat
@@ -513,7 +513,7 @@ namespace smtrat
             Formula* prune( unsigned );
             iterator prune( iterator );
             void clear();
-            void notSolvableBy( ModuleType );
+            //void notSolvableBy( ModuleType );
             void print( std::ostream& = std::cout, const std::string = "", bool = false, bool = false ) const;
             friend std::ostream& operator <<( std::ostream&, const Formula& );
             std::string toString( bool = false ) const;

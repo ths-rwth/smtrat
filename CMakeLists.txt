@@ -20,12 +20,13 @@ cmake_minimum_required (VERSION 2.8)
 set( PROJECT_FULLNAME "SMT-RAT")
 set( PROJECT_DESCRIPTION "Satisfiability-Modulo-Theories Real Algebra Toolbox")
 set( smtrat_MAJORVERSION 0)
-set( smtrat_MINORVERSION 3)
+set( smtrat_MINORVERSION 4)
 set( smtrat_MAINTENANCEVERSION 0)
 set( smtrat_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
 set( PROJECT_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
 set( smtrat_NAME "SMT-RAT" )
 set( smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
+
 
 # options for the GBModule settings
 set( SMTRAT_GBSETTING "Setting 1" CACHE STRING "" )
@@ -53,7 +54,7 @@ elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 4 )
 elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 5 )
     set( SMTRAT_GBMODULE_SETTINGS "GBSettings51" )
 endif()
-message(${SMTRAT_GBMODULE_SETTINGS})
+
 
 # options
 option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
@@ -87,8 +88,15 @@ else()
 	project(smtrat CXX)
 endif()
 
+
 # path to find own modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+# Include own macros.
+include( smtratmacros )
+# TODO: iteratively search for cmake files and include them here. 
+
+
+
 
 # path to put in the executables
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})

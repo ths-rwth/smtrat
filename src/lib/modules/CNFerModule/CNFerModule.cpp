@@ -27,7 +27,7 @@
  * Created on 02. May 2012, 20:53
  */
 
-#include "../Manager.h"
+#include "../../Manager.h"
 #include "CNFerModule.h"
 
 using namespace std;
@@ -80,6 +80,7 @@ namespace smtrat
      */
     Answer CNFerModule::isConsistent()
     {
+        mpReceivedFormula->print(std::cout, "", false, false);
         Formula::const_iterator receivedSubformula = firstUncheckedReceivedSubformula();
         while( receivedSubformula != mpReceivedFormula->end() )
         {

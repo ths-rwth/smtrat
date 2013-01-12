@@ -31,6 +31,7 @@
 #include "modules/Modules.h"
 #include "StrategyGraph.h"
 
+
 #include <typeinfo>
 #include <cln/cln.h>
 
@@ -63,26 +64,6 @@ namespace smtrat
             mpPrimaryBackend->inform( *constraint );
         }
 
-        /*
-         * Add all existing modules.
-         */
-        addModuleType( MT_SmartSimplifier, new StandardModuleFactory<SmartSimplifier>() );
-#ifdef USE_GB
-        addModuleType( MT_GroebnerModule, new StandardModuleFactory<GroebnerModule<GBSettings> >() );
-        #endif
-        addModuleType( MT_VSModule, new StandardModuleFactory<VSModule>() );
-        #ifdef USE_CAD
-        //        addModuleType( MT_UnivariateCADModule, new StandardModuleFactory<UnivariateCADModule>() );
-        addModuleType( MT_CADModule, new StandardModuleFactory<CADModule>() );
-        #endif
-        addModuleType( MT_SATModule, new StandardModuleFactory<SATModule>() );
-        addModuleType( MT_PreProModule, new StandardModuleFactory<PreProModule>() );
-        addModuleType( MT_CNFerModule, new StandardModuleFactory<CNFerModule>() );
-        addModuleType( MT_LRAModule, new StandardModuleFactory<LRAModule>() );
-        addModuleType( MT_SingleVSModule, new StandardModuleFactory<SingleVSModule>() );
-        addModuleType( MT_ILRAModule, new StandardModuleFactory<ILRAModule>() );
-//        addModuleType( MT_ICPModule, new StandardModuleFactory<ICPModule>() );
-        addModuleType( MT_TLRAModule, new StandardModuleFactory<TLRAModule>() );
     }
 
     /**

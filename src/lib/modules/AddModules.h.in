@@ -1,0 +1,24 @@
+/* 
+ * File:   AddModules.h
+ * Author: Sebastian Junges
+ *
+ * Created on January 12, 2013, 3:39 PM
+ */
+
+#pragma once 
+
+#include "../Manager.h"
+#include "ModuleType.h"
+#include "Modules.h"
+#include "../config.h"
+
+namespace smtrat {
+void addModules(Manager* manager) {
+        /*
+         * Add all existing modules.
+         */
+        @addModuleList@
+}
+}
+
+
