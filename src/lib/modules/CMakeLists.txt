@@ -3,12 +3,28 @@ foreach(subdir ${SUBDIRS})
     add_subdirectory(${subdir})
 endforeach()
 
-message("${moduleMainHeaders}")
+# Number of modules (for iteration) 
+list(LENGTH moduleTypes nrModules)
+math(EXPR maxModIndex "${nrModules} - 1")
+
 # write Modules.h
 foreach(header ${moduleMainHeaders})
 	set(includeHeaders "${includeHeaders} #include \"${header}\" \n")
 endforeach()
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.h )
+
+# write Modules.cpp
+foreach(modIndex RANGE ${maxModIndex})
+  list(GET moduleTypes ${modIndex} modType)
+  list(GET moduleObjects ${modIndex} modObject)
+  list(GET moduleVersions ${modIndex} modVersion)
+  set(moduleInfoString "${moduleInfoString} \\
+---------------------------------- \\n \\
+Module name: ${modType} \\n \\
+Module objectname: ${modObject} \\n \\
+Module version: ${modVersion} \\n")
+endforeach()
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.cpp )
 
 # write ModuleType.h
 foreach(moduleType ${moduleTypes})
@@ -23,9 +39,6 @@ endforeach()
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.cpp )
 
 # write AddModules.h
-list(LENGTH moduleTypes nrModules)
-math(EXPR maxModIndex "${nrModules} - 1")
-
 foreach(modIndex RANGE ${maxModIndex})
   list(GET moduleTypes ${modIndex} modType)
   list(GET moduleObjects ${modIndex} modObject)
@@ -37,5 +50,6 @@ configure_file ( ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.h.in ${CMAKE_SOU
 set(lib_modules_src 
 	${modulesSources}  
 	modules/ModuleType.cpp
+	modules/Modules.cpp
 	PARENT_SCOPE)
 
