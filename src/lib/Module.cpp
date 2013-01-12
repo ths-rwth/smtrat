@@ -479,6 +479,8 @@ namespace smtrat
         if( mFirstSubformulaToPass != mpPassedFormula->end() )
         {
             assert( checkFirstSubformulaToPassValidity() );
+            // Update the propositions of the passed formula
+            mpPassedFormula->getPropositions();
             bool assertionFailed = false;
             for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
             {

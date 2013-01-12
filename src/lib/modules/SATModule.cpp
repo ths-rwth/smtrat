@@ -180,12 +180,12 @@ namespace smtrat
      */
     bool SATModule::assertSubformula( Formula::const_iterator _subformula )
     {
-        assert( ((*_subformula)->proposition() | ~PROP_IS_A_CLAUSE) == ~PROP_TRUE );
         Module::assertSubformula( _subformula );
-
-        assert( mFormulaClauseMap.find( *_subformula ) == mFormulaClauseMap.end() );
-        mFormulaClauseMap[*_subformula] = addClause( *_subformula, false );
-
+        if( PROP_IS_A_CLAUSE <= (*_subformula)->proposition() )
+        {
+            assert( mFormulaClauseMap.find( *_subformula ) == mFormulaClauseMap.end() );
+            mFormulaClauseMap[*_subformula] = addClause( *_subformula, false );
+        }
         return true;
     }
 
@@ -197,11 +197,13 @@ namespace smtrat
     void SATModule::removeSubformula( Formula::const_iterator _subformula )
     {
         FormulaClauseMap::iterator iter = mFormulaClauseMap.find( *_subformula );
-        assert( iter != mFormulaClauseMap.end() );
-        if( iter->second != CRef_Undef )
+        if( iter != mFormulaClauseMap.end() )
         {
-            cancelUntil( level( iter->second ) );
-            removeClause( iter->second );
+            if( iter->second != CRef_Undef )
+            {
+                cancelUntil( level( iter->second ) );
+                removeClause( iter->second );
+            }
         }
         Module::removeSubformula( _subformula );
     }
@@ -215,62 +217,71 @@ namespace smtrat
      */
     Answer SATModule::isConsistent()
     {
-        budgetOff();
-        assumptions.clear();
-        if( !ok )
+        if( PROP_IS_IN_CNF <= mpReceivedFormula->proposition() )
         {
-            #ifdef GATHER_STATS
-            collectStats();
-            #endif
-            mSolverState = False;
-            return False;
-        }
+            // TODO: Is this necessary?
+            budgetOff();
 
-        // TODO: Is this necessary?
-        ++solves;
-        max_learnts             = nClauses() * learntsize_factor;
-        learntsize_adjust_confl = learntsize_adjust_start_confl;
-        learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
-
-        lbool result            = search();
-
-        #ifdef SATMODULE_WITH_CALL_NUMBER
-        cout << endl << endl;
-        #endif
-        cancelUntil( 0 );
-        if( result == l_True )
-        {
-            #ifdef GATHER_STATS
-            collectStats();
-            #endif
-            mSolverState = True;
-            return True;
-        }
-        else if( result == l_False )
-        {
-            ok = false;
-            mInfeasibleSubsets.clear();
-            /*
-             * Set the infeasible subset to the set of all received constraints.
-             */
-            set<const Formula*> infeasibleSubset = set<const Formula*>();
-            for( Formula::const_iterator subformula = mpReceivedFormula->begin(); subformula != mpReceivedFormula->end(); ++subformula )
+            assumptions.clear();
+            if( !ok )
             {
-                infeasibleSubset.insert( *subformula );
+                #ifdef GATHER_STATS
+                collectStats();
+                #endif
+                mSolverState = False;
+                return False;
             }
-            mInfeasibleSubsets.push_back( infeasibleSubset );
-            #ifdef GATHER_STATS
-            collectStats();
+
+            // TODO: Is this necessary?
+            ++solves;
+            max_learnts             = nClauses() * learntsize_factor;
+            learntsize_adjust_confl = learntsize_adjust_start_confl;
+            learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
+
+            lbool result            = search();
+
+            #ifdef SATMODULE_WITH_CALL_NUMBER
+            cout << endl << endl;
             #endif
-            mSolverState = False;
-            return False;
+            cancelUntil( 0 );
+            if( result == l_True )
+            {
+                #ifdef GATHER_STATS
+                collectStats();
+                #endif
+                mSolverState = True;
+                return True;
+            }
+            else if( result == l_False )
+            {
+                ok = false;
+                mInfeasibleSubsets.clear();
+                /*
+                * Set the infeasible subset to the set of all received constraints.
+                */
+                set<const Formula*> infeasibleSubset = set<const Formula*>();
+                for( Formula::const_iterator subformula = mpReceivedFormula->begin(); subformula != mpReceivedFormula->end(); ++subformula )
+                {
+                    infeasibleSubset.insert( *subformula );
+                }
+                mInfeasibleSubsets.push_back( infeasibleSubset );
+                #ifdef GATHER_STATS
+                collectStats();
+                #endif
+                mSolverState = False;
+                return False;
+            }
+            else
+            {
+                #ifdef GATHER_STATS
+                collectStats();
+                #endif
+                mSolverState = Unknown;
+                return Unknown;
+            }
         }
         else
         {
-            #ifdef GATHER_STATS
-            collectStats();
-            #endif
-            mSolverState = Unknown;
             return Unknown;
         }
     }

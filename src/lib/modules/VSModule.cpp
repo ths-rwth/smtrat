@@ -80,64 +80,66 @@ namespace smtrat
      */
     bool VSModule::assertSubformula( Formula::const_iterator _subformula )
     {
-        assert( (*_subformula)->getType() == REALCONSTRAINT );
         Module::assertSubformula( _subformula );
-
-        const Constraint* constraint = (*_subformula)->pConstraint();
-        vs::Condition*    condition  = new vs::Condition( constraint );
-        mFormulaConditionMap[*_subformula] = condition;
-
-        /*
-         * Clear the ranking.
-         */
-        switch( constraint->isConsistent() )
+        if( (*_subformula)->getType() == REALCONSTRAINT )
         {
-            case 0:
+            const Constraint* constraint = (*_subformula)->pConstraint();
+            vs::Condition*    condition  = new vs::Condition( constraint );
+            mFormulaConditionMap[*_subformula] = condition;
+
+            /*
+            * Clear the ranking.
+            */
+            switch( constraint->isConsistent() )
             {
-                eraseDTsOfRanking( *mpStateTree );
-                mIDCounter = 0;
-                mInfeasibleSubsets.clear();
-                mInfeasibleSubsets.push_back( set<const Formula*>() );
-                mInfeasibleSubsets.back().insert( *_subformula );
-                mInconsistentConstraintAdded = true;
-                mSolverState = False;
-                return false;
-            }
-            case 1:
-            {
-                return true;
-            }
-            case 2:
-            {
-                eraseDTsOfRanking( *mpStateTree );
-                mIDCounter = 0;
-                symtab::const_iterator var = constraint->variables().begin();
-                while( var != constraint->variables().end() )
+                case 0:
                 {
-                    mAllVariables.insert( pair<const string, symbol>( var->first, ex_to<symbol>( var->second ) ) );
-                    var++;
+                    eraseDTsOfRanking( *mpStateTree );
+                    mIDCounter = 0;
+                    mInfeasibleSubsets.clear();
+                    mInfeasibleSubsets.push_back( set<const Formula*>() );
+                    mInfeasibleSubsets.back().insert( *_subformula );
+                    mInconsistentConstraintAdded = true;
+                    mSolverState = False;
+                    return false;
                 }
-                ConditionSet oConds = ConditionSet();
-                oConds.insert( condition );
+                case 1:
+                {
+                    return true;
+                }
+                case 2:
+                {
+                    eraseDTsOfRanking( *mpStateTree );
+                    mIDCounter = 0;
+                    symtab::const_iterator var = constraint->variables().begin();
+                    while( var != constraint->variables().end() )
+                    {
+                        mAllVariables.insert( pair<const string, symbol>( var->first, ex_to<symbol>( var->second ) ) );
+                        var++;
+                    }
+                    ConditionSet oConds = ConditionSet();
+                    oConds.insert( condition );
 
-                vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
-                DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
-                ConditionVector condVector                   = ConditionVector();
-                condVector.push_back( new vs::Condition( constraint, false, oConds, 0 ) );
-                subResult.push_back( condVector );
-                subResults.push_back( subResult );
-                mpStateTree->addSubstitutionResults( subResults );
+                    vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
+                    DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
+                    ConditionVector condVector                   = ConditionVector();
+                    condVector.push_back( new vs::Condition( constraint, false, oConds, 0 ) );
+                    subResult.push_back( condVector );
+                    subResults.push_back( subResult );
+                    mpStateTree->addSubstitutionResults( subResults );
 
-                insertDTinRanking( mpStateTree );
-                mFreshConstraintReceived = true;
-                return true;
-            }
-            default:
-            {
-                assert( false );
-                return true;
+                    insertDTinRanking( mpStateTree );
+                    mFreshConstraintReceived = true;
+                    return true;
+                }
+                default:
+                {
+                    assert( false );
+                    return true;
+                }
             }
         }
+        return true;
     }
 
     /**
@@ -147,105 +149,108 @@ namespace smtrat
      */
     void VSModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        #ifdef VS_BACKTRACKING
-        eraseDTsOfRanking( *mpStateTree );
-        ConditionVector condsToDelete  = ConditionVector();
-        ConditionVector condsToDeleteB = ConditionVector();
-        assert( mpStateTree->hasSubstitutionResults() );
-        assert( mpStateTree->substitutionResults().size() == 1 );
-        assert( mpStateTree->substitutionResults().back().size() == 1 );
-        assert( receivedFormulaSize() == mpStateTree->substitutionResults().back().back().first.size() );
-        #endif
-        vs::Condition*    pCondition = mFormulaConditionMap[*_subformula];
-        mFormulaConditionMap.erase( *_subformula );
-        delete pCondition;
-        Module::removeSubformula( _subformula );
-        #ifdef VS_BACKTRACKING
-        bool firstConstraintToRemoveFound = false;
-        for( ConditionVector::iterator cond = mpStateTree->rSubstitutionResults().back().back().first.begin();
-                cond != mpStateTree->rSubstitutionResults().back().back().first.end(); ++cond )
+        if( (*_subformula)->getType() == REALCONSTRAINT )
         {
-            if( firstConstraintToRemoveFound )
+            #ifdef VS_BACKTRACKING
+            eraseDTsOfRanking( *mpStateTree );
+            ConditionVector condsToDelete  = ConditionVector();
+            ConditionVector condsToDeleteB = ConditionVector();
+            assert( mpStateTree->hasSubstitutionResults() );
+            assert( mpStateTree->substitutionResults().size() == 1 );
+            assert( mpStateTree->substitutionResults().back().size() == 1 );
+            assert( receivedFormulaSize() == mpStateTree->substitutionResults().back().back().first.size() );
+            #endif
+            vs::Condition*    pCondition = mFormulaConditionMap[*_subformula];
+            mFormulaConditionMap.erase( *_subformula );
+            delete pCondition;
+            #ifdef VS_BACKTRACKING
+            bool firstConstraintToRemoveFound = false;
+            for( ConditionVector::iterator cond = mpStateTree->rSubstitutionResults().back().back().first.begin();
+                    cond != mpStateTree->rSubstitutionResults().back().back().first.end(); ++cond )
             {
-                condsToDeleteB.push_back( *cond );
-                mpStateTree->rSubstitutionResults().back().back().first.erase( cond );
-            }
-            else if( (*cond)->constraint() == **constraintsToRemove.begin() )
-            {
-                condsToDeleteB.push_back( *cond );
-                mpStateTree->rSubstitutionResults().back().back().first.erase( cond );
-                firstConstraintToRemoveFound = true;
-            }
-        }
-        assert( firstConstraintToRemoveFound );
-
-        /*
-         * Collect the conditions having the conditions to delete as original conditions.
-         */
-        ConditionVector conditionsToDeleteInRoot = ConditionVector();
-        for( ConditionVector::iterator cond = mpStateTree->rConditions().begin(); cond != mpStateTree->conditions().end(); ++cond )
-        {
-            bool                   originalConditionDeleted = false;
-            ConditionSet::iterator oCond                    = (**cond).rOriginalConditions().begin();
-            while( oCond != (**cond).originalConditions().end() )
-            {
-                ConditionVector::const_iterator condToDel = condsToDelete.begin();
-                while( condToDel != condsToDelete.end() )
+                if( firstConstraintToRemoveFound )
                 {
-                    if( *oCond == *condToDel )
+                    condsToDeleteB.push_back( *cond );
+                    mpStateTree->rSubstitutionResults().back().back().first.erase( cond );
+                }
+                else if( (*cond)->constraint() == **constraintsToRemove.begin() )
+                {
+                    condsToDeleteB.push_back( *cond );
+                    mpStateTree->rSubstitutionResults().back().back().first.erase( cond );
+                    firstConstraintToRemoveFound = true;
+                }
+            }
+            assert( firstConstraintToRemoveFound );
+
+            /*
+            * Collect the conditions having the conditions to delete as original conditions.
+            */
+            ConditionVector conditionsToDeleteInRoot = ConditionVector();
+            for( ConditionVector::iterator cond = mpStateTree->rConditions().begin(); cond != mpStateTree->conditions().end(); ++cond )
+            {
+                bool                   originalConditionDeleted = false;
+                ConditionSet::iterator oCond                    = (**cond).rOriginalConditions().begin();
+                while( oCond != (**cond).originalConditions().end() )
+                {
+                    ConditionVector::const_iterator condToDel = condsToDelete.begin();
+                    while( condToDel != condsToDelete.end() )
                     {
-                        break;
+                        if( *oCond == *condToDel )
+                        {
+                            break;
+                        }
+                        condToDel++;
                     }
-                    condToDel++;
+                    if( condToDel != condsToDelete.end() )
+                    {
+                        (**cond).rOriginalConditions().erase( oCond++ );
+                        originalConditionDeleted = true;
+                    }
+                    else
+                    {
+                        oCond++;
+                    }
                 }
-                if( condToDel != condsToDelete.end() )
+                if( originalConditionDeleted )
                 {
-                    (**cond).rOriginalConditions().erase( oCond++ );
-                    originalConditionDeleted = true;
-                }
-                else
-                {
-                    oCond++;
+                    conditionsToDeleteInRoot.push_back( *cond );
                 }
             }
-            if( originalConditionDeleted )
+
+            /*
+            * Delete the conditions having only conditions to delete as original conditions.
+            */
+            mpStateTree->deleteConditions( conditionsToDeleteInRoot );
+
+            while( !condsToDelete.empty() )
             {
-                conditionsToDeleteInRoot.push_back( *cond );
+                vs::Condition* rpCond = condsToDelete.back();
+                condsToDelete.pop_back();
+                delete rpCond;
             }
+
+            while( !condsToDeleteB.empty() )
+            {
+                vs::Condition* rpCond = condsToDeleteB.back();
+                condsToDeleteB.pop_back();
+                delete rpCond;
+            }
+
+            mpStateTree->rTakeSubResultCombAgain() = true;
+
+            insertDTsinRanking( mpStateTree );
+            mpStateTree->rTakeSubResultCombAgain() = true;
+            #endif
+
+            #ifndef VS_BACKTRACKING
+            #ifdef VS_INCREMENTAL
+            reset();
+            #endif
+            #endif
+
+            mFreshConstraintReceived = true;
         }
-
-        /*
-         * Delete the conditions having only conditions to delete as original conditions.
-         */
-        mpStateTree->deleteConditions( conditionsToDeleteInRoot );
-
-        while( !condsToDelete.empty() )
-        {
-            vs::Condition* rpCond = condsToDelete.back();
-            condsToDelete.pop_back();
-            delete rpCond;
-        }
-
-        while( !condsToDeleteB.empty() )
-        {
-            vs::Condition* rpCond = condsToDeleteB.back();
-            condsToDeleteB.pop_back();
-            delete rpCond;
-        }
-
-        mpStateTree->rTakeSubResultCombAgain() = true;
-
-        insertDTsinRanking( mpStateTree );
-        mpStateTree->rTakeSubResultCombAgain() = true;
-        #endif
-
-        #ifndef VS_BACKTRACKING
-        #ifdef VS_INCREMENTAL
-        reset();
-        #endif
-        #endif
-
-        mFreshConstraintReceived = true;
+        Module::removeSubformula( _subformula );
     }
 
     /**
@@ -257,10 +262,33 @@ namespace smtrat
      */
     Answer VSModule::isConsistent()
     {
-        assert( mpReceivedFormula->size() == mFormulaConditionMap.size() );
-        if( !mFreshConstraintReceived )
+        if( mpReceivedFormula->isConstraintConjunction() )
         {
-            if( mInfeasibleSubsets.empty() )
+            assert( mpReceivedFormula->size() == mFormulaConditionMap.size() );
+            if( !mFreshConstraintReceived )
+            {
+                if( mInfeasibleSubsets.empty() )
+                {
+                    #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                    checkAnswer();
+                    #endif
+                    #ifdef VS_PRINT_ANSWERS
+                    printAnswer();
+                    #endif
+                    mSolverState = True;
+                    return True;
+                }
+                else
+                {
+                    mSolverState = False;
+                    return False;
+                }
+            }
+            mFreshConstraintReceived = false;
+            #ifndef VS_INCREMENTAL
+            reset();
+            #endif
+            if( mpReceivedFormula->empty() )
             {
                 #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
                 checkAnswer();
@@ -271,439 +299,423 @@ namespace smtrat
                 mSolverState = True;
                 return True;
             }
-            else
+            if( mInconsistentConstraintAdded )
             {
+                assert( !mInfeasibleSubsets.empty() );
+                assert( !mInfeasibleSubsets.back().empty() );
                 mSolverState = False;
                 return False;
             }
-        }
-        mFreshConstraintReceived = false;
-        #ifndef VS_INCREMENTAL
-        reset();
-        #endif
-        if( mpReceivedFormula->empty() )
-        {
-            #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
-            checkAnswer();
-            #endif
-            #ifdef VS_PRINT_ANSWERS
-            printAnswer();
-            #endif
-            mSolverState = True;
-            return True;
-        }
-        if( mInconsistentConstraintAdded )
-        {
-            assert( !mInfeasibleSubsets.empty() );
-            assert( !mInfeasibleSubsets.back().empty() );
-            mSolverState = False;
-            return False;
-        }
 
-        while( !mRanking.empty() )
-        {
-            #ifdef VS_STATISTICS
-            ++mStepCounter;
-            #endif
-            State* currentState = mRanking.begin()->second;
-            if( currentState->hasChildrenToInsert() )
+            while( !mRanking.empty() )
             {
-                currentState->rHasChildrenToInsert() = false;
-                insertDTsinRanking( currentState );
-            }
-            else
-            {
-                currentState->simplify();
-                #ifdef VS_DEBUG
-                cout << "Ranking:" << endl;
-                for( ValuationMap::const_iterator valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
-                {
-                    stringstream stream;
-                    stream << "(" << valDTPair->first.first << ", " << valDTPair->first.second << ")";
-                    cout << setw(15) << stream.str();
-                    cout << ":  " << valDTPair->second << endl;
-                }
-                cout << "*** Considered state:" << endl;
-                currentState->printAlone( "*** ", cout );
+                #ifdef VS_STATISTICS
+                ++mStepCounter;
                 #endif
-                if( currentState->isInconsistent() )
+                State* currentState = mRanking.begin()->second;
+                if( currentState->hasChildrenToInsert() )
                 {
-                    #ifdef VS_LOG_INTERMEDIATE_STEPS
-                    logConditions( *currentState, false, "Intermediate_conflict_of_VSModule" );
-                    #endif
-                    eraseDTsOfRanking( *currentState );
-                    if( currentState->isRoot() )
-                    {
-                        updateInfeasibleSubset();
-                        mSolverState = False;
-                        return False;
-                    }
-                    else
-                    {
-                        currentState->passConflictToFather();
-                        eraseDTofRanking( currentState->rFather() );
-                        insertDTinRanking( currentState->pFather() );
-                    }
-                }
-                else if( currentState->hasRecentlyAddedConditions() )
-                {
-                    #ifdef VS_DEBUG
-                    cout << "*** Propagate new conditions :" << endl;
-                    #endif
-                    propagateNewConditions(currentState);
-                    #ifdef VS_DEBUG
-                    cout << "*** Propagate new conditions ready." << endl;
-                    #endif
+                    currentState->rHasChildrenToInsert() = false;
+                    insertDTsinRanking( currentState );
                 }
                 else
                 {
-                    #ifdef VS_USE_VARIABLE_BOUNDS
-                    if( !currentState->checkTestCandidatesForBounds() )
+                    currentState->simplify();
+                    #ifdef VS_DEBUG
+                    cout << "Ranking:" << endl;
+                    for( ValuationMap::const_iterator valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
                     {
-                        currentState->rInconsistent() = true;
+                        stringstream stream;
+                        stream << "(" << valDTPair->first.first << ", " << valDTPair->first.second << ")";
+                        cout << setw(15) << stream.str();
+                        cout << ":  " << valDTPair->second << endl;
+                    }
+                    cout << "*** Considered state:" << endl;
+                    currentState->printAlone( "*** ", cout );
+                    #endif
+                    if( currentState->isInconsistent() )
+                    {
+                        #ifdef VS_LOG_INTERMEDIATE_STEPS
+                        logConditions( *currentState, false, "Intermediate_conflict_of_VSModule" );
+                        #endif
                         eraseDTsOfRanking( *currentState );
+                        if( currentState->isRoot() )
+                        {
+                            updateInfeasibleSubset();
+                            mSolverState = False;
+                            return False;
+                        }
+                        else
+                        {
+                            currentState->passConflictToFather();
+                            eraseDTofRanking( currentState->rFather() );
+                            insertDTinRanking( currentState->pFather() );
+                        }
+                    }
+                    else if( currentState->hasRecentlyAddedConditions() )
+                    {
+                        #ifdef VS_DEBUG
+                        cout << "*** Propagate new conditions :" << endl;
+                        #endif
+                        propagateNewConditions(currentState);
+                        #ifdef VS_DEBUG
+                        cout << "*** Propagate new conditions ready." << endl;
+                        #endif
                     }
                     else
                     {
-                        #endif
-                        switch( currentState->stateType() )
+                        #ifdef VS_USE_VARIABLE_BOUNDS
+                        if( !currentState->checkTestCandidatesForBounds() )
                         {
-                            case SUBSTITUTION_TO_APPLY:
+                            currentState->rInconsistent() = true;
+                            eraseDTsOfRanking( *currentState );
+                        }
+                        else
+                        {
+                            #endif
+                            switch( currentState->stateType() )
                             {
-                                #ifdef VS_DEBUG
-                                cout << "*** SubstituteAll changes it to:" << endl;
-                                #endif
-                                if( !substituteAll( currentState, currentState->rFather().rConditions() ) )
+                                case SUBSTITUTION_TO_APPLY:
                                 {
-                                    /*
-                                     * Delete the currently considered state.
-                                     */
-                                    currentState->rInconsistent() = true;
-                                    eraseDTofRanking( *currentState );
-                                }
-                                #ifdef VS_DEBUG
-                                cout << "*** SubstituteAll ready." << endl;
-                                #endif
-                                break;
-                            }
-                            case COMBINE_SUBRESULTS:
-                            {
-                                #ifdef VS_DEBUG
-                                cout << "*** Refresh conditons:" << endl;
-                                #endif
-                                if( currentState->nextSubResultCombination() )
-                                {
-                                    if( currentState->refreshConditions() )
+                                    #ifdef VS_DEBUG
+                                    cout << "*** SubstituteAll changes it to:" << endl;
+                                    #endif
+                                    if( !substituteAll( currentState, currentState->rFather().rConditions() ) )
                                     {
-                                        insertDTinRanking( currentState );
-                                    }
-                                    else
-                                    {
-                                        insertDTsinRanking( currentState );
+                                        /*
+                                        * Delete the currently considered state.
+                                        */
+                                        currentState->rInconsistent() = true;
+                                        eraseDTofRanking( *currentState );
                                     }
                                     #ifdef VS_DEBUG
-                                    currentState->printAlone( "   ", cout );
+                                    cout << "*** SubstituteAll ready." << endl;
                                     #endif
+                                    break;
                                 }
-                                else
+                                case COMBINE_SUBRESULTS:
                                 {
-                                    /*
-                                    * If it was the last combination, delete the state.
-                                    */
-                                    currentState->rInconsistent() = true;
-                                    eraseDTsOfRanking( *currentState );
-                                    currentState->rFather().rMarkedAsDeleted() = false;
-                                    insertDTinRanking( currentState->pFather() );
-
-                                }
-                                #ifdef VS_DEBUG
-                                cout << "*** Conditions refreshed." << endl;
-                                #endif
-                                break;
-                            }
-                            case TEST_CANDIDATE_TO_GENERATE:
-                            {
-                                /*
-                                * Set the index, if not already done, to the best variable to eliminate next.
-                                */
-                                if( currentState->index() == "" )
-                                {
-                                    currentState->initIndex( mAllVariables );
-                                }
-                                else if( currentState->tryToRefreshIndex() )
-                                {
-                                    if( currentState->initIndex( mAllVariables ) )
+                                    #ifdef VS_DEBUG
+                                    cout << "*** Refresh conditons:" << endl;
+                                    #endif
+                                    if( currentState->nextSubResultCombination() )
                                     {
-                                        currentState->initConditionFlags();
-                                        currentState->resetConflictSets();
-                                        while( !currentState->children().empty() )
+                                        if( currentState->refreshConditions() )
                                         {
-                                            State* toDelete = currentState->rChildren().back();
-                                            eraseDTsOfRanking( *toDelete );
-                                            currentState->rChildren().pop_back();
-                                            delete toDelete;
-                                        }
-                                    }
-                                }
-
-                                /*
-                                * Find the most adequate conditions to continue.
-                                */
-                                const vs::Condition* currentCondition;
-                                if( !currentState->bestCondition( currentCondition, mAllVariables.size() ) )
-                                {
-                                    /*
-                                    * It is a state, where no more elimination could be applied to the conditions.
-                                    */
-                                    if( currentState->conditions().empty() )
-                                    {
-                                        #ifdef VS_DEBUG
-                                        cout << "*** Check ancestors!" << endl;
-                                        #endif
-                                        /*
-                                        * Check if there are still conditions in any ancestor, which have not been considered.
-                                        */
-                                        State * unfinishedAncestor;
-                                        if( currentState->unfinishedAncestor( unfinishedAncestor ) )
-                                        {
-                                            /*
-                                            * Go back to this ancestor and refine.
-                                            */
-                                            eraseDTsOfRanking( *unfinishedAncestor );
-                                            unfinishedAncestor->extendSubResultCombination();
-                                            unfinishedAncestor->rStateType() = COMBINE_SUBRESULTS;
-                                            if( unfinishedAncestor->refreshConditions() )
-                                            {
-                                                insertDTinRanking( unfinishedAncestor );
-                                            }
-                                            else
-                                            {
-                                                insertDTsinRanking( unfinishedAncestor );
-                                            }
-                                            #ifdef VS_DEBUG
-                                            cout << "*** Found an unfinished ancestor:" << endl;
-                                            unfinishedAncestor->printAlone();
-                                            #endif
+                                            insertDTinRanking( currentState );
                                         }
                                         else
                                         {
-                                            /*
-                                            * Solution.
-                                            */
+                                            insertDTsinRanking( currentState );
+                                        }
+                                        #ifdef VS_DEBUG
+                                        currentState->printAlone( "   ", cout );
+                                        #endif
+                                    }
+                                    else
+                                    {
+                                        /*
+                                        * If it was the last combination, delete the state.
+                                        */
+                                        currentState->rInconsistent() = true;
+                                        eraseDTsOfRanking( *currentState );
+                                        currentState->rFather().rMarkedAsDeleted() = false;
+                                        insertDTinRanking( currentState->pFather() );
+
+                                    }
+                                    #ifdef VS_DEBUG
+                                    cout << "*** Conditions refreshed." << endl;
+                                    #endif
+                                    break;
+                                }
+                                case TEST_CANDIDATE_TO_GENERATE:
+                                {
+                                    /*
+                                    * Set the index, if not already done, to the best variable to eliminate next.
+                                    */
+                                    if( currentState->index() == "" )
+                                    {
+                                        currentState->initIndex( mAllVariables );
+                                    }
+                                    else if( currentState->tryToRefreshIndex() )
+                                    {
+                                        if( currentState->initIndex( mAllVariables ) )
+                                        {
+                                            currentState->initConditionFlags();
+                                            currentState->resetConflictSets();
+                                            while( !currentState->children().empty() )
+                                            {
+                                                State* toDelete = currentState->rChildren().back();
+                                                eraseDTsOfRanking( *toDelete );
+                                                currentState->rChildren().pop_back();
+                                                delete toDelete;
+                                            }
+                                        }
+                                    }
+
+                                    /*
+                                    * Find the most adequate conditions to continue.
+                                    */
+                                    const vs::Condition* currentCondition;
+                                    if( !currentState->bestCondition( currentCondition, mAllVariables.size() ) )
+                                    {
+                                        /*
+                                        * It is a state, where no more elimination could be applied to the conditions.
+                                        */
+                                        if( currentState->conditions().empty() )
+                                        {
                                             #ifdef VS_DEBUG
-                                            printAll( cout );
+                                            cout << "*** Check ancestors!" << endl;
                                             #endif
-                                            #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
-                                            checkAnswer();
-                                            #endif
-                                            #ifdef VS_PRINT_ANSWERS
-                                            printAnswer();
-                                            #endif
-                                            mSolverState = True;
-                                            return True;
+                                            /*
+                                            * Check if there are still conditions in any ancestor, which have not been considered.
+                                            */
+                                            State * unfinishedAncestor;
+                                            if( currentState->unfinishedAncestor( unfinishedAncestor ) )
+                                            {
+                                                /*
+                                                * Go back to this ancestor and refine.
+                                                */
+                                                eraseDTsOfRanking( *unfinishedAncestor );
+                                                unfinishedAncestor->extendSubResultCombination();
+                                                unfinishedAncestor->rStateType() = COMBINE_SUBRESULTS;
+                                                if( unfinishedAncestor->refreshConditions() )
+                                                {
+                                                    insertDTinRanking( unfinishedAncestor );
+                                                }
+                                                else
+                                                {
+                                                    insertDTsinRanking( unfinishedAncestor );
+                                                }
+                                                #ifdef VS_DEBUG
+                                                cout << "*** Found an unfinished ancestor:" << endl;
+                                                unfinishedAncestor->printAlone();
+                                                #endif
+                                            }
+                                            else
+                                            {
+                                                /*
+                                                * Solution.
+                                                */
+                                                #ifdef VS_DEBUG
+                                                printAll( cout );
+                                                #endif
+                                                #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                                                checkAnswer();
+                                                #endif
+                                                #ifdef VS_PRINT_ANSWERS
+                                                printAnswer();
+                                                #endif
+                                                mSolverState = True;
+                                                return True;
+                                            }
+                                        }
+                                        /*
+                                        * It is a state, where all conditions have been used for test candidate generation.
+                                        */
+                                        else
+                                        {
+                                            /*
+                                            * Check whether there are still test candidates in form of children left.
+                                            */
+                                            bool                  currentStateHasChildrenToConsider       = false;
+                                            bool                  currentStateHasChildrenWithToHighDegree = false;
+                                            StateVector::iterator child                                   = currentState->rChildren().begin();
+                                            while( child != currentState->children().end() )
+                                            {
+                                                if( !(**child).isInconsistent() )
+                                                {
+                                                    if( !(**child).markedAsDeleted() )
+                                                    {
+                                                        insertDTinRanking( *child );
+                                                    }
+                                                    if( !(**child).toHighDegree() && !(**child).markedAsDeleted() )
+                                                    {
+                                                        currentStateHasChildrenToConsider = true;
+                                                    }
+                                                    else
+                                                    {
+                                                        currentStateHasChildrenWithToHighDegree = true;
+                                                    }
+                                                }
+                                                child++;
+                                            }
+
+                                            if( !currentStateHasChildrenToConsider )
+                                            {
+                                                if( !currentStateHasChildrenWithToHighDegree )
+                                                {
+                                                    currentState->rInconsistent() = true;
+                                                    #ifdef VS_LOG_INTERMEDIATE_STEPS
+                                                    logConditions( *currentState, false, "Intermediate_conflict_of_VSModule" );
+                                                    #endif
+                                                    eraseDTsOfRanking( *currentState );
+                                                    if( currentState->isRoot() )
+                                                    {
+                                                        updateInfeasibleSubset();
+                                                    }
+                                                    else
+                                                    {
+                                                        currentState->passConflictToFather();
+                                                        eraseDTofRanking( currentState->rFather() );
+                                                        insertDTinRanking( currentState->pFather() );
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    currentState->rMarkedAsDeleted() = true;
+                                                    eraseDTofRanking( *currentState );
+                                                }
+                                            }
                                         }
                                     }
                                     /*
-                                    * It is a state, where all conditions have been used for test candidate generation.
+                                    * Generate test candidates for the chosen variable and the chosen condition.
                                     */
                                     else
                                     {
                                         /*
-                                        * Check whether there are still test candidates in form of children left.
+                                        * The degree of the constraint is appropriate to applicate this version of the
+                                        * virtual substitution.
                                         */
-                                        bool                  currentStateHasChildrenToConsider       = false;
-                                        bool                  currentStateHasChildrenWithToHighDegree = false;
-                                        StateVector::iterator child                                   = currentState->rChildren().begin();
-                                        while( child != currentState->children().end() )
+                                        symtab::const_iterator var = currentCondition->constraint().variables().find( currentState->index() );
+                                        if( var != currentCondition->constraint().variables().end() )
                                         {
-                                            if( !(**child).isInconsistent() )
+                                            #ifdef VS_DEBUG
+                                            cout << "*** Eliminate " << currentState->index() << " in ";
+                                            currentCondition->constraint().print( cout );
+                                            cout << " creates:" << endl;
+                                            #endif
+                                            if( eliminate( currentState, currentState->index(), currentCondition ) )
                                             {
-                                                if( !(**child).markedAsDeleted() )
-                                                {
-                                                    insertDTinRanking( *child );
-                                                }
-                                                if( !(**child).toHighDegree() && !(**child).markedAsDeleted() )
-                                                {
-                                                    currentStateHasChildrenToConsider = true;
-                                                }
-                                                else
-                                                {
-                                                    currentStateHasChildrenWithToHighDegree = true;
-                                                }
-                                            }
-                                            child++;
-                                        }
-
-                                        if( !currentStateHasChildrenToConsider )
-                                        {
-                                            if( !currentStateHasChildrenWithToHighDegree )
-                                            {
-                                                currentState->rInconsistent() = true;
-                                                #ifdef VS_LOG_INTERMEDIATE_STEPS
-                                                logConditions( *currentState, false, "Intermediate_conflict_of_VSModule" );
+                                                #ifdef VS_DEBUG
+                                                cout << "*** Eliminate ready." << endl;
                                                 #endif
-                                                eraseDTsOfRanking( *currentState );
-                                                if( currentState->isRoot() )
-                                                {
-                                                    updateInfeasibleSubset();
-                                                }
-                                                else
-                                                {
-                                                    currentState->passConflictToFather();
-                                                    eraseDTofRanking( currentState->rFather() );
-                                                    insertDTinRanking( currentState->pFather() );
-                                                }
                                             }
                                             else
                                             {
-                                                currentState->rMarkedAsDeleted() = true;
-                                                eraseDTofRanking( *currentState );
-                                            }
-                                        }
-                                    }
-                                }
-                                /*
-                                * Generate test candidates for the chosen variable and the chosen condition.
-                                */
-                                else
-                                {
-                                    /*
-                                    * The degree of the constraint is appropriate to applicate this version of the
-                                    * virtual substitution.
-                                    */
-                                    symtab::const_iterator var = currentCondition->constraint().variables().find( currentState->index() );
-                                    if( var != currentCondition->constraint().variables().end() )
-                                    {
-                                        #ifdef VS_DEBUG
-                                        cout << "*** Eliminate " << currentState->index() << " in ";
-                                        currentCondition->constraint().print( cout );
-                                        cout << " creates:" << endl;
-                                        #endif
-                                        if( eliminate( currentState, currentState->index(), currentCondition ) )
-                                        {
-                                            #ifdef VS_DEBUG
-                                            cout << "*** Eliminate ready." << endl;
-                                            #endif
-                                        }
-                                        else
-                                        {
-                                            #ifdef VS_DEBUG
-                                            cout << "*** No elimination. (Too high degree)" << endl;
-                                            #endif
-                                            if( (*currentState).toHighDegree() )
-                                            {
-                                                /*
-                                                * If we need to involve a complete approach.
-                                                */
-                                                #ifdef VS_WITH_BACKEND
-                                                switch( runBackendSolvers( currentState ) )
+                                                #ifdef VS_DEBUG
+                                                cout << "*** No elimination. (Too high degree)" << endl;
+                                                #endif
+                                                if( (*currentState).toHighDegree() )
                                                 {
-                                                    case True:
+                                                    /*
+                                                    * If we need to involve a complete approach.
+                                                    */
+                                                    #ifdef VS_WITH_BACKEND
+                                                    switch( runBackendSolvers( currentState ) )
                                                     {
-                                                        currentState->rToHighDegree() = true;
-
-                                                        State * unfinishedAncestor;
-                                                        if( currentState->unfinishedAncestor( unfinishedAncestor ) )
+                                                        case True:
                                                         {
-                                                            /*
-                                                            * Go back to this ancestor and refine.
-                                                            */
-                                                            eraseDTsOfRanking( *unfinishedAncestor );
-                                                            unfinishedAncestor->extendSubResultCombination();
-                                                            unfinishedAncestor->rStateType() = COMBINE_SUBRESULTS;
-                                                            if( unfinishedAncestor->refreshConditions() )
+                                                            currentState->rToHighDegree() = true;
+
+                                                            State * unfinishedAncestor;
+                                                            if( currentState->unfinishedAncestor( unfinishedAncestor ) )
                                                             {
-                                                                insertDTinRanking( unfinishedAncestor );
+                                                                /*
+                                                                * Go back to this ancestor and refine.
+                                                                */
+                                                                eraseDTsOfRanking( *unfinishedAncestor );
+                                                                unfinishedAncestor->extendSubResultCombination();
+                                                                unfinishedAncestor->rStateType() = COMBINE_SUBRESULTS;
+                                                                if( unfinishedAncestor->refreshConditions() )
+                                                                {
+                                                                    insertDTinRanking( unfinishedAncestor );
+                                                                }
+                                                                else
+                                                                {
+                                                                    insertDTsinRanking( unfinishedAncestor );
+                                                                }
                                                             }
                                                             else
                                                             {
-                                                                insertDTsinRanking( unfinishedAncestor );
+                                                                /*
+                                                                * Solution.
+                                                                */
+                                                                #ifdef VS_DEBUG
+                                                                printAll( cout );
+                                                                #endif
+                                                                #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                                                                checkAnswer();
+                                                                #endif
+                                                                #ifdef VS_PRINT_ANSWERS
+                                                                printAnswer();
+                                                                #endif
+                                                                mSolverState = True;
+                                                                return True;
                                                             }
+                                                            break;
                                                         }
-                                                        else
+                                                        case False:
                                                         {
-                                                            /*
-                                                             * Solution.
-                                                             */
-                                                            #ifdef VS_DEBUG
-                                                            printAll( cout );
-                                                            #endif
-                                                            #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
-                                                            checkAnswer();
-                                                            #endif
-                                                            #ifdef VS_PRINT_ANSWERS
-                                                            printAnswer();
-                                                            #endif
-                                                            mSolverState = True;
-                                                            return True;
+                                                            break;
                                                         }
-                                                        break;
+                                                        case Unknown:
+                                                        {
+                                                            mSolverState = Unknown;
+                                                            return Unknown;
+                                                        }
+                                                        default:
+                                                        {
+                                                            cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
+                                                            mSolverState = Unknown;
+                                                            return Unknown;
+                                                        }
                                                     }
-                                                    case False:
-                                                    {
-                                                        break;
-                                                    }
-                                                    case Unknown:
-                                                    {
-                                                        mSolverState = Unknown;
-                                                        return Unknown;
-                                                    }
-                                                    default:
-                                                    {
-                                                        cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
-                                                        mSolverState = Unknown;
-                                                        return Unknown;
-                                                    }
+                                                    #else
+    //                                                currentState->printAlone( "   ", cout );
+    //                                                cout << "###" << endl;
+    //                                                cout << "###                  Unknown!" << endl;
+    //                                                cout << "###" << endl;
+    //                                                mDeductions.clear();
+                                                    mSolverState = Unknown;
+                                                    return Unknown;
+                                                    #endif
                                                 }
-                                                #else
-//                                                currentState->printAlone( "   ", cout );
-//                                                cout << "###" << endl;
-//                                                cout << "###                  Unknown!" << endl;
-//                                                cout << "###" << endl;
-//                                                mDeductions.clear();
-                                                mSolverState = Unknown;
-                                                return Unknown;
-                                                #endif
-                                            }
-                                            else
-                                            {
-                                                currentState->rToHighDegree() = true;
-                                                insertDTinRanking( currentState );
+                                                else
+                                                {
+                                                    currentState->rToHighDegree() = true;
+                                                    insertDTinRanking( currentState );
+                                                }
                                             }
                                         }
+                                        else
+                                        {
+                                            (*currentCondition).rFlag() = true;
+                                            /*
+                                            * Update the ranking entry of the state.
+                                            */
+                                            insertDTinRanking( currentState );
+                                        }
                                     }
-                                    else
-                                    {
-                                        (*currentCondition).rFlag() = true;
-                                        /*
-                                        * Update the ranking entry of the state.
-                                        */
-                                        insertDTinRanking( currentState );
-                                    }
+                                    break;
                                 }
-                                break;
+                                default:
+                                    assert( false );
                             }
-                            default:
-                                assert( false );
+                            #ifdef VS_USE_VARIABLE_BOUNDS
                         }
-                        #ifdef VS_USE_VARIABLE_BOUNDS
+                        #endif
                     }
-                    #endif
                 }
             }
+            // if( mpStateTree->conflictSets().empty() ) mpStateTree->print();
+            // #ifdef VS_LOG_INTERMEDIATE_STEPS
+            // if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
+            // #endif
+            // if( mpStateTree->conflictSets().empty() ) Module::storeAssumptionsToCheck( *mpManager );
+            assert( !mpStateTree->conflictSets().empty() );
+            updateInfeasibleSubset();
+            #ifdef VS_DEBUG
+            printAll( cout );
+            #endif
+            mSolverState = False;
+            return False;
         }
-//        if( mpStateTree->conflictSets().empty() ) mpStateTree->print();
-//        #ifdef VS_LOG_INTERMEDIATE_STEPS
-//        if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
-//        #endif
-//        if( mpStateTree->conflictSets().empty() ) Module::storeAssumptionsToCheck( *mpManager );
-        assert( !mpStateTree->conflictSets().empty() );
-        updateInfeasibleSubset();
-        #ifdef VS_DEBUG
-        printAll( cout );
-        #endif
-        mSolverState = False;
-        return False;
+        else
+        {
+            return Unknown;
+        }
     }
 
     /**

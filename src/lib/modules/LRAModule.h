@@ -69,6 +69,7 @@ namespace smtrat
              */
             bool                        mInitialized;
             bool                        mAssignmentFullfilsNonlinearConstraints;
+            unsigned                    mNumberOfReceivedNeqConstraints;
             lra::Tableau                mTableau;
             ConstraintSet               mLinearConstraints;
             ConstraintSet               mNonlinearConstraints;
@@ -109,7 +110,7 @@ namespace smtrat
             {
                 return mSlackVars;
             }
-            
+
             const lra::Variable* const getSlackVariable( const Constraint* const _constraint ) const
             {
                 ConstraintBoundsMap::const_iterator iter = mConstraintToBound.find( _constraint->id() );

@@ -70,7 +70,7 @@ namespace smtrat
              */
             bool                        mInitialized;
             bool                        mAssignmentFullfilsNonlinearConstraints;
-            unsigned                    mMaxConstraintId;
+            unsigned                    mNumberOfReceivedLinearNeqConstraints;
             tlra::Tableau<tlra::Numeric>  mTableau;
             ConstraintSet               mLinearConstraints;
             ConstraintSet               mNonlinearConstraints;
@@ -105,6 +105,7 @@ namespace smtrat
             #ifdef TLRA_USE_GINACRA
             GiNaCRA::evalintervalmap getVariableBounds() const;
             #endif
+            void initialize();
 
         private:
             /**
@@ -120,7 +121,7 @@ namespace smtrat
             #ifdef TLRA_SIMPLE_CONFLICT_SEARCH
             void findSimpleConflicts( const tlra::Bound<tlra::Numeric>& );
             #endif
-            void initialize();
+            void initialize( const Constraint* const );
     };
 
 }    // namespace smtrat

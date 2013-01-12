@@ -160,7 +160,7 @@ namespace smtrat
                 }
                 case BOOL:
                 {
-                    mPropositions |= STRONG_CONDITIONS;
+                    mPropositions |= STRONG_CONDITIONS | PROP_CONTAINS_BOOLEAN;
                     break;
                 }
                 case REALCONSTRAINT:
@@ -209,10 +209,14 @@ namespace smtrat
                     for( iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
                     {
                         Condition subFormulaConds = (*subFormula)->getPropositions();
-                        if( !(PROP_IS_A_LITERAL<=subFormulaConds) )
+                        if( !(PROP_IS_A_CLAUSE<=subFormulaConds) )
                         {
                             mPropositions &= ~PROP_IS_PURE_CONJUNCTION;
                             mPropositions &= ~PROP_IS_IN_CNF;
+                        }
+                        else if( !(PROP_IS_A_LITERAL<=subFormulaConds) )
+                        {
+                            mPropositions &= ~PROP_IS_PURE_CONJUNCTION;
                         }
                         if( !(PROP_IS_IN_NNF<=subFormulaConds) )
                         {
@@ -296,7 +300,6 @@ namespace smtrat
     {
         assert( isBooleanCombination() );
         assert( mType != NOT || mpSubformulas->empty() );
-        //        assert( _formula->getType() != REALCONSTRAINT || _formula->constraint().relation() != CR_NEQ );
         _formula->setFather( this );
 
         /*
