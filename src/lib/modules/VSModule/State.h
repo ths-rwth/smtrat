@@ -244,6 +244,7 @@ private:
 	bool			    	 mRoot						;
 	bool					 mSubResultsSimplified		;
 	bool					 mTakeSubResultCombAgain	;
+    bool                     mTestCandidateCheckedForBounds;
 	bool					 mToHighDegree				;
 	bool					 mTryToRefreshIndex			;
 	unsigned		    	 mID						;

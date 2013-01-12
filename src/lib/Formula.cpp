@@ -18,8 +18,6 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * @file Formula.cpp
  *
@@ -29,6 +27,8 @@
  * @since 2012-02-09
  * @version 2012-10-13
  */
+
+//#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
 
 #include "Formula.h"
 
@@ -160,7 +160,7 @@ namespace smtrat
                 }
                 case BOOL:
                 {
-                    mPropositions |= STRONG_CONDITIONS;
+                    mPropositions |= STRONG_CONDITIONS | PROP_CONTAINS_BOOLEAN;
                     break;
                 }
                 case REALCONSTRAINT:
@@ -209,10 +209,14 @@ namespace smtrat
                     for( iterator subFormula = mpSubformulas->begin(); subFormula != mpSubformulas->end(); ++subFormula )
                     {
                         Condition subFormulaConds = (*subFormula)->getPropositions();
-                        if( !(PROP_IS_A_LITERAL<=subFormulaConds) )
+                        if( !(PROP_IS_A_CLAUSE<=subFormulaConds) )
                         {
                             mPropositions &= ~PROP_IS_PURE_CONJUNCTION;
                             mPropositions &= ~PROP_IS_IN_CNF;
+                        }
+                        else if( !(PROP_IS_A_LITERAL<=subFormulaConds) )
+                        {
+                            mPropositions &= ~PROP_IS_PURE_CONJUNCTION;
                         }
                         if( !(PROP_IS_IN_NNF<=subFormulaConds) )
                         {
@@ -296,7 +300,6 @@ namespace smtrat
     {
         assert( isBooleanCombination() );
         assert( mType != NOT || mpSubformulas->empty() );
-        //        assert( _formula->getType() != REALCONSTRAINT || _formula->constraint().relation() != CR_NEQ );
         _formula->setFather( this );
 
         /*
@@ -940,7 +943,23 @@ namespace smtrat
                 }
                 case REALCONSTRAINT:
                 {
+                    #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
+                    const Constraint* constraint = currentFormula->pConstraint();
+                    if( constraint->relation() == CR_LEQ )
+                    {
+                        Formula* newFormula = new Formula( OR );
+                        newFormula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() ) ) );
+                        newFormula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
+                        delete currentFormula;
+                        subformulasToTransform.push_back( newFormula );
+                    }
+                    else
+                    {
+                        _formula.addSubformula( currentFormula );
+                    }
+                    #else
                     _formula.addSubformula( currentFormula );
+                    #endif
                     break;
                 }
                 case TTRUE:
@@ -1029,7 +1048,23 @@ namespace smtrat
                             // p~0 -> p~0
                             case REALCONSTRAINT:
                             {
+                                #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
+                                const Constraint* constraint = currentSubformula->pConstraint();
+                                if( constraint->relation() == CR_LEQ )
+                                {
+                                    Formula* newFormula = new Formula( OR );
+                                    newFormula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() ) ) );
+                                    newFormula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
+                                    delete currentSubformula;
+                                    subformulasToTransform.push_back( newFormula );
+                                }
+                                else
+                                {
+                                    currentFormula->addSubformula( currentSubformula );
+                                }
+                                #else
                                 currentFormula->addSubformula( currentSubformula );
+                                #endif
                                 break;
                             }
                             // remove the entire considered disjunction and everything which has been created by considering it
@@ -1306,10 +1341,10 @@ namespace smtrat
     }
 
     /**
-        *
-        * @param _formula
-        * @param _keepConstraints
-        */
+     *
+     * @param _formula
+     * @param _keepConstraints
+     */
     bool Formula::resolveNegation( Formula& _formula, bool _keepConstraint )
     {
         assert( _formula.getType() == NOT );
@@ -1346,8 +1381,15 @@ namespace smtrat
                         }
                         case CR_LESS:
                         {
+                            #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
+                            _formula.copyAndDelete( new Formula( OR ));
+                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_EQ, constraint->variables() )));
+                            return true;
+                            #else
                             _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LEQ, constraint->variables() )));
                             return false;
+                            #endif
                         }
                         case CR_NEQ:
                         {

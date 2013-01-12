@@ -120,22 +120,26 @@ inline lbool toLbool(int   v) { return lbool((uint8_t)v);  }
 class Clause;
 typedef RegionAllocator<uint32_t>::Ref CRef;
 
+static const unsigned NORMAL_CLAUSE = 0;
+static const unsigned DEDUCTED_CLAUSE = 1;
+static const unsigned CONFLICT_CLAUSE = 2;
+
 class Clause {
     struct {
         unsigned mark      : 2;
-        unsigned learnt    : 1;
+        unsigned type      : 2;
         unsigned has_extra : 1;
         unsigned reloced   : 1;
-        unsigned size      : 27; }                            header;
+        unsigned size      : 26; }                        header;
     union { Lit lit; float act; uint32_t abs; CRef rel; } data[0];
 
     friend class ClauseAllocator;
 
     // NOTE: This constructor cannot be used directly (doesn't allocate enough memory).
     template<class V>
-    Clause(const V& ps, bool use_extra, bool learnt, bool theoryDeduction) {
+    Clause(const V& ps, bool use_extra, unsigned _type ) {
         header.mark      = 0;
-        header.learnt    = (theoryDeduction ? 2 : learnt);
+        header.type      = _type;
         header.has_extra = use_extra;
         header.reloced   = 0;
         header.size      = ps.size();
@@ -144,7 +148,7 @@ class Clause {
             data[i].lit = ps[i];
 
         if (header.has_extra){
-            if (header.learnt)
+            if (header.type == 1)
                 data[header.size].act = 0;
             else
                 calcAbstraction(); }
@@ -172,8 +176,8 @@ public:
     int          size        ()      const   { return header.size; }
     void         shrink      (int i)         { assert(i <= size()); if (header.has_extra) data[header.size-i] = data[header.size]; header.size -= i; }
     void         pop         ()              { shrink(1); }
-    bool         learnt      ()      const   { return header.learnt; }
-    bool         theoryDeduction()   const   { return header.learnt > 1; }
+    unsigned     type        ()      const   { return header.type; }
+    bool         learnt      ()      const   { return header.type > NORMAL_CLAUSE; }
     bool         has_extra   ()      const   { return header.has_extra; }
     uint32_t     mark        ()      const   { return header.mark; }
     void         mark        (uint32_t m)    { header.mark = m; }
@@ -217,14 +221,14 @@ class ClauseAllocator : public RegionAllocator<uint32_t>
         RegionAllocator<uint32_t>::moveTo(to); }
 
     template<class Lits>
-    CRef alloc(const Lits& ps, bool learnt = false, bool theoryDeduction = false )
+    CRef alloc(const Lits& ps, unsigned _type )
     {
         assert(sizeof(Lit)      == sizeof(uint32_t));
         assert(sizeof(float)    == sizeof(uint32_t));
-        bool use_extra = learnt | extra_clause_field;
+        bool use_extra = (_type > NORMAL_CLAUSE) | extra_clause_field;
 
         CRef cid = RegionAllocator<uint32_t>::alloc(clauseWord32Size(ps.size(), use_extra));
-        new (lea(cid)) Clause(ps, use_extra, learnt, theoryDeduction);
+        new (lea(cid)) Clause(ps, use_extra, _type);
 
         return cid;
     }
@@ -379,7 +383,7 @@ inline Lit Clause::subsumes(const Clause& other) const
 {
     //if (other.size() < size() || (extra.abst & ~other.extra.abst) != 0)
     //if (other.size() < size() || (!learnt() && !other.learnt() && (extra.abst & ~other.extra.abst) != 0))
-    assert(!header.learnt);   assert(!other.header.learnt);
+    assert(!header.type > NORMAL_CLAUSE);   assert(!other.header.type > NORMAL_CLAUSE);
     assert(header.has_extra); assert(other.header.has_extra);
     if (other.header.size < header.size || (data[header.size].abs & ~other.data[other.header.size].abs) != 0)
         return lit_Error;

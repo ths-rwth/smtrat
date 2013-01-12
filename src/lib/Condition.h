@@ -126,9 +126,10 @@ namespace smtrat
     static const Condition PROP_CONTAINS_LINEAR_POLYNOMIAL       = Condition( 19 );
     static const Condition PROP_CONTAINS_NONLINEAR_POLYNOMIAL    = Condition( 20 );
     static const Condition PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL = Condition( 21 );
+    static const Condition PROP_CONTAINS_BOOLEAN                 = Condition( 22 );
     static const Condition WEAK_CONDITIONS                       = PROP_CONTAINS_EQUATION | PROP_CONTAINS_INEQUALITY | PROP_CONTAINS_STRICT_INEQUALITY
                                              | PROP_CONTAINS_LINEAR_POLYNOMIAL | PROP_CONTAINS_LINEAR_POLYNOMIAL | PROP_CONTAINS_NONLINEAR_POLYNOMIAL
-                                             | PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL | PROP_CONTAINS_INEQUALITY;
+                                             | PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL | PROP_CONTAINS_INEQUALITY | PROP_CONTAINS_BOOLEAN;
 
     //Propositions indicating that a solver cannot solve the formula
     static const Condition PROP_CANNOT_BE_SOLVED_BY_SMARTSIMPLIFIER     = Condition( 48 );
