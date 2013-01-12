@@ -24,7 +24,7 @@
  *
  * @author  Henrik Schmitz
  * @since   2012-09-10
- * @version 2012-09-14
+ * @version 2013-01-11
  */
 
 #include "StrategyGraph.h"
@@ -63,7 +63,8 @@ namespace smtrat{
     
 
     StrategyGraph::StrategyGraph():
-        mStrategyGraph()
+        mStrategyGraph(),
+        mHasBranches( false )
     {
         mStrategyGraph.push_back( new Vertex() );
     }
@@ -72,9 +73,9 @@ namespace smtrat{
     {
         while( !mStrategyGraph.empty() )
         {
-            Vertex* toDelete = mStrategyGraph.back();
+            Vertex* toBeDeleted = mStrategyGraph.back();
             mStrategyGraph.pop_back();
-            delete toDelete;
+            delete toBeDeleted;
         }
     }
 
@@ -136,6 +137,7 @@ namespace smtrat{
         assert( _from < mStrategyGraph.size() );
         assert( _to < mStrategyGraph.size() );
         mStrategyGraph.at( _from )->addSuccessor( _to, _condition );
+        mHasBranches = true;
     }
 
     /**

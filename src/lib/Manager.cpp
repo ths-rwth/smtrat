@@ -1,6 +1,6 @@
 /*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
+ * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
+ * Copyright (C) 2013 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
  * This file is part of SMT-RAT.
  *
@@ -11,25 +11,28 @@
  *
  * SMT-RAT is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SMT-RAT. If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
 /**
- * @file TSManager.cpp
- * @author Florian Corzilius
- * @author Ulrich Loup
- * @author Sebastian Junges
- *
- * @since 2012-01-18, 3:22 PM
+ * @file Manager.cpp
+ * 
+ * @author  Florian Corzilius
+ * @author  Ulrich Loup
+ * @author  Sebastian Junges
+ * @author  Henrik Schmitz
+ * @since   2012-01-18
+ * @version 2013-01-11
  */
 
 #include "Manager.h"
-#include "modules/Modules.h"
 #include "StrategyGraph.h"
+#include "modules/Modules.h"
 
 #include <typeinfo>
 #include <cln/cln.h>
@@ -52,9 +55,11 @@ namespace smtrat
         mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
         mStrategyGraph(),
-        mModulePositionInStrategy()
+        mModulePositionInStrategy(),
+        mRunsParallel( false ),
+        mpThreadPool( NULL )
     {
-        mpModulFactories = new map<const ModuleType, ModuleFactory*>();
+        mpModuleFactories = new map<const ModuleType, ModuleFactory*>();
         mModulePositionInStrategy[mpPrimaryBackend] = 0;
 
         // inform it about all constraints
@@ -67,12 +72,12 @@ namespace smtrat
          * Add all existing modules.
          */
         addModuleType( MT_SmartSimplifier, new StandardModuleFactory<SmartSimplifier>() );
-#ifdef USE_GB
+        #ifdef USE_GB
         addModuleType( MT_GroebnerModule, new StandardModuleFactory<GroebnerModule<GBSettings> >() );
         #endif
         addModuleType( MT_VSModule, new StandardModuleFactory<VSModule>() );
         #ifdef USE_CAD
-        //        addModuleType( MT_UnivariateCADModule, new StandardModuleFactory<UnivariateCADModule>() );
+//        addModuleType( MT_UnivariateCADModule, new StandardModuleFactory<UnivariateCADModule>() );
         addModuleType( MT_CADModule, new StandardModuleFactory<CADModule>() );
         #endif
         addModuleType( MT_SATModule, new StandardModuleFactory<SATModule>() );
@@ -83,6 +88,16 @@ namespace smtrat
         addModuleType( MT_ILRAModule, new StandardModuleFactory<ILRAModule>() );
 //        addModuleType( MT_ICPModule, new StandardModuleFactory<ICPModule>() );
         addModuleType( MT_TLRAModule, new StandardModuleFactory<TLRAModule>() );
+        
+        if( mStrategyGraph.hasBranches() )
+        {
+            unsigned numberOfCores = 4; //std::thread::hardware_concurrency();
+            if( numberOfCores>1 )
+            {
+                mRunsParallel = true;
+                mpThreadPool = new ThreadPool( numberOfCores );
+            }
+        }
     }
 
     /**
@@ -98,13 +113,17 @@ namespace smtrat
             mGeneratedModules.pop_back();
             delete ptsmodule;
         }
-        while( !mpModulFactories->empty() )
+        while( !mpModuleFactories->empty() )
         {
-            const ModuleFactory* pModulFactory = mpModulFactories->begin()->second;
-            mpModulFactories->erase( mpModulFactories->begin() );
-            delete pModulFactory;
+            const ModuleFactory* pModuleFactory = mpModuleFactories->begin()->second;
+            mpModuleFactories->erase( mpModuleFactories->begin() );
+            delete pModuleFactory;
         }
-        delete mpModulFactories;
+        delete mpModuleFactories;
+        if( mpThreadPool!=NULL )
+        {
+            delete mpThreadPool;
+        }
     }
 
     /**
@@ -170,8 +189,8 @@ namespace smtrat
              */
             if( backend == allBackends.end() )
             {
-                auto backendFactory = mpModulFactories->find( iter->second );
-                assert( backendFactory != mpModulFactories->end() );
+                auto backendFactory = mpModuleFactories->find( iter->second );
+                assert( backendFactory != mpModuleFactories->end() );
                 Module* pBackend = backendFactory->second->create( _requiredBy->pPassedFormula(), this );
                 mGeneratedModules.push_back( pBackend );
                 pBackend->setId( mGeneratedModules.size()-1 );
@@ -188,6 +207,16 @@ namespace smtrat
         }
         return backends;
     }
-
+    
+    std::future<Answer> Manager::submitBackend( Module& _rModule )
+    {
+        if( mRunsParallel )
+        {
+            return mpThreadPool->submitTask( _rModule );
+        }
+        else
+        {
+            throw;
+        }
+    }
 }    // namespace smtrat
-

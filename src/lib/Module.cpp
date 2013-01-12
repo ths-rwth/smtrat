@@ -1,6 +1,6 @@
 /*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
+ * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
+ * Copyright (C) 2013 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
  * This file is part of SMT-RAT.
  *
@@ -11,37 +11,37 @@
  *
  * SMT-RAT is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SMT-RAT. If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 
 /**
  * @file Module.cpp
  *
- * @author Florian Corzilius
- * @author Ulrich Loup
- * @author Sebastian Junges
- * @since: 2012-01-18
- * @version: 2012-08-13
+ * @author   Florian Corzilius
+ * @author   Ulrich Loup
+ * @author   Sebastian Junges
+ * @author   Henrik Schmitz
+ * @since:   2012-01-18
+ * @version: 2013-01-11
  */
 
+#include <fstream>
+#include <iostream>
+#include <limits.h>
+
+#include "Manager.h"
 #include "Module.h"
 #include "ModuleFactory.h"
-#include "Manager.h"
-#include <limits.h>
-#include <iostream>
-#include <fstream>
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
 
 using namespace std;
-
 
 namespace smtrat
 {
@@ -498,30 +498,71 @@ namespace smtrat
         mFirstSubformulaToPass = mpPassedFormula->end();
         Answer result          = Unknown;
 
-        /*
-         * Run the backend solver sequentially until the first answers true or false.
-         */
-        vector<Module*>::iterator module = mUsedBackends.begin();
-        while( module != mUsedBackends.end() && result == Unknown )
+        if( false ) //mpManager->runsParallel() )
         {
-            #ifdef MODULE_VERBOSE
-            cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
-            (*module)->print( cout, " ");
-            #endif
-            result = (*module)->isConsistent();
-            (*module)->receivedFormulaChecked();
-            #ifdef LOG_THEORY_CALLS
-            if( result != Unknown )
+            /*
+             * Run the backend solver parallel until the first answers true or false.
+             */
+            unsigned i = 0;
+            unsigned numberOfUsedBackends = mUsedBackends.size();
+            vector< std::future<Answer> > futures( numberOfUsedBackends );
+            vector<Module*>::iterator module = mUsedBackends.begin();
+            while( module != mUsedBackends.end() )
             {
-                addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
+                #ifdef MODULE_VERBOSE
+                cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
+                (*module)->print( cout, " ");
+                #endif
+
+                futures[i++] = mpManager->submitBackend( *(*module) );
+                ++module;
             }
+            
+            for( i=0; i<numberOfUsedBackends; ++i )
+            {
+                result = futures[i].get();
+                mUsedBackends[i]->receivedFormulaChecked();
+
+                #ifdef LOG_THEORY_CALLS
+                if( result != Unknown )
+                {
+                    addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
+                }
+                #endif
+            }
+
+            #ifdef MODULE_VERBOSE
+            cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : "Unknown")) << endl;
             #endif
-            ++module;
+            return result;
         }
-        #ifdef MODULE_VERBOSE
-        cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : "Unknown")) << endl;
-        #endif
-        return result;
+        else
+        {
+            /*
+             * Run the backend solver sequentially until the first answers true or false.
+             */
+            vector<Module*>::iterator module = mUsedBackends.begin();
+            while( module != mUsedBackends.end() && result == Unknown )
+            {
+                #ifdef MODULE_VERBOSE
+                cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
+                (*module)->print( cout, " ");
+                #endif
+                result = (*module)->isConsistent();
+                (*module)->receivedFormulaChecked();
+                #ifdef LOG_THEORY_CALLS
+                if( result != Unknown )
+                {
+                    addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
+                }
+                #endif
+                ++module;
+            }
+            #ifdef MODULE_VERBOSE
+            cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : "Unknown")) << endl;
+            #endif
+            return result;
+        }
     }
 
     /**
@@ -971,6 +1012,4 @@ namespace smtrat
         }
         _out << " }" << endl;
     }
-
 }    // namespace smtrat
-
