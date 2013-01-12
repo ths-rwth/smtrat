@@ -45,7 +45,7 @@ namespace smtrat
      *
      * @return A shared pointer to the constraint.
      */
-    const Constraint* ConstraintPool::newConstraint( const string& _stringrep, bool _infix, bool _polarity )
+    const Constraint* ConstraintPool::newConstraint( const string& _stringrep, const bool _infix, const bool _polarity )
     {
         /*
          * Read the given string representing the constraint.
@@ -163,7 +163,6 @@ namespace smtrat
          * lefthand side of the constraint.
          */
         parser reader( mAllRealVariables );
-        cout << "reader.getsyms() = " << reader.get_syms().size() << endl;
         ex lhs, rhs;
         string lhsString = expression.substr( 0, opPos );
         string rhsString = expression.substr( opPos + opSize );
@@ -194,78 +193,7 @@ namespace smtrat
         {
             constraint = new Constraint( lhs, rhs, relation, reader.get_syms(), mIdAllocator );
         }
-        if( constraint->isConsistent() == 2 )
-        {
-            std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
-            if( !iterBoolPair.second )
-            {
-                delete constraint;
-            }
-            else
-            {
-                ++mIdAllocator;
-                constraint->collectProperties();
-                constraint->updateRelation();
-            }
-            return *iterBoolPair.first;
-        }
-        else
-        {
-            std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllVariableFreeConstraints.insert( constraint );
-            if( !iterBoolPair.second )
-            {
-                delete constraint;
-            }
-            return *iterBoolPair.first;
-        }
-    }
-
-
-    const Constraint* ConstraintPool::newConstraint( const std::string& _lhsRepr, const std::string& _rhsRepr, Constraint_Relation _rel, const std::set< std::string >& _variables )
-    {
-        /*
-         * Parse the lefthand and righthand side and store their difference as
-         * lefthand side of the constraint.
-         */
-        parser reader( mAllRealVariables );
-        ex lhs, rhs;
-        try
-        {
-            lhs = reader( _lhsRepr );
-            rhs = reader( _rhsRepr );
-        }
-        catch( parse_error& err )
-        {
-            cerr << err.what() << endl;
-        }
-
-        /*
-         * Collect the new variables in the constraint:
-         */
-        symtab allVars = reader.get_syms();
-        mAllRealVariables.insert( allVars.begin(), allVars.end() );
-        symtab vars = symtab();
-        symtab::iterator positionInVars = allVars.begin();
-        for( std::set< std::string >::const_iterator varIter = _variables.begin(); varIter != _variables.end(); ++varIter )
-        {
-            symtab::iterator foundVar = allVars.find( *varIter );
-            assert( foundVar != allVars.end() );
-            vars.insert( *foundVar );
-            assert( positionInVars != vars.end() );
-        }
-        Constraint* constraint;
-        if( _rel == CR_GREATER )
-        {
-            constraint = new Constraint( -lhs, -rhs, CR_LESS, vars, mIdAllocator, false );
-        }
-        else if( _rel == CR_GEQ )
-        {
-            constraint = new Constraint( -lhs, -rhs, CR_LEQ, vars, mIdAllocator, false );
-        }
-        else
-        {
-            constraint = new Constraint( lhs, rhs, _rel, vars, mIdAllocator, false );
-        }
+        constraint->simplify();
         if( constraint->isConsistent() == 2 )
         {
             std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );

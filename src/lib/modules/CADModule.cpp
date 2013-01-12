@@ -137,11 +137,9 @@ namespace smtrat
         assert( (*_subformula)->getType() == REALCONSTRAINT );
         Module::assertSubformula( _subformula );
 
-        cout << (*_subformula)->constraint() << endl;
         #ifdef CAD_USE_VARIABLE_BOUNDS
         if( !mVariableBounds.addBound( (*_subformula)->pConstraint(), *_subformula ) )
         {
-        cout << "add to CAD" << endl;
         #endif
 
         if( mSolverState == False )
@@ -153,7 +151,6 @@ namespace smtrat
         mConstraints.push_back( constraint );
         mConstraintsMap[ _subformula ] = mConstraints.size() - 1;
         mCAD.addPolynomial( constraint.polynomial(), constraint.variables() );
-        cout << "add to CAD end" << endl;
         #ifdef CAD_USE_VARIABLE_BOUNDS
         }
         #endif
@@ -273,15 +270,13 @@ namespace smtrat
     void CADModule::removeSubformula( Formula::const_iterator _subformula )
     {
         assert( (*_subformula)->getType() == REALCONSTRAINT );
-        cout << (*_subformula)->constraint() << endl;
+        #ifdef CAD_USE_VARIABLE_BOUNDS
+        if( mVariableBounds.removeBound( (*_subformula)->pConstraint(), *_subformula ) == 0 )
+        {
+        #endif
         try
         {
             ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find( _subformula );
-            #ifdef CAD_USE_VARIABLE_BOUNDS
-            if( mVariableBounds.removeBound( (*_subformula)->pConstraint(), *_subformula ) == 0 )
-            {
-            cout << "remove from CAD" << endl;
-            #endif
             if( constraintIt == mConstraintsMap.end() )
                 return; // there is nothing to remove
             GiNaCRA::Constraint constraint = mConstraints[constraintIt->second];
@@ -326,10 +321,6 @@ namespace smtrat
             cout << endl << "#Samples: " << mCAD.samples().size() << endl;
             cout << "-----------------------------------------" << endl;
             #endif
-            cout << "remove from CAD end" << endl;
-            #ifdef CAD_USE_VARIABLE_BOUNDS
-            }
-            #endif
             // forces complete re-checking of all samples in the CAD with the next call to CAD::check
             Module::removeSubformula( _subformula );
         }
@@ -338,6 +329,9 @@ namespace smtrat
             assert( false );    // the constraint to be removed should have been put to mConstraints before
             return;
         }
+        #ifdef CAD_USE_VARIABLE_BOUNDS
+        }
+        #endif
     }
 
     /**

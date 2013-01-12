@@ -611,7 +611,7 @@ namespace smtrat
      */
     void Formula::addConstraintPropositions( const Constraint& _constraint )
     {
-        switch( _constraint.maxMonomeDegree() )
+        switch( _constraint.highestDegree() )
         {
             case 0:
             {
