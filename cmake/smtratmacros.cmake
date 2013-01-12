@@ -32,25 +32,52 @@ MACRO(CMAKE_DIRECTORIES return_list)
     SET(${return_list} ${dir_list})
 ENDMACRO()
 
-MACRO(CMAKE_INCLUDE_MODULEOPTIONS )
-
-ENDMACRO()
-
-#install all headers recursively 
-MACRO(INSTALL_HEADERS_RECURSIVELY )
-
+MACRO(BeginDefineModule)
+	set(defineModule 1)
 ENDMACRO()
 
 #
 MACRO(ModuleMainHeader header)
-set(moduleMainHeaders ${moduleMainHeaders} ${header} PARENT_SCOPE)
+	if(defineModule)
+		set(mod_header ${header})
+	else()
+		message(FATAL_ERROR "Invalid ModuleMainHeader call, outside of ModuleDefinition")
+	endif()
 ENDMACRO()
 
 MACRO(ModuleName name)
-set(moduleTypes ${moduleTypes} ${name} PARENT_SCOPE)
+	if(defineModule)
+		set(mod_name ${name})
+	else()
+		message(FATAL_ERROR "Invalid ModuleName call, outside of ModuleDefinition")
+	endif()
 ENDMACRO()
 
 MACRO(ModuleObject objectname)
-set(moduleObjects ${moduleObjects} ${objectname} PARENT_SCOPE)
+	if(defineModule)
+		set(mod_objectname ${objectname})
+	else()
+		message(FATAL_ERROR "Invalid ModuleObject call, outside of ModuleDefinition", ERROR)
+	endif()
+ENDMACRO()
+
+MACRO(ModuleVersion major minor buildnr)
+	if(defineModule)
+		set(mod_version "${major}.${minor}.${buildnr}")
+	else()
+		message(FATAL_ERROR "Invalid ModuleObject call, outside of ModuleDefinition", ERROR)
+	endif()
+ENDMACRO()
+
+MACRO(EndDefineModule)
+	if(defineModule)
+		set(moduleMainHeaders ${moduleMainHeaders} ${mod_header} PARENT_SCOPE)
+		set(moduleTypes ${moduleTypes} ${mod_name} PARENT_SCOPE)
+		set(moduleObjects ${moduleObjects} ${mod_objectname} PARENT_SCOPE)
+		set(moduleVersions ${moduleVersions} ${mod_version} PARENT_SCOPE)
+		set(defineModule 0)
+	else()
+		message(FATAL_ERROR "Invalid EndDefineModule call, outside of ModuleDefinition")
+	endif()
 ENDMACRO()
 

@@ -34,10 +34,10 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
-//#define LOG_ON
-//#define LOG_THEORY_CALLS
-//#define LOG_INFEASIBLE_SUBSETS
-//#define LOG_LEMMATA
+#define LOG_ON
+#define LOG_THEORY_CALLS
+#define LOG_INFEASIBLE_SUBSETS
+#define LOG_LEMMATA
 
 #include <vector>
 #include <map>
@@ -175,7 +175,8 @@ namespace smtrat
 
             inline void passedFormulaCannotBeSolved()
             {
-                mpPassedFormula->notSolvableBy( type() );
+                //TODO do we need this???
+                //mpPassedFormula->notSolvableBy( type() );
             }
 
             const ModuleType type() const
