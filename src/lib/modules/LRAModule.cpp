@@ -400,7 +400,15 @@ namespace smtrat
         }
         else
         {
-            return Unknown;
+            adaptPassedFormula();
+            Answer a = runBackends();
+            if( a == False )
+            {
+                getInfeasibleSubsets();
+            }
+            learnRefinements();
+            mSolverState = a;
+            return a;
         }
     }
 

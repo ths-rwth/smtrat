@@ -403,7 +403,17 @@ namespace smtrat
         }
         else
         {
-            return Unknown;
+            adaptPassedFormula();
+            Answer a = runBackends();
+            if( a == False )
+            {
+                getInfeasibleSubsets();
+            }
+            #ifdef TLRA_REFINEMENT
+            learnRefinements();
+            #endif
+            mSolverState = a;
+            return a;
         }
     }
 
