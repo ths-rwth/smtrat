@@ -167,7 +167,7 @@ public:
     typedef typename Settings::Order Order;
     typedef typename Settings::Polynomial Polynomial;
 
-    GroebnerModule( const Formula * const, Manager * const );
+    GroebnerModule( ModuleType, const Formula * const, Manager * const );
     virtual ~GroebnerModule( );
 
     bool assertSubformula( Formula::const_iterator _formula );

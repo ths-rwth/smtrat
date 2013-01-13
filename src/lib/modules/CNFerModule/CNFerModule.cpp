@@ -20,11 +20,11 @@
  */
 
 
-/*
- * File:   CNFerModule.cpp
- * Author: Florian Corzilius
- *
- * Created on 02. May 2012, 20:53
+/**
+ * @file:   CNFerModule.cpp
+ * @author Florian Corzilius
+ * @author Sebastian Junges
+ * @version 2013-01-13
  */
 
 #include "../../Manager.h"
@@ -34,8 +34,8 @@ using namespace std;
 
 namespace smtrat
 {
-    CNFerModule::CNFerModule( const Formula* const _formula, Manager* const _tsManager ):
-        Module( _formula, _tsManager ),
+    CNFerModule::CNFerModule( ModuleType _type, const Formula* const _formula, Manager* const _tsManager ):
+        Module( _type, _formula, _tsManager ),
         mFirstNotCheckedFormula()
     {
         this->mModuleType = MT_CNFerModule;

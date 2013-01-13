@@ -48,12 +48,12 @@ namespace smtrat
     vector<string> Module::mAssumptionToCheck = vector<string>();
     set<string> Module::mVariablesInAssumptionToCheck = set<string>();
 
-    Module::Module( const Formula* const _formula, Manager* const _tsManager ):
+    Module::Module( ModuleType type, const Formula* const _formula, Manager* const _tsManager ):
         mSolverState( Unknown ),
         mId( 0 ),
         mInfeasibleSubsets(),
         mpManager( _tsManager ),
-        mModuleType( MT_Module ),
+        mModuleType( type ),
         mConstraintsToInform(),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),

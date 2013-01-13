@@ -52,8 +52,8 @@ namespace smtrat
 {
 
 template<class Settings>
-GroebnerModule<Settings>::GroebnerModule( const Formula * const _formula, Manager * const _tsManager ) :
-Module( _formula, _tsManager ),
+GroebnerModule<Settings>::GroebnerModule( ModuleType _type, const Formula * const _formula, Manager * const _tsManager ) :
+Module( _type, _formula, _tsManager ),
 mBasis( ),
 mInequalities( this ),
 mStateHistory( ),
@@ -64,7 +64,6 @@ mRecalculateGB(false)
 #endif
 
 {
-    mModuleType = MT_GroebnerModule;
     pushBacktrackPoint( mpReceivedFormula->end( ) );
 }
 
