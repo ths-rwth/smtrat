@@ -1,7 +1,7 @@
 BeginDefineModule()
 ModuleMainHeader(CNFerModule/CNFerModule.h)
 ModuleName(CNFerModule)
-ModuleObject(CNFerModule)
+ModuleClass(CNFerModule)
 EndDefineModule()
 
 FILE(GLOB_RECURSE sources *.cpp)

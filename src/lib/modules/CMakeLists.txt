@@ -16,13 +16,16 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.h.in ${CMAKE_SOURCE_
 # write Modules.cpp
 foreach(modIndex RANGE ${maxModIndex})
   list(GET moduleTypes ${modIndex} modType)
-  list(GET moduleObjects ${modIndex} modObject)
+  list(GET moduleClasses ${modIndex} modClass)
   list(GET moduleVersions ${modIndex} modVersion)
+  list(GET moduleSettingsClasses ${modIndex} modSettingsClass)
   set(moduleInfoString "${moduleInfoString} \\
 ---------------------------------- \\n \\
 Module name: ${modType} \\n \\
-Module objectname: ${modObject} \\n \\
-Module version: ${modVersion} \\n")
+Module classname: ${modClass} \\n \\
+Module version: ${modVersion} \\n \\
+Module settings classname: ${modSettingsClass} \\n \\
+Module settings: ${moduleSettingsList_${modIndex}}")
 endforeach()
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.cpp )
 
@@ -41,8 +44,8 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.cpp.in ${CMAKE_SO
 # write AddModules.h
 foreach(modIndex RANGE ${maxModIndex})
   list(GET moduleTypes ${modIndex} modType)
-  list(GET moduleObjects ${modIndex} modObject)
-  set(addModuleList "${addModuleList} manager->addModuleType( MT_${modType}, new StandardModuleFactory< ${modObject} >( ) ); \n")
+  list(GET moduleClasses ${modIndex} modClass)
+  set(addModuleList "${addModuleList} manager->addModuleType( MT_${modType}, new StandardModuleFactory< ${modClass} >( ) ); \n")
 endforeach()
 configure_file ( ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.h )
 

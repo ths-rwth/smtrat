@@ -1,7 +1,11 @@
 BeginDefineModule()
 ModuleMainHeader(GBModule/GroebnerModule.h)
 ModuleName(GroebnerModule)
-ModuleObject(GroebnerModule<GBSettings>)
+ModuleClass(GroebnerModule<GBSettings>)
+ModuleVersion(0 5 0)
+ModuleSettingsClass(GBRuntimeSettings)
+ModuleSettingsName(output)
+ModuleSettingsName(no_output)
 EndDefineModule()
 
 FILE(GLOB_RECURSE sources *.cpp)
