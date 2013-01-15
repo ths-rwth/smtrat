@@ -135,11 +135,17 @@ int main( int argc, char* argv[] )
     // This will point to the parsed formula;
     smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
     
+    // Construct solver
+    smtrat::NRATSolver* nratSolver = new smtrat::NRATSolver( form );
+    std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules(nratSolver);
     
     // Construct the settingsManager
     smtrat::RuntimeSettingsManager settingsManager;
-    // Introduce the settingsObjects to the manager
+    // Introduce the smtrat core settingsObjects to the manager.
     
+    // Introduce the settingsObjects from the modules to the manager
+    settingsManager.addSettingsObject(settingsObjects);
+   
     // Parse commandline;
     pathToInputFile = settingsManager.parseCommandline(argc, argv);
     // Construct the statisticsManagement
@@ -149,9 +155,6 @@ int main( int argc, char* argv[] )
     Smt2Options smt2options;
     // Parse input
     parseInput(pathToInputFile, form, smt2options);
-    // Construct solver
-    smtrat::NRATSolver* nratSolver = new smtrat::NRATSolver( form );
-    smtrat::addModules(nratSolver);
     
     
     // Run solver

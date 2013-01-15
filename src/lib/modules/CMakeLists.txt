@@ -51,8 +51,8 @@ foreach(modIndex RANGE ${maxModIndex})
 	set(addModuleList "${addModuleList} manager->addModuleType( MT_${modType}, new StandardModuleFactory< ${modClass} >( ) ); \n")
   else()
 	set(addModuleList "${addModuleList}
-	settingsObjects.push_back(new ${modSettClass}()); 
-	manager->addModuleType( MT_${modType}, new StandardModuleFactory< ${modClass} >(settingsObjects.back()) ); \n")
+	settingsObjects.push_back(NameAndSettings(\"test\" ,new ${modSettClass}() ) ); 
+	manager->addModuleType( MT_${modType}, new StandardModuleFactory< ${modClass} >(settingsObjects.back().second) ); \n")
   endif()
 endforeach()
 configure_file ( ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.h )

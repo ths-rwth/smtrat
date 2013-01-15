@@ -50,6 +50,18 @@ void RuntimeSettingsManager::addSettingsObject(const std::string& name, RuntimeS
     
     mSettingObjects[name] = settings;
 }
+
+/**
+ * A list of names and settings objects as a convenient function to introduce multiple settingsobjects to the manager.
+ * @param settings
+ */
+void RuntimeSettingsManager::addSettingsObject(const std::list<std::pair<std::string,RuntimeSettings*> >& settings) 
+{
+    for(std::list<std::pair<std::string, RuntimeSettings*> >::const_iterator it = settings.begin(); it != settings.end(); ++it)
+    {
+        addSettingsObject(it->first, it->second);
+    }
+}
 /**
  * Return a object with settings
  * @param name The name of the requested object.
@@ -80,7 +92,7 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
         // Check if a option is passed.
         if( strlen(argv[argi]) > 2 && argv[argi][0] == '-' && argv[argi][1] == '-') 
         {
-            std::string optionName(argv[argi+2]);
+            std::string optionName(argv[argi] + 2);
             // check for global options.
             if(optionName == "help") 
             {
@@ -150,6 +162,7 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << "Global options:" << std::endl;
     std::cout << "\t --help \t\t prints this help." << std::endl;
     std::cout << "\t --warranty \t\t prints the warranty." << std::endl;
+    std::cout << "\t --toc \t\t prints the terms of condition" << std::endl;
     std::cout << std::endl;
     // Print help for all known modules.
     for( std::map<std::string, RuntimeSettings*>::const_iterator it = mSettingObjects.begin(); it != mSettingObjects.end(); ++it )

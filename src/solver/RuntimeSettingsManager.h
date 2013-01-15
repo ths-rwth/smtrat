@@ -64,6 +64,7 @@ namespace smtrat {
         std::map<std::string, RuntimeSettings*> mSettingObjects;
     public:
         void addSettingsObject(const std::string& name, RuntimeSettings* settings);
+        void addSettingsObject(const std::list<std::pair<std::string, RuntimeSettings*> >& settings);
         RuntimeSettings* getSettingsObject(const std::string& name) const;
         std::string parseCommandline(int argc, char** argv);
         

@@ -14,11 +14,13 @@
 #include "../RuntimeSettings.h"
 
 #include <list>
+#include <string>
 
 namespace smtrat {
-std::list<RuntimeSettings*> addModules(Manager* manager) {
+std::list<std::pair<std::string, RuntimeSettings*> > addModules(Manager* manager) {
+		typedef std::pair<std::string, RuntimeSettings*> NameAndSettings ;
 		// List of settings objects
-		std::list<RuntimeSettings*> settingsObjects;
+		std::list<NameAndSettings> settingsObjects;
 		//
         // Add all existing modules, as well as the settings
         //
