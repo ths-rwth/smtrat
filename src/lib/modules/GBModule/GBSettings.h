@@ -26,6 +26,7 @@
  */
 
 #include <ginacra/MultivariatePolynomialMR.h>
+#include "../../config.h"
 
 #ifndef GBSETTINGS_H
 #define GBSETTINGS_H
@@ -502,10 +503,9 @@ namespace smtrat
     };
     */
     
-    typedef GBModuleSettings GBSettings;
     
 	struct decidePassingPolynomial {
-		static bool evaluate (const GBSettings::Polynomial original, const GBSettings::Polynomial& reduced) {
+		static bool evaluate (const GBSettings3::Polynomial original, const GBSettings3::Polynomial& reduced) {
 			return (original.lterm().tdeg() >= reduced.lterm().tdeg() && original.nrOfTerms() > reduced.nrOfTerms() );
 		}
 	};

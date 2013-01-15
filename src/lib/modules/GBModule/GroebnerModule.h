@@ -37,18 +37,21 @@
  * Version: 2012-20-12
  */
 
-#ifndef SMTRAT_GROEBNERMODULE_H
-#define SMTRAT_GROEBNERMODULE_H
+#pragma once
 
+// Datastructures from GiNaCRA
 #include <ginacra/ginacra.h>
-
-
 #include <ginacra/mr/Buchberger.h>
+
+// General Module interface
 #include "../../Module.h"
+
+// Compile time settings structures
 #include "GBSettings.h"
+// Runtime settings class
+#include "GBRuntimeSettings.h"
+
 #include "VariableRewriteRule.h"
-
-
 #ifdef GATHER_STATS
 #include "GBModuleStatistics.h"
 #include "GBCalculationStatistics.h"
@@ -72,12 +75,12 @@ public:
         
     }
 
-    GroebnerModuleState( const GiNaCRA::Buchberger<GBSettings::Order>& basis, const std::vector<VariableRewriteRule*>& rewrites ) :
+    GroebnerModuleState( const GiNaCRA::Buchberger<typename Settings::Order>& basis, const std::vector<VariableRewriteRule*>& rewrites ) :
     mBasis( basis ), mRewrites(rewrites)
     {
     }
 
-    const GiNaCRA::Buchberger<GBSettings::Order>& getBasis( ) const
+    const GiNaCRA::Buchberger<typename Settings::Order>& getBasis( ) const
     {
         return mBasis;
     }
@@ -221,5 +224,3 @@ private:
 };
 } // namespace smtrat
 #include "GroebnerModule.tpp"
-
-#endif   /** GROEBNERMODULE_H */
