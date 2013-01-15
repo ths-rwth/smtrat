@@ -31,6 +31,7 @@
 #define SMTRAT_STANDARDMODULEFACTORY_H
 
 #include "../ModuleFactory.h"
+#include "../RuntimeSettings.h"
 
 namespace smtrat
 {
@@ -38,10 +39,13 @@ namespace smtrat
     class StandardModuleFactory:
         public ModuleFactory
     {
+        protected:
+            RuntimeSettings* mSettings;
         public:
 
-            StandardModuleFactory():
-                ModuleFactory()
+            StandardModuleFactory(RuntimeSettings* settings= NULL):
+                ModuleFactory(),
+                mSettings(settings)
             {}
 
             ~StandardModuleFactory(){}

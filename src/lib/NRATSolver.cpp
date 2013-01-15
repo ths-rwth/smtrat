@@ -48,11 +48,11 @@ namespace smtrat
         if(smtrat::PROP_CONTAINS_EQUATION<=_inputFormula->getPropositions() ) {
             position = rStrategyGraph().addModuleType( position, MT_GroebnerModule );
         }
-        position = rStrategyGraph().addModuleType( position, MT_VSModule );
-        #else
-//        position = rStrategyGraph().addModuleType( position, MT_VSModule );
+  
         #endif
-        #ifdef USE_CAD
+//  position = rStrategyGraph().addModuleType( position, MT_VSModule );
+                
+#ifdef USE_CAD
 //        position = rStrategyGraph().addModuleType( position, MT_CADModule );
         #endif
 

@@ -45,10 +45,17 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.cpp.in ${CMAKE_SO
 foreach(modIndex RANGE ${maxModIndex})
   list(GET moduleTypes ${modIndex} modType)
   list(GET moduleClasses ${modIndex} modClass)
-  set(addModuleList "${addModuleList} manager->addModuleType( MT_${modType}, new StandardModuleFactory< ${modClass} >( ) ); \n")
+  list(GET moduleSettingsClasses ${modIndex} modSettClass)
+
+  if( modSettClass STREQUAL " ")
+	set(addModuleList "${addModuleList} manager->addModuleType( MT_${modType}, new StandardModuleFactory< ${modClass} >( ) ); \n")
+  else()
+	set(addModuleList "${addModuleList}
+	settingsObjects.push_back(new ${modSettClass}()); 
+	manager->addModuleType( MT_${modType}, new StandardModuleFactory< ${modClass} >(settingsObjects.back()) ); \n")
+  endif()
 endforeach()
 configure_file ( ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/AddModules.h )
-
 
 set(lib_modules_src 
 	${modulesSources}  

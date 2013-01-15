@@ -28,34 +28,6 @@ set( smtrat_NAME "SMT-RAT" )
 set( smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 
 
-# options for the GBModule settings
-set( SMTRAT_GBSETTING "Setting 1" CACHE STRING "" )
-set( SMTRAT_GBSETTING "Setting 2" CACHE STRING "" )
-set( SMTRAT_GBSETTING "Setting 3" CACHE STRING "" )
-set( SMTRAT_GBSETTING "Setting 4" CACHE STRING "" )
-set( SMTRAT_GBSETTING "Setting 5" CACHE STRING "" )
-set( SMTRAT_GBSETTING "Setting 51" CACHE STRING "" )
-set( SMTRAT_GBSETTING_VALUES "Setting 1" "Setting 2" "Setting 3" "Setting 4" "Setting 5" "Setting 51"  )
-set_property( CACHE SMTRAT_GBSETTING PROPERTY STRINGS ${SMTRAT_GBSETTING_VALUES} )
-list( FIND SMTRAT_GBSETTING_VALUES ${SMTRAT_GBSETTING} SMTRAT_GBSETTING_INDEX )
-if( ${SMTRAT_GBSETTING_INDEX} EQUAL -1 )
-    message( FATAL_ERROR "Option ${SMTRAT_GBSETTING} not supported, valid entries are ${SMTRAT_GBSETTING_VALUES}" )
-    set( SMTRAT_GBMODULE_SETTINGS "GBSettings1" )
-elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 0 )
-    set( SMTRAT_GBMODULE_SETTINGS "GBSettings1" )
-elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 1 )
-    set( SMTRAT_GBMODULE_SETTINGS "GBSettings1" )
-elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 2 )
-    set( SMTRAT_GBMODULE_SETTINGS "GBSettings3" )
-elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 3 )
-    set( SMTRAT_GBMODULE_SETTINGS "GBSettings1" )
-elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 4 )
-    set( SMTRAT_GBMODULE_SETTINGS "GBSettings5" )
-elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 5 )
-    set( SMTRAT_GBMODULE_SETTINGS "GBSettings51" )
-endif()
-
-
 # options
 option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
 option(BUILD_SOLVER "Build the SMT-RAT Solver" ON)
@@ -173,7 +145,7 @@ set( DOLLAR "$" )
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 configure_file( ${CMAKE_SOURCE_DIR}/smtrat.pc.in ${CMAKE_BINARY_DIR}/smtrat.pc )
-configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/config.h )
+
 
 # further directories to be included
 # # # # # # # # # # # # # # # # # # #

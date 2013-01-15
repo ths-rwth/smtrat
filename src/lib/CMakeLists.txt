@@ -53,17 +53,10 @@ add_subdirectory(modules)
 #######################
 add_subdirectory(strategies)
 
+# write config.h
+#######################
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/config.h )
 
-if(USE_GB)
-	set(lib_GBModule_headers modules/GBModule/GBSettings.h modules/GBModule/GBModuleStatistics.h modules/GBModule/GBCalculationStatistics.h)
-	set(lib_GBModule_src modules/GBModule/GBModuleStatistics.cpp modules/GBModule/GBCalculationStatistics.cpp)
-	set(lib_modules_headers ${lib_modules_headers} modules/GroebnerModule.h modules/GroebnerModule.tpp)
-endif()
-
-if(USE_CAD)
-	set(lib_modules_headers ${lib_modules_headers} modules/CADModule.h)
-	set(lib_modules_src ${lib_modules_src}  modules/CADModule.cpp)
-endif()
 
 
 # Nullstellensatz module variables

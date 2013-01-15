@@ -11,13 +11,20 @@
 #include "ModuleType.h"
 #include "Modules.h"
 #include "../config.h"
+#include "../RuntimeSettings.h"
+
+#include <list>
 
 namespace smtrat {
-void addModules(Manager* manager) {
-        /*
-         * Add all existing modules.
-         */
+std::list<RuntimeSettings*> addModules(Manager* manager) {
+		// List of settings objects
+		std::list<RuntimeSettings*> settingsObjects;
+		//
+        // Add all existing modules, as well as the settings
+        //
         @addModuleList@
+		// Return he list of settings objects, so any method managing them gets them.
+		return settingsObjects;
 }
 }
 
