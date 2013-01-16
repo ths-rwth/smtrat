@@ -28,6 +28,7 @@
  */
 
 #include "RuntimeSettings.h"
+#include <iostream>
 
 namespace smtrat{
     RuntimeSettings::RuntimeSettings() 
@@ -60,11 +61,13 @@ namespace smtrat{
             std::string token = keyValueString.substr(tokenOff, tokenLen);
             if (!token.empty()) 
             {
+                std::cout << "token: " << token;
                 equalityOffset = token.find('=', tokenOff);
                 if(equalityOffset == std::string::npos) 
                 {
                     // No equality found, so we only have a key.
                     pairs.insert(KeyValuePair(token, ""));
+                    
                 }
                 else
                 {

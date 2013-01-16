@@ -121,7 +121,7 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
                 }
                 // Split into  name and keyvalue string.
                 std::string settingsObjectName = optionName.substr(0,semicolonPosition);
-                std::string keyValueString = optionName.substr(semicolonPosition);
+                std::string keyValueString = optionName.substr(semicolonPosition+1);
                 
                 // Check safely and without exception-usage whether such a module exists.
                 if(mSettingObjects.count(settingsObjectName) == 0) 
