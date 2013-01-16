@@ -52,12 +52,13 @@ namespace smtrat
 {
 
 template<class Settings>
-GroebnerModule<Settings>::GroebnerModule( ModuleType _type, const Formula * const _formula, Manager * const _tsManager ) :
+GroebnerModule<Settings>::GroebnerModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Manager* const _tsManager ) :
 Module( _type, _formula, _tsManager ),
 mBasis( ),
 mInequalities( this ),
 mStateHistory( ),
-mRecalculateGB(false)
+mRecalculateGB(false),
+mRuntimeSettings(static_cast<GBRuntimeSettings*>(settings))
 #ifdef GATHER_STATS
     , mStats(GroebnerModuleStats::getInstance(Settings::identifier)),
         mGBStats(GBCalculationStats::getInstance(Settings::identifier))

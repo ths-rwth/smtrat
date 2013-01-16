@@ -170,7 +170,7 @@ public:
     typedef typename Settings::Order Order;
     typedef typename Settings::Polynomial Polynomial;
 
-    GroebnerModule( ModuleType, const Formula * const, Manager * const );
+    GroebnerModule( ModuleType, const Formula * const, RuntimeSettings* settings  ,Manager * const );
     virtual ~GroebnerModule( );
 
     bool assertSubformula( Formula::const_iterator _formula );
@@ -190,10 +190,10 @@ protected:
     std::list<GroebnerModuleState<Settings> > mStateHistory;
     /// After popping in the history, it might be necessary to recalculate. This flag indicates this
     bool mRecalculateGB;
-    
     /// A list of inequalities which were added after the last consistency check.
     std::list<typename InequalitiesTable<Settings>::Rows::iterator> mNewInequalities;
-    
+    /// An reference to the RuntimeSettings
+    GBRuntimeSettings* mRuntimeSettings;
     
 
     std::map<unsigned, unsigned> mAdditionalVarMap;
