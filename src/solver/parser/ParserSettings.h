@@ -46,6 +46,13 @@ namespace smtrat {
             
         }
         
+        void parseCmdOption(const std::string& keyValueString) 
+        {
+            std::map<string, string> keyvalues = splitIntoKeyValues(keyValueString);
+            keyvalues.count("s") > 1 ? traceScanning = true : traceScanning = false;
+            keyvalues.count("p") > 1 ? traceParsing = true : traceParsing = false;
+        }
+        
         void printHelp(const std::string& prefix) const
         {
             std::cout << prefix <<  "Seperate options by a comma." << std::endl;

@@ -49,8 +49,35 @@ namespace smtrat{
         
     }
     
-    std::list<RuntimeSettings::KeyValuePair> RuntimeSettings::splitIntoKeyValues(std::string keyValueString, std::string delimiter) {
+    std::map<std::string, std::string> RuntimeSettings::splitIntoKeyValues(const std::string& keyValueString, char delimiter) const {
+        std::map<std::string, std::string> pairs;
+        size_t tokenOff = 0, seperatorOffset = tokenOff;
+        size_t equalityOffset;
+        while (seperatorOffset != std::string::npos)
+        {
+            seperatorOffset = keyValueString.find(delimiter, tokenOff);
+            size_t tokenLen = (seperatorOffset == std::string::npos) ? seperatorOffset : seperatorOffset++ - tokenOff;
+            std::string token = keyValueString.substr(tokenOff, tokenLen);
+            if (!token.empty()) 
+            {
+                equalityOffset = token.find('=', tokenOff);
+                if(equalityOffset == std::string::npos) 
+                {
+                    // No equality found, so we only have a key.
+                    pairs.insert(KeyValuePair(token, ""));
+                }
+                else
+                {
+                    // split token into key and value
+                    size_t keyLength = equalityOffset++ - tokenOff;
+                    std::string key = token.substr(tokenOff, keyLength );
+                    std::string value = token.substr(equalityOffset);
+                    pairs.insert(KeyValuePair(key,value));
+                }
+            }
+            tokenOff = seperatorOffset;
+        }
         
-        return std::list<KeyValuePair>();
+        return pairs;
     }
 }

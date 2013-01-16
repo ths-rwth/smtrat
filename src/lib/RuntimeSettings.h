@@ -29,7 +29,7 @@
 
 #pragma once
 #include <string>
-#include <list>
+#include <map>
 
 namespace smtrat{
 class RuntimeSettings 
@@ -39,11 +39,11 @@ class RuntimeSettings
     public:
         RuntimeSettings();
         RuntimeSettings(const std::string& name);
-        void parseCmdOption(const std::string& keyValueString);
-        void printHelp(const std::string& prefix) const;
+        virtual void parseCmdOption(const std::string& keyValueString);
+        virtual void printHelp(const std::string& prefix) const;
     protected:
         typedef std::pair<std::string, std::string> KeyValuePair;
-        std::list<KeyValuePair> splitIntoKeyValues(std::string keyValueString, std::string delimiter = ",");
+        std::map<std::string, std::string> splitIntoKeyValues(const std::string& keyValueString, char delimiter = ',') const;
         
         
 };
