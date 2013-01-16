@@ -38,6 +38,7 @@
 #include "../lib/utilities/stats/CollectStatistics.h"
 #include "RuntimeSettingsManager.h"
 #include "../lib/modules/AddModules.h"
+#include "ParserSettings.h"
 #endif //GATHER_STATS
 
 
@@ -53,11 +54,11 @@ struct Smt2Options
  * @param formula A pointer to the formula object which holds the parsed input afterwards.
  * @param options Save options from the smt2 file here.
  */
-void parseInput(const std::string& pathToInputFile, smtrat::Formula* formula, Smt2Options& options)
+void parseInput(const std::string& pathToInputFile, smtrat::Formula* formula, smtrat::ParserSettings* settings, Smt2Options& options)
 {
     // The parser
     smtrat::Driver   parser( formula );
-    
+    settings->setOptionsToParser(parser);
     std::fstream infile( pathToInputFile.c_str() );
     if( !infile.good() )
     {
@@ -143,6 +144,10 @@ int main( int argc, char* argv[] )
     smtrat::RuntimeSettingsManager settingsManager;
     // Introduce the smtrat core settingsObjects to the manager.
     
+    // Create and introduce a parser settings object.
+    smtrat::ParserSettings* parserSettings = new smtrat::ParserSettings();
+    settingsManager.addSettingsObject("parser", parserSettings);
+    
     // Introduce the settingsObjects from the modules to the manager
     settingsManager.addSettingsObject(settingsObjects);
    
@@ -154,7 +159,7 @@ int main( int argc, char* argv[] )
     #endif
     Smt2Options smt2options;
     // Parse input
-    parseInput(pathToInputFile, form, smt2options);
+    parseInput(pathToInputFile, form, parserSettings, smt2options);
     
     
     // Run solver
@@ -177,14 +182,7 @@ int main( int argc, char* argv[] )
     
 //    for( int ai = 1; ai < argc; ++ai )
 //    {
-//        if( argv[ai] == std::string( "-p" ) )
-//        {
-//            driver.trace_parsing = true;
-//        }
-//        else if( argv[ai] == std::string( "-s" ) )
-//        {
-//            driver.trace_scanning = true;
-//        }
+//        
 //        else if( argv[ai] == std::string( "--print-stats") ) {
 //            #ifdef GATHER_STATS
 //            printStats = true;
@@ -203,13 +201,7 @@ int main( int argc, char* argv[] )
 ////            smtrat::RuntimeSettings::validationSettings.enabled = true;
 ////            smtrat::RuntimeSettings::validationSettings.pathToAssumptions = argv[++ai];
 //        }
-//        else if( argv[ai] == std::string( "--gb-info") )
-//        {
-//            std::cout << "Groebner module settings: " << std::endl;
-//        }
-//        else
-//        {
-//            // read a file with expressions
-
+//       
+//       
     return returnValue;
 }

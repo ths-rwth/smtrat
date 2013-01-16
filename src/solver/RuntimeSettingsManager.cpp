@@ -162,13 +162,15 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << "Global options:" << std::endl;
     std::cout << "\t --help \t\t prints this help." << std::endl;
     std::cout << "\t --warranty \t\t prints the warranty." << std::endl;
-    std::cout << "\t --toc \t\t prints the terms of condition" << std::endl;
+    std::cout << "\t --toc t\t\t prints the terms of condition" << std::endl;
     std::cout << std::endl;
     // Print help for all known modules.
+    std::cout << "Module options:" << std::endl;
     for( std::map<std::string, RuntimeSettings*>::const_iterator it = mSettingObjects.begin(); it != mSettingObjects.end(); ++it )
     {
-        std::cout << "Module: " << it->first << std::endl;
+        std::cout << "- Module: " << it->first << std::endl;
         it->second->printHelp("\t");
+        std::cout << std::endl;
     }
     // Print reference to website.
     std::cout << std::endl;

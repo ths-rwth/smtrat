@@ -36,9 +36,6 @@
 
 namespace smtrat {
    
-    struct ParserSettings : RuntimeSettings {
-        
-    };
 
     /**
      * Structure which holds the runtime-settings for validation.
