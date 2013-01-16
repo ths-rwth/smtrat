@@ -25,7 +25,7 @@ Module name: ${modType} \\n \\
 Module classname: ${modClass} \\n \\
 Module version: ${modVersion} \\n \\
 Module settings classname: ${modSettingsClass} \\n \\
-Module settings: ${moduleSettingsList_${modIndex}}")
+Module settings: ${moduleSettingsList_${modIndex}} \\n")
 endforeach()
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.cpp )
 
