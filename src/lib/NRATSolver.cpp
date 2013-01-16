@@ -42,18 +42,20 @@ namespace smtrat
         unsigned position = 0;
         position = rStrategyGraph().addModuleType( position, MT_CNFerModule );
 //        position = rStrategyGraph().addModuleType( position, MT_PreprocessingModule );
-//        position = rStrategyGraph().addModuleType( position, MT_SATModule );
+        position = rStrategyGraph().addModuleType( position, MT_SATModule );
 //        position = rStrategyGraph().addModuleType( position, MT_LRAModule );
-        #ifdef USE_GB
+        #ifdef SMTRAT_ENABLE_GroebnerModule
         if(smtrat::PROP_CONTAINS_EQUATION<=_inputFormula->getPropositions() ) {
             position = rStrategyGraph().addModuleType( position, MT_GroebnerModule );
         }
-  
         #endif
-//  position = rStrategyGraph().addModuleType( position, MT_VSModule );
-                
-#ifdef USE_CAD
-//        position = rStrategyGraph().addModuleType( position, MT_CADModule );
+  
+        #ifdef SMTRAT_ENABLE_VSModule
+        position = rStrategyGraph().addModuleType( position, MT_VSModule );
+        #endif
+
+        #ifdef SMTRAT_ENABLE_CADModule
+        position = rStrategyGraph().addModuleType( position, MT_CADModule );
         #endif
 
     }

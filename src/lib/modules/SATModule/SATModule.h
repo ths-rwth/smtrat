@@ -51,19 +51,20 @@
 #ifndef SMTRAT_SATMODULE_H
 #define SMTRAT_SATMODULE_H
 
-#include "../config.h"
+#include "../../config.h"
 
-#include "SATModule/Vec.h"
-#include "SATModule/Heap.h"
-#include "SATModule/Alg.h"
-#include "SATModule/Options.h"
-#include "SATModule/SolverTypes.h"
-#include "SATModule/Sort.h"
+#include "Vec.h"
+#include "Heap.h"
+#include "Alg.h"
+#include "Options.h"
+#include "SolverTypes.h"
+#include "Sort.h"
 #include <math.h>
-#include "../Module.h"
+#include "../../Module.h"
+#include "../../RuntimeSettings.h"
 
 #ifdef GATHER_STATS
-#include "SATModule/SATStatistics.h"
+#include "SATStatistics.h"
 #endif
 #define SAT_MODULE_THEORY_PROPAGATION
 
@@ -265,7 +266,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            SATModule( const Formula* const, Manager* const _tsManager );
+            SATModule( ModuleType type, const Formula* const, RuntimeSettings* settings, Manager* const _tsManager );
 
             /**
              * Destructor:

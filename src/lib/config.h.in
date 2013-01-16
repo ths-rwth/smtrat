@@ -7,8 +7,10 @@
 
 #cmakedefine USE_NSS
 #cmakedefine USE_GINACRA
-#cmakedefine USE_GB
-#cmakedefine USE_CAD
+
+#cmakedefine SMTRAT_ENABLE_GroebnerModule
+#cmakedefine SMTRAT_ENABLE_CADModule
+#cmakedefine SMTRAT_ENABLE_VSModule
 
 #cmakedefine GATHER_STATS
 

@@ -33,13 +33,14 @@
 
 //#define CAD_USE_VARIABLE_BOUNDS
 
-#include "../Module.h"
+#include "../../Module.h"
+#include "../../RuntimeSettings.h"
 
 #include <unordered_map>
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
 #ifdef CAD_USE_VARIABLE_BOUNDS
-#include "../VariableBounds.h"
+#include "../../VariableBounds.h"
 #endif
 
 namespace smtrat
@@ -87,7 +88,7 @@ namespace smtrat
         #endif
 
         public:
-            CADModule( const Formula* const, Manager* const _tsmanager );
+            CADModule( ModuleType, const Formula* const, RuntimeSettings*, Manager* const _tsmanager );
 
             virtual ~CADModule();
 

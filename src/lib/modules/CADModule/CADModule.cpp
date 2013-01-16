@@ -30,7 +30,7 @@
 
 //#define MODULE_VERBOSE
 
-#include "../Manager.h"
+#include "../../Manager.h"
 #include "CADModule.h"
 
 #include <ginacra/ginacra.h>
@@ -69,8 +69,8 @@ using namespace std;
 
 namespace smtrat
 {
-    CADModule::CADModule( const Formula* const _formula, Manager* const _tsManager ):
-        Module( _formula, _tsManager ),
+    CADModule::CADModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Manager* const _tsManager ):
+        Module( _type, _formula, _tsManager ),
         mCAD(),
         mConstraints(),
         mConstraintsMap(),
@@ -80,11 +80,9 @@ namespace smtrat
         mVariableBounds()
         #endif
     {
-        mModuleType = MT_CADModule;
         mInfeasibleSubsets.clear();    // initially everything is satisfied
         // CAD setting
         GiNaCRA::CADSettings setting = mCAD.setting();
-        setting.autoEliminate = false;
         #ifdef CAD_USE_VARIABLE_BOUNDS
         setting.simplifyEliminationByBounds = true;
         setting.earlyLiftingPruningByBounds = true;
@@ -99,7 +97,6 @@ namespace smtrat
                 setting.autoEliminate = false;
             #else
                 setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::EQUATIONDETECT_CADSETTING ); // standard
-                setting.autoEliminate = false;
                 setting.warmRestart = true;
                 setting.simplifyByFactorization = true;
                 setting.simplifyByRootcounting= true;

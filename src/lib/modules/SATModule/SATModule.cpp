@@ -86,8 +86,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    SATModule::SATModule( const Formula* const _formula, Manager* const _tsManager ):
-        Module( _formula, _tsManager ),
+    SATModule::SATModule( ModuleType type, const Formula* const _formula, RuntimeSettings* settings, Manager* const _tsManager ):
+        Module( type, _formula, _tsManager ),
         // Parameters (user settable):
         //
         verbosity( 0 ),
@@ -151,7 +151,6 @@ namespace smtrat
         , mStats(new SATstatistics())
         #endif
     {
-        this->mModuleType = MT_SATModule;
     }
 
     /**
@@ -503,6 +502,7 @@ namespace smtrat
             case REALCONSTRAINT:
             {
                 mConstraintsToInform.insert( _formula.pConstraint() );
+                
                 return getLiteral( _formula.pConstraint(), _origin, _formula.activity() );
             }
             default:
@@ -520,7 +520,7 @@ namespace smtrat
      * @param _origin
      * @return
      */
-    Lit SATModule::getLiteral( const Constraint* _constraint, const Formula* _origin, double _activity )
+    Lit SATModule::getLiteral( const Constraint* _constraint, const Formula* _origin, double _activity, bool _preferredToTSolver)
     {
         ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _constraint );
         if( constraintLiteralPair != mConstraintLiteralMap.end() )
@@ -533,17 +533,15 @@ namespace smtrat
              * Add a fresh Boolean variable as an abstraction of the constraint.
              */
             Var constraintAbstraction;
-            if( _activity > Formula::mSumOfAllActivities*FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY/Formula::mNumberOfNonZeroActivities )
+            
+            #ifdef GATHER_STATS
+            if( _preferredToTSolver )
             {
-                #ifdef GATHER_STATS
                 mStats->initialTrue();
-                #endif
-                constraintAbstraction = newVar( false, true, _activity, new Formula( _constraint ), _origin );
             }
-            else
-            {
-                constraintAbstraction = newVar( true, true, _activity, new Formula( _constraint ), _origin );
-            }
+            #endif
+            constraintAbstraction = newVar( !_preferredToTSolver, true, _activity, new Formula( _constraint ), _origin );
+            
             Lit lit                            = mkLit( constraintAbstraction, false );
             mConstraintLiteralMap[_constraint] = lit;
             return lit;

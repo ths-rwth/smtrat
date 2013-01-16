@@ -41,8 +41,8 @@ namespace smtrat
      * Constructors:
      */
 
-    VSModule::VSModule( const Formula* const _formula, Manager* const _tsManager ):
-        Module( _formula, _tsManager ),
+    VSModule::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager ):
+        Module( _type, _formula, _tsManager ),
         mFreshConstraintReceived( false ),
         mInconsistentConstraintAdded( false ),
         mIDCounter( 0 ),
@@ -54,7 +54,7 @@ namespace smtrat
         mFormulaConditionMap(),
         mRanking()
     {
-        mModuleType = MT_VSModule;
+        
     }
 
     /**

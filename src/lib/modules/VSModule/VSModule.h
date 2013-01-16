@@ -41,9 +41,10 @@
 //#define VS_PRINT_ANSWERS
 //#define VS_LOG_INTERMEDIATE_STEPS
 
-#include "VSModule/Substitute.h"
-#include "VSModule/State.h"
-#include "../Module.h"
+#include "Substitute.h"
+#include "State.h"
+#include "../../Module.h"
+#include "../../RuntimeSettings.h"
 
 namespace smtrat
 {
@@ -98,7 +99,7 @@ namespace smtrat
             /*
              * Constructors:
              */
-            VSModule( const Formula* const, Manager* const _tsManager );
+            VSModule( ModuleType _type, const Formula* const, RuntimeSettings* settings, Manager* const _tsManager );
 
             /*
              * Destructor:
