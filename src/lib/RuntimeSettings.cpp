@@ -30,15 +30,27 @@
 #include "RuntimeSettings.h"
 
 namespace smtrat{
-    void RuntimeSettings::parseCmdOption(std::string keyValueString) {
+    RuntimeSettings::RuntimeSettings() 
+    : mSettingsName("")
+    {
+        
+    }
+    RuntimeSettings::RuntimeSettings(const std::string& name)
+    : mSettingsName(name)
+    {
+        
+    }
+
+    void RuntimeSettings::parseCmdOption(const std::string& keyValueString) {
         
     }
     
-    void RuntimeSettings::printHelp(std::string prefix) const {
+    void RuntimeSettings::printHelp(const std::string& prefix) const {
         
     }
     
     std::list<RuntimeSettings::KeyValuePair> RuntimeSettings::splitIntoKeyValues(std::string keyValueString, std::string delimiter) {
+        
         return std::list<KeyValuePair>();
     }
 }

@@ -34,9 +34,13 @@
 namespace smtrat{
 class RuntimeSettings 
 {
+    protected:
+        std::string mSettingsName;
     public:
-        void parseCmdOption(std::string keyValueString);
-        void printHelp(std::string prefix) const;
+        RuntimeSettings();
+        RuntimeSettings(const std::string& name);
+        void parseCmdOption(const std::string& keyValueString);
+        void printHelp(const std::string& prefix) const;
     protected:
         typedef std::pair<std::string, std::string> KeyValuePair;
         std::list<KeyValuePair> splitIntoKeyValues(std::string keyValueString, std::string delimiter = ",");

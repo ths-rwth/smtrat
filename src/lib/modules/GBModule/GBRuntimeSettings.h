@@ -11,7 +11,8 @@ namespace smtrat
 {
 class GBRuntimeSettings : public RuntimeSettings 
 {
-    
+public:
+    GBRuntimeSettings(const string& name) : RuntimeSettings(name) {}
 };
 }
 
