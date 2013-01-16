@@ -48,16 +48,6 @@ namespace smtrat
      */
 
     /**
-     * Informs about a new constraints.
-     * @param c A new constraint
-     *
-     */
-    bool CNFerModule::inform( const Constraint* const _constraint )
-    {
-        return true;
-    }
-
-    /**
      * Adds a constraint to this module.
      *
      * @param _formula The formula to add to the already added formulas.

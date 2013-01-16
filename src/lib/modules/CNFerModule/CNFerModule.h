@@ -59,7 +59,6 @@ namespace smtrat
 
             // Interfaces.
             bool assertSubformula( Formula::const_iterator );
-            bool inform( const Constraint* const );
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
     };
