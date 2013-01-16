@@ -34,6 +34,7 @@
 #include "RuntimeSettingsManager.h"
 #include "ExitCodes.h"
 
+#include "../lib/modules/Modules.h"
 #include "../lib/config.h"
 
 namespace smtrat {
@@ -109,6 +110,11 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
                 printToC();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
+            else if(optionName == "list-modules")
+            {
+                printModulesInfo();
+                exit(SMTRAT_EXIT_SUCCESS);
+            }
             // no more global options, so we expect module options
             else 
             {
@@ -162,7 +168,10 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << "Global options:" << std::endl;
     std::cout << "\t --help \t\t prints this help." << std::endl;
     std::cout << "\t --warranty \t\t prints the warranty." << std::endl;
-    std::cout << "\t --toc t\t\t prints the terms of condition" << std::endl;
+    std::cout << "\t --toc  \t\t\t prints the terms of condition" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Developer options:" <<std::endl;
+    std::cout << "\t --list-modules \t prints all compiled modules" << std::endl;
     std::cout << std::endl;
     // Print help for all known modules.
     std::cout << "Module options:" << std::endl;
