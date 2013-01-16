@@ -50,13 +50,13 @@ namespace smtrat
         Module( _formula, _tsManager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
-        mMaxConstraintId( Formula::constraintPool().size() + 1 ),
+        mNumberOfReceivedLinearNeqConstraints( 0 ),
         mTableau( mpPassedFormula->end() ),
         mLinearConstraints(),
         mNonlinearConstraints(),
         mOriginalVars(),
         mSlackVars(),
-        mConstraintToBound( mMaxConstraintId, NULL ),
+        mConstraintToBound(),
         mBoundCandidatesToPass()
     {
         mModuleType = MT_TLRAModule;
@@ -104,10 +104,13 @@ namespace smtrat
         cout << "inform about " << *_constraint << endl;
         #endif
         Module::inform( _constraint );
-        if( !_constraint->variables().empty() && _constraint->isLinear() )
+        if( !_constraint->variables().empty() && _constraint->isLinear() && _constraint->relation() != CR_NEQ )
         {
             mLinearConstraints.insert( _constraint );
-            if( _constraint->id() > mMaxConstraintId ) mMaxConstraintId = _constraint->id();
+            if( mInitialized )
+            {
+                initialize( _constraint );
+            }
         }
         return _constraint->isConsistent() != 0;
     }
@@ -121,48 +124,58 @@ namespace smtrat
      */
     bool TLRAModule::assertSubformula( Formula::const_iterator _subformula )
     {
-        assert( (*_subformula)->getType() == REALCONSTRAINT );
-        assert( (*_subformula)->constraint().relation() != CR_NEQ );
-        #ifdef DEBUG_TLRA_MODULE
-        cout << "assert " << (*_subformula)->constraint() << endl;
-        #endif
-        if( !mInitialized ) initialize();
         Module::assertSubformula( _subformula );
-
-        const Constraint* constraint  = (*_subformula)->pConstraint();
-        int               consistency = constraint->isConsistent();
-        if( consistency == 2 )
+        if( (*_subformula)->getType() == REALCONSTRAINT )
         {
-            mAssignmentFullfilsNonlinearConstraints = false;
-            if( constraint->isLinear() )
-            {
-                vector< const Bound<Numeric>* >& bounds = *mConstraintToBound[constraint->id()];
-                set<const Formula*> originSet = set<const Formula*>();
-                originSet.insert( *_subformula );
-                activateBound( *bounds.begin(), originSet );
+            #ifdef DEBUG_TLRA_MODULE
+            cout << "assert " << (*_subformula)->constraint() << endl;
+            #endif
+            if( !mInitialized ) initialize();
 
-                assert( mInfeasibleSubsets.empty() || !mInfeasibleSubsets.begin()->empty() );
-                return mInfeasibleSubsets.empty() || !mNonlinearConstraints.empty();
+            const Constraint* constraint  = (*_subformula)->pConstraint();
+            int               consistency = constraint->isConsistent();
+            if( consistency == 2 )
+            {
+                mAssignmentFullfilsNonlinearConstraints = false;
+                if( constraint->isLinear() )
+                {
+                    if( (*_subformula)->constraint().relation() != CR_NEQ )
+                    {
+                        vector< const Bound<Numeric>* >* bounds = mConstraintToBound[constraint->id()];
+                        assert( bounds != NULL );
+                        set<const Formula*> originSet = set<const Formula*>();
+                        originSet.insert( *_subformula );
+                        activateBound( *bounds->begin(), originSet );
+
+                        assert( mInfeasibleSubsets.empty() || !mInfeasibleSubsets.begin()->empty() );
+                        return mInfeasibleSubsets.empty() || !mNonlinearConstraints.empty();
+                    }
+                    else
+                    {
+                        ++mNumberOfReceivedLinearNeqConstraints;
+                    }
+                }
+                else
+                {
+                    addSubformulaToPassedFormula( new Formula( constraint ), *_subformula );
+                    mNonlinearConstraints.insert( constraint );
+                    return true;
+                }
+            }
+            else if( consistency == 0 )
+            {
+                set< const Formula* > infSubSet = set< const Formula* >();
+                infSubSet.insert( *_subformula );
+                mInfeasibleSubsets.push_back( infSubSet );
+                mSolverState = False;
+                return false;
             }
             else
             {
-                addSubformulaToPassedFormula( new Formula( constraint ), *_subformula );
-                mNonlinearConstraints.insert( constraint );
                 return true;
             }
         }
-        else if( consistency == 0 )
-        {
-            set< const Formula* > infSubSet = set< const Formula* >();
-            infSubSet.insert( *_subformula );
-            mInfeasibleSubsets.push_back( infSubSet );
-            mSolverState = False;
-            return false;
-        }
-        else
-        {
-            return true;
-        }
+        return true;
     }
 
     /**
@@ -172,66 +185,72 @@ namespace smtrat
      */
     void TLRAModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        #ifdef DEBUG_TLRA_MODULE
-        cout << "remove " << (*_subformula)->constraint() << endl;
-        #endif
-        // Remove the mapping of the constraint to the sub-formula in the received formula
-        const Constraint* constraint = (*_subformula)->pConstraint();
-        if( constraint->isConsistent() == 2 )
+        if( (*_subformula)->getType() == REALCONSTRAINT )
         {
-            if( constraint->isLinear() )
+            #ifdef DEBUG_TLRA_MODULE
+            cout << "remove " << (*_subformula)->constraint() << endl;
+            #endif
+            // Remove the mapping of the constraint to the sub-formula in the received formula
+            const Constraint* constraint = (*_subformula)->pConstraint();
+            if( constraint->isConsistent() == 2 )
             {
-                // Deactivate the bounds regarding the given constraint
-                vector< const Bound<Numeric>* >& bounds = *mConstraintToBound[constraint->id()];
-                auto bound = bounds.begin();
-                while( bound != bounds.end() )
+                if( constraint->isLinear() )
                 {
-                    if( !(*bound)->origins().empty() )
+                    // Deactivate the bounds regarding the given constraint
+                    vector< const Bound<Numeric>* >* bounds = mConstraintToBound[constraint->id()];
+                    assert( bounds != NULL );
+                    auto bound = bounds->begin();
+                    while( bound != bounds->end() )
                     {
-                        auto originSet = (*bound)->pOrigins()->begin();
-                        while( originSet != (*bound)->origins().end() )
+                        if( !(*bound)->origins().empty() )
                         {
-                            if( originSet->find( *_subformula ) != originSet->end() ) originSet = (*bound)->pOrigins()->erase( originSet );
-                            else ++originSet;
+                            auto originSet = (*bound)->pOrigins()->begin();
+                            while( originSet != (*bound)->origins().end() )
+                            {
+                                if( originSet->find( *_subformula ) != originSet->end() ) originSet = (*bound)->pOrigins()->erase( originSet );
+                                else ++originSet;
+                            }
+                            if( (*bound)->origins().empty() )
+                            {
+                                (*bound)->pVariable()->deactivateBound( *bound, mpPassedFormula->end() );
+                                if( !(*bound)->pVariable()->pSupremum()->isInfinite() )
+                                {
+                                    mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pSupremum() );
+                                }
+                                if( !(*bound)->pVariable()->pInfimum()->isInfinite() )
+                                {
+                                    mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pInfimum() );
+                                }
+                                if( ((*bound)->isUpperBound() && (*bound)->variable().pSupremum()->isInfinite())
+                                    || ((*bound)->isLowerBound() && (*bound)->variable().pInfimum()->isInfinite()) )
+                                {
+                                    if( (*bound)->variable().isBasic() )
+                                    {
+                                        mTableau.decrementBasicActivity( (*bound)->variable() );
+                                    }
+                                    else
+                                    {
+                                        mTableau.decrementNonbasicActivity( (*bound)->variable() );
+                                    }
+                                }
+                            }
                         }
-                        if( (*bound)->origins().empty() )
+                        if( (*bound)->origins().empty() && (*bound)->deduced() )
                         {
-                            (*bound)->pVariable()->deactivateBound( *bound, mpPassedFormula->end() );
-                            if( !(*bound)->pVariable()->pSupremum()->isInfinite() )
-                            {
-                                mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pSupremum() );
-                            }
-                            if( !(*bound)->pVariable()->pInfimum()->isInfinite() )
-                            {
-                                mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pInfimum() );
-                            }
-                            if( ((*bound)->isUpperBound() && (*bound)->variable().pSupremum()->isInfinite())
-                                || ((*bound)->isLowerBound() && (*bound)->variable().pInfimum()->isInfinite()) )
-                            {
-                                if( (*bound)->variable().isBasic() )
-                                {
-                                    mTableau.decrementBasicActivity( (*bound)->variable() );
-                                }
-                                else
-                                {
-                                    mTableau.decrementNonbasicActivity( (*bound)->variable() );
-                                }
-                            }
+                            bound = bounds->erase( bound );
                         }
-                    }
-                    if( (*bound)->origins().empty() && (*bound)->deduced() )
-                    {
-                        bound = bounds.erase( bound );
-                    }
-                    else
-                    {
-                        ++bound;
+                        else
+                        {
+                            ++bound;
+                        }
                     }
                 }
-            }
-            else
-            {
-                mNonlinearConstraints.erase( constraint );
+                else
+                {
+                    ConstraintSet::iterator nonLinearConstraint = mNonlinearConstraints.find( constraint );
+                    assert( nonLinearConstraint != mNonlinearConstraints.end() );
+                    mNonlinearConstraints.erase( nonLinearConstraint );
+                }
             }
         }
         Module::removeSubformula( _subformula );
@@ -249,136 +268,143 @@ namespace smtrat
         #ifdef DEBUG_TLRA_MODULE
         cout << "check for consistency" << endl;
         #endif
-        if( !mInfeasibleSubsets.empty() )
+        if( mpReceivedFormula->isConstraintConjunction() && mNumberOfReceivedLinearNeqConstraints == 0 )
         {
-            return False;
-        }
-        unsigned posNewLearnedBound = 0;
-        for( ; ; )
-        {
-            #ifdef DEBUG_TLRA_MODULE
-            cout << endl;
-            mTableau.printVariables( cout, "    " );
-            cout << endl;
-            mTableau.print( cout, 15, "    " );
-            cout << endl;
-            #endif
-
-            pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
-
-            #ifdef DEBUG_TLRA_MODULE
-            cout << "    Next pivoting element: ";
-            mTableau.printEntry( cout, pivotingElement.first );
-            cout << (pivotingElement.second ? "(True)" : "(False)");
-            cout << " [" << pivotingElement.first << "]" << endl;
-            #endif
-
-            if( pivotingElement.second )
+            if( !mInfeasibleSubsets.empty() )
             {
-                if( pivotingElement.first == 0 )
+                return False;
+            }
+            unsigned posNewLearnedBound = 0;
+            for( ; ; )
+            {
+                #ifdef DEBUG_TLRA_MODULE
+                cout << endl;
+                mTableau.printVariables( cout, "    " );
+                cout << endl;
+                mTableau.print( cout, 15, "    " );
+                cout << endl;
+                #endif
+
+                pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
+
+                #ifdef DEBUG_TLRA_MODULE
+                cout << "    Next pivoting element: ";
+                mTableau.printEntry( cout, pivotingElement.first );
+                cout << (pivotingElement.second ? "(True)" : "(False)");
+                cout << " [" << pivotingElement.first << "]" << endl;
+                #endif
+
+                if( pivotingElement.second )
                 {
-                    #ifdef DEBUG_TLRA_MODULE
-                    cout << "True" << endl;
-                    #endif
-                    if( checkAssignmentForNonlinearConstraint() )
+                    if( pivotingElement.first == 0 )
                     {
-                        #ifdef TLRA_REFINEMENT
-                        learnRefinements();
+                        #ifdef DEBUG_TLRA_MODULE
+                        cout << "True" << endl;
                         #endif
-                        mSolverState = True;
-                        return True;
+                        if( checkAssignmentForNonlinearConstraint() )
+                        {
+                            #ifdef TLRA_REFINEMENT
+                            learnRefinements();
+                            #endif
+                            mSolverState = True;
+                            return True;
+                        }
+                        else
+                        {
+                            adaptPassedFormula();
+                            Answer a = runBackends();
+                            if( a == False )
+                            {
+                                getInfeasibleSubsets();
+                            }
+                            #ifdef TLRA_REFINEMENT
+                            learnRefinements();
+                            #endif
+                            mSolverState = a;
+                            return a;
+                        }
                     }
                     else
                     {
-                        adaptPassedFormula();
-                        Answer a = runBackends();
-                        if( a == False )
+                        mTableau.pivot( pivotingElement.first );
+                        while( posNewLearnedBound < mTableau.rLearnedBounds().size() )
                         {
-                            getInfeasibleSubsets();
+                            set< const Formula*> originSet = set< const Formula*>();
+                            vector<const Bound<Numeric>*>& bounds = *mTableau.rLearnedBounds()[posNewLearnedBound].premise;
+                            for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
+                            {
+                                assert( !(*bound)->origins().empty() );
+                                originSet.insert( (*bound)->origins().begin()->begin(), (*bound)->origins().begin()->end() );
+                                for( auto origin = (*bound)->origins().begin()->begin(); origin != (*bound)->origins().begin()->end(); ++origin )
+                                {
+                                    const Constraint* constraint = (*origin)->pConstraint();
+                                    if( constraint != NULL )
+                                    {
+                                        mConstraintToBound[constraint->id()]->push_back( mTableau.rLearnedBounds()[posNewLearnedBound].nextWeakerBound );
+                                        mConstraintToBound[constraint->id()]->push_back( mTableau.rLearnedBounds()[posNewLearnedBound].newBound );
+                                    }
+                                }
+                            }
+                            activateBound( mTableau.rLearnedBounds()[posNewLearnedBound].nextWeakerBound, originSet );
+                            activateBound( mTableau.rLearnedBounds()[posNewLearnedBound].newBound, originSet );
+                            ++posNewLearnedBound;
                         }
-                        #ifdef TLRA_REFINEMENT
-                        learnRefinements();
-                        #endif
-                        mSolverState = a;
-                        return a;
+                        if( !mInfeasibleSubsets.empty() )
+                        {
+                            #ifdef TLRA_REFINEMENT
+                            learnRefinements();
+                            #endif
+                            mSolverState = False;
+                            return False;
+                        }
                     }
                 }
                 else
                 {
-                    mTableau.pivot( pivotingElement.first );
-                    while( posNewLearnedBound < mTableau.rLearnedBounds().size() )
-                    {
-                        set< const Formula*> originSet = set< const Formula*>();
-                        vector<const Bound<Numeric>*>& bounds = *mTableau.rLearnedBounds()[posNewLearnedBound].premise;
-                        for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
-                        {
-                            assert( !(*bound)->origins().empty() );
-                            originSet.insert( (*bound)->origins().begin()->begin(), (*bound)->origins().begin()->end() );
-                            for( auto origin = (*bound)->origins().begin()->begin(); origin != (*bound)->origins().begin()->end(); ++origin )
-                            {
-                                const Constraint* constraint = (*origin)->pConstraint();
-                                if( constraint != NULL )
-                                {
-                                    mConstraintToBound[constraint->id()]->push_back( mTableau.rLearnedBounds()[posNewLearnedBound].nextWeakerBound );
-                                    mConstraintToBound[constraint->id()]->push_back( mTableau.rLearnedBounds()[posNewLearnedBound].newBound );
-                                }
-                            }
-                        }
-                        activateBound( mTableau.rLearnedBounds()[posNewLearnedBound].nextWeakerBound, originSet );
-                        activateBound( mTableau.rLearnedBounds()[posNewLearnedBound].newBound, originSet );
-                        ++posNewLearnedBound;
-                    }
-                    if( !mInfeasibleSubsets.empty() )
-                    {
-                        #ifdef TLRA_REFINEMENT
-                        learnRefinements();
-                        #endif
-                        mSolverState = False;
-                        return False;
-                    }
-                }
-            }
-            else
-            {
-                mInfeasibleSubsets.clear();
-                #ifdef TLRA_ONE_REASON
-                vector< const Bound<Numeric>* > conflict = mTableau.getConflict( pivotingElement.first );
-                set< const Formula* > infSubSet = set< const Formula* >();
-                for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
-                {
-                    assert( (*bound)->isActive() );
-                    infSubSet.insert( (*bound)->pOrigins()->begin()->begin(), (*bound)->pOrigins()->begin()->end() );
-                }
-                mInfeasibleSubsets.push_back( infSubSet );
-                #else
-                vector< set< const Bound<Numeric>* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
-                for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
-                {
+                    mInfeasibleSubsets.clear();
+                    #ifdef TLRA_ONE_REASON
+                    vector< const Bound<Numeric>* > conflict = mTableau.getConflict( pivotingElement.first );
                     set< const Formula* > infSubSet = set< const Formula* >();
-                    for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
+                    for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
                     {
                         assert( (*bound)->isActive() );
-                        infSubSet.insert( *(*bound)->pOrigins()->begin() );
+                        infSubSet.insert( (*bound)->pOrigins()->begin()->begin(), (*bound)->pOrigins()->begin()->end() );
                     }
                     mInfeasibleSubsets.push_back( infSubSet );
+                    #else
+                    vector< set< const Bound<Numeric>* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
+                    for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
+                    {
+                        set< const Formula* > infSubSet = set< const Formula* >();
+                        for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
+                        {
+                            assert( (*bound)->isActive() );
+                            infSubSet.insert( *(*bound)->pOrigins()->begin() );
+                        }
+                        mInfeasibleSubsets.push_back( infSubSet );
+                    }
+                    #endif
+                    #ifdef TLRA_REFINEMENT
+                    learnRefinements();
+                    #endif
+                    #ifdef DEBUG_TLRA_MODULE
+                    cout << "False" << endl;
+                    #endif
+                    mSolverState = False;
+                    return False;
                 }
-                #endif
-                #ifdef TLRA_REFINEMENT
-                learnRefinements();
-                #endif
-                #ifdef DEBUG_TLRA_MODULE
-                cout << "False" << endl;
-                #endif
-                mSolverState = False;
-                return False;
             }
+            assert( false );
+            #ifdef TLRA_REFINEMENT
+            learnRefinements();
+            #endif
+            mSolverState = True;
+            return True;
         }
-        assert( false );
-        #ifdef TLRA_REFINEMENT
-        learnRefinements();
-        #endif
-        mSolverState = True;
-        return True;
+        else
+        {
+            return Unknown;
+        }
     }
 
     /**
@@ -767,7 +793,6 @@ namespace smtrat
      */
     void TLRAModule::setBound( Variable<Numeric>& _var, bool _constraintInverted, const Numeric& _boundValue, const Constraint* _constraint )
     {
-        assert( _constraint->id() < mMaxConstraintId );
         if( _constraint->relation() == CR_EQ )
         {
             // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
@@ -988,90 +1013,97 @@ namespace smtrat
     /**
      * Initializes the tableau according to all linear constraints, of which this module has been informed.
      */
-    void TLRAModule::initialize()
+    void TLRAModule::initialize( const Constraint* const _pConstraint )
     {
-        mInitialized = true;
-        //TODO: sort the constraints as a first kind of a pivoting strategy
-        for( auto constraint = mLinearConstraints.begin(); constraint != mLinearConstraints.end(); ++constraint )
+        map<const string, numeric, strCmp> coeffs = _pConstraint->linearAndConstantCoefficients();
+        assert( coeffs.size() > 1 );
+        map<const string, numeric, strCmp>::iterator currentCoeff = coeffs.begin();
+        ex*                                          linearPart   = new ex( _pConstraint->lhs() - currentCoeff->second );
+        ++currentCoeff;
+
+        // divide the linear Part and the constraint by the highest coefficient
+        numeric highestCoeff = currentCoeff->second;
+        --currentCoeff;
+        while( currentCoeff != coeffs.end() )
         {
-            map<const string, numeric, strCmp> coeffs = (*constraint)->linearAndConstantCoefficients();
-            assert( coeffs.size() > 1 );
-            map<const string, numeric, strCmp>::iterator currentCoeff = coeffs.begin();
-            ex*                                          linearPart   = new ex( (*constraint)->lhs() - currentCoeff->second );
+            currentCoeff->second /= highestCoeff;
             ++currentCoeff;
-
-            // divide the linear Part and the constraint by the highest coefficient
-            numeric highestCoeff = currentCoeff->second;
-            --currentCoeff;
-            while( currentCoeff != coeffs.end() )
+        }
+        *linearPart /= highestCoeff;
+        if( coeffs.size() == 2 )
+        {
+            // constraint has one variable
+            ex* var = new ex( (*_pConstraint->variables().begin()).second );
+            ExVariableMap::iterator basicIter = mOriginalVars.find( var );
+            // constraint not found, add new nonbasic variable
+            if( basicIter == mOriginalVars.end() )
             {
-                currentCoeff->second /= highestCoeff;
-                ++currentCoeff;
-            }
-            *linearPart /= highestCoeff;
-            if( coeffs.size() == 2 )
-            {
-                // constraint has one variable
-                ex* var = new ex( (*(*constraint)->variables().begin()).second );
-                ExVariableMap::iterator basicIter = mOriginalVars.find( var );
-                // constraint not found, add new nonbasic variable
-                if( basicIter == mOriginalVars.end() )
-                {
-                    Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( var );
-                    mOriginalVars.insert( pair<const ex*, Variable<Numeric>*>( var, nonBasic ) );
-                    setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
-                }
-                else
-                {
-                    delete var;
-                    Variable<Numeric>* nonBasic = basicIter->second;
-                    setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
-                }
-
+                Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( var );
+                mOriginalVars.insert( pair<const ex*, Variable<Numeric>*>( var, nonBasic ) );
+                setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
             }
             else
             {
-                ExVariableMap::iterator slackIter = mSlackVars.find( linearPart );
-                if( slackIter == mSlackVars.end() )
-                {
-                    vector< Variable<Numeric>* > nonbasics = vector< Variable<Numeric>* >();
-                    vector< Numeric > numCoeffs = vector< Numeric >();
-                    symtab::const_iterator varIt   = (*constraint)->variables().begin();
-                    map<const string, numeric, strCmp>::iterator coeffIt = coeffs.begin();
-                    ++coeffIt;
-                    while( varIt != (*constraint)->variables().end() )
-                    {
-                        assert( coeffIt != coeffs.end() );
-                        ex* var = new ex( varIt->second );
-                        ExVariableMap::iterator nonBasicIter = mOriginalVars.find( var );
-                        if( mOriginalVars.end() == nonBasicIter )
-                        {
-                            Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( var );
-                            mOriginalVars.insert( pair<const ex*, Variable<Numeric>*>( var, nonBasic ) );
-                            nonbasics.push_back( nonBasic );
-                        }
-                        else
-                        {
-                            delete var;
-                            nonbasics.push_back( nonBasicIter->second );
-                        }
-                        numCoeffs.push_back( Numeric( coeffIt->second ) );
-                        ++varIt;
-                        ++coeffIt;
-                    }
-
-                    Variable<Numeric>* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );
-
-                    mSlackVars.insert( pair<const ex*, Variable<Numeric>*>( linearPart, slackVar ) );
-                    setBound( *slackVar, highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
-                }
-                else
-                {
-                    delete linearPart;
-                    Variable<Numeric>* slackVar = slackIter->second;
-                    setBound( *slackVar, highestCoeff.is_negative(), -coeffs.begin()->second, *constraint );
-                }
+                delete var;
+                Variable<Numeric>* nonBasic = basicIter->second;
+                setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
             }
+
+        }
+        else
+        {
+            ExVariableMap::iterator slackIter = mSlackVars.find( linearPart );
+            if( slackIter == mSlackVars.end() )
+            {
+                vector< Variable<Numeric>* > nonbasics = vector< Variable<Numeric>* >();
+                vector< Numeric > numCoeffs = vector< Numeric >();
+                symtab::const_iterator varIt   = _pConstraint->variables().begin();
+                map<const string, numeric, strCmp>::iterator coeffIt = coeffs.begin();
+                ++coeffIt;
+                while( varIt != _pConstraint->variables().end() )
+                {
+                    assert( coeffIt != coeffs.end() );
+                    ex* var = new ex( varIt->second );
+                    ExVariableMap::iterator nonBasicIter = mOriginalVars.find( var );
+                    if( mOriginalVars.end() == nonBasicIter )
+                    {
+                        Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( var );
+                        mOriginalVars.insert( pair<const ex*, Variable<Numeric>*>( var, nonBasic ) );
+                        nonbasics.push_back( nonBasic );
+                    }
+                    else
+                    {
+                        delete var;
+                        nonbasics.push_back( nonBasicIter->second );
+                    }
+                    numCoeffs.push_back( Numeric( coeffIt->second ) );
+                    ++varIt;
+                    ++coeffIt;
+                }
+
+                Variable<Numeric>* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );
+
+                mSlackVars.insert( pair<const ex*, Variable<Numeric>*>( linearPart, slackVar ) );
+                setBound( *slackVar, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
+            }
+            else
+            {
+                delete linearPart;
+                Variable<Numeric>* slackVar = slackIter->second;
+                setBound( *slackVar, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
+            }
+        }
+    }
+
+    /**
+     * Initializes the tableau according to all linear constraints, of which this module has been informed.
+     */
+    void TLRAModule::initialize()
+    {
+        mInitialized = true;
+        for( auto constraint = mLinearConstraints.begin(); constraint != mLinearConstraints.end(); ++constraint )
+        {
+            initialize( *constraint );
         }
         #ifdef TLRA_USE_PIVOTING_STRATEGY
         mTableau.setBlandsRuleStart( mTableau.columns().size() );

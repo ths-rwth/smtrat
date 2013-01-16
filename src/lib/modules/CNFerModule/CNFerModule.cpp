@@ -20,11 +20,11 @@
  */
 
 
-/**
- * @file:   CNFerModule.cpp
- * @author Florian Corzilius
- * @author Sebastian Junges
- * @version 2013-01-13
+/*
+ * File:   CNFerModule.cpp
+ * Author: Florian Corzilius
+ *
+ * Created on 02. May 2012, 20:53
  */
 
 #include "../../Manager.h"
@@ -80,7 +80,6 @@ namespace smtrat
      */
     Answer CNFerModule::isConsistent()
     {
-        mpReceivedFormula->print(std::cout, "", false, false);
         Formula::const_iterator receivedSubformula = firstUncheckedReceivedSubformula();
         while( receivedSubformula != mpReceivedFormula->end() )
         {
