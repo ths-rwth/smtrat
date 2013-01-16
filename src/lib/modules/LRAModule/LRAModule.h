@@ -33,11 +33,12 @@
 
 #define LRA_USE_GINACRA
 
-#include "../Module.h"
-#include "LRAModule/Value.h"
-#include "LRAModule/Variable.h"
-#include "LRAModule/Bound.h"
-#include "LRAModule/Tableau.h"
+#include "../../Module.h"
+#include "../../RuntimeSettings.h"
+#include "Value.h"
+#include "Variable.h"
+#include "Bound.h"
+#include "Tableau.h"
 #include <stdio.h>
 #ifdef LRA_USE_GINACRA
 #include <ginacra/ginacra.h>
@@ -83,7 +84,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            LRAModule( const Formula* const _formula, Manager* const _tsManager = NULL );
+            LRAModule( ModuleType, const Formula* const _formula, RuntimeSettings*, Manager* const _tsManager = NULL );
 
             /**
              * Destructor:

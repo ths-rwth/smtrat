@@ -43,7 +43,7 @@ namespace smtrat
         position = rStrategyGraph().addModuleType( position, MT_CNFerModule );
 //        position = rStrategyGraph().addModuleType( position, MT_PreprocessingModule );
         position = rStrategyGraph().addModuleType( position, MT_SATModule );
-//        position = rStrategyGraph().addModuleType( position, MT_LRAModule );
+        position = rStrategyGraph().addModuleType( position, MT_LRAModule );
         #ifdef SMTRAT_ENABLE_GroebnerModule
         if(smtrat::PROP_CONTAINS_EQUATION<=_inputFormula->getPropositions() ) {
             position = rStrategyGraph().addModuleType( position, MT_GroebnerModule );

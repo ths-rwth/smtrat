@@ -46,8 +46,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    LRAModule::LRAModule( const Formula* const _formula, Manager* const _tsManager ):
-        Module( _formula, _tsManager ),
+    LRAModule::LRAModule(ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Manager* const _tsManager ):
+        Module(_type, _formula, _tsManager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
         mNumberOfReceivedNeqConstraints( 0 ),
@@ -59,7 +59,7 @@ namespace smtrat
         mConstraintToBound(),
         mBoundCandidatesToPass()
     {
-        mModuleType = MT_LRAModule;
+        
     }
 
     /**
