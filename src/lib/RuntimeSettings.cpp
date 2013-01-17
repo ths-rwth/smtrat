@@ -61,8 +61,7 @@ namespace smtrat{
             std::string token = keyValueString.substr(tokenOff, tokenLen);
             if (!token.empty()) 
             {
-                std::cout << "token: " << token;
-                equalityOffset = token.find('=', tokenOff);
+                equalityOffset = token.find('=',0);
                 if(equalityOffset == std::string::npos) 
                 {
                     // No equality found, so we only have a key.
@@ -72,8 +71,8 @@ namespace smtrat{
                 else
                 {
                     // split token into key and value
-                    size_t keyLength = equalityOffset++ - tokenOff;
-                    std::string key = token.substr(tokenOff, keyLength );
+                    size_t keyLength = equalityOffset++;
+                    std::string key = token.substr(0, keyLength);
                     std::string value = token.substr(equalityOffset);
                     pairs.insert(KeyValuePair(key,value));
                 }
