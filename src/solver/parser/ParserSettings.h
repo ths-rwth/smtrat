@@ -48,7 +48,7 @@ namespace smtrat {
         
         void parseCmdOption(const std::string& keyValueString) 
         {
-            std::map<string, string> keyvalues = splitIntoKeyValues(keyValueString);
+            std::map<std::string, std::string> keyvalues = splitIntoKeyValues(keyValueString);
             setFlagIfOptionSet(keyvalues, traceScanning, "s");
             setFlagIfOptionSet(keyvalues, traceParsing, "p");
         }

@@ -32,14 +32,13 @@
 #include "ExitCodes.h"
 #include "parser/Driver.h"
 #include "../lib/NRATSolver.h"
-
-#ifdef GATHER_STATS
-
-#include "../lib/utilities/stats/CollectStatistics.h"
+#include "parser/ParserSettings.h"
 #include "RuntimeSettingsManager.h"
 #include "../lib/modules/AddModules.h"
-#include "parser/ParserSettings.h"
 #include "../lib/config.h"
+
+#ifdef GATHER_STATS
+#include "../lib/utilities/stats/CollectStatistics.h"
 #endif //GATHER_STATS
 
 
