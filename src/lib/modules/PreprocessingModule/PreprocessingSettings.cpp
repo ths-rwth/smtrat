@@ -21,44 +21,19 @@
 
 
 /** 
- * @file   PreprocessingModule.h
- *         Created on January 10, 2013, 9:59 PM
+ * @file   PreprocessingSettings.cpp
  * @author: Sebastian Junges
  *
  * 
  */
 
-#pragma once
-
-#include "../../Module.h"
 #include "PreprocessingSettings.h"
 
-namespace smtrat
+namespace smtrat 
 {
-    class PreprocessingModule : public Module
-    {
-        protected:
-
-        public:
-            /**
-             * Constructors:
-             */
-            PreprocessingModule( ModuleType, const Formula* const,  RuntimeSettings*, Manager* const _tsManager );
-
-            /**
-             * Destructor:
-             */
-            virtual ~PreprocessingModule();
-
-            /**
-             * Methods:
-             */
-
-            // Interfaces.
-            bool assertSubformula( Formula::const_iterator );
-            Answer isConsistent();
-            void removeSubformula( Formula::const_iterator );
-    };
-
-}    // namespace smtrat
+PreprocessingSettings::PreprocessingSettings( const std::string& name )
+{
+    
+}
+} // end namespace smtrat
 
