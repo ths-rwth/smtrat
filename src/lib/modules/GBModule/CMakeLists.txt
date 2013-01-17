@@ -6,7 +6,6 @@ ModuleClass(GroebnerModule<GBSettings${GbSettings}>)
 ModuleVersion(0 5 0)
 ModuleSettingsClass(GBRuntimeSettings)
 ModuleSettingsName(output)
-ModuleDefaultEnabled()
 EndDefineModule(gbEnabled)
 
 if(${gbEnabled})

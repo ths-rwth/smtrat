@@ -2,6 +2,7 @@ BeginDefineModule()
 ModuleMainHeader(CNFerModule/CNFerModule.h)
 ModuleName(CNFerModule)
 ModuleClass(CNFerModule)
+ModuleDefaultEnabled()
 EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
