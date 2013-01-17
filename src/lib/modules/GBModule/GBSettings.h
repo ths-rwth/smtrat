@@ -154,11 +154,6 @@ namespace smtrat
 		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
 		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
     };
-    
-    /**
-     * 
-     */
-	/*
    
  	
     struct GBSettings1
@@ -191,7 +186,8 @@ namespace smtrat
 		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
 		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
     };
-    
+   
+    /**
       struct GBSettings2
     {
         static const unsigned                            identifier                              = 2;
