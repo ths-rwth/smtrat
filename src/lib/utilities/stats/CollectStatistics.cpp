@@ -33,9 +33,11 @@
 
 #include "../../config.h"
 #ifdef GATHER_STATS
+#include "StatisticSettings.h"
 #include "CollectStatistics.h"
 #include "../../modules/GBModule/GBModuleStatistics.h"
 namespace smtrat {
+StatisticSettings* CollectStatistics::settings = new StatisticSettings();
 
 CollectStatistics::CollectStatistics( )
 {
@@ -44,6 +46,18 @@ CollectStatistics::CollectStatistics( )
 
 void CollectStatistics::registerStats(Statistics* _stats) {
     stats.push_back(_stats);
+}
+
+void CollectStatistics::produceOutput() 
+{
+    if(settings->exportXml()) 
+    {
+        exportXML(settings->xmlPath());
+    }
+    if(settings->printStats())
+    {
+        print();
+    }
 }
 
 

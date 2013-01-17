@@ -46,6 +46,8 @@ class RuntimeSettings
         // convenience methods
         std::map<std::string, std::string> splitIntoKeyValues(const std::string& keyValueString, char delimiter = ',') const;
         void setFlagIfOptionSet(const std::map<std::string, std::string>& keyvalues, bool & flag, const std::string& identifier);
+        bool setValueIfKeyExists(const std::map<std::string, std::string>& keyvalues, std::string & value, const std::string& key );
+        bool setNonEmptyValueIfKeyExists(const std::map<std::string, std::string>& keyvalues, std::string & value, const std::string& key );
 };
 }
     

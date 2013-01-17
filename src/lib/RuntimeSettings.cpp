@@ -83,6 +83,12 @@ namespace smtrat{
         return pairs;
     }
     
+    /**
+     * Convenience option
+     * @param keyvalues The map with the key-value pairs.
+     * @param flag The flag that is set if the key is found
+     * @param identifier The key searched for in the map of key-value pairs.
+     */
     void RuntimeSettings::setFlagIfOptionSet(const std::map<std::string, std::string>& keyvalues, bool & flag, const std::string& identifier) 
     {
         if(keyvalues.count(identifier) > 0) 
@@ -90,4 +96,46 @@ namespace smtrat{
             flag = true; 
         }
     }
+    
+    /**
+     * Convenience option
+     * @param keyvalues The map with the key-value pairs.
+     * @param value The string that is set to the value from the keyvalue pair, if the key exists.
+     * @param key The key searched for.
+     * @return true, if the key was found.
+     */
+    bool RuntimeSettings::setValueIfKeyExists(const std::map<std::string,std::string>& keyvalues, std::string& value, const std::string& key)
+    {
+        std::map<std::string, std::string>::const_iterator it = keyvalues.find(key);
+        if(it != keyvalues.end()) 
+        {
+            value = it->second;
+            return true;
+        }
+        return false;
+    }
+    
+    
+    /**
+     * Convenience option
+     * @param keyvalues The map with the key-value pairs.
+     * @param value The string that is set to the value from the keyvalue pair, if the key exists and the value is nonempty.
+     * @param key The key searched for.
+     * @return true, if the key was found.
+     */
+    bool RuntimeSettings::setNonEmptyValueIfKeyExists(const std::map<std::string,std::string>& keyvalues, std::string& value, const std::string& key)
+    {
+        std::map<std::string, std::string>::const_iterator it = keyvalues.find(key);
+        if( it != keyvalues.end() ) 
+        {
+            if( !it->second.empty() ) 
+            {
+                value = it->second;
+            }
+            return true;
+        }
+        return false;
+    }
+    
+    
 }

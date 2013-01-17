@@ -152,18 +152,14 @@ int main( int argc, char* argv[] )
     settingsManager.addSettingsObject("parser", parserSettings);
     // Introduce the settingsobject for the statistics to the manager.
     #ifdef GATHER_STATS
-    smtrat::StatisticSettings* statsSettings = new smtrat::StatisticSettings();
-    settingsManager.addSettingsObject("stats", statsSettings);
+    settingsManager.addSettingsObject("stats", smtrat::CollectStatistics::settings);
     #endif
     // Introduce the settingsObjects from the modules to the manager
     settingsManager.addSettingsObject(settingsObjects);
    
     // Parse commandline;
     pathToInputFile = settingsManager.parseCommandline(argc, argv);
-    // Construct the statisticsManagement
-    #ifdef GATHER_STATS
-
-    #endif
+    
     Smt2Options smt2options;
     // Parse input
     parseInput(pathToInputFile, form, parserSettings, smt2options);
@@ -184,7 +180,7 @@ int main( int argc, char* argv[] )
     delete form;
     // Export statistics
     #ifdef GATHER_STATS
-
+    smtrat::CollectStatistics::produceOutput();
     #endif
     
     return returnValue;

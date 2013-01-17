@@ -58,11 +58,7 @@ namespace smtrat
             setFlagIfOptionSet(keyvalues, mLogTCalls, "log-tcalls");
             setFlagIfOptionSet(keyvalues, mLogInfSubsets, "log-infsubsets");
         }
-        std::map<std::string, std::string>::const_iterator it = keyvalues.find("path");
-        if(it != keyvalues.end()) 
-        {
-            mPath = it->second;
-        }
+        setValueIfKeyExists(keyvalues, mPath, "path");
     }
 
     void ValidationSettings::printHelp(const std::string& prefix) const

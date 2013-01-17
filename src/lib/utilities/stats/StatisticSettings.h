@@ -33,10 +33,19 @@ namespace smtrat {
 class StatisticSettings : public RuntimeSettings
 {
 protected:    
-    bool mExportXml;
+    bool        mExportXml;
+    std::string mXmlPath;
+    bool        mPrintStats;
 public:
+    StatisticSettings();
+    
     void parseCmdOption(const std::string& keyValueString);
     void printHelp(const std::string& prefix) const;
+    
+    bool exportXml() const;
+    bool printStats() const;
+    const std::string& xmlPath() const;
+    
 
 
 };
