@@ -83,4 +83,12 @@ namespace smtrat{
         
         return pairs;
     }
+    
+    void RuntimeSettings::setFlagIfOptionSet(const std::map<std::string, std::string>& keyvalues, bool & flag, const std::string& identifier) 
+    {
+        if(keyvalues.count(identifier) > 0) 
+        {
+            flag = true; 
+        }
+    }
 }

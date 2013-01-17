@@ -38,7 +38,8 @@
 #include "../lib/utilities/stats/CollectStatistics.h"
 #include "RuntimeSettingsManager.h"
 #include "../lib/modules/AddModules.h"
-#include "ParserSettings.h"
+#include "parser/ParserSettings.h"
+#include "../lib/config.h"
 #endif //GATHER_STATS
 
 
@@ -143,7 +144,9 @@ int main( int argc, char* argv[] )
     // Construct the settingsManager
     smtrat::RuntimeSettingsManager settingsManager;
     // Introduce the smtrat core settingsObjects to the manager.
-    
+    #ifdef SMTRAT_ENABLE_VALIDATION
+    settingsManager.addSettingsObject("validation", smtrat::Module::validationSettings);
+    #endif
     // Create and introduce a parser settings object.
     smtrat::ParserSettings* parserSettings = new smtrat::ParserSettings();
     settingsManager.addSettingsObject("parser", parserSettings);

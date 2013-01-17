@@ -1,5 +1,5 @@
 /*
- * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
+ *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
  * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
  * This file is part of SMT-RAT.
@@ -20,33 +20,42 @@
  */
 
 
-/** 
- * @file   RuntimeSettings.h
+/**
+ * @file ValidationSettings.h
  * @author Sebastian Junges
- *
- * @version 10/01/2013
+ * @version 2013-01-16
  */
 
 #pragma once
+
+#include "RuntimeSettings.h"
 #include <string>
-#include <map>
 
-namespace smtrat{
-class RuntimeSettings 
+namespace smtrat 
 {
-    protected:
-        std::string mSettingsName;
-    public:
-        RuntimeSettings();
-        RuntimeSettings(const std::string& name);
-        virtual void parseCmdOption(const std::string& keyValueString);
-        virtual void printHelp(const std::string& prefix) const;
-    protected:
-        typedef std::pair<std::string, std::string> KeyValuePair;
-        // convenience methods
-        std::map<std::string, std::string> splitIntoKeyValues(const std::string& keyValueString, char delimiter = ',') const;
-        void setFlagIfOptionSet(const std::map<std::string, std::string>& keyvalues, bool & flag, const std::string& identifier);
-};
-}
+class ValidationSettings : public RuntimeSettings
+{
+protected:
+    /// Logging of lemmata
+    bool mLogLemmata;
+    /// Logging of theory calls
+    bool mLogTCalls;
+    /// Logging of infeasible subsets
+    bool mLogInfSubsets;
+    /// Path were assumptions file should be saved.
+    std::string mPath;
+public:
+    ValidationSettings();
     
+    void parseCmdOption(const std::string& keyValueString);
+    void printHelp(const std::string& prefix) const;
+    
+    bool logLemmata() const;
+    bool logTCalls() const;
+    bool logInfSubsets() const;
+    const std::string& path() const;
+    
+    
+};
 
+}

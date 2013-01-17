@@ -47,6 +47,10 @@ namespace smtrat
 {
     vector<string> Module::mAssumptionToCheck = vector<string>();
     set<string> Module::mVariablesInAssumptionToCheck = set<string>();
+    
+    #ifdef SMTRAT_ENABLE_VALIDATION
+    ValidationSettings* Module::validationSettings = new ValidationSettings();
+    #endif 
 
     Module::Module( ModuleType type, const Formula* const _formula, Manager* const _tsManager ):
         mSolverState( Unknown ),
@@ -413,8 +417,11 @@ namespace smtrat
         for( vec_set_const_pFormula::const_iterator infSubSet = backendsInfsubsets.begin(); infSubSet != backendsInfsubsets.end(); ++infSubSet )
         {
             assert( !infSubSet->empty() );
-            #ifdef LOG_INFEASIBLE_SUBSETS
-            addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) + "_infeasible_subset" );
+            #ifdef SMTRAT_ENABLE_VALIDATION
+            if( validationSettings->logInfSubsets() ) 
+            {
+                addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) + "_infeasible_subset" );
+            }
             #endif
             result.push_back( set<const Formula*>() );
             for( set<const Formula*>::const_iterator cons = infSubSet->begin(); cons != infSubSet->end(); ++cons )
@@ -512,10 +519,13 @@ namespace smtrat
             #endif
             result = (*module)->isConsistent();
             (*module)->receivedFormulaChecked();
-            #ifdef LOG_THEORY_CALLS
-            if( result != Unknown )
+            #ifdef SMTRAT_ENABLE_VALIDATION
+            if( validationSettings->logTCalls() ) 
             {
-                addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
+                if( result != Unknown )
+                {
+                    addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
+                }
             }
             #endif
             ++module;
@@ -592,11 +602,14 @@ namespace smtrat
             while( !(*module)->deductions().empty() )
             {
                 addDeduction( (*module)->rDeductions().back() );
-                #ifdef LOG_LEMMATA
-                Formula notLemma = Formula( NOT );
-                notLemma.addSubformula( new Formula( *(*module)->rDeductions().back() ) );
-                addAssumptionToCheck( notLemma, false, moduleName( (*module)->type() ) + "_lemma" );
-                notLemma.pruneBack();
+                #ifdef SMTRAT_ENABLE_VALIDATION
+                if( validationSettings->logLemmata() ) 
+                {
+                    Formula notLemma = Formula( NOT );
+                    notLemma.addSubformula( new Formula( *(*module)->rDeductions().back() ) );
+                    addAssumptionToCheck( notLemma, false, moduleName( (*module)->type() ) + "_lemma" );
+                    notLemma.pruneBack();
+                }
                 #endif
                 (*module)->rDeductions().pop_back();
             }
@@ -691,12 +704,13 @@ namespace smtrat
      * Prints the collected assumptions in the assumption vector into _filename with an appropriate smt2 header including all variables used.
      * @param _filename
      */
-    void Module::storeAssumptionsToCheck( const Manager& _manager, const string _filename )
+    void Module::storeAssumptionsToCheck( const Manager& _manager )
     {
+        #ifdef SMTRAT_ENABLE_VALIDATION
         if( !Module::mAssumptionToCheck.empty() )
         {
             ofstream smtlibFile;
-            smtlibFile.open( _filename );
+            smtlibFile.open( validationSettings->path() );
             for( vector< string >::const_iterator assum = Module::mAssumptionToCheck.begin();
                  assum != Module::mAssumptionToCheck.end(); ++assum )
             { // for each assumption add a new solver-call by resetting the search state
@@ -727,6 +741,7 @@ namespace smtrat
             smtlibFile << "(exit)";
             smtlibFile.close();
         }
+        #endif
     }
 
     /**

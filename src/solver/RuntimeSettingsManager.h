@@ -36,22 +36,6 @@
 
 namespace smtrat {
    
-
-    /**
-     * Structure which holds the runtime-settings for validation.
-     */
-    struct ValidationSettings : RuntimeSettings {
-        bool enabled;
-        std::string pathToAssumptions;
-    };
-
-    /**
-     * Structure which holds the runtime-settings for statistics.
-     */
-    struct StatisticSettings : RuntimeSettings {
-        bool enabled;
-        std::string xmlOutputfile;
-    };
     
     /**
      * Structure which holds all the different runtime-settings.
