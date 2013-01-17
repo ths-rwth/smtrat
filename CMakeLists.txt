@@ -73,8 +73,7 @@ endif()
 find_package(GiNaC REQUIRED)
 if(USE_GINACRA)
 	find_package(GiNaCRA REQUIRED)
-	#notice that the usage of Log4Cplus might be disabled in GiNaCRA, in that case, it doesnt need inclusion here.
-	find_package(Log4cplus)
+	#notice that GiNacra might use log4cplus, but we cannot currently support that as Ginacra does not export this knowledge.
 endif()
 include( FindCLN )
 # find gmp (which is necessary for CLN, at least when linking statically)
@@ -110,7 +109,7 @@ endif()
 set( libraries ${libraries} ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} )
 
 if(USE_GINACRA)
-        set( libraries ${GINACRA_LIBRARY} ${LOG4CPLUS_LIBRARIES} pthread ${libraries} )
+        set( libraries ${GINACRA_LIBRARY} ${libraries} )
 endif()
 if(USE_NSS)
         add_library(csdp UNKNOWN IMPORTED)
