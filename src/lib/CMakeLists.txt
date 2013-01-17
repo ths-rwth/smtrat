@@ -91,9 +91,11 @@ set(lib_utilities_headers
 	utilities/debug/debug.h
 	utilities/stats/Statistics.h
 	utilities/stats/CollectStatistics.h
+	utilities/stats/StatisticSettings.h
 )
 set(lib_utilities_src
 	utilities/stats/CollectStatistics.cpp
+	utilities/stats/StatisticSettings.cpp
 )
 
 

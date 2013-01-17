@@ -39,6 +39,7 @@
 
 #ifdef GATHER_STATS
 #include "../lib/utilities/stats/CollectStatistics.h"
+#include "lib/utilities/stats/StatisticSettings.h"
 #endif //GATHER_STATS
 
 
@@ -149,7 +150,11 @@ int main( int argc, char* argv[] )
     // Create and introduce a parser settings object.
     smtrat::ParserSettings* parserSettings = new smtrat::ParserSettings();
     settingsManager.addSettingsObject("parser", parserSettings);
-    
+    // Introduce the settingsobject for the statistics to the manager.
+    #ifdef GATHER_STATS
+    smtrat::StatisticSettings* statsSettings = new smtrat::StatisticSettings();
+    settingsManager.addSettingsObject("stats", statsSettings);
+    #endif
     // Introduce the settingsObjects from the modules to the manager
     settingsManager.addSettingsObject(settingsObjects);
    
@@ -182,28 +187,5 @@ int main( int argc, char* argv[] )
 
     #endif
     
-//    for( int ai = 1; ai < argc; ++ai )
-//    {
-//        
-//        else if( argv[ai] == std::string( "--print-stats") ) {
-//            #ifdef GATHER_STATS
-//            printStats = true;
-//            #endif
-//        }
-//        else if( argv[ai] == std::string( "--export-stats") )
-//        {
-//            #ifdef GATHER_STATS
-//            exportStats = true;
-//            #endif
-//            //TODO make this optional.
-//            pathToStatsXML = argv[++ai];
-//        }
-//        else if( argv[ai] == std::string( "--validation") )
-//        {
-////            smtrat::RuntimeSettings::validationSettings.enabled = true;
-////            smtrat::RuntimeSettings::validationSettings.pathToAssumptions = argv[++ai];
-//        }
-//       
-//       
     return returnValue;
 }
