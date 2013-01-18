@@ -39,7 +39,7 @@
 #include "ModuleFactory.h"
 
 /// Flag activating some informative and not exaggerated output about module calls.
-//#define MODULE_VERBOSE
+#define MODULE_VERBOSE
 
 using namespace std;
 
@@ -500,7 +500,7 @@ namespace smtrat
         mFirstSubformulaToPass = mpPassedFormula->end();
         Answer result          = Unknown;
 
-        if( false ) //mpManager->runsParallel() )
+        if( mpManager->runsParallel() )
         {
             /*
              * Run the backend solver parallel until the first answers true or false.
@@ -551,6 +551,7 @@ namespace smtrat
                 (*module)->print( cout, " ");
                 #endif
                 result = (*module)->isConsistent();
+//                cout << (*module)->id() << endl;
                 (*module)->receivedFormulaChecked();
                 #ifdef LOG_THEORY_CALLS
                 if( result != Unknown )

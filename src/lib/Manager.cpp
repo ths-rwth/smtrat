@@ -89,13 +89,15 @@ namespace smtrat
 //        addModuleType( MT_ICPModule, new StandardModuleFactory<ICPModule>() );
         addModuleType( MT_TLRAModule, new StandardModuleFactory<TLRAModule>() );
         
-        if( mStrategyGraph.hasBranches() )
+        if( !mStrategyGraph.hasBranches() )
         {
-            unsigned numberOfCores = 4; //std::thread::hardware_concurrency();
+            std::cout << "has branches" << std::endl;
+            unsigned numberOfCores = 8; //std::thread::hardware_concurrency();
             if( numberOfCores>1 )
             {
                 mRunsParallel = true;
                 mpThreadPool = new ThreadPool( numberOfCores );
+                std::cout << "has branches2" << std::endl;
             }
         }
     }
