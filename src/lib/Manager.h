@@ -33,6 +33,14 @@
 #ifndef SMTRAT_MANAGER_H
 #define SMTRAT_MANAGER_H
 
+#include <vector>
+
+#include "Constraint.h"
+#include "Answer.h"
+#include "ModuleFactory.h"
+#include "StrategyGraph.h"
+#include "modules/ModuleType.h"
+#include "Module.h"
 #include "config.h"
 #include "Constraint.h"
 #include "Module.h"

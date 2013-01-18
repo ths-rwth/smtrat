@@ -39,9 +39,10 @@ add_custom_command( OUTPUT ${CMAKE_BINARY_DIR}/src/solver/lex.smtrat.cc
 
 add_executable( smtratSolver
 	${CMAKE_SOURCE_DIR}/src/solver/parser/Driver.cc
-	${CMAKE_SOURCE_DIR}/src/solver/smtratSolver.cpp
+	smtratSolver.cpp
 	${CMAKE_BINARY_DIR}/src/solver/Parser.tab.cc
 	${CMAKE_BINARY_DIR}/src/solver/lex.smtrat.cc
+	RuntimeSettingsManager.cpp
 )
 
 #TODO: Dependencies do not work correctly, rebuilding parser is not triggered!

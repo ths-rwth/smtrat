@@ -1,0 +1,12 @@
+BeginDefineModule()
+ModuleMainHeader(CADModule/CADModule.h)
+ModuleName(CADModule)
+ModuleClass(CADModule)
+ModuleVersion(0 7 0)
+ModuleDefaultEnabled()
+EndDefineModule(enabled)
+
+if(${enabled})
+	FILE(GLOB_RECURSE sources *.cpp)
+	set(modulesSources ${modulesSources} ${sources} PARENT_SCOPE) 
+endif()

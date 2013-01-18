@@ -151,6 +151,14 @@ class GroebnerModuleStats : public Statistics
       * @param ratio The size of the conflict divided through the number of equalities
       */
      void EffectivenessOfConflicts(float ratio) { mEffectivenessOfConflicts.push_back(ratio); }
+     
+     void FoundEqualities() {
+         ++mNrOfFoundEqualities;
+     }
+     
+     void FoundIdentities() {
+         ++mNrOfFoundIdentities;
+     }
      /**
       * 
       * @param nrOfPops After an equality is removed, how many pop backtracks are coming.
@@ -163,7 +171,7 @@ class GroebnerModuleStats : public Statistics
     GroebnerModuleStats() : Statistics("GroebnerBasis", this), mNrCalls(0), mNrConstantGBs(0),
             mNrInfeasibleInequalities(0), mNrDeducedInequalities(0), mNrDeducedEqualities(0),mNrBackendReturnsFalse(0), mNrOfStrictInequalitiesAdded(0),
             mNrOfNonStrictInequalitiesAdded(0), mNrOfEqualitiesAdded(0), mNrOfStrictInequalitiesRemoved(0),
-            mNrOfNonStrictInequalitiesRemoved(0), mNrOfEqualitiesRemoved(0)
+            mNrOfNonStrictInequalitiesRemoved(0), mNrOfEqualitiesRemoved(0), mNrOfFoundEqualities(0), mNrOfFoundIdentities(0)
     {}
     unsigned mNrCalls;
     unsigned mNrConstantGBs;
@@ -177,6 +185,8 @@ class GroebnerModuleStats : public Statistics
     unsigned mNrOfStrictInequalitiesRemoved;
     unsigned mNrOfNonStrictInequalitiesRemoved;
     unsigned mNrOfEqualitiesRemoved;
+    unsigned mNrOfFoundEqualities;
+    unsigned mNrOfFoundIdentities;
     
     std::vector<unsigned> mNrOfConflictSets;
     std::vector<float> mEffectivenessOfConflicts;

@@ -3,11 +3,17 @@
 #define SMTRAT_PACKAGE_NAME "@PROJECT_NAME@"
 #define SMTRAT_PROJECT_NAME "@PROJECT_FULLNAME@"
 #define SMTRAT_VERSION "@PROJECT_VERSION@"
+#define SMTRAT_WEBSITE "smtrat.sourceforge.net"
 
 #cmakedefine USE_NSS
 #cmakedefine USE_GINACRA
-#cmakedefine USE_GB
-#cmakedefine USE_CAD
+
+// Whether the validation in the module should be enabled
+#cmakedefine SMTRAT_ENABLE_VALIDATION
+
+#cmakedefine SMTRAT_ENABLE_GroebnerModule
+#cmakedefine SMTRAT_ENABLE_CADModule
+#cmakedefine SMTRAT_ENABLE_VSModule
 
 #cmakedefine GATHER_STATS
 

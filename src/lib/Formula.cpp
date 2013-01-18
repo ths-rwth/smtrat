@@ -532,7 +532,7 @@ namespace smtrat
     /**
      *
      * @param _moduleType
-     */
+     
     void Formula::notSolvableBy( ModuleType _moduleType )
     {
         switch( _moduleType )
@@ -607,6 +607,7 @@ namespace smtrat
             }
         }
     }
+     */
 
     /**
      *
@@ -695,7 +696,8 @@ namespace smtrat
      *
      * @param _out
      * @param _init
-     * @param _onOneLine
+     * @param _smtlib smtlib format
+     * @param _onOneLine everything on one line
      */
     void Formula::print( ostream& _out, const string _init, bool _smtlib, bool _onOneLine ) const
     {

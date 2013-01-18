@@ -11,6 +11,12 @@
 # Version: 2012-11-20                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
+# GUI settings
+# # # # # # # #
+set( JAR_NAME "SMT-XRAT" )
+set( DOLLAR "$" )
+
 # modify pathes in build.xml
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/build.xml.in ${CMAKE_CURRENT_BINARY_DIR}/build.xml )
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/help.html.in ${CMAKE_CURRENT_BINARY_DIR}/help.html )

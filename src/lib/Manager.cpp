@@ -34,6 +34,7 @@
 #include "StrategyGraph.h"
 #include "modules/Modules.h"
 
+
 #include <typeinfo>
 #include <cln/cln.h>
 
@@ -51,7 +52,7 @@ namespace smtrat
 
     Manager::Manager( Formula* _inputFormula ):
         mpPassedFormula( _inputFormula ),
-        mGeneratedModules( vector<Module*>( 1, new Module( mpPassedFormula, this ) ) ),
+        mGeneratedModules( vector<Module*>( 1, new Module(MT_Module, mpPassedFormula, this ) ) ),
         mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
         mStrategyGraph(),
@@ -191,9 +192,9 @@ namespace smtrat
              */
             if( backend == allBackends.end() )
             {
-                auto backendFactory = mpModuleFactories->find( iter->second );
-                assert( backendFactory != mpModuleFactories->end() );
-                Module* pBackend = backendFactory->second->create( _requiredBy->pPassedFormula(), this );
+                auto backendFactory = mpModulFactories->find( iter->second );
+                assert( backendFactory != mpModulFactories->end() );
+                Module* pBackend = backendFactory->second->create(iter->second,  _requiredBy->pPassedFormula(), this );
                 mGeneratedModules.push_back( pBackend );
                 pBackend->setId( mGeneratedModules.size()-1 );
                 allBackends.push_back( pBackend );

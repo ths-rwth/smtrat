@@ -1,0 +1,12 @@
+BeginDefineModule()
+ModuleMainHeader(SATModule/SATModule.h)
+ModuleName(SATModule)
+ModuleClass(SATModule)
+ModuleVersion(1 0 0)
+ModuleDefaultEnabled()
+EndDefineModule(satEnabled)
+
+if(${satEnabled})
+	FILE(GLOB_RECURSE sources *.cpp)
+	set(modulesSources ${modulesSources} ${sources} PARENT_SCOPE) 
+endif()

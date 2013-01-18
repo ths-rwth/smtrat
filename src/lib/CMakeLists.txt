@@ -17,9 +17,8 @@ include_directories( #${PROJECT_BUILD_DIR}/src
                      ${GINACRA_INCLUDE_DIR}
 )
 
-# set some variables
+# Core library
 # # # # # # # # # # #
-
 set(lib_core_src
     Manager.cpp
     Module.cpp
@@ -28,7 +27,9 @@ set(lib_core_src
     Constraint.cpp
     ConstraintPool.cpp
 	RuntimeSettings.cpp
+	ValidationSettings.cpp
 )
+
 set(lib_core_headers
     Manager.h
     Answer.h
@@ -42,114 +43,23 @@ set(lib_core_headers
     ConstraintPool.h
 	RuntimeSettings.h
 	VariableBounds.h
+	ValidationSettings.h
     smtrat.h
 )
-set(lib_modules_headers
-    modules/Modules.h
-    modules/StandardModuleFactory.h
-    modules/SmartSimplifier.h
-    modules/VSModule.h
-    modules/SATModule.h
-    modules/LRAModule.h
-    modules/TLRAModule.h
-    modules/PreProModule.h
-    modules/CNFerModule.h
-    modules/SingleVSModule.h
-#    modules/ICPModule.h
-    modules/ILRAModule.h
-)
-set(lib_modules_src
-    modules/SmartSimplifier.cpp
-    modules/VSModule.cpp
-    modules/SATModule.cpp
-    modules/LRAModule.cpp
-    modules/TLRAModule.cpp
-    modules/PreProModule.cpp
-    modules/CNFerModule.cpp
-    modules/SingleVSModule.cpp
-#    modules/ICPModule.cpp
-    modules/ILRAModule.cpp
-)
 
-if(USE_GB)
-	set(lib_GBModule_headers modules/GBModule/GBSettings.h modules/GBModule/GBModuleStatistics.h modules/GBModule/GBCalculationStatistics.h)
-	set(lib_GBModule_src modules/GBModule/GBModuleStatistics.cpp modules/GBModule/GBCalculationStatistics.cpp)
-	set(lib_modules_headers ${lib_modules_headers} modules/GroebnerModule.h modules/GroebnerModule.tpp)
-endif()
+# Include modules
+#######################
+add_subdirectory(modules)
 
-if(USE_CAD)
-	set(lib_modules_headers ${lib_modules_headers} modules/CADModule.h)
-	set(lib_modules_src ${lib_modules_src}  modules/CADModule.cpp)
-endif()
+# Include solvers/strategies
+#######################
+add_subdirectory(strategies)
 
-set(lib_VSModule_headers
-    modules/VSModule/Condition.h
-    modules/VSModule/SqrtEx.h
-    modules/VSModule/State.h
-    modules/VSModule/Substitute.h
-    modules/VSModule/Substitution.h
-    modules/VSModule/Tools.h
-)
-set(lib_VSModule_src
-    modules/VSModule/Condition.cpp
-    modules/VSModule/SqrtEx.cpp
-    modules/VSModule/State.cpp
-    modules/VSModule/Substitute.cpp
-    modules/VSModule/Substitution.cpp
-)
-set(lib_SingleVSModule_headers
-    modules/SingleVSModule/Substitute.h
-)
+# write config.h
+#######################
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/config.h )
 
-set(lib_SingleVSModule_src
-    modules/SingleVSModule/Substitute.cpp
-)
-set(lib_SATModule_headers
-	modules/SATModule/Alg.h
-	modules/SATModule/Alloc.h
-	modules/SATModule/Heap.h
-	modules/SATModule/IntTypes.h
-	modules/SATModule/Map.h
-	modules/SATModule/Queue.h
-	modules/SATModule/Sort.h
-	modules/SATModule/Vec.h
-	modules/SATModule/XAlloc.h
-	modules/SATModule/Options.h
-	modules/SATModule/SolverTypes.h
-	modules/SATModule/SATStatistics.h
-)
-set(lib_SATModule_src
-	modules/SATModule/Options.cpp
-	modules/SATModule/SATStatistics.cpp
-)
-set(lib_LRAModule_headers
-	modules/LRAModule/Bound.h
-	modules/LRAModule/Tableau.h
-	modules/LRAModule/Value.h
-	modules/LRAModule/Variable.h
-)
-set(lib_LRAModule_src
-	modules/LRAModule/Bound.cpp
-	modules/LRAModule/Tableau.cpp
-	modules/LRAModule/Value.cpp
-	modules/LRAModule/Variable.cpp
-)
-set(lib_TLRAModule_headers
-	modules/TLRAModule/Bound.h
-	modules/TLRAModule/Tableau.h
-	modules/TLRAModule/Value.h
-	modules/TLRAModule/Variable.h
-	modules/TLRAModule/Numeric.h
-)
-set(lib_TLRAModule_src
-	modules/TLRAModule/Numeric.cpp
-)
-set(lib_ICPModule_headers
-    modules/ICPModule/DerivativeTable.h
-)
-set(lib_ICPModule_src
 
-)
 
 # Nullstellensatz module variables
 
@@ -177,13 +87,15 @@ set(lib_LinAlg
 	utilities/LinAlg/FindExactSolution.h
 )
 endif()
-set(lib_Utilities_headers
+set(lib_utilities_headers
 	utilities/debug/debug.h
 	utilities/stats/Statistics.h
 	utilities/stats/CollectStatistics.h
+	utilities/stats/StatisticSettings.h
 )
-set(lib_Utilities_src
+set(lib_utilities_src
 	utilities/stats/CollectStatistics.cpp
+	utilities/stats/StatisticSettings.cpp
 )
 
 
@@ -191,33 +103,10 @@ set( lib_nratsolver_headers NRATSolver.h )
 set( lib_nratsolver_src NRATSolver.cpp )
 
 set(lib_${PROJECT_NAME}_SRCS
-    ${lib_nratsolver_headers}
     ${lib_nratsolver_src}
-    ${lib_core_headers}
     ${lib_core_src}
-    ${lib_modules_headers}
     ${lib_modules_src}
-    ${lib_VSModule_headers}
-    ${lib_VSModule_src}
-	${lib_SATModule_headers}
-	${lib_SATModule_src}
-	${lib_LRAModule_headers}
-	${lib_LRAModule_src}
-	${lib_TLRAModule_headers}
-	${lib_TLRAModule_src}
-	${lib_GBModule_headers}
-	${lib_GBModule_src}
-	${lib_NSSModule_headers}
-	${lib_NSSModule_src}
-	${lib_SDP_headers}
-	${lib_SDP_src}
-	${lib_LinAlg}
-	${lib_Utilities_headers}
-	${lib_Utilities_src}
-    ${lib_SingleVSModule_headers}
-    ${lib_SingleVSModule_src}
-#    ${lib_ICPModule_headers}
-#    ${lib_ICPModule_src}
+	${lib_utilities_src}
 )
 
 # set linking flags
@@ -259,11 +148,11 @@ install( TARGETS lib_${PROJECT_NAME} DESTINATION lib PERMISSIONS
     GROUP_READ GROUP_EXECUTE
     WORLD_READ WORLD_EXECUTE
 )
-install( FILES ${lib_core_headers} ${lib_nratsolver_headers} DESTINATION include/${PROJECT_NAME}/lib )
-install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/lib/modules )
-install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/VSModule )
-install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SATModule )
-install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/LRAModule )
-install( FILES ${lib_SingleVSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SingleVSModule )
+#install( FILES ${lib_core_headers} ${lib_nratsolver_headers} DESTINATION include/${PROJECT_NAME}/lib )
+#install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/lib/modules )
+#install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/VSModule )
+#install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SATModule )
+#install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/LRAModule )
+#install( FILES ${lib_SingleVSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SingleVSModule )
 # install( FILES ${lib_ICPModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/ICPModule )
-install( FILES ${lib_TLRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/TLRAModule )
+#install( FILES ${lib_TLRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/TLRAModule )

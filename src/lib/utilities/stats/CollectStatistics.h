@@ -30,6 +30,7 @@
 #define	COLLECTSTATISTICS_H
 
 #include "../../config.h"
+#include "StatisticSettings.h"
 
 
 #ifdef GATHER_STATS
@@ -47,6 +48,8 @@ namespace smtrat {
         CollectStatistics( );
         virtual ~CollectStatistics( ) {};
         
+        static StatisticSettings* settings;
+        static void produceOutput();
         static void registerStats(Statistics* _stats);
         static void print(std::ostream& os = std::cout);
         static void exportKeyValue(std::string path);

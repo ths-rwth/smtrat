@@ -20,37 +20,13 @@ cmake_minimum_required (VERSION 2.8)
 set( PROJECT_FULLNAME "SMT-RAT")
 set( PROJECT_DESCRIPTION "Satisfiability-Modulo-Theories Real Algebra Toolbox")
 set( smtrat_MAJORVERSION 0)
-set( smtrat_MINORVERSION 3)
+set( smtrat_MINORVERSION 4)
 set( smtrat_MAINTENANCEVERSION 0)
 set( smtrat_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
 set( PROJECT_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
 set( smtrat_NAME "SMT-RAT" )
 set( smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 
-# options for the GBModule settings
-set( SMTRAT_GBSETTING "Setting 1" CACHE STRING "" )
-set( SMTRAT_GBSETTING "Setting 2" CACHE STRING "" )
-set( SMTRAT_GBSETTING "Setting 3" CACHE STRING "" )
-set( SMTRAT_GBSETTING "Setting 4" CACHE STRING "" )
-set( SMTRAT_GBSETTING "Setting 5" CACHE STRING "" )
-set( SMTRAT_GBSETTING_VALUES "Setting 1" "Setting 2" "Setting 3" "Setting 4" "Setting 5"  )
-set_property( CACHE SMTRAT_GBSETTING PROPERTY STRINGS ${SMTRAT_GBSETTING_VALUES} )
-list( FIND SMTRAT_GBSETTING_VALUES ${SMTRAT_GBSETTING} SMTRAT_GBSETTING_INDEX )
-if( ${SMTRAT_GBSETTING_INDEX} EQUAL -1 )
-    message( FATAL_ERROR "Option ${SMTRAT_GBSETTING} not supported, valid entries are ${SMTRAT_GBSETTING_VALUES}" )
-    set( SMTRAT_GBMODULE_SETTINGS "GBSettings1" )
-elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 0 )
-    set( SMTRAT_GBMODULE_SETTINGS "GBSettings1" )
-elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 1 )
-    set( SMTRAT_GBMODULE_SETTINGS "GBSettings1" )
-elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 2 )
-    set( SMTRAT_GBMODULE_SETTINGS "GBSettings1" )
-elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 3 )
-    set( SMTRAT_GBMODULE_SETTINGS "GBSettings1" )
-elseif( ${SMTRAT_GBSETTING_INDEX} EQUAL 4 )
-    set( SMTRAT_GBMODULE_SETTINGS "GBSettings5" )
-endif()
-message(${SMTRAT_GBMODULE_SETTINGS})
 
 # options
 option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
@@ -59,24 +35,10 @@ option(BUILD_GUI "Build the GUI" OFF)
 option(GATHER_STATS "Gather statistics during the calculation" OFF)
 option(USE_NSS "Compile the NSS Module" OFF)
 option(USE_GINACRA "Compile modules using GiNaCRA" ON)
-option(USE_GB "Compile modules using GroebnerBasis" OFF)
-option(USE_CAD "Compile modules using CAD" ON)
+option(SMTRAT_ENABLE_VALIDATION "Output intermediate states in an smt2 file")
+
 
 if(NOT USE_GINACRA)
-	if(USE_GB)
-		message(WARNING, "GB is automatically switched off when GiNaCRA is not available")
-	endif()
-	SET(USE_GB FALSE)
-	if(USE_CAD)
-		message(WARNING, "CAD is automatically switched off when GiNaCRA is not available")
-	endif()
-	SET(USE_CAD FALSE)
-endif()
-if(NOT USE_GB)
-	if(USE_NSS)
-		message(WARNING, "NSS is automatically switched off when Groebner Basis are not used")
-	endif()
-	SET(USE_NSS FALSE)
 endif()
 if(USE_NSS)
 	project(smtrat CXX Fortran C)
@@ -84,8 +46,15 @@ else()
 	project(smtrat CXX)
 endif()
 
+
 # path to find own modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+# Include own macros.
+include( smtratmacros )
+# TODO: iteratively search for cmake files and include them here. 
+
+
+
 
 # path to put in the executables
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
@@ -104,7 +73,7 @@ endif()
 find_package(GiNaC REQUIRED)
 if(USE_GINACRA)
 	find_package(GiNaCRA REQUIRED)
-	find_package(Log4cplus)
+	#notice that GiNacra might use log4cplus, but we cannot currently support that as Ginacra does not export this knowledge.
 endif()
 include( FindCLN )
 # find gmp (which is necessary for CLN, at least when linking statically)
@@ -140,7 +109,7 @@ endif()
 set( libraries ${libraries} ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} )
 
 if(USE_GINACRA)
-        set( libraries ${GINACRA_LIBRARY} ${LOG4CPLUS_LIBRARIES} pthread ${libraries} )
+        set( libraries ${GINACRA_LIBRARY} ${libraries} )
 endif()
 if(USE_NSS)
         add_library(csdp UNKNOWN IMPORTED)
@@ -161,7 +130,7 @@ set( DOLLAR "$" )
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 configure_file( ${CMAKE_SOURCE_DIR}/smtrat.pc.in ${CMAKE_BINARY_DIR}/smtrat.pc )
-configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/config.h )
+
 
 # further directories to be included
 # # # # # # # # # # # # # # # # # # #

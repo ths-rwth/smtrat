@@ -26,7 +26,7 @@
  * @author Ulrich Loup
  * @author Sebastian Junges
  * @since 2012-01-18
- * @version 2012-07-02
+ * @version 2013-01-16
  */
 
 #ifndef SMTRAT_MODULE_H
@@ -34,10 +34,6 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
-//#define LOG_ON
-//#define LOG_THEORY_CALLS
-//#define LOG_INFEASIBLE_SUBSETS
-//#define LOG_LEMMATA
 
 #include <vector>
 #include <map>
@@ -48,6 +44,8 @@
 
 #include "Answer.h"
 #include "Formula.h"
+#include "ValidationSettings.h"
+#include "config.h"
 
 namespace smtrat
 {
@@ -61,6 +59,9 @@ namespace smtrat
      */
     class Module
     {
+        #ifdef SMTRAT_ENABLE_VALIDATION
+        friend class ValidationSettings;
+        #endif
         public:
             typedef std::map< const std::string, std::string > Model;
         protected:
@@ -102,11 +103,15 @@ namespace smtrat
             bool checkFirstSubformulaToPassValidity() const;
 
         public:
-            Module( const Formula* const, Manager* const = NULL );
+            Module( ModuleType type, const Formula* const, Manager* const = NULL );
             virtual ~Module();
 
             static std::vector<std::string> mAssumptionToCheck;
             static std::set<std::string> mVariablesInAssumptionToCheck;
+            
+            #ifdef SMTRAT_ENABLE_VALIDATION
+            static ValidationSettings* validationSettings;
+            #endif
 
             // Main interfaces
             virtual bool inform( const Constraint* const _constraint )
@@ -175,7 +180,8 @@ namespace smtrat
 
             inline void passedFormulaCannotBeSolved()
             {
-                mpPassedFormula->notSolvableBy( type() );
+                //TODO do we need this???
+                //mpPassedFormula->notSolvableBy( type() );
             }
 
             const ModuleType type() const
@@ -236,7 +242,7 @@ namespace smtrat
             static void addAssumptionToCheck( const Formula&, bool, const std::string );
             static void addAssumptionToCheck( const std::set<const Formula*>&, bool, const std::string );
             static void addAssumptionToCheck( const std::set<const Constraint*>&, bool, const std::string );
-            static void storeAssumptionsToCheck( const Manager&, const std::string = "assumptions_to_check.smt2" );
+            static void storeAssumptionsToCheck( const Manager& );
             static const std::string moduleName( const ModuleType );
             //SMT
             void storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> &, const std::string= "smaller_muses") const;

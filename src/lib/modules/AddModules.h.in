@@ -1,0 +1,33 @@
+/* 
+ * File:   AddModules.h
+ * Author: Sebastian Junges
+ *
+ * Created on January 12, 2013, 3:39 PM
+ */
+
+#pragma once 
+
+#include "../Manager.h"
+#include "ModuleType.h"
+#include "Modules.h"
+#include "../config.h"
+#include "../RuntimeSettings.h"
+
+#include <list>
+#include <string>
+
+namespace smtrat {
+std::list<std::pair<std::string, RuntimeSettings*> > addModules(Manager* manager) {
+		typedef std::pair<std::string, RuntimeSettings*> NameAndSettings ;
+		// List of settings objects
+		std::list<NameAndSettings> settingsObjects;
+		//
+        // Add all existing modules, as well as the settings
+        //
+        @addModuleList@
+		// Return he list of settings objects, so any method managing them gets them.
+		return settingsObjects;
+}
+}
+
+

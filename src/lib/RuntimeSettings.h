@@ -24,22 +24,31 @@
  * @file   RuntimeSettings.h
  * @author Sebastian Junges
  *
- * Created on September 20, 2012, 5:53 PM
+ * @version 10/01/2013
  */
 
-#ifndef RUNTIMESETTINGS_H
-#define	RUNTIMESETTINGS_H
-
+#pragma once
 #include <string>
+#include <map>
 
-namespace smtrat {
-    struct RuntimeSettings {
-        static int verbosity;
-        static std::string pathToAssumptions;
-        
-    };
+namespace smtrat{
+class RuntimeSettings 
+{
+    protected:
+        std::string mSettingsName;
+    public:
+        RuntimeSettings();
+        RuntimeSettings(const std::string& name);
+        virtual void parseCmdOption(const std::string& keyValueString);
+        virtual void printHelp(const std::string& prefix) const;
+    protected:
+        typedef std::pair<std::string, std::string> KeyValuePair;
+        // convenience methods
+        std::map<std::string, std::string> splitIntoKeyValues(const std::string& keyValueString, char delimiter = ',') const;
+        void setFlagIfOptionSet(const std::map<std::string, std::string>& keyvalues, bool & flag, const std::string& identifier);
+        bool setValueIfKeyExists(const std::map<std::string, std::string>& keyvalues, std::string & value, const std::string& key );
+        bool setNonEmptyValueIfKeyExists(const std::map<std::string, std::string>& keyvalues, std::string & value, const std::string& key );
+};
 }
-
-
-#endif	/* RUNTIMESETTINGS_H */
+    
 
