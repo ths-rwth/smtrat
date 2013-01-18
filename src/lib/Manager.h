@@ -35,7 +35,6 @@
 
 #include <vector>
 
-#include "Constraint.h"
 #include "Answer.h"
 #include "ModuleFactory.h"
 #include "StrategyGraph.h"
@@ -43,10 +42,6 @@
 #include "Module.h"
 #include "config.h"
 #include "Constraint.h"
-#include "Module.h"
-#include "ModuleFactory.h"
-#include "ModuleType.h"
-#include "StrategyGraph.h"
 #include "ThreadPool.h"
 #include "modules/StandardModuleFactory.h"
 

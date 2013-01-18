@@ -21,26 +21,36 @@
 
 
 /**
- * @file Modules.h
+ * @file ModuleType.h
  *
  * @author Ulrich Loup
- * @author Sebastian Junges
- * @since 2012-01-18
- * @version 2012-07-02
+ * @since 2012-02-11
+ * @version 2013-01-12
  */
 
-#pragma once 
- #include "VSModule/VSModule.h" 
- #include "CNFerModule/CNFerModule.h" 
- #include "CADModule/CADModule.h" 
- #include "LRAModule/LRAModule.h" 
- #include "SATModule/SATModule.h" 
+#pragma once
 
+#include <string>
 
 namespace smtrat
 {
-	void printModulesInfo();
-}
+    /**
+     * Enumeration of available module types.
+     */
+    enum ModuleType
+    {
+        /// type of class Module
+        MT_Module,
+        ///
+		 MT_VSModule,
+ MT_CNFerModule,
+ MT_CADModule,
+ MT_LRAModule,
+ MT_SATModule,
 
+        /// type of no Module
+        MT_NoModule           // KEEP THIS AS THE LAST ELEMENT OF THIS ENUM!!!
+    };
 
-
+	std::string moduleTypeToString(ModuleType _type);
+}    // namespace smtrat

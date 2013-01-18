@@ -27,7 +27,7 @@
 #ifndef SMTRAT_NRATSOLVER_H
 #define SMTRAT_NRATSOLVER_H
 
-#include "Manager.h"
+#include "../Manager.h"
 
 namespace smtrat
 {

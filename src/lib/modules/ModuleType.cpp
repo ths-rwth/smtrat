@@ -21,26 +21,54 @@
 
 
 /**
- * @file Modules.h
+ * 
+ * @file ModuleType.cpp
  *
  * @author Ulrich Loup
  * @author Sebastian Junges
- * @since 2012-01-18
- * @version 2012-07-02
+ * @since 2012-02-11
+ * @version 2013-01-12
  */
 
-#pragma once 
- #include "VSModule/VSModule.h" 
- #include "CNFerModule/CNFerModule.h" 
- #include "CADModule/CADModule.h" 
- #include "LRAModule/LRAModule.h" 
- #include "SATModule/SATModule.h" 
+#include "ModuleType.h"
+#include <string>
 
+namespace smtrat {
 
-namespace smtrat
+std::string moduleTypeToString(ModuleType _type)
 {
-	void printModulesInfo();
+	switch( _type )
+	{
+		case MT_Module:
+		{
+			return "Module";
+		}
+ 	case MT_VSModule: 
+	{
+		 return "VSModule";
+	}
+ 	case MT_CNFerModule: 
+	{
+		 return "CNFerModule";
+	}
+ 	case MT_CADModule: 
+	{
+		 return "CADModule";
+	}
+ 	case MT_LRAModule: 
+	{
+		 return "LRAModule";
+	}
+ 	case MT_SATModule: 
+	{
+		 return "SATModule";
+	}
+
+		default:
+		{
+			return "UnknownModule";
+		}
+	}
 }
 
-
-
+}
