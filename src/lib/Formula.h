@@ -55,8 +55,10 @@ namespace smtrat
              *  Members.
              */
 
-            /// A unique ID within the formula containing this formula.
+            /// The set (initial) activity for this formula
             double mActivity;
+            /// 
+            double mDifficulty;
             /// The type of this formula.
             Type mType;
             /// All real valued variables used within this formula (and its sub formulas).
@@ -109,7 +111,21 @@ namespace smtrat
             /**
              * Accessors:
              */
-
+            const double& difficulty() const
+            {
+                return mDifficulty;
+            }
+            
+            double difficulty()
+            {
+                return mDifficulty;
+            }
+            
+            void setDifficulty( double difficulty )
+            {
+                mDifficulty = difficulty;
+            }
+            
             double activity() const
             {
                 return mActivity;
@@ -134,6 +150,8 @@ namespace smtrat
             {
                 assert( _formula != this );
                 mType = _formula->getType();
+                mDifficulty = _formula->difficulty();
+                
                 if( _formula->getType() == BOOL )
                 {
                     if( isBooleanCombination() )

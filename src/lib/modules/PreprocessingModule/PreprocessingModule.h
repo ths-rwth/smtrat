@@ -58,6 +58,10 @@ namespace smtrat
             bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
+            
+        protected:
+            void setDifficulty( Formula* formula, bool invert );
+            void RewritePotentialInequalities( Formula* formula, bool invert );
     };
 
 }    // namespace smtrat
