@@ -1,0 +1,13 @@
+BeginDefineModule()
+ModuleMainHeader(PreprocessingModule/PreprocessingModule.h)
+ModuleName(Preprocessing)
+ModuleClass(PreprocessingModule)
+ModuleVersion(0 0 1)
+ModuleSettingsClass(PreprocessingSettings)
+ModuleSettingsName(standard)
+EndDefineModule(moduleEnabled)
+
+if(${moduleEnabled})
+	FILE(GLOB_RECURSE sources *.cpp)
+	set(modulesSources ${modulesSources} ${sources} PARENT_SCOPE) 
+endif()

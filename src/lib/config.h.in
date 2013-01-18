@@ -14,6 +14,7 @@
 #cmakedefine SMTRAT_ENABLE_GroebnerModule
 #cmakedefine SMTRAT_ENABLE_CADModule
 #cmakedefine SMTRAT_ENABLE_VSModule
+#cmakedefine SMTRAT_ENABLE_Preprocessing
 
 #cmakedefine GATHER_STATS
 

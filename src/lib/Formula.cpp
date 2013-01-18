@@ -25,7 +25,7 @@
  * @author Florian Corzilius
  * @author Sebastian Junges
  * @since 2012-02-09
- * @version 2012-10-13
+ * @version 2013-01-17
  */
 
 //#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
@@ -42,6 +42,7 @@ namespace smtrat
 
     Formula::Formula():
         mActivity( 0 ),
+        mDifficulty(0),
         mType( TTRUE ),
         mRealValuedVars(),
         mBooleanVars(),
@@ -53,6 +54,7 @@ namespace smtrat
 
     Formula::Formula( const Type _type ):
         mActivity( 0 ),
+        mDifficulty( 0 ),
         mType( _type ),
         mRealValuedVars(),
         mBooleanVars(),
@@ -66,6 +68,7 @@ namespace smtrat
 
     Formula::Formula( const string& _id ):
         mActivity( 0 ),
+        mDifficulty( 0 ),
         mType( BOOL ),
         mRealValuedVars(),
         mBooleanVars(),
@@ -79,6 +82,7 @@ namespace smtrat
 
     Formula::Formula( const Constraint* _constraint ):
         mActivity( 0 ),
+        mDifficulty( 0 ),
         mType( REALCONSTRAINT ),
         mRealValuedVars( _constraint->variables() ),
         mBooleanVars(),
@@ -91,7 +95,8 @@ namespace smtrat
     }
 
     Formula::Formula( const Formula& _formula ):
-        mActivity( 0 ),
+        mActivity( _formula.mActivity ),
+        mDifficulty( _formula.mDifficulty ),
         mType( _formula.getType() ),
         mRealValuedVars( _formula.realValuedVars() ),
         mBooleanVars( _formula.booleanVars() ),
@@ -737,6 +742,10 @@ namespace smtrat
             case BOOL:
             {
                 _out << _init << *mpIdentifier;
+                if( !_smtlib )
+                {
+                    _out << " (" << mDifficulty << "/" << mActivity << ")";
+                }
                 break;
             }
             case REALCONSTRAINT:
@@ -749,7 +758,7 @@ namespace smtrat
                 else
                 {
                     mpConstraint->print( _out );
-                    _out << " (" << mActivity << ")";
+                    _out << " (" << mDifficulty << "/" << mActivity << ")";
                 }
                 break;
             }
@@ -1115,6 +1124,7 @@ namespace smtrat
                             case AND:
                             {
                                 Formula* hi = new Formula( Formula::newAuxiliaryBoolean() );
+                                hi->setDifficulty(currentSubformula->difficulty());
                                 while( !currentSubformula->empty() )
                                 {
                                     Formula* formulaToAssert = new Formula( OR );

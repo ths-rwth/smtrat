@@ -73,6 +73,11 @@ foreach(moduleType ${moduleTypesSettings})
 	set(moduleTypeList "${moduleTypeList} MT_${moduleType},\n")
 endforeach()
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.h )
+#write MODULETYPES.TXT
+foreach(moduleType ${moduleTypesSettings})
+	set(moduleTypeListTXT "${moduleTypeListTXT}\nMT_${moduleType}")
+endforeach()
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/MODULETYPES.txt.in ${CMAKE_SOURCE_DIR}/src/lib/modules/MODULETYPES.txt )
 
 # write ModuleType.cpp
 foreach(moduleType ${moduleTypesSettings})
