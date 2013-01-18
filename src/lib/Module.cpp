@@ -39,7 +39,7 @@
 #include "ModuleFactory.h"
 
 /// Flag activating some informative and not exaggerated output about module calls.
-#define MODULE_VERBOSE
+//#define MODULE_VERBOSE
 
 using namespace std;
 
