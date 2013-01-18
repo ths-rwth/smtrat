@@ -507,72 +507,30 @@ namespace smtrat
         mFirstSubformulaToPass = mpPassedFormula->end();
         Answer result          = Unknown;
 
-        if( mpManager->runsParallel() )
+        /*
+         * Run the backend solver sequentially until the first answers true or false.
+         */
+        vector<Module*>::iterator module = mUsedBackends.begin();
+        while( module != mUsedBackends.end() && result == Unknown )
         {
-            /*
-             * Run the backend solver parallel until the first answers true or false.
-             */
-            unsigned i = 0;
-            unsigned numberOfUsedBackends = mUsedBackends.size();
-            vector< std::future<Answer> > futures( numberOfUsedBackends );
-            vector<Module*>::iterator module = mUsedBackends.begin();
-            while( module != mUsedBackends.end() )
-            {
-                #ifdef MODULE_VERBOSE
-                cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
-                (*module)->print( cout, " ");
-                #endif
-
-                futures[i++] = mpManager->submitBackend( *(*module) );
-                ++module;
-            }
-            
-            for( i=0; i<numberOfUsedBackends; ++i )
-            {
-                result = futures[i].get();
-                mUsedBackends[i]->receivedFormulaChecked();
-
-                #ifdef LOG_THEORY_CALLS
-                if( result != Unknown )
-                {
-                    addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
-                }
-                #endif
-            }
-
             #ifdef MODULE_VERBOSE
-            cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : "Unknown")) << endl;
+            cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
+            (*module)->print( cout, " ");
             #endif
-            return result;
-        }
-        else
-        {
-            /*
-             * Run the backend solver sequentially until the first answers true or false.
-             */
-            vector<Module*>::iterator module = mUsedBackends.begin();
-            while( module != mUsedBackends.end() && result == Unknown )
+            result = (*module)->isConsistent();
+            (*module)->receivedFormulaChecked();
+            #ifdef LOG_THEORY_CALLS
+            if( result != Unknown )
             {
-                #ifdef MODULE_VERBOSE
-                cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
-                (*module)->print( cout, " ");
-                #endif
-                result = (*module)->isConsistent();
-//                cout << (*module)->id() << endl;
-                (*module)->receivedFormulaChecked();
-                #ifdef LOG_THEORY_CALLS
-                if( result != Unknown )
-                {
-                    addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
-                }
-                #endif
-                ++module;
+                addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
             }
-            #ifdef MODULE_VERBOSE
-            cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : "Unknown")) << endl;
             #endif
-            return result;
+            ++module;
         }
+        #ifdef MODULE_VERBOSE
+        cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : "Unknown")) << endl;
+        #endif
+        return result;
     }
 
     /**

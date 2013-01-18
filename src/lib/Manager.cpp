@@ -56,9 +56,7 @@ namespace smtrat
         mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
         mStrategyGraph(),
-        mModulePositionInStrategy(),
-        mRunsParallel( false ),
-        mpThreadPool( NULL )
+        mModulePositionInStrategy()
     {
         mpModuleFactories = new map<const ModuleType, ModuleFactory*>();
         mModulePositionInStrategy[mpPrimaryBackend] = 0;
@@ -67,18 +65,6 @@ namespace smtrat
         for( fcs_const_iterator constraint = Formula::mConstraintPool.begin(); constraint != Formula::mConstraintPool.end(); ++constraint )
         {
             mpPrimaryBackend->inform( *constraint );
-        }
-        
-        if( !mStrategyGraph.hasBranches() )
-        {
-            std::cout << "has branches" << std::endl;
-            unsigned numberOfCores = 8; //std::thread::hardware_concurrency();
-            if( numberOfCores>1 )
-            {
-                mRunsParallel = true;
-                mpThreadPool = new ThreadPool( numberOfCores );
-                std::cout << "has branches2" << std::endl;
-            }
         }
     }
 
@@ -102,10 +88,6 @@ namespace smtrat
             delete pModuleFactory;
         }
         delete mpModuleFactories;
-        if( mpThreadPool!=NULL )
-        {
-            delete mpThreadPool;
-        }
     }
 
     /**
@@ -188,17 +170,5 @@ namespace smtrat
             }
         }
         return backends;
-    }
-    
-    std::future<Answer> Manager::submitBackend( Module& _rModule )
-    {
-        if( mRunsParallel )
-        {
-            return mpThreadPool->submitTask( _rModule );
-        }
-        else
-        {
-            throw;
-        }
     }
 }    // namespace smtrat

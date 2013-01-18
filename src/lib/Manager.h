@@ -42,7 +42,6 @@
 #include "Module.h"
 #include "config.h"
 #include "Constraint.h"
-#include "ThreadPool.h"
 #include "modules/StandardModuleFactory.h"
 
 namespace smtrat
@@ -70,9 +69,6 @@ namespace smtrat
             StrategyGraph mStrategyGraph;
             /// position of the module instance in the strategy
             std::map<const Module* const, unsigned> mModulePositionInStrategy;
-            
-            bool mRunsParallel;
-            ThreadPool* mpThreadPool;
             
         public:
             Manager( Formula* = new Formula( AND ) );
@@ -135,15 +131,9 @@ namespace smtrat
             {
                 return *mpPassedFormula;
             }
-            
-            const bool runsParallel() const
-            {
-                return mRunsParallel;
-            }
 
             void printModel( std::ostream& ) const;
             std::vector<Module*> getBackends( Formula*, Module* );
-            std::future<Answer> submitBackend( Module& );
     };
 }    // namespace smtrat
 

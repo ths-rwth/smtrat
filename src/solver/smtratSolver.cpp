@@ -31,7 +31,7 @@
 #include <fstream>
 #include "ExitCodes.h"
 #include "parser/Driver.h"
-#include "../lib/NRATSolver.h"
+#include "../lib/strategies/strategies.h"
 #include "parser/ParserSettings.h"
 #include "RuntimeSettingsManager.h"
 #include "../lib/modules/AddModules.h"
