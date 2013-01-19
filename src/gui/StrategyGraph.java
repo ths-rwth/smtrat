@@ -1,6 +1,6 @@
 /*
  * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
+ * Copyright (C) 2013 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
  * This file is part of SMT-RAT.
  *
@@ -46,7 +46,7 @@ public class StrategyGraph extends DirectedSparseGraph
     {
         super();
         priorityAllocator = 0;
-        rootVertex =  new Vertex( new Module( ROOT_VERTEX_MODULE_NAME ) );
+        rootVertex = new Vertex( new Module( ROOT_VERTEX_MODULE_NAME, "MT_" + ROOT_VERTEX_MODULE_NAME ) );
         addVertex( rootVertex );
     }
     

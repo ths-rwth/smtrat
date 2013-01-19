@@ -1,6 +1,6 @@
 /*
  * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
+ * Copyright (C) 2013 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
  * This file is part of SMT-RAT.
  *

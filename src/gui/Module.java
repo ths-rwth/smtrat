@@ -1,6 +1,6 @@
 /*
  * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
+ * Copyright (C) 2013 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
  * This file is part of SMT-RAT.
  *
@@ -23,25 +23,13 @@
  * @file Module.java
  * 
  * @author  Henrik Schmitz
- * @author  Ulrich Loup
  * @since   2012-02-13
  * @version 2012-10-17
  */
 public class Module implements Comparable<Module>
 {
-    private static final String MODULE_TYPE_PREFIX = "MT_";
-
     private final String name;
     private final String type;
-
-    /**
-     * Constructs a module with name = getType.
-     * @param name
-     */
-    public Module( String name )
-    {
-        this( name, MODULE_TYPE_PREFIX + name );
-    }
     
     /**
      * Constructs a module with name and getType.

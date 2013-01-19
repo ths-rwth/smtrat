@@ -1,6 +1,6 @@
 /*
  * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
+ * Copyright (C) 2013 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
  * This file is part of SMT-RAT.
  *
@@ -51,15 +51,15 @@ import javax.swing.event.DocumentListener;
  *
  * @author  Henrik Schmitz
  * @since   2012-11-12
- * @version 2012-11-19
+ * @version 2013-01-18
  */
 public class ManageSolverDialog extends JDialog
 {
     private static final int DIALOG_PADDING = 250;
     private static final int LIST_HEIGHT = 98;
     
-    private static ArrayList<String> notAllowedSolverNames;
     private static ArrayList<String> existingSolverNames;
+    private static String notAllowedSolverName;
     private static boolean existingSolverNameEntered;
     private static String solverName;
     
@@ -70,7 +70,7 @@ public class ManageSolverDialog extends JDialog
     public ManageSolverDialog( GUI gui, String solverNameSuggestion )
     {
         super( gui, "Manage Solvers", true );
-        notAllowedSolverNames = IOTools.notAllowedSolverNames;
+        notAllowedSolverName = IOTools.STRATEGIES_HEADER_CLASS;
         existingSolverNames = IOTools.existingSolverNames;
 
         ExportSolverAction exportSolverAction = new ExportSolverAction();
@@ -149,7 +149,7 @@ public class ManageSolverDialog extends JDialog
         Pattern cppIdentifier = Pattern.compile( "(_|[a-zA-Z])(_|[a-zA-Z]|\\d)*" );
         Matcher cppIdentifierMatcher = cppIdentifier.matcher( textInput );
 
-        if( !cppIdentifierMatcher.matches() || findCorrespondingSolverName( notAllowedSolverNames, textInput )!=null )
+        if( !cppIdentifierMatcher.matches() || notAllowedSolverName.toLowerCase().equals( textInput.toLowerCase() ) )
         {
             solverNameTextField.setForeground( Color.RED );
             existingSolverNameEntered = false;
