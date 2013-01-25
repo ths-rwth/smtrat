@@ -43,25 +43,33 @@ std::string moduleTypeToString(ModuleType _type)
 		{
 			return "Module";
 		}
- 	case MT_VSModule: 
+ 	case MT_LRAModule: 
 	{
-		 return "VSModule";
-	}
- 	case MT_CNFerModule: 
-	{
-		 return "CNFerModule";
+		 return "LRAModule";
 	}
  	case MT_CADModule: 
 	{
 		 return "CADModule";
 	}
- 	case MT_LRAModule: 
+ 	case MT_CNFerModule: 
 	{
-		 return "LRAModule";
+		 return "CNFerModule";
+	}
+ 	case MT_Preprocessing: 
+	{
+		 return "Preprocessing";
+	}
+ 	case MT_VSModule: 
+	{
+		 return "VSModule";
 	}
  	case MT_SATModule: 
 	{
 		 return "SATModule";
+	}
+ 	case MT_GroebnerModule: 
+	{
+		 return "GroebnerModule";
 	}
 
 		default:

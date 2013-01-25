@@ -42,11 +42,13 @@ namespace smtrat
         /// type of class Module
         MT_Module,
         ///
-		 MT_VSModule,
- MT_CNFerModule,
+		 MT_LRAModule,
  MT_CADModule,
- MT_LRAModule,
+ MT_CNFerModule,
+ MT_Preprocessing,
+ MT_VSModule,
  MT_SATModule,
+ MT_GroebnerModule,
 
         /// type of no Module
         MT_NoModule           // KEEP THIS AS THE LAST ELEMENT OF THIS ENUM!!!

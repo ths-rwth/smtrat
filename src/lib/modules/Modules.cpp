@@ -36,14 +36,8 @@ namespace smtrat
 	{
 		std::cout << " \
 ---------------------------------- \n \
-Module name: VSModule \n \
-Module classname: VSModule \n \
-Module version: 1.0.0 \n \
-Module settings classname:   \n \
-Module settings:  \n \
----------------------------------- \n \
-Module name: CNFerModule \n \
-Module classname: CNFerModule \n \
+Module name: LRAModule \n \
+Module classname: LRAModule \n \
 Module version: 0.0.0 \n \
 Module settings classname:   \n \
 Module settings:  \n \
@@ -54,9 +48,21 @@ Module version: 0.7.0 \n \
 Module settings classname:   \n \
 Module settings:  \n \
 ---------------------------------- \n \
-Module name: LRAModule \n \
-Module classname: LRAModule \n \
+Module name: CNFerModule \n \
+Module classname: CNFerModule \n \
 Module version: 0.0.0 \n \
+Module settings classname:   \n \
+Module settings:  \n \
+---------------------------------- \n \
+Module name: Preprocessing \n \
+Module classname: PreprocessingModule \n \
+Module version: 0.0.1 \n \
+Module settings classname: PreprocessingSettings \n \
+Module settings: standard \n \
+---------------------------------- \n \
+Module name: VSModule \n \
+Module classname: VSModule \n \
+Module version: 1.0.0 \n \
 Module settings classname:   \n \
 Module settings:  \n \
 ---------------------------------- \n \
@@ -64,6 +70,12 @@ Module name: SATModule \n \
 Module classname: SATModule \n \
 Module version: 1.0.0 \n \
 Module settings classname:   \n \
-Module settings:  \n" << std::endl;
+Module settings:  \n \
+---------------------------------- \n \
+Module name: GroebnerModule \n \
+Module classname: GroebnerModule<GBSettings1> \n \
+Module version: 0.5.0 \n \
+Module settings classname: GBRuntimeSettings \n \
+Module settings: output \n" << std::endl;
 	}
 }

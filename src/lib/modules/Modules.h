@@ -30,11 +30,13 @@
  */
 
 #pragma once 
- #include "VSModule/VSModule.h" 
- #include "CNFerModule/CNFerModule.h" 
- #include "CADModule/CADModule.h" 
  #include "LRAModule/LRAModule.h" 
+ #include "CADModule/CADModule.h" 
+ #include "CNFerModule/CNFerModule.h" 
+ #include "PreprocessingModule/PreprocessingModule.h" 
+ #include "VSModule/VSModule.h" 
  #include "SATModule/SATModule.h" 
+ #include "GBModule/GroebnerModule.h" 
 
 
 namespace smtrat

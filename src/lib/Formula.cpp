@@ -566,7 +566,7 @@ namespace smtrat
     /**
      *
      * @param _moduleType
-     
+
     void Formula::notSolvableBy( ModuleType _moduleType )
     {
         switch( _moduleType )
@@ -955,7 +955,7 @@ namespace smtrat
                             // (and phi_i1 .. phi_ik) -> h_i, where (or (not h_i) phi_i1) .. (or (not h_i) phi_ik) is added to the queue
                             case AND:
                             {
-                                Formula* hi = new Formula( Formula::newAuxiliaryBoolean() );
+                                Formula* hi = new Formula( Formula::newAuxiliaryBooleanVariable() );
                                 hi->setDifficulty(currentSubformula->difficulty());
                                 while( !currentSubformula->empty() )
                                 {
