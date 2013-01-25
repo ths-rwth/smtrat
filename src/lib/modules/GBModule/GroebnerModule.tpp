@@ -231,12 +231,6 @@ Answer GroebnerModule<Settings>::isConsistent( )
                     deduction->addSubformula( (*jt)->pConstraint() );
                 }
                 
-                it->first.print();
-                it->second.print();
-                //mBacktrackPoints[it->second.findFirstSetBit()];
-                //deduction->addSubformula((mBacktrackPoints[it->second.findFirstSetBit()]).pConstraint());
-
-                deduction->print();
                 addDeduction(deduction);
                 #ifdef GATHER_STATS
                 mStats->DeducedEquality();
@@ -441,7 +435,7 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
                 //std::cout << t << " -> " << reduce << std::endl;
                 #endif
                 break;
-    }
+            }
             //x^(m+1) - y^(n+1)
             else if( reduce.isReducedIdentity(*it, exponent))
             {
@@ -450,7 +444,7 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
                 //std::cout << t << " -> " << reduce << std::endl;
                 #endif
                 break;
-}
+            }
         }
     }
 
