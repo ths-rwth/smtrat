@@ -38,7 +38,7 @@ namespace smtrat
     {
         unsigned position = 0;
         #ifdef SMTRAT_ENABLE_Preprocessing
-        position = rStrategyGraph().addModuleType( position, MT_PreprocessingModule );
+        position = rStrategyGraph().addModuleType( position, MT_Preprocessing );
         #else        
         position = rStrategyGraph().addModuleType( position, MT_CNFerModule );
         #endif
