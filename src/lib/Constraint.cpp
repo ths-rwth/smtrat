@@ -83,6 +83,7 @@ namespace smtrat
         {
             mID = 0;
         }
+        mVariables = symtab();
         for( auto var = _variables.begin(); var != _variables.end(); ++var )
         {
             if( pLhs->has( var->second ) )
@@ -116,7 +117,6 @@ namespace smtrat
         pLhs( new ex( _lhs - _rhs ) ),
         mpMultiRootLessLhs( pLhs ),
         mpCoefficients( new Coefficients() ),
-        mVariables(),
         mVarInfoMap()
     {
         normalize( *pLhs );
@@ -124,6 +124,7 @@ namespace smtrat
         {
             mID = 0;
         }
+        mVariables = symtab();
         for( auto var = _variables.begin(); var != _variables.end(); ++var )
         {
             if( pLhs->has( var->second ) )
@@ -224,8 +225,8 @@ namespace smtrat
             }
             case CR_NEQ:
             {
-                if( _value != 0 ) return true;
-                else return false;
+                if( _value == 0 ) return false;
+                else return true;
             }
             case CR_LESS:
             {

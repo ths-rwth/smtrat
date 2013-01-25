@@ -550,7 +550,7 @@ namespace svs
              * Add the conjunction ( h_1 and ... and h_k and (f^{i+1}(x)~0)[x -> t] ) to the back of the result.
              */
             Formula* resultBackBack = new Formula( AND );
-            string currentAuxBoolean = Formula::newAuxiliaryBoolean();
+            string currentAuxBoolean = Formula::newAuxiliaryBooleanVariable();
             auxBooleans.push_back( currentAuxBoolean );
             for( vector<string>::const_iterator auxBoolean = auxBooleans.begin(); auxBoolean != auxBooleans.end(); ++auxBoolean )
             {

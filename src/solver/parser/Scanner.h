@@ -53,10 +53,21 @@
 #endif
 
 #include <vector>
+#include <map>
+#include <ginac/ginac.h>
+#include <string>
+#include <unordered_set>
 #include "Parser.tab.hh"
+
+using namespace std;
+using namespace GiNaC;
 
 namespace smtrat
 {
+    typedef vector< map< string, pair< string, ex > >::const_iterator > RealVarVec;
+    typedef pair< ex, RealVarVec > PolyVarsPair;
+    typedef std::unordered_set<std::string> FastStringSet;
+
     /** Scanner is a derived class to add some extra function to the scanner
      * class. Flex itself creates a class named yyFlexLexer, which is renamed using
      * macros to smtratFlexLexer. However we change the context of the generated
@@ -66,7 +77,9 @@ namespace smtrat
         public smtratFlexLexer
     {
         public:
-
+            int mInPolynomial;
+            FastStringSet mRealVariables;
+            FastStringSet mBooleanVariables;
             /** Create a new scanner object. The streams arg_yyin and arg_yyout default
              * to cin and cout, but that assignment is only made when initializing in
              * yylex(). */

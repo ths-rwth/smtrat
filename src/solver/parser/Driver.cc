@@ -30,96 +30,554 @@
 
 #include <fstream>
 #include <sstream>
+#include <map>
 
 #include "location.hh"
 
 #include "Driver.h"
 #include "Scanner.h"
+#include "lib/Formula.h"
+
+
+using namespace std;
+using namespace GiNaC;
 
 namespace smtrat
 {
     Driver::Driver( class Formula *_formulaRoot ):
-        trace_scanning( false ),
-        trace_parsing( false ),
-        formulaRoot( _formulaRoot ),
-        collectedBooleans( std::set<std::string>() ),
-        collectedRealAuxilliaries( std::map<std::string, std::string>() ),
-        status( -1 ),
-        printAssignment( false ),
-        check( false ),
-        realsymbolpartsToReplace(),
-        collectedBooleanAuxilliaries()
+        mCheck( false ),
+        mPrintAssignment( false ),
+        mTraceScanning( false ),
+        mTraceParsing( false ),
+        mStatus( -1 ),
+        mLogic( QF_NRA ),
+        mFormulaRoot( _formulaRoot ),
+        mStreamname( new std::string() ),
+        mBooleanVariables(),
+        mRealVariables(),
+        mRealBooleanDependencies(),
+        mRealsymbolpartsToReplace()
     {
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "~", "__tilde__" ) );
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "!", "__exclamation__" ) );
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "@", "__at_sign__" ) );
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "$", "__dollar__" ) );
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "!", "__percent__" ) );
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "^", "__caret__" ) );
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "&", "__ampersand__" ) );
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "-", "__minus__" ) );
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "+", "__plus__" ) );
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "<", "__less__" ) );
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( ">", "__greater__" ) );
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( ".", "__dot__" ) );
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "?", "__question__" ) );
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "\"", "__quotation__" ) );
-        realsymbolpartsToReplace.insert( std::pair< const std::string, const std::string >( "/", "__slash__" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "~", "_til_" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "!", "_exc_" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "@", "_at_" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "$", "_dol_" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "!", "_per_" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "^", "_car_" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "&", "_amp_" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "-", "_min_" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "+", "_plu_" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "<", "_les_" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( ">", "_gre_" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( ".", "_dot_" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "?", "_que_" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "\"", "_quo_" ) );
+        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "/", "_sla_" ) );
     }
 
     Driver::~Driver()
     {
+        delete mStreamname;
     }
 
-    bool Driver::parse_stream( std::istream& in, const std::string& sname )
+    /**
+     * Invoke the scanner and parser for a stream.
+     * @param in input stream
+     * @param sname stream name for error messages
+     * @return true if successfully parsed
+     */
+    bool Driver::parse_stream( istream& in, const string& sname )
     {
-        streamname = sname;
+        *mStreamname = sname;
 
         Scanner scanner( &in );
-        scanner.set_debug( trace_scanning );
-        this->lexer = &scanner;
+        scanner.set_debug( mTraceScanning );
+        this->mLexer = &scanner;
 
         Parser parser( *this );
-        parser.set_debug_level( trace_parsing );
+        parser.set_debug_level( mTraceParsing );
         return (parser.parse() == 0);
     }
 
-    bool Driver::parse_file( const std::string& filename )
+    /**
+     * Invoke the scanner and parser on a file. Use parse_stream with a
+     * input file stream if detection of file reading errors is required.
+     * @param filename input file name
+     * @return true if successfully parsed
+     */
+    bool Driver::parse_file( const string& filename )
     {
-        std::ifstream in( filename.c_str() );
+        ifstream in( filename.c_str() );
         if( !in.good() )
             return false;
         return parse_stream( in, filename );
     }
 
-    bool Driver::parse_string( const std::string& input, const std::string& sname )
+    /**
+     * Invoke the scanner and parser on an input string.
+     * @param input input string
+     * @param sname stream name for error messages
+     * @return true, if successfully parsed
+     */
+    bool Driver::parse_string( const string& input, const string& sname )
     {
-        std::istringstream iss( input );
+        istringstream iss( input );
         return parse_stream( iss, sname );
     }
 
-    void Driver::error( const class location &l, const std::string& m )
+    /**
+     * Error handling with associated line number. This can be modified to
+     * output the error e.g. to a dialog box.
+     * @param l
+     * @param m
+     */
+    void Driver::error( const class location& _loc, const string& m ) const
     {
-        std::cerr << l << ": " << m << std::endl;
+        cerr << "Parsing error at Line " << _loc.begin.line << " and Column " <<  _loc.begin.column << ": " << m << endl;
     }
 
-    void Driver::error( const std::string& m )
+    /**
+     * General error handling. This can be modified to output the error e.g. to a dialog box.
+     * @param l
+     * @param m
+     */
+    void Driver::error( const string& m ) const
     {
-        std::cerr << m << std::endl;
+        cerr << "Parsing error: " << m << endl;
     }
 
-    std::string Driver::replace( const std::string _toReplaceIn, const std::string _replace, const std::string _by )
+    /**
+     *
+     * @param _loc
+     * @param _name
+     * @return
+     */
+    void Driver::setLogic( const class location& _loc, const string& _logic )
     {
-        std::string result = std::string( _toReplaceIn );
-        size_t index = result.find( _replace );
-        while( index!=std::string::npos )
+        if( _logic.compare( "QF_NRA" ) )
         {
-            result.erase( index, _replace.size() );
-            result.insert( index, _by );
-            index = result.find( _replace, index );
         }
+        else if( _logic.compare( "QFLNRA" ) )
+        {
+            mLogic = QF_LRA;
+        }
+        else
+        {
+            error( _loc, _logic + " is not supported!" );
+        }
+    }
 
+    /**
+     *
+     * @param _loc
+     * @param _realVarName
+     * @return
+     */
+    const string Driver::createDependingBoolean( const class location& _loc, const string& _realVarName )
+    {
+        assert( mRealVariables.find( _realVarName ) != mRealVariables.end() );
+        assert( mRealBooleanDependencies.find( _realVarName ) == mRealBooleanDependencies.end() );
+        const string dependentBoolean = Formula::newAuxiliaryBooleanVariable();
+        mRealBooleanDependencies[_realVarName] = dependentBoolean;
+        if( !mBooleanVariables.insert( pair< string, string >( dependentBoolean, dependentBoolean ) ).second )
+        {
+            error( _loc, "Multiple definition of Boolean variable " + dependentBoolean );
+        }
+        return dependentBoolean;
+    }
+
+    /**
+     *
+     * @param _loc
+     * @param _name
+     * @param _type
+     * @return
+     */
+    void Driver::addVariable( const class location& _loc, const string& _name, const string& _type )
+    {
+        if( _type.compare( "Real" ) == 0 )
+        {
+            addRealVariable( _loc, _name );
+            mLexer->mRealVariables.insert( _name );
+        }
+        else if( _type.compare( "Bool" ) == 0 )
+        {
+            addBooleanVariable( _loc, _name );
+            mLexer->mBooleanVariables.insert( _name );
+        }
+        else
+        {
+            error( _loc, "Only declarations of real-valued and Boolean variables are allowed!");
+        }
+    }
+
+    /**
+     * Adds a new Boolean variable name to the already found names.
+     * @param l
+     * @param _varName
+     */
+    const string Driver::addBooleanVariable( const class location& _loc, const string& _varName )
+    {
+        string booleanName = "";
+        if( _varName.empty() || _varName[0] == '?' )
+        {
+            booleanName = mFormulaRoot->mConstraintPool.newAuxiliaryBooleanVariable();
+        }
+        else
+        {
+            booleanName = _varName;
+            if( booleanName.size() > 3 && booleanName[0] == 'h' && booleanName[1] == '_' && booleanName[2] != '_' )
+            {
+                booleanName.insert( 1, "_" );
+            }
+            Formula::newBooleanVariable( booleanName );
+        }
+        if( !mBooleanVariables.insert( pair< string, string >( _varName.empty() ? booleanName : _varName, booleanName ) ).second )
+        {
+            error( _loc, "Multiple definition of Boolean variable " + _varName );
+        }
+        return booleanName;
+    }
+
+    /**
+     * Adds a new real variable name to the already found names.
+     * @param l
+     * @param _varName
+     */
+    RealVarMap::const_iterator Driver::addRealVariable( const class location& _loc, const string& _varName )
+    {
+        pair< string, ex > ginacConformVar;
+        if( _varName.empty() || _varName[0] == '?' )
+        {
+            ginacConformVar = mFormulaRoot->mConstraintPool.newAuxiliaryRealVariable();
+        }
+        else
+        {
+            string ginacConformName = _varName;
+            if( ginacConformName.size() > 3 && ginacConformName[0] == 'h' && ginacConformName[1] == '_' && ginacConformName[2] != '_' )
+            {
+                ginacConformName.insert( 1, "_" );
+            }
+            for( auto iter = mRealsymbolpartsToReplace.begin(); iter != mRealsymbolpartsToReplace.end(); ++iter )
+            {
+                size_t index = ginacConformName.find( iter->first );
+                while( index!=string::npos )
+                {
+                    ginacConformName.erase( index, ginacConformName.size() );
+                    ginacConformName.insert( index, iter->second );
+                }
+            }
+            ginacConformVar = pair< string, ex >( ginacConformName, Formula::newRealVariable( ginacConformName ) );
+        }
+        pair< RealVarMap::iterator, bool > res = mRealVariables.insert( pair< string, pair< string, ex > >( _varName.empty() ? ginacConformVar.first : _varName, ginacConformVar ) );
+        if( !res.second )
+        {
+            error( _loc, "Multiple definition of real variable " + _varName );
+        }
+        return res.first;
+    }
+
+    /**
+     *
+     * @param l
+     * @param _varName
+     */
+    const string& Driver::getBooleanVariable( const class location& _loc, const string& _varName ) const
+    {
+        auto bvar = mBooleanVariables.find( _varName );
+        if( bvar != mBooleanVariables.end() )
+        {
+            return bvar->second;
+        }
+        else
+        {
+            error( _loc, "Boolean variable " + _varName + " has not been defined!" );
+            return _varName;
+        }
+    }
+
+    /**
+     *
+     * @param l
+     * @param _varName
+     */
+    RealVarMap::const_iterator Driver::getRealVariable( const class location& _loc, const string& _varName )
+    {
+        auto rvar = mRealVariables.find( _varName );
+        if( rvar == mRealVariables.end() )
+        {
+            error( _loc, "Real variable " + _varName + " has not been defined!" );
+        }
+        return rvar;
+    }
+
+    /**
+     *
+     * @param _varName
+     */
+    void Driver::freeBooleanVariableName( const string& _varName )
+    {
+        assert( !_varName.empty() && _varName[0] == '?' );
+        mBooleanVariables.erase( _varName );
+        mLexer->mBooleanVariables.erase( _varName );
+    }
+
+    /**
+     *
+     * @param _varName
+     */
+    void Driver::freeRealVariableName( const string& _varName )
+    {
+        assert( !_varName.empty() && _varName[0] == '?' );
+        mRealVariables.erase( _varName );
+        mLexer->mRealVariables.erase( _varName );
+    }
+
+    /**
+     *
+     * @param _loc
+     * @param _varName
+     * @return
+     */
+    pair< ex, vector< RealVarMap::const_iterator > >* Driver::mkPolynomial( const class location& _loc, string& _varName )
+    {
+        RealVarMap::const_iterator realVar = getRealVariable( _loc, _varName );
+        return mkPolynomial( _loc, realVar );
+    }
+
+    /**
+     *
+     * @param _loc
+     * @param _varName
+     * @return
+     */
+    pair< ex, vector< RealVarMap::const_iterator > >* Driver::mkPolynomial( const class location& _loc, RealVarMap::const_iterator _realVar )
+    {
+        vector< RealVarMap::const_iterator > realVars = vector< RealVarMap::const_iterator >();
+        realVars.push_back( _realVar );
+        return new pair< ex, vector< RealVarMap::const_iterator > >( _realVar->second.second, realVars );
+    }
+
+    /**
+     *
+     * @param _lhs
+     * @param _lhsVars
+     * @param _rhs
+     * @param _rhsVars
+     * @param _rel
+     * @return
+     */
+    Formula* Driver::mkConstraint( const pair< ex, vector< RealVarMap::const_iterator > >& _lhs, const pair< ex, vector< RealVarMap::const_iterator > >& _rhs, unsigned _rel )
+    {
+        symtab vars = symtab();
+        set< string > booleanDependencies = set< string >();
+        string booleanDependency = "";
+        Constraint_Relation rel = (Constraint_Relation) _rel;
+        for( vector< RealVarMap::const_iterator >::const_iterator iter = _lhs.second.begin(); iter != _lhs.second.end(); ++iter )
+        {
+            if( getDependingBoolean( (*iter)->first, booleanDependency ) )
+            {
+                booleanDependencies.insert( booleanDependency );
+            }
+            vars.insert( (*iter)->second );
+        }
+        for( vector< RealVarMap::const_iterator >::const_iterator iter = _rhs.second.begin(); iter != _rhs.second.end(); ++iter )
+        {
+            if( getDependingBoolean( (*iter)->first, booleanDependency ) )
+            {
+                booleanDependencies.insert( booleanDependency );
+            }
+            vars.insert( (*iter)->second );
+        }
+        const Constraint* constraint = Formula::newConstraint( _lhs.first-_rhs.first, rel, vars );
+        Formula* result;
+        if( !booleanDependencies.empty() )
+        {
+            result = new Formula( AND );
+            result->addSubformula( constraint );
+            for( auto dependentBool = booleanDependencies.begin(); dependentBool != booleanDependencies.end(); ++dependentBool )
+            {
+                result->addSubformula( new Formula( *dependentBool ) );
+            }
+        }
+        else
+        {
+            result = new Formula( constraint );
+        }
         return result;
+    }
+
+    /**
+     *
+     * @param _type
+     * @param _subformula
+     * @return
+     */
+    Formula* Driver::mkFormula( unsigned _type, Formula* _subformula )
+    {
+		Formula* formulaTmp = new Formula( (smtrat::Type) _type );
+		formulaTmp->addSubformula( _subformula );
+		return formulaTmp;
+    }
+
+    /**
+     *
+     * @param _type
+     * @param _subformulaA
+     * @param _subformulaB
+     * @return
+     */
+    Formula* Driver::mkFormula( unsigned _type, Formula* _subformulaA, Formula* _subformulaB )
+    {
+		Formula* formulaTmp = new Formula( (smtrat::Type) _type );
+		formulaTmp->addSubformula( _subformulaA );
+		formulaTmp->addSubformula( _subformulaB );
+		return formulaTmp;
+    }
+
+    /**
+     *
+     * @param _type
+     * @param _subformulas
+     * @return
+     */
+    Formula* Driver::mkFormula( unsigned _type, vector< Formula* >& _subformulas )
+    {
+        Formula* formulaTmp = new Formula( (smtrat::Type) _type );
+        while( !_subformulas.empty() )
+        {
+            formulaTmp->addSubformula( _subformulas.back() );
+            _subformulas.pop_back();
+        }
+		return formulaTmp;
+    }
+
+    /**
+     *
+     * @param _condition
+     * @param _then
+     * @param _else
+     * @return
+     */
+    Formula* Driver::mkIteInFormula( Formula* _condition, Formula* _then, Formula* _else )
+    {
+        string auxBoolA = Formula::newAuxiliaryBooleanVariable();
+        string auxBoolB = Formula::newAuxiliaryBooleanVariable();
+        /*
+         * Add to root:  (iff auxBoolB $3)
+         */
+        Formula* formulaIffA = new Formula( IFF );
+        formulaIffA->addSubformula( new Formula( auxBoolB ) );
+        formulaIffA->addSubformula( _condition );
+        /*
+         * Add to root:  (or (not auxBoolB) (iff auxBoolA $4))
+         */
+        Formula* formulaNotB = new Formula( NOT );
+        formulaNotB->addSubformula( new Formula( auxBoolB ) );
+        Formula* formulaOrB = new Formula( OR );
+        formulaOrB->addSubformula( formulaNotB );
+        Formula* formulaIffB = new Formula( IFF );
+        formulaIffB->addSubformula( new Formula( auxBoolA ) );
+        formulaIffB->addSubformula( _then );
+        formulaOrB->addSubformula( formulaIffB );
+        /*
+         * Add to root:  (or auxBoolB (iff auxBoolA $5))
+         */
+        Formula* formulaOrC = new Formula( OR );
+        formulaOrC->addSubformula( new Formula( auxBoolB ) );
+        Formula* formulaIffC = new Formula( IFF );
+        formulaIffC->addSubformula( new Formula( auxBoolA ) );
+        formulaIffC->addSubformula( _else );
+        formulaOrC->addSubformula( formulaIffC );
+
+        return new Formula( auxBoolA );
+    }
+
+    /**
+     *
+     * @param _loc
+     * @param _condition
+     * @param _then
+     * @param _else
+     * @return
+     */
+    string* Driver::mkIteInExpr( const class location& _loc, Formula* _condition, pair< ex, vector< RealVarMap::const_iterator > >& _then, pair< ex, vector< RealVarMap::const_iterator > >& _else )
+    {
+        RealVarMap::const_iterator auxRealVar = addRealVariable( _loc );
+        string conditionBool = addBooleanVariable( _loc );
+        pair< ex, vector< RealVarMap::const_iterator > >* lhs = mkPolynomial( _loc, auxRealVar );
+        Formula* constraintA = mkConstraint( *lhs, _then, CR_EQ );
+        Formula* constraintB = mkConstraint( *lhs, _else, CR_EQ );
+        delete lhs;
+        const string dependentBool = createDependingBoolean( _loc, auxRealVar->first );
+        /*
+         * Add to root:  (or (not dependentBool) (not conditionBool) (= auxRealVar $4))
+         */
+        Formula* formulaNotA = new Formula( NOT );
+        formulaNotA->addSubformula( new Formula( dependentBool ) );
+        Formula* formulaNotB = new Formula( NOT );
+        formulaNotB->addSubformula( new Formula( conditionBool ) );
+        Formula* formulaOrA = new Formula( OR );
+        formulaOrA->addSubformula( formulaNotA );
+        formulaOrA->addSubformula( formulaNotB );
+        formulaOrA->addSubformula( constraintA );
+        mFormulaRoot->addSubformula( formulaOrA );
+        /*
+         * Add to root:  (or (not dependentBool) conditionBool (= auxRealVar $5))
+         */
+        Formula* formulaNotC = new Formula( NOT );
+        formulaNotC->addSubformula( new Formula( dependentBool ) );
+        Formula* formulaOrB = new Formula( OR );
+        formulaOrB->addSubformula( formulaNotC );
+        formulaOrB->addSubformula( new Formula( conditionBool ) );
+        formulaOrB->addSubformula( constraintB );
+        mFormulaRoot->addSubformula( formulaOrB );
+        /*
+         * Add to root:  (iff conditionBool $3)
+         */
+        Formula* formulaIff = new Formula( IFF );
+        formulaIff->addSubformula( new Formula( conditionBool ) );
+        formulaIff->addSubformula( _condition );
+        mFormulaRoot->addSubformula( formulaIff );
+        return new string( auxRealVar->first );
+    }
+
+    /**
+     *
+     * @param _numString
+     * @return
+     */
+    numeric* Driver::getNumeric( const string& _numString ) const
+    {
+        unsigned pos = _numString.find('.');
+        if( pos != string::npos )
+        {
+            unsigned numDecDigits = _numString.size()-pos-1;
+            GiNaC::numeric* rational = new GiNaC::numeric( string( _numString.substr( 0, pos ) + _numString.substr( pos+1, numDecDigits ) ).c_str() );
+            *rational /= GiNaC::numeric( string( "1" + string( numDecDigits, '0' ) ).c_str() );
+            return rational;
+        }
+        else
+        {
+            return new GiNaC::numeric( _numString.c_str() );
+        }
+    }
+
+    /**
+     *
+     * @param _loc
+     * @param _key
+     * @param _value
+     */
+    void Driver::checkInfo( const class location& _loc, const string& _key, const string& _value )
+    {
+        if( _key.compare( ":status" ) == 0 )
+        {
+            if( _value.compare( "sat" ) == 0 ) mStatus = 1;
+            else if( _value.compare( "unsat" ) == 0 ) mStatus = 0;
+            else if( _value.compare( "unknown" ) == 0 ) mStatus = -1;
+            else error( _loc, "Unknown status flag. Choose either sat, unsat or unknown!" );
+        }
     }
 
 }    // namespace smtrat

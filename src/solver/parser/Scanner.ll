@@ -23,7 +23,6 @@
 /**
  * @file Scanner.ll
  *
- * @author Safoura Rezapour Lakani
  * @author Florian Corzilius
  * @author Ulrich Loup
  * @since 2012-03-19
@@ -66,6 +65,8 @@ typedef smtrat::Parser::token_type token_type;
  * versions. */
 %option debug
 
+%option yylineno
+
 /* no support for include files is planned */
 %option yywrap nounput
 
@@ -78,7 +79,7 @@ typedef smtrat::Parser::token_type token_type;
 #define YY_USER_ACTION  yylloc->columns(yyleng);
 %}
 
-%% /*** Regular Expressions Part ***/
+%% /* Regular Expressions Part */
 
  /* code to place at the beginning of yylex() */
 %{
@@ -86,97 +87,131 @@ typedef smtrat::Parser::token_type token_type;
     yylloc->step();
 %}
 
- /*** BEGIN EXAMPLE - Change the smtrat lexer rules below ***/
+\n              { yylloc->lines(yyleng); yylloc->step(); }
+\r              {}
+[ \t]           {}
+";".*\n         { yylloc->lines(yyleng); yylloc->step(); }
 
+"+"             { return token::PLUS; }
+"-"             { return token::MINUS; }
+"*"             { return token::TIMES; }
+"/"             { return token::DIV; }
 
-[ \t\n]             { }
-"set-logic"         { return token::SETLOGIC; }
-"set-info"          { return token::SETINFO; }
-"check-sat"         { return token::CHECKSAT; }
-"get-model"         { return token::GETMODEL; }
-"push"              { return token::PUSH; }
-"pop"               { return token::POP; }
-"QF_NRA"            { return token::QFNRA; }
-"QF_LRA"            { return token::QFLRA; }
-";".*\n             { }
-"assert"            { return token::ASSERT; }
-"declare-fun"       { return token::DECLAREFUN; }
-"declare-const"		{ return token::DECLARECONST; }
-"+"                 { return token::PLUS; }
-"-"                 { return token::MINUS; }
-"*"                 { return token::TIMES; }
-"/"                 { return token::DIV; }
-"="                 { return token::EQ; }
-"<="                { return token::LEQ; }
-">="                { return token::GEQ; }
-"<"                 { return token::LESS; }
-">"                 { return token::GREATER; }
-"=>"                { return token::IMPLIES; }
-"and"	            { return token::AND; }
-"or"		     	{ return token::OR; }
-"not"	            { return token::NOT; }
-"iff"               { return token::IFF; }
-"xor"               { return token::XOR; }
-"let"               { return token::LET; }
-"true"              { return token::TRUE; }
-"false"             { return token::FALSE; }
-"Bool"              { return token::BOOL; }
-"exit"              { return token::EXIT; }
-"Real"              { return token::REAL; }
+"="             { return token::EQ; }
+"<="            { return token::LEQ; }
+">="            { return token::GEQ; }
+"<"             { return token::LESS; }
+">"             { return token::GREATER; }
+"<>"            { return token::NEQ; }
 
-0|[1-9][0-9]*   {
-                    yylval->sval = new std::string (yytext);
-                    return token::NUM;
-                }
-[0-9]+(\.[0-9]*)?|\.[0-9]+  {
-                        yylval->sval = new std::string (yytext);
-                        return token::DEC;
-                    }
-[a-zA-Z~!@\$\%\^&\*_\-\+=\<\>\.\?\"\/][a-zA-Z_0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\:\"\/]* 	{
-							yylval->sval = new std::string (yytext);
-							return token::SYM;
-						}
-\:[a-zA-Z0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\/]+      { yylval->sval = new std::string (yytext);
-                                                  return token::KEY; }
+"and"	        { return token::AND; }
+"or"		    { return token::OR; }
+"not"	        { return token::NOT; }
+"implies"       { return token::IMPLIES; }
+"=>"            { return token::IMPLIES; }
+"iff"           { return token::IFF; }
+"xor"           { return token::XOR; }
+"ite"           { return token::ITE; }
+"let"           { return token::LET; }
+"as"            { return token::AS; }
+"true"          { return token::TRUE; }
+"false"         { return token::FALSE; }
 
-[a-zA-Z0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\:\"\/]*     { yylval->sval = new std::string (yytext);
-                                                  return token::EMAIL; }
-[(]            { return token::OB; }
-[)]            { return token::CB; }
+"assert"        { return token::ASSERT; }
+"check-sat"     { return token::CHECK_SAT; }
+"push"          { return token::PUSH; }
+"pop"           { return token::POP; }
 
-\|		{ BEGIN(start_source); }
-<start_source>{
-  [^\|\n]       {  }
-  \n            {  }
-  \|            { BEGIN(INITIAL); return token::SYM; }
+"get-model"     { return token::GET_MODEL; }
+
+"set-logic"     { return token::SET_LOGIC; }
+"set-info"      { return token::SET_INFO; }
+
+"declare-fun"   { return token::DECLARE_FUN; }
+"define-fun"    { return token::DEFINE_FUN; }
+"declare-const"	{ return token::DECLARE_CONST; }
+"declare-sort"	{ return token::DECLARE_SORT; }
+"define-sort"   { return token::DEFINE_SORT; }
+
+"exit"          { return token::EXIT; }
+\(              { return token::OB; }
+\)              { return token::CB; }
+\|              { BEGIN( start_source ); }
+
+bv[0-9]+ {
+    yylval->sval = new string( yytext );
+    return token::BIT;
 }
 
- /*** END EXAMPLE - Change the smtrat lexer rules above ***/
+#b[0-1]+ {
+    yylval->sval = new string( yytext );
+    return token::BIN;
+}
 
-%% /*** Additional Code ***/
+#x[0-9a-fA-F]+ {
+    yylval->sval = new string( yytext );
+    return token::HEX;
+}
 
-namespace smtrat {
+0|[1-9][0-9]* {
+    yylval->sval = new string( yytext );
+    return token::NUM;
+}
 
-Scanner::Scanner(std::istream* in,
-		 std::ostream* out)
-    : smtratFlexLexer(in, out)
+[0-9]+\.[0-9]* {
+    yylval->sval = new string( yytext );
+    return token::DEC;
+}
+
+[a-zA-Z0-9._+\-*=%/?!$_~&^<>@]+ {
+    yylval->sval = new string( yytext );
+    if( mRealVariables.find( yytext ) != mRealVariables.end() )
+    {
+        return token::REAL_VAR;
+    }
+    else if( mBooleanVariables.find( yytext ) != mBooleanVariables.end() )
+    {
+        return token::BOOLEAN_VAR;
+    }
+    else
+    {
+        return token::SYM;
+    }
+}
+
+:[a-zA-Z0-9._+\-*=%?!$_~&^<>@]+ {
+    yylval->sval = new string( yytext );
+    return token::KEY;
+}
+
+
+<start_source>
 {
+    [^\|\n] {}
+    \n { yylloc->lines(yyleng); yylloc->step(); }
+    \| { BEGIN( INITIAL );
+    yylval->sval = new string( yytext );
+    return token::SYM; }
 }
 
-Scanner::~Scanner()
+%% /* Additional Code */
+
+namespace smtrat
 {
+    Scanner::Scanner( std::istream* _in, std::ostream* _out ) : smtratFlexLexer( _in, _out ) {}
+    Scanner::~Scanner() {}
+
+    void Scanner::set_debug( bool _bool )
+    {
+        yy_flex_debug = _bool;
+    }
 }
 
-void Scanner::set_debug(bool b)
-{
-    yy_flex_debug = b;
-}
-
-}
-
-/* This implementation of smtratFlexLexer::yylex() is required to fill the
+/*
+ *  This implementation of smtratFlexLexer::yylex() is required to fill the
  * vtable of the class smtratFlexLexer. We define the scanner's main yylex
- * function via YY_DECL to reside in the Scanner class instead. */
+ * function via YY_DECL to reside in the Scanner class instead.
+ */
 
 #ifdef yylex
 #undef yylex
@@ -188,11 +223,13 @@ int smtratFlexLexer::yylex()
     return 0;
 }
 
-/* When the scanner receives an end-of-file indication from YY_INPUT, it then
+/*
+ * When the scanner receives an end-of-file indication from YY_INPUT, it then
  * checks the yywrap() function. If yywrap() returns false (zero), then it is
  * assumed that the function has gone ahead and set up `yyin' to point to
  * another input file, and scanning continues. If it returns true (non-zero),
- * then the scanner terminates, returning 0 to its caller. */
+ * then the scanner terminates, returning 0 to its caller.
+ */
 
 int smtratFlexLexer::yywrap()
 {

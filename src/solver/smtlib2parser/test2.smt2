@@ -1,5 +1,0 @@
-(push 1)
-(declare-sort U 0)
-(pop 1)
-(declare-fun A () U)
-(exit)

@@ -45,7 +45,7 @@ namespace smtrat
      *
      * @return A shared pointer to the constraint.
      */
-    const Constraint* ConstraintPool::newConstraint( const string& _stringrep, const bool _infix, const bool _polarity )
+    const Constraint* ConstraintPool::newConstraint( const string& _stringrep, bool _infix, bool _polarity )
     {
         /*
          * Read the given string representing the constraint.
@@ -193,7 +193,6 @@ namespace smtrat
         {
             constraint = new Constraint( lhs, rhs, relation, reader.get_syms(), mIdAllocator );
         }
-        constraint->simplify();
         if( constraint->isConsistent() == 2 )
         {
             std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
