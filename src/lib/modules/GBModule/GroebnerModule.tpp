@@ -206,33 +206,43 @@ Answer GroebnerModule<Settings>::isConsistent( )
         
         //first, we interreduce the input!
         std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> > results = mBasis.reduceInput( );
-//        //analyze for deductions
-//        auto constraint = mBacktrackPoints.rbegin();
-//        for(auto it =  results.rbegin(); it != results.rend(); ++it)
-//        {
-//            // if the bitvector is not empty, there is a theory deduction
-//            if( Settings::addTheoryDeductions == ALL_CONSTRAINTS && !it->empty() )
-//            {
-//                Formula* deduction = new Formula(OR);
-//
-//                std::set<const Formula*> originals( generateReasons( *it ));
-//
-//                for( auto jt =  originals.begin(); jt != originals.end(); ++jt )
-//                {
-//                    deduction->addSubformula( new Formula( NOT ) );
-//                    deduction->back()->addSubformula( (*jt)->pConstraint() );
-//                }
-//                
-//                deduction->addSubformula((**constraint)->pConstraint( ));
-//
-//                deduction->print();
-//                addDeduction(deduction);
-//                #ifdef GATHER_STATS
-//                mStats->DeducedEquality();
-//                #endif
-//            }
-//            ++constraint;
-//        }
+        //analyze for deductions
+        for(auto it =  results.rbegin(); it != results.rend(); ++it)
+        {
+            // if the bitvector is not empty, there is a theory deduction
+            if( Settings::addTheoryDeductions == ALL_CONSTRAINTS && !it->second.empty() )
+            {
+                Formula* deduction = new Formula(OR);
+                std::set<const Formula*> deduced( generateReasons( it->first ));
+                std::set<const Formula*> originals( generateReasons( it->second ));
+                std::set<const Formula*> originalsWithoutDeduced;
+                
+                std::set_difference(originals.begin(), originals.end(), deduced.begin(), deduced.end(), std::inserter(originalsWithoutDeduced, originalsWithoutDeduced.end()));
+                
+                
+                for( auto jt =  originalsWithoutDeduced.begin(); jt != originalsWithoutDeduced.end(); ++jt )
+                {
+                    deduction->addSubformula( new Formula( NOT ) );
+                    deduction->back()->addSubformula( (*jt)->pConstraint() );
+                }
+                
+                for( auto jt =  deduced.begin(); jt != deduced.end(); ++jt )
+                {
+                    deduction->addSubformula( (*jt)->pConstraint() );
+                }
+                
+                it->first.print();
+                it->second.print();
+                //mBacktrackPoints[it->second.findFirstSetBit()];
+                //deduction->addSubformula((mBacktrackPoints[it->second.findFirstSetBit()]).pConstraint());
+
+                deduction->print();
+                addDeduction(deduction);
+                #ifdef GATHER_STATS
+                mStats->DeducedEquality();
+                #endif
+            }
+        }
     }
     
     //If the GB needs to be updated, we do so. Otherwise we skip.
