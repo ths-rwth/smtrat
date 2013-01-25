@@ -111,9 +111,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             }
             ++receivedSubformula;
         }
-        std::cout << "Passed formula: " << std::endl;
         assignActivitiesToPassedFormula();
-        mpPassedFormula->print();
         // Call backends.
         Answer ans = runBackends();
         if( ans == False )
