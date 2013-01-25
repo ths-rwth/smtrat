@@ -1,6 +1,6 @@
 /*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
+ * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
+ * Copyright (C) 2013 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
  * This file is part of SMT-RAT.
  *
@@ -11,37 +11,37 @@
  *
  * SMT-RAT is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SMT-RAT. If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 
 /**
- * @file TSManager.h
+ * @file Manager.h
  *
- * @author Florian Corzilius
- * @author Ulrich Loup
- * @author Sebastian Junges
- * @since 2012-01-18
- * @version 2012-06-08
+ * @author  Florian Corzilius
+ * @author  Ulrich Loup
+ * @author  Sebastian Junges
+ * @author  Henrik Schmitz
+ * @since   2012-01-18
+ * @version 2013-01-11
  */
 
-#ifndef SMTRAT_TSMANAGER_H
-#define SMTRAT_TSMANAGER_H
+#ifndef SMTRAT_MANAGER_H
+#define SMTRAT_MANAGER_H
 
 #include <vector>
 
-#include "Constraint.h"
 #include "Answer.h"
 #include "ModuleFactory.h"
 #include "StrategyGraph.h"
 #include "modules/ModuleType.h"
 #include "Module.h"
 #include "config.h"
+#include "Constraint.h"
 #include "modules/StandardModuleFactory.h"
 
 namespace smtrat
@@ -64,12 +64,12 @@ namespace smtrat
             /// a Boolean showing whether the manager has received new constraint after the last consistency check
             bool mBackendsUptodate;
             /// modules we can use
-            std::map<const ModuleType, ModuleFactory*>* mpModulFactories;
+            std::map<const ModuleType, ModuleFactory*>* mpModuleFactories;
             /// primary strategy
             StrategyGraph mStrategyGraph;
             /// position of the module instance in the strategy
             std::map<const Module* const, unsigned> mModulePositionInStrategy;
-
+            
         public:
             Manager( Formula* = new Formula( AND ) );
             ~Manager();
@@ -107,14 +107,14 @@ namespace smtrat
             }
 
             // Internally used interfaces
-            const std::map<const ModuleType, ModuleFactory*>& rModulFactories() const
+            const std::map<const ModuleType, ModuleFactory*>& rModuleFactories() const
             {
-                return *mpModulFactories;
+                return *mpModuleFactories;
             }
 
             void addModuleType( const ModuleType _moduleType, ModuleFactory* _factory )
             {
-                mpModulFactories->insert( std::pair<const ModuleType, ModuleFactory*>( _moduleType, _factory ) );
+                mpModuleFactories->insert( std::pair<const ModuleType, ModuleFactory*>( _moduleType, _factory ) );
             }
 
             StrategyGraph& rStrategyGraph()
@@ -135,7 +135,6 @@ namespace smtrat
             void printModel( std::ostream& ) const;
             std::vector<Module*> getBackends( Formula*, Module* );
     };
-
 }    // namespace smtrat
 
-#endif   /** SMTRAT_TSMANAGER_H */
+#endif   /** SMTRAT_MANAGER_H */

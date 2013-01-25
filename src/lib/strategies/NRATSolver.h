@@ -1,5 +1,5 @@
 /*
- *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
+ * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
  * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
  * This file is part of SMT-RAT.
@@ -21,26 +21,32 @@
 
 
 /**
- * @file Modules.h
+ * @file NRATSolver.h
  *
- * @author Ulrich Loup
- * @author Sebastian Junges
- * @since 2012-01-18
- * @version 2012-07-02
  */
+#ifndef SMTRAT_NRATSOLVER_H
+#define SMTRAT_NRATSOLVER_H
 
-#pragma once 
- #include "VSModule/VSModule.h" 
- #include "CNFerModule/CNFerModule.h" 
- #include "CADModule/CADModule.h" 
- #include "LRAModule/LRAModule.h" 
- #include "SATModule/SATModule.h" 
-
+#include "../Manager.h"
 
 namespace smtrat
 {
-	void printModulesInfo();
-}
+    /**
+    * Strategy description.
+    *
+    * @author
+    * @since
+    * @version
+    *
+    */
+    class NRATSolver:
+        public Manager
+    {
+        public:
+            NRATSolver( Formula* = new Formula( AND ) );
+            ~NRATSolver();
 
+    };
 
-
+}    // namespace smtrat
+#endif   /** SMTRAT_NRATSOLVER_H */

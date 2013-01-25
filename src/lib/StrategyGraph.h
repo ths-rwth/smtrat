@@ -24,7 +24,7 @@
  *
  * @author  Henrik Schmitz
  * @since   2012-09-10
- * @version 2012-09-24
+ * @version 2013-01-11
  */
 
 #ifndef SMTRAT_STRATEGYGRAPH_H
@@ -116,6 +116,7 @@ namespace smtrat
             // Members
 
             std::vector<Vertex*> mStrategyGraph;
+            bool mHasBranches;
 
         public:
             // [Con|De]structors
@@ -137,9 +138,15 @@ namespace smtrat
             unsigned addModuleType( unsigned, ModuleType, ConditionEvaluation = isCondition );
             
             // Only used within StrategyGraph class itself. Leaving public for future use.
+            // Now used within Java GUI.
             void addCondition( unsigned, unsigned, ConditionEvaluation = isCondition );
 
             std::vector< std::pair<unsigned, ModuleType> > nextModuleTypes( unsigned, Condition );
+            
+            bool hasBranches()
+            {
+                return mHasBranches;
+            }
     };
 }    // namespace smtrat
 

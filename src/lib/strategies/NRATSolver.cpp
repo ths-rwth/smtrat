@@ -40,10 +40,8 @@ namespace smtrat
         Manager( _inputFormula )
     {
         unsigned position = 0;
-        #ifdef SMTRAT_ENABLE_Preprocessing
-        position = rStrategyGraph().addModuleType( position, MT_Preprocessing );
-        #endif
         position = rStrategyGraph().addModuleType( position, MT_CNFerModule );
+//        position = rStrategyGraph().addModuleType( position, MT_PreprocessingModule );
         position = rStrategyGraph().addModuleType( position, MT_SATModule );
         position = rStrategyGraph().addModuleType( position, MT_LRAModule );
         #ifdef SMTRAT_ENABLE_GroebnerModule

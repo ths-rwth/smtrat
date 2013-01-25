@@ -98,14 +98,10 @@ set(lib_utilities_src
 	utilities/stats/StatisticSettings.cpp
 )
 
-
-set( lib_nratsolver_headers NRATSolver.h )
-set( lib_nratsolver_src NRATSolver.cpp )
-
 set(lib_${PROJECT_NAME}_SRCS
-    ${lib_nratsolver_src}
     ${lib_core_src}
     ${lib_modules_src}
+    ${lib_strategies_src}
 	${lib_utilities_src}
 )
 
@@ -148,7 +144,6 @@ install( TARGETS lib_${PROJECT_NAME} DESTINATION lib PERMISSIONS
     GROUP_READ GROUP_EXECUTE
     WORLD_READ WORLD_EXECUTE
 )
-#install( FILES ${lib_core_headers} ${lib_nratsolver_headers} DESTINATION include/${PROJECT_NAME}/lib )
 #install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/lib/modules )
 #install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/VSModule )
 #install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SATModule )

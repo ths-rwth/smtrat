@@ -1,5 +1,5 @@
 /*
- * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
+ *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
  * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
  * This file is part of SMT-RAT.
@@ -21,32 +21,36 @@
 
 
 /**
- * @file NRATSolver.h
+ * @file ModuleType.h
  *
+ * @author Ulrich Loup
+ * @since 2012-02-11
+ * @version 2013-01-12
  */
-#ifndef SMTRAT_NRATSOLVER_H
-#define SMTRAT_NRATSOLVER_H
 
-#include "Manager.h"
+#pragma once
+
+#include <string>
 
 namespace smtrat
 {
     /**
-    * Strategy description.
-    *
-    * @author
-    * @since
-    * @version
-    *
-    */
-    class NRATSolver:
-        public Manager
+     * Enumeration of available module types.
+     */
+    enum ModuleType
     {
-        public:
-            NRATSolver( Formula* = new Formula( AND ) );
-            ~NRATSolver();
+        /// type of class Module
+        MT_Module,
+        ///
+		 MT_VSModule,
+ MT_CNFerModule,
+ MT_CADModule,
+ MT_LRAModule,
+ MT_SATModule,
 
+        /// type of no Module
+        MT_NoModule           // KEEP THIS AS THE LAST ELEMENT OF THIS ENUM!!!
     };
 
+	std::string moduleTypeToString(ModuleType _type);
 }    // namespace smtrat
-#endif   /** SMTRAT_NRATSOLVER_H */
