@@ -71,7 +71,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         while( receivedSubformula != mpReceivedFormula->end() )
         {
             Formula* formulaToAssert = new Formula( **receivedSubformula );
-            RewritePotentialInequalities(formulaToAssert,false);
+            RewritePotentialInequalities(formulaToAssert);
             setDifficulty(formulaToAssert,false);
             /*
              * Create the origins containing only the currently considered formula of
@@ -113,6 +113,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             ++receivedSubformula;
         }
         std::cout << "Passed formula: " << std::endl;
+        assignActivitiesToPassedFormula();
         mpPassedFormula->print();
         // Call backends.
         Answer ans = runBackends();
@@ -134,6 +135,11 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         Module::removeSubformula( _subformula );
     }    
     
+    /**
+     * Res
+     * @param formula
+     * @param invert
+     */
     void PreprocessingModule::RewritePotentialInequalities( Formula* formula, bool invert )
     {
         if( formula->getType() == NOT )
@@ -210,63 +216,96 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 RewritePotentialInequalities(*it, invert);
             }
         }
-        
-        
         return;
 
     }
     
     void PreprocessingModule::setDifficulty(Formula* formula, bool invert)
     {
-        if( formula->isBooleanCombination() )
+        if( formula->getType() == NOT )
         {
+            setDifficulty(formula->subformulas().front(), !invert);
+            formula->setDifficulty(formula->subformulas().front()->difficulty());
+        }
+        
+        if( (formula->getType() == AND && !invert) || (formula->getType() == OR && invert) )
+        {
+            double maxdifficulty = 0;
+            double sumdifficulty = 0;
+            double subformulaDifficulty = 0;
             for( std::list<Formula*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
-            {
+            {   
                 setDifficulty(*it, invert);
+                subformulaDifficulty = (*it)->difficulty();
+                if( subformulaDifficulty > maxdifficulty )
+                {
+                    maxdifficulty = subformulaDifficulty;
+                }
+                sumdifficulty += subformulaDifficulty;
+            }
+            formula->setDifficulty(sumdifficulty + maxdifficulty);
+        } 
+        else if( (formula->getType() == OR && !invert) || (formula->getType() == AND && invert) )
+        {
+            double difficulty = 2000000; // TODO enter bound here.
+            for( std::list<Formula*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
+            {   
+                setDifficulty(*it, invert);
+                if( (*it)->difficulty() < difficulty )
+                {
+                    difficulty = (*it)->difficulty();
+                }
+            }
+            formula->setDifficulty(difficulty);
+        }
+        else if( formula->getType() == IMPLIES  )
+        {
+            
+        }
+        else if( formula->getType() == REALCONSTRAINT )
+        {
+            const Constraint* constraint = formula->pConstraint();
+            double difficulty;
+            if( constraint->isLinear() )
+            {
+                difficulty = 10;
+            }
+            else
+            {
+                difficulty = 200;
+            }
+            difficulty += (constraint->numMonomials()-1) * 5;
+            formula->setDifficulty(difficulty);
+        }   
+    }
+    
+    void PreprocessingModule::assignActivitiesToPassedFormula() 
+    {
+        double globalMaxDifficulty = 0;
+        for( std::list<Formula*>::const_iterator it = mpPassedFormula->subformulas().begin(); it != mpPassedFormula->subformulas().end(); ++it )
+        {
+            if((*it)->getType() != OR) continue;
+            else
+            {
+                for( std::list<Formula*>::const_iterator jt = (*it)->subformulas().begin(); jt != (*it)->subformulas().end(); ++jt )
+                {
+                    if( (*jt)->difficulty() > globalMaxDifficulty )
+                    {
+                        globalMaxDifficulty = (*jt)->difficulty();
+                    }
+                }
             }
         }
-        switch( formula->getType() )
+        std::cout << "Global max difficulty: " << globalMaxDifficulty << std::endl;
+        for( std::list<Formula*>::const_iterator it = mpPassedFormula->subformulas().begin(); it != mpPassedFormula->subformulas().end(); ++it )
         {
-            case AND:
+            if((*it)->getType() != OR) continue;
+            else
             {
-                unsigned difficulty = 0;
-                for( std::list<Formula*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
+                for( std::list<Formula*>::const_iterator jt = (*it)->subformulas().begin(); jt != (*it)->subformulas().end(); ++jt )
                 {
-                    if( (*it)->difficulty() > difficulty)
-                    {
-                        difficulty = (*it)->difficulty();
-                    }
+                    (*jt)->setActivity( 10000 - 10000 * ((*jt)->difficulty()/globalMaxDifficulty) );
                 }
-                formula->setDifficulty(difficulty);
-            }
-            
-            case OR:
-            {
-                
-                unsigned difficulty =  UINT_MAX;
-                for( std::list<Formula*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
-                {
-                    if( (*it)->difficulty() < difficulty)
-                    {
-                        difficulty = (*it)->difficulty();
-                    }
-                }
-                formula->setDifficulty(difficulty);
-            }
-            
-            case REALCONSTRAINT :
-            {
-                formula->setDifficulty(10);
-            }
-            
-            case BOOL :
-            {
-                
-            }
-            
-            default:
-            {
-
             }
         }
     }
