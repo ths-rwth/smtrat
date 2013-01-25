@@ -203,34 +203,38 @@ Answer GroebnerModule<Settings>::isConsistent( )
     // New elements queued for adding to the gb have to be handled.
     if( !mBasis.inputEmpty( ) )
     {
+        
         //first, we interreduce the input!
-        std::list<GiNaCRA::BitVector> results = mBasis.reduceInput( );
-        //analyze for deductions
-        auto constraint = mpReceivedFormula->rbegin();
-        for(auto it =  results.rbegin(); it != results.rend(); ++it)
-        {
-            // if the bitvector is not empty, there is a theory deduction
-            if( Settings::addTheoryDeductions == ALL_CONSTRAINTS && !it->empty() )
-            {
-                Formula* deduction = new Formula(OR);
-
-                std::set<const Formula*> originals( generateReasons( *it ));
-
-                for( auto jt =  originals.begin(); jt != originals.end(); ++jt )
-                {
-                    deduction->addSubformula( new Formula( NOT ) );
-                    deduction->back()->addSubformula( (*jt)->pConstraint() );
-                }
-                deduction->addSubformula((*constraint)->pConstraint( ));
-
-                addDeduction(deduction);
-                #ifdef GATHER_STATS
-                mStats->DeducedEquality();
-                #endif
-            }
-            ++constraint;
-        }
+        std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> > results = mBasis.reduceInput( );
+//        //analyze for deductions
+//        auto constraint = mBacktrackPoints.rbegin();
+//        for(auto it =  results.rbegin(); it != results.rend(); ++it)
+//        {
+//            // if the bitvector is not empty, there is a theory deduction
+//            if( Settings::addTheoryDeductions == ALL_CONSTRAINTS && !it->empty() )
+//            {
+//                Formula* deduction = new Formula(OR);
+//
+//                std::set<const Formula*> originals( generateReasons( *it ));
+//
+//                for( auto jt =  originals.begin(); jt != originals.end(); ++jt )
+//                {
+//                    deduction->addSubformula( new Formula( NOT ) );
+//                    deduction->back()->addSubformula( (*jt)->pConstraint() );
+//                }
+//                
+//                deduction->addSubformula((**constraint)->pConstraint( ));
+//
+//                deduction->print();
+//                addDeduction(deduction);
+//                #ifdef GATHER_STATS
+//                mStats->DeducedEquality();
+//                #endif
+//            }
+//            ++constraint;
+//        }
     }
+    
     //If the GB needs to be updated, we do so. Otherwise we skip.
     // Notice that we might to update the gb after backtracking (mRecalculateGB flag).
     if( !mBasis.inputEmpty( ) || (mRecalculateGB && mBasis.nrOriginalConstraints() > 0) )

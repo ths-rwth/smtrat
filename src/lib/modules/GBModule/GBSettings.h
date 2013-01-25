@@ -56,7 +56,7 @@ namespace smtrat
 	
 	struct decidePassingPolynomial;
 
-    // Contains a bug, e.g. rect-03-10
+    
     struct GBSettings5
     {
         static const unsigned                            identifier                              = 5;
@@ -90,7 +90,7 @@ namespace smtrat
 		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
     };
     
-    // causes a bug to appear (see stats)
+    
     struct GBSettings51
     {
         static const unsigned                            identifier                              = 51;

@@ -60,8 +60,9 @@ namespace smtrat
             void removeSubformula( Formula::const_iterator );
             
         protected:
-            void setDifficulty( Formula* formula, bool invert );
-            void RewritePotentialInequalities( Formula* formula, bool invert );
+            void setDifficulty( Formula* formula, bool invert = false );
+            void RewritePotentialInequalities( Formula* formula, bool invert = false);
+            void assignActivitiesToPassedFormula();
     };
 
 }    // namespace smtrat
