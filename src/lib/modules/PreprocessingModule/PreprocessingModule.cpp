@@ -293,6 +293,19 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             {
                 for( std::list<Formula*>::const_iterator jt = (*it)->subformulas().begin(); jt != (*it)->subformulas().end(); ++jt )
                 {
+                    // Special treatment for identities.
+                    if( (*jt)->getType() == REALCONSTRAINT ) 
+                    {
+                        const Constraint* constraint = (*jt)->pConstraint();
+                        
+                        if(constraint->relation() == CR_EQ && constraint->isLinear() && constraint->numMonomials() <= 2)
+                        {
+                            (*jt)->setActivity(-100);
+                            continue;
+                        }
+                        
+                    }
+                    // Otherwise we just set the activity according to the difficulty.
                     (*jt)->setActivity( 100 * ((*jt)->difficulty()/globalMaxDifficulty) );
                 }
             }
@@ -370,27 +383,56 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                     }
                     
                     if(symbols.size() > 2) continue;
-                    
+                    Formula* deduction = new Formula(OR);
                     if( symbols.size() == 1 ) 
                     {
-                        
+                        assert(false); // not implemented
                     }
                     else if( symbols.size() == 2 )
                     {
                         
+                        switch(constraint->relation())
+                        {
+                            case CR_LEQ:
+                            {
+                                // constraint->variables is an overapproximation, however, i cannot find how to create a symtab from a symbol
+                                size_t pos = std::upper_bound (squares.begin(), squares.end(), -constPart) - squares.begin();
+                                std::cout << pos << std::endl;
+                                GiNaC::ex lhs1(symbols.front() - pos);
+                                GiNaC::ex lhs2(symbols.back() - pos);
+                                const Constraint* c1 = Formula::newConstraint( lhs1 , CR_LEQ , constraint->variables() );
+                                const Constraint* c2 = Formula::newConstraint( lhs2 , CR_LEQ , constraint->variables() );
+                                deduction->addSubformula(c1);
+                                deduction->addSubformula(c2);
+                                break;
+                            }
+                            case CR_GEQ:
+                            {
+                                assert(false); // not implemented
+                                break;
+                            }
+                            case CR_LESS:
+                            {
+                                assert(false); // not implemented
+                                break;
+                            }
+                            case CR_GREATER:
+                            {
+                                assert(false); // not implemented
+                                break;
+                            }
+                            case CR_EQ:
+                            {
+                                assert(false); // not implemented
+                                break;
+                            }
+                            case CR_NEQ:
+                            {
+                                assert(false); // not implemented
+                                break;
+                            }
+                        }
                     }
-                    
-                    Formula* deduction = new Formula(OR);
-//                    switch(constraint->relation())
-//                    {
-//                        case LEQ:
-//                        {
-//                            Constraint c1 = Formula::constraintPool().newConstraint(symbolIt.fron)
-//                            break;
-//                        }
-//                    }
-//                    
-                    
                     
                     formula->addSubformula(deduction);
                 }

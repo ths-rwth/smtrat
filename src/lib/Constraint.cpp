@@ -694,7 +694,7 @@ namespace smtrat
                 }
                 else if( is_exactly_a<symbol>( summandEx ) )
                 {
-                    ++mNumMonomials;
+                    
                     mIsNeverPositive = false;
                     mIsNeverNegative = false;
                     VarInfo& varInfo = mVarInfoMap[summandEx];
@@ -716,7 +716,7 @@ namespace smtrat
                 }
                 else if( is_exactly_a<power>( summandEx ) )
                 {
-                    ++mNumMonomials;
+                    
                     assert( summandEx.nops() == 2 );
                     ex exponent = *(++(summandEx.begin()));
                     assert( !exponent.info( info_flags::negative ) );
@@ -741,6 +741,7 @@ namespace smtrat
         else if( is_exactly_a<mul>( lhs() ) )
         {
             unsigned monomDegree = 0;
+            mNumMonomials = 1;
             for( GiNaC::const_iterator factor = lhs().begin(); factor != lhs().end(); ++factor )
             {
                 const ex factorEx = *factor;
@@ -748,7 +749,6 @@ namespace smtrat
                 {
                     mIsNeverPositive = false;
                     mIsNeverNegative = false;
-                    mNumMonomials = 1;
                     VarInfo& varInfo = mVarInfoMap[factorEx];
                     ++varInfo.occurences;
                     varInfo.minDegree = 1;
@@ -767,7 +767,6 @@ namespace smtrat
                 }
                 else if( is_exactly_a<power>( factorEx ) )
                 {
-                    mNumMonomials = 1;
                     assert( factorEx.nops() == 2 );
                     ex exponent = *(++factorEx.begin());
                     assert( !exponent.info( info_flags::negative ) );
