@@ -51,6 +51,7 @@ namespace smtrat {
         static StatisticSettings* settings;
         static void produceOutput();
         static void registerStats(Statistics* _stats);
+    protected:
         static void print(std::ostream& os = std::cout);
         static void exportKeyValue(std::string path);
         static void exportXML(const std::string& filename = "stats.xml");

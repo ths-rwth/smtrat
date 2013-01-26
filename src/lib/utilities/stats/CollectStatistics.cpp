@@ -50,6 +50,9 @@ void CollectStatistics::registerStats(Statistics* _stats) {
 
 void CollectStatistics::produceOutput() 
 {
+    for(auto it = stats.begin(); it != stats.end(); ++it) {
+        (*it)->collect();
+    }
     if(settings->exportXml()) 
     {
         exportXML(settings->xmlPath());
@@ -76,7 +79,6 @@ void CollectStatistics::exportXML(const std::string& pathToFile) {
     std::stringstream stream;
     stream << "<runtimestats>\n";
     for(auto it = stats.begin(); it != stats.end(); ++it) {
-        (*it)->collect();
         (*it)->generateXML(stream);
     }
     stream << "</runtimestats>";
