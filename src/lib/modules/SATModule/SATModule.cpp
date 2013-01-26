@@ -1495,7 +1495,7 @@ Propagation:
      */
     void SATModule::uncheckedEnqueue( Lit p, CRef from )
     {
-        #ifdef LOG_ON
+        #ifdef SMTRAT_ENABLE_VALIDATION
         if( value( p ) != l_Undef )
             Module::storeAssumptionsToCheck( *mpManager );
         #endif
