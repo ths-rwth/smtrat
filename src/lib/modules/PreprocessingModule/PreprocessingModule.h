@@ -35,6 +35,14 @@
 
 namespace smtrat
 {
+    template<unsigned i>
+    struct SquareValue
+    {
+        static const unsigned squared = i * i; 
+    };
+
+    const int squaresArray[12]  = { 0*0 , 1*1, 2*2, 3*3, 4*4, 5*5, 6*6, 7*7, 8*8, 9*9, 10*10, 11*11 };
+
     class PreprocessingModule : public Module
     {
         protected:
@@ -63,6 +71,7 @@ namespace smtrat
             void setDifficulty( Formula* formula, bool invert = false );
             void RewritePotentialInequalities( Formula* formula, bool invert = false);
             void assignActivitiesToPassedFormula();
+            void addLinearDeductions( Formula* formula );
     };
 
 }    // namespace smtrat
