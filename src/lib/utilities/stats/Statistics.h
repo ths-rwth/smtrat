@@ -33,7 +33,6 @@ public :
         {
             std::cout << "\t" << mKeyValuePairs[i].first << ": " << mKeyValuePairs[i].second << std::endl;
         }
-        std::cout << "--------------------------" << std::endl;
     }
     void generateXML(std::stringstream & filestream) {
         filestream << "\t<module name=\"" << mName << "\">\n"; 

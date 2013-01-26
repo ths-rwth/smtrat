@@ -70,6 +70,8 @@ void CollectStatistics::print(std::ostream& os) {
     std::cout << "**********************************************" << std::endl;
     for(auto it = stats.begin(); it != stats.end(); ++it) {
         (*it)->print();
+        
+    std::cout << "* * * * * * * * * * * * * * * * * * * * * * * " << std::endl;
     }
     
     std::cout << "**********************************************" << std::endl;
