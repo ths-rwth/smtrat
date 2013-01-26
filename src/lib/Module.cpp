@@ -519,10 +519,13 @@ namespace smtrat
             #endif
             result = (*module)->isConsistent();
             (*module)->receivedFormulaChecked();
-            #ifdef LOG_THEORY_CALLS
-            if( result != Unknown )
+            #ifdef SMTRAT_ENABLE_VALIDATION
+            if( validationSettings->logTCalls() ) 
             {
-                addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
+                if( result != Unknown )
+                {
+                    addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
+                }
             }
             #endif
             ++module;
@@ -703,6 +706,7 @@ namespace smtrat
      */
     void Module::storeAssumptionsToCheck( const Manager& _manager )
     {
+        std::cout << mAssumptionToCheck.size() << std::endl;
         #ifdef SMTRAT_ENABLE_VALIDATION
         if( !Module::mAssumptionToCheck.empty() )
         {
