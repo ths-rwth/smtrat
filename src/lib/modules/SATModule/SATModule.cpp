@@ -503,7 +503,7 @@ namespace smtrat
             {
                 mConstraintsToInform.insert( _formula.pConstraint() );
                 
-                return getLiteral( _formula.pConstraint(), _origin, _formula.activity() );
+                return getLiteral( _formula.pConstraint(), _origin, fabs(_formula.activity()), (_formula.activity()<0) );
             }
             default:
             {
