@@ -50,6 +50,9 @@ class GroebnerModuleStats : public Statistics
          Statistics::addKeyValuePair("Backend false", mNrBackendReturnsFalse);
          Statistics::addKeyValuePair("Deduced equalities", mNrDeducedEqualities);
          Statistics::addKeyValuePair("Deduced inequalities", mNrDeducedInequalities);
+         Statistics::addKeyValuePair("Radical search: Found identity", mNrOfFoundIdentities);
+         Statistics::addKeyValuePair("Radical search: Found equality", mNrOfFoundEqualities);
+         
      }
      
      /**

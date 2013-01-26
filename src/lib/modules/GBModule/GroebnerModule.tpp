@@ -411,11 +411,13 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
     {
     #ifdef SEARCH_FOR_RADICALMEMBERS
     std::set<unsigned> variableNumbers(mBasis.getGbIdeal().gatherVariables());
+
+    //find variable rewrite rules
     //apply the rules RRI-* from the Thesis from G.O. Passmore
     // Iterate over all variables in the GB
     for(std::set<unsigned>::const_iterator it =  variableNumbers.begin(); it != variableNumbers.end(); ++it) {
         // We search until a given (static) maximal exponent
-        for(unsigned exponent = 1; exponent <= Settings::maxSearchExponent; ++(++exponent))
+        for(unsigned exponent = 3; exponent <= Settings::maxSearchExponent; ++(++exponent))
         {
             // Construct x^exp
             Term t(Rational(1), *it, exponent);
@@ -432,7 +434,7 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
                 // calculate q-root(reduce);
                 #ifdef GATHER_STATS
                 mStats->FoundEqualities();
-                //std::cout << t << " -> " << reduce << std::endl;
+                std::cout << t << " -> " << reduce << std::endl;
                 #endif
                 break;
             }
@@ -441,14 +443,13 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
             {
                 #ifdef GATHER_STATS
                 mStats->FoundIdentities();
-                //std::cout << t << " -> " << reduce << std::endl;
+                std::cout << t << " -> " << reduce << std::endl;
                 #endif
                 break;
             }
         }
     }
 
-    //find variable rewrite rules
     
     #else
     return false;
