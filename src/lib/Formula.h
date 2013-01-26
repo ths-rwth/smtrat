@@ -84,10 +84,7 @@ namespace smtrat
 
             /// A pool to manage all generated constraints.
             static ConstraintPool mConstraintPool;
-            ///
-            static double mSumOfAllActivities;
-            ///
-            static unsigned mNumberOfNonZeroActivities;
+            
 
             /**
              *  Constructors and destructor.
@@ -133,11 +130,6 @@ namespace smtrat
 
             void setActivity( double _activity )
             {
-                if( mActivity == 0 )
-                {
-                    ++Formula::mNumberOfNonZeroActivities;
-                    Formula::mSumOfAllActivities += _activity;
-                }
                 mActivity = _activity;
             }
 

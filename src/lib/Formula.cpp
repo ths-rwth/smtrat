@@ -37,8 +37,6 @@ using namespace std;
 namespace smtrat
 {
     ConstraintPool Formula::mConstraintPool             = ConstraintPool();
-    double         Formula::mSumOfAllActivities         = 0;
-    unsigned       Formula::mNumberOfNonZeroActivities  = 0;
 
     Formula::Formula():
         mActivity( 0 ),

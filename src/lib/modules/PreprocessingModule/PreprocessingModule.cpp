@@ -293,7 +293,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             {
                 for( std::list<Formula*>::const_iterator jt = (*it)->subformulas().begin(); jt != (*it)->subformulas().end(); ++jt )
                 {
-                    (*jt)->setActivity( 10000 * ((*jt)->difficulty()/globalMaxDifficulty) );
+                    (*jt)->setActivity( 100 * ((*jt)->difficulty()/globalMaxDifficulty) );
                 }
             }
         }        
