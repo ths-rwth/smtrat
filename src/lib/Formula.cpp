@@ -1445,7 +1445,7 @@ namespace smtrat
                 else
                 {
                     mpConstraint->print( _out );
-                    _out << " (" << mActivity << ")";
+                    _out << " (" << mDifficulty << ":" << mActivity << ")";
                 }
                 break;
             }
