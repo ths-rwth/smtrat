@@ -639,11 +639,11 @@ namespace smtrat
         {
             for( GiNaC::const_iterator summand = lhs().begin(); summand != lhs().end(); ++summand )
             {
+                ++mNumMonomials;
                 const ex summandEx = *summand;
                 if( is_exactly_a<mul>( summandEx ) )
                 {
                     unsigned monomDegree = 0;
-                    ++mNumMonomials;
                     for( GiNaC::const_iterator factor = summandEx.begin(); factor != summandEx.end(); ++factor )
                     {
                         const ex factorEx = *factor;
