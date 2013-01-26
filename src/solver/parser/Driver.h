@@ -35,93 +35,199 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <assert.h>
+#include <ginac/ginac.h>
+#include "../../lib/Constraint.h"
 
-/** The smtrat namespace is used to encapsulate the three parser classes
- * smtrat::Parser, smtrat::Scanner and smtrat::Driver */
 namespace smtrat
 {
-    // forward declaration
+    enum Logic { QF_NRA, QF_LRA };
+
     class Formula;
 
-    /** The driver class brings together all components. It creates an instance of
-     * the parser and scanner classes and connects them. Then the input stream is
-     * fed into the scanner object and the parser gets it's token
-     * sequence. Furthermore the driver object is available in the grammar rules as
-     * a parameter. Therefore the driver class contains a reference to the
-     * structure into which the parsed data is saved. */
+    typedef std::map< std::string, std::pair< std::string, GiNaC::ex > > RealVarMap;
+
     class Driver
     {
-        public:
-            /// construct a new parser driver context
-            Driver( class Formula * );
+        private:
 
+            ///
+            bool mCheck;
+            ///
+            bool mPrintAssignment;
+            /// enable debug output in the flex scanner
+            bool mTraceScanning;
+            /// enable debug output in the bison parser
+            bool mTraceParsing;
+            ///
+            int mStatus;
+            ///
+            Logic mLogic;
+            /// Reference to the calculator context filled during parsing of the expressions.
+            class Formula *mFormulaRoot;
+            /// Pointer to the current lexer instance, this is used to connect the parser to the scanner. It is used in the yylex macro.
+            class Scanner *mLexer;
+            /// stream name (file or input stream) used for error messages.
+            std::string* mStreamname;
+            ///
+            std::map< std::string, std::string > mBooleanVariables;
+            ///
+            RealVarMap mRealVariables;
+            ///
+            std::map< std::string, std::string > mRealBooleanDependencies;
+            ///
+            std::map< const std::string, const std::string > mRealsymbolpartsToReplace;
+
+        public:
+            /*
+             * Constructor and destructor.
+             */
+            Driver( class Formula * );
             ~Driver();
 
-            /// enable debug output in the flex scanner
-            bool trace_scanning;
-
-            /// enable debug output in the bison parser
-            bool trace_parsing;
-
-            /// stream name (file or input stream) used for error messages.
-            std::string streamname;
-
-            /** Invoke the scanner and parser for a stream.
-             * @param in    input stream
-             * @param sname stream name for error messages
-             * @return      true if successfully parsed
+            /*
+             * Methods.
              */
+            bool check()
+            {
+                return mCheck;
+            }
+
+            void setCheck( const class location& _loc )
+            {
+                if( mCheck ) error( _loc, "Only one (check) is supported!" );
+                else mCheck = true;
+            }
+
+            bool traceScanning() const
+            {
+                return mTraceParsing;
+            }
+
+            bool& rTraceScanning()
+            {
+                return mTraceParsing;
+            }
+
+            bool traceParsing() const
+            {
+                return mTraceParsing;
+            }
+
+            bool& rTraceParsing()
+            {
+                return mTraceParsing;
+            }
+
+            int status() const
+            {
+                return mStatus;
+            }
+
+            int& rStatus()
+            {
+                return mStatus;
+            }
+
+            Scanner* pLexer()
+            {
+                return mLexer;
+            }
+
+            std::string* pStreamname()
+            {
+                return mStreamname;
+            }
+
+            bool printAssignment()
+            {
+                return mPrintAssignment;
+            }
+
+            void setPrintAssignment()
+            {
+                mPrintAssignment = true;
+            }
+
+            smtrat::Formula& rFormulaRoot()
+            {
+                return *mFormulaRoot;
+            }
+
+            bool getDependingBoolean( const std::string& _realVarName, std::string& _dependingBoolean ) const
+            {
+                auto iter = mRealBooleanDependencies.find( _realVarName );
+                if( iter != mRealBooleanDependencies.end() )
+                {
+                    _dependingBoolean = iter->second;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            void free( std::vector< std::string* >* _toFree ) const
+            {
+                while( !_toFree->empty() )
+                {
+                    std::string* toDelete = _toFree->back();
+                    _toFree->pop_back();
+                    delete toDelete;
+                }
+                delete _toFree;
+            }
+
+            void free( std::vector< std::pair< std::string, unsigned >* >* _toFree )
+            {
+                while( !_toFree->empty() )
+                {
+                    std::pair< std::string, unsigned >* tmp = _toFree->back();
+                    if( tmp->second == 0 ) freeBooleanVariableName( tmp->first );
+                    else freeRealVariableName( tmp->first );
+                    _toFree->pop_back(); delete tmp;
+                }
+                delete _toFree;
+            }
+
+            unsigned type( const std::string& _varName ) const
+            {
+                if( mBooleanVariables.find( _varName ) != mBooleanVariables.end() )
+                {
+                    return 0;
+                }
+                else
+                {
+                    assert( mRealVariables.find( _varName ) != mRealVariables.end() );
+                    return 1;
+                }
+            }
+
+            const std::string createDependingBoolean( const class location&, const std::string& );
             bool parse_stream( std::istream& in, const std::string& sname = "stream input" );
-
-            /** Invoke the scanner and parser on an input string.
-             * @param input input string
-             * @param sname stream name for error messages
-             * @return      true if successfully parsed
-             */
             bool parse_string( const std::string& input, const std::string& sname = "string stream" );
-
-            /** Invoke the scanner and parser on a file. Use parse_stream with a
-             * std::ifstream if detection of file reading errors is required.
-             * @param filename  input file name
-             * @return      true if successfully parsed
-             */
             bool parse_file( const std::string& filename );
-
-            // To demonstrate pure handling of parse errors, instead of
-            // simply dumping them on the standard error output, we will pass
-            // them to the driver using the following two member functions.
-
-            /** Error handling with associated line number. This can be modified to
-             * output the error e.g. to a dialog box. */
-            void error( const class location &l, const std::string& m );
-
-            /** General error handling. This can be modified to output the error
-             * e.g. to a dialog box. */
-            void error( const std::string& m );
-
-            static std::string replace( const std::string, const std::string, const std::string );
-
-            /** Pointer to the current lexer instance, this is used to connect the
-             * parser to the scanner. It is used in the yylex macro. */
-            class Scanner *lexer;
-
-            /** Reference to the calculator context filled during parsing of the
-             * expressions. */
-            class Formula *formulaRoot;
-
-            std::set<std::string>              collectedBooleans;
-
-            std::map<std::string, std::string> collectedRealAuxilliaries;
-
-            int status;
-
-            bool printAssignment;
-
-            bool check;
-
-            std::map< const std::string, const std::string > realsymbolpartsToReplace;
-
-            std::map< const std::string, class Formula*> collectedBooleanAuxilliaries;
+            void error( const class location&, const std::string& m ) const;
+            void error( const std::string& m ) const;
+            void setLogic( const class location&, const std::string& );
+            void addVariable( const class location&, const std::string&, const std::string& );
+            const std::string addBooleanVariable( const class location&, const std::string& = "" );
+            RealVarMap::const_iterator addRealVariable( const class location&, const std::string& = "" );
+            const std::string& getBooleanVariable( const class location&, const std::string& ) const;
+            RealVarMap::const_iterator getRealVariable( const class location&, const std::string& );
+            void freeBooleanVariableName( const std::string& );
+            void freeRealVariableName( const std::string& );
+            std::pair< GiNaC::ex, std::vector< RealVarMap::const_iterator > >* mkPolynomial( const class location&, std::string& );
+            std::pair< GiNaC::ex, std::vector< RealVarMap::const_iterator > >* mkPolynomial( const class location&, RealVarMap::const_iterator );
+            smtrat::Formula* mkConstraint( const std::pair< GiNaC::ex, std::vector< RealVarMap::const_iterator > >&, const std::pair< GiNaC::ex, std::vector< RealVarMap::const_iterator > >&, unsigned );
+            smtrat::Formula* mkFormula( unsigned, smtrat::Formula* );
+            smtrat::Formula* mkFormula( unsigned, smtrat::Formula*, smtrat::Formula* );
+            smtrat::Formula* mkFormula( unsigned, std::vector< smtrat::Formula* >& );
+            smtrat::Formula* mkIteInFormula( smtrat::Formula*, smtrat::Formula*, smtrat::Formula* );
+            std::string* mkIteInExpr( const class location&, smtrat::Formula*, std::pair< GiNaC::ex, std::vector< RealVarMap::const_iterator > >&, std::pair< GiNaC::ex, std::vector< RealVarMap::const_iterator > >& );
+            GiNaC::numeric* getNumeric( const std::string& ) const;
+            void checkInfo( const class location&, const std::string&, const std::string& );
     };
 
 }    // namespace smtrat

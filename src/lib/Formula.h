@@ -64,7 +64,7 @@ namespace smtrat
             /// All real valued variables used within this formula (and its sub formulas).
             GiNaC::symtab mRealValuedVars;
             /// All Boolean variables used within this formula (and its sub formulas).
-            std::set< std::string, strCmp > mBooleanVars;
+            std::set< std::string > mBooleanVars;
 
             /// The content of this formula.
             union
@@ -196,7 +196,7 @@ namespace smtrat
                     }
                     while( !_formula->empty() )
                     {
-                        addSubformula( _formula->pruneBack() );
+                        addSubformula( _formula->pruneFront() );
                     }
                 }
                 delete _formula;
@@ -228,7 +228,7 @@ namespace smtrat
                 return mBooleanVars.size();
             }
 
-            const std::set< std::string, strCmp >& booleanVars() const
+            const std::set< std::string >& booleanVars() const
             {
                 return mBooleanVars;
             }
@@ -442,9 +442,14 @@ namespace smtrat
                 return mConstraintPool.newConstraint( _stringrep, _infix, _polarity );
             }
 
-            static GiNaC::ex newVariable( const std::string& _name )
+            static GiNaC::ex newRealVariable( const std::string& _name )
             {
-                return mConstraintPool.newVariable( _name );
+                return mConstraintPool.newRealVariable( _name );
+            }
+
+            static void newBooleanVariable( const std::string& _name )
+            {
+                mConstraintPool.newBooleanVariable( _name );
             }
 
             static const ConstraintPool& constraintPool()
@@ -457,9 +462,9 @@ namespace smtrat
              *
              * @return The fresh real variable.
              */
-            static std::pair<std::string,GiNaC::ex> newAuxiliaryReal()
+            static std::pair<std::string,GiNaC::ex> newAuxiliaryRealVariable()
             {
-                return mConstraintPool.newAuxiliaryReal();
+                return mConstraintPool.newAuxiliaryRealVariable();
             }
 
             /**
@@ -467,9 +472,9 @@ namespace smtrat
              *
              * @return The identifier of a fresh Boolean variable.
              */
-            static std::string newAuxiliaryBoolean()
+            static std::string newAuxiliaryBooleanVariable()
             {
-                return mConstraintPool.newAuxiliaryBoolean();
+                return mConstraintPool.newAuxiliaryBooleanVariable();
             }
 
             bool isAtom() const
@@ -535,11 +540,13 @@ namespace smtrat
             void addSubformula( Formula* );
             void addSubformula( const Constraint* );
             void pop_back();
+            void pop_front();
             void erase( unsigned );
             void erase( const Formula* );
             iterator erase( iterator );
 
             Formula* pruneBack();
+            Formula* pruneFront();
             Formula* prune( unsigned );
             iterator prune( iterator );
             void clear();

@@ -279,6 +279,8 @@ namespace smtrat
                 default:
                 {
                     cerr << "Undefined operator!" << endl;
+                    cerr << mType << endl;
+                    cerr << *this << endl;
                     assert( false );
                 }
             }
@@ -409,6 +411,18 @@ namespace smtrat
 
     /**
      *
+     */
+    void Formula::pop_front()
+    {
+        assert( isBooleanCombination() );
+        Formula* pSubForm = mpSubformulas->front();
+        mpSubformulas->pop_front();
+        delete pSubForm;
+        mPropositionsUptodate = false;
+    }
+
+    /**
+     *
      * @param _position
      */
     void Formula::erase( unsigned _position )
@@ -481,6 +495,21 @@ namespace smtrat
 
     /**
      *
+     * @return
+     */
+    Formula* Formula::pruneFront()
+    {
+        assert( isBooleanCombination() );
+        assert( !mpSubformulas->empty() );
+        Formula* result = mpSubformulas->front();
+        result->resetFather();
+        mpSubformulas->pop_front();
+        mPropositionsUptodate = false;
+        return result;
+    }
+
+    /**
+     *
      * @param _position
      * @return
      */
@@ -537,7 +566,7 @@ namespace smtrat
     /**
      *
      * @param _moduleType
-     
+
     void Formula::notSolvableBy( ModuleType _moduleType )
     {
         switch( _moduleType )
@@ -620,7 +649,7 @@ namespace smtrat
      */
     void Formula::addConstraintPropositions( const Constraint& _constraint )
     {
-        switch( _constraint.highestDegree() )
+        switch( _constraint.maxMonomeDegree() )
         {
             case 0:
             {
@@ -699,203 +728,6 @@ namespace smtrat
 
     /**
      *
-     * @param _out
-     * @param _init
-     * @param _smtlib smtlib format
-     * @param _onOneLine everything on one line
-     */
-    void Formula::print( ostream& _out, const string _init, bool _smtlib, bool _onOneLine ) const
-    {
-        string oper = "";
-        switch( mType )
-        {
-            case AND:
-            {
-                oper = "and";
-                break;
-            }
-            case OR:
-            {
-                oper = "or";
-                break;
-            }
-            case NOT:
-            {
-                oper = "not";
-                break;
-            }
-            case IFF:
-            {
-                oper = "iff";
-                break;
-            }
-            case XOR:
-            {
-                oper = "xor";
-                break;
-            }
-            case IMPLIES:
-            {
-                oper = "implies";
-                break;
-            }
-            case BOOL:
-            {
-                _out << _init << *mpIdentifier;
-                if( !_smtlib )
-                {
-                    _out << " (" << mDifficulty << "/" << mActivity << ")";
-                }
-                break;
-            }
-            case REALCONSTRAINT:
-            {
-                _out << _init;
-                if( _smtlib )
-                {
-                    _out << mpConstraint->smtlibString();
-                }
-                else
-                {
-                    mpConstraint->print( _out );
-                    _out << " (" << mDifficulty << "/" << mActivity << ")";
-                }
-                break;
-            }
-            case TTRUE:
-            {
-                _out << _init << "True";
-                break;
-            }
-            case FFALSE:
-            {
-                _out << _init << "False";
-                break;
-            }
-            default:
-            {
-                _out << _init << "Undefined";
-            }
-        }
-        if( !oper.empty() )
-        {
-            _out << _init << "(" << oper;
-            if( _onOneLine )
-            {
-                _out << " ";
-            }
-            else
-            {
-                _out << endl;
-            }
-            std::list<Formula*>::const_iterator subFormula = mpSubformulas->begin();
-            while( subFormula != mpSubformulas->end() )
-            {
-                assert( (*subFormula)->cpFather() == this );
-                if( _onOneLine )
-                {
-                    (*subFormula)->print( _out, "", _smtlib, _onOneLine );
-                    _out << " ";
-                }
-                else
-                {
-                    (*subFormula)->print( _out, _init + "   ", _smtlib, _onOneLine );
-                    _out << endl;
-                }
-                ++subFormula;
-            }
-            _out << _init << ")";
-        }
-        if( mpFather == NULL &&!_onOneLine )
-        {
-            _out << endl;
-        }
-    }
-
-    ostream& operator <<( ostream& _ostream, const Formula& _formula )
-    {
-        _formula.print( _ostream, "", true );
-        return _ostream;
-    }
-
-    string Formula::toString( bool _infix ) const
-    {
-        string result = "";
-        switch( mType )
-        {
-            case AND:
-            {
-                result += "(and";
-                break;
-            }
-            case OR:
-            {
-                result += "(or";
-                break;
-            }
-            case NOT:
-            {
-                result += "(not";
-                break;
-            }
-            case IFF:
-            {
-                result += "(iff";
-                break;
-            }
-            case XOR:
-            {
-                result += "(xor";
-                break;
-            }
-            case IMPLIES:
-            {
-                result += "(=>";
-                break;
-            }
-            case BOOL:
-            {
-                result += *mpIdentifier;
-                break;
-            }
-            case REALCONSTRAINT:
-            {
-                if( _infix )
-                {
-                    result += mpConstraint->toString();
-                }
-                else
-                {
-                    result += mpConstraint->smtlibString();
-                }
-                break;
-            }
-            case TTRUE:
-            {
-                result += "True";
-                break;
-            }
-            case FFALSE:
-            {
-                result += "False";
-                break;
-            }
-            default:
-            {
-                result += "Undefined";
-            }
-        }
-        if( isBooleanCombination() )
-        {
-            for( std::list<Formula*>::const_iterator subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
-                result += " " + (*subformula)->toString( _infix );
-            result += ")";
-        }
-        return result;
-    }
-
-    /**
-     *
      * @param _const
      */
     void Formula::getConstraints( vector<const Constraint*>& _const ) const
@@ -936,7 +768,7 @@ namespace smtrat
         Formula* copy = new Formula( _formula.getType() );
         while( !_formula.empty() )
         {
-            copy->addSubformula( _formula.pruneBack() );
+            copy->addSubformula( _formula.pruneFront() );
         }
         _formula.copyAndDelete( new Formula( AND ));
         vector<Formula*> subformulasToTransform = vector<Formula*>();
@@ -1092,7 +924,7 @@ namespace smtrat
                                     phis.pop_back();
                                     delete formulaToDelete;
                                 }
-                                delete currentFormula;
+                                delete currentSubformula;
                                 break;
                             }
                             // remove it
@@ -1123,7 +955,7 @@ namespace smtrat
                             // (and phi_i1 .. phi_ik) -> h_i, where (or (not h_i) phi_i1) .. (or (not h_i) phi_ik) is added to the queue
                             case AND:
                             {
-                                Formula* hi = new Formula( Formula::newAuxiliaryBoolean() );
+                                Formula* hi = new Formula( Formula::newAuxiliaryBooleanVariable() );
                                 hi->setDifficulty(currentSubformula->difficulty());
                                 while( !currentSubformula->empty() )
                                 {
@@ -1150,7 +982,7 @@ namespace smtrat
                             // (-> lhs_i rhs_i) -> (not lhs_i) rhs_i
                             case IMPLIES:
                             {
-                                assert( currentSubformula->back()->size() == 2 );
+                                assert( currentSubformula->size() == 2 );
                                 Formula* rhs = currentSubformula->pruneBack();
                                 Formula* lhs = currentSubformula->pruneBack();
                                 delete currentSubformula;
@@ -1163,9 +995,9 @@ namespace smtrat
                             //                                       (or (not h_i2) (not lhs_i)) (or (not h_i2) (not rhs_i))  is added to the queue
                             case IFF:
                             {
-                                assert( currentSubformula->back()->size() == 2 );
-                                Formula* h_i1  = new Formula( Formula::newAuxiliaryBoolean() );
-                                Formula* h_i2  = new Formula( Formula::newAuxiliaryBoolean() );
+                                assert( currentSubformula->size() == 2 );
+                                Formula* h_i1  = new Formula( Formula::newAuxiliaryBooleanVariable() );
+                                Formula* h_i2  = new Formula( Formula::newAuxiliaryBooleanVariable() );
                                 Formula* rhs_i = currentSubformula->pruneBack();
                                 Formula* lhs_i = currentSubformula->pruneBack();
                                 delete currentSubformula;
@@ -1197,9 +1029,9 @@ namespace smtrat
                             //                                       (or (not h_i2) lhs_i) (or (not h_i2) (not rhs_i))  is added to the queue
                             case XOR:
                             {
-                                assert( currentSubformula->back()->size() == 2 );
-                                Formula* h_i1  = new Formula( Formula::newAuxiliaryBoolean() );
-                                Formula* h_i2  = new Formula( Formula::newAuxiliaryBoolean() );
+                                assert( currentSubformula->size() == 2 );
+                                Formula* h_i1  = new Formula( Formula::newAuxiliaryBooleanVariable() );
+                                Formula* h_i2  = new Formula( Formula::newAuxiliaryBooleanVariable() );
                                 Formula* rhs_i = currentSubformula->pruneBack();
                                 Formula* lhs_i = currentSubformula->pruneBack();
                                 delete currentSubformula;
@@ -1234,8 +1066,17 @@ namespace smtrat
                             }
                         }
                     }
-                    if( !currentFormula->empty() )
+                    if( currentFormula->isBooleanCombination() && currentFormula->size() == 1 )
+                    {
+                        _formula.addSubformula( currentFormula->pruneBack() );
+                        delete currentFormula;
+                    }
+                    else if( !currentFormula->empty() )
                         _formula.addSubformula( currentFormula );
+                    else
+                    {
+                        delete currentFormula;
+                    }
                     break;
                 }
                 case IMPLIES:
@@ -1246,12 +1087,13 @@ namespace smtrat
                     assert( currentFormula->size() == 2 );
                     Formula* rhs = currentFormula->pruneBack();
                     Formula* lhs = currentFormula->pruneBack();
+                    assert( currentFormula->cpFather() == NULL );
                     delete currentFormula;
-                    currentFormula = new Formula( OR );
-                    currentFormula->addSubformula( new Formula( NOT ));
-                    currentFormula->back()->addSubformula( lhs );
-                    currentFormula->addSubformula( rhs );
-                    subformulasToTransform.push_back( currentFormula );
+                    Formula* newFormula = new Formula( OR );
+                    newFormula->addSubformula( new Formula( NOT ));
+                    newFormula->back()->addSubformula( lhs );
+                    newFormula->addSubformula( rhs );
+                    subformulasToTransform.push_back( newFormula );
                     break;
                 }
                 case IFF:
@@ -1265,8 +1107,8 @@ namespace smtrat
                     Formula* lhs = currentFormula->pruneBack();
                     delete currentFormula;
                     // Add (or h1 h2) to the passed formula, where h1 and h2 are fresh Boolean variables.
-                    Formula* h1     = new Formula( Formula::newAuxiliaryBoolean() );
-                    Formula* h2     = new Formula( Formula::newAuxiliaryBoolean() );
+                    Formula* h1     = new Formula( Formula::newAuxiliaryBooleanVariable() );
+                    Formula* h2     = new Formula( Formula::newAuxiliaryBooleanVariable() );
                     Formula* clause = new Formula( OR );
                     clause->addSubformula( h1 );
                     clause->addSubformula( h2 );
@@ -1307,8 +1149,8 @@ namespace smtrat
                     Formula* lhs = currentFormula->pruneBack();
                     delete currentFormula;
                     // Add (or h1 h2) to the passed formula, where h1 and h2 are fresh Boolean variables.
-                    Formula* h1     = new Formula( Formula::newAuxiliaryBoolean() );
-                    Formula* h2     = new Formula( Formula::newAuxiliaryBoolean() );
+                    Formula* h1     = new Formula( Formula::newAuxiliaryBooleanVariable() );
+                    Formula* h2     = new Formula( Formula::newAuxiliaryBooleanVariable() );
                     Formula* clause = new Formula( OR );
                     clause->addSubformula( h1 );
                     clause->addSubformula( h2 );
@@ -1349,7 +1191,13 @@ namespace smtrat
         {
             _formula.copyAndDelete( new Formula( TTRUE ));
         }
+        else if( _formula.isBooleanCombination() && _formula.size() == 1 )
+        {
+            Formula* subFormula = _formula.pruneBack();
+            _formula.copyAndDelete( subFormula );
+        }
         _formula.getPropositions();
+
     }
 
     /**
@@ -1422,7 +1270,8 @@ namespace smtrat
                 /*
                  * (not true)  ->  false
                  */
-                _formula.copyAndDelete( _formula.pruneBack() );
+                _formula.pop_back();
+                _formula.copyAndDelete( new Formula( FFALSE ) );
                 return true;
             }
             case FFALSE:
@@ -1430,7 +1279,8 @@ namespace smtrat
                 /*
                  * (not false)  ->  true
                  */
-                _formula.copyAndDelete( _formula.pruneBack() );
+                _formula.pop_back();
+                _formula.copyAndDelete( new Formula( TTRUE ) );
                 return true;
             }
             case NOT:
@@ -1488,7 +1338,7 @@ namespace smtrat
                 assert( subformula->size() == 2 );
 
                 /*
-                 * (not (implies lhs rhs))  ->  (and rhs (not lhs))
+                 * (not (implies lhs rhs))  ->  (and lhs (not rhs))
                  */
                 Formula* rhsOfSubformula = subformula->pruneBack();
                 Formula* lhsOfSubformula = subformula->pruneBack();
@@ -1539,6 +1389,194 @@ namespace smtrat
         _formula.getPropositions();
     }
 
+    /**
+     *
+     * @param _out
+     * @param _init
+     * @param _onOneLine
+     */
+    void Formula::print( ostream& _out, const string _init, bool _smtlib, bool _onOneLine ) const
+    {
+        string oper = "";
+        switch( mType )
+        {
+            case AND:
+            {
+                oper = "and";
+                break;
+            }
+            case OR:
+            {
+                oper = "or";
+                break;
+            }
+            case NOT:
+            {
+                oper = "not";
+                break;
+            }
+            case IFF:
+            {
+                oper = "=";
+                break;
+            }
+            case XOR:
+            {
+                oper = "xor";
+                break;
+            }
+            case IMPLIES:
+            {
+                oper = "=>";
+                break;
+            }
+            case BOOL:
+            {
+                _out << _init << *mpIdentifier;
+                break;
+            }
+            case REALCONSTRAINT:
+            {
+                _out << _init;
+                if( _smtlib )
+                {
+                    _out << mpConstraint->smtlibString();
+                }
+                else
+                {
+                    mpConstraint->print( _out );
+                    _out << " (" << mActivity << ")";
+                }
+                break;
+            }
+            case TTRUE:
+            {
+                _out << _init << "true";
+                break;
+            }
+            case FFALSE:
+            {
+                _out << _init << "false";
+                break;
+            }
+            default:
+            {
+                _out << _init << "undefined";
+            }
+        }
+        if( !oper.empty() )
+        {
+            _out << _init << "(" << oper;
+            if( _onOneLine )
+            {
+                _out << " ";
+            }
+            else
+            {
+                _out << endl;
+            }
+            std::list<Formula*>::const_iterator subFormula = mpSubformulas->begin();
+            while( subFormula != mpSubformulas->end() )
+            {
+                assert( (*subFormula)->cpFather() == this );
+                if( _onOneLine )
+                {
+                    (*subFormula)->print( _out, "", _smtlib, _onOneLine );
+                    _out << " ";
+                }
+                else
+                {
+                    (*subFormula)->print( _out, _init + "   ", _smtlib, _onOneLine );
+                    _out << endl;
+                }
+                ++subFormula;
+            }
+            _out << _init << ")";
+        }
+    }
+
+    ostream& operator <<( ostream& _ostream, const Formula& _formula )
+    {
+        _formula.print( _ostream, "", true );
+        return _ostream;
+    }
+
+    string Formula::toString( bool _infix ) const
+    {
+        string result = "";
+        switch( mType )
+        {
+            case AND:
+            {
+                result += "(and";
+                break;
+            }
+            case OR:
+            {
+                result += "(or";
+                break;
+            }
+            case NOT:
+            {
+                result += "(not";
+                break;
+            }
+            case IFF:
+            {
+                result += "(=";
+                break;
+            }
+            case XOR:
+            {
+                result += "(xor";
+                break;
+            }
+            case IMPLIES:
+            {
+                result += "(=>";
+                break;
+            }
+            case BOOL:
+            {
+                result += *mpIdentifier;
+                break;
+            }
+            case REALCONSTRAINT:
+            {
+                if( _infix )
+                {
+                    result += "( " + mpConstraint->toString() + " )";
+                }
+                else
+                {
+                    result += mpConstraint->smtlibString();
+                }
+                break;
+            }
+            case TTRUE:
+            {
+                result += "true";
+                break;
+            }
+            case FFALSE:
+            {
+                result += "false";
+                break;
+            }
+            default:
+            {
+                result += "undefined";
+            }
+        }
+        if( isBooleanCombination() )
+        {
+            for( std::list<Formula*>::const_iterator subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
+                result += " " + (*subformula)->toString( _infix );
+            result += ")";
+        }
+        return result;
+    }
+
     std::string Formula::FormulaTypeToString( Type type )
     {
         string oper = "";
@@ -1561,7 +1599,7 @@ namespace smtrat
             }
             case IFF:
             {
-                oper = "iff";
+                oper = "=";
                 break;
             }
             case XOR:

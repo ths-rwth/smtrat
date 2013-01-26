@@ -20,7 +20,7 @@
  */
 
 
-/** 
+/**
  * @file   RuntimeSettingsManager.h
  * @author Sebastian Junges
  *
@@ -33,7 +33,7 @@
 #include "Driver.h"
 
 namespace smtrat {
-    class ParserSettings : public RuntimeSettings 
+    class ParserSettings : public RuntimeSettings
     {
     protected:
         bool traceParsing;
@@ -43,16 +43,16 @@ namespace smtrat {
         traceParsing(false),
         traceScanning(false)
         {
-            
+
         }
-        
-        void parseCmdOption(const std::string& keyValueString) 
+
+        void parseCmdOption(const std::string& keyValueString)
         {
             std::map<std::string, std::string> keyvalues = splitIntoKeyValues(keyValueString);
             setFlagIfOptionSet(keyvalues, traceScanning, "s");
             setFlagIfOptionSet(keyvalues, traceParsing, "p");
         }
-        
+
         void printHelp(const std::string& prefix) const
         {
             std::cout << prefix <<  "Seperate options by a comma." << std::endl;
@@ -60,15 +60,15 @@ namespace smtrat {
             std::cout << prefix <<  "\t s \t\t Enable scanner tracing" << std::endl;
             std::cout << prefix <<  "\t p \t\t Enable parser tracing" << std::endl;
         }
-        
+
         /**
          * A function which sets some flags in a passed parser.
          * @param parser The parser in which the flags will be set.
          */
         void setOptionsToParser(smtrat::Driver& parser) const
         {
-            parser.trace_parsing = traceParsing;
-            parser.trace_scanning = traceScanning;
+            parser.rTraceParsing() = traceParsing;
+            parser.rTraceScanning() = traceScanning;
         }
     };
 }

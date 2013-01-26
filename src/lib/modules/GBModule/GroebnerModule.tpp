@@ -71,7 +71,7 @@ mRuntimeSettings(static_cast<GBRuntimeSettings*>(settings))
 template<class Settings>
 GroebnerModule<Settings>::~GroebnerModule( )
 {
-    
+
 }
 
 /**
@@ -88,7 +88,7 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
     {
         return true;
     }
-    
+
     const Constraint& constraint = (*_formula)->constraint( );
     // add variables
     for( GiNaC::symtab::const_iterator it = constraint.variables( ).begin( ); it != constraint.variables( ).end( ); ++it )
@@ -104,7 +104,7 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
     processNewConstraint(_formula);
     //only equalities should be added to the gb
     return true;
-    
+
 }
 
 /**
@@ -403,11 +403,11 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
 /**
  * With the new groebner basis, we search for radical-members which then can be added to the GB.
- * @return 
+ * @return
  */
 
 template<class Settings>
-bool GroebnerModule<Settings>::searchForRadicalMembers() 
+bool GroebnerModule<Settings>::searchForRadicalMembers()
     {
     #ifdef SEARCH_FOR_RADICALMEMBERS
     std::set<unsigned> variableNumbers(mBasis.getGbIdeal().gatherVariables());
@@ -422,11 +422,11 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
             // Construct x^exp
             Term t(Rational(1), *it, exponent);
             Polynomial reduce(t);
-            
+
             // reduce x^exp
             typename Settings::Reductor reduction( mBasis.getGbIdeal( ), reduce );
             reduce = reduction.fullReduce( );
-            
+
             if( reduce.isConstant() )
             {
                 // TODO handle 0 and 1.
@@ -531,18 +531,18 @@ void GroebnerModule<Settings>::pushBacktrackPoint( Formula::const_iterator btpoi
     {
         saveState( );
     }
-    
+
     if( mStateHistory.empty() )
     {
         // there are no variable rewrite rules, so we can only push our current basis and empty rewrites
         mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, std::vector<VariableRewriteRule*>() ) );
     }
-    else 
+    else
     {
         // we save the current basis and use the variable rules from the previous level.
         mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, mStateHistory.back().getRewriteRules() ) );
     }
-    
+
     mBacktrackPoints.push_back( btpoint );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
 
@@ -643,7 +643,7 @@ typename GroebnerModule<Settings>::Polynomial GroebnerModule<Settings>::transfor
     {
         std::stringstream stream;
         stream << "AddVarGB" << constrId;
-        GiNaC::symbol varSym = ex_to<symbol > (Formula::newVariable( stream.str( ) ));
+        GiNaC::symbol varSym = ex_to<symbol > (Formula::newRealVariable( stream.str( ) ));
         mListOfVariables[stream.str()] = varSym;
         varNr = VariableListPool::addVariable( varSym );
         mAdditionalVarMap.insert(std::pair<unsigned, unsigned>(constrId, varNr));
@@ -688,7 +688,7 @@ template<class Settings>
 bool GroebnerModule<Settings>::saveState( )
 {
     assert( mStateHistory.size( ) == mBacktrackPoints.size( ) );
-    
+
     // TODO fix this copy.
     std::vector<VariableRewriteRule*> rules(mStateHistory.back().getRewriteRules());
     mStateHistory.pop_back( );
@@ -738,7 +738,7 @@ void GroebnerModule<Settings>::passGB( )
         }
         assert( !originals.front( ).empty( ) );
         //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "simplIt->toEx( )"
-        addSubformulaToPassedFormula( new Formula( Formula::newConstraint( simplIt->toEx( ), CR_EQ, Formula::constraintPool().variables() ) ), originals );
+        addSubformulaToPassedFormula( new Formula( Formula::newConstraint( simplIt->toEx( ), CR_EQ, Formula::constraintPool().realVariables() ) ), originals );
     }
 }
 
@@ -928,7 +928,7 @@ void InequalitiesTable<Settings>::popBacktrackPoint( unsigned nrOfBacktracks )
                         originals.push_back( mModule->generateReasons( std::get < 2 > (it->second).back( ).second.getOrigins( ).getBitVector( ) ) );
                         originals.front( ).insert( *(it->first) );
                         //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "std::get < 2 > (it->second).back( ).second.toEx( )"
-                        mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( std::get < 2 > (it->second).back( ).second.toEx( ), std::get < 1 > (it->second), Formula::constraintPool().variables() ) ), originals );
+                        mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( std::get < 2 > (it->second).back( ).second.toEx( ), std::get < 1 > (it->second), Formula::constraintPool().realVariables() ) ), originals );
 
                     }
                     else
@@ -1152,7 +1152,7 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
 
                 //pass the result
                 //TODO: replace "Formula::constraintPool().variables()" by a smaller approximations of the variables contained in "reduced.toEx( )"
-                mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( reduced.toEx( ), relation, Formula::constraintPool().variables() ) ), originals );
+                mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( reduced.toEx( ), relation, Formula::constraintPool().realVariables() ) ), originals );
                 //set the pointer to the passed formula accordingly.
                 std::get < 0 > (it->second) = mModule->mpPassedFormula->last( );
             }

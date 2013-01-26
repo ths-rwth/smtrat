@@ -162,7 +162,7 @@ namespace smtrat
                 mIdAllocator = 1;
             }
 
-            const GiNaC::symtab& variables() const
+            const GiNaC::symtab& realVariables() const
             {
                 return mAllRealVariables;
             }
@@ -189,7 +189,7 @@ namespace smtrat
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
             {
                 assert( hasNoOtherVariables( _lhs ) );
-                Constraint* constraint;
+                smtrat::Constraint* constraint;
                 if( _rel == CR_GREATER )
                 {
                     constraint = new Constraint( -_lhs, CR_LESS, _variables, mIdAllocator );
@@ -231,7 +231,7 @@ namespace smtrat
             const Constraint* newConstraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
             {
                 assert( hasNoOtherVariables( _lhs ) && hasNoOtherVariables( _rhs ) );
-                Constraint* constraint;
+                smtrat::Constraint* constraint;
                 if( _rel == CR_GREATER )
                 {
                     constraint = new Constraint( -_lhs, -_rhs, CR_LESS, _variables, mIdAllocator );
@@ -270,41 +270,35 @@ namespace smtrat
                 }
             }
 
-            const Constraint* newConstraint( const std::string& _stringrep, const bool = true, const bool = true );
+            const Constraint* newConstraint( const std::string& _stringrep, bool = true, bool = true );
 
-            GiNaC::ex newVariable( const std::string& _name )
+            GiNaC::ex newRealVariable( const std::string& _name )
             {
-                GiNaC::symtab::iterator var = mAllRealVariables.find( _name );
-                if( var != mAllRealVariables.end() )
-                {
-                    assert( false );
-                    return var->second;
-                }
-                else
-                {
-                    GiNaC::parser reader( mAllRealVariables );
-                    GiNaC::ex var = reader( _name );
-                    return mAllRealVariables.insert( std::pair<const std::string, GiNaC::ex>( _name, var ) ).first->second;
-                }
+                assert( mAllRealVariables.find( _name ) == mAllRealVariables.end() );
+                GiNaC::symtab emptySymtab;
+                GiNaC::parser reader( emptySymtab );
+                GiNaC::ex var = reader( _name );
+                return mAllRealVariables.insert( std::pair<const std::string, GiNaC::ex>( _name, var ) ).first->second;
             }
 
-            std::pair<std::string,GiNaC::ex> newAuxiliaryReal()
+            std::pair<std::string,GiNaC::ex> newAuxiliaryRealVariable()
             {
                 std::stringstream out;
                 out << mAuxiliaryRealNamePrefix << mAuxiliaryRealCounter++;
                 assert( mAllRealVariables.find( out.str() ) == mAllRealVariables.end() );
-                GiNaC::parser reader( mAllRealVariables );
+                GiNaC::symtab emptySymtab;
+                GiNaC::parser reader( emptySymtab );
                 GiNaC::ex var = reader( out.str() );
                 return *mAllRealVariables.insert( std::pair<const std::string, GiNaC::ex>( out.str(), var ) ).first;
             }
 
-            void newAuxiliaryBoolean( const std::string& _name )
+            void newBooleanVariable( const std::string& _name )
             {
                 assert( mAllBooleanVariables.find( _name ) == mAllBooleanVariables.end() );
                 mAllBooleanVariables.insert( _name );
             }
 
-            std::string newAuxiliaryBoolean()
+            std::string newAuxiliaryBooleanVariable()
             {
                 std::stringstream out;
                 out << mAuxiliaryBooleanNamePrefix << mAuxiliaryBooleanCounter++;

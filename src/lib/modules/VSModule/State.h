@@ -244,7 +244,10 @@ private:
 	bool			    	 mRoot						;
 	bool					 mSubResultsSimplified		;
 	bool					 mTakeSubResultCombAgain	;
+    #ifdef VS_USE_VARIABLE_BOUNDS
     bool                     mTestCandidateCheckedForBounds;
+    bool                     mTestCandidateInBoundsCreated;
+    #endif
 	bool					 mToHighDegree				;
 	bool					 mTryToRefreshIndex			;
 	unsigned		    	 mID						;

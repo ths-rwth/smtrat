@@ -371,7 +371,7 @@ namespace smtrat
         Module::Model::const_iterator assignment = _model.begin();
         while( assignment != _model.end() )
         {
-            GiNaC::symtab allVars = Formula::constraintPool().variables();
+            GiNaC::symtab allVars = Formula::constraintPool().realVariables();
             if( allVars.find( assignment->first ) == allVars.end() ) return false;
             ++assignment;
         }
@@ -716,8 +716,8 @@ namespace smtrat
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // add all real-valued variables
-                for( GiNaC::symtab::const_iterator var = Formula::mConstraintPool.variables().begin();
-                    var != Formula::mConstraintPool.variables().end(); ++var )
+                for( GiNaC::symtab::const_iterator var = Formula::mConstraintPool.realVariables().begin();
+                    var != Formula::mConstraintPool.realVariables().end(); ++var )
                 {
                     smtlibFile << "(declare-fun " << var->first << " () Real)\n";
                 }
@@ -759,8 +759,8 @@ namespace smtrat
             smtlibFile << "(set-option :interactive-mode true)\n";
             smtlibFile << "(set-info :smt-lib-version 2.0)\n";
             // add all real-valued variables
-            for( GiNaC::symtab::const_iterator var = Formula::mConstraintPool.variables().begin();
-                var != Formula::mConstraintPool.variables().end(); ++var )
+            for( GiNaC::symtab::const_iterator var = Formula::mConstraintPool.realVariables().begin();
+                var != Formula::mConstraintPool.realVariables().end(); ++var )
             {
                 smtlibFile << "(declare-fun " << var->first << " () Real)\n";
             }

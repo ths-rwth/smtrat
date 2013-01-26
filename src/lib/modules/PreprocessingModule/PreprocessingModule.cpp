@@ -20,11 +20,11 @@
  */
 
 
-/** 
+/**
  * @file   PreprocessingModule.cpp
  * @author: Sebastian Junges
  *
- * 
+ *
  */
 
 #include "PreprocessingModule.h"
@@ -36,7 +36,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
     :
     Module( _type, _formula, _tsManager )
     {
-        
+
     }
 
     /**
@@ -67,6 +67,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
     Answer PreprocessingModule::isConsistent()
     {
         //mpReceivedFormula->print();
+
         Formula::const_iterator receivedSubformula = firstUncheckedReceivedSubformula();
         while( receivedSubformula != mpReceivedFormula->end() )
         {
@@ -87,7 +88,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
              * to the passed formula.
              */
             Formula::toCNF( *formulaToAssert, false );
-            
+
             if( formulaToAssert->getType() == TTRUE )
             {
                 // No need to add it.
@@ -134,8 +135,8 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
     void PreprocessingModule::removeSubformula( Formula::const_iterator _subformula )
     {
         Module::removeSubformula( _subformula );
-    }    
-    
+    }
+
     /**
      * Res
      * @param formula
@@ -147,11 +148,11 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         {
             assert( formula->subformulas().size() == 1 );
             Formula* subformula = formula->subformulas().front();
-            if(subformula->isBooleanCombination()) 
+            if(subformula->isBooleanCombination())
             {
                 RewritePotentialInequalities(formula, !invert);
             }
-            else if(subformula->getType() == REALCONSTRAINT) 
+            else if(subformula->getType() == REALCONSTRAINT)
             {
                 const Constraint* constraint = subformula->pConstraint();
                 // Since we are considering a not, invert is in fact "inverted" ;-)
@@ -197,7 +198,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 }
             }
         }
-        else if( formula->getType() == OR || formula->getType() == AND || formula->getType() == XOR || formula->getType() == IFF  ) 
+        else if( formula->getType() == OR || formula->getType() == AND || formula->getType() == XOR || formula->getType() == IFF  )
         {
             for( std::list<Formula*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
             {
@@ -207,7 +208,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         return;
 
     }
-    
+
     void PreprocessingModule::setDifficulty(Formula* formula, bool invert)
     {
         if( formula->getType() == NOT )
@@ -215,14 +216,14 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             setDifficulty(formula->subformulas().front(), !invert);
             formula->setDifficulty(formula->subformulas().front()->difficulty());
         }
-        
+
         if( (formula->getType() == AND && !invert) || (formula->getType() == OR && invert) )
         {
             double maxdifficulty = 0;
             double sumdifficulty = 0;
             double subformulaDifficulty = 0;
             for( std::list<Formula*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
-            {   
+            {
                 setDifficulty(*it, invert);
                 subformulaDifficulty = (*it)->difficulty();
                 if( subformulaDifficulty > maxdifficulty )
@@ -232,12 +233,12 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 sumdifficulty += subformulaDifficulty;
             }formula->print();
             formula->setDifficulty(sumdifficulty + maxdifficulty);
-        } 
+        }
         else if( (formula->getType() == OR && !invert) || (formula->getType() == AND && invert) )
         {
             double difficulty = 2000000; // TODO enter bound here.
             for( std::list<Formula*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
-            {   
+            {
                 setDifficulty(*it, invert);
                 if( (*it)->difficulty() < difficulty )
                 {
@@ -248,7 +249,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         }
         else if( formula->getType() == IMPLIES  )
         {
-            
+
         }
         else if( formula->getType() == REALCONSTRAINT )
         {
@@ -264,10 +265,10 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             }
             difficulty += (constraint->numMonomials()-1) * 8;
             formula->setDifficulty(difficulty);
-        }   
+        }
     }
-    
-    void PreprocessingModule::assignActivitiesToPassedFormula() 
+
+    void PreprocessingModule::assignActivitiesToPassedFormula()
     {
         double globalMaxDifficulty = 0;
         for( std::list<Formula*>::const_iterator it = mpPassedFormula->subformulas().begin(); it != mpPassedFormula->subformulas().end(); ++it )

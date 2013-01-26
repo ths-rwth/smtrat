@@ -29,695 +29,281 @@
  * @version 2012-03-19
  */
 
-%{ /*** C/C++ Declarations ***/
+/* TODOS: some setter and getter of the smtlib language miss.
+ *        resolve the shift/reduce
+ *        use unordered_maps where possible (watch out for the stored iterators)
+ *        remove useless code in the driver
+ *        shorten code in the Parser.yy by outsourcing in the driver
+ *        rename the class Driver
+ *        there is some kind of minus and plus where I didn't expect it to be (TM/p6-zenonumeric_s9.smt2)
+ */
+%{ /* C/C++ Declarations */
 
 #include <stdio.h>
 #include <string>
 #include <vector>
-
+#include <map>
+#include <ginac/ginac.h>
 #include <lib/Formula.h>
 
 %}
 
-/*** yacc/bison Declarations ***/
+/*
+ * yacc/bison Declarations
+ */
 
-/* Require bison 2.3 or later */
+// Require bison 2.3 or later
 %require "2.3"
 
-/* add debug output code to generated parser. disable this for release
- * versions. */
+// Add debug output code to generated parser. disable this for release versions.
 %debug
 
-/* start symbol is named "start" */
+// Start symbol is named "start"
 %start start
 
-/* write out a header file containing the token defines */
+// write out a header file containing the token defines
 %defines
 
-/* use newer C++ skeleton file */
+// use newer C++ skeleton file
 %skeleton "lalr1.cc"
 
-/* namespace to enclose parser in */
+// namespace to enclose parser in
 %name-prefix="smtrat"
 
-/* set the parser's class identifier */
+// Set the parser's class identifier
 %define "parser_class_name" "Parser"
 
-/* keep track of the current position within the input */
+// Keep track of the current position within the input
 %locations
 %initial-action
 {
     // initialize the initial location object
-    @$.begin.filename = @$.end.filename = &driver.streamname;
+    @$.begin.filename = @$.end.filename = dv.pStreamname();
+    typedef struct YYLTYPE
+    {
+        int first_line;
+        int first_column;
+        int last_line;
+        int last_column;
+    } YYLTYPE;
 };
 
-/* The driver is passed by reference to the parser and to the scanner. This
+/*
+ * The driver is passed by reference to the parser and to the scanner. This
  * provides a simple but effective pure interface, not relying on global
- * variables. */
-%parse-param { class Driver& driver }
+ * variables.
+ */
+%parse-param { class Driver& dv }
 
-/* verbose error messages */
+// Verbose error messages
 %error-verbose
 
 // Symbols.
 
 %union
 {
-   unsigned        					eval;
-   int          					ival;
-   std::string*						sval;
-   class Formula*					fval;
-   std::vector< class Formula* >*	vfval;
+   unsigned                                            eval;
+   std::string*                                        sval;
+   std::vector< std::string* >*                        vsval;
+   GiNaC::numeric*                                     gnval;
+   class Formula*                                      fval;
+   std::vector< class Formula* >*                      vfval;
+   std::pair< std::string, unsigned >*                 psval;
+   std::vector< std::pair< std::string, unsigned >* >* msval;
+   std::pair< GiNaC::ex, std::vector< std::map< std::string, std::pair< std::string, GiNaC::ex > >::const_iterator > >* pval;
 }
 
- /*** BEGIN EXAMPLE - Change the smtrat grammar's tokens below ***/
-
-
 %token END	0	"end of file"
-%token BOOL
-%token REAL
+%token ASSERT CHECK_SAT PUSH POP
 %token PLUS MINUS TIMES DIV
-%token EQ LEQ GEQ LESS GREATER
-%token AND OR NOT IFF XOR IMPLIES LET
-%token TRUE FALSE
-%token FORMULA
-%token ASSERT SETLOGIC QFNRA QFLRA
+%token EQ LEQ GEQ LESS GREATER NEQ
+%token AND OR NOT IFF XOR IMPLIES ITE LET AS TRUE FALSE
+%token DECLARE_CONST DECLARE_FUN DECLARE_SORT
+%token DEFINE_CONST DEFINE_FUN DEFINE_SORT
+%token SET_INFO SET_LOGIC
+%token GET_MODEL
 %token EXIT
-%token DECLARECONST
-%token DECLAREFUN
-%token OB
-%token CB
-%token DB
-%token SETINFO
-%token CHECKSAT
-%token GETMODEL
-%token PUSH
-%token POP
-%token <sval> SYM
-%token <sval> NUM
-%token <sval> DEC
-%token <sval> KEY
-%token <sval> EMAIL
+%token <sval> SYM REAL_VAR BOOLEAN_VAR NUM DEC KEY BIT HEX BIN
 
-%type  <sval> 	term
-%type  <sval> 	termlistPlus
-%type  <sval> 	termlistMinus
-%type  <sval> 	termlistTimes
-%type  <sval> 	termOp
-%type  <sval> 	nums
-%type  <sval> 	numlistPlus
-%type  <sval> 	numlistMinus
-%type  <sval> 	numlistTimes
-%type  <fval> 	expr
-%type  <sval>   keys
-%type  <vfval>  exprlist;
-%type  <sval>  	relationSymbol;
-%type  <eval>  	unaryOperator;
-%type  <eval>  	binaryOperator;
-%type  <eval>  	naryOperator;
+%token OB CB DB
 
- /*** END EXAMPLE - Change the smtrat grammar's tokens above ***/
+%type <sval>  value
+%type <pval>  poly polylistPlus polylistMinus polylistTimes polyOp
+%type <gnval> nums numlistPlus numlistMinus numlistTimes
+%type <fval>  form equation
+%type <vfval> formlist
+%type <vsval> symlist
+%type <eval>  relation
+%type <eval>  unaryOp binaryOp naryOp
+%type <psval> bind
+%type <msval> bindlist
 
 %{
 
 #include "Driver.h"
 #include "Scanner.h"
 
-/* this "connects" the bison parser in the driver to the flex scanner class
- * object. it defines the yylex() function call to pull the next token from the
- * current lexer object of the driver context. */
 #undef yylex
-#define yylex driver.lexer->lex
+#define yylex dv.pLexer()->lex
 
 %}
 
-%% /*** SMT_RAT Grammar Rules ***/
+%% /* SMT_RAT Grammar Rules */
 
 start:
-	command_list
+	commandlist
 
-command_list:
-		command_list command
+commandlist:
+		commandlist command
 	|	command
-	;
 
 command:
-		OB ASSERT expr CB
-	{
-		driver.formulaRoot->addSubformula( $3 );
-	}
-	|	OB SETINFO KEY keys CB
-	{
-        if( $3->compare( ":status" ) == 0 )
-        {
-            if( $4->compare( "sat" ) == 0 )
-            {
-                driver.status = 1;
-            }
-            else if( $4->compare( "unsat" ) == 0 )
-            {
-                driver.status = 0;
-            }
-            else if( $4->compare( "unknown" ) == 0 )
-            {
-                driver.status = -1;
-            }
-            else
-            {
-                std::string errstr = std::string( "Unknown status flag. Choose either sat or unsat!");
-                error( yyloc, errstr );
-            }
-            delete $4;
-        }
-        delete $3;
-	}
-	|	OB SETINFO KEY CB
-	{
-	}
-	|	OB CHECKSAT CB
-    {
-        if( driver.check )
-        {
-            std::string errstr = std::string( "Only one (check) is supported!");
-            error( yyloc, errstr );
-        }
-        else
-        {
-            driver.check = true;
-        }
-    }
-	|	OB PUSH KEY CB
-	{
-        std::string errstr = std::string( "(push) is not supported!");
-        error( yyloc, errstr );
-	}
-	|	OB POP KEY CB
-	{
-        std::string errstr = std::string( "(pop) is not is supported!");
-        error( yyloc, errstr );
-	}
-	|	OB GETMODEL CB
-    {
-        driver.printAssignment = true;
-    }
-	|	OB DECLARECONST SYM REAL CB
-	{
-		GiNaC::parser reader( driver.formulaRoot->realValuedVars() );
-		try
-		{
-            for( std::map< const std::string, const std::string >::const_iterator iter = driver.realsymbolpartsToReplace.begin();
-                 iter != driver.realsymbolpartsToReplace.end(); ++iter )
-            {
-                if( $3->find( iter->second ) != std::string::npos )
-                {
-                    std::string errstr = std::string( "The name of a real variable constains " + iter->second + ", which is already internally used!");
-                    error( yyloc, errstr );
-                    break;
-                }
-                *$3 = driver.replace( *$3, iter->first, iter->second );
-            }
-			std::string s = *$3;
-			reader( s );
-		}
-		catch( GiNaC::parse_error& err )
-		{
-			std::cerr << err.what() << std::endl;
-		}
-		driver.formulaRoot->rRealValuedVars().insert( reader.get_syms().begin(), reader.get_syms().end() );
-        delete $3;
-	}
-	| 	OB DECLAREFUN SYM OB CB REAL CB
-	{
-		try
-		{
-            for( std::map< const std::string, const std::string >::const_iterator iter = driver.realsymbolpartsToReplace.begin();
-                 iter != driver.realsymbolpartsToReplace.end(); ++iter )
-            {
-                if( $3->find( iter->second ) != std::string::npos )
-                {
-                    std::string errstr = std::string( "The name of a real variable constains " + iter->second + ", which is already internally used!");
-                    error( yyloc, errstr );
-                    break;
-                }
-                *$3 = driver.replace( *$3, iter->first, iter->second );
-            }
-			driver.formulaRoot->rRealValuedVars().insert( std::pair<std::string, GiNaC::ex>( *$3, driver.formulaRoot->mConstraintPool.newVariable( *$3 ) ) );
-		}
-		catch( GiNaC::parse_error& err )
-		{
-			std::cerr << err.what() << std::endl;
-		}
-        delete $3;
-	}
-	| 	OB DECLAREFUN SYM OB CB BOOL CB
-	{
-        driver.collectedBooleans.insert( *$3 );
-        driver.formulaRoot->mConstraintPool.newAuxiliaryBoolean( *$3 );
-        delete $3;
-	}
-	| 	OB SETLOGIC logic CB
-  	{
-  	}
+		OB ASSERT form CB                       { dv.rFormulaRoot().addSubformula( $3 ); }
+	|	OB CHECK_SAT CB                         { dv.setCheck( yyloc ); }
+	|	OB PUSH KEY CB                          { error( yyloc, "The command (push) is not supported!" ); }
+	|	OB POP KEY CB                           { error( yyloc, "The command (pop) is not is supported!" ); }
+	|	OB SET_INFO KEY value CB                { dv.checkInfo( yyloc, *$3, *$4 ); delete $4; delete $3; }
+	| 	OB SET_LOGIC SYM CB                     { dv.setLogic( yyloc, *$3 ); delete $3; }
+	|	OB GET_MODEL CB                         { dv.setPrintAssignment(); }
+	|	OB DECLARE_CONST SYM SYM CB             { dv.addVariable( yyloc, *$3, *$4 ); delete $3; delete $4; }
+	| 	OB DECLARE_FUN SYM OB CB SYM CB         { dv.addVariable( yyloc, *$3, *$6 ); delete $3; delete $6; }
+	| 	OB DECLARE_FUN SYM OB symlist CB SYM CB { dv.addVariable( yyloc, *$3, *$7 ); delete $3; delete $7; dv.free( $5 ); }
+    |   OB DECLARE_SORT SYM NUM CB              { error( yyloc, "Declaration of types not allowed in supported logics!" );
+                                                  delete $3; delete $4; }
+	| 	OB DEFINE_FUN SYM OB CB SYM CB          { error( yyloc, "Definition of functions not allowed in supported logics!" );
+                                                  delete $3; delete $6; }
+	| 	OB DEFINE_FUN SYM OB symlist CB SYM CB  { error( yyloc, "Definition of functions not allowed in supported logics!" );
+                                                  delete $3; delete $7; dv.free( $5 ); }
+	| 	OB DEFINE_SORT SYM OB CB SYM CB         { error( yyloc, "Definition of types not allowed in supported logics!" );
+                                                  delete $3; delete $6; }
+	| 	OB DEFINE_SORT SYM OB symlist CB SYM CB { error( yyloc, "Definition of types not allowed in supported logics!" );
+                                                  delete $3; delete $7; dv.free( $5 ); }
 	|	OB EXIT CB
-	{
-        while( !driver.collectedBooleanAuxilliaries.empty() )
-        {
-            smtrat::Formula* formula = driver.collectedBooleanAuxilliaries.begin()->second;
-            driver.collectedBooleanAuxilliaries.erase( driver.collectedBooleanAuxilliaries.begin() );
-            delete formula;
-        }
-	}
-	;
 
-expr:
-		OB naryOperator exprlist CB
-	{
-		smtrat::Formula* formulaTmp = new smtrat::Formula( (smtrat::Type) $2 );
-		while( !$3->empty() )
-		{
-			formulaTmp->addSubformula( $3->back() );
-			$3->pop_back();
-		}
-		delete $3;
-		$$ = formulaTmp;
-	}
-	|	OB unaryOperator expr CB
-	{
-		smtrat::Formula* formulaTmp = new smtrat::Formula( (smtrat::Type) $2 );
-		formulaTmp->addSubformula( $3 );
-		$$ = formulaTmp;
-	}
-	|	OB binaryOperator expr expr CB
-	{
-		smtrat::Formula* formulaTmp = new smtrat::Formula( (smtrat::Type) $2 );
-		formulaTmp->addSubformula( $3 );
-		formulaTmp->addSubformula( $4 );
-		$$ = formulaTmp;
-	}
-	| 	OB relationSymbol term term CB
-	{
-        const smtrat::Constraint* constraint = Formula::newConstraint( *$3 + *$2 + *$4 );
-        delete $2;
-        delete $3;
-        delete $4;
-		//driver.formulaRoot->rRealValuedVars().insert( constraint->variables().begin(), constraint->variables().end() );
-		$$ = new smtrat::Formula( constraint );
-	}
-	| 	SYM
-	{
-        std::map< const std::string, smtrat::Formula*>::iterator iter = driver.collectedBooleanAuxilliaries.find( *$1 );
-        if( iter != driver.collectedBooleanAuxilliaries.end() )
-        {
-            $$ = new smtrat::Formula( *iter->second );
-        }
-        else
-        {
-            if( driver.collectedBooleans.find( *$1 ) == driver.collectedBooleans.end() )
-            {
-                std::string errstr = std::string( "The Boolean variable " + *$1 + " is not defined!");
-                error( yyloc, errstr );
-            }
-            else
-            {
-                $$ = new smtrat::Formula( *$1 );
-            }
-        }
-        delete $1;
-    }
-    | OB LET OB bindlist CB expr CB
-    {
-        $$ = $6;
-        while( !driver.collectedBooleanAuxilliaries.empty() )
-        {
-            smtrat::Formula* formula = driver.collectedBooleanAuxilliaries.begin()->second;
-            driver.collectedBooleanAuxilliaries.erase( driver.collectedBooleanAuxilliaries.begin() );
-            delete formula;
-        }
-        driver.collectedRealAuxilliaries.clear();
-    }
-    | OB expr CB
-    {
-        $$ = $2;
-    }
-	;
+symlist:
+        SYM         { vector< string* >* syms = new vector< string* >(); syms->push_back( $1 ); $$ = syms; }
+    |   symlist SYM { $1->push_back( $2 ); $$ = $1; }
 
-exprlist :
-		expr
-	{
-		$$ = new std::vector< smtrat::Formula* >( 1, $1 );
-	}
-    |	exprlist expr
-	{
-		$1->push_back( $2 );
-		$$ = $1;
-	}
-	;
+value:
+        SYM { $$ = $1; }
+    |   NUM { $$ = $1; }
+    |   DEC { $$ = $1; }
 
-relationSymbol :
-		EQ
-	{
-		$$ = new std::string( "=" );
-	}
-    |	LEQ
-	{
-		$$ = new std::string( "<=" );
-	}
-    |	GEQ
-	{
-		$$ = new std::string( ">=" );
-	}
-    |	LESS
-	{
-		$$ = new std::string( "<" );
-	}
-    |	GREATER
-	{
-		$$ = new std::string( ">" );
-	}
-	;
+form:
+        BOOLEAN_VAR                   { $$ = new Formula( dv.getBooleanVariable( yyloc, *$1 ) ); delete $1; }
+    |   TRUE                          { $$ = new Formula( smtrat::TTRUE ); }
+    |   FALSE                         { $$ = new Formula( smtrat::FFALSE ); }
+    |   equation                      { $$ = $1; }
+    |   OB relation poly poly CB      { $$ = dv.mkConstraint( *$3, *$4, $2 ); delete $3; delete $4; }
+    |   OB AS SYM SYM CB              { error( yyloc, "\"as\" is not allowed in QF_NRA or QF_LRA!" ); }
+	|	OB unaryOp form CB            { $$ = dv.mkFormula( (Type) $2, $3 ); }
+	|	OB binaryOp form form CB      { $$ = dv.mkFormula( (Type) $2, $3, $4 ); }
+	|	OB naryOp formlist CB         { $$ = dv.mkFormula( (Type) $2, *$3 ); delete $3; }
+    |   OB LET OB bindlist CB form CB { dv.free( $4 ); $$ = $6; }
+    |   OB ITE form form form CB      { $$ = dv.mkIteInFormula( $3, $4, $5 ); }
 
-unaryOperator :
-		NOT
-	{
-		$$ = smtrat::NOT;
-	}
-	;
+formlist :
+		form          { $$ = new vector< Formula* >( 1, $1 ); }
+    |	formlist form { $1->push_back( $2 ); $$ = $1; }
 
-binaryOperator :
-		IMPLIES
-	{
-		$$ = smtrat::IMPLIES;
-	}
-    |	IFF
-	{
-		$$ = smtrat::IFF;
-	}
-    |	XOR
-	{
-		$$ = smtrat::XOR;
-	}
-	;
+equation:
+       OB EQ form form CB         { $$ = dv.mkFormula( smtrat::IFF, $3, $4 ); }
+    |  OB EQ poly poly CB         { $$ = dv.mkConstraint( *$3, *$4, CR_EQ ); delete $3; delete $4; }
 
-naryOperator :
-		AND
-	{
-		$$ = smtrat::AND;
-	}
-    |	OR
-	{
-		$$ = smtrat::OR;
-	}
-	;
 
-term :
-		SYM
-   	{
-        std::map<std::string, std::string>::iterator iter = driver.collectedRealAuxilliaries.find( *$1 );
-   		if( iter == driver.collectedRealAuxilliaries.end() )
-   		{
-            for( std::map< const std::string, const std::string >::const_iterator iter = driver.realsymbolpartsToReplace.begin();
-                 iter != driver.realsymbolpartsToReplace.end(); ++iter )
-            {
-                *$1 = driver.replace( *$1, iter->first, iter->second );
-            }
-            if( driver.formulaRoot->realValuedVars().find( *$1 ) == driver.formulaRoot->realValuedVars().end() )
-            {
-                std::string errstr = std::string( "The variable " + *$1 + " is not defined!");
-                error( yyloc, errstr );
-            }
-            $$ = $1;
-   		}
-        else
-        {
-            delete $1;
-            $$ = new std::string( "(" + iter->second + ")" );
-        }
-   	}
-    | 	NUM
-   	{
-        $$ = $1;
-   	}
-    | 	DEC
-   	{
-        unsigned pos = $1->find('.');
-        if( pos != std::string::npos )
-        {
-            std::string* result = new std::string( "(" + $1->substr( 0, pos ) + $1->substr( pos+1, $1->size()-pos-1 ) );
-            *result += "/1" + std::string( $1->size()-pos-1, '0' ) + ")";
-            $$ = result;
-        }
-        else
-        {
-   			std::string errstr = std::string( "There should be a point in a decimal!");
-  			error( yyloc, errstr );
-        }
-        delete $1;
-   	}
-    |  	termOp
-    {
-        $$ = $1;
-    }
-    ;
+relation :
+		LEQ     { $$ = CR_LEQ; }
+    |	GEQ     { $$ = CR_GEQ; }
+    |	LESS    { $$ = CR_LESS; }
+    |	GREATER { $$ = CR_GREATER; }
+    |	NEQ     { $$ = CR_NEQ; }
 
-termOp :
-		OB MINUS term CB
-	{
-		$$ = new std::string( "(-1)*(" + *$3 + ")" );
-        delete $3;
-	}
-	|	OB PLUS termlistPlus CB
-	{
-    	$$ = $3;
-	}
-	|	OB MINUS termlistMinus CB
-	{
-		$$ = $3;
-	}
-	|	OB TIMES termlistTimes CB
-	{
-	    $$ = $3;
-	}
-	|	OB DIV term nums CB
-	{
-		$$ = new std::string( "(" + *$3 + "/" + *$4 + ")" );
-        delete $3;
-        delete $4;
-	}
-	;
+unaryOp :
+		NOT { $$ = smtrat::NOT; }
 
-termlistPlus :
-		term termlistPlus
-	{
-        std::string* s = new std::string( "(" + *$1 + "+" + *$2 + ")" );
-        delete $1;
-        delete $2;
-		$$ = s;
-	}
-	|	term
-	{
-        std::string* s = new std::string( *$1 + "" );
-        delete $1;
-		$$ = s;
-	}
-	;
+binaryOp :
+		IMPLIES { $$ = smtrat::IMPLIES; }
+    |	IFF     { $$ = smtrat::IFF; }
+    |	XOR     { $$ = smtrat::XOR; }
 
-termlistMinus :
-		term termlistMinus
-	{
-        std::string* s = new std::string( "(" + *$1 + "-" + *$2 + ")" );
-        delete $1;
-        delete $2;
-		$$ = s;
-	}
-	|	term
-	{
-        std::string* s = new std::string( *$1 + "" );
-        delete $1;
-		$$ = s;
-	}
-	;
-
-termlistTimes :
-		term termlistTimes
-	{
-        std::string* s = new std::string( "(" + *$1 + "*" + *$2 + ")" );
-        delete $1;
-        delete $2;
-		$$ = s;
-	}
-	|	term
-	{
-        std::string* s = new std::string( *$1 + "" );
-        delete $1;
-		$$ = s;
-	}
-	;
-
-nums :
-		NUM
-   	{
-        $$ = $1;
-   	}
-    | 	DEC
-   	{
-        unsigned pos = $1->find('.');
-        if( pos != std::string::npos )
-        {
-            std::string* result = new std::string( "(" + $1->substr( 0, pos ) + $1->substr( pos+1, $1->size()-pos-1 ) );
-            *result += "/1" + std::string( $1->size()-pos-1, '0' ) + ")";
-            $$ = result;
-        }
-        else
-        {
-   			std::string errstr = std::string( "There should be a point in a decimal!");
-  			error( yyloc, errstr );
-        }
-        delete $1;
-   	}
-    |	OB PLUS numlistPlus CB
-	{
-    	$$ = $3;
-	}
-	| 	OB MINUS numlistMinus CB
-	{
-		$$ = $3;
-	}
-	| 	OB MINUS nums CB
-	{
-		$$ = new std::string( "(-1)*(" + *$3 + ")" );
-        delete $3;
-	}
-	| 	OB TIMES numlistTimes CB
-	{
-		$$ = $3;
-	}
-	| 	OB DIV nums nums CB
-	{
-		$$ = new std::string( "(" + *$3 + "/" + *$4 + ")" );
-        delete $3;
-        delete $4;
-	}
-	;
-
-numlistPlus :
-		nums numlistPlus
-	{
-		$$ = new std::string( "(" + *$1 + "+" + *$2 + ")" );
-	}
-	|	nums
-	{
-		$$ = new std::string( *$1 + "" );
-	}
-	;
-
-numlistMinus :
-		nums numlistMinus
-	{
-		$$ = new std::string( "(" + *$1 + "-" + *$2 + ")" );
-	}
-	|	nums
-	{
-		$$ = new std::string( *$1 + "" );
-	}
-	;
-
-numlistTimes :
-		nums numlistTimes
-	{
-		$$ = new std::string( "(" + *$1 + "*" + *$2 + ")" );
-	}
-	|	nums
-	{
-		$$ = new std::string( *$1 + "" );
-	}
-	;
+naryOp :
+		AND { $$ = smtrat::AND; }
+    |	OR  { $$ = smtrat::OR; }
 
 bindlist :
-		bind
-	{
-	}
-	|	bindlist bind
-	{
-    }
-    ;
+		bind          { $$ = new vector< pair< string, unsigned >* >(); $$->push_back( $1 ); }
+	|	bindlist bind { $$ = $1; $$->push_back( $2 ); }
 
 bind :
-		OB SYM term CB
-	{
-        std::pair<std::map<std::string, std::string>::iterator, bool> ret
-            = driver.collectedRealAuxilliaries.insert( std::pair<std::string, std::string>( *$2, *$3 ) );
-        if( !ret.second )
-        {
-            std::string errstr = std::string( "The same variable is used in several let expressions!" );
-            error( yyloc, errstr );
-        }
-        delete $2;
-        delete $3;
-	}
-	|	OB SYM expr CB
-	{
-        driver.collectedBooleanAuxilliaries.insert( std::pair<const std::string, smtrat::Formula*>( *$2, $3 ) );
-        delete $2;
-	}
-	;
+        OB SYM poly CB { RealVarMap::const_iterator rv = dv.addRealVariable( yyloc, *$2 );
+                         PolyVarsPair* pvp = dv.mkPolynomial( yyloc, rv );
+                         Formula* f = dv.mkConstraint( *pvp, *$3, CR_EQ ); delete pvp;
+                         string db = dv.createDependingBoolean( yyloc, *$2 );
+                         dv.rFormulaRoot().addSubformula( dv.mkFormula( smtrat::IMPLIES, new Formula( db ), f ) );
+                         $$ = new pair< string, unsigned >( *$2, 1 ); delete $3;
+                         dv.pLexer()->mRealVariables.insert( *$2 ); delete $2; }
+	|	OB SYM form CB { const string boolVarName = dv.addBooleanVariable( yyloc, *$2 );
+                         dv.rFormulaRoot().addSubformula( dv.mkFormula( smtrat::IMPLIES, new Formula( boolVarName ), $3 ) );
+                         $$ = new pair< string, unsigned >( *$2, 0 );
+                         dv.pLexer()->mBooleanVariables.insert( *$2 ); delete $2; }
 
-logic :
-		QFNRA
-	{
-	}
-    |
-		QFLRA
-	{
-	}
-	|	SYM
-	{
-		std::string errstr = std::string( "SMT-RAT does not support " + *$1 + "!");
-		error( yyloc, errstr );
-        delete $1;
-	}
-	;
+poly :
+        REAL_VAR                 { $$ = dv.mkPolynomial( yyloc, *$1 ); delete $1; }
+    |   DEC                      { numeric* num = dv.getNumeric( *$1 ); delete $1;
+                                   $$ = new PolyVarsPair( ex( *num ), RealVarVec() ); delete num; }
+    | 	NUM                      { $$ = new PolyVarsPair( ex( numeric( $1->c_str() ) ), RealVarVec() ); delete $1; }
+    |  	polyOp                   { $$ = $1; }
+    |   OB ITE form poly poly CB { $$ = dv.mkPolynomial( yyloc, *dv.mkIteInExpr( yyloc, $3, *$4, *$5 ) ); }
 
-keys :
-		EMAIL DB keys
-	{
-	}
-	|	EMAIL
-	{
-	}
-	|	EMAIL keys
-	{
-	}
-	|	NUM keys
-	{
-	}
-	|	DEC keys
-	{
-	}
-	|	NUM DB keys
-	{
-	}
-	|	DEC DB keys
-	{
-        delete $1;
-	}
-	|	NUM
-	{
-	}
-	|	DEC
-	{
-        delete $1;
-	}
-	|	SYM
-	{
-        $$ = $1;
-	}
-	;
+polyOp :
+		OB DIV poly nums CB       { $3->first /= (*$4); delete $4; $$ = $3; }
+	|	OB MINUS poly CB          { $3->first *= -1; $$ = $3; }
+	|	OB PLUS polylistPlus CB   { $$ = $3; }
+	|	OB MINUS polylistMinus CB { $$ = $3; }
+	|	OB TIMES polylistTimes CB { $$ = $3; }
 
- /*** END EXAMPLE - Change the smtrat grammar rules above ***/
+polylistPlus :
+		poly polylistPlus { $1->second.insert( $1->second.end(), $2->second.begin(), $2->second.end() );
+                            $1->first += $2->first; $$ = $1; delete $2; }
+	|	poly poly         { $1->second.insert( $1->second.end(), $2->second.begin(), $2->second.end() );
+                            $1->first += $2->first; $$ = $1; delete $2; }
 
-%% /*** Additional Code ***/
+polylistMinus :
+		poly polylistMinus { $1->second.insert( $1->second.end(), $2->second.begin(), $2->second.end() );
+                             $1->first -= $2->first; $$ = $1; delete $2; }
+	|	poly poly          { $1->second.insert( $1->second.end(), $2->second.begin(), $2->second.end() );
+                             $1->first -= $2->first; $$ = $1; delete $2; }
 
-void smtrat::Parser::error( const Parser::location_type& l, const std::string& m )
+polylistTimes :
+		poly polylistTimes  { $1->second.insert( $1->second.end(), $2->second.begin(), $2->second.end() );
+                              $1->first *= $2->first; $$ = $1; delete $2; }
+	|	poly poly           { $1->second.insert( $1->second.end(), $2->second.begin(), $2->second.end() );
+                              $1->first *= $2->first; $$ = $1; delete $2; }
+
+nums :
+     	DEC                      { $$ = dv.getNumeric( *$1 ); delete $1; }
+    | 	NUM                      { $$ = new numeric( $1->c_str() ); delete $1; }
+	| 	OB MINUS nums CB         { *$3 *= -1; $$ = $3; }
+	| 	OB DIV nums nums CB      { *$3 /= (*$4); $$ = $3; delete $4; }
+    |	OB PLUS numlistPlus CB   { $$ = $3; }
+	| 	OB MINUS numlistMinus CB { $$ = $3; }
+	| 	OB TIMES numlistTimes CB { $$ = $3; }
+
+numlistPlus :
+		nums numlistPlus { *$1 += *$2; $$ = $1; delete $2; }
+	|	nums nums        { *$1 += *$2; $$ = $1; delete $2; }
+
+numlistMinus :
+		nums numlistMinus { *$1 -= *$2; $$ = $1; delete $2; }
+	|	nums nums         { *$1 -= *$2; $$ = $1; delete $2; }
+
+numlistTimes :
+		nums numlistTimes { *$1 *= *$2; $$ = $1; delete $2; }
+	|	nums nums         { *$1 *= *$2; $$ = $1; delete $2; }
+
+%% /* Additional Code */
+
+void smtrat::Parser::error( const Parser::location_type& _loc, const std::string& _message )
 {
-    driver.error( l, m );
+    dv.error( _loc, _message );
 }
