@@ -706,7 +706,6 @@ namespace smtrat
      */
     void Module::storeAssumptionsToCheck( const Manager& _manager )
     {
-        std::cout << mAssumptionToCheck.size() << std::endl;
         #ifdef SMTRAT_ENABLE_VALIDATION
         if( !Module::mAssumptionToCheck.empty() )
         {
