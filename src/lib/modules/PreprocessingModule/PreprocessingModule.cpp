@@ -66,13 +66,13 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
      */
     Answer PreprocessingModule::isConsistent()
     {
-        mpReceivedFormula->print();
+        //mpReceivedFormula->print();
         Formula::const_iterator receivedSubformula = firstUncheckedReceivedSubformula();
         while( receivedSubformula != mpReceivedFormula->end() )
         {
             Formula* formulaToAssert = new Formula( **receivedSubformula );
             RewritePotentialInequalities(formulaToAssert);
-            addLinearDeductions(formulaToAssert);
+            //addLinearDeductions(formulaToAssert);
             setDifficulty(formulaToAssert,false);
             /*
              * Create the origins containing only the currently considered formula of
@@ -113,9 +113,9 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             }
             ++receivedSubformula;
         }
-        std::cout << "Passed formula: " << std::endl;
+        //std::cout << "Passed formula: " << std::endl;
         assignActivitiesToPassedFormula();
-        mpPassedFormula->print();
+        //mpPassedFormula->print();
         // Call backends.
         Answer ans = runBackends();
         if( ans == False )
