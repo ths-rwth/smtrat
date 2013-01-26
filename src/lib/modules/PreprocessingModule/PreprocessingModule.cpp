@@ -231,7 +231,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                     maxdifficulty = subformulaDifficulty;
                 }
                 sumdifficulty += subformulaDifficulty;
-            }formula->print();
+            }
             formula->setDifficulty(sumdifficulty + maxdifficulty);
         }
         else if( (formula->getType() == OR && !invert) || (formula->getType() == AND && invert) )
