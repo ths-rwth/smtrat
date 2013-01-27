@@ -249,7 +249,21 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         }
         else if( formula->getType() == IMPLIES  )
         {
-
+            assert(formula->subformulas().size() == 2);
+            double difficulty = formula->subformulas().front()->difficulty() + formula->subformulas().back()->difficulty();
+            formula->setDifficulty(difficulty/2);
+        }
+        else if( formula->getType() == IFF )
+        {
+            assert(formula->subformulas().size() == 2);
+            double difficulty = formula->subformulas().front()->difficulty() + formula->subformulas().back()->difficulty();
+            formula->setDifficulty(difficulty/2);
+        }
+        else if( formula->getType() == XOR )
+        {
+            assert(formula->subformulas().size() == 2);
+            double difficulty = std::max(formula->subformulas().front()->difficulty(), formula->subformulas().back()->difficulty());
+            formula->setDifficulty(difficulty);
         }
         else if( formula->getType() == REALCONSTRAINT )
         {
