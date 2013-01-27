@@ -680,6 +680,8 @@ namespace smtrat
             else
             {
                 if( _type == DEDUCTED_CLAUSE ) cancelUntil( 0 );
+                // This assertion is from uncheckedEnqueue and is here for debug purposes.
+                assert( value( add_tmp[0] ) == l_Undef );
                 uncheckedEnqueue( add_tmp[0] );
                 ok = (propagate() == CRef_Undef);
                 return false;
@@ -1191,6 +1193,7 @@ Propagation:
 
                 if( learnt_clause.size() == 1 )
                 {
+                    assert( value( learnt_clause[0] ) == l_Undef );
                     uncheckedEnqueue( learnt_clause[0] );
                 }
                 else
@@ -1199,6 +1202,7 @@ Propagation:
                     learnts.push( cr );
                     attachClause( cr );
                     claBumpActivity( ca[cr] );
+                    assert( value( learnt_clause[0] ) == l_Undef );
                     uncheckedEnqueue( learnt_clause[0], cr );
                 }
 
@@ -1280,6 +1284,7 @@ Propagation:
                 // Increase decision level and enqueue 'next'
 
                 newDecisionLevel();
+                assert( value( next ) == l_Undef );
                 uncheckedEnqueue( next );
             }
         }
@@ -1600,7 +1605,10 @@ Propagation:
                         *j++ = *i++;
                 }
                 else
+                {
+                    assert( value( first ) == l_Undef );
                     uncheckedEnqueue( first, cr );
+                }
 
 NextClause:
                 ;
