@@ -16,7 +16,9 @@ include_directories(${CMAKE_SOURCE_DIR}/src
 					 ${CMAKE_SOURCE_DIR}/src/solver
 					 ${CMAKE_SOURCE_DIR}/src/solver/parser
 					 ${CMAKE_BINARY_DIR}/src/solver
-					 ${CMAKE_BINARY_DIR}/src/solver/parser )
+					 ${CMAKE_BINARY_DIR}/src/solver/parser
+					${GINACRA_INCLUDE_DIR}
+ )
 
 #TODO: we only link against the library, which is copied to the binary root dir. We should somehow save that in a variable.
 link_directories( ${PROJECT_BINARY_DIR}/src/lib
