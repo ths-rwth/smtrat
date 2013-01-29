@@ -6,3 +6,8 @@
 nbproject/configurations.xml
 /src/config.h
 /nbproject/
+/src/lib/modules/Modules.cpp
+/src/lib/modules/ModuleType.cpp
+/src/lib/modules/MODULETYPES.txt
+/src/lib/modules/ModuleType.h
+/src/lib/modules/AddModules.h
