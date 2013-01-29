@@ -67,7 +67,7 @@ namespace smtrat
         public:
             typedef std::map< const std::string, std::string > Model;
             typedef std::chrono::high_resolution_clock clock;
-            typedef std::chrono::milliseconds milliseconds; 
+            typedef std::chrono::microseconds timeunit; 
             
         protected:
             ///
@@ -288,9 +288,9 @@ namespace smtrat
             clock::time_point mTimerCheckStarted;
             clock::time_point mTimerAddStarted;
             clock::time_point mTimerRemoveStarted;
-            milliseconds mTimerAddTotal;
-            milliseconds mTimerCheckTotal;
-            milliseconds mTimerRemoveTotal;
+            timeunit mTimerAddTotal;
+            timeunit mTimerCheckTotal;
+            timeunit mTimerRemoveTotal;
             // for debug purposes
             bool mTimerAddRunning;
             bool mTimerCheckRunning;
@@ -305,9 +305,9 @@ namespace smtrat
             int stopAllTimers();
             void startTimers(int timers);
         public:
-            unsigned getAddTimerMS() const;
-            unsigned getCheckTimerMS() const;
-            unsigned getRemoveTimerMS() const;
+            double getAddTimerMS() const;
+            double getCheckTimerMS() const;
+            double getRemoveTimerMS() const;
             
     };
 }    // namespace smtrat

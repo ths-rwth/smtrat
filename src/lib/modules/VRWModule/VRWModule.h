@@ -39,7 +39,9 @@ namespace smtrat
     class VRWModule : public Module
     {
         protected:
-
+            /// mapping received constraint -> node in the graph
+            std::map<Formula::const_iterator, ConstraintNode> ; 
+            
         public:
             /**
              * Constructors:

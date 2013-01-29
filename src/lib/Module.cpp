@@ -482,12 +482,11 @@ namespace smtrat
     Answer Module::runBackends()
     {
         passedFormulaCannotBeSolved();
+
+        if( mpManager == NULL ) return Unknown;
         #ifdef SMTRAT_MEASURE_MODULE_TIMES
         stopCheckTimer();
         #endif
-
-        if( mpManager == NULL ) return Unknown;
-
         /*
          * Get the backends to be considered from the manager.
          */
@@ -520,6 +519,9 @@ namespace smtrat
             }
             if( assertionFailed )
             {
+                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                startCheckTimer();
+                #endif
                 return False;
             }
         }
@@ -991,7 +993,7 @@ namespace smtrat
     void Module::stopAddTimer()
     {
         assert(mTimerAddRunning);
-        mTimerAddTotal += std::chrono::duration_cast<milliseconds>(clock::now() - mTimerAddStarted);
+        mTimerAddTotal += std::chrono::duration_cast<timeunit>(clock::now() - mTimerAddStarted);
         mTimerAddRunning = false;
     }
 
@@ -1005,7 +1007,7 @@ namespace smtrat
     void Module::stopCheckTimer()
     {
         assert(mTimerCheckRunning);
-        mTimerCheckTotal += std::chrono::duration_cast<milliseconds>(clock::now() - mTimerCheckStarted);
+        mTimerCheckTotal += std::chrono::duration_cast<timeunit>(clock::now() - mTimerCheckStarted);
         mTimerCheckRunning = false;
     }
 
@@ -1020,7 +1022,7 @@ namespace smtrat
     void Module::stopRemoveTimer()
     {
         assert(mTimerRemoveRunning);
-        mTimerRemoveTotal += std::chrono::duration_cast<milliseconds>(clock::now() - mTimerRemoveStarted);
+        mTimerRemoveTotal += std::chrono::duration_cast<timeunit>(clock::now() - mTimerRemoveStarted);
         mTimerRemoveRunning = false;
     }
 
@@ -1061,19 +1063,19 @@ namespace smtrat
         return result;
     }
 
-    unsigned Module::getAddTimerMS() const
+    double Module::getAddTimerMS() const
     {
-        return mTimerAddTotal.count();
+        return mTimerAddTotal.count() / 1000;
     }
 
-    unsigned Module::getCheckTimerMS() const
+    double Module::getCheckTimerMS() const
     {
-        return mTimerCheckTotal.count();
+        return mTimerCheckTotal.count() / 1000;
     }
 
-    unsigned Module::getRemoveTimerMS() const
+    double Module::getRemoveTimerMS() const
     {
-        return mTimerRemoveTotal.count();
+        return mTimerRemoveTotal.count() / 1000;
     }
 
 }    // namespace smtrat
