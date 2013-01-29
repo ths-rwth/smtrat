@@ -6,15 +6,21 @@
  * 
  */
 
-#ifndef VARIABLECONSTRAINTGRAPH_H
-#define	VARIABLECONSTRAINTGRAPH_H
+#pragma once
+
+#include <list>
+#include <vector>
+#include "Formula.h"
+#include <map>
 
 namespace smtrat 
 {
 
+    struct ConstraintNode;
     struct VariableNode
     {
-        std::list<ConstraintNode*> adjacencyList;
+        // Constraintid -> ConstraintNode
+        std::map<unsigned,ConstraintNode*> adjacencyList;
     };
 
     struct ConstraintNode 
@@ -27,15 +33,17 @@ namespace smtrat
     class VariableConstraintGraph
     {
     protected:
-        std::vector<VariableNode*> variableNodes;
-        std::vector<ConstraintNode*> 
+        /// identifier -> node
+        std::map<std::string,VariableNode*> variableNodes;
+        std::list<ConstraintNode*> constraintNodes;
     public:
         VariableConstraintGraph( );
+        std::list<ConstraintNode*>::iterator addConstraint(Constraint* constraint, Formula::const_iterator pos);
+        bool removeConstraint(std::list<ConstraintNode*>::iterator);
+        
+        void print(); 
         virtual ~VariableConstraintGraph( ) {}
     private:
 
     };
 }
-
-#endif	/* VARIABLECONSTRAINTGRAPH_H */
-

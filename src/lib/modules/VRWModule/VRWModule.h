@@ -32,6 +32,7 @@
 
 #include "../../Module.h"
 
+#include "../../VariableConstraintGraph.h"
 
 namespace smtrat
 {
@@ -39,8 +40,9 @@ namespace smtrat
     class VRWModule : public Module
     {
         protected:
+            VariableConstraintGraph mMatchingGraph;
             /// mapping received constraint -> node in the graph
-            std::map<Formula::const_iterator, ConstraintNode> ; 
+            std::map<Formula::const_iterator, std::list<ConstraintNode*>::const_iterator> mConstraintPositions; 
             
         public:
             /**

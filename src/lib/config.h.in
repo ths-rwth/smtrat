@@ -15,6 +15,7 @@
 #cmakedefine SMTRAT_ENABLE_CADModule
 #cmakedefine SMTRAT_ENABLE_VSModule
 #cmakedefine SMTRAT_ENABLE_Preprocessing
+#cmakedefine SMTRAT_ENABLE_VRWModule
 
 #cmakedefine GATHER_STATS
 

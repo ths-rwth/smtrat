@@ -42,7 +42,7 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
     /**
      * Destructor:
      */
-    PreprocessingModule::~PreprocessingModule(){}
+    VRWModule::~VRWModule(){}
 
     /**
      * Methods:
@@ -55,7 +55,7 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
      *
      * @return true
      */
-    bool PreprocessingModule::assertSubformula( Formula::const_iterator _subformula )
+    bool VRWModule::assertSubformula( Formula::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
         return true;
@@ -64,7 +64,7 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
     /**
      * Checks the so far received constraints for consistency.
      */
-    Answer PreprocessingModule::isConsistent()
+    Answer VRWModule::isConsistent()
     {
         //mpReceivedFormula->print();
 
@@ -82,7 +82,7 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
      *
      * @param _subformula The sub formula of the received formula to remove.
      */
-    void PreprocessingModule::removeSubformula( Formula::const_iterator _subformula )
+    void VRWModule::removeSubformula( Formula::const_iterator _subformula )
     {
         Module::removeSubformula( _subformula );
     }
