@@ -207,8 +207,8 @@ formlist :
     |	formlist form { $1->push_back( $2 ); $$ = $1; }
 
 equation:
-       OB EQ form form CB         { $$ = dv.mkFormula( smtrat::IFF, $3, $4 ); }
-    |  OB EQ poly poly CB         { $$ = dv.mkConstraint( *$3, *$4, CR_EQ ); delete $3; delete $4; }
+       OB EQ form form CB { $$ = dv.mkFormula( smtrat::IFF, $3, $4 ); }
+    |  OB EQ poly poly CB { $$ = dv.mkConstraint( *$3, *$4, CR_EQ ); delete $3; delete $4; }
 
 
 relation :
@@ -238,8 +238,7 @@ bind :
         OB SYM poly CB { RealVarMap::const_iterator rv = dv.addRealVariable( yyloc, *$2 );
                          PolyVarsPair* pvp = dv.mkPolynomial( yyloc, rv );
                          Formula* f = dv.mkConstraint( *pvp, *$3, CR_EQ ); delete pvp;
-                         string db = dv.createDependingBoolean( yyloc, *$2 );
-                         dv.rFormulaRoot().addSubformula( dv.mkFormula( smtrat::IMPLIES, new Formula( db ), f ) );
+                         dv.rFormulaRoot().addSubformula( f );
                          $$ = new pair< string, unsigned >( *$2, 1 ); delete $3;
                          dv.pLexer()->mRealVariables.insert( *$2 ); delete $2; }
 	|	OB SYM form CB { const string boolVarName = dv.addBooleanVariable( yyloc, *$2 );

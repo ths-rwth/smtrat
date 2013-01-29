@@ -289,6 +289,8 @@ namespace smtrat
             void printBooleanVarMap( std::ostream& = std::cout, const std::string = "***" ) const;
             void printBooleanConstraintMap( std::ostream& = std::cout, const std::string = "***" ) const;
             void printClause( std::ostream&, Minisat::Clause& );
+            void printClause( Minisat::CRef, std::ostream& = std::cout, const std::string& = "" ) const;
+            void printClause( const Minisat::vec<Minisat::Lit>&, std::ostream& = std::cout, const std::string& = "" ) const;
             void printClauses( std::ostream&, Minisat::Clause&, Minisat::vec<Minisat::Var>&, Minisat::Var& );
             void printClauses( const Minisat::vec<Minisat::CRef>&, const std::string, std::ostream& = std::cout, const std::string = "***" );
             void printDecisions( std::ostream& = std::cout, std::string = "***" ) const;

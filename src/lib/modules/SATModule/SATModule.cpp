@@ -242,7 +242,7 @@ namespace smtrat
             #ifdef SATMODULE_WITH_CALL_NUMBER
             cout << endl << endl;
             #endif
-            cancelUntil( 0 );
+            cancelUntil( 0 ); // TODO: remove it, when sure incrementality (removeSubformula) is working
             if( result == l_True )
             {
                 #ifdef GATHER_STATS
@@ -256,7 +256,7 @@ namespace smtrat
                 ok = false;
                 mInfeasibleSubsets.clear();
                 /*
-                * Set the infeasible subset to the set of all received constraints.
+                * Set the infeasible subset to the set of all clauses.
                 */
                 set<const Formula*> infeasibleSubset = set<const Formula*>();
                 for( Formula::const_iterator subformula = mpReceivedFormula->begin(); subformula != mpReceivedFormula->end(); ++subformula )
@@ -502,7 +502,7 @@ namespace smtrat
             case REALCONSTRAINT:
             {
                 mConstraintsToInform.insert( _formula.pConstraint() );
-                
+
                 return getLiteral( _formula.pConstraint(), _origin, fabs(_formula.activity()), (_formula.activity()<0) );
             }
             default:
@@ -533,7 +533,7 @@ namespace smtrat
              * Add a fresh Boolean variable as an abstraction of the constraint.
              */
             Var constraintAbstraction;
-            
+
             #ifdef GATHER_STATS
             if( _preferredToTSolver )
             {
@@ -541,7 +541,7 @@ namespace smtrat
             }
             #endif
             constraintAbstraction = newVar( !_preferredToTSolver, true, _activity, new Formula( _constraint ), _origin );
-            
+
             Lit lit                            = mkLit( constraintAbstraction, false );
             mConstraintLiteralMap[_constraint] = lit;
             return lit;
@@ -641,6 +641,7 @@ namespace smtrat
         assert( _clause.size() != 0 );
         add_tmp.clear();
         _clause.copyTo( add_tmp );
+
         #ifdef GATHER_STATS
         if( _type > NORMAL_CLAUSE ) mStats->lemmaLearned();
         #endif
@@ -672,18 +673,10 @@ namespace smtrat
         // Do not store theory lemma
         if( add_tmp.size() == 1 )
         {
-            if( _type == CONFLICT_CLAUSE )
-            {
-                ca.alloc( add_tmp, true );
-                return true;
-            }
-            else
-            {
-                if( _type == DEDUCTED_CLAUSE ) cancelUntil( 0 );
-                uncheckedEnqueue( add_tmp[0] );
-                ok = (propagate() == CRef_Undef);
-                return false;
-            }
+            if( _type == DEDUCTED_CLAUSE || _type == CONFLICT_CLAUSE ) cancelUntil( 0 );
+            uncheckedEnqueue( add_tmp[0] );
+            ok = ok && (propagate() == CRef_Undef);
+            return false;
         }
         // Learn theory lemma
         else
@@ -715,7 +708,7 @@ namespace smtrat
                 if( value( c[0] ) == l_Undef && value( c[1] ) == l_False )
                 {
                     uncheckedEnqueue( c[0], cr );
-                    ok = (propagate() == CRef_Undef);
+                    ok = ok && (propagate() == CRef_Undef);
                 }
             }
         }
@@ -929,6 +922,7 @@ FindSecond:
             trail.shrink( trail.size() - trail_lim[level] );
             trail_lim.shrink( trail_lim.size() - level );
         }
+        ok = true;
     }
 
     //=================================================================================================
@@ -977,9 +971,6 @@ FindSecond:
 
         for( ; ; )
         {
-#ifdef SAT_MODULE_THEORY_PROPAGATION
-Propagation:
-#endif
             CRef confl = propagate();
 
             #ifdef DEBUG_SATMODULE
@@ -1029,7 +1020,6 @@ Propagation:
                             /*
                              * Theory propagation.
                              */
-                            bool theoryPropagationApplied = false;
                             learnt_clause.clear();
                             vector<Module*>::const_iterator backend = usedBackends().begin();
                             while( backend != usedBackends().end() )
@@ -1038,7 +1028,6 @@ Propagation:
                                  * Learn the deductions.
                                  */
                                 (*backend)->updateDeductions();
-                                if( !(*backend)->deductions().empty() ) theoryPropagationApplied = true;
                                 for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
                                         deduction != (*backend)->deductions().end(); ++deduction )
                                 {
@@ -1053,9 +1042,6 @@ Propagation:
                             #endif
                             #ifdef DEBUG_SATMODULE
                             cout << "### Result: True!" << endl;
-                            #endif
-                            #ifdef SAT_MODULE_THEORY_PROPAGATION
-                            if( ok && theoryPropagationApplied ) goto Propagation;
                             #endif
                             break;
                         }
@@ -1075,8 +1061,11 @@ Propagation:
                                     for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
                                             infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                                     {
-                                        #ifdef LOG_INFEASIBLE_SUBSETS
-                                        addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
+                                        #ifdef SMTRAT_ENABLE_VALIDATION
+                                        if( validationSettings->logInfSubsets() )
+                                        {
+                                            addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
+                                        }
                                         #endif
                                         if( bestInfeasibleSubset->size() > infsubset->size() )
                                         {
@@ -1166,23 +1155,19 @@ Propagation:
 
                 learnt_clause.clear();
                 assert( confl != CRef_Undef );
+                #ifdef DEBUG_SATMODULE
+                if( madeTheoryCall )
+                {
+                    printClause( confl, cout, "### Conflict clause: " );
+                }
+                #endif
 
                 analyze( confl, learnt_clause, backtrack_level );
 
                 #ifdef DEBUG_SATMODULE
                 if( madeTheoryCall )
                 {
-                    cout << "### Asserting clause: ";
-                    for( int pos = 0; pos < learnt_clause.size(); ++pos )
-                    {
-                        cout << " ";
-                        if( sign( learnt_clause[pos] ) )
-                        {
-                            cout << "-";
-                        }
-                        cout << var( learnt_clause[pos] );
-                    }
-                    cout << endl;
+                    printClause( learnt_clause, cout, "### Asserting clause: " );
                     cout << "### Backtrack to level " << backtrack_level << endl;
                     cout << "###" << endl;
                 }
@@ -2010,6 +1995,43 @@ NextClause:
 
         if( satisfied( c ) )
             cout << "      ok";
+    }
+
+    void SATModule::printClause( CRef _clause, ostream& _out, const string& _init ) const
+    {
+        const Clause& c = ca[_clause];
+        cout << _init;
+        for( int pos = 0; pos < c.size(); ++pos )
+        {
+            cout << " ";
+            if( sign( c[pos] ) )
+            {
+                cout << "-";
+            }
+            cout << var( c[pos] );
+        }
+        cout << endl;
+    }
+
+    /**
+     *
+     * @param _clause
+     * @param _out
+     * @param _init
+     */
+    void SATModule::printClause( const vec<Lit>& _clause, ostream& _out, const string& _init ) const
+    {
+        cout << _init;
+        for( int pos = 0; pos < _clause.size(); ++pos )
+        {
+            cout << " ";
+            if( sign( _clause[pos] ) )
+            {
+                cout << "-";
+            }
+            cout << var( _clause[pos] );
+        }
+        cout << endl;
     }
 
     /**

@@ -154,20 +154,6 @@ namespace smtrat
                 return *mFormulaRoot;
             }
 
-            bool getDependingBoolean( const std::string& _realVarName, std::string& _dependingBoolean ) const
-            {
-                auto iter = mRealBooleanDependencies.find( _realVarName );
-                if( iter != mRealBooleanDependencies.end() )
-                {
-                    _dependingBoolean = iter->second;
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
             void free( std::vector< std::string* >* _toFree ) const
             {
                 while( !_toFree->empty() )
@@ -204,7 +190,6 @@ namespace smtrat
                 }
             }
 
-            const std::string createDependingBoolean( const class location&, const std::string& );
             bool parse_stream( std::istream& in, const std::string& sname = "stream input" );
             bool parse_string( const std::string& input, const std::string& sname = "string stream" );
             bool parse_file( const std::string& filename );

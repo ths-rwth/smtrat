@@ -222,6 +222,8 @@ namespace smtrat
                     std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllVariableFreeConstraints.insert( constraint );
                     if( !iterBoolPair.second )
                     {
+                        ++mIdAllocator;
+                        constraint->collectProperties();
                         delete constraint;
                     }
                     return *iterBoolPair.first;
@@ -264,6 +266,8 @@ namespace smtrat
                     std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllVariableFreeConstraints.insert( constraint );
                     if( !iterBoolPair.second )
                     {
+                        ++mIdAllocator;
+                        constraint->collectProperties();
                         delete constraint;
                     }
                     return *iterBoolPair.first;
