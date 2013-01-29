@@ -304,6 +304,10 @@ namespace smtrat
             void stopRemoveTimer();
             int stopAllTimers();
             void startTimers(int timers);
+        public:
+            unsigned getAddTimerMS() const;
+            unsigned getCheckTimerMS() const;
+            unsigned getRemoveTimerMS() const;
             
     };
 }    // namespace smtrat

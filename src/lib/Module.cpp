@@ -1061,4 +1061,19 @@ namespace smtrat
         return result;
     }
     
+    unsigned Module::getAddTimerMS() const 
+    {
+        return mTimerAddTotal.count();
+    }
+    
+    unsigned Module::getCheckTimerMS() const
+    {
+        return mTimerCheckTotal.count();
+    }
+    
+    unsigned Module::getRemoveTimerMS() const
+    {
+        return mTimerRemoveTotal.count();
+    }
+    
 }    // namespace smtrat
