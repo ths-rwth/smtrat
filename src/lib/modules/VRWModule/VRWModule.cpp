@@ -59,7 +59,8 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
     {
         Module::assertSubformula( _subformula );
         addReceivedSubformulaToPassedFormula(_subformula);
-        mMatchingGraph.addConstraint( (*_subformula)->pConstraint(), mpPassedFormula->last());
+        std::list<ConstraintNode*>::iterator node = mMatchingGraph.addConstraint( (*_subformula)->pConstraint(), mpPassedFormula->last());
+        mConstraintPositions.insert(std::pair<Formula::const_iterator, std::list<ConstraintNode*>::iterator>(_subformula, node));
         return true;
     }
 
@@ -87,7 +88,19 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
      */
     void VRWModule::removeSubformula( Formula::const_iterator _subformula )
     {
+        assert(mConstraintPositions.find(_subformula) != mConstraintPositions.end());
+        mMatchingGraph.removeConstraint(mConstraintPositions[_subformula]);
+        mConstraintPositions.erase(_subformula);
         Module::removeSubformula( _subformula );
+    }
+    
+    void VRWModule::printConstraintPositions() 
+    {
+        std::cout << "known constraint positions" << std::endl;
+        for(auto it = mConstraintPositions.begin(); it != mConstraintPositions.end(); ++it)
+        {
+            std::cout << (*it->first)->pConstraint()->id() << std::endl;
+        }
     }
 
 }

@@ -42,6 +42,7 @@ namespace smtrat
     
     bool VariableConstraintGraph::removeConstraint(std::list<ConstraintNode*>::iterator constraintNode)
     {
+        
         // Remove all the links from the variable to the node
         for(std::list<VariableNode*>::iterator itVar = (*constraintNode)->adjacencyList.begin(); itVar != (*constraintNode)->adjacencyList.end(); ++itVar)
         {

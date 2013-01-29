@@ -36,13 +36,20 @@
 
 namespace smtrat
 {
+
+    struct dereference_compare {
+        template <class I>
+        bool operator()(const I& a, const I& b) {
+            return *a < *b;
+        }
+    };
     
     class VRWModule : public Module
     {
         protected:
             VariableConstraintGraph mMatchingGraph;
             /// mapping received constraint -> node in the graph
-            std::map<Formula::const_iterator, std::list<ConstraintNode*>::const_iterator> mConstraintPositions; 
+            std::map<Formula::const_iterator, std::list<ConstraintNode*>::iterator, dereference_compare> mConstraintPositions; 
             
         public:
             /**
@@ -64,6 +71,7 @@ namespace smtrat
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
             
+            void printConstraintPositions();
     };
 
 }    // namespace smtrat
