@@ -690,7 +690,7 @@ namespace smtrat
                 cr = ca.alloc( add_tmp, _type );
                 learnts.push( cr );
             }
-            else
+            else // NORMAL CLAUSE
             {
                 cr = ca.alloc( add_tmp, false );
                 clauses.push( cr );
