@@ -35,12 +35,14 @@
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
 
+
 #include <vector>
 #include <map>
 #include <set>
 #include <algorithm>
 #include <string>
 #include <ginac/ginac.h>
+#include <chrono>
 
 #include "Answer.h"
 #include "Formula.h"
@@ -64,6 +66,9 @@ namespace smtrat
         #endif
         public:
             typedef std::map< const std::string, std::string > Model;
+            typedef std::chrono::high_resolution_clock clock;
+            typedef std::chrono::milliseconds milliseconds; 
+            
         protected:
             ///
             Answer mSolverState;
@@ -100,6 +105,8 @@ namespace smtrat
             /// Counter used for the generation of the smt2 files to check for smaller muses.
             mutable unsigned mSmallerMusesCheckCounter;
 
+            
+            
             bool checkFirstSubformulaToPassValidity() const;
 
         public:
@@ -265,12 +272,43 @@ namespace smtrat
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
             const std::set<const Formula*>& getOrigins( Formula::const_iterator ) const;
-
+            //
+            // Print methods
+            //
         public:
             void print( std::ostream& = std::cout, const std::string = "***" ) const;
             void printReceivedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printPassedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printInfeasibleSubsets( std::ostream& = std::cout, const std::string = "***" ) const;
+        
+            //
+            // Measuring module times
+            //
+        private:
+            clock::time_point mTimerCheckStarted;
+            clock::time_point mTimerAddStarted;
+            clock::time_point mTimerRemoveStarted;
+            milliseconds mTimerAddTotal;
+            milliseconds mTimerCheckTotal;
+            milliseconds mTimerRemoveTotal;
+            // for debug purposes
+            bool mTimerAddRunning;
+            bool mTimerCheckRunning;
+            bool mTimerRemoveRunning;
+        public:
+            void startCheckTimer();
+            void stopCheckTimer();
+            void startAddTimer();
+            void stopAddTimer();
+            void startRemoveTimer();
+            void stopRemoveTimer();
+            int stopAllTimers();
+            void startTimers(int timers);
+        public:
+            unsigned getAddTimerMS() const;
+            unsigned getCheckTimerMS() const;
+            unsigned getRemoveTimerMS() const;
+            
     };
 }    // namespace smtrat
 #endif   /* SMTRAT_MODULE_H */

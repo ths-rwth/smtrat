@@ -115,6 +115,10 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
                 printModulesInfo();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
+            else if(optionName == "print-timings")
+            {
+                mDoPrintTimings = true;
+            }
             // no more global options, so we expect module options
             else 
             {
@@ -162,7 +166,7 @@ void RuntimeSettingsManager::printHelp() const
     // Print usage examples.
     std::cout << "Usage: ./solver [GlobalOptions] [ModuleOptions] inputfile" << std::endl;
     std::cout << "Example: ./solver --help. Prints this help." << std::endl;
-    std::cout << "Example ./solver --parser:trace example.smt2. Runs the solver on example.smt2 with tracing enabled for the parser." << std::endl;
+    std::cout << "Example ./solver --parser:s example.smt2. Runs the solver on example.smt2 with tracing enabled for the parser." << std::endl;
     std::cout << std::endl;
     // Print help for the global options.
     std::cout << "Global options:" << std::endl;
@@ -172,6 +176,7 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << std::endl;
     std::cout << "Developer options:" <<std::endl;
     std::cout << "\t --list-modules \t prints all compiled modules" << std::endl;
+    std::cout << "\t --print-timings \t prints the timings" << std::endl;
     std::cout << std::endl;
     // Print help for all known modules.
     std::cout << "Module options:" << std::endl;
@@ -213,5 +218,9 @@ void RuntimeSettingsManager::printWelcome() const
     std::cout << "For more information, run this binary with --help." << std::endl;
 }
 
-        
+bool RuntimeSettingsManager::doPrintTimings() const 
+{
+    return mDoPrintTimings;
+}
+
 }

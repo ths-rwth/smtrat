@@ -51,6 +51,7 @@ namespace smtrat
      */
     class Manager
     {
+        friend class Module;
         private:
 
             /// the constraints so far passed to the primary backend
@@ -87,6 +88,7 @@ namespace smtrat
 
             Answer isConsistent()
             {
+                mpPrimaryBackend->startCheckTimer();
                 return mpPrimaryBackend->isConsistent();
             }
 
@@ -122,7 +124,7 @@ namespace smtrat
                 return mStrategyGraph;
             }
 
-            std::vector<Module*> getAllBackends( Module* _module )
+            std::vector<Module*> getAllBackends( Module* _module ) 
             {
                 return mBackendsOfModules[_module];
             }
@@ -130,6 +132,11 @@ namespace smtrat
             const Formula& formula() const
             {
                 return *mpPassedFormula;
+            }
+            
+            const std::vector<Module*>& getAllGeneratedModules() const
+            {
+                return mGeneratedModules;
             }
 
             void printModel( std::ostream& ) const;
