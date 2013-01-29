@@ -46,7 +46,9 @@ namespace smtrat
         #ifdef SMTRAT_ENABLE_VRWModule
         position = rStrategyGraph().addModuleType( position, MT_VRWModule );
         #endif
+        #ifdef SMTRAT_ENABLE_LRAModule
         position = rStrategyGraph().addModuleType( position, MT_LRAModule );
+        #endif
         #ifdef SMTRAT_ENABLE_GroebnerModule
         position = rStrategyGraph().addModuleType( position, MT_GroebnerModule );
         #endif
