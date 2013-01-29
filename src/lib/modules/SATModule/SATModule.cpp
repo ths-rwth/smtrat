@@ -51,11 +51,11 @@
 #include "SATModule.h"
 
 //#define DEBUG_SATMODULE
-//#define DEBUG_SATMODULE_THEORY_PROPAGATION
+#define DEBUG_SATMODULE_THEORY_PROPAGATION
 #define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
 #define STORE_ONLY_ONE_REASON
-//#define SAT_MODULE_THEORY_PROPAGATION
+#define SAT_MODULE_THEORY_PROPAGATION
 
 const static double FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY = 1.02;
 
@@ -1103,6 +1103,14 @@ FindSecond:
                                         (*backend)->printInfeasibleSubsets();
                                         cout << "### { ";
                                         #endif
+
+                                        #ifdef SMTRAT_ENABLE_VALIDATION
+                                        if( validationSettings->logInfSubsets() )
+                                        {
+                                            addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
+                                        }
+                                        #endif
+                                        
                                         CRef tmpConfl = learnTheoryConflict( *infsubset );
                                         if( ca[tmpConfl].size() < conflictSize )
                                         {
