@@ -59,6 +59,7 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
     {
         Module::assertSubformula( _subformula );
         addReceivedSubformulaToPassedFormula(_subformula);
+        mMatchingGraph.addConstraint( (*_subformula)->pConstraint(), mpPassedFormula->last());
         return true;
     }
 
@@ -68,6 +69,7 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
     Answer VRWModule::isConsistent()
     {
         //mpReceivedFormula->print();
+        mMatchingGraph.print();
 
         Answer ans = runBackends();
         if( ans == False )

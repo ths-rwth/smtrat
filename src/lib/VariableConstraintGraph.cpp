@@ -15,7 +15,7 @@ namespace smtrat
     {
     }
     
-    std::list<ConstraintNode*>::iterator VariableConstraintGraph::addConstraint(Constraint* constraint, Formula::const_iterator pos) 
+    std::list<ConstraintNode*>::iterator VariableConstraintGraph::addConstraint(const Constraint* constraint, Formula::const_iterator pos) 
     {
         constraintNodes.push_back(new ConstraintNode());
         (constraintNodes.back())->constraint = constraint;
@@ -32,7 +32,10 @@ namespace smtrat
             }
             // Add the current constraint to the adjacencylist.
             itVarNode->second->adjacencyList.insert(std::pair<unsigned, ConstraintNode*>(constraint->id(), constraintNodes.back()));
+            // Add the variable to this constraints adjacencylist
+            constraintNodes.back()->adjacencyList.push_back(itVarNode->second);
         }
+        
         return --constraintNodes.end();
         
     }

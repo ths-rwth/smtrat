@@ -25,7 +25,7 @@ namespace smtrat
 
     struct ConstraintNode 
     {
-        Constraint* constraint;
+        const Constraint* constraint;
         Formula::const_iterator posInPassedFormula;
         std::list<VariableNode*> adjacencyList;
     };
@@ -38,7 +38,7 @@ namespace smtrat
         std::list<ConstraintNode*> constraintNodes;
     public:
         VariableConstraintGraph( );
-        std::list<ConstraintNode*>::iterator addConstraint(Constraint* constraint, Formula::const_iterator pos);
+        std::list<ConstraintNode*>::iterator addConstraint(const Constraint* constraint, Formula::const_iterator pos);
         bool removeConstraint(std::list<ConstraintNode*>::iterator);
         
         void print(); 
