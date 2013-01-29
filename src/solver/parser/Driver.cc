@@ -244,8 +244,9 @@ namespace smtrat
                 size_t index = ginacConformName.find( iter->first );
                 while( index!=string::npos )
                 {
-                    ginacConformName.erase( index, ginacConformName.size() );
+                    ginacConformName.erase( index, iter->first.size() );
                     ginacConformName.insert( index, iter->second );
+                    index = ginacConformName.find( iter->first, index );
                 }
             }
             ginacConformVar = pair< string, ex >( ginacConformName, Formula::newRealVariable( ginacConformName ) );

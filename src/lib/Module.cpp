@@ -47,10 +47,10 @@ namespace smtrat
 {
     vector<string> Module::mAssumptionToCheck = vector<string>();
     set<string> Module::mVariablesInAssumptionToCheck = set<string>();
-    
+
     #ifdef SMTRAT_ENABLE_VALIDATION
     ValidationSettings* Module::validationSettings = new ValidationSettings();
-    #endif 
+    #endif
 
     Module::Module( ModuleType type, const Formula* const _formula, Manager* const _tsManager ):
         mSolverState( Unknown ),
@@ -418,7 +418,7 @@ namespace smtrat
         {
             assert( !infSubSet->empty() );
             #ifdef SMTRAT_ENABLE_VALIDATION
-            if( validationSettings->logInfSubsets() ) 
+            if( validationSettings->logInfSubsets() )
             {
                 addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) + "_infeasible_subset" );
             }
@@ -520,7 +520,7 @@ namespace smtrat
             result = (*module)->isConsistent();
             (*module)->receivedFormulaChecked();
             #ifdef SMTRAT_ENABLE_VALIDATION
-            if( validationSettings->logTCalls() ) 
+            if( validationSettings->logTCalls() )
             {
                 if( result != Unknown )
                 {
@@ -603,7 +603,7 @@ namespace smtrat
             {
                 addDeduction( (*module)->rDeductions().back() );
                 #ifdef SMTRAT_ENABLE_VALIDATION
-                if( validationSettings->logLemmata() ) 
+                if( validationSettings->logLemmata() )
                 {
                     Formula notLemma = Formula( NOT );
                     notLemma.addSubformula( new Formula( *(*module)->rDeductions().back() ) );

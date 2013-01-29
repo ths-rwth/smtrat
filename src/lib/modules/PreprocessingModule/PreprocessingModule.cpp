@@ -30,6 +30,7 @@
 #include "PreprocessingModule.h"
 #include "../../../solver/ExitCodes.h"
 #include <limits.h>
+#include <bits/stl_map.h>
 
 namespace smtrat {
 PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager )
@@ -249,7 +250,21 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         }
         else if( formula->getType() == IMPLIES  )
         {
-
+            assert(formula->subformulas().size() == 2);
+            double difficulty = formula->subformulas().front()->difficulty() + formula->subformulas().back()->difficulty();
+            formula->setDifficulty(difficulty/2);
+        }
+        else if( formula->getType() == IFF )
+        {
+            assert(formula->subformulas().size() == 2);
+            double difficulty = formula->subformulas().front()->difficulty() + formula->subformulas().back()->difficulty();
+            formula->setDifficulty(difficulty/2);
+        }
+        else if( formula->getType() == XOR )
+        {
+            assert(formula->subformulas().size() == 2);
+            double difficulty = std::max(formula->subformulas().front()->difficulty(), formula->subformulas().back()->difficulty());
+            formula->setDifficulty(difficulty);
         }
         else if( formula->getType() == REALCONSTRAINT )
         {
@@ -347,6 +362,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 {
                     continue;
                 }
+                unsigned degree = constraint->maxMonomeDegree();
                 // This are constraints of the form a1t_1 ~ 0 with a1 a numerical value and t_1 a monomial of degree > 1.
                 if( constraint->numMonomials() == 1 )
                 {
@@ -357,88 +373,83 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 else if( constraint->numMonomials() == 2 )
                 {
                     GiNaC::ex expression = constraint->lhs();
-                    GiNaC::numeric constPart = constraint->constantPart();
+                    assert(GiNaC::is_exactly_a<GiNaC::numeric>(expression.lcoeff(expression)));
+                    GiNaC::numeric constPart = constraint->constantPart() / GiNaC::ex_to<GiNaC::numeric>(expression.lcoeff(expression));
                     if(constPart == (GiNaC::numeric)0 ) continue;
-                    std::list<GiNaC::ex> symbols;
-                    assert( GiNaC::is_exactly_a<GiNaC::add>( expression ) );
-                    for( GiNaC::const_iterator i = expression.begin(); i != expression.end(); ++i )    // iterate through the summands
-                    {
-                        if(GiNaC::is_exactly_a<GiNaC::mul>( *i ) )
-                        {
-                            for( GiNaC::const_iterator j = i->begin(); j != i->end(); ++j)
-                            {
-                                if(!GiNaC::is_exactly_a<GiNaC::symbol>( *j )) continue;
-                                symbols.push_back(*j);
-                            }
-                        }
-                        else if(GiNaC::is_exactly_a<GiNaC::power>( *i ))
-                        {
-                            // TODO implement this.
-                            assert(false);
-                        }
-                        else
-                        {
-                            continue;
-                        }
-                    }
                     
-                    if(symbols.size() > 2) continue;
+                    assert( GiNaC::is_exactly_a<GiNaC::add>( expression ) ); 
+                    if(degree > 2) continue;
                     Formula* deduction = new Formula(OR);
-                    if( symbols.size() == 1 ) 
-                    {
-                        assert(false); // not implemented
-                    }
-                    else if( symbols.size() == 2 )
-                    {
                         
-                        switch(constraint->relation())
+                    switch(constraint->relation())
+                    {
+                        case CR_LEQ:
                         {
-                            case CR_LEQ:
-                            {
-                                // constraint->variables is an overapproximation, however, i cannot find how to create a symtab from a symbol
-                                size_t pos = std::upper_bound (squares.begin(), squares.end(), -constPart) - squares.begin();
-                                std::cout << pos << std::endl;
-                                GiNaC::ex lhs1(symbols.front() - pos);
-                                GiNaC::ex lhs2(symbols.back() - pos);
-                                const Constraint* c1 = Formula::newConstraint( lhs1 , CR_LEQ , constraint->variables() );
-                                const Constraint* c2 = Formula::newConstraint( lhs2 , CR_LEQ , constraint->variables() );
-                                deduction->addSubformula(c1);
-                                deduction->addSubformula(c2);
-                                break;
-                            }
-                            case CR_GEQ:
-                            {
-                                assert(false); // not implemented
-                                break;
-                            }
-                            case CR_LESS:
-                            {
-                                assert(false); // not implemented
-                                break;
-                            }
-                            case CR_GREATER:
-                            {
-                                assert(false); // not implemented
-                                break;
-                            }
-                            case CR_EQ:
-                            {
-                                assert(false); // not implemented
-                                break;
-                            }
-                            case CR_NEQ:
-                            {
-                                assert(false); // not implemented
-                                break;
-                            }
+                            addUpperBounds(deduction, constraint->variables(), determineUpperBounds(degree, constPart), false);
+                            break;
+                        }
+                        case CR_GEQ:
+                        {
+                            assert(false); // not implemented
+                            break;
+                        }
+                        case CR_LESS:
+                        {
+                            addUpperBounds(deduction, constraint->variables(), determineUpperBounds(degree, constPart), true);
+                            break;
+                        }
+                        case CR_GREATER:
+                        {
+                            assert(false); // not implemented
+                            break;
+                        }
+                        case CR_EQ:
+                        {
+                            assert(false); // not implemented
+                            break;
+                        }
+                        case CR_NEQ:
+                        {
+                            assert(false); // not implemented
+                            break;
                         }
                     }
-                    
                     formula->addSubformula(deduction);
                 }
             }
         }
         
+    }
+    
+    void PreprocessingModule::addUpperBounds(Formula* formula, const GiNaC::symtab& symbols, GiNaC::numeric boundary, bool strict  ) const 
+    {   
+        for(GiNaC::symtab::const_iterator it = symbols.begin(); it != symbols.end(); ++it )
+        {
+           GiNaC::ex lhs(it->second - boundary);
+           GiNaC::symtab sym;
+           sym.insert(*it);
+           const Constraint* constraint = Formula::newConstraint( lhs, (strict ? CR_LESS : CR_LEQ), sym );
+           formula->addSubformula(constraint);
+        }      
+    }
+    
+    /**
+     * TODO extend this method for more than degree 2
+     * Given a constraint at - c lessequal 0 with t being a monomial and a and c constants, we deduce an upper bound for one of the variables each. 
+     * @return A constant d such that we have (x_1 - d lessequal 0 or ... or x_n - d lessequal 0)
+     */
+    GiNaC::numeric PreprocessingModule::determineUpperBounds(unsigned degree, const GiNaC::numeric& constPart) const
+    {
+        assert(degree == 2);
+        std::vector<int>::const_iterator upperBound = std::upper_bound (squares.begin(), squares.end(), -constPart);
+        if(upperBound != squares.end())
+        {
+            return upperBound - squares.begin();
+        }
+        else
+        {
+            return -constPart;
+        }
     }
 }
 

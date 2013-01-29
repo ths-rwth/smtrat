@@ -674,6 +674,8 @@ namespace smtrat
         if( add_tmp.size() == 1 )
         {
             if( _type == DEDUCTED_CLAUSE || _type == CONFLICT_CLAUSE ) cancelUntil( 0 );
+            // This assertion is from uncheckedEnqueue and is here for debug purposes.
+            assert( value( add_tmp[0] ) == l_Undef );
             uncheckedEnqueue( add_tmp[0] );
             ok = ok && (propagate() == CRef_Undef);
             return false;
@@ -1176,6 +1178,7 @@ FindSecond:
 
                 if( learnt_clause.size() == 1 )
                 {
+                    assert( value( learnt_clause[0] ) == l_Undef );
                     uncheckedEnqueue( learnt_clause[0] );
                 }
                 else
@@ -1184,6 +1187,7 @@ FindSecond:
                     learnts.push( cr );
                     attachClause( cr );
                     claBumpActivity( ca[cr] );
+                    assert( value( learnt_clause[0] ) == l_Undef );
                     uncheckedEnqueue( learnt_clause[0], cr );
                 }
 
@@ -1265,6 +1269,7 @@ FindSecond:
                 // Increase decision level and enqueue 'next'
 
                 newDecisionLevel();
+                assert( value( next ) == l_Undef );
                 uncheckedEnqueue( next );
             }
         }
@@ -1585,7 +1590,10 @@ FindSecond:
                         *j++ = *i++;
                 }
                 else
+                {
+                    assert( value( first ) == l_Undef );
                     uncheckedEnqueue( first, cr );
+                }
 
 NextClause:
                 ;
