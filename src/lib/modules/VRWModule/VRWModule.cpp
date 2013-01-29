@@ -58,6 +58,7 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
     bool VRWModule::assertSubformula( Formula::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
+        addReceivedSubformulaToPassedFormula(_subformula);
         return true;
     }
 
