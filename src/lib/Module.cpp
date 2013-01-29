@@ -40,7 +40,7 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
-#define SMTRAT_MEASURE_MODULE_TIMES
+//#define SMTRAT_MEASURE_MODULE_TIMES
 
 using namespace std;
 
