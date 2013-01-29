@@ -675,6 +675,11 @@ namespace smtrat
         if( add_tmp.size() == 1 )
         {
             if( _type == DEDUCTED_CLAUSE || _type == CONFLICT_CLAUSE ) cancelUntil( 0 );
+            #ifdef SMTRAT_ENABLE_VALIDATION
+            // this is often an indication that something is wrong with our theory, so we do store our assumptions.
+            if( value( add_tmp[0] ) != l_Undef )
+                Module::storeAssumptionsToCheck( *mpManager );
+            #endif
             // This assertion is from uncheckedEnqueue and is here for debug purposes.
             assert( value( add_tmp[0] ) == l_Undef );
             uncheckedEnqueue( add_tmp[0] );
@@ -1492,10 +1497,6 @@ FindSecond:
      */
     void SATModule::uncheckedEnqueue( Lit p, CRef from )
     {
-        #ifdef SMTRAT_ENABLE_VALIDATION
-        if( value( p ) != l_Undef )
-            Module::storeAssumptionsToCheck( *mpManager );
-        #endif
         assert( value( p ) == l_Undef );
         assigns[var( p )] = lbool( !sign( p ) );
         if( !sign( p ) && mBooleanConstraintMap[var( p )].formula != NULL ) ++mBooleanConstraintMap[var( p )].updateInfo;
