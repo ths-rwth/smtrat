@@ -126,6 +126,14 @@ int determineResult(int status, smtrat::Answer answer)
     }
 }
 
+void printTimings(smtrat::NRATSolver* solver)
+{
+    for(std::vector<smtrat::Module*>::const_iterator it =  solver->getAllGeneratedModules().begin(); it != solver->getAllGeneratedModules().end(); ++it)
+    {
+        std::cout << (*it)->getAddTimerMS() << std::endl;
+    }
+}
+    
 
 /**
  *
@@ -174,6 +182,11 @@ int main( int argc, char* argv[] )
     {
         std::cout << std::endl;
         nratSolver->printModel( std::cout );
+    }
+    
+    if(settingsManager.doPrintTimings()) 
+    {
+        printTimings(nratSolver);
     }
     // Delete the solver and the formula.
     delete nratSolver;

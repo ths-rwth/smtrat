@@ -43,17 +43,21 @@ namespace smtrat {
     class RuntimeSettingsManager  {
     protected:
         std::map<std::string, RuntimeSettings*> mSettingObjects;
+        bool mDoPrintTimings;
     public:
         void addSettingsObject(const std::string& name, RuntimeSettings* settings);
         void addSettingsObject(const std::list<std::pair<std::string, RuntimeSettings*> >& settings);
         RuntimeSettings* getSettingsObject(const std::string& name) const;
         std::string parseCommandline(int argc, char** argv);
         
+        bool doPrintTimings() const;
+        
     protected:
         void printHelp() const;
         void printWarranty() const;
         void printToC() const;
         void printWelcome() const;
+        
     };  
 }
 
