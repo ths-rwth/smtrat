@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-02-04
- * @version 2012-12-09
+ * @version 2013-01-29
  *
  */
 #ifndef SMTRAT_CADMODULE_H
@@ -39,6 +39,7 @@
 #include <unordered_map>
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
+
 #ifdef CAD_USE_VARIABLE_BOUNDS
 #include "../../VariableBounds.h"
 #endif
