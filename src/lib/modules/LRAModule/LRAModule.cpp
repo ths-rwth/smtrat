@@ -59,7 +59,7 @@ namespace smtrat
         mConstraintToBound(),
         mBoundCandidatesToPass()
     {
-        
+
     }
 
     /**

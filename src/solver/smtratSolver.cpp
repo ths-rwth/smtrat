@@ -43,7 +43,7 @@
 #endif //GATHER_STATS
 
 
-struct Smt2Options 
+struct Smt2Options
 {
     int statusFlag;
     bool printAssignment;
@@ -67,11 +67,13 @@ void parseInput(const std::string& pathToInputFile, smtrat::Formula* formula, sm
         exit(SMTRAT_EXIT_NOSUCHFILE);
     }
     bool parsingSuccessful = parser.parse_stream( infile, pathToInputFile.c_str() );
-    if(!parsingSuccessful) 
+    if(!parsingSuccessful)
     {
         std::cerr << "Parse error" << std::endl;
         exit(SMTRAT_EXIT_PARSERFAILURE);
     }
+    options.statusFlag = parser.status();
+    options.printAssignment = parser.printAssignment();
 }
 
 /**
@@ -80,7 +82,7 @@ void parseInput(const std::string& pathToInputFile, smtrat::Formula* formula, sm
  * @param answer the answer from the solver
  * @return the corresponding returnvalue.
  */
-int determineResult(int status, smtrat::Answer answer) 
+int determineResult(int status, smtrat::Answer answer)
 {
     switch( answer )
     {
@@ -150,11 +152,11 @@ int main( int argc, char* argv[] )
     std::string pathToInputFile = "";
     // This will point to the parsed formula;
     smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
-    
+
     // Construct solver
     smtrat::NRATSolver* nratSolver = new smtrat::NRATSolver( form );
     std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules(nratSolver);
-    
+
     // Construct the settingsManager
     smtrat::RuntimeSettingsManager settingsManager;
     // Introduce the smtrat core settingsObjects to the manager.
@@ -170,21 +172,21 @@ int main( int argc, char* argv[] )
     #endif
     // Introduce the settingsObjects from the modules to the manager
     settingsManager.addSettingsObject(settingsObjects);
-   
+
     // Parse commandline;
     pathToInputFile = settingsManager.parseCommandline(argc, argv);
-    
+
     Smt2Options smt2options;
     // Parse input
     parseInput(pathToInputFile, form, parserSettings, smt2options);
-    
-    
+
+
     // Run solver
     smtrat::Answer      answer     = nratSolver->isConsistent();
     // Determine result.
     int returnValue = determineResult(smt2options.statusFlag, answer);
     // Print assignment.
-    if(smt2options.printAssignment && answer == smtrat::True) 
+    if(smt2options.printAssignment && answer == smtrat::True)
     {
         std::cout << std::endl;
         nratSolver->printModel( std::cout );
@@ -201,6 +203,6 @@ int main( int argc, char* argv[] )
     #ifdef GATHER_STATS
     smtrat::CollectStatistics::produceOutput();
     #endif
-    
+
     return returnValue;
 }

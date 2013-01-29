@@ -79,10 +79,6 @@ namespace smtrat
         mVarInfoMap()
     {
         normalize( *pLhs );
-        if( pLhs->info( info_flags::rational ) )
-        {
-            mID = 0;
-        }
         mVariables = symtab();
         for( auto var = _variables.begin(); var != _variables.end(); ++var )
         {
@@ -120,10 +116,6 @@ namespace smtrat
         mVarInfoMap()
     {
         normalize( *pLhs );
-        if( pLhs->info( info_flags::rational ) )
-        {
-            mID = 0;
-        }
         mVariables = symtab();
         for( auto var = _variables.begin(); var != _variables.end(); ++var )
         {
@@ -694,7 +686,7 @@ namespace smtrat
                 }
                 else if( is_exactly_a<symbol>( summandEx ) )
                 {
-                    
+
                     mIsNeverPositive = false;
                     mIsNeverNegative = false;
                     VarInfo& varInfo = mVarInfoMap[summandEx];
@@ -716,7 +708,7 @@ namespace smtrat
                 }
                 else if( is_exactly_a<power>( summandEx ) )
                 {
-                    
+
                     assert( summandEx.nops() == 2 );
                     ex exponent = *(++(summandEx.begin()));
                     assert( !exponent.info( info_flags::negative ) );

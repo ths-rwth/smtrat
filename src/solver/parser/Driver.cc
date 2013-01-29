@@ -170,25 +170,6 @@ namespace smtrat
     /**
      *
      * @param _loc
-     * @param _realVarName
-     * @return
-     */
-    const string Driver::createDependingBoolean( const class location& _loc, const string& _realVarName )
-    {
-        assert( mRealVariables.find( _realVarName ) != mRealVariables.end() );
-        assert( mRealBooleanDependencies.find( _realVarName ) == mRealBooleanDependencies.end() );
-        const string dependentBoolean = Formula::newAuxiliaryBooleanVariable();
-        mRealBooleanDependencies[_realVarName] = dependentBoolean;
-        if( !mBooleanVariables.insert( pair< string, string >( dependentBoolean, dependentBoolean ) ).second )
-        {
-            error( _loc, "Multiple definition of Boolean variable " + dependentBoolean );
-        }
-        return dependentBoolean;
-    }
-
-    /**
-     *
-     * @param _loc
      * @param _name
      * @param _type
      * @return
@@ -263,8 +244,9 @@ namespace smtrat
                 size_t index = ginacConformName.find( iter->first );
                 while( index!=string::npos )
                 {
-                    ginacConformName.erase( index, ginacConformName.size() );
+                    ginacConformName.erase( index, iter->first.size() );
                     ginacConformName.insert( index, iter->second );
+                    index = ginacConformName.find( iter->first, index );
                 }
             }
             ginacConformVar = pair< string, ex >( ginacConformName, Formula::newRealVariable( ginacConformName ) );
@@ -370,41 +352,10 @@ namespace smtrat
     Formula* Driver::mkConstraint( const pair< ex, vector< RealVarMap::const_iterator > >& _lhs, const pair< ex, vector< RealVarMap::const_iterator > >& _rhs, unsigned _rel )
     {
         symtab vars = symtab();
-        set< string > booleanDependencies = set< string >();
-        string booleanDependency = "";
+        for( auto iter = _lhs.second.begin(); iter != _lhs.second.end(); ++iter ) vars.insert( (*iter)->second );
+        for( auto iter = _rhs.second.begin(); iter != _rhs.second.end(); ++iter ) vars.insert( (*iter)->second );
         Constraint_Relation rel = (Constraint_Relation) _rel;
-        for( vector< RealVarMap::const_iterator >::const_iterator iter = _lhs.second.begin(); iter != _lhs.second.end(); ++iter )
-        {
-            if( getDependingBoolean( (*iter)->first, booleanDependency ) )
-            {
-                booleanDependencies.insert( booleanDependency );
-            }
-            vars.insert( (*iter)->second );
-        }
-        for( vector< RealVarMap::const_iterator >::const_iterator iter = _rhs.second.begin(); iter != _rhs.second.end(); ++iter )
-        {
-            if( getDependingBoolean( (*iter)->first, booleanDependency ) )
-            {
-                booleanDependencies.insert( booleanDependency );
-            }
-            vars.insert( (*iter)->second );
-        }
-        const Constraint* constraint = Formula::newConstraint( _lhs.first-_rhs.first, rel, vars );
-        Formula* result;
-        if( !booleanDependencies.empty() )
-        {
-            result = new Formula( AND );
-            result->addSubformula( constraint );
-            for( auto dependentBool = booleanDependencies.begin(); dependentBool != booleanDependencies.end(); ++dependentBool )
-            {
-                result->addSubformula( new Formula( *dependentBool ) );
-            }
-        }
-        else
-        {
-            result = new Formula( constraint );
-        }
-        return result;
+        return new Formula( Formula::newConstraint( _lhs.first-_rhs.first, rel, vars ) );;
     }
 
     /**
@@ -509,26 +460,19 @@ namespace smtrat
         Formula* constraintA = mkConstraint( *lhs, _then, CR_EQ );
         Formula* constraintB = mkConstraint( *lhs, _else, CR_EQ );
         delete lhs;
-        const string dependentBool = createDependingBoolean( _loc, auxRealVar->first );
         /*
-         * Add to root:  (or (not dependentBool) (not conditionBool) (= auxRealVar $4))
+         * Add to root:  (or (not conditionBool) (= auxRealVar $4))
          */
-        Formula* formulaNotA = new Formula( NOT );
-        formulaNotA->addSubformula( new Formula( dependentBool ) );
-        Formula* formulaNotB = new Formula( NOT );
-        formulaNotB->addSubformula( new Formula( conditionBool ) );
+        Formula* formulaNot = new Formula( NOT );
+        formulaNot->addSubformula( new Formula( conditionBool ) );
         Formula* formulaOrA = new Formula( OR );
-        formulaOrA->addSubformula( formulaNotA );
-        formulaOrA->addSubformula( formulaNotB );
+        formulaOrA->addSubformula( formulaNot );
         formulaOrA->addSubformula( constraintA );
         mFormulaRoot->addSubformula( formulaOrA );
         /*
-         * Add to root:  (or (not dependentBool) conditionBool (= auxRealVar $5))
+         * Add to root:  (or conditionBool (= auxRealVar $5))
          */
-        Formula* formulaNotC = new Formula( NOT );
-        formulaNotC->addSubformula( new Formula( dependentBool ) );
         Formula* formulaOrB = new Formula( OR );
-        formulaOrB->addSubformula( formulaNotC );
         formulaOrB->addSubformula( new Formula( conditionBool ) );
         formulaOrB->addSubformula( constraintB );
         mFormulaRoot->addSubformula( formulaOrB );
