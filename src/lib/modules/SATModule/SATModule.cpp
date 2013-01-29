@@ -1295,15 +1295,21 @@ FindSecond:
 
         // Activity based decision:
         while( next == var_Undef || value( next ) != l_Undef ||!decision[next] )
+        {
             if( order_heap.empty() )
             {
                 next = var_Undef;
                 break;
             }
             else
+            {
                 next = order_heap.removeMin();
-
-        return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
+            }
+        }
+        // simpler to understand if we do not allow nondeterminism
+        assert(!rnd_pol);
+        return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
+        //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }
 
     /**
