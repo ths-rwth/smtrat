@@ -1039,6 +1039,15 @@ FindSecond:
                                 for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
                                         deduction != (*backend)->deductions().end(); ++deduction )
                                 {
+                                    #ifdef SMTRAT_ENABLE_VALIDATION
+                                    if( validationSettings->logLemmata() )
+                                    {
+                                        Formula notLemma = Formula( NOT );
+                                        notLemma.addSubformula( new Formula( **deduction ) );
+                                        addAssumptionToCheck( notLemma, false, moduleName( (*backend)->type() ) + "_lemma" );
+                                        notLemma.pruneBack();
+                                    }
+                                    #endif
                                     #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                                     cout << "Learned a theory deduction from a backend module!" << endl;
                                     #endif
