@@ -66,7 +66,6 @@
 #ifdef GATHER_STATS
 #include "SATStatistics.h"
 #endif
-#define SAT_MODULE_THEORY_PROPAGATION
 
 namespace smtrat
 {
