@@ -40,6 +40,7 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
+#define SMTRAT_MEASURE_MODULE_TIMES
 
 using namespace std;
 
@@ -69,6 +70,15 @@ namespace smtrat
         mFirstSubformulaToPass( mpPassedFormula->end() ),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
         mSmallerMusesCheckCounter(0)
+#ifdef SMTRAT_MEASURE_MODULE_TIMES
+        , 
+            mTimerAddTotal(0),
+            mTimerCheckTotal(0),
+            mTimerRemoveTotal(0),
+            mTimerAddRunning(false),
+            mTimerCheckRunning(false),
+            mTimerRemoveRunning(false)
+#endif
     {}
 
     Module::~Module()
@@ -472,7 +482,10 @@ namespace smtrat
     Answer Module::runBackends()
     {
         passedFormulaCannotBeSolved();
-
+        #ifdef SMTRAT_MEASURE_MODULE_TIMES
+        stopCheckTimer();
+        #endif
+        
         if( mpManager == NULL ) return Unknown;
 
         /*
@@ -491,6 +504,9 @@ namespace smtrat
             bool assertionFailed = false;
             for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
             {
+                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                (*module)->startAddTimer();
+                #endif
                 for( Formula::const_iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
                 {
                     if( !(*module)->assertSubformula( subformula ) )
@@ -498,6 +514,9 @@ namespace smtrat
                         assertionFailed = true;
                     }
                 }
+                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                (*module)->stopAddTimer();
+                #endif
             }
             if( assertionFailed )
             {
@@ -517,7 +536,13 @@ namespace smtrat
             cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
             (*module)->print( cout, " ");
             #endif
+            #ifdef SMTRAT_MEASURE_MODULE_TIMES
+            (*module)->startCheckTimer();
+            #endif
             result = (*module)->isConsistent();
+            #ifdef SMTRAT_MEASURE_MODULE_TIMES
+            (*module)->stopCheckTimer();
+            #endif
             (*module)->receivedFormulaChecked();
             #ifdef SMTRAT_ENABLE_VALIDATION
             if( validationSettings->logTCalls() ) 
@@ -533,6 +558,9 @@ namespace smtrat
         #ifdef MODULE_VERBOSE
         cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : "Unknown")) << endl;
         #endif
+        #ifdef SMTRAT_MEASURE_MODULE_TIMES
+        startCheckTimer();
+        #endif 
         return result;
     }
 
@@ -544,6 +572,10 @@ namespace smtrat
     Formula::iterator Module::removeSubformulaFromPassedFormula( Formula::iterator _subformula )
     {
         assert( _subformula != mpPassedFormula->end() );
+        #ifdef SMTRAT_MEASURE_MODULE_TIMES
+        int timers = stopAllTimers();
+        #endif 
+        
         if( _subformula == mpPassedFormula->end() ) cout << "Error!" << endl;
         if( _subformula == mFirstSubformulaToPass )
         {
@@ -558,11 +590,21 @@ namespace smtrat
             mAllBackends = mpManager->getAllBackends( this );
             for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
             {
+                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                (*module)->startRemoveTimer();
+                #endif
                 (*module)->removeSubformula( _subformula );
+                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                (*module)->stopRemoveTimer();
+                #endif
             }
         }
         mPassedformulaOrigins.erase( *_subformula );
         Formula::iterator result = mpPassedFormula->erase( _subformula );
+        #ifdef SMTRAT_MEASURE_MODULE_TIMES
+        startTimers(timers);
+        #endif 
+        
         return result;
     }
 
@@ -574,7 +616,9 @@ namespace smtrat
     Formula::iterator Module::pruneSubformulaFromPassedFormula( Formula::iterator _subformula )
     {
         assert( _subformula != mpPassedFormula->end() );
-
+        #ifdef SMTRAT_MEASURE_MODULE_TIMES
+        int timers = stopAllTimers();
+        #endif 
         /*
          * Delete the sub formula from the passed formula.
          */
@@ -583,10 +627,20 @@ namespace smtrat
             mAllBackends = mpManager->getAllBackends( this );
             for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
             {
+                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                (*module)->startRemoveTimer();
+                #endif
                 (*module)->removeSubformula( _subformula );
+                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                (*module)->stopRemoveTimer();
+                #endif
+                
             }
         }
         mPassedformulaOrigins.erase( *_subformula );
+        #ifdef SMTRAT_MEASURE_MODULE_TIMES
+        startTimers(timers);
+        #endif 
         return mpPassedFormula->prune( _subformula );
     }
 
@@ -926,4 +980,85 @@ namespace smtrat
         }
         _out << " }" << endl;
     }
+    
+    void Module::startAddTimer() 
+    {
+        assert(!mTimerAddRunning);
+        mTimerAddRunning = true;
+        mTimerAddStarted = clock::now();
+    }
+    
+    void Module::stopAddTimer() 
+    {
+        assert(mTimerAddRunning);
+        mTimerAddTotal += std::chrono::duration_cast<milliseconds>(clock::now() - mTimerAddStarted);
+        mTimerAddRunning = false;
+    }
+    
+    void Module::startCheckTimer()
+    {
+        assert(!mTimerCheckRunning);
+        mTimerCheckRunning = true;
+        mTimerCheckStarted = clock::now();
+    }
+    
+    void Module::stopCheckTimer()
+    {
+        assert(mTimerCheckRunning);
+        mTimerCheckTotal += std::chrono::duration_cast<milliseconds>(clock::now() - mTimerCheckStarted);
+        mTimerCheckRunning = false;
+    }
+    
+    void Module::startRemoveTimer()
+    {
+        assert(!mTimerRemoveRunning);
+        mTimerRemoveRunning = true;
+        mTimerRemoveStarted = clock::now();
+        
+    }
+    
+    void Module::stopRemoveTimer()
+    {
+        assert(mTimerRemoveRunning);
+        mTimerRemoveTotal += std::chrono::duration_cast<milliseconds>(clock::now() - mTimerRemoveStarted);
+        mTimerRemoveRunning = false;
+    }
+    
+    void Module::startTimers(int timers)
+    {
+        if( (timers & 1) > 0 ) 
+        {
+            startAddTimer();
+        }
+        if( (timers & 2) > 0 )
+        {
+            startCheckTimer();
+        }
+        if( (timers & 4) > 0 )
+        {
+            startRemoveTimer();
+        }
+    }
+  
+    int Module::stopAllTimers()
+    {
+        int result = 0;
+        if( mTimerAddRunning )
+        {
+            stopAddTimer();
+            result |= 1;
+        }
+        if(mTimerCheckRunning)
+        {
+            stopCheckTimer();
+            result |= 2;
+        }
+        if( mTimerRemoveRunning )
+        {
+            stopRemoveTimer();
+            result |= 4;
+        }
+        return result;
+    }
+    
 }    // namespace smtrat
