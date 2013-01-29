@@ -51,6 +51,7 @@ namespace smtrat
      */
     class Manager
     {
+        friend class Module;
         private:
 
             /// the constraints so far passed to the primary backend
@@ -87,6 +88,7 @@ namespace smtrat
 
             Answer isConsistent()
             {
+                mpPrimaryBackend->startCheckTimer();
                 return mpPrimaryBackend->isConsistent();
             }
 

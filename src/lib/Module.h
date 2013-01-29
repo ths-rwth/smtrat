@@ -295,7 +295,7 @@ namespace smtrat
             bool mTimerAddRunning;
             bool mTimerCheckRunning;
             bool mTimerRemoveRunning;
-        protected:
+        public:
             void startCheckTimer();
             void stopCheckTimer();
             void startAddTimer();
