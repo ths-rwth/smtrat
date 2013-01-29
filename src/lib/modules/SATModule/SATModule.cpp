@@ -640,11 +640,12 @@ namespace smtrat
     bool SATModule::addClause( vec<Lit>& _clause, unsigned _type )
     {
         assert( _clause.size() != 0 );
+        assert( _type >= 0 && _type <= 2);
         add_tmp.clear();
         _clause.copyTo( add_tmp );
 
         #ifdef GATHER_STATS
-        if( _type > NORMAL_CLAUSE ) mStats->lemmaLearned();
+        if( _type != NORMAL_CLAUSE ) mStats->lemmaLearned();
         #endif
         // Check if clause is satisfied and remove false/duplicate literals:
         sort( add_tmp );
@@ -690,19 +691,19 @@ namespace smtrat
         else
         {
             CRef cr;
-            if( _type > NORMAL_CLAUSE )
+            if( _type != NORMAL_CLAUSE )
             {
                 cr = ca.alloc( add_tmp, _type );
                 learnts.push( cr );
             }
-            else // NORMAL CLAUSE
+            else 
             {
                 cr = ca.alloc( add_tmp, false );
                 clauses.push( cr );
             }
             if( _type == DEDUCTED_CLAUSE )
             {
-                arangeForWatches( cr );
+                arrangeForWatches( cr );
                 if( value( add_tmp[1] ) != l_Undef )
                 {
                     cancelUntil( level( add_tmp ) );
@@ -730,7 +731,7 @@ namespace smtrat
      *
      * @param _clause The clause in which the literals shall be reordered.
      */
-    void SATModule::arangeForWatches( CRef _clauseRef )
+    void SATModule::arrangeForWatches( CRef _clauseRef )
     {
         Clause& clause = ca[_clauseRef];
         assert( clause.size() > 1 );
@@ -1187,6 +1188,7 @@ FindSecond:
                 }
                 #endif
 
+                
                 analyze( confl, learnt_clause, backtrack_level );
 
                 #ifdef DEBUG_SATMODULE
