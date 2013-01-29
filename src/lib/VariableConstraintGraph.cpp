@@ -8,7 +8,10 @@
 
 #include "VariableConstraintGraph.h"
 
-VariableConstraintGraph::VariableConstraintGraph( )
+namespace smtrat 
 {
+    VariableConstraintGraph::VariableConstraintGraph( )
+    {
+    }
 }
 

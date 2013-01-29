@@ -40,7 +40,7 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
-#define SMTRAT_MEASURE_MODULE_TIMES
+//#define SMTRAT_MEASURE_MODULE_TIMES
 
 using namespace std;
 
@@ -48,10 +48,10 @@ namespace smtrat
 {
     vector<string> Module::mAssumptionToCheck = vector<string>();
     set<string> Module::mVariablesInAssumptionToCheck = set<string>();
-    
+
     #ifdef SMTRAT_ENABLE_VALIDATION
     ValidationSettings* Module::validationSettings = new ValidationSettings();
-    #endif 
+    #endif
 
     Module::Module( ModuleType type, const Formula* const _formula, Manager* const _tsManager ):
         mSolverState( Unknown ),
@@ -71,7 +71,7 @@ namespace smtrat
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
         mSmallerMusesCheckCounter(0)
 #ifdef SMTRAT_MEASURE_MODULE_TIMES
-        , 
+        ,
             mTimerAddTotal(0),
             mTimerCheckTotal(0),
             mTimerRemoveTotal(0),
@@ -428,7 +428,7 @@ namespace smtrat
         {
             assert( !infSubSet->empty() );
             #ifdef SMTRAT_ENABLE_VALIDATION
-            if( validationSettings->logInfSubsets() ) 
+            if( validationSettings->logInfSubsets() )
             {
                 addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) + "_infeasible_subset" );
             }
@@ -485,7 +485,7 @@ namespace smtrat
         #ifdef SMTRAT_MEASURE_MODULE_TIMES
         stopCheckTimer();
         #endif
-        
+
         if( mpManager == NULL ) return Unknown;
 
         /*
@@ -545,7 +545,7 @@ namespace smtrat
             #endif
             (*module)->receivedFormulaChecked();
             #ifdef SMTRAT_ENABLE_VALIDATION
-            if( validationSettings->logTCalls() ) 
+            if( validationSettings->logTCalls() )
             {
                 if( result != Unknown )
                 {
@@ -560,7 +560,7 @@ namespace smtrat
         #endif
         #ifdef SMTRAT_MEASURE_MODULE_TIMES
         startCheckTimer();
-        #endif 
+        #endif
         return result;
     }
 
@@ -574,8 +574,8 @@ namespace smtrat
         assert( _subformula != mpPassedFormula->end() );
         #ifdef SMTRAT_MEASURE_MODULE_TIMES
         int timers = stopAllTimers();
-        #endif 
-        
+        #endif
+
         if( _subformula == mpPassedFormula->end() ) cout << "Error!" << endl;
         if( _subformula == mFirstSubformulaToPass )
         {
@@ -603,8 +603,8 @@ namespace smtrat
         Formula::iterator result = mpPassedFormula->erase( _subformula );
         #ifdef SMTRAT_MEASURE_MODULE_TIMES
         startTimers(timers);
-        #endif 
-        
+        #endif
+
         return result;
     }
 
@@ -618,7 +618,7 @@ namespace smtrat
         assert( _subformula != mpPassedFormula->end() );
         #ifdef SMTRAT_MEASURE_MODULE_TIMES
         int timers = stopAllTimers();
-        #endif 
+        #endif
         /*
          * Delete the sub formula from the passed formula.
          */
@@ -634,13 +634,13 @@ namespace smtrat
                 #ifdef SMTRAT_MEASURE_MODULE_TIMES
                 (*module)->stopRemoveTimer();
                 #endif
-                
+
             }
         }
         mPassedformulaOrigins.erase( *_subformula );
         #ifdef SMTRAT_MEASURE_MODULE_TIMES
         startTimers(timers);
-        #endif 
+        #endif
         return mpPassedFormula->prune( _subformula );
     }
 
@@ -657,7 +657,7 @@ namespace smtrat
             {
                 addDeduction( (*module)->rDeductions().back() );
                 #ifdef SMTRAT_ENABLE_VALIDATION
-                if( validationSettings->logLemmata() ) 
+                if( validationSettings->logLemmata() )
                 {
                     Formula notLemma = Formula( NOT );
                     notLemma.addSubformula( new Formula( *(*module)->rDeductions().back() ) );
@@ -980,53 +980,53 @@ namespace smtrat
         }
         _out << " }" << endl;
     }
-    
-    void Module::startAddTimer() 
+
+    void Module::startAddTimer()
     {
         assert(!mTimerAddRunning);
         mTimerAddRunning = true;
         mTimerAddStarted = clock::now();
     }
-    
-    void Module::stopAddTimer() 
+
+    void Module::stopAddTimer()
     {
         assert(mTimerAddRunning);
         mTimerAddTotal += std::chrono::duration_cast<milliseconds>(clock::now() - mTimerAddStarted);
         mTimerAddRunning = false;
     }
-    
+
     void Module::startCheckTimer()
     {
         assert(!mTimerCheckRunning);
         mTimerCheckRunning = true;
         mTimerCheckStarted = clock::now();
     }
-    
+
     void Module::stopCheckTimer()
     {
         assert(mTimerCheckRunning);
         mTimerCheckTotal += std::chrono::duration_cast<milliseconds>(clock::now() - mTimerCheckStarted);
         mTimerCheckRunning = false;
     }
-    
+
     void Module::startRemoveTimer()
     {
         assert(!mTimerRemoveRunning);
         mTimerRemoveRunning = true;
         mTimerRemoveStarted = clock::now();
-        
+
     }
-    
+
     void Module::stopRemoveTimer()
     {
         assert(mTimerRemoveRunning);
         mTimerRemoveTotal += std::chrono::duration_cast<milliseconds>(clock::now() - mTimerRemoveStarted);
         mTimerRemoveRunning = false;
     }
-    
+
     void Module::startTimers(int timers)
     {
-        if( (timers & 1) > 0 ) 
+        if( (timers & 1) > 0 )
         {
             startAddTimer();
         }
@@ -1039,7 +1039,7 @@ namespace smtrat
             startRemoveTimer();
         }
     }
-  
+
     int Module::stopAllTimers()
     {
         int result = 0;
@@ -1060,20 +1060,20 @@ namespace smtrat
         }
         return result;
     }
-    
-    unsigned Module::getAddTimerMS() const 
+
+    unsigned Module::getAddTimerMS() const
     {
         return mTimerAddTotal.count();
     }
-    
+
     unsigned Module::getCheckTimerMS() const
     {
         return mTimerCheckTotal.count();
     }
-    
+
     unsigned Module::getRemoveTimerMS() const
     {
         return mTimerRemoveTotal.count();
     }
-    
+
 }    // namespace smtrat
