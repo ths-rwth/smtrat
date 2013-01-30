@@ -847,12 +847,19 @@ namespace smtrat
 //        }
     }
 
-    void Constraint::updateRelation()
+    /**
+     *
+     */
+    Constraint* Constraint::updateRelation()
     {
         if( (mIsNeverNegative && mRelation == CR_LEQ) || (mIsNeverPositive && mRelation == CR_GEQ) )
         {
             mRelation = CR_EQ;
+            Constraint* constraint = new Constraint( *pLhs, CR_EQ, mVariables, mID );
+            constraint->mVarInfoMap = mVarInfoMap;
+            return constraint;
         }
+        return NULL;
     }
 
     /**

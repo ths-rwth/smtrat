@@ -37,6 +37,168 @@ using namespace GiNaC;
 namespace smtrat
 {
     /**
+     *
+     * @param _capacity
+     */
+    ConstraintPool::ConstraintPool( unsigned _capacity ):
+        mIdAllocator( 1 ),
+        mAuxiliaryBooleanCounter( 0 ),
+        mAuxiliaryRealCounter( 0 ),
+        mAuxiliaryBooleanNamePrefix( "h_b_" ),
+        mAuxiliaryRealNamePrefix( "h_r_" ),
+        mAllRealVariables(),
+        mAllBooleanVariables(),
+        mAllConstraints(),
+        mAllVariableFreeConstraints()
+    {
+        mAllConstraints.reserve( _capacity );
+        mIdAllocator = 1;
+    }
+
+    /**
+     *
+     */
+    ConstraintPool::~ConstraintPool()
+    {
+        while( !mAllConstraints.empty() )
+        {
+            const Constraint* pCons = *mAllConstraints.begin();
+            mAllConstraints.erase( mAllConstraints.begin() );
+            delete pCons;
+        }
+        while( !mAllVariableFreeConstraints.empty() )
+        {
+            const Constraint* pCons = *mAllVariableFreeConstraints.begin();
+            mAllVariableFreeConstraints.erase( mAllVariableFreeConstraints.begin() );
+            delete pCons;
+        }
+    }
+
+    /**
+     *
+     */
+    void ConstraintPool::clear()
+    {
+        mAllRealVariables.clear();
+        mAllBooleanVariables.clear();
+        mAllConstraints.clear();
+        mAllVariableFreeConstraints.clear();
+        mIdAllocator = 1;
+    }
+
+    /**
+     *
+     * @return
+     */
+    unsigned ConstraintPool::maxLenghtOfVarName() const
+    {
+        unsigned result = 0;
+        for( symtab::const_iterator var = mAllRealVariables.begin(); var != mAllRealVariables.end(); ++var )
+        {
+            if( var->first.size() > result ) result = var->first.size();
+        }
+        for( set<string>::const_iterator var = mAllBooleanVariables.begin(); var != mAllBooleanVariables.end(); ++var )
+        {
+            if( var->size() > result ) result = var->size();
+        }
+        return result;
+    }
+
+    /**
+     *
+     * @param _lhs
+     * @param _rel
+     * @param _variables
+     * @return
+     */
+    const Constraint* ConstraintPool::newConstraint( const ex& _lhs, const Constraint_Relation _rel, const symtab& _variables )
+    {
+        assert( hasNoOtherVariables( _lhs ) );
+        return addConstraintToPool( createNormalizedConstraint( _lhs, _rel, _variables ) );
+    }
+
+    /**
+     *
+     * @param _lhs
+     * @param _rhs
+     * @param _rel
+     * @param _variables
+     * @return
+     */
+    const Constraint* ConstraintPool::newConstraint( const ex& _lhs, const ex& _rhs, const Constraint_Relation _rel, const symtab& _variables )
+    {
+        assert( hasNoOtherVariables( _lhs ) && hasNoOtherVariables( _rhs ) );
+        return addConstraintToPool( createNormalizedConstraint( _lhs-_rhs, _rel, _variables ) );
+    }
+
+    /**
+     *
+     * @param _name
+     * @return
+     */
+    ex ConstraintPool::newRealVariable( const string& _name )
+    {
+        assert( mAllRealVariables.find( _name ) == mAllRealVariables.end() );
+        symtab emptySymtab;
+        parser reader( emptySymtab );
+        ex var = reader( _name );
+        return mAllRealVariables.insert( pair<const string, ex>( _name, var ) ).first->second;
+    }
+
+    /**
+     *
+     * @return
+     */
+    pair<string,ex> ConstraintPool::newAuxiliaryRealVariable()
+    {
+        stringstream out;
+        out << mAuxiliaryRealNamePrefix << mAuxiliaryRealCounter++;
+        assert( mAllRealVariables.find( out.str() ) == mAllRealVariables.end() );
+        symtab emptySymtab;
+        parser reader( emptySymtab );
+        ex var = reader( out.str() );
+        return *mAllRealVariables.insert( pair<const string, ex>( out.str(), var ) ).first;
+    }
+
+    /**
+     *
+     * @param _name
+     */
+    void ConstraintPool::newBooleanVariable( const string& _name )
+    {
+        assert( mAllBooleanVariables.find( _name ) == mAllBooleanVariables.end() );
+        mAllBooleanVariables.insert( _name );
+    }
+
+    /**
+     *
+     * @return
+     */
+    string ConstraintPool::newAuxiliaryBooleanVariable()
+    {
+        stringstream out;
+        out << mAuxiliaryBooleanNamePrefix << mAuxiliaryBooleanCounter++;
+        mAllBooleanVariables.insert( out.str() );
+        return out.str();
+    }
+
+    /**
+     *
+     * @param _out
+     */
+    void ConstraintPool::print( ostream& _out ) const
+    {
+        _out << "---------------------------------------------------" << endl;
+        _out << "Constraint pool:" << endl;
+        for( fcs_const_iterator constraint = mAllConstraints.begin();
+                constraint != mAllConstraints.end(); ++constraint )
+        {
+            _out << "    " << **constraint << endl;
+        }
+        _out << "---------------------------------------------------" << endl;
+    }
+
+    /**
      * Constructs a new constraint using its string representation.
      *
      * @param _stringrep    String representation of the constraint.
@@ -180,45 +342,7 @@ namespace smtrat
          * Collect the new variables in the constraint:
          */
         mAllRealVariables.insert( reader.get_syms().begin(), reader.get_syms().end() );
-        Constraint* constraint;
-        if( relation == CR_GREATER )
-        {
-            constraint = new Constraint( -lhs, -rhs, CR_LESS, reader.get_syms(), mIdAllocator );
-        }
-        else if( relation == CR_GEQ )
-        {
-            constraint = new Constraint( -lhs, -rhs, CR_LEQ, reader.get_syms(), mIdAllocator );
-        }
-        else
-        {
-            constraint = new Constraint( lhs, rhs, relation, reader.get_syms(), mIdAllocator );
-        }
-        if( constraint->isConsistent() == 2 )
-        {
-            std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
-            if( !iterBoolPair.second )
-            {
-                delete constraint;
-            }
-            else
-            {
-                ++mIdAllocator;
-                constraint->collectProperties();
-                constraint->updateRelation();
-            }
-            return *iterBoolPair.first;
-        }
-        else
-        {
-            std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllVariableFreeConstraints.insert( constraint );
-            if( !iterBoolPair.second )
-            {
-                ++mIdAllocator;
-                constraint->collectProperties();
-                delete constraint;
-            }
-            return *iterBoolPair.first;
-        }
+        return addConstraintToPool( createNormalizedConstraint( lhs-rhs, relation, reader.get_syms() ) );
     }
 
     /**
@@ -327,7 +451,10 @@ namespace smtrat
         }
     }
 
-
+    /**
+     *
+     * @return
+     */
     int ConstraintPool::maxDegree() const
     {
         int result = 0;
@@ -340,6 +467,10 @@ namespace smtrat
         return result;
     }
 
+    /**
+     *
+     * @return
+     */
     unsigned ConstraintPool::nrNonLinearConstraints() const
     {
         unsigned nonlinear = 0;
@@ -350,6 +481,95 @@ namespace smtrat
         }
         return nonlinear;
     }
+
+    /**
+     *
+     * @param _expression
+     * @return
+     */
+    bool ConstraintPool::hasNoOtherVariables( const ex& _expression ) const
+    {
+        lst substitutionList = lst();
+        for( symtab::const_iterator var = mAllRealVariables.begin(); var != mAllRealVariables.end(); ++var )
+        {
+            substitutionList.append( ex_to<symbol>( var->second ) == 0 );
+        }
+        return _expression.subs( substitutionList ).info( info_flags::rational );
+    }
+
+    /**
+     *
+     * @param _lhs
+     * @param _rel
+     * @param _variables
+     * @return
+     */
+    Constraint* ConstraintPool::createNormalizedConstraint( const ex& _lhs, const Constraint_Relation _rel, const symtab& _variables )
+    {
+        if( _rel == CR_GREATER )
+        {
+            return new Constraint( -_lhs, CR_LESS, _variables, mIdAllocator );
+        }
+        else if( _rel == CR_GEQ )
+        {
+            return new Constraint( -_lhs, CR_LEQ, _variables, mIdAllocator );
+        }
+        else
+        {
+            return new Constraint( _lhs, _rel, _variables, mIdAllocator );
+        }
+    }
+
+    /**
+     *
+     * @param _constraint
+     * @return
+     */
+    const Constraint* ConstraintPool::addConstraintToPool( Constraint* _constraint )
+    {
+        if( _constraint->isConsistent() == 2 )
+        {
+            pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( _constraint );
+            if( !iterBoolPair.second )
+            {
+                delete _constraint;
+            }
+            else
+            {
+                _constraint->collectProperties();
+                Constraint* constraint = _constraint->updateRelation();
+                if( constraint != NULL )
+                {
+                    pair<fastConstraintSet::iterator, bool> iterBoolPairB = mAllConstraints.insert( constraint );
+                    if( !iterBoolPair.second )
+                    {
+                        _constraint->rId() = (*iterBoolPairB.first)->id();
+                    }
+                    else
+                    {
+                        ++mIdAllocator;
+                    }
+                }
+                else
+                {
+                    ++mIdAllocator;
+                }
+            }
+            return *iterBoolPair.first;
+        }
+        else
+        {
+            pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllVariableFreeConstraints.insert( _constraint );
+            if( !iterBoolPair.second )
+            {
+                ++mIdAllocator;
+                _constraint->collectProperties();
+                delete _constraint;
+            }
+            return *iterBoolPair.first;
+        }
+    }
+
 
 }    // namespace smtrat
 

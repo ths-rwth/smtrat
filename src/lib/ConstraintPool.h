@@ -94,49 +94,15 @@ namespace smtrat
             // Methods:
 
             static std::string prefixToInfix( const std::string& );
-
-            bool hasNoOtherVariables( const GiNaC::ex& _expression ) const
-            {
-                GiNaC::lst substitutionList = GiNaC::lst();
-                for( GiNaC::symtab::const_iterator var = mAllRealVariables.begin(); var != mAllRealVariables.end(); ++var )
-                {
-                    substitutionList.append( GiNaC::ex_to<GiNaC::symbol>( var->second ) == 0 );
-                }
-                return _expression.subs( substitutionList ).info( GiNaC::info_flags::rational );
-            }
+            bool hasNoOtherVariables( const GiNaC::ex& ) const;
+            Constraint* createNormalizedConstraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& );
+            const Constraint* addConstraintToPool( Constraint* );
 
         public:
 
-            ConstraintPool( unsigned _capacity = 10000 ):
-                mIdAllocator( 1 ),
-                mAuxiliaryBooleanCounter( 0 ),
-                mAuxiliaryRealCounter( 0 ),
-                mAuxiliaryBooleanNamePrefix( "h_b_" ),
-                mAuxiliaryRealNamePrefix( "h_r_" ),
-                mAllRealVariables(),
-                mAllBooleanVariables(),
-                mAllConstraints(),
-                mAllVariableFreeConstraints()
-            {
-                mAllConstraints.reserve( _capacity );
-                mIdAllocator = 1;
-            }
+            ConstraintPool( unsigned = 10000 );
 
-            virtual ~ConstraintPool()
-            {
-                while( !mAllConstraints.empty() )
-                {
-                    const Constraint* pCons = *mAllConstraints.begin();
-                    mAllConstraints.erase( mAllConstraints.begin() );
-                    delete pCons;
-                }
-                while( !mAllVariableFreeConstraints.empty() )
-                {
-                    const Constraint* pCons = *mAllVariableFreeConstraints.begin();
-                    mAllVariableFreeConstraints.erase( mAllVariableFreeConstraints.begin() );
-                    delete pCons;
-                }
-            }
+            virtual ~ConstraintPool();
 
             fcs_const_iterator begin() const
             {
@@ -153,15 +119,6 @@ namespace smtrat
                 return mAllConstraints.size();
             }
 
-            void clear()
-            {
-                mAllRealVariables.clear();
-                mAllBooleanVariables.clear();
-                mAllConstraints.clear();
-                mAllVariableFreeConstraints.clear();
-                mIdAllocator = 1;
-            }
-
             const GiNaC::symtab& realVariables() const
             {
                 return mAllRealVariables;
@@ -172,156 +129,16 @@ namespace smtrat
                 return mAllBooleanVariables;
             }
 
-            unsigned maxLenghtOfVarName() const
-            {
-                unsigned result = 0;
-                for( GiNaC::symtab::const_iterator var = mAllRealVariables.begin(); var != mAllRealVariables.end(); ++var )
-                {
-                    if( var->first.size() > result ) result = var->first.size();
-                }
-                for( std::set<std::string>::const_iterator var = mAllBooleanVariables.begin(); var != mAllBooleanVariables.end(); ++var )
-                {
-                    if( var->size() > result ) result = var->size();
-                }
-                return result;
-            }
-
-            const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
-            {
-                assert( hasNoOtherVariables( _lhs ) );
-                smtrat::Constraint* constraint;
-                if( _rel == CR_GREATER )
-                {
-                    constraint = new Constraint( -_lhs, CR_LESS, _variables, mIdAllocator );
-                }
-                else if( _rel == CR_GEQ )
-                {
-                    constraint = new Constraint( -_lhs, CR_LEQ, _variables, mIdAllocator );
-                }
-                else
-                {
-                    constraint = new Constraint( _lhs, _rel, _variables, mIdAllocator );
-                }
-                if( constraint->isConsistent() == 2 )
-                {
-                    std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
-                    if( !iterBoolPair.second )
-                    {
-                        delete constraint;
-                    }
-                    else
-                    {
-                        ++mIdAllocator;
-                        constraint->collectProperties();
-                        constraint->updateRelation();
-                    }
-                    return *iterBoolPair.first;
-                }
-                else
-                {
-                    std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllVariableFreeConstraints.insert( constraint );
-                    if( !iterBoolPair.second )
-                    {
-                        ++mIdAllocator;
-                        constraint->collectProperties();
-                        delete constraint;
-                    }
-                    return *iterBoolPair.first;
-                }
-            }
-
-            const Constraint* newConstraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
-            {
-                assert( hasNoOtherVariables( _lhs ) && hasNoOtherVariables( _rhs ) );
-                smtrat::Constraint* constraint;
-                if( _rel == CR_GREATER )
-                {
-                    constraint = new Constraint( -_lhs, -_rhs, CR_LESS, _variables, mIdAllocator );
-                }
-                else if( _rel == CR_GEQ )
-                {
-                    constraint = new Constraint( -_lhs, -_rhs, CR_LEQ, _variables, mIdAllocator );
-                }
-                else
-                {
-                    constraint = new Constraint( _lhs, _rhs, _rel, _variables, mIdAllocator );
-                }
-                if( constraint->isConsistent() == 2 )
-                {
-                    std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( constraint );
-                    if( !iterBoolPair.second )
-                    {
-                        delete constraint;
-                    }
-                    else
-                    {
-                        ++mIdAllocator;
-                        constraint->collectProperties();
-                        constraint->updateRelation();
-                    }
-                    return *iterBoolPair.first;
-                }
-                else
-                {
-                    std::pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllVariableFreeConstraints.insert( constraint );
-                    if( !iterBoolPair.second )
-                    {
-                        ++mIdAllocator;
-                        constraint->collectProperties();
-                        delete constraint;
-                    }
-                    return *iterBoolPair.first;
-                }
-            }
-
-            const Constraint* newConstraint( const std::string& _stringrep, bool = true, bool = true );
-
-            GiNaC::ex newRealVariable( const std::string& _name )
-            {
-                assert( mAllRealVariables.find( _name ) == mAllRealVariables.end() );
-                GiNaC::symtab emptySymtab;
-                GiNaC::parser reader( emptySymtab );
-                GiNaC::ex var = reader( _name );
-                return mAllRealVariables.insert( std::pair<const std::string, GiNaC::ex>( _name, var ) ).first->second;
-            }
-
-            std::pair<std::string,GiNaC::ex> newAuxiliaryRealVariable()
-            {
-                std::stringstream out;
-                out << mAuxiliaryRealNamePrefix << mAuxiliaryRealCounter++;
-                assert( mAllRealVariables.find( out.str() ) == mAllRealVariables.end() );
-                GiNaC::symtab emptySymtab;
-                GiNaC::parser reader( emptySymtab );
-                GiNaC::ex var = reader( out.str() );
-                return *mAllRealVariables.insert( std::pair<const std::string, GiNaC::ex>( out.str(), var ) ).first;
-            }
-
-            void newBooleanVariable( const std::string& _name )
-            {
-                assert( mAllBooleanVariables.find( _name ) == mAllBooleanVariables.end() );
-                mAllBooleanVariables.insert( _name );
-            }
-
-            std::string newAuxiliaryBooleanVariable()
-            {
-                std::stringstream out;
-                out << mAuxiliaryBooleanNamePrefix << mAuxiliaryBooleanCounter++;
-                mAllBooleanVariables.insert( out.str() );
-                return out.str();
-            }
-
-            void print( std::ostream& _out = std::cout ) const
-            {
-                _out << "---------------------------------------------------" << std::endl;
-                _out << "Constraint pool:" << std::endl;
-                for( fcs_const_iterator constraint = mAllConstraints.begin();
-                     constraint != mAllConstraints.end(); ++constraint )
-                {
-                    _out << "    " << **constraint << std::endl;
-                }
-                _out << "---------------------------------------------------" << std::endl;
-            }
-
+            void clear();
+            unsigned maxLenghtOfVarName() const;
+            const Constraint* newConstraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& );
+            const Constraint* newConstraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& );
+            const Constraint* newConstraint( const std::string&, bool = true, bool = true );
+            GiNaC::ex newRealVariable( const std::string& );
+            std::pair<std::string,GiNaC::ex> newAuxiliaryRealVariable();
+            void newBooleanVariable( const std::string& );
+            std::string newAuxiliaryBooleanVariable();
+            void print( std::ostream& = std::cout ) const;
             int maxDegree() const;
             unsigned nrNonLinearConstraints() const;
     };

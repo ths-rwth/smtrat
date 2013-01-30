@@ -169,6 +169,11 @@ namespace smtrat
                 return mID;
             }
 
+            unsigned& rId()
+            {
+                return mID;
+            }
+
             unsigned secondHash() const
             {
                 return mSecondHash;
@@ -230,7 +235,7 @@ namespace smtrat
             unsigned maxDegree() const;
             std::map<const std::string, GiNaC::numeric, strCmp> linearAndConstantCoefficients() const;
             void collectProperties();
-            void updateRelation();
+            Constraint* updateRelation();
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
 
             // Data access methods (read and write).
