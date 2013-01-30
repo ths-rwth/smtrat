@@ -59,17 +59,20 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
     {
         Module::assertSubformula( _subformula );
         addReceivedSubformulaToPassedFormula(_subformula);
+//        std::cout << "Type" <<  mpPassedFormula->last()->getType() << std::endl;
+        scheduleSubformalaForAddingToPassedFormula(mpPassedFormula->last());
         std::list<ConstraintNode*> readd = mMatchingGraph.addConstraint( (*_subformula)->pConstraint(), _subformula, mpPassedFormula->last());
         while(!readd.empty())
         {
             addReceivedSubformulaToPassedFormula(readd.front()->posInReceivedFormula);
+            scheduleSubformalaForAddingToPassedFormula(mpPassedFormula->last());
             std::list<ConstraintNode*> addAsWell = mMatchingGraph.updateConstraintNode(readd.front(), mpPassedFormula->last());
             readd.pop_front();
             readd.insert(readd.end(), addAsWell.begin(), addAsWell.end() );
         }
         std::list<ConstraintNode*>::iterator node = mMatchingGraph.last();
         mConstraintPositions.insert(std::pair<Formula::const_iterator, std::list<ConstraintNode*>::iterator>(_subformula, node));
-        std::cout << "formula asserted" << std::endl;
+        
         return true;
     }
 
@@ -78,33 +81,32 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
      */
     Answer VRWModule::isConsistent()
     {
-        std::cout << "Consistency check:" << std::endl;
-        mMatchingGraph.print();
         std::list<Formula::iterator> notNecessary = mMatchingGraph.findIrrelevantConstraints(mpPassedFormula->end());
         for(std::list<Formula::iterator>::const_iterator it = notNecessary.begin(); it != notNecessary.end(); ++it)
         {
             assert(*it != mpPassedFormula->end());
-            std::cout << "Remove " << (**it)->pConstraint()->lhs() << std::endl;
-            printPassedFormula();
             scheduleSubformulaForRemovalFromPassedFormula(*it);
         }
-        std::cout << "Updated graph" << std::endl;
-        mMatchingGraph.print();
-
-        std::cout << "Remove scheduled" << std::endl;
-        removeScheduled();
-        std::cout << "Run backends" << std::endl;
+        
         Answer ans;
-        if(mpPassedFormula->size() > 0) {
-            ans = runBackends();
-            if( ans == False )
-            {
-                getInfeasibleSubsets();
-            }
+        if(handleScheduled())
+        {
+            ans = False;        
         }
         else
         {
-            ans = True;
+            if(mpPassedFormula->size() > 0) {
+                ans = runBackends();
+            }
+            else
+            {
+                ans = True;
+            }
+        }
+            
+        if( ans == False )
+        {
+            getInfeasibleSubsets();
         }
         mSolverState = ans;
         return ans;
@@ -118,6 +120,7 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
     void VRWModule::removeSubformula( Formula::const_iterator _subformula )
     {
         assert(mConstraintPositions.find(_subformula) != mConstraintPositions.end());
+        
         mMatchingGraph.removeConstraint( mConstraintPositions[_subformula], mpPassedFormula->end() );
         mConstraintPositions.erase(_subformula);
         Module::removeSubformula( _subformula );

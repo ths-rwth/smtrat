@@ -128,6 +128,7 @@ namespace smtrat
         {
             ++mFirstUncheckedReceivedSubformula;
         }
+        
 
         /*
          * Check if the constraint to delete is an original constraint of constraints in the vector
@@ -159,6 +160,7 @@ namespace smtrat
 
             if( formulaOrigins.empty() )
             {
+                mScheduledForRemoval.erase(passedSubformula);
                 passedSubformula = removeSubformulaFromPassedFormula( passedSubformula );
             }
             else
@@ -192,6 +194,7 @@ namespace smtrat
             }
         }
         if( mInfeasibleSubsets.empty() ) mSolverState = Unknown;
+        
     }
 
     /**
@@ -573,31 +576,77 @@ namespace smtrat
         mScheduledForRemoval.insert(_subformula);
     }
     
-    void Module::removeScheduled()
+    void Module::scheduleSubformalaForAddingToPassedFormula( Formula::iterator _subformula )
+    {
+        mScheduledForAdding.insert(_subformula);
+    }
+    
+    bool operator<(const Formula::iterator& lhs, const Formula::iterator& rhs)
+    {
+        return *lhs < *rhs;
+    }
+    
+    bool Module::handleScheduled()
     {
         // We first want to remove everything which is scheduled for removal. 
         // As some removal might not have been asserted on our backend, we have to prevent the backend call in these cases.
         // For now, we simply run over the not yet asserted constraints and fix 
-        if( !mScheduledForRemoval.empty() )
-        {
-            for( Formula::iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end();  )
-            {
-                std::set<Formula::iterator>::iterator positionInRemovalQueue = mScheduledForRemoval.find(subformula);
-                if( positionInRemovalQueue != mScheduledForRemoval.end() )
-                {
-                    subformula = removeSubformulaFromPassedFormula(subformula, false);
-                    mScheduledForRemoval.erase(positionInRemovalQueue);
-                }
-                ++subformula;
-                
-            }    
+        std::set<Formula::iterator, dereference_compare> removeLocal;
+        
+        std::set_intersection(mScheduledForAdding.begin(),mScheduledForAdding.end(), mScheduledForRemoval.begin(), mScheduledForRemoval.end(), 
+            std::inserter(removeLocal, removeLocal.end()));
+        std::set<Formula::iterator, dereference_compare> removeFromBackends;
+        std::set_difference(mScheduledForRemoval.begin(), mScheduledForRemoval.end(), removeLocal.begin(), removeLocal.end(), std::inserter(removeFromBackends, removeFromBackends.end()) );
+        std::set<Formula::iterator, dereference_compare> addToBackends;
+        std::set_difference(mScheduledForAdding.begin(),mScheduledForAdding.end(), removeLocal.begin(), removeLocal.end(), std::inserter(addToBackends, addToBackends.end()));
 
-            for( std::set<Formula::iterator>::const_iterator it = mScheduledForRemoval.begin(); it != mScheduledForRemoval.end(); ++it )
-            {
-                removeSubformulaFromPassedFormula(*it, true);
-            }
-            mScheduledForRemoval.clear();
+        
+        mScheduledForAdding.clear();
+        mScheduledForRemoval.clear();
+
+        
+        for( std::set<Formula::iterator>::const_iterator it = removeLocal.begin(); it != removeLocal.end(); ++it )
+        {
+            removeSubformulaFromPassedFormula(*it, false);
         }
+
+
+        for( std::set<Formula::iterator>::const_iterator it = removeFromBackends.begin(); it != removeFromBackends.end(); ++it )
+        {
+            removeSubformulaFromPassedFormula(*it, true);
+        }
+        
+        /*
+         * Get the backends to be considered from the manager.
+         */
+        mUsedBackends = mpManager->getBackends( mpPassedFormula, this );
+        mpPassedFormula->getPropositions();
+        
+        bool inconsistencyWhileAsserting = false;
+        for( std::set<Formula::iterator>::const_iterator it = addToBackends.begin(); it != addToBackends.end(); ++it )
+        {
+            for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+            {
+                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                stopCheckTimer();
+                (*module)->startAddTimer();
+                #endif
+                if( !(*module)->assertSubformula( *it ) )
+                {
+                    inconsistencyWhileAsserting = true;
+                }
+                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                (*module)->stopAddTimer();
+                startCheckTimer();
+                #endif
+            }
+        }
+        
+        
+        mFirstSubformulaToPass = mpPassedFormula->end();
+
+        return inconsistencyWhileAsserting;
+        
     }
     
     /**
