@@ -36,14 +36,6 @@
 
 namespace smtrat
 {
-
-    struct dereference_compare {
-        template <class I>
-        bool operator()(const I& a, const I& b) {
-            return *a < *b;
-        }
-    };
-    
     class VRWModule : public Module
     {
         protected:

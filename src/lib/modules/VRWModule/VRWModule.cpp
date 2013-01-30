@@ -86,11 +86,13 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
             assert(*it != mpPassedFormula->end());
             std::cout << "Remove " << (**it)->pConstraint()->lhs() << std::endl;
             printPassedFormula();
-            removeSubformulaFromPassedFormula(*it);
+            scheduleSubformulaForRemovalFromPassedFormula(*it);
         }
         std::cout << "Updated graph" << std::endl;
         mMatchingGraph.print();
 
+        std::cout << "Remove scheduled" << std::endl;
+        removeScheduled();
         std::cout << "Run backends" << std::endl;
         Answer ans;
         if(mpPassedFormula->size() > 0) {
