@@ -19,8 +19,12 @@ namespace smtrat
     struct ConstraintNode;
     struct VariableNode
     {
+        VariableNode();
+        VariableNode(const GiNaC::ex& var) : variable(var) {}; 
+        
         // Constraintid -> ConstraintNode
         std::map<unsigned,ConstraintNode*> adjacencyList;
+        GiNaC::ex variable;
     };
 
     struct ConstraintNode 
@@ -34,12 +38,14 @@ namespace smtrat
     {
     protected:
         /// identifier -> node
-        std::map<std::string,VariableNode*> variableNodes;
-        std::list<ConstraintNode*> constraintNodes;
+        std::map<std::string,VariableNode*> mVariableNodes;
+        std::list<ConstraintNode*> mConstraintNodes;
     public:
         VariableConstraintGraph( );
         std::list<ConstraintNode*>::iterator addConstraint(const Constraint* constraint, Formula::const_iterator pos);
         bool removeConstraint(std::list<ConstraintNode*>::iterator);
+        
+        std::list<Formula::const_iterator> findIrrelevantConstraints(Formula::const_iterator end);
         
         void print(); 
         virtual ~VariableConstraintGraph( ) {}

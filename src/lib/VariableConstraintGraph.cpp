@@ -8,6 +8,7 @@
 
 
 #include "VariableConstraintGraph.h"
+#include "Answer.h"
 
 namespace smtrat 
 {
@@ -17,26 +18,25 @@ namespace smtrat
     
     std::list<ConstraintNode*>::iterator VariableConstraintGraph::addConstraint(const Constraint* constraint, Formula::const_iterator pos) 
     {
-        constraintNodes.push_back(new ConstraintNode());
-        (constraintNodes.back())->constraint = constraint;
-        (constraintNodes.back())->posInPassedFormula = pos;
+        mConstraintNodes.push_back(new ConstraintNode());
+        (mConstraintNodes.back())->constraint = constraint;
+        (mConstraintNodes.back())->posInPassedFormula = pos;
         // We assume that the variables in the symtab are exact.
         for( GiNaC::symtab::const_iterator itVar = constraint->variables().begin(); itVar != constraint->variables().end(); ++itVar )
         {
             // Search for the variable node corresponding to the current variable.
-            std::map<std::string, VariableNode*>::const_iterator itVarNode = variableNodes.find(itVar->first);
+            std::map<std::string, VariableNode*>::const_iterator itVarNode = mVariableNodes.find(itVar->first);
             // Check whether such a node already exists. If not, create one.
-            if(itVarNode == variableNodes.end()) 
+            if(itVarNode == mVariableNodes.end()) 
             {
-                itVarNode = variableNodes.insert(std::pair<std::string, VariableNode*>(itVar->first, new VariableNode())).first;
+                itVarNode = mVariableNodes.insert(std::pair<std::string, VariableNode*>(itVar->first, new VariableNode(itVar->second))).first;
             }
             // Add the current constraint to the adjacencylist.
-            itVarNode->second->adjacencyList.insert(std::pair<unsigned, ConstraintNode*>(constraint->id(), constraintNodes.back()));
+            itVarNode->second->adjacencyList.insert(std::pair<unsigned, ConstraintNode*>(constraint->id(), mConstraintNodes.back()));
             // Add the variable to this constraints adjacencylist
-            constraintNodes.back()->adjacencyList.push_back(itVarNode->second);
+            mConstraintNodes.back()->adjacencyList.push_back(itVarNode->second);
         }
-        
-        return --constraintNodes.end();
+        return --mConstraintNodes.end();
         
     }
     
@@ -52,14 +52,38 @@ namespace smtrat
         // Remove the constraintnode
         delete *constraintNode;
         // Remove the entry
-        constraintNodes.erase(constraintNode);
+        mConstraintNodes.erase(constraintNode);
         return true;
+    }
+    
+    std::list<Formula::const_iterator> VariableConstraintGraph::findIrrelevantConstraints(Formula::const_iterator end)
+    {
+        std::list<Formula::const_iterator> irrelevantConstraints;
+        for(std::map<std::string, VariableNode*>::const_iterator itVar = mVariableNodes.begin(); itVar != mVariableNodes.end(); ++itVar)
+        {
+            const VariableNode* varNode = itVar->second;
+            if( varNode->adjacencyList.size() == 1 )
+            {
+                ConstraintNode* constraintNode = varNode->adjacencyList.begin()->second;
+                VarInfo varInfo(constraintNode->constraint->varInfo(varNode->variable));
+                // the variable should occur only once and with an odd degree.
+                if( varInfo.occurences == 1 && varInfo.maxDegree%2 == 1)
+                {
+                    // as the variable occurs only once the max and mindegree are assumed to be equal.
+                    assert(varInfo.maxDegree == varInfo.minDegree);
+                    irrelevantConstraints.push_back(constraintNode->posInPassedFormula);
+                    constraintNode->posInPassedFormula = end;
+                }
+                
+            }
+        }
+        return irrelevantConstraints;
     }
     
     void VariableConstraintGraph::print() 
     {
         std::cout << "Constraint nodes:" << std::endl;
-        for( std::list<ConstraintNode*>::const_iterator it = constraintNodes.begin(); it != constraintNodes.end(); ++it ) 
+        for( std::list<ConstraintNode*>::const_iterator it = mConstraintNodes.begin(); it != mConstraintNodes.end(); ++it ) 
         {
             std::cout << "\tConstraint: ";
             (*it)->constraint->print();
@@ -71,7 +95,7 @@ namespace smtrat
             }    
         }
         std::cout << "Variable nodes:" << std::endl;
-        for( std::map<std::string, VariableNode*>::const_iterator itVarNode = variableNodes.begin(); itVarNode != variableNodes.end(); ++itVarNode )
+        for( std::map<std::string, VariableNode*>::const_iterator itVarNode = mVariableNodes.begin(); itVarNode != mVariableNodes.end(); ++itVarNode )
         {
             std::cout << "\tVariable: " << itVarNode->first << " (" << itVarNode->second << ")" << std::endl;
             std::cout << "\tConstraints (by id): " << std::endl;

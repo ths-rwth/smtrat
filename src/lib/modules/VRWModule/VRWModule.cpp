@@ -69,9 +69,10 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
      */
     Answer VRWModule::isConsistent()
     {
-        //mpReceivedFormula->print();
+        mMatchingGraph.findIrrelevantConstraints(mpPassedFormula->end());
         mMatchingGraph.print();
 
+        
         Answer ans = runBackends();
         if( ans == False )
         {
