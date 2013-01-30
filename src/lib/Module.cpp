@@ -566,12 +566,46 @@ namespace smtrat
         return result;
     }
 
+    
+    void Module::scheduleSubformulaForRemovalFromPassedFormula( Formula::iterator _subformula ) 
+    {
+        assert( _subformula != mpPassedFormula->end() );
+        mScheduledForRemoval.insert(_subformula);
+    }
+    
+    void Module::removeScheduled()
+    {
+        // We first want to remove everything which is scheduled for removal. 
+        // As some removal might not have been asserted on our backend, we have to prevent the backend call in these cases.
+        // For now, we simply run over the not yet asserted constraints and fix 
+        if( !mScheduledForRemoval.empty() )
+        {
+            for( Formula::iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end();  )
+            {
+                std::set<Formula::iterator>::iterator positionInRemovalQueue = mScheduledForRemoval.find(subformula);
+                if( positionInRemovalQueue != mScheduledForRemoval.end() )
+                {
+                    subformula = removeSubformulaFromPassedFormula(subformula, false);
+                    mScheduledForRemoval.erase(positionInRemovalQueue);
+                }
+                ++subformula;
+                
+            }    
+
+            for( std::set<Formula::iterator>::const_iterator it = mScheduledForRemoval.begin(); it != mScheduledForRemoval.end(); ++it )
+            {
+                removeSubformulaFromPassedFormula(*it, true);
+            }
+            mScheduledForRemoval.clear();
+        }
+    }
+    
     /**
      *
      * @param _subformula
      * @return
      */
-    Formula::iterator Module::removeSubformulaFromPassedFormula( Formula::iterator _subformula )
+    Formula::iterator Module::removeSubformulaFromPassedFormula( Formula::iterator _subformula, bool involveBackends )
     {
         assert( _subformula != mpPassedFormula->end() );
         #ifdef SMTRAT_MEASURE_MODULE_TIMES
@@ -587,7 +621,7 @@ namespace smtrat
         /*
          * Delete the sub formula from the passed formula.
          */
-        if( mpManager != NULL )
+        if( mpManager != NULL && involveBackends )
         {
             mAllBackends = mpManager->getAllBackends( this );
             for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )

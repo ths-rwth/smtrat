@@ -49,6 +49,7 @@
 #include "ValidationSettings.h"
 #include "config.h"
 
+
 namespace smtrat
 {
     class Manager;
@@ -56,6 +57,14 @@ namespace smtrat
     typedef std::vector<std::set<const Formula*> >           vec_set_const_pFormula;
     typedef std::map<const Formula*, vec_set_const_pFormula> FormulaOrigins;
 
+    struct dereference_compare {
+        template <class I>
+        bool operator()(const I& a, const I& b) {
+            return *a < *b;
+        }
+    };
+    
+    
     /**
      * A base class for all kind of theory solving methods.
      */
@@ -99,12 +108,14 @@ namespace smtrat
             /// stores the deductions this module or its backends made.
             std::vector<Formula*> mDeductions;
             ///
-            Formula::const_iterator mFirstSubformulaToPass;
+            Formula::iterator mFirstSubformulaToPass;
             ///
             Formula::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
             mutable unsigned mSmallerMusesCheckCounter;
 
+            // 
+            std::set<Formula::iterator, dereference_compare> mScheduledForRemoval;
             
             
             bool checkFirstSubformulaToPassValidity() const;
@@ -266,7 +277,9 @@ namespace smtrat
             static bool modelsDisjoint( const Model&, const Model& );
             void getBackendsModel();
             Answer runBackends();
-            Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator );
+            Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator, bool involveBackends = true );
+            void scheduleSubformulaForRemovalFromPassedFormula( Formula::iterator );
+            void removeScheduled();
             Formula::iterator pruneSubformulaFromPassedFormula( Formula::iterator );
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
