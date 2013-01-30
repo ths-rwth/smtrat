@@ -675,6 +675,11 @@ namespace smtrat
         if( add_tmp.size() == 1 )
         {
             if( _type == DEDUCTED_CLAUSE || _type == CONFLICT_CLAUSE ) cancelUntil( 0 );
+            #ifdef SMTRAT_ENABLE_VALIDATION
+            // this is often an indication that something is wrong with our theory, so we do store our assumptions.
+            if( value( add_tmp[0] ) != l_Undef )
+                Module::storeAssumptionsToCheck( *mpManager );
+            #endif
             // This assertion is from uncheckedEnqueue and is here for debug purposes.
             assert( value( add_tmp[0] ) == l_Undef );
             uncheckedEnqueue( add_tmp[0] );
@@ -690,7 +695,7 @@ namespace smtrat
                 cr = ca.alloc( add_tmp, _type );
                 learnts.push( cr );
             }
-            else
+            else // NORMAL CLAUSE
             {
                 cr = ca.alloc( add_tmp, false );
                 clauses.push( cr );
@@ -1034,6 +1039,15 @@ FindSecond:
                                 for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
                                         deduction != (*backend)->deductions().end(); ++deduction )
                                 {
+                                    #ifdef SMTRAT_ENABLE_VALIDATION
+                                    if( validationSettings->logLemmata() )
+                                    {
+                                        Formula notLemma = Formula( NOT );
+                                        notLemma.addSubformula( new Formula( **deduction ) );
+                                        addAssumptionToCheck( notLemma, false, moduleName( (*backend)->type() ) + "_lemma" );
+                                        notLemma.pruneBack();
+                                    }
+                                    #endif
                                     #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                                     cout << "Learned a theory deduction from a backend module!" << endl;
                                     #endif
@@ -1295,15 +1309,21 @@ FindSecond:
 
         // Activity based decision:
         while( next == var_Undef || value( next ) != l_Undef ||!decision[next] )
+        {
             if( order_heap.empty() )
             {
                 next = var_Undef;
                 break;
             }
             else
+            {
                 next = order_heap.removeMin();
-
-        return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
+            }
+        }
+        // simpler to understand if we do not allow nondeterminism
+        assert(!rnd_pol);
+        return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
+        //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }
 
     /**
@@ -1486,10 +1506,6 @@ FindSecond:
      */
     void SATModule::uncheckedEnqueue( Lit p, CRef from )
     {
-        #ifdef SMTRAT_ENABLE_VALIDATION
-        if( value( p ) != l_Undef )
-            Module::storeAssumptionsToCheck( *mpManager );
-        #endif
         assert( value( p ) == l_Undef );
         assigns[var( p )] = lbool( !sign( p ) );
         if( !sign( p ) && mBooleanConstraintMap[var( p )].formula != NULL ) ++mBooleanConstraintMap[var( p )].updateInfo;

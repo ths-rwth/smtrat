@@ -42,7 +42,7 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
     /**
      * Destructor:
      */
-    PreprocessingModule::~PreprocessingModule(){}
+    VRWModule::~VRWModule(){}
 
     /**
      * Methods:
@@ -55,18 +55,22 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
      *
      * @return true
      */
-    bool PreprocessingModule::assertSubformula( Formula::const_iterator _subformula )
+    bool VRWModule::assertSubformula( Formula::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
+        addReceivedSubformulaToPassedFormula(_subformula);
+        std::list<ConstraintNode*>::iterator node = mMatchingGraph.addConstraint( (*_subformula)->pConstraint(), mpPassedFormula->last());
+        mConstraintPositions.insert(std::pair<Formula::const_iterator, std::list<ConstraintNode*>::iterator>(_subformula, node));
         return true;
     }
 
     /**
      * Checks the so far received constraints for consistency.
      */
-    Answer PreprocessingModule::isConsistent()
+    Answer VRWModule::isConsistent()
     {
         //mpReceivedFormula->print();
+        mMatchingGraph.print();
 
         Answer ans = runBackends();
         if( ans == False )
@@ -82,9 +86,21 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
      *
      * @param _subformula The sub formula of the received formula to remove.
      */
-    void PreprocessingModule::removeSubformula( Formula::const_iterator _subformula )
+    void VRWModule::removeSubformula( Formula::const_iterator _subformula )
     {
+        assert(mConstraintPositions.find(_subformula) != mConstraintPositions.end());
+        mMatchingGraph.removeConstraint(mConstraintPositions[_subformula]);
+        mConstraintPositions.erase(_subformula);
         Module::removeSubformula( _subformula );
+    }
+    
+    void VRWModule::printConstraintPositions() 
+    {
+        std::cout << "known constraint positions" << std::endl;
+        for(auto it = mConstraintPositions.begin(); it != mConstraintPositions.end(); ++it)
+        {
+            std::cout << (*it->first)->pConstraint()->id() << std::endl;
+        }
     }
 
 }

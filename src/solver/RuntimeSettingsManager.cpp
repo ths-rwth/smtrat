@@ -39,6 +39,12 @@
 
 namespace smtrat {
 
+RuntimeSettingsManager::RuntimeSettingsManager() 
+: mDoPrintTimings(false)
+{
+    
+}
+
 /**
  * Add a settings object with a unique name
  * @param name A unique string not yet in the list of settingsobjects. The name will be used as identifier and for passing command line arguments.

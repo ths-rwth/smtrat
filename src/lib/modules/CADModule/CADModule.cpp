@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2012-12-14
+ * @version 2013-01-29
  */
 
 //#define MODULE_VERBOSE
@@ -60,7 +60,7 @@ using namespace std;
 //#define SMTRAT_CAD_GENERIC_SETTING
 //#define SMTRAT_CAD_DISABLE_SMT
 //#define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
-#define SMTRAT_CAD_DISABLE_MIS
+//#define SMTRAT_CAD_DISABLE_MIS
 
 #ifdef SMTRAT_CAD_DISABLE_SMT
     #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
@@ -80,23 +80,22 @@ namespace smtrat
         mVariableBounds()
         #endif
     {
+        mModuleType = MT_CADModule;
         mInfeasibleSubsets.clear();    // initially everything is satisfied
         // CAD setting
         GiNaCRA::CADSettings setting = mCAD.setting();
-        #ifdef CAD_USE_VARIABLE_BOUNDS
-        setting.simplifyEliminationByBounds = true;
-        setting.earlyLiftingPruningByBounds = true;
-        #endif
         // general setting set
         #ifdef SMTRAT_CAD_ALTERNATIVE_SETTING
             setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::RATIONALSAMPLE_CADSETTING );
-            setting.autoEliminate = false;
         #else
             #ifdef SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
                 setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::GENERIC_CADSETTING );
-                setting.autoEliminate = false;
             #else
+                #ifdef CAD_USE_VARIABLE_BOUNDS
+                setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::BOUNDED_CADSETTING ); // standard
+                #else
                 setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::EQUATIONDETECT_CADSETTING ); // standard
+                #endif
                 setting.warmRestart = true;
                 setting.simplifyByFactorization = true;
                 setting.simplifyByRootcounting= true;
@@ -131,27 +130,21 @@ namespace smtrat
      */
     bool CADModule::assertSubformula( Formula::const_iterator _subformula )
     {
+        assert( (*_subformula)->getType() == REALCONSTRAINT );
         Module::assertSubformula( _subformula );
-        if( (*_subformula)->getType() == REALCONSTRAINT )
-        {
-            #ifdef CAD_USE_VARIABLE_BOUNDS
-            if( !mVariableBounds.addBound( (*_subformula)->pConstraint(), *_subformula ) )
-            {
-            #endif
-
-            if( mSolverState == False )
-                return false;
-            // add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
-            if( mConstraintsMap.find( _subformula ) != mConstraintsMap.end() )
-                return true;    // the exact constraint was already considered
-            GiNaCRA::Constraint constraint = convertConstraint( (*_subformula)->constraint() );
-            mConstraints.push_back( constraint );
-            mConstraintsMap[ _subformula ] = mConstraints.size() - 1;
-            mCAD.addPolynomial( constraint.polynomial(), constraint.variables() );
-            #ifdef CAD_USE_VARIABLE_BOUNDS
-            }
-            #endif
-        }
+        #ifdef CAD_USE_VARIABLE_BOUNDS
+        if( mVariableBounds.addBound( (*_subformula)->pConstraint(), *_subformula ) )
+            return true;
+        #endif
+        if( mSolverState == False )
+            return false;
+        // add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
+        if( mConstraintsMap.find( _subformula ) != mConstraintsMap.end() )
+            return true;    // the exact constraint was already considered
+        GiNaCRA::Constraint constraint = convertConstraint( (*_subformula)->constraint() );
+        mConstraints.push_back( constraint );
+        mConstraintsMap[ _subformula ] = mConstraints.size() - 1;
+        mCAD.addPolynomial( constraint.polynomial(), constraint.variables() );
         return true;
     }
 
@@ -163,186 +156,176 @@ namespace smtrat
      */
     Answer CADModule::isConsistent()
     {
-        if( mpReceivedFormula->isConstraintConjunction() )
+        if( !mpReceivedFormula->isConstraintConjunction() )
+            return Unknown;
+        if( !mInfeasibleSubsets.empty() )
+            return False; // there was no constraint removed which was in a previously generated infeasible subset
+        #ifdef MODULE_VERBOSE
+        cout << "Checking constraint set " << endl;
+        for( vector<GiNaCRA::Constraint>::const_iterator k = mConstraints.begin(); k != mConstraints.end(); ++k )
+            cout << " " << *k << endl;
+        #endif
+        // perform the scheduled elimination and see if there were new variables added
+        mCAD.prepareElimination();
+        #ifdef MODULE_VERBOSE
+        cout << "over the variables " << endl;
+        vector<symbol> vars = mCAD.variables();
+        for( vector<GiNaC::symbol>::const_iterator k = vars.begin(); k != vars.end(); ++k )
+            cout << " " << *k << endl;
+        #endif
+        // check the extended constraints for satisfiability
+        #ifdef CAD_USE_VARIABLE_BOUNDS
+        if( variableBounds().isConflicting() )
         {
-            if( !mInfeasibleSubsets.empty() )
-                return False; // there was no constraint removed which was in a previously generated infeasible subset
-            #ifdef MODULE_VERBOSE
-            cout << "Checking constraint set " << endl;
-            for( vector<GiNaCRA::Constraint>::const_iterator k = mConstraints.begin(); k != mConstraints.end(); ++k )
-                cout << " " << *k << endl;
+            mInfeasibleSubsets.push_back( variableBounds().getConflict() );
+            mSolverState = False;
+            mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
+            return False;
+        }
+        GiNaCRA::BoundMap boundMap = GiNaCRA::BoundMap();
+        GiNaCRA::evalintervalmap eiMap = mVariableBounds.getEvalIntervalMap();
+        for( auto iter = eiMap.begin(); iter != eiMap.end(); ++iter )
+        {
+            unsigned pos = mCAD.variable( iter->first );
+            assert( boundMap.find( pos ) == boundMap.end() );
+            boundMap[pos] = iter->second;
+        }
+        #endif
+        ConflictGraph conflictGraph;
+        list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > > deductions;
+        #ifdef CAD_USE_VARIABLE_BOUNDS
+        if( !mCAD.check( mConstraints, mRealAlgebraicSolution, conflictGraph, boundMap, deductions, false, false ) )
+        #else
+        if( !mCAD.check( mConstraints, mRealAlgebraicSolution, conflictGraph, deductions, false, false ) )
+        #endif
+        {
+            #ifdef SMTRAT_CAD_DISABLE_SMT
+            // simulate non-incrementality by constructing a trivial infeasible subset and clearing all data in the CAD
+            #define SMTRAT_CAD_DISABLE_MIS // this constructs a trivial infeasible subset below
+            #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION // no lemmata from staisfying assignments are going to be constracted
+            mCAD.clear();
+            // replay adding the polynomials as scheduled polynomials
+            for( vector<GiNaCRA::Constraint>::const_iterator constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
+                mCAD.addPolynomial( constraint->polynomial(), constraint->variables() );
             #endif
-            // perform the scheduled elimination and see if there were new variables added
-            mCAD.prepareElimination();
-            #ifdef MODULE_VERBOSE
-            cout << "over the variables " << endl;
-            vector<symbol> vars = mCAD.variables();
-            for( vector<GiNaC::symbol>::const_iterator k = vars.begin(); k != vars.end(); ++k )
-                cout << " " << *k << endl;
-            #endif
-            // check the extended constraints for satisfiability
-            #ifdef CAD_USE_VARIABLE_BOUNDS
-            if( variableBounds().isConflicting() )
-            {
-                mInfeasibleSubsets.push_back( variableBounds().getConflict() );
-                mSolverState = False;
-                mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
-                return False;
-            }
-            GiNaCRA::BoundMap boundMap = GiNaCRA::BoundMap();
-            GiNaCRA::evalintervalmap eiMap = mVariableBounds.getEvalIntervalMap();
-            for( auto iter = eiMap.begin(); iter != eiMap.end(); ++iter )
-            {
-                unsigned pos = mCAD.variable( iter->first );
-                assert( boundMap.find( pos ) == boundMap.end() );
-                boundMap[pos] = iter->second;
-            }
-            #endif
-            ConflictGraph conflictGraph;
-            list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > > deductions;
-            #ifdef CAD_USE_VARIABLE_BOUNDS
-            if( !mCAD.check( mConstraints, mRealAlgebraicSolution, conflictGraph, boundMap, deductions, false, false ) )
-            {
+            #ifdef SMTRAT_CAD_DISABLE_MIS
+            // construct a trivial infeasible subset
+            mInfeasibleSubsets.push_back( set<const Formula*>() );
+            for( ConstraintIndexMap::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
+                mInfeasibleSubsets.back().insert( *i->first );
             #else
-            if( !mCAD.check( mConstraints, mRealAlgebraicSolution, conflictGraph, deductions, false, false ) )
-            {
+            // construct an infeasible subset
+            assert( mCAD.setting().computeConflictGraph );
+            #ifdef MODULE_VERBOSE
+            cout << "Constructing a minimal infeasible set from the ";
+            cout << "conflict graph: " << endl << conflictGraph << endl << endl;
             #endif
-                #ifdef SMTRAT_CAD_DISABLE_SMT
-                // simulate non-incrementality by constructing a trivial infeasible subset and clearing all data in the CAD
-                #define SMTRAT_CAD_DISABLE_MIS // this constructs a trivial infeasible subset below
-                #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION // no lemmata from staisfying assignments are going to be constracted
-                mCAD.clear();
-                // replay adding the polynomials as scheduled polynomials
-                for( vector<GiNaCRA::Constraint>::const_iterator constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
-                    mCAD.addPolynomial( constraint->polynomial(), constraint->variables() );
-                #endif
-                #ifdef SMTRAT_CAD_DISABLE_MIS
-                // construct a trivial infeasible subset
-                mInfeasibleSubsets.push_back( set<const Formula*>() );
-                for( ConstraintIndexMap::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
-                    mInfeasibleSubsets.back().insert( *i->first );
-                #else
-                // construct an infeasible subset
-                assert( mCAD.setting().computeConflictGraph );
-                #ifdef MODULE_VERBOSE
-                cout << "Constructing a minimal infeasible set from the ";
-                cout << "conflict graph: " << endl << conflictGraph << endl << endl;
-                #endif
-                vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( conflictGraph );
-                for( vec_set_const_pFormula::const_iterator i = infeasibleSubsets.begin(); i != infeasibleSubsets.end(); ++i )
-                    mInfeasibleSubsets.push_back( *i );
-                #endif
-                #ifdef MODULE_VERBOSE
-                cout << endl << "#Samples: " << mCAD.samples().size() << endl;
-                cout << "Elimination sets:" << endl;
-                vector<EliminationSet> elimSets = mCAD.eliminationSets();
-                for( unsigned i = 0; i != elimSets.size(); ++i )
-                    cout << "  Level " << i << " (" << elimSets[i].size() << "): " << elimSets[i] << endl;
-                cout << "Result: false" << endl;
-                cout << "CAD complete: " << mCAD.isComplete() << endl;
-                printInfeasibleSubsets();
-                cout << "Performance gain: " << (mpReceivedFormula->size() - mInfeasibleSubsets.front().size()) << endl << endl;
-                // mCAD.printSampleTree();
-                #endif
-                mSolverState = False;
-                mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
-                return False;
-            }
+            vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( conflictGraph );
+            for( vec_set_const_pFormula::const_iterator i = infeasibleSubsets.begin(); i != infeasibleSubsets.end(); ++i )
+                mInfeasibleSubsets.push_back( *i );
+            #endif
             #ifdef MODULE_VERBOSE
             cout << endl << "#Samples: " << mCAD.samples().size() << endl;
             cout << "Elimination sets:" << endl;
             vector<EliminationSet> elimSets = mCAD.eliminationSets();
             for( unsigned i = 0; i != elimSets.size(); ++i )
                 cout << "  Level " << i << " (" << elimSets[i].size() << "): " << elimSets[i] << endl;
-            cout << "Result: true" << endl;
+            cout << "Result: false" << endl;
             cout << "CAD complete: " << mCAD.isComplete() << endl;
-            cout << "Solution point: " << mRealAlgebraicSolution << endl << endl;
+            printInfeasibleSubsets();
+            cout << "Performance gain: " << (mpReceivedFormula->size() - mInfeasibleSubsets.front().size()) << endl << endl;
             // mCAD.printSampleTree();
             #endif
-            mInfeasibleSubsets.clear();
-            #ifndef SMTRAT_CAD_DISABLE_THEORYPROPAGATION
-            // compute theory deductions
-            assert( mCAD.setting().numberOfDeductions > 0 );
-            #ifdef MODULE_VERBOSE
-            cout << "Constructing theory deductions..." << endl;
-            #endif
-            this->addDeductions( deductions );
-            #endif
-            mSolverState = True;
-            return True;
+            mSolverState = False;
+            mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
+            return False;
         }
-        else
-        {
-            return Unknown;
-        }
+        #ifdef MODULE_VERBOSE
+        cout << endl << "#Samples: " << mCAD.samples().size() << endl;
+        cout << "Elimination sets:" << endl;
+        vector<EliminationSet> elimSets = mCAD.eliminationSets();
+        for( unsigned i = 0; i != elimSets.size(); ++i )
+            cout << "  Level " << i << " (" << elimSets[i].size() << "): " << elimSets[i] << endl;
+        cout << "Result: true" << endl;
+        cout << "CAD complete: " << mCAD.isComplete() << endl;
+        cout << "Solution point: " << mRealAlgebraicSolution << endl << endl;
+        // mCAD.printSampleTree();
+        #endif
+        mInfeasibleSubsets.clear();
+        #ifndef SMTRAT_CAD_DISABLE_THEORYPROPAGATION
+        // compute theory deductions
+        assert( mCAD.setting().numberOfDeductions > 0 );
+        #ifdef MODULE_VERBOSE
+        cout << "Constructing theory deductions..." << endl;
+        #endif
+        this->addDeductions( deductions );
+        #endif
+        mSolverState = True;
+        return True;
     }
 
     void CADModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        if( (*_subformula)->getType() == REALCONSTRAINT )
-        {
-            #ifdef CAD_USE_VARIABLE_BOUNDS
-            if( mVariableBounds.removeBound( (*_subformula)->pConstraint(), *_subformula ) == 0 )
-            {
-            #endif
-            try
-            {
-                ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find( _subformula );
-                if( constraintIt == mConstraintsMap.end() )
-                    return; // there is nothing to remove
-                GiNaCRA::Constraint constraint = mConstraints[constraintIt->second];
-                #ifdef MODULE_VERBOSE
-                cout << endl << "---- Constraint removal (before) ----" << endl;
-                cout << "Elimination set sizes:";
-                vector<EliminationSet> elimSets = mCAD.eliminationSets();
-                for( unsigned i = 0; i != elimSets.size(); ++i )
-                    cout << "  Level " << i << " (" << elimSets[i].size() << "): " << elimSets[i] << endl;
-                cout << endl << "#Samples: " << mCAD.samples().size() << endl;
-                cout << "-----------------------------------------" << endl;
-                cout << "Removing " << constraint << "..." << endl;
-                #endif
-                unsigned constraintIndex = constraintIt->second;
-                // remove the constraint in mConstraintsMap
-                mConstraintsMap.erase( constraintIt );
-                // update the constraint / index map, i.e., decrement all indices above the removed one
-                updateConstraintMap( constraintIndex );
-                // remove the constraint from the list of constraints
-                mConstraints.erase( mConstraints.begin() + constraintIndex );    // erase the (constraintIt->second)-th element
-                // remove the corresponding polynomial if it is not occurring in another constraint
-                bool doDelete = true;
-                for( vector<GiNaCRA::Constraint>::const_reverse_iterator c = mConstraints.rbegin(); c != mConstraints.rend(); ++c )
-                {
-                    if( constraint.polynomial() == c->polynomial() )
-                    {
-                        doDelete = false;
-                        break;
-                    }
-                }
-                if( doDelete ) // no other constraint claims the polynomial, hence remove it from the list and the cad
-                    mCAD.removePolynomial( constraint.polynomial() );
-                #ifdef MODULE_VERBOSE
-                cout << endl << "---- Constraint removal (afterwards) ----" << endl;
-                cout << "New constraint set:" << endl;
-                for( auto k = mConstraints.begin(); k != mConstraints.end(); ++k )
-                    cout << " " << *k << endl;
-                cout << "Elimination sets:";
-                elimSets = mCAD.eliminationSets();
-                for( unsigned i = 0; i != elimSets.size(); ++i )
-                    cout << "  Level " << i << " (" << elimSets[i].size() << "): " << elimSets[i] << endl;
-                cout << endl << "#Samples: " << mCAD.samples().size() << endl;
-                cout << "-----------------------------------------" << endl;
-                #endif
-                // forces complete re-checking of all samples in the CAD with the next call to CAD::check
-            }
-            catch( std::out_of_range )
-            {
-                assert( false );    // the constraint to be removed should have been put to mConstraints before
-                return;
-            }
-            #ifdef CAD_USE_VARIABLE_BOUNDS
-            }
-            #endif
+        if( !(*_subformula)->getType() == REALCONSTRAINT )
+        { // not our concern
+            Module::removeSubformula( _subformula );
+            return;
         }
+        #ifdef CAD_USE_VARIABLE_BOUNDS
+        if( !mVariableBounds.removeBound( (*_subformula)->pConstraint(), *_subformula ) == 0 )
+        { // constraint was added as bound, so there is no respective constraint stored
+            Module::removeSubformula( _subformula );
+            return;
+        }
+        #endif
+
+        ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find( _subformula );
+        if( constraintIt == mConstraintsMap.end() )
+            return; // there is nothing to remove
+        GiNaCRA::Constraint constraint = mConstraints[constraintIt->second];
+        #ifdef MODULE_VERBOSE
+        cout << endl << "---- Constraint removal (before) ----" << endl;
+        cout << "Elimination set sizes:";
+        vector<EliminationSet> elimSets = mCAD.eliminationSets();
+        for( unsigned i = 0; i != elimSets.size(); ++i )
+            cout << "  Level " << i << " (" << elimSets[i].size() << "): " << elimSets[i] << endl;
+        cout << endl << "#Samples: " << mCAD.samples().size() << endl;
+        cout << "-----------------------------------------" << endl;
+        cout << "Removing " << constraint << "..." << endl;
+        #endif
+        unsigned constraintIndex = constraintIt->second;
+        // remove the constraint in mConstraintsMap
+        mConstraintsMap.erase( constraintIt );
+        // remove the constraint from the list of constraints
+        assert( mConstraints.size() > constraintIndex ); // the constraint to be removed should be stored in the local constraint list
+        mConstraints.erase( mConstraints.begin() + constraintIndex );    // erase the (constraintIt->second)-th element
+        // update the constraint / index map, i.e., decrement all indices above the removed one
+        updateConstraintMap( constraintIndex, true );
+        
+        // remove the corresponding polynomial if it is not occurring in another constraint
+        bool doDelete = true;
+        for( vector<GiNaCRA::Constraint>::const_reverse_iterator c = mConstraints.rbegin(); c != mConstraints.rend(); ++c )
+        {
+            if( constraint.polynomial() == c->polynomial() )
+            {
+                doDelete = false;
+                break;
+            }
+        }
+        if( doDelete ) // no other constraint claims the polynomial, hence remove it from the list and the cad
+            mCAD.removePolynomial( constraint.polynomial() );
+        #ifdef MODULE_VERBOSE
+        cout << endl << "---- Constraint removal (afterwards) ----" << endl;
+        cout << "New constraint set:" << endl;
+        for( auto k = mConstraints.begin(); k != mConstraints.end(); ++k )
+            cout << " " << *k << endl;
+        cout << "Elimination sets:";
+        elimSets = mCAD.eliminationSets();
+        for( unsigned i = 0; i != elimSets.size(); ++i )
+            cout << "  Level " << i << " (" << elimSets[i].size() << "): " << elimSets[i] << endl;
+        cout << endl << "#Samples: " << mCAD.samples().size() << endl;
+        cout << "-----------------------------------------" << endl;
+        #endif
         Module::removeSubformula( _subformula );
     }
 
@@ -592,15 +575,24 @@ namespace smtrat
     }
 
     /**
-     *
+     * Increment all indices stored in the constraint map being greater than the given index; decrement if decrement is true.
      * @param index
      * @param decrement
      */
     inline void CADModule::updateConstraintMap( unsigned index, bool decrement )
     {
-        for( ConstraintIndexMap::iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
-            if( i->second > index )
-                i->second = decrement ? i->second - 1 : i->second + 1;
+        if( decrement )
+        {
+            for( ConstraintIndexMap::iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
+                if( i->second > index )
+                    --i->second;
+        }
+        else
+        {
+            for( ConstraintIndexMap::iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
+                if( i->second > index )
+                    ++i->second;
+        }
     }
 
 }    // namespace smtrat
