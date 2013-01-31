@@ -1630,14 +1630,22 @@ namespace smtrat
 
     std::string Formula::variableListToString( std::string seperator ) const
     {
-        GiNaC::symtab::const_iterator i      = mRealValuedVars.begin();
-        string                        result = "";
-        result += i->first;
-        for( ++i; i != mRealValuedVars.end(); ++i )
-        {
-            result += "," + i->first;
-        }
+        GiNaC::symtab::const_iterator                   i = mRealValuedVars.begin();
         std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin();
+        string                        result = "";
+        if( i != mRealValuedVars.end() )
+        {
+            result += i->first;
+            for( ++i; i != mRealValuedVars.end(); ++i )
+            {
+                result += "," + i->first;
+            }
+        }
+        else if( j != mBooleanVars.end() )
+        {
+            result += *j;
+            ++j;
+        }
         for( ; j != mBooleanVars.end(); ++j )
         {
             result += "," + *j;
