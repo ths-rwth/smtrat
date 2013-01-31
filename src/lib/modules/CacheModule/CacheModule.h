@@ -42,6 +42,12 @@ namespace smtrat
         unsigned nrConstraints;
     };
     
+    struct TCallResponse
+    {
+        Answer answer;
+        vec_set_const_pFormula infSubsets;
+    };
+    
     struct TCallHash
     {
         // TODO write a better hash (something with some bitoperations on the bitvector together with the nr of constraints.
@@ -63,9 +69,10 @@ namespace smtrat
 
     class CacheModule : public Module
     {
-        typedef std::unordered_map<TCall, Answer, TCallHash, TCallEqual> TCallCache;
+        typedef std::unordered_map<TCall, TCallResponse, TCallHash, TCallEqual> TCallCache;
         protected:
             TCallCache mCallCache;
+            
             TCall mActualTCall;
         public:
             /**
@@ -87,7 +94,7 @@ namespace smtrat
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
             
-            std::pair<bool, Answer> callCacheLookup() const;
+            bool callCacheLookup();
             void callCacheSave();
             
             void print();

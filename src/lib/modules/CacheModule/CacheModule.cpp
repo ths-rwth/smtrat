@@ -72,10 +72,10 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
     Answer CacheModule::isConsistent()
     {
         //print();
-        std::pair<bool, Answer> result = callCacheLookup();
-        if(result.first) 
+        
+        if(callCacheLookup()) 
         {
-            mSolverState = result.second;
+            
         }
         else
         {
@@ -84,6 +84,7 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
             {
                 getInfeasibleSubsets();
             }
+            
             mSolverState = ans;
             callCacheSave();
         }
@@ -102,23 +103,34 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
         Module::removeSubformula( _subformula );
     }
     
-    std::pair<bool,Answer> CacheModule::callCacheLookup() const
+    bool CacheModule::callCacheLookup() 
     {
         TCallCache::const_iterator value = mCallCache.find(mActualTCall);
         if(value != mCallCache.end())
         {
             std::cout << "Cache hit" << std::endl;
-            return std::pair<bool,Answer>(true, value->second);
+            mSolverState = value->second.answer;
+            if(mSolverState == False)
+            {
+                return false;
+                mInfeasibleSubsets = value->second.infSubsets;
+            }
+            
+            return true;
         }
-        else
-        {
-            return std::pair<bool,Answer>(false, Unknown);
-        }
+        return false;
     }
     
     void CacheModule::callCacheSave() 
     {
-        mCallCache.insert(std::pair<TCall, Answer>(mActualTCall, mSolverState));
+        TCallResponse response;
+        response.answer = mSolverState;
+        if(response.answer == False) 
+        {
+            response.infSubsets = mInfeasibleSubsets;
+        }
+        mCallCache.insert(std::pair<TCall, TCallResponse>(mActualTCall, response));
+        
     }
     
     void CacheModule::print()
@@ -130,7 +142,7 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
         for(TCallCache::const_iterator it = mCallCache.begin(); it != mCallCache.end(); ++it )
         {
             it->first.passedConstraints.print();
-            std::cout << " --> " << it->second << std::endl;
+            std::cout << " --> " << it->second.answer << std::endl;
         }
     }
 }        

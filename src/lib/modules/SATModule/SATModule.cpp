@@ -55,7 +55,8 @@
 #define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
 #define STORE_ONLY_ONE_REASON
-//#define SAT_MODULE_THEORY_PROPAGATION
+#define SAT_MODULE_THEORY_PROPAGATION
+#define SAT_MODULE_DONTSEND_DEDUCTIONS
 
 const static double FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY = 1.02;
 
@@ -980,6 +981,7 @@ FindSecond:
 
         for( ; ; )
         {
+            bool deductionsLearned = false;
             CRef confl = propagate();
 
             #ifdef DEBUG_SATMODULE
@@ -991,6 +993,7 @@ FindSecond:
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
                 // TODO: Do not call the theory solver on instances which have already been proved to be consistent.
                 //       (Happens if the Boolean assignment is extended by assignments to false only)
+                
                 if( adaptPassedFormula() )
                 {
                     #ifdef DEBUG_SATMODULE
@@ -1040,6 +1043,7 @@ FindSecond:
                                 for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
                                         deduction != (*backend)->deductions().end(); ++deduction )
                                 {
+                                    deductionsLearned = true;
                                     #ifdef SMTRAT_ENABLE_VALIDATION
                                     if( validationSettings->logLemmata() )
                                     {
@@ -1145,6 +1149,11 @@ FindSecond:
                     }
                 }
             }
+            #ifdef SAT_MODULE_THEORY_PROPAGATION
+            if(deductionsLearned) continue;
+            #endif  
+            
+            
             #ifdef SATMODULE_WITH_CALL_NUMBER
             #ifndef DEBUG_SATMODULE
             #ifdef WITH_PROGRESS_ESTIMATION
@@ -1155,6 +1164,7 @@ FindSecond:
             cout.flush();
             #endif
             #endif
+                            
 
             if( confl != CRef_Undef )
             {
@@ -1200,6 +1210,8 @@ FindSecond:
                 }
                 #endif
                 cancelUntil( backtrack_level );
+                
+
 
                 if( learnt_clause.size() == 1 )
                 {
@@ -1208,6 +1220,7 @@ FindSecond:
                 }
                 else
                 {
+                    // learnt clause is the asserting clause.
                     CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
                     learnts.push( cr );
                     attachClause( cr );
@@ -1284,7 +1297,7 @@ FindSecond:
                         break;
                     }
                 }
-
+                // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
                 {
                     // New variable decision:
@@ -1297,7 +1310,6 @@ FindSecond:
                 }
 
                 // Increase decision level and enqueue 'next'
-
                 newDecisionLevel();
                 assert( value( next ) == l_Undef );
                 uncheckedEnqueue( next );
@@ -1528,6 +1540,7 @@ FindSecond:
         trail.push_( p );
         #ifdef SAT_MODULE_THEORY_PROPAGATION
         // Check whether the lit is a deduction via a learned clause.
+        #ifdef SAT_MODULE_DONTSEND_DEDUCTIONS
         if( from != CRef_Undef && ca[from].type() == DEDUCTED_CLAUSE && !sign( p ) && mBooleanConstraintMap[var( p )].formula != NULL  )
         {
             Clause& c           = ca[from];
@@ -1545,6 +1558,7 @@ FindSecond:
                 mBooleanConstraintMap[var( p )].updateInfo = 0;
             }
         }
+        #endif
         #endif
     }
 
