@@ -31,6 +31,8 @@
 #include "../../../solver/ExitCodes.h"
 
 
+#define CACHE_ONLY_TRUE
+
 namespace smtrat {
 CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager )
     :
@@ -108,14 +110,17 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
         TCallCache::const_iterator value = mCallCache.find(mActualTCall);
         if(value != mCallCache.end())
         {
-            std::cout << "Cache hit" << std::endl;
+            //std::cout << "Cache hit: ";
             mSolverState = value->second.answer;
+            #ifdef CACHE_ONLY_TRUE
+            assert(mSolverState == True);
+            #else
             if(mSolverState == False)
             {
                 return false;
-                mInfeasibleSubsets = value->second.infSubsets;
+                //mInfeasibleSubsets = value->second.infSubsets;
             }
-            
+            #endif
             return true;
         }
         return false;
@@ -125,11 +130,18 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
     {
         TCallResponse response;
         response.answer = mSolverState;
+#ifdef CACHE_ONLY_TRUE
+        if(response.answer == True)
+        {
+            mCallCache.insert(std::pair<TCall, TCallResponse>(mActualTCall, response));
+        }
+#else
         if(response.answer == False) 
         {
             response.infSubsets = mInfeasibleSubsets;
         }
         mCallCache.insert(std::pair<TCall, TCallResponse>(mActualTCall, response));
+#endif
         
     }
     
