@@ -51,7 +51,6 @@ namespace smtrat
         
         std::list<ConstraintNode*>::iterator last()  { return --mConstraintNodes.end(); }
         
-        std::list<const Constraint*> restoreRelevantConstraints();
         std::list<Formula::iterator> findIrrelevantConstraints(Formula::iterator end);
         
         void print(); 

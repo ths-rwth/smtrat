@@ -103,17 +103,6 @@ namespace smtrat
         mConstraintNodes.erase(constraintNode);
         return !nothingChanges;
     }
-                
-    std::list<const Constraint*> VariableConstraintGraph::restoreRelevantConstraints() {
-        for(std::set<VariableNode*>::iterator itVar = mSingleAppearingVariables.begin(); itVar != mSingleAppearingVariables.end(); ++itVar) {
-            if( (*itVar)->adjacencyList.size() > 1) 
-            {
-                
-            }
-                
-        }
-
-    }
     
     std::list<Formula::iterator> VariableConstraintGraph::findIrrelevantConstraints(Formula::iterator end)
     {
