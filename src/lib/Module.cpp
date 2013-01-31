@@ -40,7 +40,7 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
-//#define SMTRAT_DEVOPTIONS_MeasureTime
+//#define SMTRAT_DEVOPTION_MeasureTime
 
 using namespace std;
 
@@ -70,7 +70,7 @@ namespace smtrat
         mFirstSubformulaToPass( mpPassedFormula->end() ),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
         mSmallerMusesCheckCounter(0)
-#ifdef SMTRAT_DEVOPTIONS_MeasureTime
+#ifdef SMTRAT_DEVOPTION_MeasureTime
         ,
             mTimerAddTotal(0),
             mTimerCheckTotal(0),
@@ -487,7 +487,7 @@ namespace smtrat
         passedFormulaCannotBeSolved();
 
         if( mpManager == NULL ) return Unknown;
-        #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
         stopCheckTimer();
         #endif
         /*
@@ -506,7 +506,7 @@ namespace smtrat
             bool assertionFailed = false;
             for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
             {
-                #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->startAddTimer();
                 #endif
                 for( Formula::const_iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
@@ -516,13 +516,13 @@ namespace smtrat
                         assertionFailed = true;
                     }
                 }
-                #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->stopAddTimer();
                 #endif
             }
             if( assertionFailed )
             {
-                #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 startCheckTimer();
                 #endif
                 return False;
@@ -541,11 +541,11 @@ namespace smtrat
             cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
             (*module)->print( cout, " ");
             #endif
-            #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+            #ifdef SMTRAT_DEVOPTION_MeasureTime
             (*module)->startCheckTimer();
             #endif
             result = (*module)->isConsistent();
-            #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+            #ifdef SMTRAT_DEVOPTION_MeasureTime
             (*module)->stopCheckTimer();
             #endif
             (*module)->receivedFormulaChecked();
@@ -563,7 +563,7 @@ namespace smtrat
         #ifdef MODULE_VERBOSE
         cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : "Unknown")) << endl;
         #endif
-        #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
         startCheckTimer();
         #endif
         return result;
@@ -627,7 +627,7 @@ namespace smtrat
         {
             for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
             {
-                #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 stopCheckTimer();
                 (*module)->startAddTimer();
                 #endif
@@ -635,7 +635,7 @@ namespace smtrat
                 {
                     inconsistencyWhileAsserting = true;
                 }
-                #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->stopAddTimer();
                 startCheckTimer();
                 #endif
@@ -657,7 +657,7 @@ namespace smtrat
     Formula::iterator Module::removeSubformulaFromPassedFormula( Formula::iterator _subformula, bool involveBackends )
     {
         assert( _subformula != mpPassedFormula->end() );
-        #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
         int timers = stopAllTimers();
         #endif
 
@@ -675,18 +675,18 @@ namespace smtrat
             mAllBackends = mpManager->getAllBackends( this );
             for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
             {
-                #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->startRemoveTimer();
                 #endif
                 (*module)->removeSubformula( _subformula );
-                #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->stopRemoveTimer();
                 #endif
             }
         }
         mPassedformulaOrigins.erase( *_subformula );
         Formula::iterator result = mpPassedFormula->erase( _subformula );
-        #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
         startTimers(timers);
         #endif
 
@@ -701,7 +701,7 @@ namespace smtrat
     Formula::iterator Module::pruneSubformulaFromPassedFormula( Formula::iterator _subformula )
     {
         assert( _subformula != mpPassedFormula->end() );
-        #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
         int timers = stopAllTimers();
         #endif
         /*
@@ -712,18 +712,18 @@ namespace smtrat
             mAllBackends = mpManager->getAllBackends( this );
             for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
             {
-                #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->startRemoveTimer();
                 #endif
                 (*module)->removeSubformula( _subformula );
-                #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->stopRemoveTimer();
                 #endif
 
             }
         }
         mPassedformulaOrigins.erase( *_subformula );
-        #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
         startTimers(timers);
         #endif
         return mpPassedFormula->prune( _subformula );

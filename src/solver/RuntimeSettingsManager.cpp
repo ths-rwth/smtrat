@@ -121,10 +121,12 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
                 printModulesInfo();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
+            #ifdef SMTRAT_DEVOPTION_MeasureTime
             else if(optionName == "print-timings")
             {
                 mDoPrintTimings = true;
             }
+            #endif
             // no more global options, so we expect module options
             else 
             {
@@ -182,7 +184,9 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << std::endl;
     std::cout << "Developer options:" <<std::endl;
     std::cout << "\t --list-modules \t prints all compiled modules" << std::endl;
+    #ifdef SMTRAT_DEVOPTION_MeasureTime
     std::cout << "\t --print-timings \t prints the timings" << std::endl;
+    #endif
     std::cout << std::endl;
     // Print help for all known modules.
     std::cout << "Module options:" << std::endl;

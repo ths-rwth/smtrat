@@ -88,7 +88,7 @@ namespace smtrat
 
             Answer isConsistent()
             {
-                #ifdef SMTRAT_DEVOPTIONS_MeasureTime
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 mpPrimaryBackend->startCheckTimer();
                 #endif
                 return mpPrimaryBackend->isConsistent();
