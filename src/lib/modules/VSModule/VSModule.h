@@ -31,7 +31,6 @@
 #define SMTRAT_VSMODULE_H
 
 #define VS_INCREMENTAL
-//#define VS_BACKTRACKING
 #define VS_INFEASIBLE_SUBSET_GENERATION
 
 #define VS_WITH_BACKEND
@@ -83,16 +82,16 @@ namespace smtrat
             /*
              * Attributes:
              */
-            bool                   mFreshConstraintReceived;
-            bool                   mInconsistentConstraintAdded;
-            unsigned               mIDCounter;
+            bool                mFreshConstraintReceived;
+            bool                mInconsistentConstraintAdded;
+            unsigned            mIDCounter;
             #ifdef VS_STATISTICS
-            unsigned               mStepCounter;
+            unsigned            mStepCounter;
             #endif
-            vs::State*             mpStateTree;
-            GiNaC::symtab          mAllVariables;
+            vs::State*          mpStateTree;
+            GiNaC::symtab       mAllVariables;
             FormulaConditionMap mFormulaConditionMap;
-            ValuationMap           mRanking;
+            ValuationMap        mRanking;
 
         public:
 
@@ -140,7 +139,6 @@ namespace smtrat
             bool eraseDTofRanking( vs::State& );
             void eraseDTsOfRanking( vs::State& );
             void updateInfeasibleSubset();
-            void reset();
             std::vector<std::pair<std::string, std::pair<vs::Substitution_Type, GiNaC::ex> > > getSymbolicAssignment() const;
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
             bool adaptPassedFormula( const vs::State& );

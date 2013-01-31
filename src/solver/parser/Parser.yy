@@ -167,7 +167,8 @@ command:
 	|	OB GET_MODEL CB                         { dv.setPrintAssignment(); }
 	|	OB DECLARE_CONST SYM SYM CB             { dv.addVariable( yyloc, *$3, *$4 ); delete $3; delete $4; }
 	| 	OB DECLARE_FUN SYM OB CB SYM CB         { dv.addVariable( yyloc, *$3, *$6 ); delete $3; delete $6; }
-	| 	OB DECLARE_FUN SYM OB symlist CB SYM CB { dv.addVariable( yyloc, *$3, *$7 ); delete $3; delete $7; dv.free( $5 ); }
+	| 	OB DECLARE_FUN SYM OB symlist CB SYM CB { error( yyloc, "Declaration of function with arguments is not allowed in supported logics!" );
+                                                  delete $3; delete $7; dv.free( $5 ); }
     |   OB DECLARE_SORT SYM NUM CB              { error( yyloc, "Declaration of types not allowed in supported logics!" );
                                                   delete $3; delete $4; }
 	| 	OB DEFINE_FUN SYM OB CB SYM CB          { error( yyloc, "Definition of functions not allowed in supported logics!" );

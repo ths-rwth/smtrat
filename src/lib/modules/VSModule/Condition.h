@@ -154,7 +154,7 @@ namespace vs
             unsigned bestVariable2( std::string& ) const;
             bool operator ==( const Condition& ) const;
             bool operator <( const Condition& ) const;
-            void print( std::ostream& ) const;
+            void print( std::ostream& = std::cout ) const;
     };
 
     typedef std::set<const Condition*, Condition::condComp> ConditionSet;

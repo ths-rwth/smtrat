@@ -600,7 +600,7 @@ namespace vs
                     if( !simplify( fixedConditions->back().first, redundantConditions, conflictingConditionPairs ) )
                     {
                         addConflicts( NULL, conflictingConditionPairs );
-                        passConflictToFather();
+                        if( !isRoot() ) passConflictToFather();
                     }
                 }
             }
@@ -1732,6 +1732,8 @@ namespace vs
                                         condConj->second = false;
                                         delete rpCond;
                                         (**child).rSubResultsSimplified() = false;
+                                        (**child).rTakeSubResultCombAgain() = true;
+                                        (**child).rInconsistent() = false;
                                     }
                                     else
                                     {
@@ -1926,38 +1928,45 @@ namespace vs
                      * Delete the entry of the test candidate whose conflict set is empty
                      * and set "inconsistent flag" of the corresponding child to false.
                      */
-                    StateVector::iterator child = rChildren().begin();
-                    while( child != children().end() && (**child).pSubstitution() != conflictSet->first )
+                    if( conflictSet->first != NULL )
                     {
-                        ++child;
-                    }
-
-                    if( child != children().end() )
-                    {
-                        if( (**child).hasSubstitutionResults() )
+                        StateVector::iterator child = rChildren().begin();
+                        while( child != children().end() && (**child).pSubstitution() != conflictSet->first )
                         {
-                            if( (**child).hasSubResultsCombination() )
-                            {
-                                SubResultCombination::iterator subResComb = (**child).rSubResultCombination().begin();
-                                while( subResComb != (**child).subResultCombination().end() )
-                                {
-                                    subResComb->second = 0;
-                                    ++subResComb;
-                                }
-                            }
-                            SubstitutionResults::iterator subResult = (**child).rSubstitutionResults().begin();
-                            while( subResult != (**child).substitutionResults().end() )
-                            {
-                                SubstitutionResult::iterator condConj = subResult->begin();
-                                while( condConj != subResult->end() )
-                                {
-                                    condConj->second = false;
-                                    ++condConj;
-                                }
-                                ++subResult;
-                            }
+                            ++child;
                         }
-                        (**child).rInconsistent() = false;
+
+                        if( child != children().end() )
+                        {
+                            if( (**child).hasSubstitutionResults() )
+                            {
+                                if( (**child).hasSubResultsCombination() )
+                                {
+                                    SubResultCombination::iterator subResComb = (**child).rSubResultCombination().begin();
+                                    while( subResComb != (**child).subResultCombination().end() )
+                                    {
+                                        subResComb->second = 0;
+                                        ++subResComb;
+                                    }
+                                }
+                                SubstitutionResults::iterator subResult = (**child).rSubstitutionResults().begin();
+                                while( subResult != (**child).substitutionResults().end() )
+                                {
+                                    SubstitutionResult::iterator condConj = subResult->begin();
+                                    while( condConj != subResult->end() )
+                                    {
+                                        condConj->second = false;
+                                        ++condConj;
+                                    }
+                                    ++subResult;
+                                }
+                            }
+                            (**child).rInconsistent() = false;
+                        }
+                    }
+                    else
+                    {
+                        rInconsistent() = false;
                     }
 
                     mpConflictSets->erase( conflictSet++ );
@@ -1970,11 +1979,13 @@ namespace vs
             }
 
             bool conditionDeleted = false;
+            bool recentlyAddedConditionLeft = false;
             while( !_conditionsToDelete.empty() )
             {
                 /*
                  * Delete the condition from the vector this state considers.
                  */
+                recentlyAddedConditionLeft = false;
                 for( ConditionVector::iterator cond = rConditions().begin(); cond != conditions().end(); ++cond )
                 {
                     if( *cond == _conditionsToDelete.back() )
@@ -1986,6 +1997,7 @@ namespace vs
                         conditionDeleted = true;
                         break;
                     }
+                    else if( (*cond)->recentlyAdded() ) recentlyAddedConditionLeft = true;
                 }
                 _conditionsToDelete.pop_back();
             }
@@ -1997,6 +2009,7 @@ namespace vs
                     mStateType              = COMBINE_SUBRESULTS;
                 }
                 mInconsistent = false;
+                mHasRecentlyAddedConditions = recentlyAddedConditionLeft;
             }
         }
 

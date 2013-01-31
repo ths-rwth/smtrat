@@ -40,7 +40,6 @@ namespace smtrat
     /**
      * Constructors:
      */
-
     VSModule::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager ):
         Module( _type, _formula, _tsManager ),
         mFreshConstraintReceived( false ),
@@ -53,9 +52,7 @@ namespace smtrat
         mAllVariables(),
         mFormulaConditionMap(),
         mRanking()
-    {
-
-    }
+    {}
 
     /**
      * Destructor:
@@ -151,104 +148,46 @@ namespace smtrat
     {
         if( (*_subformula)->getType() == REALCONSTRAINT )
         {
-            #ifdef VS_BACKTRACKING
+//            mpStateTree->print();
+
+            mInconsistentConstraintAdded = false;
+            auto formulaConditionPair = mFormulaConditionMap.find( *_subformula );
+            assert( formulaConditionPair != mFormulaConditionMap.end() );
+            vs::Condition* condToDelete = formulaConditionPair->second;
             eraseDTsOfRanking( *mpStateTree );
-            ConditionVector condsToDelete  = ConditionVector();
-            ConditionVector condsToDeleteB = ConditionVector();
-            assert( mpStateTree->hasSubstitutionResults() );
             assert( mpStateTree->substitutionResults().size() == 1 );
             assert( mpStateTree->substitutionResults().back().size() == 1 );
-            assert( receivedFormulaSize() == mpStateTree->substitutionResults().back().back().first.size() );
-            #endif
-            vs::Condition*    pCondition = mFormulaConditionMap[*_subformula];
-            mFormulaConditionMap.erase( *_subformula );
-            delete pCondition;
-            #ifdef VS_BACKTRACKING
-            bool firstConstraintToRemoveFound = false;
-            for( ConditionVector::iterator cond = mpStateTree->rSubstitutionResults().back().back().first.begin();
-                    cond != mpStateTree->rSubstitutionResults().back().back().first.end(); ++cond )
+            ConditionVector& subResult = mpStateTree->rSubstitutionResults().back().back().first;
+            auto cond = subResult.begin();
+            while( cond != subResult.end() )
             {
-                if( firstConstraintToRemoveFound )
+                ConditionSet::iterator oCond = (*cond)->pOriginalConditions()->begin();
+                while( oCond != (*cond)->originalConditions().end() )
                 {
-                    condsToDeleteB.push_back( *cond );
-                    mpStateTree->rSubstitutionResults().back().back().first.erase( cond );
-                }
-                else if( (*cond)->constraint() == **constraintsToRemove.begin() )
-                {
-                    condsToDeleteB.push_back( *cond );
-                    mpStateTree->rSubstitutionResults().back().back().first.erase( cond );
-                    firstConstraintToRemoveFound = true;
-                }
-            }
-            assert( firstConstraintToRemoveFound );
-
-            /*
-            * Collect the conditions having the conditions to delete as original conditions.
-            */
-            ConditionVector conditionsToDeleteInRoot = ConditionVector();
-            for( ConditionVector::iterator cond = mpStateTree->rConditions().begin(); cond != mpStateTree->conditions().end(); ++cond )
-            {
-                bool                   originalConditionDeleted = false;
-                ConditionSet::iterator oCond                    = (**cond).rOriginalConditions().begin();
-                while( oCond != (**cond).originalConditions().end() )
-                {
-                    ConditionVector::const_iterator condToDel = condsToDelete.begin();
-                    while( condToDel != condsToDelete.end() )
+                    if( *oCond == condToDelete )
                     {
-                        if( *oCond == *condToDel )
-                        {
-                            break;
-                        }
-                        condToDel++;
+                        (*cond)->pOriginalConditions()->erase( oCond );
+                        break;
                     }
-                    if( condToDel != condsToDelete.end() )
-                    {
-                        (**cond).rOriginalConditions().erase( oCond++ );
-                        originalConditionDeleted = true;
-                    }
-                    else
-                    {
-                        oCond++;
-                    }
+                    ++oCond;
                 }
-                if( originalConditionDeleted )
+                if( oCond != (*cond)->originalConditions().end() )
                 {
-                    conditionsToDeleteInRoot.push_back( *cond );
+                    cond = subResult.erase( cond );
+                }
+                else
+                {
+                    ++cond;
                 }
             }
-
-            /*
-            * Delete the conditions having only conditions to delete as original conditions.
-            */
-            mpStateTree->deleteConditions( conditionsToDeleteInRoot );
-
-            while( !condsToDelete.empty() )
-            {
-                vs::Condition* rpCond = condsToDelete.back();
-                condsToDelete.pop_back();
-                delete rpCond;
-            }
-
-            while( !condsToDeleteB.empty() )
-            {
-                vs::Condition* rpCond = condsToDeleteB.back();
-                condsToDeleteB.pop_back();
-                delete rpCond;
-            }
-
             mpStateTree->rTakeSubResultCombAgain() = true;
-
+            mpStateTree->rStateType() = COMBINE_SUBRESULTS;
+            mpStateTree->refreshConditions();
             insertDTsinRanking( mpStateTree );
-            mpStateTree->rTakeSubResultCombAgain() = true;
-            #endif
+            mFormulaConditionMap.erase( formulaConditionPair );
+            delete condToDelete;
 
-            #ifndef VS_BACKTRACKING
-            #ifdef VS_INCREMENTAL
-            reset();
-            #endif
-            #endif
-
-            mFreshConstraintReceived = true;
+//            mpStateTree->print();
         }
         Module::removeSubformula( _subformula );
     }
@@ -285,9 +224,6 @@ namespace smtrat
                 }
             }
             mFreshConstraintReceived = false;
-            #ifndef VS_INCREMENTAL
-            reset();
-            #endif
             if( mpReceivedFormula->empty() )
             {
                 #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
@@ -352,7 +288,7 @@ namespace smtrat
                             insertDTinRanking( currentState->pFather() );
                         }
                     }
-                    else if( currentState->hasRecentlyAddedConditions() )
+                    else if( currentState->hasRecentlyAddedConditions() && !(currentState->takeSubResultCombAgain() && currentState->isRoot() ) )
                     {
                         #ifdef VS_DEBUG
                         cout << "*** Propagate new conditions :" << endl;
@@ -1479,10 +1415,8 @@ namespace smtrat
     void VSModule::updateInfeasibleSubset()
     {
         #ifdef VS_INFEASIBLE_SUBSET_GENERATION
-
         /*
-         * Determine the minimum covering sets of the conflict sets, i.e. the infeasible subsets
-         * of the root.
+         * Determine the minimum covering sets of the conflict sets, i.e. the infeasible subsets of the root.
          */
         ConditionSetSet minCoverSets = ConditionSetSet();
         ConditionSetSetSet confSets  = ConditionSetSetSet();
@@ -1499,16 +1433,20 @@ namespace smtrat
             }
         }
         allMinimumCoveringSets( confSets, minCoverSets );
+        if( minCoverSets.empty() )
+        {
+            printAll();
+        }
         assert( !minCoverSets.empty() );
 
         /*
          * Change the globally stored infeasible subset to the smaller one.
          */
         mInfeasibleSubsets.clear();
-        mInfeasibleSubsets.push_back( set<const Formula*>() );
         for( ConditionSetSet::const_iterator minCoverSet = minCoverSets.begin(); minCoverSet != minCoverSets.end(); ++minCoverSet )
         {
             assert( !minCoverSet->empty() );
+            mInfeasibleSubsets.push_back( set<const Formula*>() );
             for( ConditionSet::const_iterator cond = minCoverSet->begin(); cond != minCoverSet->end(); ++cond )
             {
                 for( ConditionSet::const_iterator oCond = (**cond).originalConditions().begin(); oCond != (**cond).originalConditions().end();
@@ -1540,74 +1478,6 @@ namespace smtrat
             mInfeasibleSubsets.back().insert( *cons );
         }
         #endif
-    }
-
-    /**
-     * Restores the module to the initial state after adding all constraints it
-     * considered before and where no consistency check has been applied yet.
-     */
-    void VSModule::reset()
-    {
-        /*
-         * Delete everything but the received constraints and their variables including
-         * the variable valuations.
-         */
-        mRanking.clear();
-        delete mpStateTree;
-
-        /*
-         * Initialize everything but the received constraints and their variables including
-         * the variable valuations.
-         */
-        mInconsistentConstraintAdded = false;
-        mIDCounter                   = 0;
-        mInfeasibleSubsets.clear();
-        mpStateTree = new State();
-
-        FormulaConditionMap::iterator cons = mFormulaConditionMap.begin();
-        while( cons != mFormulaConditionMap.end() )
-        {
-            /*
-             * Check the consistency of the constraint to add.
-             */
-            unsigned isConstraintConsistent = cons->first->constraint().isConsistent();
-
-            /*
-             * Clear the ranking.
-             */
-            if( isConstraintConsistent != 1 )
-            {
-                eraseDTsOfRanking( *mpStateTree );
-                mIDCounter = 0;
-
-                /*
-                 * Add the variables of the new constraint to the history of all occurred variables.
-                 */
-                if( isConstraintConsistent == 2 )
-                {
-                    ConditionSet oConds = ConditionSet();
-                    oConds.insert( cons->second );
-
-                    vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
-                    DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
-                    ConditionVector condVector                   = ConditionVector();
-                    condVector.push_back( new vs::Condition( cons->first->pConstraint(), false, oConds, 0 ) );
-                    subResult.push_back( condVector );
-                    subResults.push_back( subResult );
-                    mpStateTree->addSubstitutionResults( subResults );
-
-                    mpStateTree->rHasRecentlyAddedConditions() = true;
-                    insertDTinRanking( mpStateTree );
-                }
-                else if( isConstraintConsistent == 0 )
-                {
-                    mInfeasibleSubsets.push_back( set<const Formula*>() );
-                    mInfeasibleSubsets.back().insert( cons->first );
-                    mInconsistentConstraintAdded = true;
-                }
-            }
-            ++cons;
-        }
     }
 
     /**

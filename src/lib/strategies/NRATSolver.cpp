@@ -39,7 +39,7 @@ namespace smtrat
         unsigned position = 0;
         #ifdef SMTRAT_ENABLE_Preprocessing
         position = rStrategyGraph().addModuleType( position, MT_Preprocessing );
-        #else        
+        #else
         position = rStrategyGraph().addModuleType( position, MT_CNFerModule );
         #endif
         position = rStrategyGraph().addModuleType( position, MT_SATModule );
@@ -52,7 +52,7 @@ namespace smtrat
         #ifdef SMTRAT_ENABLE_GroebnerModule
         position = rStrategyGraph().addModuleType( position, MT_GroebnerModule );
         #endif
-  
+
         #ifdef SMTRAT_ENABLE_VSModule
         position = rStrategyGraph().addModuleType( position, MT_VSModule );
         #endif

@@ -674,16 +674,16 @@ namespace smtrat
         // Do not store theory lemma
         if( add_tmp.size() == 1 )
         {
-            if( _type == DEDUCTED_CLAUSE || _type == CONFLICT_CLAUSE ) cancelUntil( 0 );
-            #ifdef SMTRAT_ENABLE_VALIDATION
-            // this is often an indication that something is wrong with our theory, so we do store our assumptions.
-            if( value( add_tmp[0] ) != l_Undef )
-                Module::storeAssumptionsToCheck( *mpManager );
-            #endif
-            // This assertion is from uncheckedEnqueue and is here for debug purposes.
-            assert( value( add_tmp[0] ) == l_Undef );
-            uncheckedEnqueue( add_tmp[0] );
-            ok = ok && (propagate() == CRef_Undef);
+            cancelUntil( 0 );
+            if( value( add_tmp[0] ) == l_Undef )
+            {
+                uncheckedEnqueue( add_tmp[0] );
+                ok = ok && (propagate() == CRef_Undef);
+            }
+            else
+            {
+                ok = false;
+            }
             return false;
         }
         // Learn theory lemma
@@ -1094,6 +1094,7 @@ FindSecond:
                                     cout << "### { ";
                                     #endif
                                     confl = learnTheoryConflict( *bestInfeasibleSubset );
+                                    if( !ok ) return l_False;
                                     #else
                                     int conflictSize = mpPassedFormula->size() + 1;
                                     for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
@@ -1202,6 +1203,7 @@ FindSecond:
                     learnts.push( cr );
                     attachClause( cr );
                     claBumpActivity( ca[cr] );
+                    if( value( learnt_clause[0] ) == l_Undef ) Module::storeAssumptionsToCheck( *mpManager );
                     assert( value( learnt_clause[0] ) == l_Undef );
                     uncheckedEnqueue( learnt_clause[0], cr );
                 }
@@ -1754,7 +1756,6 @@ NextClause:
         if( addClause( learnt_clause, CONFLICT_CLAUSE ) )
         {
             CRef conflictClause = learnts.last();
-            // learnts.pop();
             return conflictClause;
         }
         else
