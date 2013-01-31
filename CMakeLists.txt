@@ -32,10 +32,13 @@ set( smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
 option(BUILD_SOLVER "Build the SMT-RAT Solver" ON)
 option(BUILD_GUI "Build the GUI" OFF)
-option(GATHER_STATS "Gather statistics during the calculation" OFF)
 option(USE_NSS "Compile the NSS Module" OFF)
 option(USE_GINACRA "Compile modules using GiNaCRA" ON)
-option(SMTRAT_ENABLE_VALIDATION "Output intermediate states in an smt2 file")
+
+# Development options
+option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file")
+option(SMTRAT_DEVOPTION_MeasureTime "Measure times and number of calls")
+option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering")
 
 
 if(NOT USE_GINACRA)

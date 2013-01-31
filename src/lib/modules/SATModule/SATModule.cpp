@@ -149,7 +149,7 @@ namespace smtrat
         mBooleanVarMap(),
         mFormulaClauseMap(),
         mMaxSatAssigns()
-        #ifdef GATHER_STATS
+        #ifdef SMTRAT_DEVOPTION_Stats
         , mStats(new SATstatistics())
         #endif
     {
@@ -226,7 +226,7 @@ namespace smtrat
             assumptions.clear();
             if( !ok )
             {
-                #ifdef GATHER_STATS
+                #ifdef SMTRAT_DEVOPTION_Stats
                 collectStats();
                 #endif
                 mSolverState = False;
@@ -247,7 +247,7 @@ namespace smtrat
             cancelUntil( 0 ); // TODO: remove it, when sure incrementality (removeSubformula) is working
             if( result == l_True )
             {
-                #ifdef GATHER_STATS
+                #ifdef SMTRAT_DEVOPTION_Stats
                 collectStats();
                 #endif
                 mSolverState = True;
@@ -266,7 +266,7 @@ namespace smtrat
                     infeasibleSubset.insert( *subformula );
                 }
                 mInfeasibleSubsets.push_back( infeasibleSubset );
-                #ifdef GATHER_STATS
+                #ifdef SMTRAT_DEVOPTION_Stats
                 collectStats();
                 #endif
                 mSolverState = False;
@@ -274,7 +274,7 @@ namespace smtrat
             }
             else
             {
-                #ifdef GATHER_STATS
+                #ifdef SMTRAT_DEVOPTION_Stats
                 collectStats();
                 #endif
                 mSolverState = Unknown;
@@ -536,7 +536,7 @@ namespace smtrat
              */
             Var constraintAbstraction;
 
-            #ifdef GATHER_STATS
+            #ifdef SMTRAT_DEVOPTION_Stats
             if( _preferredToTSolver )
             {
                 mStats->initialTrue();
@@ -645,7 +645,7 @@ namespace smtrat
         add_tmp.clear();
         _clause.copyTo( add_tmp );
 
-        #ifdef GATHER_STATS
+        #ifdef SMTRAT_DEVOPTION_Stats
         if( _type != NORMAL_CLAUSE ) mStats->lemmaLearned();
         #endif
         // Check if clause is satisfied and remove false/duplicate literals:
@@ -677,7 +677,7 @@ namespace smtrat
         if( add_tmp.size() == 1 )
         {
             if( _type == DEDUCTED_CLAUSE || _type == CONFLICT_CLAUSE ) cancelUntil( 0 );
-            #ifdef SMTRAT_ENABLE_VALIDATION
+            #ifdef SMTRAT_DEVOPTION_Validation
             // this is often an indication that something is wrong with our theory, so we do store our assumptions.
             if( value( add_tmp[0] ) != l_Undef )
                 Module::storeAssumptionsToCheck( *mpManager );
@@ -1044,7 +1044,7 @@ FindSecond:
                                         deduction != (*backend)->deductions().end(); ++deduction )
                                 {
                                     deductionsLearned = true;
-                                    #ifdef SMTRAT_ENABLE_VALIDATION
+                                    #ifdef SMTRAT_DEVOPTION_Validation
                                     if( validationSettings->logLemmata() )
                                     {
                                         Formula notLemma = Formula( NOT );
@@ -1083,7 +1083,7 @@ FindSecond:
                                     for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
                                             infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                                     {
-                                        #ifdef SMTRAT_ENABLE_VALIDATION
+                                        #ifdef SMTRAT_DEVOPTION_Validation
                                         if( validationSettings->logInfSubsets() )
                                         {
                                             addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
@@ -1109,7 +1109,7 @@ FindSecond:
                                         cout << "### { ";
                                         #endif
 
-                                        #ifdef SMTRAT_ENABLE_VALIDATION
+                                        #ifdef SMTRAT_DEVOPTION_Validation
                                         if( validationSettings->logInfSubsets() )
                                         {
                                             addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
@@ -1225,7 +1225,7 @@ FindSecond:
                     learnts.push( cr );
                     attachClause( cr );
                     claBumpActivity( ca[cr] );
-                    #ifdef SMTRAT_ENABLE_VALIDATION
+                    #ifdef SMTRAT_DEVOPTION_Validation
                     // this is often an indication that something is wrong with our theory, so we do store our assumptions.
                     if( value( learnt_clause[0] ) != l_Undef )
                         Module::storeAssumptionsToCheck( *mpManager );
@@ -2223,7 +2223,7 @@ NextClause:
      */
     void SATModule::collectStats()
     {
-        #ifdef GATHER_STATS
+        #ifdef SMTRAT_DEVOPTION_Stats
         mStats->nrTotalVariables = nVars();
         mStats->nrUnassignedVariables = nFreeVars();
         mStats->nrClauses = nClauses();

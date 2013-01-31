@@ -33,7 +33,7 @@
 #include "StatisticSettings.h"
 
 
-#ifdef GATHER_STATS
+#ifdef SMTRAT_DEVOPTION_Stats
 
 #include <vector>
 #include <iostream>

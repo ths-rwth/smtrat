@@ -22,7 +22,7 @@
 
 #include "../../config.h"
 #include "GBCalculationStatistics.h"
-#ifdef GATHER_STATS
+#ifdef SMTRAT_DEVOPTION_Stats
 
 #include <algorithm>
 namespace smtrat 

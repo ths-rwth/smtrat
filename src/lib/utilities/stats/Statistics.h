@@ -10,7 +10,7 @@
 
 #include "../../config.h"
 
-#ifdef GATHER_STATS
+#ifdef SMTRAT_DEVOPTION_Stats
 
 #include <iostream>
 #include <sstream>

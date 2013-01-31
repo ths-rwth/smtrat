@@ -70,7 +70,7 @@ namespace smtrat
      */
     class Module
     {
-        #ifdef SMTRAT_ENABLE_VALIDATION
+        #ifdef SMTRAT_DEVOPTION_Validation
         friend class ValidationSettings;
         #endif
         public:
@@ -131,7 +131,7 @@ namespace smtrat
             static std::vector<std::string> mAssumptionToCheck;
             static std::set<std::string> mVariablesInAssumptionToCheck;
             
-            #ifdef SMTRAT_ENABLE_VALIDATION
+            #ifdef SMTRAT_DEVOPTION_Validation
             static ValidationSettings* validationSettings;
             #endif
 

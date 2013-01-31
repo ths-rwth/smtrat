@@ -9,7 +9,9 @@
 #cmakedefine USE_GINACRA
 
 // Whether the validation in the module should be enabled
-#cmakedefine SMTRAT_ENABLE_VALIDATION
+#cmakedefine SMTRAT_DEVOPTION_Validation
+#cmakedefine SMTRAT_DEVOPTION_Stats
+#cmakedefine SMTRAT_DEVOPTION_MeasureTime
 
 #cmakedefine SMTRAT_ENABLE_GroebnerModule
 #cmakedefine SMTRAT_ENABLE_CADModule
