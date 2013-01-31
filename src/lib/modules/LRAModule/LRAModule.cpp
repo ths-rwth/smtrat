@@ -146,7 +146,7 @@ namespace smtrat
                         set<const Formula*> originSet = set<const Formula*>();
                         originSet.insert( *_subformula );
                         activateBound( *bounds->begin(), originSet );
-
+                        
                         assert( mInfeasibleSubsets.empty() || !mInfeasibleSubsets.begin()->empty() );
                         return mInfeasibleSubsets.empty() || !mNonlinearConstraints.empty();
                     }
@@ -184,7 +184,7 @@ namespace smtrat
      * @param _subformula The position of the constraint within the received constraints.
      */
     void LRAModule::removeSubformula( Formula::const_iterator _subformula )
-    {
+    { 
         #ifdef DEBUG_LRA_MODULE
         cout << "remove " << **_subformula << endl;
         #endif
