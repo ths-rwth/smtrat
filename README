@@ -6,6 +6,7 @@ Project sourceforge page: http://smtrat.sourceforge.net/
 Development status: beta
 
 * Prerequisites
+	- A C++ Compiler with c++0x capabilities. We assume GCC 4.5 or higher.
     - The build system CMake (only for building the library): http://www.cmake.org/
     - The library CLN: http://www.ginac.de/CLN/
     - The library GiNaC: http://www.ginac.de/
@@ -17,18 +18,16 @@ Development status: beta
     - The build system Ant (only for building the gui): http://ant.apache.org/
     - A Java development environment >= 1.6 (only for building the gui): http://www.oracle.com/technetwork/java/index.html
 
+* Run the solver
+The solver can be found in the build directory. It is usually called smtratSolver. It accepts .smt2 files as described by the smtlib (http://www.smtlib.org/).
+For more information, run './smtratSolver --help'. To run the solver on an inputfile 'input.smt2' run './smtratSolver input.smt2'.
+
 
 * How to build the project including library and the binary (solver)
 mkdir build         // Create a separate build directory.
 cd build
 cmake ..            // Configure using cmake. Use "ccmake .." in order for an interactive user interface with more options.
 make                // Build the project, in particular, build the solver smtratSolver
-
-* How to build the binary which uses CAD and GB
-mkdir build
-cd build
-cmake .. -i			//No advanced options, then, keep all settings as before, but set USE_CAD, USE_GINACRA and USE_GB to to ON
-make 
 
 * Other targets to make
 
@@ -48,10 +47,9 @@ Required: Doxygen: http://www.stack.nl/~dimitri/doxygen/
 make doc
 
 * Note on how to include a new module
-  - Add NewModule.{h,cpp} to src/modules.
-  - Add '#include "NewModule.h"'src/modules/Modules.h.
-  - Add MT_NewModule entry to TSModuleType in TSModule.h.
-  - Add NewModule.{h,cpp} to the variables lib_modules_headers resp. lib_modules_src in src/CMakeLists.
+  We included a little python script called writeModules.py. Run it with the name of the module as argument. 
+  It will create an empty but working script for you. 
+  You might have to lookup the cmake option SMTRAT_ENABLE_"modulename" to include it in the compilestack.
 
 * Troubleshooting
   - I have GiNaCRA installed but SMT-RAT does not find it!
