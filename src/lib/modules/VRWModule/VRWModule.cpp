@@ -81,12 +81,16 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
      */
     Answer VRWModule::isConsistent()
     {
-        std::list<Formula::iterator> notNecessary = mMatchingGraph.findIrrelevantConstraints(mpPassedFormula->end());
-        for(std::list<Formula::iterator>::const_iterator it = notNecessary.begin(); it != notNecessary.end(); ++it)
+        std::list<Formula::iterator> notNecessary;
+        do 
         {
-            assert(*it != mpPassedFormula->end());
-            scheduleSubformulaForRemovalFromPassedFormula(*it);
-        }
+            notNecessary = mMatchingGraph.findIrrelevantConstraints(mpPassedFormula->end());
+            for(std::list<Formula::iterator>::const_iterator it = notNecessary.begin(); it != notNecessary.end(); ++it)
+            {
+                assert(*it != mpPassedFormula->end());
+                scheduleSubformulaForRemovalFromPassedFormula(*it);
+            }
+        } while(!notNecessary.empty());
         
         Answer ans;
         if(handleScheduled())
