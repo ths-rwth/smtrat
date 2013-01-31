@@ -89,6 +89,8 @@ namespace smtrat
             
             std::pair<bool, Answer> callCacheLookup() const;
             void callCacheSave();
+            
+            void print();
     };
 
 }    // namespace smtrat

@@ -71,6 +71,7 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
      */
     Answer CacheModule::isConsistent()
     {
+        //print();
         std::pair<bool, Answer> result = callCacheLookup();
         if(result.first) 
         {
@@ -118,5 +119,18 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
     void CacheModule::callCacheSave() 
     {
         mCallCache.insert(std::pair<TCall, Answer>(mActualTCall, mSolverState));
+    }
+    
+    void CacheModule::print()
+    {
+        std::cout << "actual call:" << std::endl;
+        mActualTCall.passedConstraints.print();
+        
+        std::cout << "call cache:" << std::endl;
+        for(TCallCache::const_iterator it = mCallCache.begin(); it != mCallCache.end(); ++it )
+        {
+            it->first.passedConstraints.print();
+            std::cout << " --> " << it->second << std::endl;
+        }
     }
 }        
