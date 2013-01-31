@@ -981,6 +981,7 @@ FindSecond:
 
         for( ; ; )
         {
+            bool deductionsLearned = false;
             CRef confl = propagate();
 
             #ifdef DEBUG_SATMODULE
@@ -1033,7 +1034,6 @@ FindSecond:
                              */
                             learnt_clause.clear();
                             vector<Module*>::const_iterator backend = usedBackends().begin();
-                            bool deductionsLearned = false;
                             while( backend != usedBackends().end() )
                             {
                                 /*
@@ -1065,9 +1065,6 @@ FindSecond:
                             #ifdef DEBUG_SATMODULE
                             cout << "### Result: True!" << endl;
                             #endif
-                            #ifdef SAT_MODULE_THEORY_PROPAGATION
-                            if(deductionsLearned) continue;
-                            #endif  
                             break;
                         }
                         case False:
@@ -1152,6 +1149,11 @@ FindSecond:
                     }
                 }
             }
+            #ifdef SAT_MODULE_THEORY_PROPAGATION
+            if(deductionsLearned) continue;
+            #endif  
+            
+            
             #ifdef SATMODULE_WITH_CALL_NUMBER
             #ifndef DEBUG_SATMODULE
             #ifdef WITH_PROGRESS_ESTIMATION
@@ -1162,6 +1164,7 @@ FindSecond:
             cout.flush();
             #endif
             #endif
+                            
 
             if( confl != CRef_Undef )
             {
