@@ -59,6 +59,10 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
     {
         Module::assertSubformula( _subformula );
         addReceivedSubformulaToPassedFormula(_subformula);
+        if( (*_subformula)->getType() != REALCONSTRAINT ) return true;
+        assert((*_subformula)->getType() == REALCONSTRAINT);
+        ++(mActualTCall.nrConstraints);
+        mActualTCall.passedConstraints.setBit((*_subformula)->pConstraint()->id(), true);
         return true;
     }
 
@@ -67,15 +71,22 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
      */
     Answer CacheModule::isConsistent()
     {
-       
-        
-        Answer ans = runBackends();
-        if( ans == False )
+        std::pair<bool, Answer> result = callCacheLookup();
+        if(result.first) 
         {
-            getInfeasibleSubsets();
+            mSolverState = result.second;
         }
-        mSolverState = ans;
-        return ans;
+        else
+        {
+            Answer ans = runBackends();
+            if( ans == False )
+            {
+                getInfeasibleSubsets();
+            }
+            mSolverState = ans;
+            callCacheSave();
+        }
+        return mSolverState;
     }
 
     /**
@@ -85,8 +96,27 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
      */
     void CacheModule::removeSubformula( Formula::const_iterator _subformula )
     {
+        --(mActualTCall.nrConstraints);
+        mActualTCall.passedConstraints.setBit((*_subformula)->pConstraint()->id(), false);
         Module::removeSubformula( _subformula );
     }
     
-
-}
+    std::pair<bool,Answer> CacheModule::callCacheLookup() const
+    {
+        TCallCache::const_iterator value = mCallCache.find(mActualTCall);
+        if(value != mCallCache.end())
+        {
+            std::cout << "Cache hit" << std::endl;
+            return std::pair<bool,Answer>(true, value->second);
+        }
+        else
+        {
+            return std::pair<bool,Answer>(false, Unknown);
+        }
+    }
+    
+    void CacheModule::callCacheSave() 
+    {
+        mCallCache.insert(std::pair<TCall, Answer>(mActualTCall, mSolverState));
+    }
+}        

@@ -31,14 +31,42 @@
 #pragma once
 
 #include "../../Module.h"
+#include <unordered_map>
+#include <ginacra/datastructures/bitvector.h>
 
 namespace smtrat
 {
+    struct TCall 
+    {
+        GiNaCRA::BitVector passedConstraints;
+        unsigned nrConstraints;
+    };
+    
+    struct TCallHash
+    {
+        // TODO write a better hash (something with some bitoperations on the bitvector together with the nr of constraints.
+        size_t operator() (const TCall& tcall) const
+        {
+            return tcall.nrConstraints;
+        }
+    };
+    
+    
+    struct TCallEqual
+    {
+        size_t operator() (const TCall& tcall1, const TCall& tcall2) const
+        {
+            return (tcall1.nrConstraints == tcall2.nrConstraints && tcall1.passedConstraints == tcall2.passedConstraints);
+                   
+        }
+    };
 
     class CacheModule : public Module
     {
+        typedef std::unordered_map<TCall, Answer, TCallHash, TCallEqual> TCallCache;
         protected:
-            
+            TCallCache mCallCache;
+            TCall mActualTCall;
         public:
             /**
              * Constructors:
@@ -59,6 +87,8 @@ namespace smtrat
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
             
+            std::pair<bool, Answer> callCacheLookup() const;
+            void callCacheSave();
     };
 
 }    // namespace smtrat
