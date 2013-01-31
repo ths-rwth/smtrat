@@ -17,6 +17,7 @@
 #cmakedefine SMTRAT_ENABLE_Preprocessing
 #cmakedefine SMTRAT_ENABLE_VRWModule
 #cmakedefine SMTRAT_ENABLE_LRAModule
+#cmakedefine SMTRAT_ENABLE_CacheModule
 
 #cmakedefine GATHER_STATS
 
