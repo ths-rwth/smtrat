@@ -154,7 +154,7 @@ int main( int argc, char* argv[] )
     smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
 
     // Construct solver
-    smtrat::NRATSolver* nratSolver = new smtrat::NRATSolver( form );
+    CMakeStrategySolver* nratSolver = new CMakeStrategySolver( form );
     std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules(nratSolver);
 
     // Construct the settingsManager

@@ -35,6 +35,9 @@ option(BUILD_GUI "Build the GUI" OFF)
 option(USE_NSS "Compile the NSS Module" OFF)
 option(USE_GINACRA "Compile modules using GiNaCRA" ON)
 
+# Strategy
+set(SMTRAT_Strategy "NRATSolver" CACHE STRING "Used strategy in the solver")
+
 # Development options
 option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file")
 option(SMTRAT_DEVOPTION_MeasureTime "Measure times and number of calls")

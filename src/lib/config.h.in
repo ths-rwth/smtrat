@@ -21,8 +21,7 @@
 #cmakedefine SMTRAT_ENABLE_LRAModule
 #cmakedefine SMTRAT_ENABLE_CacheModule
 
-#cmakedefine GATHER_STATS
-
 // Take the GBsetting from cmake
 #define GBModuleSettings @SMTRAT_GBMODULE_SETTINGS@
 
+#define CMakeStrategySolver smtrat::@SMTRAT_Strategy@ 
