@@ -1734,7 +1734,7 @@ namespace smtrat
                                     }
                                 }
                             }
-                            #ifdef SMTRAT_ENABLE_VALIDATION
+                            #ifdef SMTRAT_DEVOPTION_Validation
                             if( validationSettings->logTCalls() )
                             {
                                 set<const smtrat::Constraint*> constraints = set<const smtrat::Constraint*>();

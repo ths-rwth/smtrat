@@ -7,7 +7,7 @@
  */
 
 #include "SATStatistics.h"
-#ifdef GATHER_STATS
+#ifdef SMTRAT_DEVOPTION_Stats
 #include "../../utilities/stats/Statistics.h"
 namespace smtrat {
 

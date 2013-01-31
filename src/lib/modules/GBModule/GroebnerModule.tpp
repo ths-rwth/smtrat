@@ -59,7 +59,7 @@ mInequalities( this ),
 mStateHistory( ),
 mRecalculateGB(false),
 mRuntimeSettings(static_cast<GBRuntimeSettings*>(settings))
-#ifdef GATHER_STATS
+#ifdef SMTRAT_DEVOPTION_Stats
     , mStats(GroebnerModuleStats::getInstance(Settings::identifier)),
         mGBStats(GBCalculationStats::getInstance(Settings::identifier))
 #endif
@@ -97,7 +97,7 @@ bool GroebnerModule<Settings>::assertSubformula( Formula::const_iterator _formul
         mListOfVariables.insert( *it );
     }
 
-    #ifdef GATHER_STATS
+    #ifdef SMTRAT_DEVOPTION_Stats
     mStats->constraintAdded(constraint.relation());
     #endif
 
@@ -194,7 +194,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
         return False;
     }
 
-    #ifdef GATHER_STATS
+    #ifdef SMTRAT_DEVOPTION_Stats
     mStats->called();
     #endif
 
@@ -232,7 +232,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
                 }
                 
                 addDeduction(deduction);
-                #ifdef GATHER_STATS
+                #ifdef SMTRAT_DEVOPTION_Stats
                 mStats->DeducedEquality();
                 #endif
             }
@@ -282,7 +282,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
         {
             if( mBasis.isConstant( ) )
             {
-                #ifdef GATHER_STATS
+                #ifdef SMTRAT_DEVOPTION_Stats
                 mStats->constantGB();
                 #endif
                 witness = mBasis.getGb( ).front( );
@@ -322,7 +322,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
                 }
             }
 
-            #ifdef GATHER_STATS
+            #ifdef SMTRAT_DEVOPTION_Stats
             mStats->EffectivenessOfConflicts(mInfeasibleSubsets.back().size()/mpReceivedFormula->size());
             #endif
 
@@ -388,7 +388,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
     Answer ans = runBackends( );
     if( ans == False )
     {
-        #ifdef GATHER_STATS
+        #ifdef SMTRAT_DEVOPTION_Stats
         mStats->backendFalse();
         #endif
         // use the infeasible subsets from our backends.
@@ -432,7 +432,7 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
                 // TODO handle 0 and 1.
                 // TODO handle other cases
                 // calculate q-root(reduce);
-                #ifdef GATHER_STATS
+                #ifdef SMTRAT_DEVOPTION_Stats
                 mStats->FoundEqualities();
                 std::cout << t << " -> " << reduce << std::endl;
                 #endif
@@ -441,7 +441,7 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
             //x^(m+1) - y^(n+1)
             else if( reduce.isReducedIdentity(*it, exponent))
             {
-                #ifdef GATHER_STATS
+                #ifdef SMTRAT_DEVOPTION_Stats
                 mStats->FoundIdentities();
                 std::cout << t << " -> " << reduce << std::endl;
                 #endif
@@ -470,7 +470,7 @@ void GroebnerModule<Settings>::removeSubformula( Formula::const_iterator _formul
         super::removeSubformula( _formula );
         return;
     }
-    #ifdef GATHER_STATS
+    #ifdef SMTRAT_DEVOPTION_Stats
     mStats->constraintRemoved((*_formula)->constraint().relation());
     #endif
     if( Settings::transformIntoEqualities == ALL_INEQUALITIES )
@@ -586,7 +586,7 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
         }
     }
 
-    #ifdef GATHER_STATS
+    #ifdef SMTRAT_DEVOPTION_Stats
     mStats->PopLevel(nrOfBacktracks);
     #endif
 
@@ -841,7 +841,7 @@ InequalitiesTable<Settings>::InequalitiesTable( GroebnerModule<Settings>* module
 {
     mBtnumber = 0;
     mNewConstraints = mReducedInequalities.begin( );
-    #ifdef GATHER_STATS
+    #ifdef SMTRAT_DEVOPTION_Stats
     mStats = GroebnerModuleStats::getInstance(Settings::identifier);
     #endif
 }
@@ -959,7 +959,7 @@ Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const Ideal& gb )
     {
         // The formula is not passed because it is satisfiable.
         if( !reduceWRTGroebnerBasis( it, gb ) ) {
-            #ifdef GATHER_STATS
+            #ifdef SMTRAT_DEVOPTION_Stats
             mStats->infeasibleInequality();
             #endif
             return False;
@@ -973,7 +973,7 @@ Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const Ideal& gb )
         }
         else
         {
-            #ifdef GATHER_STATS
+            #ifdef SMTRAT_DEVOPTION_Stats
             mStats->infeasibleInequality();
             #endif
             return False;
@@ -1000,7 +1000,7 @@ Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const std::list<type
     {
         assert( std::get < 1 > ((*it)->second) != CR_EQ );
         if( !reduceWRTGroebnerBasis( *it, gb ) ) {
-            #ifdef GATHER_STATS
+            #ifdef SMTRAT_DEVOPTION_Stats
             mStats->infeasibleInequality();
             #endif
             return False;
@@ -1014,7 +1014,7 @@ Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const std::list<type
         }
         else
         {
-            #ifdef GATHER_STATS
+            #ifdef SMTRAT_DEVOPTION_Stats
             mStats->infeasibleInequality();
             #endif
             return False;
@@ -1105,7 +1105,7 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                     deduction->addSubformula(((*(it->first))->pConstraint( )));
 
                     mModule->addDeduction(deduction);
-                    #ifdef GATHER_STATS
+                    #ifdef SMTRAT_DEVOPTION_Stats
                     mStats->DeducedInequality();
                     #endif
 
@@ -1116,9 +1116,9 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
 
                 std::set<const Formula*> infeasibleSubset( mModule->generateReasons( reduced.getOrigins( ).getBitVector( ) ) );
                 infeasibleSubset.insert( *(it->first) );
-                #ifdef GATHER_STATS
+                #ifdef SMTRAT_DEVOPTION_Stats
                 mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->mpReceivedFormula->size());
-                #endif //GATHER_STATS
+                #endif //SMTRAT_DEVOPTION_Stats
                 mModule->mInfeasibleSubsets.push_back( infeasibleSubset );
                 if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
                 {

@@ -442,7 +442,7 @@ namespace smtrat
     const VarInfo& Constraint::varInfo( const ex& _variable ) const
     {
         VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
-        assert( varInfo != mVarInfoMap.end() );
+        assert( varInfo != mVarInfoMap.end() ); // variable not in constraint.
         return varInfo->second;
     }
 

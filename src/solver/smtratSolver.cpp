@@ -37,10 +37,10 @@
 #include "../lib/modules/AddModules.h"
 #include "../lib/config.h"
 
-#ifdef GATHER_STATS
+#ifdef SMTRAT_DEVOPTION_Stats
 #include "../lib/utilities/stats/CollectStatistics.h"
 #include "lib/utilities/stats/StatisticSettings.h"
-#endif //GATHER_STATS
+#endif //SMTRAT_DEVOPTION_Stats
 
 
 struct Smt2Options
@@ -154,20 +154,20 @@ int main( int argc, char* argv[] )
     smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
 
     // Construct solver
-    smtrat::NRATSolver* nratSolver = new smtrat::NRATSolver( form );
+    CMakeStrategySolver* nratSolver = new CMakeStrategySolver( form );
     std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules(nratSolver);
 
     // Construct the settingsManager
     smtrat::RuntimeSettingsManager settingsManager;
     // Introduce the smtrat core settingsObjects to the manager.
-    #ifdef SMTRAT_ENABLE_VALIDATION
+    #ifdef SMTRAT_DEVOPTION_Validation
     settingsManager.addSettingsObject("validation", smtrat::Module::validationSettings);
     #endif
     // Create and introduce a parser settings object.
     smtrat::ParserSettings* parserSettings = new smtrat::ParserSettings();
     settingsManager.addSettingsObject("parser", parserSettings);
     // Introduce the settingsobject for the statistics to the manager.
-    #ifdef GATHER_STATS
+    #ifdef SMTRAT_DEVOPTION_Stats
     settingsManager.addSettingsObject("stats", smtrat::CollectStatistics::settings);
     #endif
     // Introduce the settingsObjects from the modules to the manager
@@ -200,7 +200,7 @@ int main( int argc, char* argv[] )
     delete nratSolver;
     delete form;
     // Export statistics
-    #ifdef GATHER_STATS
+    #ifdef SMTRAT_DEVOPTION_Stats
     smtrat::CollectStatistics::produceOutput();
     #endif
 

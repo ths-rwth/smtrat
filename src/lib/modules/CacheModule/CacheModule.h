@@ -31,28 +31,59 @@
 #pragma once
 
 #include "../../Module.h"
-
-#include "../../VariableConstraintGraph.h"
+#include <unordered_map>
+#include <ginacra/datastructures/bitvector.h>
 
 namespace smtrat
 {
-    class VRWModule : public Module
+    struct TCall 
     {
+        GiNaCRA::BitVector passedConstraints;
+        unsigned nrConstraints;
+    };
+    
+    struct TCallResponse
+    {
+        Answer answer;
+        vec_set_const_pFormula infSubsets;
+    };
+    
+    struct TCallHash
+    {
+        // TODO write a better hash (something with some bitoperations on the bitvector together with the nr of constraints.
+        size_t operator() (const TCall& tcall) const
+        {
+            return tcall.nrConstraints;
+        }
+    };
+    
+    
+    struct TCallEqual
+    {
+        size_t operator() (const TCall& tcall1, const TCall& tcall2) const
+        {
+            return (tcall1.nrConstraints == tcall2.nrConstraints && tcall1.passedConstraints == tcall2.passedConstraints);
+                   
+        }
+    };
+
+    class CacheModule : public Module
+    {
+        typedef std::unordered_map<TCall, TCallResponse, TCallHash, TCallEqual> TCallCache;
         protected:
-            VariableConstraintGraph mMatchingGraph;
-            /// mapping received constraint -> node in the graph
-            std::map<Formula::const_iterator, std::list<ConstraintNode*>::iterator, dereference_compare> mConstraintPositions; 
+            TCallCache mCallCache;
             
+            TCall mActualTCall;
         public:
             /**
              * Constructors:
              */
-            VRWModule( ModuleType, const Formula* const,  RuntimeSettings*, Manager* const _tsManager );
+            CacheModule( ModuleType, const Formula* const,  RuntimeSettings*, Manager* const _tsManager );
 
             /**
              * Destructor:
              */
-            virtual ~VRWModule();
+            virtual ~CacheModule();
 
             /**
              * Methods:
@@ -63,7 +94,10 @@ namespace smtrat
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
             
-            void printConstraintPositions();
+            bool callCacheLookup();
+            void callCacheSave();
+            
+            void print();
     };
 
 }    // namespace smtrat

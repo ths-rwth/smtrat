@@ -55,7 +55,8 @@
 #define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
 #define STORE_ONLY_ONE_REASON
-//#define SAT_MODULE_THEORY_PROPAGATION
+#define SAT_MODULE_THEORY_PROPAGATION
+#define SAT_MODULE_DONTSEND_DEDUCTIONS
 
 const static double FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY = 1.02;
 
@@ -148,7 +149,7 @@ namespace smtrat
         mBooleanVarMap(),
         mFormulaClauseMap(),
         mMaxSatAssigns()
-        #ifdef GATHER_STATS
+        #ifdef SMTRAT_DEVOPTION_Stats
         , mStats(new SATstatistics())
         #endif
     {
@@ -225,7 +226,7 @@ namespace smtrat
             assumptions.clear();
             if( !ok )
             {
-                #ifdef GATHER_STATS
+                #ifdef SMTRAT_DEVOPTION_Stats
                 collectStats();
                 #endif
                 mSolverState = False;
@@ -246,7 +247,7 @@ namespace smtrat
             cancelUntil( 0 ); // TODO: remove it, when sure incrementality (removeSubformula) is working
             if( result == l_True )
             {
-                #ifdef GATHER_STATS
+                #ifdef SMTRAT_DEVOPTION_Stats
                 collectStats();
                 #endif
                 mSolverState = True;
@@ -265,7 +266,7 @@ namespace smtrat
                     infeasibleSubset.insert( *subformula );
                 }
                 mInfeasibleSubsets.push_back( infeasibleSubset );
-                #ifdef GATHER_STATS
+                #ifdef SMTRAT_DEVOPTION_Stats
                 collectStats();
                 #endif
                 mSolverState = False;
@@ -273,7 +274,7 @@ namespace smtrat
             }
             else
             {
-                #ifdef GATHER_STATS
+                #ifdef SMTRAT_DEVOPTION_Stats
                 collectStats();
                 #endif
                 mSolverState = Unknown;
@@ -535,7 +536,7 @@ namespace smtrat
              */
             Var constraintAbstraction;
 
-            #ifdef GATHER_STATS
+            #ifdef SMTRAT_DEVOPTION_Stats
             if( _preferredToTSolver )
             {
                 mStats->initialTrue();
@@ -640,11 +641,12 @@ namespace smtrat
     bool SATModule::addClause( vec<Lit>& _clause, unsigned _type )
     {
         assert( _clause.size() != 0 );
+        assert( _type >= 0 && _type <= 2);
         add_tmp.clear();
         _clause.copyTo( add_tmp );
 
-        #ifdef GATHER_STATS
-        if( _type > NORMAL_CLAUSE ) mStats->lemmaLearned();
+        #ifdef SMTRAT_DEVOPTION_Stats
+        if( _type != NORMAL_CLAUSE ) mStats->lemmaLearned();
         #endif
         // Check if clause is satisfied and remove false/duplicate literals:
         sort( add_tmp );
@@ -690,19 +692,19 @@ namespace smtrat
         else
         {
             CRef cr;
-            if( _type > NORMAL_CLAUSE )
+            if( _type != NORMAL_CLAUSE )
             {
                 cr = ca.alloc( add_tmp, _type );
                 learnts.push( cr );
             }
-            else // NORMAL CLAUSE
+            else 
             {
                 cr = ca.alloc( add_tmp, false );
                 clauses.push( cr );
             }
             if( _type == DEDUCTED_CLAUSE )
             {
-                arangeForWatches( cr );
+                arrangeForWatches( cr );
                 if( value( add_tmp[1] ) != l_Undef )
                 {
                     cancelUntil( level( add_tmp ) );
@@ -730,7 +732,7 @@ namespace smtrat
      *
      * @param _clause The clause in which the literals shall be reordered.
      */
-    void SATModule::arangeForWatches( CRef _clauseRef )
+    void SATModule::arrangeForWatches( CRef _clauseRef )
     {
         Clause& clause = ca[_clauseRef];
         assert( clause.size() > 1 );
@@ -979,6 +981,7 @@ FindSecond:
 
         for( ; ; )
         {
+            bool deductionsLearned = false;
             CRef confl = propagate();
 
             #ifdef DEBUG_SATMODULE
@@ -990,6 +993,7 @@ FindSecond:
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
                 // TODO: Do not call the theory solver on instances which have already been proved to be consistent.
                 //       (Happens if the Boolean assignment is extended by assignments to false only)
+                
                 if( adaptPassedFormula() )
                 {
                     #ifdef DEBUG_SATMODULE
@@ -1039,7 +1043,8 @@ FindSecond:
                                 for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
                                         deduction != (*backend)->deductions().end(); ++deduction )
                                 {
-                                    #ifdef SMTRAT_ENABLE_VALIDATION
+                                    deductionsLearned = true;
+                                    #ifdef SMTRAT_DEVOPTION_Validation
                                     if( validationSettings->logLemmata() )
                                     {
                                         Formula notLemma = Formula( NOT );
@@ -1078,7 +1083,7 @@ FindSecond:
                                     for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
                                             infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                                     {
-                                        #ifdef SMTRAT_ENABLE_VALIDATION
+                                        #ifdef SMTRAT_DEVOPTION_Validation
                                         if( validationSettings->logInfSubsets() )
                                         {
                                             addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
@@ -1104,6 +1109,14 @@ FindSecond:
                                         (*backend)->printInfeasibleSubsets();
                                         cout << "### { ";
                                         #endif
+
+                                        #ifdef SMTRAT_DEVOPTION_Validation
+                                        if( validationSettings->logInfSubsets() )
+                                        {
+                                            addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
+                                        }
+                                        #endif
+                                        
                                         CRef tmpConfl = learnTheoryConflict( *infsubset );
                                         if( ca[tmpConfl].size() < conflictSize )
                                         {
@@ -1137,6 +1150,11 @@ FindSecond:
                     }
                 }
             }
+            #ifdef SAT_MODULE_THEORY_PROPAGATION
+            if(deductionsLearned) continue;
+            #endif  
+            
+            
             #ifdef SATMODULE_WITH_CALL_NUMBER
             #ifndef DEBUG_SATMODULE
             #ifdef WITH_PROGRESS_ESTIMATION
@@ -1147,6 +1165,7 @@ FindSecond:
             cout.flush();
             #endif
             #endif
+                            
 
             if( confl != CRef_Undef )
             {
@@ -1180,6 +1199,7 @@ FindSecond:
                 }
                 #endif
 
+                
                 analyze( confl, learnt_clause, backtrack_level );
 
                 #ifdef DEBUG_SATMODULE
@@ -1191,6 +1211,8 @@ FindSecond:
                 }
                 #endif
                 cancelUntil( backtrack_level );
+                
+
 
                 if( learnt_clause.size() == 1 )
                 {
@@ -1199,11 +1221,16 @@ FindSecond:
                 }
                 else
                 {
+                    // learnt clause is the asserting clause.
                     CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
                     learnts.push( cr );
                     attachClause( cr );
                     claBumpActivity( ca[cr] );
-                    if( value( learnt_clause[0] ) == l_Undef ) Module::storeAssumptionsToCheck( *mpManager );
+                    #ifdef SMTRAT_DEVOPTION_Validation
+                    // this is often an indication that something is wrong with our theory, so we do store our assumptions.
+                    if( value( learnt_clause[0] ) != l_Undef )
+                        Module::storeAssumptionsToCheck( *mpManager );
+                    #endif
                     assert( value( learnt_clause[0] ) == l_Undef );
                     uncheckedEnqueue( learnt_clause[0], cr );
                 }
@@ -1271,7 +1298,7 @@ FindSecond:
                         break;
                     }
                 }
-
+                // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
                 {
                     // New variable decision:
@@ -1284,7 +1311,6 @@ FindSecond:
                 }
 
                 // Increase decision level and enqueue 'next'
-
                 newDecisionLevel();
                 assert( value( next ) == l_Undef );
                 uncheckedEnqueue( next );
@@ -1515,6 +1541,7 @@ FindSecond:
         trail.push_( p );
         #ifdef SAT_MODULE_THEORY_PROPAGATION
         // Check whether the lit is a deduction via a learned clause.
+        #ifdef SAT_MODULE_DONTSEND_DEDUCTIONS
         if( from != CRef_Undef && ca[from].type() == DEDUCTED_CLAUSE && !sign( p ) && mBooleanConstraintMap[var( p )].formula != NULL  )
         {
             Clause& c           = ca[from];
@@ -1532,6 +1559,7 @@ FindSecond:
                 mBooleanConstraintMap[var( p )].updateInfo = 0;
             }
         }
+        #endif
         #endif
     }
 
@@ -2195,7 +2223,7 @@ NextClause:
      */
     void SATModule::collectStats()
     {
-        #ifdef GATHER_STATS
+        #ifdef SMTRAT_DEVOPTION_Stats
         mStats->nrTotalVariables = nVars();
         mStats->nrUnassignedVariables = nFreeVars();
         mStats->nrClauses = nClauses();

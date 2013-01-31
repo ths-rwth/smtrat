@@ -9,7 +9,9 @@
 #cmakedefine USE_GINACRA
 
 // Whether the validation in the module should be enabled
-#cmakedefine SMTRAT_ENABLE_VALIDATION
+#cmakedefine SMTRAT_DEVOPTION_Validation
+#cmakedefine SMTRAT_DEVOPTION_Statistics
+#cmakedefine SMTRAT_DEVOPTION_MeasureTime
 
 #cmakedefine SMTRAT_ENABLE_GroebnerModule
 #cmakedefine SMTRAT_ENABLE_CADModule
@@ -17,9 +19,9 @@
 #cmakedefine SMTRAT_ENABLE_Preprocessing
 #cmakedefine SMTRAT_ENABLE_VRWModule
 #cmakedefine SMTRAT_ENABLE_LRAModule
-
-#cmakedefine GATHER_STATS
+#cmakedefine SMTRAT_ENABLE_CacheModule
 
 // Take the GBsetting from cmake
 #define GBModuleSettings @SMTRAT_GBMODULE_SETTINGS@
 
+#define CMakeStrategySolver smtrat::@SMTRAT_Strategy@ 

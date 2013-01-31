@@ -275,6 +275,15 @@ namespace smtrat
             return (*pConstraintA) < (*pConstraintB);
         }
     };
+    
+    struct constraintIdComp
+    {
+        bool operator() (const Constraint* const pConstraintA, const Constraint* const pConstraintB ) const
+        {
+            return pConstraintA->id() < pConstraintB->id();
+        }
+    };
+    
     typedef std::set< const Constraint*, constraintPointerComp > ConstraintSet;
 }    // namespace smtrat
 

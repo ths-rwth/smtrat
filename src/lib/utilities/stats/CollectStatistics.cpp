@@ -32,7 +32,7 @@
 #include <iostream>
 
 #include "../../config.h"
-#ifdef GATHER_STATS
+#ifdef SMTRAT_DEVOPTION_Stats
 #include "StatisticSettings.h"
 #include "CollectStatistics.h"
 #include "../../modules/GBModule/GBModuleStatistics.h"
@@ -97,5 +97,5 @@ std::vector<Statistics*> CollectStatistics::stats = std::vector<Statistics*>();
 
 }
 
-#endif //GATHER_STATS
+#endif //SMTRAT_DEVOPTION_Stats
 

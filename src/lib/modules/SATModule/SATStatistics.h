@@ -10,7 +10,7 @@
 #define	SATSTATISTICS_H
 
 #include "../../utilities/stats/Statistics.h"
-#ifdef GATHER_STATS
+#ifdef SMTRAT_DEVOPTION_Stats
 
 namespace smtrat {
 

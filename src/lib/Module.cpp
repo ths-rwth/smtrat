@@ -40,7 +40,7 @@
 
 /// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
-//#define SMTRAT_MEASURE_MODULE_TIMES
+//#define SMTRAT_DEVOPTION_MeasureTime
 
 using namespace std;
 
@@ -49,7 +49,7 @@ namespace smtrat
     vector<string> Module::mAssumptionToCheck = vector<string>();
     set<string> Module::mVariablesInAssumptionToCheck = set<string>();
 
-    #ifdef SMTRAT_ENABLE_VALIDATION
+    #ifdef SMTRAT_DEVOPTION_Validation
     ValidationSettings* Module::validationSettings = new ValidationSettings();
     #endif
 
@@ -70,7 +70,7 @@ namespace smtrat
         mFirstSubformulaToPass( mpPassedFormula->end() ),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
         mSmallerMusesCheckCounter(0)
-#ifdef SMTRAT_MEASURE_MODULE_TIMES
+#ifdef SMTRAT_DEVOPTION_MeasureTime
         ,
             mTimerAddTotal(0),
             mTimerCheckTotal(0),
@@ -128,6 +128,7 @@ namespace smtrat
         {
             ++mFirstUncheckedReceivedSubformula;
         }
+        
 
         /*
          * Check if the constraint to delete is an original constraint of constraints in the vector
@@ -159,6 +160,7 @@ namespace smtrat
 
             if( formulaOrigins.empty() )
             {
+                mScheduledForRemoval.erase(passedSubformula);
                 passedSubformula = removeSubformulaFromPassedFormula( passedSubformula );
             }
             else
@@ -192,6 +194,7 @@ namespace smtrat
             }
         }
         if( mInfeasibleSubsets.empty() ) mSolverState = Unknown;
+        
     }
 
     /**
@@ -427,7 +430,7 @@ namespace smtrat
         for( vec_set_const_pFormula::const_iterator infSubSet = backendsInfsubsets.begin(); infSubSet != backendsInfsubsets.end(); ++infSubSet )
         {
             assert( !infSubSet->empty() );
-            #ifdef SMTRAT_ENABLE_VALIDATION
+            #ifdef SMTRAT_DEVOPTION_Validation
             if( validationSettings->logInfSubsets() )
             {
                 addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) + "_infeasible_subset" );
@@ -484,7 +487,7 @@ namespace smtrat
         passedFormulaCannotBeSolved();
 
         if( mpManager == NULL ) return Unknown;
-        #ifdef SMTRAT_MEASURE_MODULE_TIMES
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
         stopCheckTimer();
         #endif
         /*
@@ -503,7 +506,7 @@ namespace smtrat
             bool assertionFailed = false;
             for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
             {
-                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->startAddTimer();
                 #endif
                 for( Formula::const_iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
@@ -513,13 +516,13 @@ namespace smtrat
                         assertionFailed = true;
                     }
                 }
-                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->stopAddTimer();
                 #endif
             }
             if( assertionFailed )
             {
-                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 startCheckTimer();
                 #endif
                 return False;
@@ -538,15 +541,15 @@ namespace smtrat
             cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
             (*module)->print( cout, " ");
             #endif
-            #ifdef SMTRAT_MEASURE_MODULE_TIMES
+            #ifdef SMTRAT_DEVOPTION_MeasureTime
             (*module)->startCheckTimer();
             #endif
             result = (*module)->isConsistent();
-            #ifdef SMTRAT_MEASURE_MODULE_TIMES
+            #ifdef SMTRAT_DEVOPTION_MeasureTime
             (*module)->stopCheckTimer();
             #endif
             (*module)->receivedFormulaChecked();
-            #ifdef SMTRAT_ENABLE_VALIDATION
+            #ifdef SMTRAT_DEVOPTION_Validation
             if( validationSettings->logTCalls() )
             {
                 if( result != Unknown )
@@ -560,21 +563,101 @@ namespace smtrat
         #ifdef MODULE_VERBOSE
         cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : "Unknown")) << endl;
         #endif
-        #ifdef SMTRAT_MEASURE_MODULE_TIMES
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
         startCheckTimer();
         #endif
         return result;
     }
 
+    
+    void Module::scheduleSubformulaForRemovalFromPassedFormula( Formula::iterator _subformula ) 
+    {
+        assert( _subformula != mpPassedFormula->end() );
+        mScheduledForRemoval.insert(_subformula);
+    }
+    
+    void Module::scheduleSubformalaForAddingToPassedFormula( Formula::iterator _subformula )
+    {
+        mScheduledForAdding.insert(_subformula);
+    }
+    
+    bool operator<(const Formula::iterator& lhs, const Formula::iterator& rhs)
+    {
+        return *lhs < *rhs;
+    }
+    
+    bool Module::handleScheduled()
+    {
+        // We first want to remove everything which is scheduled for removal. 
+        // As some removal might not have been asserted on our backend, we have to prevent the backend call in these cases.
+        // For now, we simply run over the not yet asserted constraints and fix 
+        std::set<Formula::iterator, dereference_compare> removeLocal;
+        
+        std::set_intersection(mScheduledForAdding.begin(),mScheduledForAdding.end(), mScheduledForRemoval.begin(), mScheduledForRemoval.end(), 
+            std::inserter(removeLocal, removeLocal.end()));
+        std::set<Formula::iterator, dereference_compare> removeFromBackends;
+        std::set_difference(mScheduledForRemoval.begin(), mScheduledForRemoval.end(), removeLocal.begin(), removeLocal.end(), std::inserter(removeFromBackends, removeFromBackends.end()) );
+        std::set<Formula::iterator, dereference_compare> addToBackends;
+        std::set_difference(mScheduledForAdding.begin(),mScheduledForAdding.end(), removeLocal.begin(), removeLocal.end(), std::inserter(addToBackends, addToBackends.end()));
+
+        
+        mScheduledForAdding.clear();
+        mScheduledForRemoval.clear();
+
+        
+        for( std::set<Formula::iterator>::const_iterator it = removeLocal.begin(); it != removeLocal.end(); ++it )
+        {
+            removeSubformulaFromPassedFormula(*it, false);
+        }
+
+
+        for( std::set<Formula::iterator>::const_iterator it = removeFromBackends.begin(); it != removeFromBackends.end(); ++it )
+        {
+            removeSubformulaFromPassedFormula(*it, true);
+        }
+        
+        /*
+         * Get the backends to be considered from the manager.
+         */
+        mUsedBackends = mpManager->getBackends( mpPassedFormula, this );
+        mpPassedFormula->getPropositions();
+        
+        bool inconsistencyWhileAsserting = false;
+        for( std::set<Formula::iterator>::const_iterator it = addToBackends.begin(); it != addToBackends.end(); ++it )
+        {
+            for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+            {
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
+                stopCheckTimer();
+                (*module)->startAddTimer();
+                #endif
+                if( !(*module)->assertSubformula( *it ) )
+                {
+                    inconsistencyWhileAsserting = true;
+                }
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
+                (*module)->stopAddTimer();
+                startCheckTimer();
+                #endif
+            }
+        }
+        
+        
+        mFirstSubformulaToPass = mpPassedFormula->end();
+
+        return inconsistencyWhileAsserting;
+        
+    }
+    
     /**
      *
      * @param _subformula
      * @return
      */
-    Formula::iterator Module::removeSubformulaFromPassedFormula( Formula::iterator _subformula )
+    Formula::iterator Module::removeSubformulaFromPassedFormula( Formula::iterator _subformula, bool involveBackends )
     {
         assert( _subformula != mpPassedFormula->end() );
-        #ifdef SMTRAT_MEASURE_MODULE_TIMES
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
         int timers = stopAllTimers();
         #endif
 
@@ -587,23 +670,23 @@ namespace smtrat
         /*
          * Delete the sub formula from the passed formula.
          */
-        if( mpManager != NULL )
+        if( mpManager != NULL && involveBackends )
         {
             mAllBackends = mpManager->getAllBackends( this );
             for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
             {
-                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->startRemoveTimer();
                 #endif
                 (*module)->removeSubformula( _subformula );
-                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->stopRemoveTimer();
                 #endif
             }
         }
         mPassedformulaOrigins.erase( *_subformula );
         Formula::iterator result = mpPassedFormula->erase( _subformula );
-        #ifdef SMTRAT_MEASURE_MODULE_TIMES
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
         startTimers(timers);
         #endif
 
@@ -618,7 +701,7 @@ namespace smtrat
     Formula::iterator Module::pruneSubformulaFromPassedFormula( Formula::iterator _subformula )
     {
         assert( _subformula != mpPassedFormula->end() );
-        #ifdef SMTRAT_MEASURE_MODULE_TIMES
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
         int timers = stopAllTimers();
         #endif
         /*
@@ -629,18 +712,18 @@ namespace smtrat
             mAllBackends = mpManager->getAllBackends( this );
             for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
             {
-                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->startRemoveTimer();
                 #endif
                 (*module)->removeSubformula( _subformula );
-                #ifdef SMTRAT_MEASURE_MODULE_TIMES
+                #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->stopRemoveTimer();
                 #endif
 
             }
         }
         mPassedformulaOrigins.erase( *_subformula );
-        #ifdef SMTRAT_MEASURE_MODULE_TIMES
+        #ifdef SMTRAT_DEVOPTION_MeasureTime
         startTimers(timers);
         #endif
         return mpPassedFormula->prune( _subformula );
@@ -658,7 +741,7 @@ namespace smtrat
             while( !(*module)->deductions().empty() )
             {
                 addDeduction( (*module)->rDeductions().back() );
-                #ifdef SMTRAT_ENABLE_VALIDATION
+                #ifdef SMTRAT_DEVOPTION_Validation
                 if( validationSettings->logLemmata() )
                 {
                     Formula notLemma = Formula( NOT );
@@ -762,7 +845,7 @@ namespace smtrat
      */
     void Module::storeAssumptionsToCheck( const Manager& _manager )
     {
-        #ifdef SMTRAT_ENABLE_VALIDATION
+        #ifdef SMTRAT_DEVOPTION_Validation
         if( !Module::mAssumptionToCheck.empty() )
         {
             ofstream smtlibFile;
