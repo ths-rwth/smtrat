@@ -152,7 +152,7 @@ namespace smtrat
             auto formulaConditionPair = mFormulaConditionMap.find( *_subformula );
             assert( formulaConditionPair != mFormulaConditionMap.end() );
             vs::Condition* condToDelete = formulaConditionPair->second;
-//
+
 //            condToDelete->print(); cout << endl;
 //            mpStateTree->print();
 
