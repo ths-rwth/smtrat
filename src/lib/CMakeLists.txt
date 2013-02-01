@@ -28,7 +28,6 @@ set(lib_core_src
     ConstraintPool.cpp
 	RuntimeSettings.cpp
 	ValidationSettings.cpp
-	VariableConstraintGraph.cpp
 )
 
 set(lib_core_headers
@@ -45,7 +44,6 @@ set(lib_core_headers
 	RuntimeSettings.h
 	VariableBounds.h
 	ValidationSettings.h
-	VariableConstraintGraph.h
     smtrat.h
 )
 
