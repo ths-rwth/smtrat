@@ -38,12 +38,14 @@
 #include "Module.h"
 #include "ModuleFactory.h"
 
-/// Flag activating some informative and not exaggerated output about module calls.
+// Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
-//#define SMTRAT_DEVOPTION_MeasureTime
 
 using namespace std;
 
+/**
+ * Main smtrat namespace. 
+ */
 namespace smtrat
 {
     vector<string> Module::mAssumptionToCheck = vector<string>();

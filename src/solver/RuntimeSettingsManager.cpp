@@ -207,7 +207,15 @@ void RuntimeSettingsManager::printHelp() const
  */
 void RuntimeSettingsManager::printWarranty() const 
 {
-
+   std::cout << "\
+HERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY \n\
+APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT \n\
+HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY \n\
+OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, \n\
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR \n\
+PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM \n\
+IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF \n\
+ALL NECESSARY SERVICING, REPAIR OR CORRECTION. \n";
 }
 
 /**
@@ -215,7 +223,7 @@ void RuntimeSettingsManager::printWarranty() const
  */
 void RuntimeSettingsManager::printToC() const
 {
-
+    
 }
 
 /**
@@ -226,6 +234,13 @@ void RuntimeSettingsManager::printWelcome() const
     std::cout << "This is " << SMTRAT_PROJECT_NAME << "." << std::endl;
     std::cout << "Version: " << SMTRAT_VERSION << std::endl;
     std::cout << "For more information, run this binary with --help." << std::endl;
+    std::cout << std::endl << std::endl;
+    std::cout << "\
+SMT-RAT  Copyright (C) 2012-2013 \n \
+Florian Corzilius, Ulrich Loup, Sebastian Junges, Erika Abraham \n\n\
+This program comes with ABSOLUTELY NO WARRANTY; for details run the solver with --warranty'. \n\
+This is free software, and you are welcome to redistribute it \n\
+under certain conditions;"<< std::endl << std::endl;
 }
 
 bool RuntimeSettingsManager::doPrintTimings() const 
