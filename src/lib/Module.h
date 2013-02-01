@@ -63,8 +63,8 @@ namespace smtrat
             return *a < *b;
         }
     };
-    
-    
+
+
     /**
      * A base class for all kind of theory solving methods.
      */
@@ -76,8 +76,8 @@ namespace smtrat
         public:
             typedef std::map< const std::string, std::string > Model;
             typedef std::chrono::high_resolution_clock clock;
-            typedef std::chrono::microseconds timeunit; 
-            
+            typedef std::chrono::microseconds timeunit;
+
         protected:
             ///
             Answer mSolverState;
@@ -114,23 +114,23 @@ namespace smtrat
             /// Counter used for the generation of the smt2 files to check for smaller muses.
             mutable unsigned mSmallerMusesCheckCounter;
 
-            
-            
+
+
             bool checkFirstSubformulaToPassValidity() const;
 
         public:
-            
-            // 
+
+            //
             std::set<Formula::iterator, dereference_compare> mScheduledForRemoval;
             //
             std::set<Formula::iterator, dereference_compare> mScheduledForAdding;
-            
+
             Module( ModuleType type, const Formula* const, Manager* const = NULL );
             virtual ~Module();
 
             static std::vector<std::string> mAssumptionToCheck;
             static std::set<std::string> mVariablesInAssumptionToCheck;
-            
+
             #ifdef SMTRAT_DEVOPTION_Validation
             static ValidationSettings* validationSettings;
             #endif
@@ -141,14 +141,7 @@ namespace smtrat
                 mConstraintsToInform.insert( _constraint );
                 return true;
             }
-            virtual bool assertSubformula( Formula::const_iterator _subformula )
-            {
-                if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
-                {
-                    mFirstUncheckedReceivedSubformula = _subformula;
-                }
-                return true;
-            }
+            virtual bool assertSubformula( Formula::const_iterator );
             virtual Answer isConsistent();
             virtual void removeSubformula( Formula::const_iterator );
             virtual void updateModel();
@@ -298,7 +291,7 @@ namespace smtrat
             void printReceivedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printPassedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printInfeasibleSubsets( std::ostream& = std::cout, const std::string = "***" ) const;
-        
+
             //
             // Measuring module times
             //
@@ -326,7 +319,7 @@ namespace smtrat
             double getAddTimerMS() const;
             double getCheckTimerMS() const;
             double getRemoveTimerMS() const;
-            
+
     };
 }    // namespace smtrat
 #endif   /* SMTRAT_MODULE_H */
