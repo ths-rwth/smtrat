@@ -12,6 +12,9 @@
 #include "../../Formula.h"
 #include <stddef.h>
 
+/**
+ * Namespace used by the LRA module.
+ */
 namespace lra
 {
     class Variable;
