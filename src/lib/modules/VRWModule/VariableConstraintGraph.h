@@ -10,7 +10,7 @@
 
 #include <list>
 #include <vector>
-#include "Formula.h"
+#include "../../Formula.h"
 #include <map>
 
 namespace smtrat 

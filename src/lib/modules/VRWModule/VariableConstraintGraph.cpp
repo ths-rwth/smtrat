@@ -8,7 +8,7 @@
 
 
 #include "VariableConstraintGraph.h"
-#include "Answer.h"
+
 
 namespace smtrat 
 {
