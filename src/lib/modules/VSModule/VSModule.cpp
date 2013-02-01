@@ -42,7 +42,7 @@ namespace smtrat
      */
     VSModule::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager ):
         Module( _type, _formula, _tsManager ),
-        mFreshConstraintReceived( false ),
+        mConditionsChanged( false ),
         mInconsistentConstraintAdded( false ),
         mIDCounter( 0 ),
         #ifdef VS_STATISTICS
@@ -126,7 +126,7 @@ namespace smtrat
                     mpStateTree->addSubstitutionResults( subResults );
 
                     insertDTinRanking( mpStateTree );
-                    mFreshConstraintReceived = true;
+                    mConditionsChanged = true;
                     return true;
                 }
                 default:
@@ -148,12 +148,14 @@ namespace smtrat
     {
         if( (*_subformula)->getType() == REALCONSTRAINT )
         {
-//            mpStateTree->print();
-
             mInconsistentConstraintAdded = false;
             auto formulaConditionPair = mFormulaConditionMap.find( *_subformula );
             assert( formulaConditionPair != mFormulaConditionMap.end() );
             vs::Condition* condToDelete = formulaConditionPair->second;
+//
+//            condToDelete->print(); cout << endl;
+//            mpStateTree->print();
+
             eraseDTsOfRanking( *mpStateTree );
             assert( mpStateTree->substitutionResults().size() == 1 );
             assert( mpStateTree->substitutionResults().back().size() == 1 );
@@ -180,12 +182,23 @@ namespace smtrat
                     ++cond;
                 }
             }
-            mpStateTree->rTakeSubResultCombAgain() = true;
+            mpStateTree->rSubResultsSimplified() = false;
+            ConditionVector condsToDelete = ConditionVector();
+            for( auto condition = mpStateTree->rConditions().begin(); condition != mpStateTree->conditions().end(); ++condition )
+            {
+                if( (*condition)->originalConditions().find( condToDelete ) != (*condition)->originalConditions().end() )
+                {
+                    condsToDelete.push_back( *condition );
+                    break;
+                }
+            }
+            mpStateTree->deleteConditions( condsToDelete );
             mpStateTree->rStateType() = COMBINE_SUBRESULTS;
-            mpStateTree->refreshConditions();
-            insertDTsinRanking( mpStateTree );
+            mpStateTree->rTakeSubResultCombAgain() = true;
+            insertDTinRanking( mpStateTree );
             mFormulaConditionMap.erase( formulaConditionPair );
             delete condToDelete;
+            mConditionsChanged = true;
 
 //            mpStateTree->print();
         }
@@ -204,7 +217,7 @@ namespace smtrat
         if( mpReceivedFormula->isConstraintConjunction() )
         {
             assert( mpReceivedFormula->size() == mFormulaConditionMap.size() );
-            if( !mFreshConstraintReceived )
+            if( !mConditionsChanged )
             {
                 if( mInfeasibleSubsets.empty() )
                 {
@@ -223,7 +236,7 @@ namespace smtrat
                     return False;
                 }
             }
-            mFreshConstraintReceived = false;
+            mConditionsChanged = false;
             if( mpReceivedFormula->empty() )
             {
                 #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
@@ -256,7 +269,6 @@ namespace smtrat
                 }
                 else
                 {
-                    currentState->simplify();
                     #ifdef VS_DEBUG
                     cout << "Ranking:" << endl;
                     for( ValuationMap::const_iterator valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
@@ -267,6 +279,11 @@ namespace smtrat
                         cout << ":  " << valDTPair->second << endl;
                     }
                     cout << "*** Considered state:" << endl;
+                    currentState->printAlone( "*** ", cout );
+                    #endif
+                    currentState->simplify();
+                    #ifdef VS_DEBUG
+                    cout << "Simplifing results in " << endl;
                     currentState->printAlone( "*** ", cout );
                     #endif
                     if( currentState->isInconsistent() )
@@ -288,7 +305,7 @@ namespace smtrat
                             insertDTinRanking( currentState->pFather() );
                         }
                     }
-                    else if( currentState->hasRecentlyAddedConditions() && !(currentState->takeSubResultCombAgain() && currentState->isRoot() ) )
+                    else if( currentState->hasRecentlyAddedConditions() )//&& !(currentState->takeSubResultCombAgain() && currentState->isRoot() ) )
                     {
                         #ifdef VS_DEBUG
                         cout << "*** Propagate new conditions :" << endl;
@@ -1176,6 +1193,18 @@ namespace smtrat
     {
         eraseDTsOfRanking( *_currentState );
         _currentState->rHasRecentlyAddedConditions() = false;
+        if( _currentState->takeSubResultCombAgain() && _currentState->stateType() == COMBINE_SUBRESULTS )
+        {
+            #ifdef VS_DEBUG
+            cout << "*** Refresh conditons:" << endl;
+            #endif
+            _currentState->refreshConditions();
+            _currentState->rTakeSubResultCombAgain() = false;
+            #ifdef VS_DEBUG
+            _currentState->printAlone( "   ", cout );
+            cout << "*** Conditions refreshed." << endl;
+            #endif
+        }
 
         /*
          * Collect the recently added conditions and mark them as not recently added.
@@ -1363,7 +1392,7 @@ namespace smtrat
     {
         insertDTinRanking( _state );
 
-        if( _state->conditionsSimplified() && _state->subResultsSimplified() )
+        if( _state->conditionsSimplified() && _state->subResultsSimplified() && !_state->takeSubResultCombAgain() && !_state->hasRecentlyAddedConditions() )
         {
             for( StateVector::iterator dt = (*_state).rChildren().begin(); dt != (*_state).children().end(); ++dt )
             {
@@ -1488,7 +1517,7 @@ namespace smtrat
      */
     vector<pair<string, pair<Substitution_Type, ex> > > VSModule::getSymbolicAssignment() const
     {
-        assert( !mFreshConstraintReceived && mInfeasibleSubsets.empty() );
+        assert( !mConditionsChanged && mInfeasibleSubsets.empty() );
         vector<pair<string, pair<Substitution_Type, ex> > > result    = vector<pair<string, pair<Substitution_Type, ex> > >();
         vector<pair<string, pair<Substitution_Type, ex> > > resultTmp = vector<pair<string, pair<Substitution_Type, ex> > >();
         symtab uncheckedVariables = mAllVariables;

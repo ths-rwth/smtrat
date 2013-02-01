@@ -1732,8 +1732,6 @@ namespace vs
                                         condConj->second = false;
                                         delete rpCond;
                                         (**child).rSubResultsSimplified() = false;
-                                        (**child).rTakeSubResultCombAgain() = true;
-                                        (**child).rInconsistent() = false;
                                     }
                                     else
                                     {
@@ -1924,53 +1922,54 @@ namespace vs
                 }
                 else
                 {
+                    if( conflictSet->first == NULL )
+                    {
+                        rInconsistent() = false;
+                    }
+                    mpConflictSets->erase( conflictSet++ );
+                }
+            }
+
+            child = rChildren().begin();
+            while( child != children().end() )
+            {
+                if( mpConflictSets->find( (*child)->pSubstitution() ) == mpConflictSets->end() )
+                {
                     /*
                      * Delete the entry of the test candidate whose conflict set is empty
                      * and set "inconsistent flag" of the corresponding child to false.
                      */
-                    if( conflictSet->first != NULL )
+                    if( (*child)->hasSubstitutionResults() )
                     {
-                        StateVector::iterator child = rChildren().begin();
-                        while( child != children().end() && (**child).pSubstitution() != conflictSet->first )
+                        if( (*child)->hasSubResultsCombination() )
                         {
-                            ++child;
-                        }
-
-                        if( child != children().end() )
-                        {
-                            if( (**child).hasSubstitutionResults() )
+                            SubResultCombination::iterator subResComb = (**child).rSubResultCombination().begin();
+                            while( subResComb != (*child)->subResultCombination().end() )
                             {
-                                if( (**child).hasSubResultsCombination() )
-                                {
-                                    SubResultCombination::iterator subResComb = (**child).rSubResultCombination().begin();
-                                    while( subResComb != (**child).subResultCombination().end() )
-                                    {
-                                        subResComb->second = 0;
-                                        ++subResComb;
-                                    }
-                                }
-                                SubstitutionResults::iterator subResult = (**child).rSubstitutionResults().begin();
-                                while( subResult != (**child).substitutionResults().end() )
-                                {
-                                    SubstitutionResult::iterator condConj = subResult->begin();
-                                    while( condConj != subResult->end() )
-                                    {
-                                        condConj->second = false;
-                                        ++condConj;
-                                    }
-                                    ++subResult;
-                                }
+                                subResComb->second = 0;
+                                ++subResComb;
                             }
-                            (**child).rInconsistent() = false;
+                        }
+                        SubstitutionResults::iterator subResult = (*child)->rSubstitutionResults().begin();
+                        while( subResult != (*child)->substitutionResults().end() )
+                        {
+                            SubstitutionResult::iterator condConj = subResult->begin();
+                            while( condConj != subResult->end() )
+                            {
+                                condConj->second = false;
+                                ++condConj;
+                            }
+                            ++subResult;
                         }
                     }
-                    else
+                    if( (*child)->stateType() != SUBSTITUTION_TO_APPLY )
                     {
-                        rInconsistent() = false;
+                        (*child)->rStateType() = COMBINE_SUBRESULTS;
+                        (*child)->rTakeSubResultCombAgain() = true;
+                        (*child)->rInconsistent() = false;
                     }
-
-                    mpConflictSets->erase( conflictSet++ );
                 }
+                ++child;
             }
 
             if( constraintWithFinitlyManySolutionCandidatesInIndexExists )
@@ -1980,26 +1979,32 @@ namespace vs
 
             bool conditionDeleted = false;
             bool recentlyAddedConditionLeft = false;
-            while( !_conditionsToDelete.empty() )
+            ConditionVector::iterator cond = rConditions().begin();
+            while( cond != conditions().end() )
             {
                 /*
                  * Delete the condition from the vector this state considers.
                  */
-                recentlyAddedConditionLeft = false;
-                for( ConditionVector::iterator cond = rConditions().begin(); cond != conditions().end(); ++cond )
+                ConditionVector::iterator condToDel = _conditionsToDelete.begin();
+                while( condToDel != _conditionsToDelete.end() )
                 {
-                    if( *cond == _conditionsToDelete.back() )
-                    {
-                        #ifdef VS_USE_VARIABLE_BOUNDS
-                        mVariableBounds.removeBound( (*cond)->pConstraint(), *cond );
-                        #endif
-                        rConditions().erase( cond );
-                        conditionDeleted = true;
-                        break;
-                    }
-                    else if( (*cond)->recentlyAdded() ) recentlyAddedConditionLeft = true;
+                    if( *cond == *condToDel ) break;
+                    ++condToDel;
                 }
-                _conditionsToDelete.pop_back();
+                if( condToDel != _conditionsToDelete.end() )
+                {
+                    #ifdef VS_USE_VARIABLE_BOUNDS
+                    mVariableBounds.removeBound( (*cond)->pConstraint(), *cond );
+                    #endif
+                    conditionDeleted = true;
+                    cond = rConditions().erase( cond );
+                    _conditionsToDelete.erase( condToDel );
+                }
+                else
+                {
+                    if( (*cond)->recentlyAdded() ) recentlyAddedConditionLeft = true;
+                    ++cond;
+                }
             }
             if( conditionDeleted )
             {
