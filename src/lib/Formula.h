@@ -46,7 +46,7 @@ namespace smtrat
     {
         AND, OR, NOT, IFF, XOR, IMPLIES, BOOL, REALCONSTRAINT, TTRUE, FFALSE
     };
-
+    
     class Formula
     {
         private:
@@ -558,6 +558,15 @@ namespace smtrat
 
             void addConstraintPropositions( const Constraint& );
     };
+    
+    struct FormulaIteratorConstraintIdCompare
+    {
+        bool operator() ( Formula::const_iterator i1, Formula::const_iterator i2 ) const
+        {
+            return (*i1)->pConstraint()->id() < (*i2)->pConstraint()->id();
+        }
+    };
+
 
 }    // namespace smtrat
 

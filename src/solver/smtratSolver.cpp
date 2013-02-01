@@ -37,10 +37,10 @@
 #include "../lib/modules/AddModules.h"
 #include "../lib/config.h"
 
-#ifdef SMTRAT_DEVOPTION_Stats
+#ifdef SMTRAT_DEVOPTION_Statistics
 #include "../lib/utilities/stats/CollectStatistics.h"
 #include "lib/utilities/stats/StatisticSettings.h"
-#endif //SMTRAT_DEVOPTION_Stats
+#endif //SMTRAT_DEVOPTION_Statistics
 
 
 struct Smt2Options
@@ -167,7 +167,7 @@ int main( int argc, char* argv[] )
     smtrat::ParserSettings* parserSettings = new smtrat::ParserSettings();
     settingsManager.addSettingsObject("parser", parserSettings);
     // Introduce the settingsobject for the statistics to the manager.
-    #ifdef SMTRAT_DEVOPTION_Stats
+    #ifdef SMTRAT_DEVOPTION_Statistics
     settingsManager.addSettingsObject("stats", smtrat::CollectStatistics::settings);
     #endif
     // Introduce the settingsObjects from the modules to the manager
@@ -200,7 +200,7 @@ int main( int argc, char* argv[] )
     delete nratSolver;
     delete form;
     // Export statistics
-    #ifdef SMTRAT_DEVOPTION_Stats
+    #ifdef SMTRAT_DEVOPTION_Statistics
     smtrat::CollectStatistics::produceOutput();
     #endif
 

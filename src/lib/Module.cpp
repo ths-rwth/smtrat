@@ -618,13 +618,13 @@ namespace smtrat
         // We first want to remove everything which is scheduled for removal.
         // As some removal might not have been asserted on our backend, we have to prevent the backend call in these cases.
         // For now, we simply run over the not yet asserted constraints and fix
-        std::set<Formula::iterator, dereference_compare> removeLocal;
+        std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> removeLocal;
 
         std::set_intersection(mScheduledForAdding.begin(),mScheduledForAdding.end(), mScheduledForRemoval.begin(), mScheduledForRemoval.end(),
             std::inserter(removeLocal, removeLocal.end()));
-        std::set<Formula::iterator, dereference_compare> removeFromBackends;
+        std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> removeFromBackends;
         std::set_difference(mScheduledForRemoval.begin(), mScheduledForRemoval.end(), removeLocal.begin(), removeLocal.end(), std::inserter(removeFromBackends, removeFromBackends.end()) );
-        std::set<Formula::iterator, dereference_compare> addToBackends;
+        std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> addToBackends;
         std::set_difference(mScheduledForAdding.begin(),mScheduledForAdding.end(), removeLocal.begin(), removeLocal.end(), std::inserter(addToBackends, addToBackends.end()));
 
 

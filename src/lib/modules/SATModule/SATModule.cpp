@@ -149,7 +149,7 @@ namespace smtrat
         mBooleanVarMap(),
         mFormulaClauseMap(),
         mMaxSatAssigns()
-        #ifdef SMTRAT_DEVOPTION_Stats
+        #ifdef SMTRAT_DEVOPTION_Statistics
         , mStats(new SATstatistics())
         #endif
     {
@@ -226,7 +226,7 @@ namespace smtrat
             assumptions.clear();
             if( !ok )
             {
-                #ifdef SMTRAT_DEVOPTION_Stats
+                #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
                 mSolverState = False;
@@ -247,7 +247,7 @@ namespace smtrat
             cancelUntil( 0 ); // TODO: remove it, when sure incrementality (removeSubformula) is working
             if( result == l_True )
             {
-                #ifdef SMTRAT_DEVOPTION_Stats
+                #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
                 mSolverState = True;
@@ -266,7 +266,7 @@ namespace smtrat
                     infeasibleSubset.insert( *subformula );
                 }
                 mInfeasibleSubsets.push_back( infeasibleSubset );
-                #ifdef SMTRAT_DEVOPTION_Stats
+                #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
                 mSolverState = False;
@@ -274,7 +274,7 @@ namespace smtrat
             }
             else
             {
-                #ifdef SMTRAT_DEVOPTION_Stats
+                #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
                 mSolverState = Unknown;
@@ -536,7 +536,7 @@ namespace smtrat
              */
             Var constraintAbstraction;
 
-            #ifdef SMTRAT_DEVOPTION_Stats
+            #ifdef SMTRAT_DEVOPTION_Statistics
             if( _preferredToTSolver )
             {
                 mStats->initialTrue();
@@ -645,7 +645,7 @@ namespace smtrat
         add_tmp.clear();
         _clause.copyTo( add_tmp );
 
-        #ifdef SMTRAT_DEVOPTION_Stats
+        #ifdef SMTRAT_DEVOPTION_Statistics
         if( _type != NORMAL_CLAUSE ) mStats->lemmaLearned();
         #endif
         // Check if clause is satisfied and remove false/duplicate literals:
@@ -2223,7 +2223,7 @@ NextClause:
      */
     void SATModule::collectStats()
     {
-        #ifdef SMTRAT_DEVOPTION_Stats
+        #ifdef SMTRAT_DEVOPTION_Statistics
         mStats->nrTotalVariables = nVars();
         mStats->nrUnassignedVariables = nFreeVars();
         mStats->nrClauses = nClauses();

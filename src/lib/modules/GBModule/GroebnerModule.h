@@ -52,7 +52,7 @@
 #include "GBRuntimeSettings.h"
 
 #include "VariableRewriteRule.h"
-#ifdef SMTRAT_DEVOPTION_Stats
+#ifdef SMTRAT_DEVOPTION_Statistics
 #include "GBModuleStatistics.h"
 #include "GBCalculationStatistics.h"
 #endif
@@ -150,9 +150,9 @@ public:
     typename Rows::iterator mNewConstraints;
     unsigned mLastRestart;
 private:
-    #ifdef SMTRAT_DEVOPTION_Stats
+    #ifdef SMTRAT_DEVOPTION_Statistics
     GroebnerModuleStats* mStats;
-    #endif //SMTRAT_DEVOPTION_Stats
+    #endif //SMTRAT_DEVOPTION_Statistics
 };
 
 /**
@@ -211,10 +211,10 @@ protected:
     bool validityCheck( );
 
 private:
-    #ifdef SMTRAT_DEVOPTION_Stats
+    #ifdef SMTRAT_DEVOPTION_Statistics
     GroebnerModuleStats* mStats;
     GBCalculationStats* mGBStats;
-    #endif //SMTRAT_DEVOPTION_Stats
+    #endif //SMTRAT_DEVOPTION_Statistics
 
     void processNewConstraint( Formula::const_iterator _formula );
     void handleConstraintToGBQueue( Formula::const_iterator _formula );

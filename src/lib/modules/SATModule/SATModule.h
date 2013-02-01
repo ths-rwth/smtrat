@@ -63,7 +63,7 @@
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
 
-#ifdef SMTRAT_DEVOPTION_Stats
+#ifdef SMTRAT_DEVOPTION_Statistics
 #include "SATStatistics.h"
 #endif
 
@@ -256,7 +256,7 @@ namespace smtrat
             /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
             ClauseVector          mMaxSatAssigns;
 
-            #ifdef SMTRAT_DEVOPTION_Stats
+            #ifdef SMTRAT_DEVOPTION_Statistics
             SATstatistics* mStats;
             #endif
 

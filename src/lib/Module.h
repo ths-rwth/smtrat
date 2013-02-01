@@ -63,6 +63,8 @@ namespace smtrat
             return *a < *b;
         }
     };
+    
+    
 
 
     /**
@@ -121,9 +123,9 @@ namespace smtrat
         public:
 
             //
-            std::set<Formula::iterator, dereference_compare> mScheduledForRemoval;
+            std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForRemoval;
             //
-            std::set<Formula::iterator, dereference_compare> mScheduledForAdding;
+            std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForAdding;
 
             Module( ModuleType type, const Formula* const, Manager* const = NULL );
             virtual ~Module();

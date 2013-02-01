@@ -101,11 +101,11 @@ namespace smtrat
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
 		typedef smtrat::decidePassingPolynomial			 passPolynomial;
 
-        static const bool                                passGB                                  = true;
+        static const bool                                passGB                                  = false;
         static const bool                                getReasonsForInfeasibility              = true;
         static const bool                                passWithMinimalReasons                  = true;
         static const check_inequalities                  checkInequalities                       = AFTER_NEW_GB;
-        static const pass_inequalities                   passInequalities                        = FULL_REDUCED;
+        static const pass_inequalities                   passInequalities                        = AS_RECEIVED;
         static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_ALLINEQUALITIES;
         static const theory_deductions                   addTheoryDeductions                     = ALL_CONSTRAINTS;
         static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;

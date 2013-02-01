@@ -80,7 +80,7 @@ namespace cachemodule
             TCallCache mCallCache;
             
             cachemodule::TCall mActualTCall;
-            std::set<Formula::const_iterator,dereference_compare> addingQueue;
+            std::set<Formula::const_iterator,FormulaIteratorConstraintIdCompare> addingQueue;
         public:
             /**
              * Constructors:
