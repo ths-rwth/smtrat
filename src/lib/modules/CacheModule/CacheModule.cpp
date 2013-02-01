@@ -32,8 +32,10 @@
 
 
 #define CACHE_ONLY_TRUE
+using namespace smtrat::cachemodule;
 
-namespace smtrat {
+namespace smtrat
+{
 CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager )
     :
     Module( _type, _formula, _tsManager )
@@ -60,7 +62,7 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
     bool CacheModule::assertSubformula( Formula::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
-        addReceivedSubformulaToPassedFormula(_subformula);
+        addingQueue.insert(_subformula);
         if( (*_subformula)->getType() != REALCONSTRAINT ) return true;
         assert((*_subformula)->getType() == REALCONSTRAINT);
         ++(mActualTCall.nrConstraints);
@@ -81,6 +83,11 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
         }
         else
         {
+            for( std::set<Formula::const_iterator>::const_iterator it = addingQueue.begin(); it != addingQueue.end(); ++it ) 
+            {
+                addReceivedSubformulaToPassedFormula(*it);
+            }
+            addingQueue.clear();
             Answer ans = runBackends();
             if( ans == False )
             {
@@ -102,6 +109,7 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
     {
         --(mActualTCall.nrConstraints);
         mActualTCall.passedConstraints.setBit((*_subformula)->pConstraint()->id(), false);
+        addingQueue.erase(_subformula);
         Module::removeSubformula( _subformula );
     }
     

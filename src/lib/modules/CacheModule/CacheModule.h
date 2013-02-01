@@ -36,6 +36,11 @@
 
 namespace smtrat
 {
+/**
+ * Namespace for the cache module
+ */
+namespace cachemodule
+{
     struct TCall 
     {
         GiNaCRA::BitVector passedConstraints;
@@ -66,14 +71,16 @@ namespace smtrat
                    
         }
     };
+}
 
     class CacheModule : public Module
     {
-        typedef std::unordered_map<TCall, TCallResponse, TCallHash, TCallEqual> TCallCache;
+        typedef std::unordered_map<cachemodule::TCall, cachemodule::TCallResponse, cachemodule::TCallHash, cachemodule::TCallEqual> TCallCache;
         protected:
             TCallCache mCallCache;
             
-            TCall mActualTCall;
+            cachemodule::TCall mActualTCall;
+            std::set<Formula::const_iterator,dereference_compare> addingQueue;
         public:
             /**
              * Constructors:
