@@ -20,7 +20,7 @@
  */
 
 #include "GBModuleStatistics.h"
-#ifdef SMTRAT_DEVOPTION_Stats
+#ifdef SMTRAT_DEVOPTION_Statistics
 
 #include <algorithm>
 namespace smtrat 

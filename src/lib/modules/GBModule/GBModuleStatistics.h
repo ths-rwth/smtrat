@@ -24,7 +24,7 @@
 #define	GBMODULESTATISTICS_H
 
 #include "../../config.h"
-#ifdef SMTRAT_DEVOPTION_Stats
+#ifdef SMTRAT_DEVOPTION_Statistics
 #include <vector>
 #include <map>
 #include <iostream>
