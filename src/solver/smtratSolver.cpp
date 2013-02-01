@@ -133,10 +133,10 @@ void printTimings(smtrat::NRATSolver* solver)
     std::cout << "**********************************************" << std::endl;
     std::cout << "*                  Timings                   *" << std::endl;
     std::cout << "**********************************************" << std::endl;
-    std::cout << "\t\tAdd \t\tCheck \t\tRemove" << std::endl;
+    std::cout << "\t\tAdd \t\tCheck \t (calls) \tRemove" << std::endl;
     for(std::vector<smtrat::Module*>::const_iterator it =  solver->getAllGeneratedModules().begin(); it != solver->getAllGeneratedModules().end(); ++it)
     {
-        std::cout << smtrat::moduleTypeToString((*it)->type()) << ":\t" << (*it)->getAddTimerMS() << "\t\t" << (*it)->getCheckTimerMS() << "\t\t" << (*it)->getRemoveTimerMS() << std::endl;
+        std::cout << smtrat::moduleTypeToString((*it)->type()) << ":\t" << (*it)->getAddTimerMS() << "\t\t" << (*it)->getCheckTimerMS() << "\t(" << (*it)->getNrConsistencyChecks() << ")\t\t" << (*it)->getRemoveTimerMS() << std::endl;
 
     }
     std::cout << "**********************************************" << std::endl;
