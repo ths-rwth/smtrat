@@ -697,7 +697,7 @@ namespace smtrat
                 cr = ca.alloc( add_tmp, _type );
                 learnts.push( cr );
             }
-            else 
+            else
             {
                 cr = ca.alloc( add_tmp, false );
                 clauses.push( cr );
@@ -993,7 +993,7 @@ FindSecond:
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
                 // TODO: Do not call the theory solver on instances which have already been proved to be consistent.
                 //       (Happens if the Boolean assignment is extended by assignments to false only)
-                
+
                 if( adaptPassedFormula() )
                 {
                     #ifdef DEBUG_SATMODULE
@@ -1116,7 +1116,7 @@ FindSecond:
                                             addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
                                         }
                                         #endif
-                                        
+
                                         CRef tmpConfl = learnTheoryConflict( *infsubset );
                                         if( ca[tmpConfl].size() < conflictSize )
                                         {
@@ -1152,9 +1152,9 @@ FindSecond:
             }
             #ifdef SAT_MODULE_THEORY_PROPAGATION
             if(deductionsLearned) continue;
-            #endif  
-            
-            
+            #endif
+
+
             #ifdef SATMODULE_WITH_CALL_NUMBER
             #ifndef DEBUG_SATMODULE
             #ifdef WITH_PROGRESS_ESTIMATION
@@ -1165,7 +1165,7 @@ FindSecond:
             cout.flush();
             #endif
             #endif
-                            
+
 
             if( confl != CRef_Undef )
             {
@@ -1199,7 +1199,7 @@ FindSecond:
                 }
                 #endif
 
-                
+
                 analyze( confl, learnt_clause, backtrack_level );
 
                 #ifdef DEBUG_SATMODULE
@@ -1211,7 +1211,7 @@ FindSecond:
                 }
                 #endif
                 cancelUntil( backtrack_level );
-                
+
 
 
                 if( learnt_clause.size() == 1 )

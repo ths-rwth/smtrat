@@ -77,12 +77,12 @@ namespace smtrat
 
             typedef std::pair<UnsignedPair, vs::State*>                 ValStatePair;
             typedef std::map<UnsignedPair, vs::State*, unsignedPairCmp> ValuationMap;
-            typedef std::map<const Formula* const , vs::Condition*>  FormulaConditionMap;
+            typedef std::map<const Formula* const, vs::Condition*>  FormulaConditionMap;
 
             /*
              * Attributes:
              */
-            bool                mFreshConstraintReceived;
+            bool                mConditionsChanged;
             bool                mInconsistentConstraintAdded;
             unsigned            mIDCounter;
             #ifdef VS_STATISTICS
