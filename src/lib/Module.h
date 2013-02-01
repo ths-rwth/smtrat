@@ -306,6 +306,7 @@ namespace smtrat
             bool mTimerAddRunning;
             bool mTimerCheckRunning;
             bool mTimerRemoveRunning;
+            unsigned mNrConsistencyChecks;
         public:
             void startCheckTimer();
             void stopCheckTimer();
@@ -319,7 +320,8 @@ namespace smtrat
             double getAddTimerMS() const;
             double getCheckTimerMS() const;
             double getRemoveTimerMS() const;
-
+            unsigned getNrConsistencyChecks() const;
+            
     };
 }    // namespace smtrat
 #endif   /* SMTRAT_MODULE_H */

@@ -32,32 +32,28 @@
 
 #include "../../Module.h"
 
-#include "../../VariableConstraintGraph.h"
+#include "VariableConstraintGraph.h"
 
 namespace smtrat
 {
+    /**
+     * A preprocessing module which takes real constraints.
+     * More information can be found in the DESCRIPTION file. 
+     */
     class VRWModule : public Module
     {
         protected:
+            /// The bipartite graph matching constraints and their variables
             VariableConstraintGraph mMatchingGraph;
             /// mapping received constraint -> node in the graph
             std::map<Formula::const_iterator, std::list<ConstraintNode*>::iterator, dereference_compare> mConstraintPositions; 
             
         public:
-            /**
-             * Constructors:
-             */
             VRWModule( ModuleType, const Formula* const,  RuntimeSettings*, Manager* const _tsManager );
 
-            /**
-             * Destructor:
-             */
             virtual ~VRWModule();
 
-            /**
-             * Methods:
-             */
-
+            
             // Interfaces.
             bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();

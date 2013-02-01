@@ -79,7 +79,8 @@ namespace smtrat
             mTimerRemoveTotal(0),
             mTimerAddRunning(false),
             mTimerCheckRunning(false),
-            mTimerRemoveRunning(false)
+            mTimerRemoveRunning(false),
+            mNrConsistencyChecks(0)
 #endif
     {}
 
@@ -568,6 +569,7 @@ namespace smtrat
             #endif
             #ifdef SMTRAT_DEVOPTION_MeasureTime
             (*module)->startCheckTimer();
+            ++((*module)->mNrConsistencyChecks);
             #endif
             result = (*module)->isConsistent();
             #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -669,7 +671,6 @@ namespace smtrat
 
 
         mFirstSubformulaToPass = mpPassedFormula->end();
-
         return inconsistencyWhileAsserting;
 
     }
@@ -1209,6 +1210,11 @@ namespace smtrat
     double Module::getRemoveTimerMS() const
     {
         return mTimerRemoveTotal.count() / 1000;
+    }
+    
+    unsigned Module::getNrConsistencyChecks() const 
+    {
+        return mNrConsistencyChecks;
     }
 
 }    // namespace smtrat

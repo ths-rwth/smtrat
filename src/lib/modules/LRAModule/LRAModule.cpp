@@ -125,7 +125,7 @@ namespace smtrat
     bool LRAModule::assertSubformula( Formula::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "assert " << **_subformula << endl;
+        cout << "add " << **_subformula << "(" << *_subformula << ")" << endl;
         #endif
         Module::assertSubformula( _subformula );
         if( (*_subformula)->getType() == REALCONSTRAINT )
@@ -186,7 +186,7 @@ namespace smtrat
     void LRAModule::removeSubformula( Formula::const_iterator _subformula )
     { 
         #ifdef DEBUG_LRA_MODULE
-        cout << "remove " << **_subformula << endl;
+        cout << "remove " << **_subformula << "(" << *_subformula << ")" << endl;
         #endif
         if( (*_subformula)->getType() == REALCONSTRAINT )
         {
