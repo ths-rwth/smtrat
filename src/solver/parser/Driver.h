@@ -197,8 +197,8 @@ namespace smtrat
             void error( const std::string& m ) const;
             void setLogic( const class location&, const std::string& );
             void addVariable( const class location&, const std::string&, const std::string& );
-            const std::string addBooleanVariable( const class location&, const std::string& = "" );
-            RealVarMap::const_iterator addRealVariable( const class location&, const std::string& = "" );
+            const std::string addBooleanVariable( const class location&, const std::string& = "", bool = false );
+            RealVarMap::const_iterator addRealVariable( const class location&, const std::string& = "", bool = false );
             const std::string& getBooleanVariable( const class location&, const std::string& ) const;
             RealVarMap::const_iterator getRealVariable( const class location&, const std::string& );
             void freeBooleanVariableName( const std::string& );
