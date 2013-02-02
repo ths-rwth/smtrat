@@ -151,7 +151,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             Formula* subformula = formula->subformulas().front();
             if(subformula->isBooleanCombination())
             {
-                RewritePotentialInequalities(formula, !invert);
+                RewritePotentialInequalities(subformula, !invert);
             }
             else if(subformula->getType() == REALCONSTRAINT)
             {
