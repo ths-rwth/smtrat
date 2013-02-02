@@ -197,10 +197,11 @@ namespace smtrat
      * @param l
      * @param _varName
      */
-    const string Driver::addBooleanVariable( const class location& _loc, const string& _varName )
+    const string Driver::addBooleanVariable( const class location& _loc, const string& _varName, bool _isBindingVariable )
     {
+        assert( !_varName.empty() );
         string booleanName = "";
-        if( _varName.empty() || _varName[0] == '?' )
+        if( _isBindingVariable )
         {
             booleanName = mFormulaRoot->mConstraintPool.newAuxiliaryBooleanVariable();
         }
@@ -225,10 +226,11 @@ namespace smtrat
      * @param l
      * @param _varName
      */
-    RealVarMap::const_iterator Driver::addRealVariable( const class location& _loc, const string& _varName )
+    RealVarMap::const_iterator Driver::addRealVariable( const class location& _loc, const string& _varName, bool _isBindingVariable )
     {
+        assert( !_varName.empty() );
         pair< string, ex > ginacConformVar;
-        if( _varName.empty() || _varName[0] == '?' )
+        if( _isBindingVariable )
         {
             ginacConformVar = mFormulaRoot->mConstraintPool.newAuxiliaryRealVariable();
         }
@@ -299,7 +301,7 @@ namespace smtrat
      */
     void Driver::freeBooleanVariableName( const string& _varName )
     {
-        assert( !_varName.empty() && _varName[0] == '?' );
+        assert( !_varName.empty() );
         mBooleanVariables.erase( _varName );
         mLexer->mBooleanVariables.erase( _varName );
     }
@@ -310,7 +312,7 @@ namespace smtrat
      */
     void Driver::freeRealVariableName( const string& _varName )
     {
-        assert( !_varName.empty() && _varName[0] == '?' );
+        assert( !_varName.empty() );
         mRealVariables.erase( _varName );
         mLexer->mRealVariables.erase( _varName );
     }

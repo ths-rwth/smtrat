@@ -236,13 +236,13 @@ bindlist :
 	|	bindlist bind { $$ = $1; $$->push_back( $2 ); }
 
 bind :
-        OB SYM poly CB { RealVarMap::const_iterator rv = dv.addRealVariable( yyloc, *$2 );
+        OB SYM poly CB { RealVarMap::const_iterator rv = dv.addRealVariable( yyloc, *$2, true );
                          PolyVarsPair* pvp = dv.mkPolynomial( yyloc, rv );
                          Formula* f = dv.mkConstraint( *pvp, *$3, CR_EQ ); delete pvp;
                          dv.rFormulaRoot().addSubformula( f );
                          $$ = new pair< string, unsigned >( *$2, 1 ); delete $3;
                          dv.pLexer()->mRealVariables.insert( *$2 ); delete $2; }
-	|	OB SYM form CB { const string boolVarName = dv.addBooleanVariable( yyloc, *$2 );
+	|	OB SYM form CB { const string boolVarName = dv.addBooleanVariable( yyloc, *$2, true );
                          dv.rFormulaRoot().addSubformula( dv.mkFormula( smtrat::IMPLIES, new Formula( boolVarName ), $3 ) );
                          $$ = new pair< string, unsigned >( *$2, 0 );
                          dv.pLexer()->mBooleanVariables.insert( *$2 ); delete $2; }
