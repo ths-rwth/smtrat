@@ -526,6 +526,7 @@ namespace vs
                 {
                     assert( !subResult->empty() );
                     SubstitutionResult::iterator condConjunction = subResult->begin();
+                    bool containsEmptyCase = false;
                     while( condConjunction != subResult->end() && subResult->size() > 1 )
                     {
                         ConditionVector redundantConditions       = ConditionVector();
@@ -536,57 +537,95 @@ namespace vs
                         }
                         else
                         {
+                            if( condConjunction->first.empty() ) containsEmptyCase = true;
                             ++condConjunction;
                         }
                     }
-                    if( subResult->size() == 1 )
+                    if( containsEmptyCase )
                     {
-                        if( fixedConditions == mpSubstitutionResults->end() )
+                        if( hasSubResultsCombination() )
                         {
-                            fixedConditions = subResult;
-                            ++subResult;
-                            ++subResultIndex;
+                            SubResultCombination::iterator subResComb = rSubResultCombination().begin();
+                            while( subResComb != subResultCombination().end() )
+                            {
+                                if( subResComb->first == subResultIndex )
+                                {
+                                    subResComb = rSubResultCombination().erase( subResComb );
+                                }
+                                else if( subResComb->first > subResultIndex )
+                                {
+                                    --(subResComb->first);
+                                    ++subResComb;
+                                }
+                                else
+                                {
+                                    ++subResComb;
+                                }
+                            }
                         }
-                        else
+                        bool fixedPosWasEndBefore = (fixedConditions == mpSubstitutionResults->end());
+                        subResult = mpSubstitutionResults->erase( subResult );
+                        if( fixedPosWasEndBefore ) fixedConditions = mpSubstitutionResults->end();
+                        if( mpSubResultCombination != NULL )
                         {
-                            fixedConditions->back().first.insert( fixedConditions->back().first.end(),
-                                                                  subResult->back().first.begin(),
-                                                                  subResult->back().first.end() );
-                            if( hasSubResultsCombination() )
+                            if( mpSubResultCombination->size() > 0 )
                             {
-                                SubResultCombination::iterator subResComb = rSubResultCombination().begin();
-                                while( subResComb != subResultCombination().end() )
-                                {
-                                    if( subResComb->first == subResultIndex )
-                                    {
-                                        subResComb = rSubResultCombination().erase( subResComb );
-                                    }
-                                    else if( subResComb->first > subResultIndex )
-                                    {
-                                        --(subResComb->first);
-                                        ++subResComb;
-                                    }
-                                    else
-                                    {
-                                        ++subResComb;
-                                    }
-                                }
+                                mTakeSubResultCombAgain = true;
                             }
-                            subResult = mpSubstitutionResults->erase( subResult );
-                            if( mpSubResultCombination != NULL )
-                            {
-                                if( mpSubResultCombination->size() > 0 )
-                                {
-                                    mTakeSubResultCombAgain = true;
-                                }
-                                assert( mpSubResultCombination->size() <= mpSubstitutionResults->size() );
-                            }
+                            assert( mpSubResultCombination->size() <= mpSubstitutionResults->size() );
                         }
                     }
                     else
                     {
-                        ++subResult;
-                        ++subResultIndex;
+                        if( subResult->size() == 1 )
+                        {
+                            if( fixedConditions == mpSubstitutionResults->end() )
+                            {
+                                fixedConditions = subResult;
+                                ++subResult;
+                                ++subResultIndex;
+                            }
+                            else
+                            {
+                                fixedConditions->back().first.insert( fixedConditions->back().first.end(),
+                                                                    subResult->back().first.begin(),
+                                                                    subResult->back().first.end() );
+                                if( hasSubResultsCombination() )
+                                {
+                                    SubResultCombination::iterator subResComb = rSubResultCombination().begin();
+                                    while( subResComb != subResultCombination().end() )
+                                    {
+                                        if( subResComb->first == subResultIndex )
+                                        {
+                                            subResComb = rSubResultCombination().erase( subResComb );
+                                        }
+                                        else if( subResComb->first > subResultIndex )
+                                        {
+                                            --(subResComb->first);
+                                            ++subResComb;
+                                        }
+                                        else
+                                        {
+                                            ++subResComb;
+                                        }
+                                    }
+                                }
+                                subResult = mpSubstitutionResults->erase( subResult );
+                                if( mpSubResultCombination != NULL )
+                                {
+                                    if( mpSubResultCombination->size() > 0 )
+                                    {
+                                        mTakeSubResultCombAgain = true;
+                                    }
+                                    assert( mpSubResultCombination->size() <= mpSubstitutionResults->size() );
+                                }
+                            }
+                        }
+                        else
+                        {
+                            ++subResult;
+                            ++subResultIndex;
+                        }
                     }
                 }
 

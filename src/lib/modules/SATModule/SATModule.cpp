@@ -1216,6 +1216,11 @@ FindSecond:
 
                 if( learnt_clause.size() == 1 )
                 {
+                    #ifdef SMTRAT_DEVOPTION_Validation
+                    // this is often an indication that something is wrong with our theory, so we do store our assumptions.
+                    if( value( learnt_clause[0] ) != l_Undef )
+                        Module::storeAssumptionsToCheck( *mpManager );
+                    #endif
                     assert( value( learnt_clause[0] ) == l_Undef );
                     uncheckedEnqueue( learnt_clause[0] );
                 }
