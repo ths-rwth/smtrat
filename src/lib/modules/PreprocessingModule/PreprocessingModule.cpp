@@ -74,7 +74,9 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         {
             Formula* formulaToAssert = new Formula( **receivedSubformula );
             RewritePotentialInequalities(formulaToAssert);
-            //addLinearDeductions(formulaToAssert);
+            #ifdef ADDLINEARDEDUCTIONS
+            addLinearDeductions(formulaToAssert);
+            #endif
             setDifficulty(formulaToAssert,false);
             /*
              * Create the origins containing only the currently considered formula of
@@ -272,11 +274,16 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             double difficulty;
             if( constraint->isLinear() )
             {
-                difficulty = 10;
+                difficulty = 20;
             }
             else
             {
-                difficulty = 200;
+                difficulty = 300;
+            }
+            // Equalities allow for a small solution space, so we find them easier.
+            if( constraint->relation() == CR_EQ )
+            {
+                difficulty -= 15;
             }
             difficulty += (constraint->numMonomials()-1) * 8;
             formula->setDifficulty(difficulty);
@@ -373,8 +380,8 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 else if( constraint->numMonomials() == 2 )
                 {
                     GiNaC::ex expression = constraint->lhs();
-                    assert(GiNaC::is_exactly_a<GiNaC::numeric>(expression.lcoeff(expression)));
-                    GiNaC::numeric constPart = constraint->constantPart() / GiNaC::ex_to<GiNaC::numeric>(expression.lcoeff(expression));
+                    
+                    GiNaC::numeric constPart = constraint->constantPart() ;
                     if(constPart == (GiNaC::numeric)0 ) continue;
                     
                     assert( GiNaC::is_exactly_a<GiNaC::add>( expression ) ); 
