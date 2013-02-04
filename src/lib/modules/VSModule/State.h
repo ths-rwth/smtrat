@@ -28,7 +28,7 @@
 #ifndef SMTRAT_VS_STATE_H
 #define SMTRAT_VS_STATE_H
 
-//#define VS_USE_VARIABLE_BOUNDS
+#define VS_USE_VARIABLE_BOUNDS
 
 #include <map>
 #include <limits.h>

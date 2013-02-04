@@ -716,7 +716,7 @@ namespace smtrat
             return 0;
         }
 
-        #define CONVERT_BOUND(type, namesp) (type != Bound<T>::WEAK_UPPER_BOUND && type != Bound<T>::EQUAL_BOUND ) ? namesp::STRICT_BOUND : namesp::WEAK_BOUND
+        #define CONVERT_BOUND(type, namesp) (type != Bound<T>::WEAK_UPPER_BOUND && type != Bound<T>::WEAK_LOWER_BOUND && type != Bound<T>::EQUAL_BOUND ) ? namesp::STRICT_BOUND : namesp::WEAK_BOUND
 
         /**
          * Creates an evalintervalmap corresponding to the variable bounds.

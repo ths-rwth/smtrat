@@ -785,13 +785,10 @@ namespace smtrat
                 if( (*_currentState).addChild( coeffs.at( 1 ), CR_NEQ, _eliminationVar, sym, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, vars,
                                                oConditions ) )
                 {
-                    if( constraint.relation() == CR_EQ )
+                    if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
-                        if( coeffs.at( 1 ).info( info_flags::rational ) )
-                        {
-                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                            generatedTestCandidateBeingASolution = true;
-                        }
+                        _currentState->rChildren().back()->setOriginalCondition( _condition );
+                        generatedTestCandidateBeingASolution = true;
                     }
 
                     /*
@@ -803,7 +800,7 @@ namespace smtrat
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
                 }
-                else if( constraint.relation() == CR_EQ && coeffs.at( 1 ).info( info_flags::rational ) )
+                else if( constraint.relation() == CR_EQ )
                 {
                     generatedTestCandidateBeingASolution = true;
                 }
@@ -821,13 +818,10 @@ namespace smtrat
                 if( (*_currentState).addChild( coeffs.at( 2 ), CR_EQ, coeffs.at( 1 ), CR_NEQ, _eliminationVar, sym, -coeffs.at( 0 ), 0,
                                                coeffs.at( 1 ), 0, subType, vars, oConditions ) )
                 {
-                    if( constraint.relation() == CR_EQ )
+                    if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
-                        if( coeffs.at( 2 ).info( info_flags::rational ) && coeffs.at( 1 ).info( info_flags::rational ) )
-                        {
-                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                            generatedTestCandidateBeingASolution = true;
-                        }
+                        _currentState->rChildren().back()->setOriginalCondition( _condition );
+                        generatedTestCandidateBeingASolution = true;
                     }
 
                     /*
@@ -839,6 +833,7 @@ namespace smtrat
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
                 }
+                else
 
                 /*
                  * Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
@@ -846,13 +841,10 @@ namespace smtrat
                 if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, sym, -coeffs.at( 1 ), 1,
                                                2 * coeffs.at( 2 ), radicand, subType, vars, oConditions ) )
                 {
-                    if( constraint.relation() == CR_EQ )
+                    if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
-                        if( coeffs.at( 2 ).info( info_flags::rational ) && radicand.info( info_flags::rational ) )
-                        {
-                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                            generatedTestCandidateBeingASolution = true;
-                        }
+                        _currentState->rChildren().back()->setOriginalCondition( _condition );
+                        generatedTestCandidateBeingASolution = true;
                     }
 
                     /*
@@ -871,13 +863,10 @@ namespace smtrat
                 if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, sym, -coeffs.at( 1 ), -1,
                                                2 * coeffs.at( 2 ), radicand, subType , vars, oConditions ) )
                 {
-                    if( constraint.relation() == CR_EQ )
+                    if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
-                        if( coeffs.at( 2 ).info( info_flags::rational ) && radicand.info( info_flags::rational ) )
-                        {
-                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                            generatedTestCandidateBeingASolution = true;
-                        }
+                        _currentState->rChildren().back()->setOriginalCondition( _condition );
+                        generatedTestCandidateBeingASolution = true;
                     }
 
                     /*
@@ -890,7 +879,7 @@ namespace smtrat
                     #endif
                 }
 
-                if( numberOfAddedChildren == 0 && constraint.relation() == CR_EQ && coeffs.at( 2 ).info( info_flags::rational ) && coeffs.at( 1 ).info( info_flags::rational ) )
+                if( numberOfAddedChildren == 0 && constraint.relation() == CR_EQ )
                 {
                     generatedTestCandidateBeingASolution = true;
                 }
