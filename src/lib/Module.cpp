@@ -70,6 +70,7 @@ namespace smtrat
         mPassedformulaOrigins(),
         mDeductions(),
         mFirstSubformulaToPass( mpPassedFormula->end() ),
+        mFirstConstraintToInform( mConstraintsToInform.end() ),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
         mSmallerMusesCheckCounter(0)
 #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -535,6 +536,14 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->startAddTimer();
                 #endif
+                if( mFirstConstraintToInform != mConstraintsToInform.end() )
+                {
+                    auto iter = mFirstConstraintToInform;
+                    for( ; iter != mConstraintsToInform.end(); ++iter )
+                    {
+                        (*module)->inform( *iter );
+                    }
+                }
                 for( Formula::const_iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
                 {
                     if( !(*module)->assertSubformula( subformula ) )
@@ -546,6 +555,7 @@ namespace smtrat
                 (*module)->stopAddTimer();
                 #endif
             }
+            mFirstConstraintToInform = mConstraintsToInform.end();
             if( assertionFailed )
             {
                 #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -1211,8 +1221,8 @@ namespace smtrat
     {
         return mTimerRemoveTotal.count() / 1000;
     }
-    
-    unsigned Module::getNrConsistencyChecks() const 
+
+    unsigned Module::getNrConsistencyChecks() const
     {
         return mNrConsistencyChecks;
     }

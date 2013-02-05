@@ -34,6 +34,9 @@
 #define VS_INFEASIBLE_SUBSET_GENERATION
 
 #define VS_WITH_BACKEND
+#ifdef VS_WITH_BACKEND
+#define CHECK_STRICT_INEQUALITIES_WITH_BACKEND
+#endif
 
 //#define VS_DEBUG
 //#define VS_STATISTICS
@@ -141,8 +144,8 @@ namespace smtrat
             void updateInfeasibleSubset();
             std::vector<std::pair<std::string, std::pair<vs::Substitution_Type, GiNaC::ex> > > getSymbolicAssignment() const;
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
-            bool adaptPassedFormula( const vs::State& );
-            Answer runBackendSolvers( vs::State* );
+            bool adaptPassedFormula( const vs::State&, bool = false );
+            Answer runBackendSolvers( vs::State*, bool = false );
             #ifdef VS_LOG_INTERMEDIATE_STEPS
             void checkAnswer() const;
             void logConditions( const vs::State&, bool, const std::string& ) const;

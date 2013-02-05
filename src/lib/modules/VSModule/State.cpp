@@ -56,7 +56,6 @@ namespace vs
         mHasRecentlyAddedConditions( false ),
         mInconsistent( false ),
         mMarkedAsDeleted( false ),
-        mRoot( true ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
         #ifdef VS_USE_VARIABLE_BOUNDS
@@ -90,7 +89,6 @@ namespace vs
         mHasRecentlyAddedConditions( false ),
         mInconsistent( false ),
         mMarkedAsDeleted( false ),
-        mRoot( false ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
         #ifdef VS_USE_VARIABLE_BOUNDS
@@ -2519,7 +2517,7 @@ namespace vs
                     {
                         divisionResultA = DoubleInterval( divisionResultA.left(),
                                                           DoubleInterval::STRICT_BOUND,
-                                                          DoubleInterval::roundUp( divisionResultA.right(), true ),
+                                                          std::nextafter( divisionResultA.right(), DBL_MAX ),
                                                           DoubleInterval::WEAK_BOUND );
                     }
                     #ifdef VS_VB_DEBUG
@@ -2545,7 +2543,7 @@ namespace vs
                         {
                             divisionResultA = DoubleInterval( divisionResultA.left(),
                                                               DoubleInterval::STRICT_BOUND,
-                                                              DoubleInterval::roundUp( divisionResultA.right(), true ),
+                                                              std::nextafter( divisionResultA.right(), DBL_MAX ),
                                                               DoubleInterval::WEAK_BOUND );
                         }
                         #ifdef VS_VB_DEBUG
@@ -2584,7 +2582,7 @@ namespace vs
                     {
                         divisionResultA = DoubleInterval( divisionResultA.left(),
                                                           DoubleInterval::STRICT_BOUND,
-                                                          DoubleInterval::roundUp( divisionResultA.right(), true ),
+                                                          std::nextafter( divisionResultA.right(), DBL_MAX ),
                                                           DoubleInterval::WEAK_BOUND );
                     }
                     #ifdef VS_VB_DEBUG

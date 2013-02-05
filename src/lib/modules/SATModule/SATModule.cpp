@@ -362,7 +362,7 @@ namespace smtrat
                             {
                                 case REALCONSTRAINT:
                                 {
-                                    Lit literal = getLiteral( subsubformula, _type == NORMAL_CLAUSE ? _formula : NULL );
+                                    Lit literal = getLiteral( subsubformula, _type == NORMAL_CLAUSE ? _formula : NULL, false );
                                     clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
                                     break;
                                 }
@@ -423,7 +423,7 @@ namespace smtrat
                 {
                     case REALCONSTRAINT:
                     {
-                        Lit literal = getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : NULL );
+                        Lit literal = getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : NULL, false );
                         vec<Lit> learned_clause;
                         learned_clause.push( mkLit( var( literal ), !sign( literal ) ) );
                         return addClause( learned_clause, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
@@ -482,7 +482,7 @@ namespace smtrat
      * @param _origin
      * @return
      */
-    Lit SATModule::getLiteral( const Formula& _formula, const Formula* _origin )
+    Lit SATModule::getLiteral( const Formula& _formula, const Formula* _origin, bool _polarity )
     {
         assert( _formula.getType() != REALCONSTRAINT || _formula.constraint().relation() != CR_NEQ );
         switch( _formula.getType() )
@@ -503,8 +503,6 @@ namespace smtrat
             }
             case REALCONSTRAINT:
             {
-                mConstraintsToInform.insert( _formula.pConstraint() );
-
                 return getLiteral( _formula.pConstraint(), _origin, fabs(_formula.activity()), (_formula.activity()<0) );
             }
             default:
@@ -522,7 +520,7 @@ namespace smtrat
      * @param _origin
      * @return
      */
-    Lit SATModule::getLiteral( const Constraint* _constraint, const Formula* _origin, double _activity, bool _preferredToTSolver)
+    Lit SATModule::getLiteral( const Constraint* _constraint, const Formula* _origin, double _activity, bool _preferredToTSolver, bool _polarity )
     {
         ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _constraint );
         if( constraintLiteralPair != mConstraintLiteralMap.end() )
@@ -542,10 +540,57 @@ namespace smtrat
                 mStats->initialTrue();
             }
             #endif
+            const Constraint* constraint = _constraint;
+//            const Constraint* constraint = NULL;
+//            if( !_polarity )
+//            {
+//                cout << "test" << endl;
+//                Constraint_Relation rel = CR_EQ;
+//                switch( _constraint->relation() )
+//                {
+//                    case CR_EQ:
+//                    {
+//                        rel = CR_NEQ;
+//                        break;
+//                    }
+//                    case CR_NEQ:
+//                    {
+//                        rel = CR_EQ;
+//                        break;
+//                    }
+//                    case CR_LEQ:
+//                    {
+//                        rel = CR_GREATER;
+//                        break;
+//                    }
+//                    case CR_GEQ:
+//                    {
+//                        rel = CR_LESS;
+//                        break;
+//                    }
+//                    case CR_LESS:
+//                    {
+//                        rel = CR_GEQ;
+//                        break;
+//                    }
+//                    case CR_GREATER:
+//                    {
+//                        rel = CR_LEQ;
+//                        break;
+//                    }
+//                    default:
+//                    {
+//                        assert(false);
+//                    }
+//                }
+//                constraint = Formula::newConstraint( _constraint->lhs(), rel, _constraint->variables() );
+//            }
+//            else constraint = _constraint;
             constraintAbstraction = newVar( !_preferredToTSolver, true, _activity, new Formula( _constraint ), _origin );
 
             Lit lit                            = mkLit( constraintAbstraction, false );
             mConstraintLiteralMap[_constraint] = lit;
+            mConstraintsToInform.push_back( constraint );
             return lit;
         }
     }

@@ -63,8 +63,8 @@ namespace smtrat
             return *a < *b;
         }
     };
-    
-    
+
+
 
 
     /**
@@ -92,7 +92,7 @@ namespace smtrat
             ///
             ModuleType mModuleType;
             ///
-            fastConstraintSet mConstraintsToInform;
+            std::list<const Constraint* > mConstraintsToInform;
             /// formula passed to this module
             const Formula* mpReceivedFormula;
             /// formula passed to the backends
@@ -111,6 +111,8 @@ namespace smtrat
             std::vector<Formula*> mDeductions;
             ///
             Formula::iterator mFirstSubformulaToPass;
+            ///
+            std::list<const Constraint* >::iterator mFirstConstraintToInform;
             ///
             Formula::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
@@ -140,7 +142,7 @@ namespace smtrat
             // Main interfaces
             virtual bool inform( const Constraint* const _constraint )
             {
-                mConstraintsToInform.insert( _constraint );
+                mConstraintsToInform.push_back( _constraint );
                 return true;
             }
             virtual bool assertSubformula( Formula::const_iterator );
@@ -211,7 +213,7 @@ namespace smtrat
                 return mUsedBackends;
             }
 
-            const fastConstraintSet& constraintsToInform() const
+            const std::list<const Constraint* >& constraintsToInform() const
             {
                 return mConstraintsToInform;
             }
@@ -323,7 +325,7 @@ namespace smtrat
             double getCheckTimerMS() const;
             double getRemoveTimerMS() const;
             unsigned getNrConsistencyChecks() const;
-            
+
     };
 }    // namespace smtrat
 #endif   /* SMTRAT_MODULE_H */
