@@ -216,7 +216,8 @@ namespace smtrat
     {
         if( mpReceivedFormula->isConstraintConjunction() )
         {
-            assert( mpReceivedFormula->size() == mFormulaConditionMap.size() );
+            assert( !(mpReceivedFormula->size() < mFormulaConditionMap.size()) );
+            assert( !(mpReceivedFormula->size() > mFormulaConditionMap.size()) );
             if( !mConditionsChanged )
             {
                 if( mInfeasibleSubsets.empty() )
