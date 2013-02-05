@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-01-29
+ * @version 2013-02-05
  */
 
 //#define MODULE_VERBOSE
@@ -272,7 +272,7 @@ namespace smtrat
             return;
         }
         #ifdef CAD_USE_VARIABLE_BOUNDS
-        if( !mVariableBounds.removeBound( (*_subformula)->pConstraint(), *_subformula ) == 0 )
+        if( mVariableBounds.removeBound( (*_subformula)->pConstraint(), *_subformula ) != 0 )
         { // constraint was added as bound, so there is no respective constraint stored
             Module::removeSubformula( _subformula );
             return;
