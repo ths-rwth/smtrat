@@ -59,7 +59,7 @@ using namespace std;
 //#define SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
 //#define SMTRAT_CAD_GENERIC_SETTING
 //#define SMTRAT_CAD_DISABLE_SMT
-//#define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
+#define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
 //#define SMTRAT_CAD_DISABLE_MIS
 
 #ifdef SMTRAT_CAD_DISABLE_SMT
@@ -96,9 +96,11 @@ namespace smtrat
                 #else
                 setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::EQUATIONDETECT_CADSETTING ); // standard
                 #endif
-                setting.warmRestart = true;
+                setting.computeConflictGraph    = true;
+                setting.numberOfDeductions      = 1;
+                setting.warmRestart             = true;
                 setting.simplifyByFactorization = true;
-                setting.simplifyByRootcounting= true;
+                setting.simplifyByRootcounting  = true;
             #endif
         #endif
 
@@ -221,8 +223,16 @@ namespace smtrat
             cout << "conflict graph: " << endl << conflictGraph << endl << endl;
             #endif
             vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( conflictGraph );
+            #ifdef CAD_USE_VARIABLE_BOUNDS
+            set<Formula*> boundConstraints = mVariableBounds.getOriginsOfBounds();
+            #endif
             for( vec_set_const_pFormula::const_iterator i = infeasibleSubsets.begin(); i != infeasibleSubsets.end(); ++i )
+            {
                 mInfeasibleSubsets.push_back( *i );
+                #ifdef CAD_USE_VARIABLE_BOUNDS
+                mInfeasibleSubsets.back().insert( boundConstraints.begin(), boundConstraints.end() );
+                #endif
+            }
             #endif
             #ifdef MODULE_VERBOSE
             cout << endl << "#Samples: " << mCAD.samples().size() << endl;
