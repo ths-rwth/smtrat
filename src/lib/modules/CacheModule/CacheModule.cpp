@@ -62,10 +62,10 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
     bool CacheModule::assertSubformula( Formula::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
-        addingQueue.insert(_subformula);
-        if( (*_subformula)->getType() != REALCONSTRAINT ) return true;
+        addReceivedSubformulaToPassedFormula(_subformula);
         assert((*_subformula)->getType() == REALCONSTRAINT);
         ++(mActualTCall.nrConstraints);
+        assert(mActualTCall.passedConstraints.getBit((*_subformula)->pConstraint()->id()) == false);
         mActualTCall.passedConstraints.setBit((*_subformula)->pConstraint()->id(), true);
         return true;
     }
@@ -75,19 +75,12 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
      */
     Answer CacheModule::isConsistent()
     {
-        //print();
-        
         if(callCacheLookup()) 
         {
             
         }
         else
         {
-            for( std::set<Formula::const_iterator>::const_iterator it = addingQueue.begin(); it != addingQueue.end(); ++it ) 
-            {
-                addReceivedSubformulaToPassedFormula(*it);
-            }
-            addingQueue.clear();
             Answer ans = runBackends();
             if( ans == False )
             {
@@ -108,8 +101,8 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
     void CacheModule::removeSubformula( Formula::const_iterator _subformula )
     {
         --(mActualTCall.nrConstraints);
+        assert(mActualTCall.passedConstraints.getBit((*_subformula)->pConstraint()->id()) == true);
         mActualTCall.passedConstraints.setBit((*_subformula)->pConstraint()->id(), false);
-        addingQueue.erase(_subformula);
         Module::removeSubformula( _subformula );
     }
     
@@ -153,7 +146,7 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
         
     }
     
-    void CacheModule::print()
+    void CacheModule::printCache()
     {
         std::cout << "actual call:" << std::endl;
         mActualTCall.passedConstraints.print();

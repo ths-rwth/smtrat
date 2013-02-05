@@ -80,7 +80,7 @@ namespace cachemodule
             TCallCache mCallCache;
             
             cachemodule::TCall mActualTCall;
-            std::set<Formula::const_iterator,FormulaIteratorConstraintIdCompare> addingQueue;
+            std::list<Formula::const_iterator> addingQueue;
         public:
             /**
              * Constructors:
@@ -104,7 +104,7 @@ namespace cachemodule
             bool callCacheLookup();
             void callCacheSave();
             
-            void print();
+            void printCache();
     };
 
 }    // namespace smtrat
