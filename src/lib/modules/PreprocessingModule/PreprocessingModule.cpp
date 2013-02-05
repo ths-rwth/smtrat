@@ -285,11 +285,16 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 difficulty = 300;
             }
             // Equalities allow for a small solution space, so we find them easier.
+            
+            difficulty += (constraint->numMonomials()-1) * 8;
             if( constraint->relation() == CR_EQ )
             {
-                difficulty -= 15;
+                difficulty *= 0.7;
             }
-            difficulty += (constraint->numMonomials()-1) * 8;
+            if( constraint->relation() == CR_LEQ  || constraint->relation() == CR_GEQ)
+            {
+                difficulty *= 1.1;
+            }
             formula->setDifficulty(difficulty);
         }
     }
@@ -377,6 +382,9 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 // This are constraints of the form a1t_1 ~ 0 with a1 a numerical value and t_1 a monomial of degree > 1.
                 if( constraint->numMonomials() == 1 )
                 {
+                    #ifdef PREPROCESSING_DEVELOP_MODE
+                    assert(false)
+                    #endif
                     // TODO implement this.
                 }
                 // We search for constraints of the form a1t_1 + a2 ~ 0
@@ -401,7 +409,9 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                         }
                         case CR_GEQ:
                         {
+                            #ifdef PREPROCESSING_DEVELOP_MODE
                             assert(false); // not implemented
+                            #endif
                             break;
                         }
                         case CR_LESS:
@@ -411,17 +421,23 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                         }
                         case CR_GREATER:
                         {
+                            #ifdef PREPROCESSING_DEVELOP_MODE
                             assert(false); // not implemented
+                            #endif
                             break;
                         }
                         case CR_EQ:
                         {
+                            #ifdef PREPROCESSING_DEVELOP_MODE
                             assert(false); // not implemented
+                            #endif
                             break;
                         }
                         case CR_NEQ:
                         {
+                            #ifdef PREPROCESSING_DEVELOP_MODE
                             assert(false); // not implemented
+                            #endif
                             break;
                         }
                     }
