@@ -224,7 +224,7 @@ namespace smtrat
             #endif
             vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( conflictGraph );
             #ifdef CAD_USE_VARIABLE_BOUNDS
-            set<Formula*> boundConstraints = mVariableBounds.getOriginsOfBounds();
+            set<const Formula*> boundConstraints = mVariableBounds.getOriginsOfBounds();
             #endif
             for( vec_set_const_pFormula::const_iterator i = infeasibleSubsets.begin(); i != infeasibleSubsets.end(); ++i )
             {
