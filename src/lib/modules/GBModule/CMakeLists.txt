@@ -1,4 +1,4 @@
-set(GbSettings "1" CACHE STRING "Number of settings used for GroebnerModule")
+set(GbSettings "5" CACHE STRING "Number of settings used for GroebnerModule")
 BeginDefineModule()
 ModuleMainHeader(GBModule/GroebnerModule.h)
 ModuleName(GroebnerModule)

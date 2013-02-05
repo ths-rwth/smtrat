@@ -41,6 +41,8 @@
 //#define MEASURE_TIME
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
+//#define SEARCH_RULES
+//#define GB_OUTPUT
 
 using std::set;
 using GiNaC::ex_to;
@@ -183,6 +185,9 @@ void GroebnerModule<Settings>::handleConstraintNotToGB(Formula::const_iterator _
 template<class Settings>
 Answer GroebnerModule<Settings>::isConsistent( )
 {
+#ifdef GB_OUTPUT
+    std::cout << "GB Called" << std::endl;
+#endif
     if(!mpReceivedFormula->isConstraintConjunction())
     {
         return Unknown;
@@ -244,10 +249,20 @@ Answer GroebnerModule<Settings>::isConsistent( )
     if( !mBasis.inputEmpty( ) || (mRecalculateGB && mBasis.nrOriginalConstraints() > 0) )
         {
         //now, we calculate the groebner basis
+#ifdef GB_OUTPUT
+        std::cout << "basis calculate call" << std::endl;
+#endif
         mBasis.calculate( );
+#ifdef GB_OUTPUT
+        std::cout << "basis calculated" << std::endl;
+#endif
         mRecalculateGB = false;
-        #ifdef SEARCH_FOR_RADICALMEMBERS
+        //std::cout << "search rules" << std::endl;
         searchForRadicalMembers();
+
+        //std::cout << "rules found" << std::endl;
+#ifdef SEARCH_FOR_RADICALMEMBERS
+        
         #endif
         Polynomial witness;
         #ifdef USE_NSS
@@ -408,7 +423,76 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
 template<class Settings>
 bool GroebnerModule<Settings>::searchForRadicalMembers()
+{
+    #ifdef SEARCH_RULES
+    std::list<Polynomial> polynomials = mBasis.getGb();
+    std::map<unsigned, Term> rewrites;
+    for(typename std::list<Polynomial>::iterator it = polynomials.begin(); it != polynomials.end();)
     {
+        bool foundRule = false;
+        if( it->nrOfTerms() == 1 && it->lterm().tdeg()==1 )
+        {
+            foundRule = rewrites.insert(std::pair<unsigned, Term>(it->lterm().getSingleVariableNr(),Term(0))).second;
+        }
+        else if( it->nrOfTerms() == 2 )
+        {
+            // todo fix the coefficients 
+            if(it->lterm().tdeg() == 1 )
+            {
+                foundRule = rewrites.insert(std::pair<unsigned, Term>(it->lterm().getSingleVariableNr(),it->trailingTerm())).second;
+            }
+            else if(it->trailingTerm().tdeg() == 1 )
+            {
+                foundRule = true;   
+                foundRule = rewrites.insert(std::pair<unsigned, Term>(it->trailingTerm().getSingleVariableNr(),it->lterm())).second;
+            }
+        }
+        if(foundRule)
+        {
+            it = polynomials.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+    
+    
+    
+    std::list<Polynomial> gbpolynomials = mBasis.getGb();
+    std::cout << "Original gb" << std::endl;
+    for(typename std::list<Polynomial>::const_iterator it = gbpolynomials.begin(); it != gbpolynomials.end(); ++it )
+    {
+        std::cout << *it << std::endl; 
+    }
+    
+    std::cout << "rewrite rules" << std::endl;
+    for( std::map<unsigned, Term>::const_iterator it = rewrites.begin(); it != rewrites.end(); ++it )
+    {
+        std::cout << it->first << " -> " << it->second << std::endl;
+    }
+    
+    //TODO this is probably not sufficient for normalizing.
+    std::map<unsigned, Term> normalizedRewrites;
+    for( std::map<unsigned, Term>::const_iterator it = rewrites.begin(); it != rewrites.end(); ++it )
+    {
+        normalizedRewrites.insert(std::pair<unsigned, Term>(it->first, it->second.rewriteVariables(rewrites) ) );
+    }
+    
+    
+    std::cout << "normalized rules" << std::endl;
+    for( std::map<unsigned, Term>::const_iterator it = normalizedRewrites.begin(); it != normalizedRewrites.end(); ++it )
+    {
+        std::cout << it->first << " -> " << it->second << std::endl;
+    }
+
+    std::cout << "Remaining gb" << std::endl;
+    for(typename std::list<Polynomial>::const_iterator it = polynomials.begin(); it != polynomials.end(); ++it )
+    {
+        std::cout << *it << std::endl; 
+    }
+    
+    #endif
     #ifdef SEARCH_FOR_RADICALMEMBERS
     std::set<unsigned> variableNumbers(mBasis.getGbIdeal().gatherVariables());
 
