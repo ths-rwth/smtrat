@@ -74,8 +74,12 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         {
             Formula* formulaToAssert = new Formula( **receivedSubformula );
             RewritePotentialInequalities(formulaToAssert);
+            
             #ifdef ADDLINEARDEDUCTIONS
-            addLinearDeductions(formulaToAssert);
+            if(formulaToAssert->getType() == AND) 
+            {
+                addLinearDeductions(formulaToAssert);
+            }
             #endif
             setDifficulty(formulaToAssert,false);
             /*
