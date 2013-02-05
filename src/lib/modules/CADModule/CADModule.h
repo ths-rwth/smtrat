@@ -25,13 +25,13 @@
  *
  * @author Ulrich Loup
  * @since 2012-02-04
- * @version 2013-01-29
+ * @version 2013-02-05
  *
  */
 #ifndef SMTRAT_CADMODULE_H
 #define SMTRAT_CADMODULE_H
 
-//#define CAD_USE_VARIABLE_BOUNDS
+#define CAD_USE_VARIABLE_BOUNDS
 
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"

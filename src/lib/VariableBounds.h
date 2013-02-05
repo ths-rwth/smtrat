@@ -24,7 +24,7 @@
  * @file VariableBounds.h
  * @author Florian Corzilius
  * @since 2012-10-04
- * @version 2012-10-04
+ * @version 2013-02-05
  */
 
 #ifndef VARIABLEBOUNDS_H
@@ -943,7 +943,7 @@ namespace smtrat
         template<class T>
         std::set< const T* > VariableBounds<T>::getOriginsOfBounds() const
         {
-            std::set< T* > originsOfBounds = std::set< T* >();
+            std::set< const T* > originsOfBounds = std::set< const T* >();
             for( auto exVarPair = mpExVariableMap->begin(); exVarPair != mpExVariableMap->end(); ++exVarPair )
             {
                 const Variable<T>& var = *exVarPair->second;
