@@ -1186,7 +1186,7 @@ FindSecond:
                         }
                         default:
                         {
-                            cerr << "Unexpected output!" << endl;
+                            cerr << "Backend returns undefined answer!" << endl;
                             assert( false );
                             return l_Undef;
                         }
