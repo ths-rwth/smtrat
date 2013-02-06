@@ -186,12 +186,26 @@ namespace smtrat
         }
         GiNaCRA::BoundMap boundMap = GiNaCRA::BoundMap();
         GiNaCRA::evalintervalmap eiMap = mVariableBounds.getEvalIntervalMap();
-        for( auto iter = eiMap.begin(); iter != eiMap.end(); ++iter )
+        for( GiNaCRA::evalintervalmap::const_iterator iter = eiMap.begin(); iter != eiMap.end(); ++iter )
         {
             unsigned pos = mCAD.variable( iter->first );
             assert( boundMap.find( pos ) == boundMap.end() );
             boundMap[pos] = iter->second;
         }
+        #ifdef MODULE_VERBOSE
+        cout << "within " << ( boundMap.empty() ? "no bounds." : "the bounds:" ) << endl;
+        if( vars.empty() )
+        {
+            for( GiNaCRA::BoundMap::const_iterator b = boundMap.begin(); b != boundMap.end(); ++b )
+                cout << "  " << b->second << " (no variable assigned)" << endl;
+        }
+        else
+        {
+            for( GiNaCRA::BoundMap::const_iterator b = boundMap.begin(); b != boundMap.end(); ++b )
+                if( vars.size() < b->first )
+                    cout << "  " << b->second << " for " << vars[b->first] << endl;
+        }
+        #endif
         #endif
         ConflictGraph conflictGraph;
         list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > > deductions;

@@ -26,7 +26,7 @@
  * @author Ulrich Loup
  * @author Sebastian Junges
  * @since 2012-01-18
- * @version 2013-01-16
+ * @version 2013-02-06
  */
 
 #ifndef SMTRAT_MODULE_H
@@ -76,6 +76,7 @@ namespace smtrat
         friend class ValidationSettings;
         #endif
         public:
+            /// data type for an assignment assigning a variable, represented as a string, a real algebraic number, represented as a string
             typedef std::map< const std::string, std::string > Model;
             typedef std::chrono::high_resolution_clock clock;
             typedef std::chrono::microseconds timeunit;
@@ -97,7 +98,7 @@ namespace smtrat
             const Formula* mpReceivedFormula;
             /// formula passed to the backends
             Formula* mpPassedFormula;
-            ///
+            /// stores the assignment of the current satisfiable result
             Model mModel;
 
         private:
