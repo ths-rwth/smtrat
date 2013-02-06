@@ -40,7 +40,7 @@
 
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
-#define SEARCH_RULES
+//#define SMTRAT_GROEBNER_SEARCH_REWRITERULES
 //#define GB_OUTPUT
 
 using std::set;
@@ -205,9 +205,12 @@ Answer GroebnerModule<Settings>::isConsistent( )
     assert( mBacktrackPoints.size( ) - 1 == mBasis.nrOriginalConstraints( ) );
     assert( mInfeasibleSubsets.empty( ) );
     // New elements queued for adding to the gb have to be handled.
+    
     if( !mBasis.inputEmpty( ) )
     {
-        
+        #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
+        mBasis.applyVariableRewriteRulesToInput(mRewriteRules);
+        #endif
         //first, we interreduce the input!
         std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> > results = mBasis.reduceInput( );
         //analyze for deductions
@@ -356,9 +359,20 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
         if( Settings::checkInequalities != NEVER )
         {
-            Answer ans = mInequalities.reduceWRTGroebnerBasis( mBasis.getGbIdeal( ) );
+            Answer ans;
+            #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
+            ans = mInequalities.reduceWRTVariableRewriteRules(mRewriteRules);
+            #endif
+            // TODO do we really have to clear them now?
             mNewInequalities.clear( );
-        if( ans == False )
+            if( ans == False )
+            {
+                mSolverState = ans;
+                return ans;
+            }
+            ans = mInequalities.reduceWRTGroebnerBasis( mBasis.getGbIdeal( ) );
+            
+            if( ans == False )
             {
                 mSolverState = ans;
                 return ans;
@@ -386,11 +400,23 @@ Answer GroebnerModule<Settings>::isConsistent( )
     // If we always want to check inequalities, we also have to do so when there is no new groebner basis
     else if( Settings::checkInequalities == ALWAYS )
     {
-    // We only check those inequalities which are new, as the others are unchanged and have already been reduced wrt the latest GB
-        Answer ans = mInequalities.reduceWRTGroebnerBasis( mNewInequalities, mBasis.getGbIdeal( ) );
-    // New inequalities are handled now, no need to longer save them as new.
+        Answer ans;
+        #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
+        ans = mInequalities.reduceWRTVariableRewriteRules( mNewInequalities, mRewriteRules);
+        #endif   
+        if( ans != Unknown )
+        {
+            // New inequalities are handled now, no need to longer save them as new.
+            mNewInequalities.clear( );
+        
+            mSolverState = ans;
+            return ans;
+        }
+        // We only check those inequalities which are new, as the others are unchanged and have already been reduced wrt the latest GB
+        ans = mInequalities.reduceWRTGroebnerBasis( mNewInequalities, mBasis.getGbIdeal( ) );
+        // New inequalities are handled now, no need to longer save them as new.
         mNewInequalities.clear( );
-    // If we managed to get an answer, we can return that.
+        // If we managed to get an answer, we can return that.
         if( ans != Unknown )
         {
             mSolverState = ans;
@@ -423,7 +449,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
 template<class Settings>
 bool GroebnerModule<Settings>::searchForRadicalMembers()
 {
-    #ifdef SEARCH_RULES
+    #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
     std::list<Polynomial> gbpolynomials = mBasis.getGb();
     std::cout << "Original gb" << std::endl;
     for(typename std::list<Polynomial>::const_iterator it = gbpolynomials.begin(); it != gbpolynomials.end(); ++it )
@@ -658,12 +684,12 @@ void GroebnerModule<Settings>::pushBacktrackPoint( Formula::const_iterator btpoi
     if( mStateHistory.empty() )
     {
         // there are no variable rewrite rules, so we can only push our current basis and empty rewrites
-        mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, std::vector<VariableRewriteRule*>() ) );
+        mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> >() ) );
     }
     else
     {
-        // we save the current basis and use the variable rules from the previous level.
-        mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, mStateHistory.back().getRewriteRules() ) );
+        // we save the current basis and the rewrite rules
+        mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, mRewriteRules ) );
     }
 
     mBacktrackPoints.push_back( btpoint );
@@ -723,6 +749,7 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
 
     // Load the state to be restored;
     mBasis = mStateHistory.back( ).getBasis( );
+    mRewriteRules = mStateHistory.back().getRewriteRules();
     assert( mBasis.nrOriginalConstraints( ) == mBacktrackPoints.size( ) - 1 );
 
     if( Settings::checkInequalities != NEVER )
@@ -813,9 +840,8 @@ bool GroebnerModule<Settings>::saveState( )
     assert( mStateHistory.size( ) == mBacktrackPoints.size( ) );
 
     // TODO fix this copy.
-    std::vector<VariableRewriteRule*> rules(mStateHistory.back().getRewriteRules());
     mStateHistory.pop_back( );
-    mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, rules ) );
+    mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, mRewriteRules ) );
 
     return true;
 }
