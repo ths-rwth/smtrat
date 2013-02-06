@@ -32,6 +32,8 @@
 #include <limits.h>
 #include <bits/stl_map.h>
 
+//#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
+
 namespace smtrat {
 PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager )
     :
@@ -73,8 +75,9 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         while( receivedSubformula != mpReceivedFormula->end() )
         {
             Formula* formulaToAssert = new Formula( **receivedSubformula );
+            formulaToAssert->print();
             RewritePotentialInequalities(formulaToAssert);
-            
+            formulaToAssert->print();
             #ifdef ADDLINEARDEDUCTIONS
             if(formulaToAssert->getType() == AND) 
             {
@@ -162,6 +165,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             else if(subformula->getType() == REALCONSTRAINT)
             {
                 const Constraint* constraint = subformula->pConstraint();
+                formula->pop_back();
                 // Since we are considering a not, invert is in fact "inverted" ;-)
                 if(!invert)
                 {
@@ -170,7 +174,6 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                         case CR_EQ:
                         {
                             formula->copyAndDelete( new Formula( OR ));
-                            formula->erase((unsigned)0);
                             formula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
                             formula->addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
                             return;
@@ -183,13 +186,13 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                         case CR_LESS:
                         {
                             #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-                            _formula.copyAndDelete( new Formula( OR ));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_EQ, constraint->variables() )));
+                            formula->copyAndDelete( new Formula( OR ));
+                            formula->addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            formula->addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_EQ, constraint->variables() )));
                             #else
                             formula->copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LEQ, constraint->variables() )));
-                            return;
                             #endif
+                            return;
                         }
                         case CR_NEQ:
                         {
@@ -203,6 +206,42 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                         }
                     }
                 }
+                #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
+                else
+                {
+                    switch( constraint->relation() )
+                    {
+                        case CR_EQ:
+                        {
+                            return;
+                        }
+                        case CR_LEQ:
+                        {
+                            subformula->copyAndDelete( new Formula( OR ));
+                            subformula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                            subformula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
+                            return;
+                        }
+                        case CR_LESS:
+                        {                            
+                            return;
+
+                        }
+                        case CR_NEQ:
+                        {
+                            subformula->copyAndDelete( new Formula( OR ));                            
+                            subformula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                            subformula->addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            return;
+                        }
+                        default:
+                        {
+                            std::cerr << "Unexpected relation symbol!" << std::endl;
+                            exit(SMTRAT_EXIT_GENERALERROR);
+                        }
+                    }
+                }
+                #endif         
             }
         }
         else if( formula->getType() == OR || formula->getType() == AND || formula->getType() == XOR || formula->getType() == IFF  )
@@ -212,6 +251,48 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 RewritePotentialInequalities(*it, invert);
             }
         }
+        #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
+        else if( formula->getType() == REALCONSTRAINT )
+        {
+            formula->print();
+            const Constraint* constraint = formula->pConstraint();
+            
+            switch( constraint->relation() )
+            {
+                case CR_EQ:
+                {
+                    return;
+                }
+                case CR_LEQ:
+                {
+                    Formula* phi = new Formula(OR );
+                    phi->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
+                    phi->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                    formula->pFather()->addSubformula(phi);
+                    formula->father().print();
+                    formula->pFather()->erase(formula);
+                }
+                case CR_LESS:
+                {                            
+                    return;
+
+                }
+                case CR_NEQ:
+                {
+                    formula->copyAndDelete( new Formula( OR ));
+                    formula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
+                    formula->addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                    return;
+                }
+                default:
+                {
+                    std::cerr << "Unexpected relation symbol!" << std::endl;
+                    exit(SMTRAT_EXIT_GENERALERROR);
+                }
+            }
+        }
+        #endif
+        
         return;
 
     }
