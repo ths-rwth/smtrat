@@ -60,12 +60,10 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
         Module::assertSubformula( _subformula );
         addReceivedSubformulaToPassedFormula(_subformula);
 //        std::cout << "Type" <<  mpPassedFormula->last()->getType() << std::endl;
-        scheduleSubformalaForAddingToPassedFormula(mpPassedFormula->last());
         std::list<ConstraintNode*> readd = mMatchingGraph.addConstraint( (*_subformula)->pConstraint(), _subformula, mpPassedFormula->last());
         while(!readd.empty())
         {
             addReceivedSubformulaToPassedFormula(readd.front()->posInReceivedFormula);
-            scheduleSubformalaForAddingToPassedFormula(mpPassedFormula->last());
             std::list<ConstraintNode*> addAsWell = mMatchingGraph.updateConstraintNode(readd.front(), mpPassedFormula->last());
             readd.pop_front();
             readd.insert(readd.end(), addAsWell.begin(), addAsWell.end() );
@@ -81,31 +79,28 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
      */
     Answer VRWModule::isConsistent()
     {
+        print();
         std::list<Formula::iterator> notNecessary;
         do 
         {
             notNecessary = mMatchingGraph.findIrrelevantConstraints(mpPassedFormula->end());
             for(std::list<Formula::iterator>::const_iterator it = notNecessary.begin(); it != notNecessary.end(); ++it)
             {
+                removeSubformulaFromPassedFormula(*it);
                 assert(*it != mpPassedFormula->end());
-                scheduleSubformulaForRemovalFromPassedFormula(*it);
             }
         } while(!notNecessary.empty());
         
-        Answer ans;
-        if(handleScheduled())
-        {
-            ans = False;        
+        Answer ans = Unknown;
+        mMatchingGraph.print();
+        print();
+        
+        if(mpPassedFormula->size() > 0) {
+            ans = runBackends();
         }
         else
         {
-            if(mpPassedFormula->size() > 0) {
-                ans = runBackends();
-            }
-            else
-            {
-                ans = True;
-            }
+            ans = True;
         }
             
         if( ans == False )
