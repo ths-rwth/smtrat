@@ -359,7 +359,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
         if( Settings::checkInequalities != NEVER )
         {
-            Answer ans;
+            Answer ans = Unknown;
             #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
             ans = mInequalities.reduceWRTVariableRewriteRules(mRewriteRules);
             #endif
@@ -400,7 +400,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
     // If we always want to check inequalities, we also have to do so when there is no new groebner basis
     else if( Settings::checkInequalities == ALWAYS )
     {
-        Answer ans;
+        Answer ans = Unknown;
         #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
         ans = mInequalities.reduceWRTVariableRewriteRules( mNewInequalities, mRewriteRules);
         #endif   
@@ -1252,7 +1252,11 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                         deduction->back()->addSubformula( (*jt)->pConstraint() );
                     }
                     deduction->addSubformula(((*(it->first))->pConstraint( )));
-
+                    mModule->print();
+                    std::cout << "Id="<<(*(it->first))->pConstraint()->id()<<std::endl;
+                    std::cout << "Gb learns: ";
+                    deduction->print();
+                    std::cout << std::endl;
                     mModule->addDeduction(deduction);
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mStats->DeducedInequality();
