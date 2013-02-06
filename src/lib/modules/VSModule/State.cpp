@@ -56,7 +56,6 @@ namespace vs
         mHasRecentlyAddedConditions( false ),
         mInconsistent( false ),
         mMarkedAsDeleted( false ),
-        mRoot( true ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
         #ifdef VS_USE_VARIABLE_BOUNDS
@@ -90,7 +89,6 @@ namespace vs
         mHasRecentlyAddedConditions( false ),
         mInconsistent( false ),
         mMarkedAsDeleted( false ),
-        mRoot( false ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
         #ifdef VS_USE_VARIABLE_BOUNDS
@@ -2444,7 +2442,7 @@ namespace vs
     }
 
     #ifdef VS_USE_VARIABLE_BOUNDS
-    #define VS_VB_DEBUG
+//    #define VS_VB_DEBUG
     /**
      *
      * @return
@@ -2501,25 +2499,27 @@ namespace vs
                 father().variableBounds().print( cout, "          " );
                 cout << endl;
                 #endif
-                DoubleInterval solutionSpaceConst = DoubleInterval::evaluate( substitution().term().constantPart(), rFather().rVariableBounds().getIntervalMap() );
-                DoubleInterval solutionSpaceFactor = DoubleInterval::evaluate( substitution().term().factor(), rFather().rVariableBounds().getIntervalMap() );
-                DoubleInterval solutionSpaceRadicand = DoubleInterval::evaluate( substitution().term().radicand(), rFather().rVariableBounds().getIntervalMap() );
-                if( solutionSpaceRadicand.left() < 0 )
-                {
-                    solutionSpaceRadicand.setLeftType( DoubleInterval::WEAK_BOUND );
-                    solutionSpaceRadicand.setLeft( 0 );
-                }
-                if( solutionSpaceRadicand.right() > 0 && solutionSpaceRadicand.leftType() != DoubleInterval::INFINITY_BOUND )
-                {
-                    solutionSpaceRadicand.setRight( sqrt( solutionSpaceRadicand.right() ) + DBL_MIN );
-                }
-                DoubleInterval solutionSpaceDenom = DoubleInterval::evaluate( substitution().term().denominator(), rFather().rVariableBounds().getIntervalMap() );
-                DoubleInterval solutionSpace = solutionSpaceFactor * solutionSpaceRadicand;
+                evaldoubleintervalmap intervals = rFather().rVariableBounds().getIntervalMap();
+                DoubleInterval solutionSpaceConst = DoubleInterval::evaluate( substitution().term().constantPart(), intervals );
+                DoubleInterval solutionSpaceFactor = DoubleInterval::evaluate( substitution().term().factor(), intervals );
+                DoubleInterval solutionSpaceRadicand = DoubleInterval::evaluate( substitution().term().radicand(), intervals );
+                DoubleInterval solutionSpaceSqrt = solutionSpaceRadicand.sqrt();
+                DoubleInterval solutionSpaceDenom = DoubleInterval::evaluate( substitution().term().denominator(), intervals );
+                DoubleInterval solutionSpace = solutionSpaceFactor * solutionSpaceSqrt;
                 solutionSpace = solutionSpace + solutionSpaceConst;
                 DoubleInterval divisionResultA;
                 DoubleInterval divisionResultB;
                 if( solutionSpace.div_ext( divisionResultA, divisionResultB, solutionSpaceDenom ) )
                 {
+                    symbol subVar = ex_to<symbol>( substitution().varAsEx() );
+                    const DoubleInterval& subVarInterval = intervals[subVar];
+                    if( substitution().type() == ST_PLUS_EPSILON && divisionResultA.leftType() != DoubleInterval::INFINITY_BOUND )
+                    {
+                        divisionResultA = DoubleInterval( divisionResultA.left(),
+                                                          DoubleInterval::STRICT_BOUND,
+                                                          std::nextafter( divisionResultA.right(), DBL_MAX ),
+                                                          DoubleInterval::WEAK_BOUND );
+                    }
                     #ifdef VS_VB_DEBUG
                     cout << " results in   ";
                     divisionResultA.dbgprint();
@@ -2527,12 +2527,11 @@ namespace vs
                     divisionResultB.dbgprint();
                     cout << endl;
                     cout << endl << "intersect first interval with  ";
-                    DoubleInterval variableDomain = rFather().rVariableBounds().getDoubleInterval( substitution().varAsEx() );
+                    DoubleInterval variableDomain = subVarInterval;
                     variableDomain.dbgprint();
                     cout << endl;
                     #endif
-                    if( substitution().type() == ST_PLUS_EPSILON ) divisionResultA.setLeftType( DoubleInterval::STRICT_BOUND );
-                    solutionSpace = divisionResultA.intersect( rFather().rVariableBounds().getDoubleInterval( substitution().varAsEx() ) );
+                    solutionSpace = divisionResultA.intersect( subVarInterval );
                     #ifdef VS_VB_DEBUG
                     cout << " results in   ";
                     solutionSpace.dbgprint();
@@ -2540,14 +2539,20 @@ namespace vs
                     #endif
                     if( solutionSpace.empty() )
                     {
+                        if( substitution().type() == ST_PLUS_EPSILON && divisionResultA.leftType() != DoubleInterval::INFINITY_BOUND )
+                        {
+                            divisionResultA = DoubleInterval( divisionResultA.left(),
+                                                              DoubleInterval::STRICT_BOUND,
+                                                              std::nextafter( divisionResultA.right(), DBL_MAX ),
+                                                              DoubleInterval::WEAK_BOUND );
+                        }
                         #ifdef VS_VB_DEBUG
                         cout << endl << "intersect first interval with  ";
-                        DoubleInterval variableDomain = rFather().rVariableBounds().getDoubleInterval( substitution().varAsEx() );
+                        DoubleInterval variableDomain = subVarInterval;
                         variableDomain.dbgprint();
                         cout << endl;
                         #endif
-                        if( substitution().type() == ST_PLUS_EPSILON ) divisionResultB.setLeftType( DoubleInterval::STRICT_BOUND );
-                        solutionSpace = divisionResultB.intersect( rFather().rVariableBounds().getDoubleInterval( substitution().varAsEx() ) );
+                        solutionSpace = divisionResultB.intersect( subVarInterval );
                         #ifdef VS_VB_DEBUG
                         cout << " results in   ";
                         solutionSpace.dbgprint();
@@ -2573,6 +2578,13 @@ namespace vs
                 }
                 else
                 {
+                    if( substitution().type() == ST_PLUS_EPSILON && divisionResultA.leftType() != DoubleInterval::INFINITY_BOUND )
+                    {
+                        divisionResultA = DoubleInterval( divisionResultA.left(),
+                                                          DoubleInterval::STRICT_BOUND,
+                                                          std::nextafter( divisionResultA.right(), DBL_MAX ),
+                                                          DoubleInterval::WEAK_BOUND );
+                    }
                     #ifdef VS_VB_DEBUG
                     cout << " results in   ";
                     divisionResultA.dbgprint();
@@ -2582,7 +2594,6 @@ namespace vs
                     variableDomain.dbgprint();
                     cout << endl;
                     #endif
-                    if( substitution().type() == ST_PLUS_EPSILON ) divisionResultA.setLeftType( DoubleInterval::STRICT_BOUND );
                     solutionSpace = divisionResultA.intersect( rFather().rVariableBounds().getDoubleInterval( substitution().varAsEx() ) );
                     #ifdef VS_VB_DEBUG
                     cout << " results in   ";

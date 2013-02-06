@@ -61,7 +61,6 @@ namespace smtrat
         mInfeasibleSubsets(),
         mpManager( _tsManager ),
         mModuleType( type ),
-        mConstraintsToInform(),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),
         mModel(),
@@ -70,6 +69,8 @@ namespace smtrat
         mPassedformulaOrigins(),
         mDeductions(),
         mFirstSubformulaToPass( mpPassedFormula->end() ),
+        mConstraintsToInform(),
+        mFirstConstraintToInform( mConstraintsToInform.end() ),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
         mSmallerMusesCheckCounter(0)
 #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -136,6 +137,7 @@ namespace smtrat
         {
             mFirstUncheckedReceivedSubformula = _receivedSubformula;
         }
+        
         return true;
     }
 
@@ -186,7 +188,6 @@ namespace smtrat
 
             if( formulaOrigins.empty() )
             {
-                mScheduledForRemoval.erase(passedSubformula);
                 passedSubformula = removeSubformulaFromPassedFormula( passedSubformula );
             }
             else
@@ -290,7 +291,31 @@ namespace smtrat
      */
     void Module::setOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins )
     {
+        assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
         mPassedformulaOrigins[_formula] = _origins;
+    }
+
+    /**
+     *
+     * @param _formula
+     * @param _origins
+     */
+    void Module::addOrigin( const Formula* const _formula, set< const Formula* >& _origin )
+    {
+        assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
+        mPassedformulaOrigins[_formula].push_back( _origin );
+    }
+
+    /**
+     *
+     * @param _formula
+     * @param _origins
+     */
+    void Module::addOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins )
+    {
+        assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
+        vec_set_const_pFormula& formulaOrigins = mPassedformulaOrigins[_formula];
+        formulaOrigins.insert( formulaOrigins.end(), _origins.begin(), _origins.end() );
     }
 
     /**
@@ -299,7 +324,7 @@ namespace smtrat
      * @return
      */
     const std::set<const Formula*>& Module::getOrigins( Formula::const_iterator _subformula ) const
-    {
+    {   
         FormulaOrigins::const_iterator origins = mPassedformulaOrigins.find( *_subformula );
         assert( origins != mPassedformulaOrigins.end() );
         assert( origins->second.size() == 1 );
@@ -535,6 +560,14 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->startAddTimer();
                 #endif
+                if( mFirstConstraintToInform != mConstraintsToInform.end() )
+                {
+                    auto iter = mFirstConstraintToInform;
+                    for( ; iter != mConstraintsToInform.end(); ++iter )
+                    {
+                        (*module)->inform( *iter );
+                    }
+                }
                 for( Formula::const_iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
                 {
                     if( !(*module)->assertSubformula( subformula ) )
@@ -546,6 +579,7 @@ namespace smtrat
                 (*module)->stopAddTimer();
                 #endif
             }
+            mFirstConstraintToInform = mConstraintsToInform.end();
             if( assertionFailed )
             {
                 #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -572,6 +606,7 @@ namespace smtrat
             ++((*module)->mNrConsistencyChecks);
             #endif
             result = (*module)->isConsistent();
+            assert(result == Unknown || result == False || result == True);
             #ifdef SMTRAT_DEVOPTION_MeasureTime
             (*module)->stopCheckTimer();
             #endif
@@ -615,6 +650,7 @@ namespace smtrat
 
     bool Module::handleScheduled()
     {
+        print();
         // We first want to remove everything which is scheduled for removal.
         // As some removal might not have been asserted on our backend, we have to prevent the backend call in these cases.
         // For now, we simply run over the not yet asserted constraints and fix
@@ -628,18 +664,36 @@ namespace smtrat
         std::set_difference(mScheduledForAdding.begin(),mScheduledForAdding.end(), removeLocal.begin(), removeLocal.end(), std::inserter(addToBackends, addToBackends.end()));
 
 
+        for( std::set<Formula::iterator>::const_iterator it = mScheduledForAdding.begin(); it != mScheduledForAdding.end(); ++it )
+        {
+            std::cout << "adding: " << **it << std::endl;
+            
+        }
+        
+        for( std::set<Formula::iterator>::const_iterator it = mScheduledForRemoval.begin(); it != mScheduledForRemoval.end(); ++it )
+        {
+            std::cout << "removing: " << **it << std::endl;
+        }
+        
+        for( std::set<Formula::iterator>::const_iterator it = removeLocal.begin(); it != removeLocal.end(); ++it )
+        {
+            std::cout << "intersection: " << **it << std::endl;
+            
+        }
         mScheduledForAdding.clear();
         mScheduledForRemoval.clear();
 
 
         for( std::set<Formula::iterator>::const_iterator it = removeLocal.begin(); it != removeLocal.end(); ++it )
         {
+            std::cout << "remove local: " << **it << std::endl;
             removeSubformulaFromPassedFormula(*it, false);
         }
 
 
         for( std::set<Formula::iterator>::const_iterator it = removeFromBackends.begin(); it != removeFromBackends.end(); ++it )
         {
+            std::cout << "remove global: " << **it << std::endl;
             removeSubformulaFromPassedFormula(*it, true);
         }
 
@@ -658,6 +712,8 @@ namespace smtrat
                 stopCheckTimer();
                 (*module)->startAddTimer();
                 #endif
+                std::cout << "add global: " << **it << std::endl;
+            
                 if( !(*module)->assertSubformula( *it ) )
                 {
                     inconsistencyWhileAsserting = true;
@@ -742,6 +798,15 @@ namespace smtrat
         #endif
 
         return result;
+    }
+    
+    void Module::addConstraintToInform( const Constraint* const constraint )
+    {
+        mConstraintsToInform.push_back(constraint);
+        if(mFirstConstraintToInform == mConstraintsToInform.end())
+        {
+            mFirstConstraintToInform = --mConstraintsToInform.end();
+        }
     }
 
     /**
@@ -1211,8 +1276,8 @@ namespace smtrat
     {
         return mTimerRemoveTotal.count() / 1000;
     }
-    
-    unsigned Module::getNrConsistencyChecks() const 
+
+    unsigned Module::getNrConsistencyChecks() const
     {
         return mNrConsistencyChecks;
     }

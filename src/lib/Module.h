@@ -63,8 +63,8 @@ namespace smtrat
             return *a < *b;
         }
     };
-    
-    
+
+
 
 
     /**
@@ -92,8 +92,6 @@ namespace smtrat
             Manager* const mpManager;
             ///
             ModuleType mModuleType;
-            ///
-            fastConstraintSet mConstraintsToInform;
             /// formula passed to this module
             const Formula* mpReceivedFormula;
             /// formula passed to the backends
@@ -113,6 +111,11 @@ namespace smtrat
             ///
             Formula::iterator mFirstSubformulaToPass;
             ///
+            std::list<const Constraint* > mConstraintsToInform;
+            ///
+            std::list<const Constraint* >::iterator mFirstConstraintToInform;
+
+            ///
             Formula::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
             mutable unsigned mSmallerMusesCheckCounter;
@@ -123,9 +126,9 @@ namespace smtrat
 
         public:
 
-            //
+            //DEPRECATED
             std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForRemoval;
-            //
+            //DEPRECATED
             std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForAdding;
 
             Module( ModuleType type, const Formula* const, Manager* const = NULL );
@@ -141,7 +144,7 @@ namespace smtrat
             // Main interfaces
             virtual bool inform( const Constraint* const _constraint )
             {
-                mConstraintsToInform.insert( _constraint );
+                addConstraintToInform(_constraint);
                 return true;
             }
             virtual bool assertSubformula( Formula::const_iterator );
@@ -212,7 +215,7 @@ namespace smtrat
                 return mUsedBackends;
             }
 
-            const fastConstraintSet& constraintsToInform() const
+            const std::list<const Constraint* >& constraintsToInform() const
             {
                 return mConstraintsToInform;
             }
@@ -267,11 +270,14 @@ namespace smtrat
             std::vector<Formula> generateSubformulaeOfInfeasibleSubset( unsigned infeasiblesubset, unsigned size ) const;
             void updateDeductions();
         protected:
+            void addConstraintToInform( const Constraint* const _constraint );
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );
             void addSubformulaToPassedFormula( Formula*, const vec_set_const_pFormula& );
             void addSubformulaToPassedFormula( Formula*, const Formula* );
-            void setOrigins( const Formula* const , vec_set_const_pFormula& );
-            void getOrigins( const Formula* const , vec_set_const_pFormula& ) const;
+            void setOrigins( const Formula* const, vec_set_const_pFormula& );
+            void addOrigin( const Formula* const, std::set< const Formula* >& );
+            void addOrigins( const Formula* const, vec_set_const_pFormula& );
+            void getOrigins( const Formula* const, vec_set_const_pFormula& ) const;
             Answer specialCaseConsistencyCheck() const;
             void getInfeasibleSubsets();
             static bool modelsDisjoint( const Model&, const Model& );
@@ -324,7 +330,7 @@ namespace smtrat
             double getCheckTimerMS() const;
             double getRemoveTimerMS() const;
             unsigned getNrConsistencyChecks() const;
-            
+
     };
 }    // namespace smtrat
 #endif   /* SMTRAT_MODULE_H */

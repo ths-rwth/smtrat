@@ -38,10 +38,9 @@
 #include "NSSModule/GroebnerToSDP.h"
 #endif
 
-//#define MEASURE_TIME
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
-//#define SEARCH_RULES
+//#define SMTRAT_GROEBNER_SEARCH_REWRITERULES
 //#define GB_OUTPUT
 
 using std::set;
@@ -206,9 +205,12 @@ Answer GroebnerModule<Settings>::isConsistent( )
     assert( mBacktrackPoints.size( ) - 1 == mBasis.nrOriginalConstraints( ) );
     assert( mInfeasibleSubsets.empty( ) );
     // New elements queued for adding to the gb have to be handled.
+    
     if( !mBasis.inputEmpty( ) )
     {
-        
+        #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
+        mBasis.applyVariableRewriteRulesToInput(mRewriteRules);
+        #endif
         //first, we interreduce the input!
         std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> > results = mBasis.reduceInput( );
         //analyze for deductions
@@ -357,9 +359,20 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
         if( Settings::checkInequalities != NEVER )
         {
-            Answer ans = mInequalities.reduceWRTGroebnerBasis( mBasis.getGbIdeal( ) );
+            Answer ans = Unknown;
+            #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
+            ans = mInequalities.reduceWRTVariableRewriteRules(mRewriteRules);
+            #endif
+            // TODO do we really have to clear them now?
             mNewInequalities.clear( );
-        if( ans == False )
+            if( ans == False )
+            {
+                mSolverState = ans;
+                return ans;
+            }
+            ans = mInequalities.reduceWRTGroebnerBasis( mBasis.getGbIdeal( ) );
+            
+            if( ans == False )
             {
                 mSolverState = ans;
                 return ans;
@@ -387,11 +400,23 @@ Answer GroebnerModule<Settings>::isConsistent( )
     // If we always want to check inequalities, we also have to do so when there is no new groebner basis
     else if( Settings::checkInequalities == ALWAYS )
     {
-    // We only check those inequalities which are new, as the others are unchanged and have already been reduced wrt the latest GB
-        Answer ans = mInequalities.reduceWRTGroebnerBasis( mNewInequalities, mBasis.getGbIdeal( ) );
-    // New inequalities are handled now, no need to longer save them as new.
+        Answer ans = Unknown;
+        #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
+        ans = mInequalities.reduceWRTVariableRewriteRules( mNewInequalities, mRewriteRules);
+        #endif   
+        if( ans != Unknown )
+        {
+            // New inequalities are handled now, no need to longer save them as new.
+            mNewInequalities.clear( );
+        
+            mSolverState = ans;
+            return ans;
+        }
+        // We only check those inequalities which are new, as the others are unchanged and have already been reduced wrt the latest GB
+        ans = mInequalities.reduceWRTGroebnerBasis( mNewInequalities, mBasis.getGbIdeal( ) );
+        // New inequalities are handled now, no need to longer save them as new.
         mNewInequalities.clear( );
-    // If we managed to get an answer, we can return that.
+        // If we managed to get an answer, we can return that.
         if( ans != Unknown )
         {
             mSolverState = ans;
@@ -424,41 +449,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
 template<class Settings>
 bool GroebnerModule<Settings>::searchForRadicalMembers()
 {
-    #ifdef SEARCH_RULES
-    std::list<Polynomial> polynomials = mBasis.getGb();
-    std::map<unsigned, Term> rewrites;
-    for(typename std::list<Polynomial>::iterator it = polynomials.begin(); it != polynomials.end();)
-    {
-        bool foundRule = false;
-        if( it->nrOfTerms() == 1 && it->lterm().tdeg()==1 )
-        {
-            foundRule = rewrites.insert(std::pair<unsigned, Term>(it->lterm().getSingleVariableNr(),Term(0))).second;
-        }
-        else if( it->nrOfTerms() == 2 )
-        {
-            // todo fix the coefficients 
-            if(it->lterm().tdeg() == 1 )
-            {
-                foundRule = rewrites.insert(std::pair<unsigned, Term>(it->lterm().getSingleVariableNr(),it->trailingTerm())).second;
-            }
-            else if(it->trailingTerm().tdeg() == 1 )
-            {
-                foundRule = true;   
-                foundRule = rewrites.insert(std::pair<unsigned, Term>(it->trailingTerm().getSingleVariableNr(),it->lterm())).second;
-            }
-        }
-        if(foundRule)
-        {
-            it = polynomials.erase(it);
-        }
-        else
-        {
-            ++it;
-        }
-    }
-    
-    
-    
+    #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
     std::list<Polynomial> gbpolynomials = mBasis.getGb();
     std::cout << "Original gb" << std::endl;
     for(typename std::list<Polynomial>::const_iterator it = gbpolynomials.begin(); it != gbpolynomials.end(); ++it )
@@ -466,30 +457,104 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
         std::cout << *it << std::endl; 
     }
     
-    std::cout << "rewrite rules" << std::endl;
-    for( std::map<unsigned, Term>::const_iterator it = rewrites.begin(); it != rewrites.end(); ++it )
-    {
-        std::cout << it->first << " -> " << it->second << std::endl;
-    }
+    std::list<Polynomial> polynomials = mBasis.getGb();
+    std::map<unsigned, Term> gatheredRewrites;
+    bool newRuleFound = true;
     
-    //TODO this is probably not sufficient for normalizing.
-    std::map<unsigned, Term> normalizedRewrites;
-    for( std::map<unsigned, Term>::const_iterator it = rewrites.begin(); it != rewrites.end(); ++it )
-    {
-        normalizedRewrites.insert(std::pair<unsigned, Term>(it->first, it->second.rewriteVariables(rewrites) ) );
-    }
+    unsigned ruleVar;
+    Term ruleTerm;
+    GiNaCRA::BitVector ruleReasons;
     
-    
-    std::cout << "normalized rules" << std::endl;
-    for( std::map<unsigned, Term>::const_iterator it = normalizedRewrites.begin(); it != normalizedRewrites.end(); ++it )
+    std::map<unsigned, std::pair<Term, BitVector> > rewrites;
+    while(newRuleFound) 
     {
-        std::cout << it->first << " -> " << it->second << std::endl;
-    }
+        newRuleFound = false;
+        std::cout << "current gb" << std::endl;
+        for(typename std::list<Polynomial>::const_iterator it = polynomials.begin(); it != polynomials.end(); ++it )
+        {
+            std::cout << *it << std::endl; 
+        }
+        
+        for(typename std::list<Polynomial>::iterator it = polynomials.begin(); it != polynomials.end();)
+        {
+            if( it->nrOfTerms() == 1 && it->lterm().tdeg()==1 )
+            {
+                //TODO optimization, this variable does not appear in the gb.
+                ruleVar = it->lterm().getSingleVariableNr();
+                ruleTerm = Term(0);
+                ruleReasons = it->getOrigins().getBitVector();
+                newRuleFound = true;
+            }
+            else if( it->nrOfTerms() == 2 )
+            {
+                // todo fix the coefficients 
+                if(it->lterm().tdeg() == 1 )
+                {
+                    ruleVar = it->lterm().getSingleVariableNr();
+                    ruleTerm = it->trailingTerm();
+                    ruleReasons = it->getOrigins().getBitVector();
+                    newRuleFound = true;
+                }
+                else if(it->trailingTerm().tdeg() == 1 )
+                {
+                    ruleVar = it->trailingTerm().getSingleVariableNr();
+                    ruleTerm = it->lterm().divide(it->trailingTerm().getCoeff());
+                    ruleReasons = it->getOrigins().getBitVector();
+                    newRuleFound = true;
+                }
+            }
+            if(newRuleFound)
+            {
+                it = polynomials.erase(it);
+                break;
+            }
+            else
+            {
+                ++it;
+            }
+        }
+        
+        if(polynomials.empty())
+        {
+            break;
+        }
 
-    std::cout << "Remaining gb" << std::endl;
-    for(typename std::list<Polynomial>::const_iterator it = polynomials.begin(); it != polynomials.end(); ++it )
-    {
-        std::cout << *it << std::endl; 
+        if(newRuleFound)
+        {
+            rewrites.insert(std::pair<unsigned, std::pair<Term, BitVector> >(ruleVar, std::pair<Term, BitVector>(ruleTerm, ruleReasons ) ) );
+            std::cout << "variable to be substituted: " << ruleVar << std::endl;
+            
+            
+            std::cout << "Remaining gb" << std::endl;
+            std::list<Polynomial> resultingGb;
+            GiNaCRA::Buchberger<typename Settings::Order> basis;
+            for(typename std::list<Polynomial>::const_iterator it = polynomials.begin(); it != polynomials.end(); ++it )
+            {
+                std::cout << *it << " ---- > "; 
+                std::cout.flush();
+                resultingGb.push_back(it->rewriteVariables(ruleVar, ruleTerm, ruleReasons));
+                basis.addPolynomial(resultingGb.back(), false);
+                std::cout << resultingGb.back() << std::endl;
+            }
+            basis.reduceInput();
+            basis.calculate();
+            polynomials = basis.getGb();
+            
+            std::cout << "rewrite rules" << std::endl;
+            for( std::map<unsigned, std::pair<Term, BitVector> >::iterator it = rewrites.begin(); it != rewrites.end(); ++it )
+            {
+                std::pair<Term, bool> reducedRule = it->second.first.rewriteVariables(ruleVar, ruleTerm);
+                if(reducedRule.second)
+                {
+                    it->second.first = reducedRule.first;
+                    it->second.second |= ruleReasons;
+                }
+                std::cout << it->first << " -> " << it->second.first << " [";
+                it->second.second.print();
+                std::cout <<  "]" << std::endl;
+            }
+            
+        }
     }
     
     #endif
@@ -619,12 +684,12 @@ void GroebnerModule<Settings>::pushBacktrackPoint( Formula::const_iterator btpoi
     if( mStateHistory.empty() )
     {
         // there are no variable rewrite rules, so we can only push our current basis and empty rewrites
-        mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, std::vector<VariableRewriteRule*>() ) );
+        mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> >() ) );
     }
     else
     {
-        // we save the current basis and use the variable rules from the previous level.
-        mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, mStateHistory.back().getRewriteRules() ) );
+        // we save the current basis and the rewrite rules
+        mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, mRewriteRules ) );
     }
 
     mBacktrackPoints.push_back( btpoint );
@@ -684,6 +749,7 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
 
     // Load the state to be restored;
     mBasis = mStateHistory.back( ).getBasis( );
+    mRewriteRules = mStateHistory.back().getRewriteRules();
     assert( mBasis.nrOriginalConstraints( ) == mBacktrackPoints.size( ) - 1 );
 
     if( Settings::checkInequalities != NEVER )
@@ -774,9 +840,8 @@ bool GroebnerModule<Settings>::saveState( )
     assert( mStateHistory.size( ) == mBacktrackPoints.size( ) );
 
     // TODO fix this copy.
-    std::vector<VariableRewriteRule*> rules(mStateHistory.back().getRewriteRules());
     mStateHistory.pop_back( );
-    mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, rules ) );
+    mStateHistory.push_back( GroebnerModuleState<Settings>( mBasis, mRewriteRules ) );
 
     return true;
 }
@@ -1187,7 +1252,11 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                         deduction->back()->addSubformula( (*jt)->pConstraint() );
                     }
                     deduction->addSubformula(((*(it->first))->pConstraint( )));
-
+                    mModule->print();
+                    std::cout << "Id="<<(*(it->first))->pConstraint()->id()<<std::endl;
+                    std::cout << "Gb learns: ";
+                    deduction->print();
+                    std::cout << std::endl;
                     mModule->addDeduction(deduction);
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mStats->DeducedInequality();

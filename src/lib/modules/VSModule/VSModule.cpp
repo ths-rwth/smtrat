@@ -384,6 +384,46 @@ namespace smtrat
                                 }
                                 case TEST_CANDIDATE_TO_GENERATE:
                                 {
+                                    #ifdef CHECK_STRICT_INEQUALITIES_WITH_BACKEND
+                                    switch( runBackendSolvers( currentState, true ) )
+                                    {
+                                        case True:
+                                        {
+                                            if( mpPassedFormula->size() == currentState->conditions().size() )
+                                            {
+                                                /*
+                                                 * Solution.
+                                                 */
+                                                #ifdef VS_DEBUG
+                                                printAll( cout );
+                                                #endif
+                                                #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                                                checkAnswer();
+                                                #endif
+                                                #ifdef VS_PRINT_ANSWERS
+                                                printAnswer();
+                                                #endif
+                                                mSolverState = True;
+                                                return True;
+                                            }
+                                            break;
+                                        }
+                                        case False:
+                                        {
+                                            goto EndSwitch;
+                                        }
+                                        case Unknown:
+                                        {
+                                            break;
+                                        }
+                                        default:
+                                        {
+                                            cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
+                                            mSolverState = Unknown;
+                                            return Unknown;
+                                        }
+                                    }
+                                    #endif
                                     /*
                                     * Set the index, if not already done, to the best variable to eliminate next.
                                     */
@@ -647,6 +687,9 @@ namespace smtrat
                                 default:
                                     assert( false );
                             }
+#ifdef CHECK_STRICT_INEQUALITIES_WITH_BACKEND
+EndSwitch:;
+#endif
                             #ifdef VS_USE_VARIABLE_BOUNDS
                         }
                         #endif
@@ -786,13 +829,10 @@ namespace smtrat
                 if( (*_currentState).addChild( coeffs.at( 1 ), CR_NEQ, _eliminationVar, sym, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, vars,
                                                oConditions ) )
                 {
-                    if( constraint.relation() == CR_EQ )
+                    if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
-                        if( coeffs.at( 1 ).info( info_flags::rational ) )
-                        {
-                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                            generatedTestCandidateBeingASolution = true;
-                        }
+                        _currentState->rChildren().back()->setOriginalCondition( _condition );
+                        generatedTestCandidateBeingASolution = true;
                     }
 
                     /*
@@ -804,7 +844,7 @@ namespace smtrat
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
                 }
-                else if( constraint.relation() == CR_EQ && coeffs.at( 1 ).info( info_flags::rational ) )
+                else if( constraint.relation() == CR_EQ )
                 {
                     generatedTestCandidateBeingASolution = true;
                 }
@@ -822,13 +862,10 @@ namespace smtrat
                 if( (*_currentState).addChild( coeffs.at( 2 ), CR_EQ, coeffs.at( 1 ), CR_NEQ, _eliminationVar, sym, -coeffs.at( 0 ), 0,
                                                coeffs.at( 1 ), 0, subType, vars, oConditions ) )
                 {
-                    if( constraint.relation() == CR_EQ )
+                    if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
-                        if( coeffs.at( 2 ).info( info_flags::rational ) && coeffs.at( 1 ).info( info_flags::rational ) )
-                        {
-                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                            generatedTestCandidateBeingASolution = true;
-                        }
+                        _currentState->rChildren().back()->setOriginalCondition( _condition );
+                        generatedTestCandidateBeingASolution = true;
                     }
 
                     /*
@@ -840,6 +877,7 @@ namespace smtrat
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
                 }
+                else
 
                 /*
                  * Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
@@ -847,13 +885,10 @@ namespace smtrat
                 if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, sym, -coeffs.at( 1 ), 1,
                                                2 * coeffs.at( 2 ), radicand, subType, vars, oConditions ) )
                 {
-                    if( constraint.relation() == CR_EQ )
+                    if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
-                        if( coeffs.at( 2 ).info( info_flags::rational ) && radicand.info( info_flags::rational ) )
-                        {
-                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                            generatedTestCandidateBeingASolution = true;
-                        }
+                        _currentState->rChildren().back()->setOriginalCondition( _condition );
+                        generatedTestCandidateBeingASolution = true;
                     }
 
                     /*
@@ -872,13 +907,10 @@ namespace smtrat
                 if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, sym, -coeffs.at( 1 ), -1,
                                                2 * coeffs.at( 2 ), radicand, subType , vars, oConditions ) )
                 {
-                    if( constraint.relation() == CR_EQ )
+                    if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
-                        if( coeffs.at( 2 ).info( info_flags::rational ) && radicand.info( info_flags::rational ) )
-                        {
-                            _currentState->rChildren().back()->setOriginalCondition( _condition );
-                            generatedTestCandidateBeingASolution = true;
-                        }
+                        _currentState->rChildren().back()->setOriginalCondition( _condition );
+                        generatedTestCandidateBeingASolution = true;
                     }
 
                     /*
@@ -891,7 +923,7 @@ namespace smtrat
                     #endif
                 }
 
-                if( numberOfAddedChildren == 0 && constraint.relation() == CR_EQ && coeffs.at( 2 ).info( info_flags::rational ) && coeffs.at( 1 ).info( info_flags::rational ) )
+                if( numberOfAddedChildren == 0 && constraint.relation() == CR_EQ )
                 {
                     generatedTestCandidateBeingASolution = true;
                 }
@@ -936,6 +968,14 @@ namespace smtrat
             }
             assert( numberOfAddedChildren <= _currentState->children().size() );
 
+            while( _currentState->children().size() > numberOfAddedChildren )
+            {
+                State* toDelete = *_currentState->rChildren().begin();
+                eraseDTsOfRanking( *toDelete );
+                _currentState->resetConflictSets();
+                _currentState->rChildren().erase( _currentState->rChildren().begin() );
+                delete toDelete;
+            }
             if( numberOfAddedChildren == 0 )
             {
                 ConditionSetSet conflictSet = ConditionSetSet();
@@ -944,21 +984,6 @@ namespace smtrat
                 conflictSet.insert( condSet );
                 _currentState->addConflicts( NULL, conflictSet );
                 _currentState->rInconsistent() = true;
-            }
-            else
-            {
-                while( _currentState->children().size() > numberOfAddedChildren )
-                {
-                    State* toDelete = *_currentState->rChildren().begin();
-    //                ConflictSets::iterator conflictSet = _currentState->rConflictSets().find( toDelete->pSubstitution() );
-    //                if( conflictSet != _currentState->conflictSets().end() )
-    //                {
-    //                    _currentState->rConflictSets().erase( conflictSet );
-    //                }
-                    _currentState->resetConflictSets();
-                    _currentState->rChildren().erase( _currentState->rChildren().begin() );
-                    delete toDelete;
-                }
             }
         }
         else
@@ -1672,7 +1697,7 @@ namespace smtrat
      * @return  true,   if the passed formula has been changed;
      *          false,  otherwise.
      */
-    bool VSModule::adaptPassedFormula( const State& _state )
+    bool VSModule::adaptPassedFormula( const State& _state, bool _strictInequalitiesOnly )
     {
         bool changedPassedFormula = false;
 
@@ -1682,8 +1707,20 @@ namespace smtrat
         set<Constraint> constraintsToCheck = set<Constraint>();
         for( ConditionVector::const_iterator cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
         {
-            constraintsToCheck.insert( (**cond).constraint() );
+            if( _strictInequalitiesOnly )
+            {
+                Constraint_Relation rel = (**cond).constraint().relation();
+                if( rel == CR_LESS || rel == CR_GREATER || rel == CR_NEQ )
+                {
+                    constraintsToCheck.insert( (**cond).constraint() );
+                }
+            }
+            else
+            {
+                constraintsToCheck.insert( (**cond).constraint() );
+            }
         }
+        if( constraintsToCheck.empty() ) return false;
 
         /*
          * Remove the constraints from the constraints to check, which are already in the passed formula
@@ -1725,12 +1762,13 @@ namespace smtrat
      *          TS_False,   if the conditions are inconsistent;
      *          TS_Unknown, if the theory solver cannot give an answer for these conditons.
      */
-    Answer VSModule::runBackendSolvers( State* _state )
+    Answer VSModule::runBackendSolvers( State* _state, bool _strictInequalitiesOnly )
     {
         /*
          * Run the backends on the constraint of the state.
          */
-        adaptPassedFormula( *_state );
+        bool changedPassedFormula = adaptPassedFormula( *_state, _strictInequalitiesOnly );
+        if( _strictInequalitiesOnly && !changedPassedFormula ) return True;
 
         switch( runBackends() )
         {
@@ -1801,8 +1839,8 @@ namespace smtrat
                     /*
                      * If the considered state is not the root, pass the infeasible subset to the father.
                      */
+                    eraseDTsOfRanking( _state->rFather() );
                     _state->passConflictToFather();
-                    eraseDTofRanking( _state->rFather() );
                     insertDTinRanking( _state->pFather() );
                 }
                 return False;

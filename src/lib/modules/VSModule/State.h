@@ -28,7 +28,7 @@
 #ifndef SMTRAT_VS_STATE_H
 #define SMTRAT_VS_STATE_H
 
-//#define VS_USE_VARIABLE_BOUNDS
+#define VS_USE_VARIABLE_BOUNDS
 
 #include <map>
 #include <limits.h>
@@ -241,7 +241,6 @@ private:
 	bool					 mHasRecentlyAddedConditions;
 	bool					 mInconsistent				;
 	bool					 mMarkedAsDeleted			;
-	bool			    	 mRoot						;
 	bool					 mSubResultsSimplified		;
 	bool					 mTakeSubResultCombAgain	;
     #ifdef VS_USE_VARIABLE_BOUNDS
@@ -282,7 +281,7 @@ public:
 	 * Methods:
 	 */
 
-	bool					isRoot		        		( ) const 	{ return mRoot	   					 									; }
+	bool					isRoot		        		( ) const 	{ return mpFather == NULL			 									; }
 	bool					toHighDegree        		( ) const 	{ return mToHighDegree				 									; }
 	bool&                   rToHighDegree        		( ) 		{ return mToHighDegree				 									; }
 #ifndef VS_USE_REDLOG

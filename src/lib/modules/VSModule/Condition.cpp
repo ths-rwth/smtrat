@@ -136,7 +136,7 @@ namespace vs
             double maximum = 0;
             if( _maxNumberOfVars < 4 ) maximum = 16;
             else maximum = _maxNumberOfVars * _maxNumberOfVars;
-            //Check the relation symbol.
+            // Check the relation symbol.
             double relationSymbolWeight = 0;
             switch( mpConstraint->relation() )
             {
@@ -215,7 +215,99 @@ namespace vs
             // Check how in how many monomials the variable occurs.
             double numberOfVariableOccurencesWeight = varInfo.occurences;
             if( maximum <= numberOfVariableOccurencesWeight ) numberOfVariableOccurencesWeight = maximum - 1;
-            // Check the number of variables.
+            // If variable occurs only in one monomial, give a bonus if all other monomials are positive.
+            double otherMonomialsPositiveWeight = 1;
+            if( numberOfVariableOccurencesWeight == 1 && mpConstraint->numMonomials() > 1 )
+            {
+                const ex lhs = mpConstraint->lhs();
+                assert( is_exactly_a<add>( lhs ) );
+                bool allOtherMonomialsPos = true;
+                bool allOtherMonomialsNeg = true;
+                for( GiNaC::const_iterator summand = lhs.begin(); summand != lhs.end(); ++summand )
+                {
+                    const ex summandEx = *summand;
+                    if( is_exactly_a<mul>( summandEx ) )
+                    {
+                        bool monomialPos = true;
+                        bool monomialNeg = true;
+                        bool monomialContainsVariable = false;
+                        for( GiNaC::const_iterator factor = summandEx.begin(); factor != summandEx.end(); ++factor )
+                        {
+                            const ex factorEx = *factor;
+                            if( is_exactly_a<symbol>( factorEx ) )
+                            {
+                                if( factorEx == var->second ) monomialContainsVariable = true;
+                                monomialPos = false;
+                                monomialNeg = false;
+                            }
+                            else if( is_exactly_a<numeric>( factorEx ) )
+                            {
+                                if( factorEx.info( info_flags::negative ) )
+                                {
+                                    monomialNeg = false;
+                                }
+                                else
+                                {
+                                    monomialPos = false;
+                                }
+                            }
+                            else if( is_exactly_a<power>( factorEx ) )
+                            {
+                                assert( factorEx.nops() == 2 );
+                                ex exponent = *(++(factorEx.begin()));
+                                assert( !exponent.info( info_flags::negative ) );
+                                unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
+                                if( fmod( exp, 2.0 ) != 0.0 )
+                                {
+                                    monomialPos = false;
+                                    monomialNeg = false;
+                                }
+                                ex subterm = *factorEx.begin();
+                                assert( is_exactly_a<symbol>( subterm ) );
+                            }
+                            else assert( false );
+                        }
+                        if( !monomialContainsVariable )
+                        {
+                            allOtherMonomialsPos = monomialPos;
+                            allOtherMonomialsNeg = monomialNeg;
+                        }
+                    }
+                    else if( is_exactly_a<symbol>( summandEx ) )
+                    {
+                        allOtherMonomialsPos = false;
+                        allOtherMonomialsNeg = false;
+                    }
+                    else if( is_exactly_a<numeric>( summandEx ) )
+                    {
+                        if( summandEx.info( info_flags::negative ) )
+                        {
+                            allOtherMonomialsNeg = false;
+                        }
+                        else
+                        {
+                            allOtherMonomialsPos = false;
+                        }
+                    }
+                    else if( is_exactly_a<power>( summandEx ) )
+                    {
+                        assert( summandEx.nops() == 2 );
+                        ex exponent = *(++(summandEx.begin()));
+                        assert( !exponent.info( info_flags::negative ) );
+                        unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
+                        allOtherMonomialsPos = false;
+                        if( fmod( exp, 2.0 ) != 0.0 )
+                        {
+                            allOtherMonomialsNeg = false;
+                        }
+                        ex subterm = *summandEx.begin();
+                        assert( is_exactly_a<symbol>( subterm ) );
+                    }
+                    else assert( false );
+                }
+                if( allOtherMonomialsPos || allOtherMonomialsNeg ) otherMonomialsPositiveWeight = 2;
+            }
+
             double weightFactorTmp = maximum;
             double result = ( degreeWeight <= 2 ? 1 : 2);
             result += relationSymbolWeight/weightFactorTmp;
@@ -227,6 +319,8 @@ namespace vs
             result += numberOfVariableWeight/weightFactorTmp;
             weightFactorTmp *= maximum;
             result += numberOfVariableOccurencesWeight/weightFactorTmp;
+            weightFactorTmp *= maximum;
+            result += otherMonomialsPositiveWeight/weightFactorTmp;
             return result;
         }
         else

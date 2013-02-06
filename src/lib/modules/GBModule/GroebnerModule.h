@@ -70,12 +70,12 @@ class GroebnerModuleState
 {
 public:
     GroebnerModuleState( ) :
-    mRewrites(std::vector<VariableRewriteRule*>())
+    mRewrites()
     {
         
     }
 
-    GroebnerModuleState( const GiNaCRA::Buchberger<typename Settings::Order>& basis, const std::vector<VariableRewriteRule*>& rewrites ) :
+    GroebnerModuleState( const GiNaCRA::Buchberger<typename Settings::Order>& basis, const std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> >& rewrites ) :
     mBasis( basis ), mRewrites(rewrites)
     {
     }
@@ -85,7 +85,7 @@ public:
         return mBasis;
     }
     
-    const std::vector<VariableRewriteRule*>& getRewriteRules() const
+    const std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> >& getRewriteRules() const
     {
         return mRewrites;
     }
@@ -93,7 +93,7 @@ public:
 protected:
     ///The state of the basis
     const GiNaCRA::Buchberger<typename Settings::Order> mBasis;
-    std::vector<VariableRewriteRule*> mRewrites;
+    const std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> > mRewrites;
 };
 
 template<typename Settings>
@@ -176,7 +176,7 @@ public:
     bool assertSubformula( Formula::const_iterator _formula );
     virtual Answer isConsistent( );
     void removeSubformula( Formula::const_iterator _formula );
-    void printStateHistory( );
+    
 protected:
     /// The current Groebner basis
     GiNaCRA::Buchberger<typename Settings::Order> mBasis;
@@ -194,6 +194,8 @@ protected:
     std::list<typename InequalitiesTable<Settings>::Rows::iterator> mNewInequalities;
     /// An reference to the RuntimeSettings
     GBRuntimeSettings* mRuntimeSettings;
+    /// The rewrite rules for the variables
+    std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> > mRewriteRules;
     
 
     std::map<unsigned, unsigned> mAdditionalVarMap;
@@ -209,7 +211,9 @@ protected:
     
     bool searchForRadicalMembers();
     bool validityCheck( );
-
+public:
+    void printStateHistory( );
+    
 private:
     #ifdef SMTRAT_DEVOPTION_Statistics
     GroebnerModuleStats* mStats;

@@ -39,6 +39,8 @@ namespace smtrat
     ConstraintPool Formula::mConstraintPool             = ConstraintPool();
 
     Formula::Formula():
+        mDeducted( false ),
+        mPropositionsUptodate( false ),
         mActivity( 0 ),
         mDifficulty(0),
         mType( TTRUE ),
@@ -46,11 +48,12 @@ namespace smtrat
         mBooleanVars(),
         mpSubformulas( NULL ),
         mpFather( NULL ),
-        mPropositions(),
-        mPropositionsUptodate( false )
+        mPropositions()
     {}
 
     Formula::Formula( const Type _type ):
+        mDeducted( false ),
+        mPropositionsUptodate( false ),
         mActivity( 0 ),
         mDifficulty( 0 ),
         mType( _type ),
@@ -58,13 +61,14 @@ namespace smtrat
         mBooleanVars(),
         mpSubformulas( (_type != TTRUE && _type != FFALSE) ? new list<Formula*>() : NULL ),
         mpFather( NULL ),
-        mPropositions(),
-        mPropositionsUptodate( false )
+        mPropositions()
     {
         assert( _type != REALCONSTRAINT && _type != BOOL );
     }
 
     Formula::Formula( const string& _id ):
+        mDeducted( false ),
+        mPropositionsUptodate( false ),
         mActivity( 0 ),
         mDifficulty( 0 ),
         mType( BOOL ),
@@ -72,13 +76,14 @@ namespace smtrat
         mBooleanVars(),
         mpIdentifier( new string( _id )),
         mpFather( NULL ),
-        mPropositions(),
-        mPropositionsUptodate( false )
+        mPropositions()
     {
         mBooleanVars.insert( _id );
     }
 
     Formula::Formula( const Constraint* _constraint ):
+        mDeducted( false ),
+        mPropositionsUptodate( false ),
         mActivity( 0 ),
         mDifficulty( 0 ),
         mType( REALCONSTRAINT ),
@@ -86,21 +91,19 @@ namespace smtrat
         mBooleanVars(),
         mpConstraint( _constraint ),
         mpFather( NULL ),
-        mPropositions(),
-        mPropositionsUptodate( false )
-    {
-        //        assert( _constraint->relation() != CR_NEQ );
-    }
+        mPropositions()
+    {}
 
     Formula::Formula( const Formula& _formula ):
+        mDeducted( false ),
+        mPropositionsUptodate( false ),
         mActivity( _formula.mActivity ),
         mDifficulty( _formula.mDifficulty ),
         mType( _formula.getType() ),
         mRealValuedVars( _formula.realValuedVars() ),
         mBooleanVars( _formula.booleanVars() ),
         mpFather( NULL ),
-        mPropositions(),
-        mPropositionsUptodate( false )
+        mPropositions()
     {
         assert( &_formula != this );
 

@@ -11,6 +11,7 @@
 #include <ginacra/MultivariateTermMR.h>
 
 typedef GiNaCRA::MultivariateTermMR Term;
+typedef GiNaCRA::BitVector BitVector;
 
 #endif	/* USINGDECLARATIONS_H */
 
