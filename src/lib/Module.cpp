@@ -136,6 +136,7 @@ namespace smtrat
         {
             mFirstUncheckedReceivedSubformula = _receivedSubformula;
         }
+        
         return true;
     }
 
@@ -186,7 +187,6 @@ namespace smtrat
 
             if( formulaOrigins.empty() )
             {
-                mScheduledForRemoval.erase(passedSubformula);
                 passedSubformula = removeSubformulaFromPassedFormula( passedSubformula );
             }
             else
@@ -299,7 +299,7 @@ namespace smtrat
      * @return
      */
     const std::set<const Formula*>& Module::getOrigins( Formula::const_iterator _subformula ) const
-    {
+    {   
         FormulaOrigins::const_iterator origins = mPassedformulaOrigins.find( *_subformula );
         assert( origins != mPassedformulaOrigins.end() );
         assert( origins->second.size() == 1 );
@@ -615,6 +615,7 @@ namespace smtrat
 
     bool Module::handleScheduled()
     {
+        print();
         // We first want to remove everything which is scheduled for removal.
         // As some removal might not have been asserted on our backend, we have to prevent the backend call in these cases.
         // For now, we simply run over the not yet asserted constraints and fix
@@ -628,18 +629,36 @@ namespace smtrat
         std::set_difference(mScheduledForAdding.begin(),mScheduledForAdding.end(), removeLocal.begin(), removeLocal.end(), std::inserter(addToBackends, addToBackends.end()));
 
 
+        for( std::set<Formula::iterator>::const_iterator it = mScheduledForAdding.begin(); it != mScheduledForAdding.end(); ++it )
+        {
+            std::cout << "adding: " << **it << std::endl;
+            
+        }
+        
+        for( std::set<Formula::iterator>::const_iterator it = mScheduledForRemoval.begin(); it != mScheduledForRemoval.end(); ++it )
+        {
+            std::cout << "removing: " << **it << std::endl;
+        }
+        
+        for( std::set<Formula::iterator>::const_iterator it = removeLocal.begin(); it != removeLocal.end(); ++it )
+        {
+            std::cout << "intersection: " << **it << std::endl;
+            
+        }
         mScheduledForAdding.clear();
         mScheduledForRemoval.clear();
 
 
         for( std::set<Formula::iterator>::const_iterator it = removeLocal.begin(); it != removeLocal.end(); ++it )
         {
+            std::cout << "remove local: " << **it << std::endl;
             removeSubformulaFromPassedFormula(*it, false);
         }
 
 
         for( std::set<Formula::iterator>::const_iterator it = removeFromBackends.begin(); it != removeFromBackends.end(); ++it )
         {
+            std::cout << "remove global: " << **it << std::endl;
             removeSubformulaFromPassedFormula(*it, true);
         }
 
@@ -658,6 +677,8 @@ namespace smtrat
                 stopCheckTimer();
                 (*module)->startAddTimer();
                 #endif
+                std::cout << "add global: " << **it << std::endl;
+            
                 if( !(*module)->assertSubformula( *it ) )
                 {
                     inconsistencyWhileAsserting = true;
