@@ -21,7 +21,7 @@
 
 /**
  * @file Manager.cpp
- * 
+ *
  * @author  Florian Corzilius
  * @author  Ulrich Loup
  * @author  Sebastian Junges
@@ -162,7 +162,7 @@ namespace smtrat
                 backends.push_back( pBackend );
                 mModulePositionInStrategy[pBackend] = iter->first;
                 // inform it about all constraints
-                for( fcs_const_iterator constraint = _requiredBy->constraintsToInform().begin();
+                for( std::list<const Constraint* >::const_iterator constraint = _requiredBy->constraintsToInform().begin();
                         constraint != _requiredBy->constraintsToInform().end(); ++constraint )
                 {
                     pBackend->inform( *constraint );

@@ -70,6 +70,7 @@ namespace smtrat
         mPassedformulaOrigins(),
         mDeductions(),
         mFirstSubformulaToPass( mpPassedFormula->end() ),
+        mFirstConstraintToInform( mConstraintsToInform.end() ),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
         mSmallerMusesCheckCounter(0)
 #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -290,7 +291,31 @@ namespace smtrat
      */
     void Module::setOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins )
     {
+        assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
         mPassedformulaOrigins[_formula] = _origins;
+    }
+
+    /**
+     *
+     * @param _formula
+     * @param _origins
+     */
+    void Module::addOrigin( const Formula* const _formula, set< const Formula* >& _origin )
+    {
+        assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
+        mPassedformulaOrigins[_formula].push_back( _origin );
+    }
+
+    /**
+     *
+     * @param _formula
+     * @param _origins
+     */
+    void Module::addOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins )
+    {
+        assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
+        vec_set_const_pFormula& formulaOrigins = mPassedformulaOrigins[_formula];
+        formulaOrigins.insert( formulaOrigins.end(), _origins.begin(), _origins.end() );
     }
 
     /**
@@ -535,6 +560,14 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->startAddTimer();
                 #endif
+                if( mFirstConstraintToInform != mConstraintsToInform.end() )
+                {
+                    auto iter = mFirstConstraintToInform;
+                    for( ; iter != mConstraintsToInform.end(); ++iter )
+                    {
+                        (*module)->inform( *iter );
+                    }
+                }
                 for( Formula::const_iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
                 {
                     if( !(*module)->assertSubformula( subformula ) )
@@ -546,6 +579,7 @@ namespace smtrat
                 (*module)->stopAddTimer();
                 #endif
             }
+            mFirstConstraintToInform = mConstraintsToInform.end();
             if( assertionFailed )
             {
                 #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -1232,8 +1266,8 @@ namespace smtrat
     {
         return mTimerRemoveTotal.count() / 1000;
     }
-    
-    unsigned Module::getNrConsistencyChecks() const 
+
+    unsigned Module::getNrConsistencyChecks() const
     {
         return mNrConsistencyChecks;
     }

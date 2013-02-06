@@ -46,7 +46,7 @@ namespace smtrat
     {
         AND, OR, NOT, IFF, XOR, IMPLIES, BOOL, REALCONSTRAINT, TTRUE, FFALSE
     };
-    
+
     class Formula
     {
         private:
@@ -55,9 +55,13 @@ namespace smtrat
              *  Members.
              */
 
+            /// A flag indicating whether this formula is a deduction of the other sub-formulas of its father.
+            bool mDeducted;
+            /// A flag indicating whether the propositions of this formula are updated.
+            bool mPropositionsUptodate;
             /// The set (initial) activity for this formula
             double mActivity;
-            /// 
+            ///
             double mDifficulty;
             /// The type of this formula.
             Type mType;
@@ -77,14 +81,12 @@ namespace smtrat
             Formula* mpFather;
             /// The propositions of this formula.
             Condition mPropositions;
-            /// A flag indicating whether the propositions of this formula are updated.
-            bool mPropositionsUptodate;
 
         public:
 
             /// A pool to manage all generated constraints.
             static ConstraintPool mConstraintPool;
-            
+
 
             /**
              *  Constructors and destructor.
@@ -106,23 +108,34 @@ namespace smtrat
             typedef std::list<Formula*>::const_reverse_iterator const_reverse_iterator;
 
             /**
-             * Accessors:
+             * Methods.
              */
+
+            void setDeducted( bool _deducted )
+            {
+                mDeducted = _deducted;
+            }
+
+            bool deducted() const
+            {
+                return mDeducted;
+            }
+
             const double& difficulty() const
             {
                 return mDifficulty;
             }
-            
+
             double difficulty()
             {
                 return mDifficulty;
             }
-            
+
             void setDifficulty( double difficulty )
             {
                 mDifficulty = difficulty;
             }
-            
+
             double activity() const
             {
                 return mActivity;
@@ -143,7 +156,7 @@ namespace smtrat
                 assert( _formula != this );
                 mType = _formula->getType();
                 mDifficulty = _formula->difficulty();
-                
+
                 if( _formula->getType() == BOOL )
                 {
                     if( isBooleanCombination() )
@@ -558,7 +571,7 @@ namespace smtrat
 
             void addConstraintPropositions( const Constraint& );
     };
-    
+
     struct FormulaIteratorConstraintIdCompare
     {
         bool operator() ( Formula::const_iterator i1, Formula::const_iterator i2 ) const
