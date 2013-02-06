@@ -34,6 +34,11 @@ using namespace std;
 using namespace GiNaC;
 using namespace vs;
 
+#define VS_WITH_BACKEND
+#ifdef VS_WITH_BACKEND
+//#define CHECK_STRICT_INEQUALITIES_WITH_BACKEND
+#endif
+//#define DONT_CHECK_STRICT_INEQUALITIES
 
 namespace smtrat
 {
@@ -153,9 +158,6 @@ namespace smtrat
             assert( formulaConditionPair != mFormulaConditionMap.end() );
             vs::Condition* condToDelete = formulaConditionPair->second;
 
-//            condToDelete->print(); cout << endl;
-//            mpStateTree->print();
-
             eraseDTsOfRanking( *mpStateTree );
             assert( mpStateTree->substitutionResults().size() == 1 );
             assert( mpStateTree->substitutionResults().back().size() == 1 );
@@ -199,8 +201,6 @@ namespace smtrat
             mFormulaConditionMap.erase( formulaConditionPair );
             delete condToDelete;
             mConditionsChanged = true;
-
-//            mpStateTree->print();
         }
         Module::removeSubformula( _subformula );
     }
@@ -771,6 +771,12 @@ EndSwitch:;
          * Get the constraint of this condition.
          */
         const Constraint& constraint = (*_condition).constraint();
+        #ifdef DONT_CHECK_STRICT_INEQUALITIES
+        if( constraint.relation() == CR_LESS || constraint.relation() == CR_GREATER || constraint.relation() == CR_NEQ )
+        {
+            return false;
+        }
+        #endif
 
         /*
          * Get coefficients of the variable in the constraints.
@@ -1707,6 +1713,39 @@ EndSwitch:;
         set<Constraint> constraintsToCheck = set<Constraint>();
         for( ConditionVector::const_iterator cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
         {
+            #ifdef DONT_CHECK_STRICT_INEQUALITIES
+            //TODO: do not pass equations and change not strict inequalities to strict ones
+            if( (*cond)->flag() )
+            {
+                const Constraint& constraint = (**cond).constraint();
+                switch( (**cond).constraint().relation() )
+                {
+                    case CR_EQ:
+                    {
+                        break;
+                    }
+                    case CR_GEQ:
+                    {
+                        constraintsToCheck.insert( *Formula::newConstraint( constraint.lhs(), CR_GREATER, constraint.variables() ) );
+                        break;
+                    }
+                    case CR_LEQ:
+                    {
+                        constraintsToCheck.insert( *Formula::newConstraint( constraint.lhs(), CR_LESS, constraint.variables() ) );
+                        break;
+                    }
+                    default:
+                    {
+                        constraintsToCheck.insert( constraint );
+                    }
+                }
+            }
+            else
+            {
+                constraintsToCheck.insert( (**cond).constraint() );
+            }
+            #else
+            #ifdef CHECK_STRICT_INEQUALITIES_WITH_BACKEND
             if( _strictInequalitiesOnly )
             {
                 Constraint_Relation rel = (**cond).constraint().relation();
@@ -1719,6 +1758,10 @@ EndSwitch:;
             {
                 constraintsToCheck.insert( (**cond).constraint() );
             }
+            #else
+            constraintsToCheck.insert( (**cond).constraint() );
+            #endif
+            #endif
         }
         if( constraintsToCheck.empty() ) return false;
 
@@ -1767,8 +1810,12 @@ EndSwitch:;
         /*
          * Run the backends on the constraint of the state.
          */
-        bool changedPassedFormula = adaptPassedFormula( *_state, _strictInequalitiesOnly );
+        #ifdef CHECK_STRICT_INEQUALITIES_WITH_BACKEND
+        bool changedPassedFormula = adaptPassedFormula( *_state );
         if( _strictInequalitiesOnly && !changedPassedFormula ) return True;
+        #else
+        adaptPassedFormula( *_state );
+        #endif
 
         switch( runBackends() )
         {

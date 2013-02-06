@@ -588,7 +588,7 @@ namespace smtrat
             Lit lit                            = mkLit( constraintAbstraction, !_polarity );
             mConstraintLiteralMap[_constraint] = lit;
             addConstraintToInform(constraint);
-            
+
             return lit;
         }
     }
@@ -1434,6 +1434,7 @@ FindSecond:
 
         do
         {
+            if( confl == CRef_Undef ) Module::storeAssumptionsToCheck( *mpManager );
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
             Clause& c = ca[confl];
 
