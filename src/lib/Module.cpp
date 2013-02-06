@@ -61,7 +61,6 @@ namespace smtrat
         mInfeasibleSubsets(),
         mpManager( _tsManager ),
         mModuleType( type ),
-        mConstraintsToInform(),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),
         mModel(),
@@ -70,6 +69,7 @@ namespace smtrat
         mPassedformulaOrigins(),
         mDeductions(),
         mFirstSubformulaToPass( mpPassedFormula->end() ),
+        mConstraintsToInform(),
         mFirstConstraintToInform( mConstraintsToInform.end() ),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
         mSmallerMusesCheckCounter(0)
@@ -606,6 +606,7 @@ namespace smtrat
             ++((*module)->mNrConsistencyChecks);
             #endif
             result = (*module)->isConsistent();
+            assert(result == Unknown || result == False || result == True);
             #ifdef SMTRAT_DEVOPTION_MeasureTime
             (*module)->stopCheckTimer();
             #endif
@@ -797,6 +798,15 @@ namespace smtrat
         #endif
 
         return result;
+    }
+    
+    void Module::addConstraintToInform( const Constraint* const constraint )
+    {
+        mConstraintsToInform.push_back(constraint);
+        if(mFirstConstraintToInform == mConstraintsToInform.end())
+        {
+            mFirstConstraintToInform = --mConstraintsToInform.end();
+        }
     }
 
     /**

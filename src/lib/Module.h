@@ -91,8 +91,6 @@ namespace smtrat
             Manager* const mpManager;
             ///
             ModuleType mModuleType;
-            ///
-            std::list<const Constraint* > mConstraintsToInform;
             /// formula passed to this module
             const Formula* mpReceivedFormula;
             /// formula passed to the backends
@@ -112,7 +110,10 @@ namespace smtrat
             ///
             Formula::iterator mFirstSubformulaToPass;
             ///
+            std::list<const Constraint* > mConstraintsToInform;
+            ///
             std::list<const Constraint* >::iterator mFirstConstraintToInform;
+
             ///
             Formula::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
@@ -124,9 +125,9 @@ namespace smtrat
 
         public:
 
-            //
+            //DEPRECATED
             std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForRemoval;
-            //
+            //DEPRECATED
             std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForAdding;
 
             Module( ModuleType type, const Formula* const, Manager* const = NULL );
@@ -142,7 +143,7 @@ namespace smtrat
             // Main interfaces
             virtual bool inform( const Constraint* const _constraint )
             {
-                mConstraintsToInform.push_back( _constraint );
+                addConstraintToInform(_constraint);
                 return true;
             }
             virtual bool assertSubformula( Formula::const_iterator );
@@ -268,6 +269,7 @@ namespace smtrat
             std::vector<Formula> generateSubformulaeOfInfeasibleSubset( unsigned infeasiblesubset, unsigned size ) const;
             void updateDeductions();
         protected:
+            void addConstraintToInform( const Constraint* const _constraint );
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );
             void addSubformulaToPassedFormula( Formula*, const vec_set_const_pFormula& );
             void addSubformulaToPassedFormula( Formula*, const Formula* );

@@ -50,8 +50,8 @@
 
 #include "SATModule.h"
 
-//#define DEBUG_SATMODULE
-//#define DEBUG_SATMODULE_THEORY_PROPAGATION
+#define DEBUG_SATMODULE
+#define DEBUG_SATMODULE_THEORY_PROPAGATION
 #define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
 #define STORE_ONLY_ONE_REASON
@@ -587,7 +587,8 @@ namespace smtrat
             constraintAbstraction = newVar( !_preferredToTSolver, true, _activity, new Formula( _constraint ), _origin );
             Lit lit                            = mkLit( constraintAbstraction, !_polarity );
             mConstraintLiteralMap[_constraint] = lit;
-            mConstraintsToInform.push_back( constraint );
+            addConstraintToInform(constraint);
+            
             return lit;
         }
     }
