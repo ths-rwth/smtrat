@@ -75,9 +75,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         while( receivedSubformula != mpReceivedFormula->end() )
         {
             Formula* formulaToAssert = new Formula( **receivedSubformula );
-            formulaToAssert->print();
             RewritePotentialInequalities(formulaToAssert);
-            formulaToAssert->print();
             #ifdef ADDLINEARDEDUCTIONS
             if(formulaToAssert->getType() == AND) 
             {
