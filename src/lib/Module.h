@@ -142,11 +142,7 @@ namespace smtrat
             #endif
 
             // Main interfaces
-            virtual bool inform( const Constraint* const _constraint )
-            {
-                addConstraintToInform(_constraint);
-                return true;
-            }
+            virtual bool inform( const Constraint* const );
             virtual bool assertSubformula( Formula::const_iterator );
             virtual Answer isConsistent();
             virtual void removeSubformula( Formula::const_iterator );
@@ -197,12 +193,6 @@ namespace smtrat
             inline const vec_set_const_pFormula& infeasibleSubsets() const
             {
                 return mInfeasibleSubsets;
-            }
-
-            inline void passedFormulaCannotBeSolved()
-            {
-                //TODO do we need this???
-                //mpPassedFormula->notSolvableBy( type() );
             }
 
             const ModuleType type() const

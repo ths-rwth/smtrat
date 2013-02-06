@@ -106,8 +106,7 @@ namespace smtrat
         Module::inform( _constraint );
         if( !_constraint->variables().empty() && _constraint->isLinear() && _constraint->relation() != CR_NEQ )
         {
-            mLinearConstraints.insert( _constraint );
-            if( mInitialized )
+            if( mLinearConstraints.insert( _constraint ).second && mInitialized )
             {
                 initialize( _constraint );
             }
@@ -350,6 +349,7 @@ namespace smtrat
                             }
                             activateBound( mTableau.rLearnedBounds()[posNewLearnedBound].nextWeakerBound, originSet );
                             activateBound( mTableau.rLearnedBounds()[posNewLearnedBound].newBound, originSet );
+                            mLinearConstraints.insert( mTableau.rLearnedBounds()[posNewLearnedBound].newBound->pAsConstraint() );
                             ++posNewLearnedBound;
                         }
                         if( !mInfeasibleSubsets.empty() )
@@ -981,6 +981,7 @@ namespace smtrat
      */
     void LRAModule::findSimpleConflicts( const Bound& _bound )
     {
+        if( _bound.deduced() ) Module::storeAssumptionsToCheck( *mpManager );
         assert( !_bound.deduced() );
         if( _bound.isUpperBound() )
         {

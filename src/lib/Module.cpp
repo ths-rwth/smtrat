@@ -122,6 +122,20 @@ namespace smtrat
     }
 
     /**
+     *
+     * @param _constraint
+     * @return
+     */
+    bool Module::inform( const Constraint* const _constraint )
+    {
+        #ifdef MODULE_VERBOSE
+        cout << __func__ << " in " << this << " with name " << moduleName( mModuleType ) << ": " << _constraint->smtlibString() << endl;
+        #endif
+        addConstraintToInform(_constraint);
+        return true;
+    }
+
+    /**
      * The module has to take the given sub-formula of the received formula into account.
      *
      * @param _subformula
@@ -137,7 +151,7 @@ namespace smtrat
         {
             mFirstUncheckedReceivedSubformula = _receivedSubformula;
         }
-        
+
         return true;
     }
 
@@ -324,7 +338,7 @@ namespace smtrat
      * @return
      */
     const std::set<const Formula*>& Module::getOrigins( Formula::const_iterator _subformula ) const
-    {   
+    {
         FormulaOrigins::const_iterator origins = mPassedformulaOrigins.find( *_subformula );
         assert( origins != mPassedformulaOrigins.end() );
         assert( origins->second.size() == 1 );
@@ -535,8 +549,6 @@ namespace smtrat
      */
     Answer Module::runBackends()
     {
-        passedFormulaCannotBeSolved();
-
         if( mpManager == NULL ) return Unknown;
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         stopCheckTimer();
@@ -667,18 +679,18 @@ namespace smtrat
         for( std::set<Formula::iterator>::const_iterator it = mScheduledForAdding.begin(); it != mScheduledForAdding.end(); ++it )
         {
             std::cout << "adding: " << **it << std::endl;
-            
+
         }
-        
+
         for( std::set<Formula::iterator>::const_iterator it = mScheduledForRemoval.begin(); it != mScheduledForRemoval.end(); ++it )
         {
             std::cout << "removing: " << **it << std::endl;
         }
-        
+
         for( std::set<Formula::iterator>::const_iterator it = removeLocal.begin(); it != removeLocal.end(); ++it )
         {
             std::cout << "intersection: " << **it << std::endl;
-            
+
         }
         mScheduledForAdding.clear();
         mScheduledForRemoval.clear();
@@ -713,7 +725,7 @@ namespace smtrat
                 (*module)->startAddTimer();
                 #endif
                 std::cout << "add global: " << **it << std::endl;
-            
+
                 if( !(*module)->assertSubformula( *it ) )
                 {
                     inconsistencyWhileAsserting = true;
@@ -799,7 +811,7 @@ namespace smtrat
 
         return result;
     }
-    
+
     void Module::addConstraintToInform( const Constraint* const constraint )
     {
         mConstraintsToInform.push_back(constraint);
