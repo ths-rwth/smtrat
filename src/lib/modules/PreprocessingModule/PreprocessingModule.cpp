@@ -74,7 +74,13 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         {
             Formula* formulaToAssert = new Formula( **receivedSubformula );
             RewritePotentialInequalities(formulaToAssert);
-            //addLinearDeductions(formulaToAssert);
+            
+            #ifdef ADDLINEARDEDUCTIONS
+            if(formulaToAssert->getType() == AND) 
+            {
+                addLinearDeductions(formulaToAssert);
+            }
+            #endif
             setDifficulty(formulaToAssert,false);
             /*
              * Create the origins containing only the currently considered formula of
@@ -272,13 +278,23 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             double difficulty;
             if( constraint->isLinear() )
             {
-                difficulty = 10;
+                difficulty = 20;
             }
             else
             {
-                difficulty = 200;
+                difficulty = 300;
             }
+            // Equalities allow for a small solution space, so we find them easier.
+            
             difficulty += (constraint->numMonomials()-1) * 8;
+            if( constraint->relation() == CR_EQ )
+            {
+                difficulty *= 0.7;
+            }
+            if( constraint->relation() == CR_LEQ  || constraint->relation() == CR_GEQ)
+            {
+                difficulty *= 1.1;
+            }
             formula->setDifficulty(difficulty);
         }
     }
@@ -366,6 +382,9 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 // This are constraints of the form a1t_1 ~ 0 with a1 a numerical value and t_1 a monomial of degree > 1.
                 if( constraint->numMonomials() == 1 )
                 {
+                    #ifdef PREPROCESSING_DEVELOP_MODE
+                    assert(false)
+                    #endif
                     // TODO implement this.
                 }
                 // We search for constraints of the form a1t_1 + a2 ~ 0
@@ -373,8 +392,8 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 else if( constraint->numMonomials() == 2 )
                 {
                     GiNaC::ex expression = constraint->lhs();
-                    assert(GiNaC::is_exactly_a<GiNaC::numeric>(expression.lcoeff(expression)));
-                    GiNaC::numeric constPart = constraint->constantPart() / GiNaC::ex_to<GiNaC::numeric>(expression.lcoeff(expression));
+                    
+                    GiNaC::numeric constPart = constraint->constantPart() ;
                     if(constPart == (GiNaC::numeric)0 ) continue;
                     
                     assert( GiNaC::is_exactly_a<GiNaC::add>( expression ) ); 
@@ -390,7 +409,9 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                         }
                         case CR_GEQ:
                         {
+                            #ifdef PREPROCESSING_DEVELOP_MODE
                             assert(false); // not implemented
+                            #endif
                             break;
                         }
                         case CR_LESS:
@@ -400,17 +421,23 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                         }
                         case CR_GREATER:
                         {
+                            #ifdef PREPROCESSING_DEVELOP_MODE
                             assert(false); // not implemented
+                            #endif
                             break;
                         }
                         case CR_EQ:
                         {
+                            #ifdef PREPROCESSING_DEVELOP_MODE
                             assert(false); // not implemented
+                            #endif
                             break;
                         }
                         case CR_NEQ:
                         {
+                            #ifdef PREPROCESSING_DEVELOP_MODE
                             assert(false); // not implemented
+                            #endif
                             break;
                         }
                     }

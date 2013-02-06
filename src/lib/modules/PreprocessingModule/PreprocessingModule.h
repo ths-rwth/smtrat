@@ -33,6 +33,9 @@
 #include "../../Module.h"
 #include "PreprocessingSettings.h"
 
+#define ADDLINEARDEDUCTIONS
+//#define PREPROCESSING_DEVELOP_MODE
+
 namespace smtrat
 {
     template<unsigned i>

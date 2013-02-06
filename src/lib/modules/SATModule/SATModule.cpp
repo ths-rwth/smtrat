@@ -1097,6 +1097,7 @@ FindSecond:
                                     #endif
                                     #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
                                     cout << "Learned a theory deduction from a backend module!" << endl;
+                                    (*deduction)->print();
                                     #endif
                                     addFormula( *deduction, DEDUCTED_CLAUSE );
                                 }
