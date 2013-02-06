@@ -38,10 +38,9 @@
 #include "NSSModule/GroebnerToSDP.h"
 #endif
 
-//#define MEASURE_TIME
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
-//#define SEARCH_RULES
+#define SEARCH_RULES
 //#define GB_OUTPUT
 
 using std::set;
@@ -425,40 +424,6 @@ template<class Settings>
 bool GroebnerModule<Settings>::searchForRadicalMembers()
 {
     #ifdef SEARCH_RULES
-    std::list<Polynomial> polynomials = mBasis.getGb();
-    std::map<unsigned, Term> rewrites;
-    for(typename std::list<Polynomial>::iterator it = polynomials.begin(); it != polynomials.end();)
-    {
-        bool foundRule = false;
-        if( it->nrOfTerms() == 1 && it->lterm().tdeg()==1 )
-        {
-            foundRule = rewrites.insert(std::pair<unsigned, Term>(it->lterm().getSingleVariableNr(),Term(0))).second;
-        }
-        else if( it->nrOfTerms() == 2 )
-        {
-            // todo fix the coefficients 
-            if(it->lterm().tdeg() == 1 )
-            {
-                foundRule = rewrites.insert(std::pair<unsigned, Term>(it->lterm().getSingleVariableNr(),it->trailingTerm())).second;
-            }
-            else if(it->trailingTerm().tdeg() == 1 )
-            {
-                foundRule = true;   
-                foundRule = rewrites.insert(std::pair<unsigned, Term>(it->trailingTerm().getSingleVariableNr(),it->lterm())).second;
-            }
-        }
-        if(foundRule)
-        {
-            it = polynomials.erase(it);
-        }
-        else
-        {
-            ++it;
-        }
-    }
-    
-    
-    
     std::list<Polynomial> gbpolynomials = mBasis.getGb();
     std::cout << "Original gb" << std::endl;
     for(typename std::list<Polynomial>::const_iterator it = gbpolynomials.begin(); it != gbpolynomials.end(); ++it )
@@ -466,30 +431,104 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
         std::cout << *it << std::endl; 
     }
     
-    std::cout << "rewrite rules" << std::endl;
-    for( std::map<unsigned, Term>::const_iterator it = rewrites.begin(); it != rewrites.end(); ++it )
-    {
-        std::cout << it->first << " -> " << it->second << std::endl;
-    }
+    std::list<Polynomial> polynomials = mBasis.getGb();
+    std::map<unsigned, Term> gatheredRewrites;
+    bool newRuleFound = true;
     
-    //TODO this is probably not sufficient for normalizing.
-    std::map<unsigned, Term> normalizedRewrites;
-    for( std::map<unsigned, Term>::const_iterator it = rewrites.begin(); it != rewrites.end(); ++it )
-    {
-        normalizedRewrites.insert(std::pair<unsigned, Term>(it->first, it->second.rewriteVariables(rewrites) ) );
-    }
+    unsigned ruleVar;
+    Term ruleTerm;
+    GiNaCRA::BitVector ruleReasons;
     
-    
-    std::cout << "normalized rules" << std::endl;
-    for( std::map<unsigned, Term>::const_iterator it = normalizedRewrites.begin(); it != normalizedRewrites.end(); ++it )
+    std::map<unsigned, std::pair<Term, BitVector> > rewrites;
+    while(newRuleFound) 
     {
-        std::cout << it->first << " -> " << it->second << std::endl;
-    }
+        newRuleFound = false;
+        std::cout << "current gb" << std::endl;
+        for(typename std::list<Polynomial>::const_iterator it = polynomials.begin(); it != polynomials.end(); ++it )
+        {
+            std::cout << *it << std::endl; 
+        }
+        
+        for(typename std::list<Polynomial>::iterator it = polynomials.begin(); it != polynomials.end();)
+        {
+            if( it->nrOfTerms() == 1 && it->lterm().tdeg()==1 )
+            {
+                //TODO optimization, this variable does not appear in the gb.
+                ruleVar = it->lterm().getSingleVariableNr();
+                ruleTerm = Term(0);
+                ruleReasons = it->getOrigins().getBitVector();
+                newRuleFound = true;
+            }
+            else if( it->nrOfTerms() == 2 )
+            {
+                // todo fix the coefficients 
+                if(it->lterm().tdeg() == 1 )
+                {
+                    ruleVar = it->lterm().getSingleVariableNr();
+                    ruleTerm = it->trailingTerm();
+                    ruleReasons = it->getOrigins().getBitVector();
+                    newRuleFound = true;
+                }
+                else if(it->trailingTerm().tdeg() == 1 )
+                {
+                    ruleVar = it->trailingTerm().getSingleVariableNr();
+                    ruleTerm = it->lterm().divide(it->trailingTerm().getCoeff());
+                    ruleReasons = it->getOrigins().getBitVector();
+                    newRuleFound = true;
+                }
+            }
+            if(newRuleFound)
+            {
+                it = polynomials.erase(it);
+                break;
+            }
+            else
+            {
+                ++it;
+            }
+        }
+        
+        if(polynomials.empty())
+        {
+            break;
+        }
 
-    std::cout << "Remaining gb" << std::endl;
-    for(typename std::list<Polynomial>::const_iterator it = polynomials.begin(); it != polynomials.end(); ++it )
-    {
-        std::cout << *it << std::endl; 
+        if(newRuleFound)
+        {
+            rewrites.insert(std::pair<unsigned, std::pair<Term, BitVector> >(ruleVar, std::pair<Term, BitVector>(ruleTerm, ruleReasons ) ) );
+            std::cout << "variable to be substituted: " << ruleVar << std::endl;
+            
+            
+            std::cout << "Remaining gb" << std::endl;
+            std::list<Polynomial> resultingGb;
+            GiNaCRA::Buchberger<typename Settings::Order> basis;
+            for(typename std::list<Polynomial>::const_iterator it = polynomials.begin(); it != polynomials.end(); ++it )
+            {
+                std::cout << *it << " ---- > "; 
+                std::cout.flush();
+                resultingGb.push_back(it->rewriteVariables(ruleVar, ruleTerm, ruleReasons));
+                basis.addPolynomial(resultingGb.back(), false);
+                std::cout << resultingGb.back() << std::endl;
+            }
+            basis.reduceInput();
+            basis.calculate();
+            polynomials = basis.getGb();
+            
+            std::cout << "rewrite rules" << std::endl;
+            for( std::map<unsigned, std::pair<Term, BitVector> >::iterator it = rewrites.begin(); it != rewrites.end(); ++it )
+            {
+                std::pair<Term, bool> reducedRule = it->second.first.rewriteVariables(ruleVar, ruleTerm);
+                if(reducedRule.second)
+                {
+                    it->second.first = reducedRule.first;
+                    it->second.second |= ruleReasons;
+                }
+                std::cout << it->first << " -> " << it->second.first << " [";
+                it->second.second.print();
+                std::cout <<  "]" << std::endl;
+            }
+            
+        }
     }
     
     #endif
