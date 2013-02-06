@@ -633,6 +633,19 @@ namespace smtrat
     }
     #endif
 
+
+    bool iterInFormula( Formula::const_iterator _iter, const Formula& _formula )
+    {
+        if( _formula.isBooleanCombination() )
+        {
+            for( Formula::const_iterator iter = _formula.begin(); iter != _formula.end(); ++iter )
+            {
+                if( iter == _iter ) return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Adapt the passed formula, such that it consists of the finite infimums and supremums
      * of all variables and the non linear constraints.
@@ -650,6 +663,7 @@ namespace smtrat
             }
             else if( bound.pInfo()->updated < 0 )
             {
+                assert( iterInFormula( bound.pInfo()->position, *mpPassedFormula ) );
                 removeSubformulaFromPassedFormula( bound.pInfo()->position );
                 bound.pInfo()->position = mpPassedFormula->end();
                 bound.pInfo()->updated = 0;
@@ -702,6 +716,10 @@ namespace smtrat
     {
         bool result = true;
         _bound->pOrigins()->push_back( _formulas );
+        if( _bound->pInfo()->position != mpPassedFormula->end() )
+        {
+            addOrigin( *_bound->pInfo()->position, _formulas );
+        }
         const Variable& var = _bound->variable();
         if( (_bound->isUpperBound() && var.pSupremum()->isInfinite()) )
         {

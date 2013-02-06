@@ -271,8 +271,10 @@ namespace smtrat
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );
             void addSubformulaToPassedFormula( Formula*, const vec_set_const_pFormula& );
             void addSubformulaToPassedFormula( Formula*, const Formula* );
-            void setOrigins( const Formula* const , vec_set_const_pFormula& );
-            void getOrigins( const Formula* const , vec_set_const_pFormula& ) const;
+            void setOrigins( const Formula* const, vec_set_const_pFormula& );
+            void addOrigin( const Formula* const, std::set< const Formula* >& );
+            void addOrigins( const Formula* const, vec_set_const_pFormula& );
+            void getOrigins( const Formula* const, vec_set_const_pFormula& ) const;
             Answer specialCaseConsistencyCheck() const;
             void getInfeasibleSubsets();
             static bool modelsDisjoint( const Model&, const Model& );

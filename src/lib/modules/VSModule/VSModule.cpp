@@ -686,7 +686,9 @@ namespace smtrat
                                 default:
                                     assert( false );
                             }
+#ifdef CHECK_STRICT_INEQUALITIES_WITH_BACKEND
 EndSwitch:;
+#endif
                             #ifdef VS_USE_VARIABLE_BOUNDS
                         }
                         #endif
@@ -1717,6 +1719,7 @@ EndSwitch:;
                 constraintsToCheck.insert( (**cond).constraint() );
             }
         }
+        if( constraintsToCheck.empty() ) return false;
 
         /*
          * Remove the constraints from the constraints to check, which are already in the passed formula
@@ -1763,7 +1766,8 @@ EndSwitch:;
         /*
          * Run the backends on the constraint of the state.
          */
-        adaptPassedFormula( *_state, _strictInequalitiesOnly );
+        bool changedPassedFormula = adaptPassedFormula( *_state, _strictInequalitiesOnly );
+        if( _strictInequalitiesOnly && !changedPassedFormula ) return True;
 
         switch( runBackends() )
         {

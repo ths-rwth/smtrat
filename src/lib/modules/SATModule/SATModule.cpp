@@ -56,7 +56,7 @@
 //#define WITH_PROGRESS_ESTIMATION
 #define STORE_ONLY_ONE_REASON
 #define SAT_MODULE_THEORY_PROPAGATION
-//#define SAT_MODULE_DONTSEND_DEDUCTIONS
+#define SAT_MODULE_DETECT_DEDUCTIONS
 
 const static double FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY = 1.02;
 
@@ -587,7 +587,6 @@ namespace smtrat
 //            }
 //            else constraint = _constraint;
             constraintAbstraction = newVar( !_preferredToTSolver, true, _activity, new Formula( _constraint ), _origin );
-
             Lit lit                            = mkLit( constraintAbstraction, false );
             mConstraintLiteralMap[_constraint] = lit;
             mConstraintsToInform.push_back( constraint );
@@ -1591,7 +1590,7 @@ FindSecond:
         trail.push_( p );
         #ifdef SAT_MODULE_THEORY_PROPAGATION
         // Check whether the lit is a deduction via a learned clause.
-        #ifdef SAT_MODULE_DONTSEND_DEDUCTIONS
+        #ifdef SAT_MODULE_DETECT_DEDUCTIONS
         if( from != CRef_Undef && ca[from].type() == DEDUCTED_CLAUSE && !sign( p ) && mBooleanConstraintMap[var( p )].formula != NULL  )
         {
             Clause& c           = ca[from];
@@ -1606,7 +1605,7 @@ FindSecond:
             }
             if( isDeduction )
             {
-                mBooleanConstraintMap[var( p )].updateInfo = 0;
+                mBooleanConstraintMap[var( p )].formula->setDeducted( true );
             }
         }
         #endif
