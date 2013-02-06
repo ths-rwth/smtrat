@@ -540,54 +540,52 @@ namespace smtrat
                 mStats->initialTrue();
             }
             #endif
-            const Constraint* constraint = _constraint;
-//            const Constraint* constraint = NULL;
-//            if( !_polarity )
-//            {
-//                cout << "test" << endl;
-//                Constraint_Relation rel = CR_EQ;
-//                switch( _constraint->relation() )
-//                {
-//                    case CR_EQ:
-//                    {
-//                        rel = CR_NEQ;
-//                        break;
-//                    }
-//                    case CR_NEQ:
-//                    {
-//                        rel = CR_EQ;
-//                        break;
-//                    }
-//                    case CR_LEQ:
-//                    {
-//                        rel = CR_GREATER;
-//                        break;
-//                    }
-//                    case CR_GEQ:
-//                    {
-//                        rel = CR_LESS;
-//                        break;
-//                    }
-//                    case CR_LESS:
-//                    {
-//                        rel = CR_GEQ;
-//                        break;
-//                    }
-//                    case CR_GREATER:
-//                    {
-//                        rel = CR_LEQ;
-//                        break;
-//                    }
-//                    default:
-//                    {
-//                        assert(false);
-//                    }
-//                }
-//                constraint = Formula::newConstraint( _constraint->lhs(), rel, _constraint->variables() );
-//            }
-//            else constraint = _constraint;
+            const Constraint* constraint = NULL;
+            if( !_polarity )
+            {
+                Constraint_Relation rel = CR_EQ;
+                switch( _constraint->relation() )
+                {
+                    case CR_EQ:
+                    {
+                        rel = CR_NEQ;
+                        break;
+                    }
+                    case CR_NEQ:
+                    {
+                        rel = CR_EQ;
+                        break;
+                    }
+                    case CR_LEQ:
+                    {
+                        rel = CR_GREATER;
+                        break;
+                    }
+                    case CR_GEQ:
+                    {
+                        rel = CR_LESS;
+                        break;
+                    }
+                    case CR_LESS:
+                    {
+                        rel = CR_GEQ;
+                        break;
+                    }
+                    case CR_GREATER:
+                    {
+                        rel = CR_LEQ;
+                        break;
+                    }
+                    default:
+                    {
+                        assert(false);
+                    }
+                }
+                constraint = Formula::newConstraint( _constraint->lhs(), rel, _constraint->variables() );
+            }
+            else constraint = _constraint;
             constraintAbstraction = newVar( !_preferredToTSolver, true, _activity, new Formula( _constraint ), _origin );
-            Lit lit                            = mkLit( constraintAbstraction, false );
+            Lit lit                            = mkLit( constraintAbstraction, !_polarity );
             mConstraintLiteralMap[_constraint] = lit;
             mConstraintsToInform.push_back( constraint );
             return lit;
