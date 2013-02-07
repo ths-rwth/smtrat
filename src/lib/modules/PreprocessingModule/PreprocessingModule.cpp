@@ -32,7 +32,7 @@
 #include <limits.h>
 #include <bits/stl_map.h>
 
-//#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
+//#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION (Not working)
 
 namespace smtrat {
 PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager )
