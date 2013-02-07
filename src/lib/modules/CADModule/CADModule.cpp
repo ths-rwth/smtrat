@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-02-05
+ * @version 2013-02-06
  */
 
 //#define MODULE_VERBOSE
@@ -186,12 +186,26 @@ namespace smtrat
         }
         GiNaCRA::BoundMap boundMap = GiNaCRA::BoundMap();
         GiNaCRA::evalintervalmap eiMap = mVariableBounds.getEvalIntervalMap();
-        for( auto iter = eiMap.begin(); iter != eiMap.end(); ++iter )
+        for( GiNaCRA::evalintervalmap::const_iterator iter = eiMap.begin(); iter != eiMap.end(); ++iter )
         {
             unsigned pos = mCAD.variable( iter->first );
             assert( boundMap.find( pos ) == boundMap.end() );
             boundMap[pos] = iter->second;
         }
+        #ifdef MODULE_VERBOSE
+        cout << "within " << ( boundMap.empty() ? "no bounds." : "the bounds:" ) << endl;
+        if( vars.empty() )
+        {
+            for( GiNaCRA::BoundMap::const_iterator b = boundMap.begin(); b != boundMap.end(); ++b )
+                cout << "  " << b->second << " (no variable assigned)" << endl;
+        }
+        else
+        {
+            for( GiNaCRA::BoundMap::const_iterator b = boundMap.begin(); b != boundMap.end(); ++b )
+                if( vars.size() < b->first )
+                    cout << "  " << b->second << " for " << vars[b->first] << endl;
+        }
+        #endif
         #endif
         ConflictGraph conflictGraph;
         list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > > deductions;
@@ -347,21 +361,40 @@ namespace smtrat
         mModel.clear();
         if( mSolverState == True )
         {
-            for( unsigned varID = 0; varID < mCAD.variables().size(); ++varID )
+            // bound-independent part of the model
+            vector<symbol> vars = mCAD.variables();
+            for( unsigned varID = 0; varID < vars.size(); ++varID )
             {
                 stringstream outA;
-                outA << mCAD.variables()[varID];
+                outA << vars[varID];
                 stringstream outB;
-                GiNaCRA::RealAlgebraicNumberIRPtr irA = std::dynamic_pointer_cast<GiNaCRA::RealAlgebraicNumberIR>( mRealAlgebraicSolution[varID] );
-                GiNaCRA::RealAlgebraicNumberNRPtr nrA = std::dynamic_pointer_cast<GiNaCRA::RealAlgebraicNumberNR>( mRealAlgebraicSolution[varID] );
-                if( irA != 0 )
-                    outB << "zero( " << irA->polynomial() << ", " << irA->order() << " )";
-                else if( nrA != 0 )
-                    outB << static_cast<GiNaCRA::RealAlgebraicNumberNR>(*nrA);
+                if( mRealAlgebraicSolution[varID]->isNumeric() )
+                    outB << mRealAlgebraicSolution[varID]->value();
                 else
-                    outB << "NaN";
+                {
+                    GiNaCRA::RealAlgebraicNumberIRPtr irA = std::static_pointer_cast<GiNaCRA::RealAlgebraicNumberIR>( mRealAlgebraicSolution[varID] );
+                    outB << "zero( " << irA->polynomial() << ", " << irA->order() << " )";
+                }
                 mModel.insert( pair< const string, string >( outA.str(), outB.str() ) );
             }
+            #ifdef CAD_USE_VARIABLE_BOUNDS
+            // bounds for variables which were not handled in the solution point
+            GiNaCRA::evaldoubleintervalmap intervalMap = mVariableBounds.getIntervalMap();
+            for( GiNaCRA::evaldoubleintervalmap::const_iterator b = intervalMap.begin(); b != intervalMap.end(); ++b )
+            { // add an assignment for every bound of a variable not in vars (Caution! Destroys vars!)
+                vector<symbol>::iterator v = std::find( vars.begin(), vars.end(), b->first );
+                if( v != vars.end() )
+                    vars.erase( v ); // shall never be found again
+                else
+                { // variable not handled by CAD, use the midpoint of the bounding interval for the assignment
+                    stringstream outA;
+                    outA << b->first;
+                    stringstream outB;
+                    outB << b->second.midpoint();
+                    mModel.insert( pair< const string, string >( outA.str(), outB.str() ) );
+                }
+            }
+            #endif
         }
     }
 

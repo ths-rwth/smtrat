@@ -31,7 +31,7 @@
 #ifndef SMTRAT_CADMODULE_H
 #define SMTRAT_CADMODULE_H
 
-//#define CAD_USE_VARIABLE_BOUNDS
+#define CAD_USE_VARIABLE_BOUNDS
 
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
