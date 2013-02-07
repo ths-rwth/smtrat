@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-02-06
+ * @version 2013-02-07
  */
 
 //#define MODULE_VERBOSE
@@ -202,7 +202,7 @@ namespace smtrat
         else
         {
             for( GiNaCRA::BoundMap::const_iterator b = boundMap.begin(); b != boundMap.end(); ++b )
-                if( vars.size() < b->first )
+                if( vars.size() > b->first )
                     cout << "  " << b->second << " for " << vars[b->first] << endl;
         }
         #endif
@@ -258,7 +258,7 @@ namespace smtrat
             cout << "CAD complete: " << mCAD.isComplete() << endl;
             printInfeasibleSubsets();
             cout << "Performance gain: " << (mpReceivedFormula->size() - mInfeasibleSubsets.front().size()) << endl << endl;
-            // mCAD.printSampleTree();
+            mCAD.printSampleTree();
             #endif
             mSolverState = False;
             mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
@@ -273,7 +273,7 @@ namespace smtrat
         cout << "Result: true" << endl;
         cout << "CAD complete: " << mCAD.isComplete() << endl;
         cout << "Solution point: " << mRealAlgebraicSolution << endl << endl;
-        // mCAD.printSampleTree();
+        mCAD.printSampleTree();
         #endif
         mInfeasibleSubsets.clear();
         #ifndef SMTRAT_CAD_DISABLE_THEORYPROPAGATION
