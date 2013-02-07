@@ -44,9 +44,9 @@ namespace smtrat
     {
         protected:
             /// The bipartite graph matching constraints and their variables
-            VariableConstraintGraph mMatchingGraph;
+            vrw::VariableConstraintGraph mMatchingGraph;
             /// mapping received constraint -> node in the graph
-            std::map<Formula::const_iterator, std::list<ConstraintNode*>::iterator, dereference_compare> mConstraintPositions; 
+            std::map<Formula::const_iterator, std::list<vrw::ConstraintNode*>::iterator, dereference_compare> mConstraintPositions; 
             
         public:
             VRWModule( ModuleType, const Formula* const,  RuntimeSettings*, Manager* const _tsManager );
