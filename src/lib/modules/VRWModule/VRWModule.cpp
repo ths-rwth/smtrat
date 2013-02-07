@@ -33,6 +33,9 @@
 //#define SMTRAT_VRW_DEBUGOUTPUT
 
 namespace smtrat {
+
+using namespace vrw;
+
 VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager )
     :
     Module( _type, _formula, _tsManager )

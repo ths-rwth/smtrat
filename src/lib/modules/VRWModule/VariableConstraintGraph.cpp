@@ -12,13 +12,23 @@
 
 namespace smtrat 
 {
+namespace vrw
+{
     VariableConstraintGraph::VariableConstraintGraph( )
     {
     }
     
+    /**
+     * Add a constraint to the graph.
+     * @param constraint The constraint to be added
+     * @param origin The iterator in the received formula
+     * @param pos The iterator in the passed formula
+     * @return A list of constraints which have to be reconsidered, as they have a variable which is not "single" anymore.
+     */
     std::list<ConstraintNode*> VariableConstraintGraph::addConstraint(const Constraint* constraint, Formula::const_iterator origin, Formula::iterator pos) 
     {
         std::list<ConstraintNode*> readd;
+        // Insert and set;
         mConstraintNodes.push_back(new ConstraintNode());
         (mConstraintNodes.back())->constraint = constraint;
         (mConstraintNodes.back())->posInPassedFormula = pos;
@@ -36,6 +46,7 @@ namespace smtrat
             }
             else 
             {
+                // If a variable was single, the connected constraint has to be reconsidered.
                 std::set<VariableNode*>::iterator singleVarEntry = mSingleAppearingVariables.find(itVarNode->second);
                 if(singleVarEntry != mSingleAppearingVariables.end()) 
                 {
@@ -53,6 +64,12 @@ namespace smtrat
         return readd;        
     }
     
+    /**
+     * A given constraint was removed before but now has to be reconsidered.
+     * @param node The node of the constraint.
+     * @param pos The position in the passed formula where it can be found now.
+     * @return A list of constraints which have to be reconsidered, as they have a variable which is not "single" anymore.
+     */
     std::list<ConstraintNode*> VariableConstraintGraph::updateConstraintNode(ConstraintNode* node, Formula::iterator pos) 
     {
         std::list<ConstraintNode*> readd;
@@ -81,6 +98,12 @@ namespace smtrat
         return readd;        
     }
     
+    /**
+     * Removing a constraint from the graph.
+     * @param constraintNode The node to be removed.
+     * @param end An iterator to passedFormula->end
+     * @return Whether the formula has to be removed.
+     */
     bool VariableConstraintGraph::removeConstraint(std::list<ConstraintNode*>::iterator constraintNode , Formula::const_iterator end )
     {
         bool nothingChanges = false;
@@ -106,6 +129,11 @@ namespace smtrat
         return !nothingChanges;
     }
     
+    /**
+     * Searching for variables which appear with odd degree in a constraint, as the corresponding constraint can be eliminated.
+     * @param end An iterator to passedFormula->end
+     * @return 
+     */
     std::list<std::pair<Formula::iterator, bool> > VariableConstraintGraph::findIrrelevantConstraints(Formula::iterator end)
     {
         std::list<std::pair<Formula::iterator, bool> > irrelevantConstraints;
@@ -147,6 +175,9 @@ namespace smtrat
         return irrelevantConstraints;
     }
     
+    /**
+     * Set all constraints to "asserted"
+     */
     void VariableConstraintGraph::assertConstraints() 
     {
         for( std::list<ConstraintNode*>::iterator it = mConstraintNodes.begin(); it != mConstraintNodes.end(); ++it ) 
@@ -155,6 +186,9 @@ namespace smtrat
         }
     }
     
+    /**
+     * Print the graph. You find a list of constraint nodes with outgoing edges and then a list of variable nodes with outgoing edges.
+     */
     void VariableConstraintGraph::print() 
     {
         std::cout << "Constraint nodes:" << std::endl;
@@ -183,5 +217,5 @@ namespace smtrat
         
     }
 }
-
+}
 

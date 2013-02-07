@@ -15,6 +15,11 @@
 
 namespace smtrat 
 {
+/**
+ * A namespace for the V(ariable)R(ewrite)M(odule)
+ */
+namespace vrw 
+{
 
     struct ConstraintNode;
     struct VariableNode
@@ -51,13 +56,17 @@ namespace smtrat
         bool removeConstraint(std::list<ConstraintNode*>::iterator, Formula::const_iterator end);
         void assertConstraints();
         
+        
         std::list<ConstraintNode*>::iterator last()  { return --mConstraintNodes.end(); }
         
         std::list<std::pair<Formula::iterator, bool> > findIrrelevantConstraints(Formula::iterator end);
-        
+        std::list<std::pair<Formula::iterator, bool> > findPurelyLinearComponents(Formula::iterator end);
         void print(); 
         virtual ~VariableConstraintGraph( ) {}
     private:
 
     };
+
 }
+}
+
