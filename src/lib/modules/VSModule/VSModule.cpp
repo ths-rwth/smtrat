@@ -1820,7 +1820,7 @@ EndSwitch:;
         adaptPassedFormula( *_state, formulaToConditions );
         #endif
 
-        _state->printAlone();
+//        _state->printAlone();
         switch( runBackends() )
         {
             case True:
