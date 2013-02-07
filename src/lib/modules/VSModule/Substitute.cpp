@@ -809,7 +809,7 @@ namespace vs
             /*
              * Form the derivate of the left hand side of the last added constraint.
              */
-            derivative = ex( derivative.diff( sym, 1 ) );
+            derivative = ex( constraint->lhs().diff( sym, 1 ) );
             simplify( derivative, ex( sym ) );
 
             /*

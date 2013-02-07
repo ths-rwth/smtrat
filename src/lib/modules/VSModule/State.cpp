@@ -1448,7 +1448,6 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
         #endif
-//        printConditions();
 
         mTryToRefreshIndex = false;
 

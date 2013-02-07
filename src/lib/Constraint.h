@@ -52,11 +52,6 @@ namespace smtrat
     // Type and object definitions
     //
 
-    /*
-     * The expected number of variables occurring in the constraint.
-     */
-    const unsigned VS_EXPECTED_NUMBER_OF_VARIABLES = 10;
-
     enum Constraint_Relation
     {
         CR_EQ = 0, CR_NEQ = 1, CR_LESS = 2, CR_GREATER = 3, CR_LEQ = 4, CR_GEQ = 5
@@ -116,6 +111,7 @@ namespace smtrat
              * Attributes:
              */
             unsigned             mID;
+            unsigned             mFirstHash;
             unsigned             mSecondHash;
             bool                 mIsNeverPositive;
             bool                 mIsNeverNegative;
@@ -126,13 +122,13 @@ namespace smtrat
             Constraint_Relation  mRelation;
             GiNaC::ex*           pLhs;
             GiNaC::ex*           mpMultiRootLessLhs;
+            GiNaC::ex*           mpFactorization;
             Coefficients*        mpCoefficients;
             GiNaC::numeric       mConstantPart;
             GiNaC::symtab        mVariables;
             VarInfoMap           mVarInfoMap;
 
         public:
-
             /*
              * Constructors:
              */
@@ -174,6 +170,11 @@ namespace smtrat
                 return mID;
             }
 
+            unsigned firstHash() const
+            {
+                return mFirstHash;
+            }
+
             unsigned secondHash() const
             {
                 return mSecondHash;
@@ -182,6 +183,11 @@ namespace smtrat
             const GiNaC::ex& multiRootLessLhs() const
             {
                 return *mpMultiRootLessLhs;
+            }
+
+            const GiNaC::ex& factorization() const
+            {
+                return *mpFactorization;
             }
 
             unsigned numMonomials() const
@@ -234,12 +240,7 @@ namespace smtrat
             bool isLinear() const;
             unsigned maxDegree() const;
             std::map<const std::string, GiNaC::numeric, strCmp> linearAndConstantCoefficients() const;
-            void collectProperties();
-            Constraint* updateRelation();
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
-
-            // Data access methods (read and write).
-            const GiNaC::ex& multiRootLessLhs( const std::string& ) const;
 
             // Operators.
             bool operator <( const Constraint& ) const;
@@ -247,7 +248,9 @@ namespace smtrat
             friend std::ostream& operator <<( std::ostream&, const Constraint& );
 
             // Manipulating methods.
-            void simplify();
+            void collectProperties();
+            Constraint* simplify();
+            void init();
 
             // Printing methods.
             std::string toString() const;
@@ -255,6 +258,7 @@ namespace smtrat
             void print2( std::ostream& _out = std::cout ) const;
             void printInPrefix( std::ostream& _out = std::cout ) const;
             const std::string prefixStringOf( const GiNaC::ex& ) const;
+            void printPropositions( std::ostream& = std::cout ) const;
             std::string smtlibString() const;
 
             //
@@ -275,7 +279,7 @@ namespace smtrat
             return (*pConstraintA) < (*pConstraintB);
         }
     };
-    
+
     struct constraintIdComp
     {
         bool operator() (const Constraint* const pConstraintA, const Constraint* const pConstraintB ) const
@@ -283,7 +287,7 @@ namespace smtrat
             return pConstraintA->id() < pConstraintB->id();
         }
     };
-    
+
     typedef std::set< const Constraint*, constraintPointerComp > ConstraintSet;
 }    // namespace smtrat
 

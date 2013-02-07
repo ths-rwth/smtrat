@@ -35,11 +35,18 @@
 #include "ConstraintPool.h"
 #include "Formula.h"
 
+#define CONSTRAINT_FACTORIZATION
+
 using namespace std;
 using namespace GiNaC;
 
 namespace smtrat
 {
+    const unsigned MAX_DEGREE_FOR_FACTORIZATION = 40;
+    const unsigned MIN_DEGREE_FOR_FACTORIZATION = 3;
+    const unsigned MAX_DIMENSION_FOR_FACTORIZATION = 4;
+    const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 6;
+
     /**
      * Constructors:
      */
@@ -55,15 +62,18 @@ namespace smtrat
         mRelation( CR_EQ ),
         pLhs( new ex( 0 ) ),
         mpMultiRootLessLhs( pLhs ),
+        mpFactorization( pLhs ),
         mpCoefficients( new Coefficients() ),
         mVariables(),
         mVarInfoMap()
     {
+        mFirstHash = pLhs->gethash();
         normalize( *pLhs );
     }
 
     Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _variables, unsigned _id ):
         mID( _id ),
+        mFirstHash( _lhs.gethash() ),
         mSecondHash( _cr ),
         mIsNeverPositive( false ),
         mIsNeverNegative( false ),
@@ -74,6 +84,7 @@ namespace smtrat
         mRelation( _cr ),
         pLhs( new ex( _lhs ) ),
         mpMultiRootLessLhs( pLhs ),
+        mpFactorization( pLhs ),
         mpCoefficients( new Coefficients() ),
         mVariables(),
         mVarInfoMap()
@@ -85,17 +96,6 @@ namespace smtrat
             if( pLhs->has( var->second ) )
             {
                 mVariables.insert( *var );
-            }
-        }
-        if( mVariables.size() == 1 )
-        {
-            ex derivate            = lhs().diff( ex_to<symbol>( mVariables.begin()->second ), 1 );
-            ex gcdOfLhsAndDerivate = gcd( lhs(), derivate );
-            normalize( gcdOfLhsAndDerivate );
-            ex quotient;
-            if( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, quotient ) )
-            {
-                mpMultiRootLessLhs = new ex( quotient );
             }
         }
     }
@@ -112,9 +112,11 @@ namespace smtrat
         mRelation( _cr ),
         pLhs( new ex( _lhs - _rhs ) ),
         mpMultiRootLessLhs( pLhs ),
+        mpFactorization( pLhs ),
         mpCoefficients( new Coefficients() ),
         mVarInfoMap()
     {
+        mFirstHash = pLhs->gethash();
         normalize( *pLhs );
         mVariables = symtab();
         for( auto var = _variables.begin(); var != _variables.end(); ++var )
@@ -124,21 +126,11 @@ namespace smtrat
                 mVariables.insert( *var );
             }
         }
-        if( mVariables.size() == 1 )
-        {
-            ex derivate            = lhs().diff( ex_to<symbol>( mVariables.begin()->second ), 1 );
-            ex gcdOfLhsAndDerivate = gcd( lhs(), derivate );
-            normalize( gcdOfLhsAndDerivate );
-            ex quotient;
-            if( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, quotient ) )
-            {
-                mpMultiRootLessLhs = new ex( quotient );
-            }
-        }
     }
 
     Constraint::Constraint( const Constraint& _constraint ):
         mID( _constraint.id() ),
+        mFirstHash( _constraint.firstHash() ),
         mSecondHash( _constraint.secondHash() ),
         mIsNeverPositive( _constraint.mIsNeverPositive ),
         mIsNeverNegative( _constraint.mIsNeverNegative ),
@@ -149,6 +141,7 @@ namespace smtrat
         mRelation( _constraint.relation() ),
         pLhs( new ex( _constraint.lhs() ) ),
         mpMultiRootLessLhs( _constraint.mpMultiRootLessLhs != _constraint.pLhs ? new ex( _constraint.multiRootLessLhs() ) : pLhs ),
+        mpFactorization( _constraint.mpFactorization != _constraint.pLhs ? new ex( _constraint.factorization() ) : pLhs ),
         mpCoefficients( new Coefficients( *_constraint.mpCoefficients ) ),
         mVariables( _constraint.variables() ),
         mVarInfoMap( _constraint.mVarInfoMap )
@@ -160,6 +153,7 @@ namespace smtrat
     Constraint::~Constraint()
     {
         if( mpMultiRootLessLhs != pLhs ) delete mpMultiRootLessLhs;
+        if( mpFactorization != pLhs ) delete mpFactorization;
         delete pLhs;
     }
 
@@ -612,7 +606,6 @@ namespace smtrat
      */
     void Constraint::collectProperties()
     {
-//        cout << endl << "initialize " << lhs() << endl;
         mIsNeverPositive = true;
         mIsNeverNegative = true;
         mIsNeverZero = false;
@@ -829,37 +822,126 @@ namespace smtrat
         {
             mIsNeverZero = true;
         }
-
-//        cout << "mIsNeverPositive: " << mIsNeverPositive << endl;
-//        cout << "mIsNeverNegative: " << mIsNeverNegative << endl;
-//        cout << "mCannotBeZero    : " << mIsNeverZero << endl;
-//        cout << "mNumMonomials    : " << mNumMonomials << endl;
-//        cout << "mMaxMonomeDegree : " << mMaxMonomeDegree << endl;
-//        cout << "mMinMonomeDegree : " << mMinMonomeDegree << endl;
-//        cout << "mConstantPart    : " << mConstantPart << endl;
-//        cout << "Variables:" << endl;
-//        for( auto var = variables().begin(); var != variables().end(); ++var )
-//        {
-//            VarInfo& varInfo = mVarInfoMap[var->second];
-//            cout << "     occurences of " << var->first << " : " << varInfo.occurences << endl;
-//            cout << "     maxDegree of " << var->first << "  : " << varInfo.maxDegree << endl;
-//            cout << "     minDegree of " << var->first << "  : " << varInfo.minDegree << endl;
-//        }
     }
 
     /**
      *
      */
-    Constraint* Constraint::updateRelation()
+    Constraint* Constraint::simplify()
     {
+        bool anythingChanged = false;
         if( (mIsNeverNegative && mRelation == CR_LEQ) || (mIsNeverPositive && mRelation == CR_GEQ) )
         {
+            anythingChanged = true;
             mRelation = CR_EQ;
-            Constraint* constraint = new Constraint( *pLhs, CR_EQ, mVariables, mID );
-            constraint->mVarInfoMap = mVarInfoMap;
+        }
+        if( mVarInfoMap.size() == 1 && mNumMonomials == 1 && mMaxMonomeDegree > 1 )
+        {
+            anythingChanged = true;
+            mMaxMonomeDegree = 1;
+            mMinMonomeDegree = 1;
+            mVarInfoMap.begin()->second.maxDegree = 1;
+            mVarInfoMap.begin()->second.minDegree = 1;
+
+            switch( mRelation )
+            {
+                case CR_EQ:
+                {
+                    mIsNeverPositive = false;
+                    mIsNeverNegative = false;
+                    *pLhs = mVariables.begin()->second;
+                    break;
+                }
+                case CR_NEQ:
+                {
+                    mIsNeverPositive = false;
+                    mIsNeverNegative = false;
+                    *pLhs = mVariables.begin()->second;
+                    break;
+                }
+                case CR_LEQ:
+                {
+                    assert( fmod( mVarInfoMap.begin()->second.maxDegree, 2.0 ) != 0.0 );
+                    *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                    break;
+                }
+                case CR_GEQ:
+                {
+                    assert( fmod( mVarInfoMap.begin()->second.maxDegree, 2.0 ) != 0.0 );
+                    *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                    break;
+                }
+                case CR_LESS:
+                {
+                    if( mIsNeverPositive )
+                    {
+                        mRelation = CR_NEQ;
+                        *pLhs = mVariables.begin()->second;
+                        mIsNeverPositive = false;
+                    }
+                    else
+                    {
+                        assert( fmod( mVarInfoMap.begin()->second.maxDegree, 2.0 ) != 0.0 );
+                        *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                    }
+                    break;
+                }
+                case CR_GREATER:
+                {
+                    if( mIsNeverNegative )
+                    {
+                        mRelation = CR_NEQ;
+                        *pLhs = mVariables.begin()->second;
+                        mIsNeverNegative = false;
+                    }
+                    else
+                    {
+                        assert( fmod( mVarInfoMap.begin()->second.maxDegree, 2.0 ) != 0.0 );
+                        *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                    }
+                    break;
+                }
+                default:
+                {
+                    assert( false );
+                    anythingChanged = false;
+                }
+            }
+        }
+        if( anythingChanged )
+        {
+            Constraint* constraint = new Constraint( *this );
             return constraint;
         }
-        return NULL;
+        else
+        {
+            return NULL;
+        }
+    }
+
+    /**
+     *
+     */
+    void Constraint::init()
+    {
+        if( mVariables.size() == 1 )
+        {
+            ex derivate            = lhs().diff( ex_to<symbol>( mVariables.begin()->second ), 1 );
+            ex gcdOfLhsAndDerivate = gcd( lhs(), derivate );
+            normalize( gcdOfLhsAndDerivate );
+            ex quotient;
+            if( gcdOfLhsAndDerivate != 0 && divide( lhs(), gcdOfLhsAndDerivate, quotient ) )
+            {
+                mpMultiRootLessLhs = new ex( quotient );
+            }
+        }
+        #ifdef CONSTRAINT_FACTORIZATION
+        if( mNumMonomials <= MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION && mVariables.size() <= MAX_DIMENSION_FOR_FACTORIZATION
+            && mMaxMonomeDegree <= MAX_DEGREE_FOR_FACTORIZATION && mMaxMonomeDegree >= MIN_DEGREE_FOR_FACTORIZATION )
+        {
+            mpFactorization = new ex( factor( *pLhs ) );
+        }
+        #endif
     }
 
     /**
@@ -993,6 +1075,7 @@ namespace smtrat
         }
         else if( relation() == _constraint.relation() )
         {
+            assert( mVariables.empty() );
             if( exCompare( lhs(), variables(), _constraint.lhs(), _constraint.variables() ) == -1 )
             {
                 return true;
@@ -1047,29 +1130,6 @@ namespace smtrat
     {
         _ostream << _constraint.toString();
         return _ostream;
-    }
-
-    /**
-     * Simplifies this constraint.
-     */
-    void Constraint::simplify()
-    {
-        if( !variables().empty() )
-        {
-            ex un, con, prim;
-            lhs().unitcontprim( ex( variables().begin()->second ), un, con, prim );
-            if( con.info( info_flags::rational ) )
-            {
-                if( relation() == CR_EQ || relation() == CR_NEQ )
-                {
-                    *pLhs = prim;
-                }
-                else
-                {
-                    *pLhs = prim * un;
-                }
-            }
-        }
     }
 
     void Constraint::getVariables( const ex& _term, symtab& _variables )
@@ -1334,6 +1394,29 @@ namespace smtrat
             result += out.str();
         }
         return result;
+    }
+
+    /**
+     *
+     * @param _out
+     */
+    void Constraint::printPropositions( ostream& _out ) const
+    {
+        _out << "Propostions:" << endl;
+        _out << "   mIsNeverPositive = " << (mIsNeverPositive ? "true" : "false") << endl;
+        _out << "   mIsNeverNegative = " << (mIsNeverNegative ? "true" : "false") << endl;
+        _out << "   mCannotBeZero    = " << (mIsNeverZero ? "true" : "false") << endl;
+        _out << "   mNumMonomials    = " << mNumMonomials << endl;
+        _out << "   mMaxMonomeDegree = " << mMaxMonomeDegree << endl;
+        _out << "   mMinMonomeDegree = " << mMinMonomeDegree << endl;
+        _out << "   mConstantPart    = " << mConstantPart << endl;
+        _out << "   Variables:" << endl;
+        for( auto varInfo = mVarInfoMap.begin(); varInfo != mVarInfoMap.end(); ++varInfo )
+        {
+            _out << "        occurences of " << varInfo->first << " = " << varInfo->second.occurences << endl;
+            _out << "        maxDegree of " << varInfo->first << "  = " << varInfo->second.maxDegree << endl;
+            _out << "        minDegree of " << varInfo->first << "  = " << varInfo->second.minDegree << endl;
+        }
     }
 
     /**
