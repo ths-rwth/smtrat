@@ -33,6 +33,7 @@ namespace smtrat
         Formula::const_iterator posInReceivedFormula;
         Formula::iterator posInPassedFormula;
         std::list<VariableNode*> adjacencyList;
+        bool unasserted;
     };
 
     class VariableConstraintGraph
@@ -48,10 +49,11 @@ namespace smtrat
         std::list<ConstraintNode*> addConstraint(const Constraint* constraint,Formula::const_iterator origin, Formula::iterator pos);
         std::list<ConstraintNode*> updateConstraintNode(ConstraintNode* node, Formula::iterator pos);
         bool removeConstraint(std::list<ConstraintNode*>::iterator, Formula::const_iterator end);
+        void assertConstraints();
         
         std::list<ConstraintNode*>::iterator last()  { return --mConstraintNodes.end(); }
         
-        std::list<Formula::iterator> findIrrelevantConstraints(Formula::iterator end);
+        std::list<std::pair<Formula::iterator, bool> > findIrrelevantConstraints(Formula::iterator end);
         
         void print(); 
         virtual ~VariableConstraintGraph( ) {}

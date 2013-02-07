@@ -23,6 +23,7 @@ namespace smtrat
         (mConstraintNodes.back())->constraint = constraint;
         (mConstraintNodes.back())->posInPassedFormula = pos;
         (mConstraintNodes.back())->posInReceivedFormula = origin;
+        (mConstraintNodes.back())->unasserted = true;
         // We assume that the variables in the symtab are exact.
         for( GiNaC::symtab::const_iterator itVar = constraint->variables().begin(); itVar != constraint->variables().end(); ++itVar )
         {
@@ -57,6 +58,7 @@ namespace smtrat
         std::list<ConstraintNode*> readd;
         node->posInPassedFormula = pos;
         node->adjacencyList.clear();
+        node->unasserted = true;
         // We assume that the variables in the symtab are exact.
         for( GiNaC::symtab::const_iterator itVar = node->constraint->variables().begin(); itVar != node->constraint->variables().end(); ++itVar )
         {
@@ -104,9 +106,9 @@ namespace smtrat
         return !nothingChanges;
     }
     
-    std::list<Formula::iterator> VariableConstraintGraph::findIrrelevantConstraints(Formula::iterator end)
+    std::list<std::pair<Formula::iterator, bool> > VariableConstraintGraph::findIrrelevantConstraints(Formula::iterator end)
     {
-        std::list<Formula::iterator> irrelevantConstraints;
+        std::list<std::pair<Formula::iterator, bool> > irrelevantConstraints;
         for(std::map<std::string, VariableNode*>::const_iterator itVar = mVariableNodes.begin(); itVar != mVariableNodes.end(); ++itVar)
         {
             VariableNode* varNode = itVar->second;
@@ -120,7 +122,7 @@ namespace smtrat
                 {
                     // as the variable occurs only once the max and mindegree are assumed to be equal.
                     assert(varInfo.maxDegree == varInfo.minDegree);
-                    irrelevantConstraints.push_back(constraintNode->posInPassedFormula);
+                    irrelevantConstraints.push_back(std::pair<Formula::iterator, bool>(constraintNode->posInPassedFormula, constraintNode->unasserted) );
                     constraintNode->posInPassedFormula = end;
                     
                     // Remove all the links from the variable to the node
@@ -145,6 +147,14 @@ namespace smtrat
         return irrelevantConstraints;
     }
     
+    void VariableConstraintGraph::assertConstraints() 
+    {
+        for( std::list<ConstraintNode*>::iterator it = mConstraintNodes.begin(); it != mConstraintNodes.end(); ++it ) 
+        {
+            (*it)->unasserted = false;
+        }
+    }
+    
     void VariableConstraintGraph::print() 
     {
         std::cout << "Constraint nodes:" << std::endl;
@@ -153,6 +163,7 @@ namespace smtrat
             std::cout << "\tConstraint: ";
             (*it)->constraint->print();
             std::cout << "(" << (*it)->constraint->id() << ")" << std::endl;
+            std::cout << "\tReceived:" << *(*it)->posInReceivedFormula <<" Passed: " << *(*it)->posInPassedFormula << std::endl;
             std::cout << "\tVariable nodes:" << std::endl;
             for( std::list<VariableNode*>::const_iterator itVarNode = (*it)->adjacencyList.begin(); itVarNode != (*it)->adjacencyList.end(); ++itVarNode )
             {
