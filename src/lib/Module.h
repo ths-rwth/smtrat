@@ -273,10 +273,8 @@ namespace smtrat
             static bool modelsDisjoint( const Model&, const Model& );
             void getBackendsModel();
             Answer runBackends();
-            Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator, bool involveBackends = true );
-            void scheduleSubformalaForAddingToPassedFormula( Formula::iterator );
-            void scheduleSubformulaForRemovalFromPassedFormula( Formula::iterator );
-            bool handleScheduled();
+            void clearReceivedFormula( Formula::const_iterator _received, Formula::iterator _passed );
+            Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator, bool local = false, bool forceBackendCall = false );
             Formula::iterator pruneSubformulaFromPassedFormula( Formula::iterator );
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;

@@ -66,7 +66,7 @@ namespace smtrat
     {
         while( !mFormulaConditionMap.empty() )
         {
-            vs::Condition* pRecCond = mFormulaConditionMap.begin()->second;
+            const vs::Condition* pRecCond = mFormulaConditionMap.begin()->second;
             mFormulaConditionMap.erase( mFormulaConditionMap.begin() );
             delete pRecCond;
         }
@@ -86,7 +86,7 @@ namespace smtrat
         if( (*_subformula)->getType() == REALCONSTRAINT )
         {
             const Constraint* constraint = (*_subformula)->pConstraint();
-            vs::Condition*    condition  = new vs::Condition( constraint );
+            const vs::Condition* condition  = new vs::Condition( constraint );
             mFormulaConditionMap[*_subformula] = condition;
 
             /*
@@ -156,7 +156,7 @@ namespace smtrat
             mInconsistentConstraintAdded = false;
             auto formulaConditionPair = mFormulaConditionMap.find( *_subformula );
             assert( formulaConditionPair != mFormulaConditionMap.end() );
-            vs::Condition* condToDelete = formulaConditionPair->second;
+            const vs::Condition* condToDelete = formulaConditionPair->second;
 
             eraseDTsOfRanking( *mpStateTree );
             assert( mpStateTree->substitutionResults().size() == 1 );
@@ -1703,22 +1703,34 @@ EndSwitch:;
      * @return  true,   if the passed formula has been changed;
      *          false,  otherwise.
      */
-    bool VSModule::adaptPassedFormula( const State& _state, bool _strictInequalitiesOnly )
+    bool VSModule::adaptPassedFormula( const State& _state, FormulaConditionMap& _formulaCondMap, bool _strictInequalitiesOnly )
     {
         bool changedPassedFormula = false;
 
         /*
          * Collect the constraints to check.
          */
-        set<Constraint> constraintsToCheck = set<Constraint>();
-        for( ConditionVector::const_iterator cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
+        map< const Constraint*, const vs::Condition* const, smtrat::constraintPointerComp > constraintsToCheck = map< const Constraint*, const vs::Condition* const, smtrat::constraintPointerComp >();
+        for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
         {
-            #ifdef DONT_CHECK_STRICT_INEQUALITIES
-            //TODO: do not pass equations and change not strict inequalities to strict ones
+            #ifdef CHECK_STRICT_INEQUALITIES_WITH_BACKEND
+            if( _strictInequalitiesOnly )
+            {
+                Constraint_Relation rel = (*cond)->constraint().relation();
+                if( rel == CR_LESS || rel == CR_GREATER || rel == CR_NEQ )
+                {
+                    constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( (*cond)->pConstraint(), *cond ) );
+                }
+            }
+            else
+            {
+                constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( (*cond)->pConstraint(), *cond ) );
+            }
+            #else
             if( (*cond)->flag() )
             {
-                const Constraint& constraint = (**cond).constraint();
-                switch( (**cond).constraint().relation() )
+                const Constraint* constraint = (*cond)->pConstraint();
+                switch( constraint->relation() )
                 {
                     case CR_EQ:
                     {
@@ -1726,41 +1738,26 @@ EndSwitch:;
                     }
                     case CR_GEQ:
                     {
-                        constraintsToCheck.insert( *Formula::newConstraint( constraint.lhs(), CR_GREATER, constraint.variables() ) );
+                        const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), CR_GREATER, constraint->variables() );
+                        constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( strictVersion, *cond ) );
                         break;
                     }
                     case CR_LEQ:
                     {
-                        constraintsToCheck.insert( *Formula::newConstraint( constraint.lhs(), CR_LESS, constraint.variables() ) );
+                        const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() );
+                        constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( strictVersion, *cond ) );
                         break;
                     }
                     default:
                     {
-                        constraintsToCheck.insert( constraint );
+                        constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( constraint, *cond ) );
                     }
                 }
             }
             else
             {
-                constraintsToCheck.insert( (**cond).constraint() );
+                constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( (*cond)->pConstraint(), *cond ) );
             }
-            #else
-            #ifdef CHECK_STRICT_INEQUALITIES_WITH_BACKEND
-            if( _strictInequalitiesOnly )
-            {
-                Constraint_Relation rel = (**cond).constraint().relation();
-                if( rel == CR_LESS || rel == CR_GREATER || rel == CR_NEQ )
-                {
-                    constraintsToCheck.insert( (**cond).constraint() );
-                }
-            }
-            else
-            {
-                constraintsToCheck.insert( (**cond).constraint() );
-            }
-            #else
-            constraintsToCheck.insert( (**cond).constraint() );
-            #endif
             #endif
         }
         if( constraintsToCheck.empty() ) return false;
@@ -1773,25 +1770,30 @@ EndSwitch:;
         Formula::iterator subformula = mpPassedFormula->begin();
         while( subformula != mpPassedFormula->end() )
         {
-            if( constraintsToCheck.erase( (*subformula)->constraint() ) == 0 )
+            auto iter = constraintsToCheck.find( (*subformula)->pConstraint() );
+            if( iter != constraintsToCheck.end() )
             {
-                subformula           = removeSubformulaFromPassedFormula( subformula );
-                changedPassedFormula = true;
+                _formulaCondMap[*subformula] = iter->second;
+                constraintsToCheck.erase( iter );
+                ++subformula;
             }
             else
             {
-                ++subformula;
+                subformula           = removeSubformulaFromPassedFormula( subformula );
+                changedPassedFormula = true;
             }
         }
 
         /*
          * Add the the remaining constraints to add to the passed formula.
          */
-        for( set<Constraint>::iterator iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
+        for( auto iter = constraintsToCheck.begin(); iter != constraintsToCheck.end(); ++iter )
         {
             changedPassedFormula           = true;
             vec_set_const_pFormula origins = vec_set_const_pFormula();
-            addSubformulaToPassedFormula( new smtrat::Formula( smtrat::Formula::newConstraint( iter->lhs(), iter->relation(), iter->variables() ) ), origins );
+            Formula* formula = new smtrat::Formula( iter->first );
+            _formulaCondMap[formula] = iter->second;
+            addSubformulaToPassedFormula( formula, origins );
         }
         return changedPassedFormula;
     }
@@ -1810,13 +1812,15 @@ EndSwitch:;
         /*
          * Run the backends on the constraint of the state.
          */
+        FormulaConditionMap formulaToConditions = FormulaConditionMap();
         #ifdef CHECK_STRICT_INEQUALITIES_WITH_BACKEND
-        bool changedPassedFormula = adaptPassedFormula( *_state );
+        bool changedPassedFormula = adaptPassedFormula( *_state, formulaToConditions, true );
         if( _strictInequalitiesOnly && !changedPassedFormula ) return True;
         #else
-        adaptPassedFormula( *_state );
+        adaptPassedFormula( *_state, formulaToConditions );
         #endif
 
+//        _state->printAlone();
         switch( runBackends() )
         {
             case True:
@@ -1840,14 +1844,9 @@ EndSwitch:;
                             ConditionSet conflict = ConditionSet();
                             for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                             {
-                                for( ConditionVector::const_iterator cond = _state->conditions().begin(); cond != _state->conditions().end(); ++cond )
-                                {
-                                    if( (*cond)->constraint() == (*subformula)->constraint() )
-                                    {
-                                        conflict.insert( *cond );
-                                        break;
-                                    }
-                                }
+                                auto fcPair = formulaToConditions.find( *subformula );
+                                assert( fcPair != formulaToConditions.end() );
+                                conflict.insert( fcPair->second );
                             }
                             #ifdef SMTRAT_DEVOPTION_Validation
                             if( validationSettings->logTCalls() )
