@@ -1304,20 +1304,25 @@ namespace lra
             }
             if( ubound != --upperBounds.end() )
             {
+                assert( (*ubound)->type() != Bound::EQUAL );
                 LearnedBound learnedBound = LearnedBound();
-                if( (*ubound)->type() != Bound::EQUAL && !(*ubound)->deduced() )
+                learnedBound.nextWeakerBound = *ubound;
+                learnedBound.premise = uPremise;
+                #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                if( newlimit->mainPart() < (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
                 {
-                    learnedBound.nextWeakerBound = *ubound;
+                    ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
+                    smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
+                    const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*ubound)->pAsConstraint()->variables() );
+                    learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                 }
                 else
                 {
-                    learnedBound.nextWeakerBound = NULL;
+                    learnedBound.newBound = NULL;
                 }
-                learnedBound.premise = uPremise;
-                ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
-                smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
-                const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*ubound)->pAsConstraint()->variables() );
-                learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
+                #else
+                learnedBound.newBound = NULL;
+                #endif
                 mLearnedBounds.push_back( learnedBound );
             }
             else
@@ -1350,7 +1355,7 @@ CheckLowerPremise:
             auto lbound = lowerBounds.rbegin();
             while( lbound != lowerBounds.rend() )
             {
-                if( **lbound < *newlimit && (*lbound)->type() != Bound::EQUAL && !(*lbound)->deduced() )
+                if( **lbound < *newlimit && (*lbound)->type() != Bound::EQUAL )
                 {
                     break;
                 }
@@ -1363,20 +1368,25 @@ CheckLowerPremise:
             }
             if( lbound != --lowerBounds.rend() )
             {
+                assert( (*lbound)->type() != Bound::EQUAL );
                 LearnedBound learnedBound = LearnedBound();
-                if( (*lbound)->type() != Bound::EQUAL && !(*lbound)->deduced() )
+                learnedBound.nextWeakerBound = *lbound;
+                learnedBound.premise = lPremise;
+                #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
                 {
-                    learnedBound.nextWeakerBound = *lbound;
+                    ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
+                    smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
+                    const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*lbound)->pAsConstraint()->variables() );
+                    learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                 }
                 else
                 {
-                    learnedBound.nextWeakerBound = NULL;
+                    learnedBound.newBound = NULL;
                 }
-                learnedBound.premise = lPremise;
-                ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
-                smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
-                const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*lbound)->pAsConstraint()->variables() );
-                learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
+                #else
+                learnedBound.newBound = NULL;
+                #endif
                 mLearnedBounds.push_back( learnedBound );
             }
             else
@@ -1498,20 +1508,25 @@ CheckLowerPremise:
             }
             if( ubound != --upperBounds.end() )
             {
+                assert( (*ubound)->type() != Bound::EQUAL );
                 LearnedBound learnedBound = LearnedBound();
-                if( (*ubound)->type() != Bound::EQUAL && !(*ubound)->deduced() )
+                learnedBound.nextWeakerBound = *ubound;
+                learnedBound.premise = uPremise;
+                #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                if( newlimit->mainPart() < (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
                 {
-                    learnedBound.nextWeakerBound = *ubound;
+                    ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
+                    smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
+                    const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*ubound)->pAsConstraint()->variables() );
+                    learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                 }
                 else
                 {
-                    learnedBound.nextWeakerBound = NULL;
+                    learnedBound.newBound = NULL;
                 }
-                learnedBound.premise = uPremise;
-                ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
-                smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
-                const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*ubound)->pAsConstraint()->variables() );
-                learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
+                #else
+                learnedBound.newBound = NULL;
+                #endif
                 mLearnedBounds.push_back( learnedBound );
             }
             else
@@ -1544,7 +1559,7 @@ CheckLowerPremise:
             auto lbound = lowerBounds.rbegin();
             while( lbound != lowerBounds.rend() )
             {
-                if( **lbound < *newlimit && (*lbound)->type() != Bound::EQUAL && !(*lbound)->deduced() )
+                if( **lbound < *newlimit && (*lbound)->type() != Bound::EQUAL )
                 {
                     break;
                 }
@@ -1557,20 +1572,25 @@ CheckLowerPremise:
             }
             if( lbound != --lowerBounds.rend() )
             {
+                assert( (*lbound)->type() != Bound::EQUAL );
                 LearnedBound learnedBound = LearnedBound();
-                if( (*lbound)->type() != Bound::EQUAL && !(*lbound)->deduced() )
+                learnedBound.nextWeakerBound = *lbound;
+                learnedBound.premise = lPremise;
+                #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
                 {
-                    learnedBound.nextWeakerBound = *lbound;
+                    ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
+                    smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
+                    const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*lbound)->pAsConstraint()->variables() );
+                    learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                 }
                 else
                 {
-                    learnedBound.nextWeakerBound = NULL;
+                    learnedBound.newBound = NULL;
                 }
-                learnedBound.premise = lPremise;
-                ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
-                smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
-                const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*lbound)->pAsConstraint()->variables() );
-                learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
+                #else
+                learnedBound.newBound = NULL;
+                #endif
                 mLearnedBounds.push_back( learnedBound );
             }
             else

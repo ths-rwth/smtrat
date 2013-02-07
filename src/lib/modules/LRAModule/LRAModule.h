@@ -22,9 +22,9 @@
 
 /**
  * @file LRAModule.h
- * @author name surname <emailadress>
+ * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  *
- * @version 2012-04-05
+ * @version 2013-02-07
  * Created on April 5th, 2012, 3:22 PM
  */
 
@@ -60,8 +60,8 @@ namespace smtrat
                     return GiNaC::ex_is_less()( *pExA, *pExB );
                 }
             };
-            typedef std::map<const GiNaC::ex*, lra::Variable*, exPointerComp>   ExVariableMap;
-            typedef std::map< unsigned, std::vector< const lra::Bound* >* >     ConstraintBoundsMap;
+            typedef std::map<const GiNaC::ex*, lra::Variable*, exPointerComp>                               ExVariableMap;
+            typedef std::map< const Constraint*, std::vector< const lra::Bound* >*, constraintPointerComp > ConstraintBoundsMap;
 
         private:
 
@@ -107,6 +107,18 @@ namespace smtrat
             #endif
             void initialize();
 
+            void printLinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
+            void printNonlinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
+            void printOriginalVars ( std::ostream& = std::cout, const std::string = "" ) const;
+            void printSlackVars ( std::ostream& = std::cout, const std::string = "" ) const;
+            void printConstraintToBound ( std::ostream& = std::cout, const std::string = "" ) const;
+            void printBoundCandidatesToPass ( std::ostream& = std::cout, const std::string = "" ) const;
+
+            void printTableau ( std::ostream& _out = std::cout, const std::string _init = "" ) const
+            {
+                mTableau.print( _out, 28, _init );
+            }
+
             const ExVariableMap& slackVariables() const
             {
                 return mSlackVars;
@@ -114,7 +126,7 @@ namespace smtrat
 
             const lra::Variable* const getSlackVariable( const Constraint* const _constraint ) const
             {
-                ConstraintBoundsMap::const_iterator iter = mConstraintToBound.find( _constraint->id() );
+                ConstraintBoundsMap::const_iterator iter = mConstraintToBound.find( _constraint );
                 assert( iter != mConstraintToBound.end() );
                 return iter->second->back()->pVariable();
             }

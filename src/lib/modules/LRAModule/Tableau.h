@@ -38,6 +38,9 @@
 
 #define LRA_USE_PIVOTING_STRATEGY
 #define LRA_REFINEMENT
+#ifdef LRA_REFINEMENT
+//#define LRA_INTRODUCE_NEW_CONSTRAINTS
+#endif
 
 // TODO: Make it templated, such that the coefficients, bounds and assignments can be any kind of arithmetic data type.
 //       You could also use double, once assuring they underapproximate and a satisfiable result is indeed satisfiable,

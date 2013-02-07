@@ -1820,7 +1820,7 @@ NextClause:
             #ifdef DEBUG_SATMODULE
             if( subformula != _theoryReason.begin() )
             {
-                cout << ", ";
+                cout << ", " << endl;;
             }
             (*subformula)->print();
             #endif
