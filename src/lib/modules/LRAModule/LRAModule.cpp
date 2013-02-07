@@ -20,9 +20,9 @@
  */
 /*
  * File:   LRAModule.cpp
- * @author name surname <emailadress>
+ * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  *
- * @version 2012-04-05
+ * @version 2013-02-07
  * Created on April 5th, 2012, 3:22 PM
  */
 
@@ -106,7 +106,8 @@ namespace smtrat
         Module::inform( _constraint );
         if( !_constraint->variables().empty() && _constraint->isLinear() && _constraint->relation() != CR_NEQ )
         {
-            if( mLinearConstraints.insert( _constraint ).second && mInitialized )
+            bool elementInserted = mLinearConstraints.insert( _constraint ).second;
+            if( elementInserted && mInitialized )
             {
                 initialize( _constraint );
             }
@@ -140,7 +141,7 @@ namespace smtrat
                 {
                     if( (*_subformula)->constraint().relation() != CR_NEQ )
                     {
-                        vector< const Bound* >* bounds = mConstraintToBound[constraint->id()];
+                        vector< const Bound* >* bounds = mConstraintToBound[constraint];
                         assert( bounds != NULL );
                         set<const Formula*> originSet = set<const Formula*>();
                         originSet.insert( *_subformula );
@@ -198,7 +199,7 @@ namespace smtrat
                     if( (*_subformula)->constraint().relation() != CR_NEQ )
                     {
                         // Deactivate the bounds regarding the given constraint
-                        vector< const Bound* >* bounds = mConstraintToBound[constraint->id()];
+                        vector< const Bound* >* bounds = mConstraintToBound[constraint];
                         assert( bounds != NULL );
                         auto bound = bounds->begin();
                         while( bound != bounds->end() )
@@ -236,7 +237,7 @@ namespace smtrat
                                     }
                                 }
                             }
-                            if( (*bound)->origins().empty() && (*bound)->deduced() )
+                            if( bound != bounds->begin() )
                             {
                                 bound = bounds->erase( bound );
                             }
@@ -329,12 +330,19 @@ namespace smtrat
                     else
                     {
                         mTableau.pivot( pivotingElement.first );
+//                        printConstraintToBound();
                         while( posNewLearnedBound < mTableau.rLearnedBounds().size() )
                         {
                             set< const Formula*> originSet = set< const Formula*>();
-                            vector<const Bound*>& bounds = *mTableau.rLearnedBounds()[posNewLearnedBound].premise;
+                            Tableau::LearnedBound& learnedBound = mTableau.rLearnedBounds()[posNewLearnedBound];
+//                            if( learnedBound.newBound != NULL ) { cout << "newBound       : "; learnedBound.newBound->print( true, cout, true ); cout << endl; }
+//                            else cout << "newBound       : NULL" << endl;
+//                            cout << "nextWeakerBound: "; learnedBound.nextWeakerBound->print( true, cout, true ); cout << endl;
+//                            cout << "premise        : " << endl;
+                            vector<const Bound*>& bounds = *learnedBound.premise;
                             for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
                             {
+//                                cout << "    "; (*bound)->print( true, cout, true ); cout << endl;
                                 assert( !(*bound)->origins().empty() );
                                 originSet.insert( (*bound)->origins().begin()->begin(), (*bound)->origins().begin()->end() );
                                 for( auto origin = (*bound)->origins().begin()->begin(); origin != (*bound)->origins().begin()->end(); ++origin )
@@ -342,16 +350,29 @@ namespace smtrat
                                     const Constraint* constraint = (*origin)->pConstraint();
                                     if( constraint != NULL )
                                     {
-                                        mConstraintToBound[constraint->id()]->push_back( mTableau.rLearnedBounds()[posNewLearnedBound].nextWeakerBound );
-                                        mConstraintToBound[constraint->id()]->push_back( mTableau.rLearnedBounds()[posNewLearnedBound].newBound );
+                                        vector< const Bound* >* constraintToBounds = mConstraintToBound[constraint];
+                                        constraintToBounds->push_back( learnedBound.nextWeakerBound );
+                                        #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                                        if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
+                                        #endif
                                     }
                                 }
                             }
-                            activateBound( mTableau.rLearnedBounds()[posNewLearnedBound].nextWeakerBound, originSet );
-                            activateBound( mTableau.rLearnedBounds()[posNewLearnedBound].newBound, originSet );
-                            mLinearConstraints.insert( mTableau.rLearnedBounds()[posNewLearnedBound].newBound->pAsConstraint() );
+                            activateBound( learnedBound.nextWeakerBound, originSet );
+                            #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                            if( learnedBound.newBound != NULL )
+                            {
+                                const Constraint* newConstraint = learnedBound.newBound->pAsConstraint();
+                                mLinearConstraints.insert( newConstraint );
+                                vector< const Bound* >* boundVector = new vector< const Bound* >();
+                                boundVector->push_back( learnedBound.newBound );
+                                mConstraintToBound[newConstraint] = boundVector;
+                                activateBound( learnedBound.newBound, originSet );
+                            }
+                            #endif
                             ++posNewLearnedBound;
                         }
+//                        printConstraintToBound();
                         if( !mInfeasibleSubsets.empty() )
                         {
                             learnRefinements();
@@ -818,7 +839,7 @@ namespace smtrat
             #endif
             vector< const Bound* >* boundVector = new vector< const Bound* >();
             boundVector->push_back( result.first );
-            mConstraintToBound[_constraint->id()] = boundVector;
+            mConstraintToBound[_constraint] = boundVector;
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
             if( result.second.first != NULL && !result.second.first->isInfinite() )
             {
@@ -863,7 +884,7 @@ namespace smtrat
             #endif
             vector< const Bound* >* boundVector = new vector< const Bound* >();
             boundVector->push_back( result.first );
-            mConstraintToBound[_constraint->id()] = boundVector;
+            mConstraintToBound[_constraint] = boundVector;
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
             if( result.second.first != NULL && !result.second.first->isInfinite() )
             {
@@ -892,7 +913,7 @@ namespace smtrat
             #endif
             vector< const Bound* >* boundVector = new vector< const Bound* >();
             boundVector->push_back( result.first );
-            mConstraintToBound[_constraint->id()] = boundVector;
+            mConstraintToBound[_constraint] = boundVector;
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
             if( result.second.first != NULL && !result.second.first->isInfinite() )
             {
@@ -921,7 +942,7 @@ namespace smtrat
             #endif
             vector< const Bound* >* boundVector = new vector< const Bound* >();
             boundVector->push_back( result.first );
-            mConstraintToBound[_constraint->id()] = boundVector;
+            mConstraintToBound[_constraint] = boundVector;
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
             if( result.second.first != NULL && !result.second.first->isInfinite() )
             {
@@ -950,7 +971,7 @@ namespace smtrat
             #endif
             vector< const Bound* >* boundVector = new vector< const Bound* >();
             boundVector->push_back( result.first );
-            mConstraintToBound[_constraint->id()] = boundVector;
+            mConstraintToBound[_constraint] = boundVector;
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
             if( result.second.first != NULL && !result.second.first->isInfinite() )
             {
@@ -1128,6 +1149,107 @@ namespace smtrat
             #endif
         }
     }
+
+    /**
+     *
+     * @param _out
+     * @param _init
+     */
+    void LRAModule::printLinearConstraints( ostream& _out, const string _init ) const
+    {
+        _out << _init << "Linear constraints:" << endl;
+        for( auto iter = mLinearConstraints.begin(); iter != mLinearConstraints.end(); ++iter )
+        {
+            _out << _init << "   " << (*iter)->smtlibString() << endl;
+        }
+    }
+
+    /**
+     *
+     * @param _out
+     * @param _init
+     */
+    void LRAModule::printNonlinearConstraints( ostream& _out, const string _init ) const
+    {
+        _out << _init << "Nonlinear constraints:" << endl;
+        for( auto iter = mNonlinearConstraints.begin(); iter != mNonlinearConstraints.end(); ++iter )
+        {
+            _out << _init << "   " << (*iter)->smtlibString() << endl;
+        }
+    }
+
+    /**
+     *
+     * @param _out
+     * @param _init
+     */
+    void LRAModule::printOriginalVars( ostream& _out, const string _init ) const
+    {
+        _out << _init << "Original variables:" << endl;
+        for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
+        {
+            _out << _init << "   " << *iter->first << ":" << endl;
+            _out << _init << "          ";
+            iter->second->print( _out );
+            _out << endl;
+            iter->second->printAllBounds( _out, _init + "          " );
+        }
+    }
+
+    /**
+     *
+     * @param _out
+     * @param _init
+     */
+    void LRAModule::printSlackVars( ostream& _out, const string _init ) const
+    {
+        _out << _init << "Slack variables:" << endl;
+        for( auto iter = mSlackVars.begin(); iter != mSlackVars.end(); ++iter )
+        {
+            _out << _init << "   " << *iter->first << ":" << endl;
+            _out << _init << "          ";
+            iter->second->print( _out );
+            _out << endl;
+            iter->second->printAllBounds( _out, _init + "          " );
+        }
+    }
+
+    /**
+     *
+     * @param _out
+     * @param _init
+     */
+    void LRAModule::printConstraintToBound( ostream& _out, const string _init ) const
+    {
+        _out << _init << "Mapping of constraints to bounds:" << endl;
+        for( auto iter = mConstraintToBound.begin(); iter != mConstraintToBound.end(); ++iter )
+        {
+            _out << _init << "   " << iter->first->smtlibString() << endl;
+            for( auto iter2 = iter->second->begin(); iter2 != iter->second->end(); ++iter2 )
+            {
+                _out << _init << "        ";
+                (*iter2)->print( true, cout, true );
+                _out << endl;
+            }
+        }
+    }
+
+    /**
+     *
+     * @param _out
+     * @param _init
+     */
+    void LRAModule::printBoundCandidatesToPass( ostream& _out, const string _init ) const
+    {
+        _out << _init << "Bound candidates to pass:" << endl;
+        for( auto iter = mBoundCandidatesToPass.begin(); iter != mBoundCandidatesToPass.end(); ++iter )
+        {
+            _out << _init << "   ";
+            (*iter)->print( true, cout, true );
+            _out << endl;
+        }
+    }
+
 
 }    // namespace smtrat
 

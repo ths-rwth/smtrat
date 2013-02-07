@@ -73,9 +73,9 @@ namespace smtrat
                 }
             };
 
-            typedef std::pair<UnsignedPair, vs::State*>                 ValStatePair;
-            typedef std::map<UnsignedPair, vs::State*, unsignedPairCmp> ValuationMap;
-            typedef std::map<const Formula* const, vs::Condition*>  FormulaConditionMap;
+            typedef std::pair<UnsignedPair, vs::State*>                  ValStatePair;
+            typedef std::map<UnsignedPair, vs::State*, unsignedPairCmp>  ValuationMap;
+            typedef std::map<const Formula* const, const vs::Condition*> FormulaConditionMap;
 
             /*
              * Attributes:
@@ -139,7 +139,7 @@ namespace smtrat
             void updateInfeasibleSubset();
             std::vector<std::pair<std::string, std::pair<vs::Substitution_Type, GiNaC::ex> > > getSymbolicAssignment() const;
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
-            bool adaptPassedFormula( const vs::State&, bool = false );
+            bool adaptPassedFormula( const vs::State&, FormulaConditionMap&, bool = false );
             Answer runBackendSolvers( vs::State*, bool = false );
             #ifdef VS_LOG_INTERMEDIATE_STEPS
             void checkAnswer() const;
