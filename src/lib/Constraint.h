@@ -135,7 +135,7 @@ namespace smtrat
             Constraint();
             Constraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab&, unsigned = 0 );
             Constraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation&, const GiNaC::symtab&, unsigned = 0 );
-            Constraint( const Constraint& );
+            Constraint( const Constraint&, bool = false );
 
             /*
              * Destructor:

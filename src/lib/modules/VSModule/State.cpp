@@ -726,7 +726,6 @@ namespace vs
                         redundantConditionSet.insert( condB );
 
                     }
-
                     /*
                      * If cond1's solution space is a subset of the solution space of cond2.
                      */
@@ -734,7 +733,6 @@ namespace vs
                     {
                         redundantConditionSet.insert( condB );
                     }
-
                     /*
                      * If it is easy to give a condition whose solution space is the intersection of
                      * the solution spaces of cond1 and cond2.
@@ -824,7 +822,6 @@ namespace vs
                             assert( false );
                         }
                     }
-
                     /*
                      * If cond1's solution space is a superset of the solution space of cond2.
                      */
@@ -832,14 +829,12 @@ namespace vs
                     {
                         redundantConditionSet.insert( condA );
                     }
-
                     /*
                      * If it is easy to decide that cond1 and cond2 are conflicting.
                      */
                     else if( strongProp == -2 || strongProp == -4 )
                     {
                         ConditionSet condSet = ConditionSet();
-
                         condSet.insert( condA );
                         condSet.insert( condB );
 
@@ -2071,9 +2066,11 @@ namespace vs
      *                              element of a substitution.
      * @param _substitutionType     The type of the substitution we create.
      *
-     * @return True, if a state was successfully added.
+     * @return  1,  if a state was successfully added;
+     *          0,  if a the state already exists;
+     *         -1,  if the side conditions fail.
      */
-    bool State::addChild( const string& _eliminationVar, const ex& _elimVarAsEx, const Substitution_Type& _substitutionType, const ConditionSet& _oConditions )
+    int State::addChild( const string& _eliminationVar, const ex& _elimVarAsEx, const Substitution_Type& _substitutionType, const ConditionSet& _oConditions )
     {
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
@@ -2084,11 +2081,11 @@ namespace vs
             State * dt = new State( this, sub );
             (*dt).updateValuation();
             rChildren().push_back( dt );
-            return true;
+            return 1;
         }
         else
         {
-            return false;
+            return 0;
         }
     }
 
@@ -2106,9 +2103,11 @@ namespace vs
      * @param _subTermDenom         The denominator of the term to which the variable is mapped.
      * @param _substitutionType     The type of the substitution we create.
      *
-     * @return True, if a state was successfully added.
+     * @return  1,  if a state was successfully added;
+     *          0,  if a the state already exists;
+     *         -1,  if the side conditions fail.
      */
-    bool State::addChild( const ex& _lhsCondition,
+    int State::addChild( const ex& _lhsCondition,
                           const smtrat::Constraint_Relation& _relationCondition,
                           const string& _eliminationVar,
                           const ex& _elimVarAsEx,
@@ -2145,16 +2144,16 @@ namespace vs
                 }
                 (*state).updateValuation();
                 rChildren().push_back( state );
-                return true;
+                return 1;
             }
             else
             {
-                return false;
+                return 0;
             }
         }
         else
         {
-            return false;
+            return -1;
         }
     }
 
@@ -2176,9 +2175,11 @@ namespace vs
      * @param _subTermDenom         The denominator of the term to which the variable is mapped.
      * @param _substitutionType     The type of the substitution we create.
      *
-     * @return True, if a state was successfully added.
+     * @return  1,  if a state was successfully added;
+     *          0,  if a the state already exists;
+     *         -1,  if the side conditions fail.
      */
-    bool State::addChild( const ex& _lhsCondition1,
+    int State::addChild( const ex& _lhsCondition1,
                           const smtrat::Constraint_Relation& _relationCondition1,
                           const ex& _lhsCondition2,
                           const smtrat::Constraint_Relation& _relationCondition2,
@@ -2227,21 +2228,21 @@ namespace vs
                     }
                     state->updateValuation();
                     rChildren().push_back( state );
-                    return true;
+                    return 1;
                 }
                 else
                 {
-                    return false;
+                    return 0;
                 }
             }
             else
             {
-                return false;
+                return -1;
             }
         }
         else
         {
-            return false;
+            return -1;
         }
     }
 
@@ -2298,7 +2299,7 @@ namespace vs
     /**
      * Passes the original conditions of the covering set of the conflicts of this state to its father.
      */
-    void State::passConflictToFather()
+    void State::passConflictToFather( bool _includeInconsistentTestCandidates )
     {
         #ifdef VS_DEBUG_METHODS_X
         cout << __func__ << endl;
@@ -2311,7 +2312,7 @@ namespace vs
         ConditionSet covSet         = ConditionSet();
         ConditionSetSetSet confSets = ConditionSetSetSet();
         ConflictSets::iterator nullConfSet = rConflictSets().find( NULL );
-        if( nullConfSet != conflictSets().end() )
+        if( nullConfSet != conflictSets().end() && !_includeInconsistentTestCandidates )
         {
             confSets.insert( nullConfSet->second.begin(), nullConfSet->second.end() );
         }

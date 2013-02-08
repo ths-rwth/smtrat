@@ -679,7 +679,7 @@ namespace smtrat
             ++module;
         }
         #ifdef MODULE_VERBOSE
-        cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : "Unknown")) << endl;
+        cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : (result == Unknown ? "Unknown" : "Undefined"))) << endl;
         #endif
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         startCheckTimer();
@@ -1092,7 +1092,9 @@ namespace smtrat
             _out << setw( 30 ) << (*receivedSubformula)->toString( true );
             stringstream out;
             out << "  [" << *receivedSubformula << "]";
-            _out << setw( 15 ) << out.str() << endl;
+            _out << setw( 15 ) << out.str();
+            if( (*receivedSubformula)->deducted() ) _out << " deducted";
+            _out << endl;
         }
     }
 

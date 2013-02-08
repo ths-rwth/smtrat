@@ -833,8 +833,9 @@ EndSwitch:;
                 /*
                  * Create state ({b!=0} + oldConditions, [x -> -c/b]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 1 ), CR_NEQ, _eliminationVar, sym, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, vars,
-                                               oConditions ) )
+                int isAdded = (*_currentState).addChild( coeffs.at( 1 ), CR_NEQ, _eliminationVar, sym, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, vars,
+                                               oConditions );
+                if( isAdded > 0 )
                 {
                     if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
@@ -851,7 +852,7 @@ EndSwitch:;
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
                 }
-                else if( constraint.relation() == CR_EQ )
+                else if( isAdded < 0 && constraint.relation() == CR_EQ )
                 {
                     generatedTestCandidateBeingASolution = true;
                 }
@@ -862,12 +863,13 @@ EndSwitch:;
             {
                 ex radicand = ex( pow( coeffs.at( 1 ), 2 ) - 4 * coeffs.at( 2 ) * coeffs.at( 0 ) );
                 Constraint::normalize( radicand );
-
+                bool constraintHasZeros = false;
                 /*
                  * Create state ({a==0, b!=0} + oldConditions, [x -> -c/b]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_EQ, coeffs.at( 1 ), CR_NEQ, _eliminationVar, sym, -coeffs.at( 0 ), 0,
-                                               coeffs.at( 1 ), 0, subType, vars, oConditions ) )
+                int isAdded = (*_currentState).addChild( coeffs.at( 2 ), CR_EQ, coeffs.at( 1 ), CR_NEQ, _eliminationVar, sym, -coeffs.at( 0 ), 0,
+                                               coeffs.at( 1 ), 0, subType, vars, oConditions );
+                if( isAdded > 0 )
                 {
                     if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
@@ -884,13 +886,14 @@ EndSwitch:;
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
                 }
-                else
+                constraintHasZeros = isAdded >= 0;
 
                 /*
                  * Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, sym, -coeffs.at( 1 ), 1,
-                                               2 * coeffs.at( 2 ), radicand, subType, vars, oConditions ) )
+                isAdded = (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, sym, -coeffs.at( 1 ), 1,
+                                               2 * coeffs.at( 2 ), radicand, subType, vars, oConditions );
+                if( isAdded > 0 )
                 {
                     if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
@@ -907,12 +910,14 @@ EndSwitch:;
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
                 }
+                constraintHasZeros = isAdded >= 0;
 
                 /*
                  * Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, sym, -coeffs.at( 1 ), -1,
-                                               2 * coeffs.at( 2 ), radicand, subType , vars, oConditions ) )
+                isAdded = (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, sym, -coeffs.at( 1 ), -1,
+                                               2 * coeffs.at( 2 ), radicand, subType , vars, oConditions );
+                if( isAdded > 0 )
                 {
                     if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
@@ -929,8 +934,9 @@ EndSwitch:;
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
                 }
+                constraintHasZeros = isAdded >= 0;
 
-                if( numberOfAddedChildren == 0 && constraint.relation() == CR_EQ )
+                if( constraintHasZeros && constraint.relation() == CR_EQ )
                 {
                     generatedTestCandidateBeingASolution = true;
                 }
@@ -1474,7 +1480,7 @@ EndSwitch:;
     /**
      * Updates the infeasible subset.
      */
-    void VSModule::updateInfeasibleSubset()
+    void VSModule::updateInfeasibleSubset( bool _includeInconsistentTestCandidates )
     {
         #ifdef VS_INFEASIBLE_SUBSET_GENERATION
         /*
@@ -1483,7 +1489,7 @@ EndSwitch:;
         ConditionSetSet minCoverSets = ConditionSetSet();
         ConditionSetSetSet confSets  = ConditionSetSetSet();
         ConflictSets::iterator nullConfSet = mpStateTree->rConflictSets().find( NULL );
-        if( nullConfSet != mpStateTree->rConflictSets().end() )
+        if( nullConfSet != mpStateTree->rConflictSets().end() && !_includeInconsistentTestCandidates )
         {
             confSets.insert( nullConfSet->second.begin(), nullConfSet->second.end() );
         }
@@ -1794,6 +1800,7 @@ EndSwitch:;
             vec_set_const_pFormula origins = vec_set_const_pFormula();
             Formula* formula = new smtrat::Formula( iter->first );
             _formulaCondMap[formula] = iter->second;
+            addConstraintToInform( iter->first );
             addSubformulaToPassedFormula( formula, origins );
         }
         return changedPassedFormula;

@@ -135,7 +135,7 @@ namespace smtrat
             void insertDTsinRanking( vs::State* );
             bool eraseDTofRanking( vs::State& );
             void eraseDTsOfRanking( vs::State& );
-            void updateInfeasibleSubset();
+            void updateInfeasibleSubset( bool = false );
             std::vector<std::pair<std::string, std::pair<vs::Substitution_Type, GiNaC::ex> > > getSymbolicAssignment() const;
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
             bool adaptPassedFormula( const vs::State&, FormulaConditionMap&, bool = false );

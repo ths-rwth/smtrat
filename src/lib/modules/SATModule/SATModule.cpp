@@ -145,6 +145,7 @@ namespace smtrat
         conflict_budget( -1 ),
         propagation_budget( -1 ),
         asynch_interrupt( false ),
+        mChangedPassedFormula( false ),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
         mFormulaClauseMap(),
@@ -484,7 +485,6 @@ namespace smtrat
      */
     Lit SATModule::getLiteral( const Formula& _formula, const Formula* _origin, bool _polarity )
     {
-        assert( _formula.getType() != REALCONSTRAINT || _formula.constraint().relation() != CR_NEQ );
         switch( _formula.getType() )
         {
             case BOOL:
@@ -599,10 +599,8 @@ namespace smtrat
      * @return  true,   if the passed formula has been changed;
      *          false,  otherwise.
      */
-    bool SATModule::adaptPassedFormula()
+    void SATModule::adaptPassedFormula()
     {
-        bool changedPassedFormula = false;
-
         signed posInAssigns = 0;
         while( posInAssigns < mBooleanConstraintMap.size() )
         {
@@ -613,7 +611,7 @@ namespace smtrat
                 {
                     removeSubformulaFromPassedFormula( mBooleanConstraintMap[posInAssigns].position );
                     mBooleanConstraintMap[posInAssigns].position = mpPassedFormula->end();
-                    if( !changedPassedFormula ) changedPassedFormula = true;
+                    mChangedPassedFormula = true;
                 }
             }
             else if( mBooleanConstraintMap[posInAssigns].updateInfo > 0 )
@@ -631,12 +629,11 @@ namespace smtrat
                     assert( mpPassedFormula->last() != mpPassedFormula->end() );
                     mBooleanConstraintMap[posInAssigns].position = mpPassedFormula->last();
                 }
-                if( !changedPassedFormula ) changedPassedFormula = true;
+                mChangedPassedFormula = true;
             }
             mBooleanConstraintMap[posInAssigns].updateInfo = 0;
             ++posInAssigns;
         }
-        return changedPassedFormula;
     }
 
     //=================================================================================================
@@ -1036,8 +1033,8 @@ FindSecond:
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
                 // TODO: Do not call the theory solver on instances which have already been proved to be consistent.
                 //       (Happens if the Boolean assignment is extended by assignments to false only)
-
-                if( adaptPassedFormula() )
+                adaptPassedFormula();
+                if( mChangedPassedFormula )
                 {
                     #ifdef DEBUG_SATMODULE
                     madeTheoryCall = true;
@@ -1067,44 +1064,15 @@ FindSecond:
                     }
                     cout << "}" << endl;
                     #endif
+                    mChangedPassedFormula = false;
                     switch( runBackends() )
                     {
                         case True:
                         {
-                            #ifdef SAT_MODULE_THEORY_PROPAGATION
-                            /*
-                             * Theory propagation.
-                             */
                             learnt_clause.clear();
-                            vector<Module*>::const_iterator backend = usedBackends().begin();
-                            while( backend != usedBackends().end() )
-                            {
-                                /*
-                                 * Learn the deductions.
-                                 */
-                                (*backend)->updateDeductions();
-                                for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
-                                        deduction != (*backend)->deductions().end(); ++deduction )
-                                {
-                                    deductionsLearned = true;
-                                    #ifdef SMTRAT_DEVOPTION_Validation
-                                    if( validationSettings->logLemmata() )
-                                    {
-                                        Formula notLemma = Formula( NOT );
-                                        notLemma.addSubformula( new Formula( **deduction ) );
-                                        addAssumptionToCheck( notLemma, false, moduleName( (*backend)->type() ) + "_lemma" );
-                                        notLemma.pruneBack();
-                                    }
-                                    #endif
-                                    #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
-                                    cout << "Learned a theory deduction from a backend module!" << endl;
-                                    (*deduction)->print();
-                                    #endif
-                                    addFormula( *deduction, DEDUCTED_CLAUSE );
-                                }
-                                (*backend)->clearDeductions();
-                                ++backend;
-                            }
+                            #ifdef SAT_MODULE_THEORY_PROPAGATION
+                            //Theory propagation.
+                            deductionsLearned = processLemmas();
                             #endif
                             #ifdef DEBUG_SATMODULE
                             cout << "### Result: True!" << endl;
@@ -1179,11 +1147,25 @@ FindSecond:
                         }
                         case Unknown:
                         {
+                            #ifdef SAT_MODULE_THEORY_PROPAGATION
+                            //Theory propagation.
+                            deductionsLearned = processLemmas();
+                            if( !deductionsLearned )
+                            {
+                                #ifdef DEBUG_SATMODULE
+                                cout << "### Result: Unknown!" << endl;
+                                cout << "Warning! Unknown as answer in SAT solver." << endl;
+                                #endif
+                                return l_Undef;
+                            }
+                            #else
                             #ifdef DEBUG_SATMODULE
                             cout << "### Result: Unknown!" << endl;
                             cout << "Warning! Unknown as answer in SAT solver." << endl;
                             #endif
                             return l_Undef;
+                            #endif
+                            break;
                         }
                         default:
                         {
@@ -1607,6 +1589,7 @@ FindSecond:
             if( isDeduction )
             {
                 mBooleanConstraintMap[var( p )].formula->setDeducted( true );
+                mChangedPassedFormula = true;
             }
         }
         #endif
@@ -1803,6 +1786,44 @@ NextClause:
         simpDB_props   = clauses_literals + learnts_literals;    // (shouldn't depend on stats really, but it will do for now)
 
         return true;
+    }
+
+    /**
+     *
+     */
+    bool SATModule::processLemmas()
+    {
+        bool deductionsLearned = false;
+        vector<Module*>::const_iterator backend = usedBackends().begin();
+        while( backend != usedBackends().end() )
+        {
+            /*
+                * Learn the deductions.
+                */
+            (*backend)->updateDeductions();
+            for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
+                    deduction != (*backend)->deductions().end(); ++deduction )
+            {
+                deductionsLearned = true;
+                #ifdef SMTRAT_DEVOPTION_Validation
+                if( validationSettings->logLemmata() )
+                {
+                    Formula notLemma = Formula( NOT );
+                    notLemma.addSubformula( new Formula( **deduction ) );
+                    addAssumptionToCheck( notLemma, false, moduleName( (*backend)->type() ) + "_lemma" );
+                    notLemma.pruneBack();
+                }
+                #endif
+                #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
+                cout << "Learned a theory deduction from a backend module!" << endl;
+                (*deduction)->print();
+                #endif
+                addFormula( *deduction, DEDUCTED_CLAUSE );
+            }
+            (*backend)->clearDeductions();
+            ++backend;
+        }
+        return deductionsLearned;
     }
 
     /**
@@ -2020,7 +2041,7 @@ NextClause:
         _out << _init << " BooleanVarMap" << endl;
         for( BooleanVarMap::const_iterator clPair = mBooleanVarMap.begin(); clPair != mBooleanVarMap.end(); ++clPair )
         {
-            _out << _init << "    " << clPair->first << "  ->  " << clPair->second + 1 << endl;
+            _out << _init << "    " << clPair->first << "  ->  " << clPair->second << endl;
         }
     }
 

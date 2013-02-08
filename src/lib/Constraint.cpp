@@ -128,10 +128,10 @@ namespace smtrat
         }
     }
 
-    Constraint::Constraint( const Constraint& _constraint ):
+    Constraint::Constraint( const Constraint& _constraint, bool _rehash ):
         mID( _constraint.id() ),
-        mFirstHash( _constraint.firstHash() ),
-        mSecondHash( _constraint.secondHash() ),
+        mFirstHash( _rehash ? _constraint.relation() : _constraint.firstHash() ),
+        mSecondHash( _rehash ? _constraint.lhs().gethash() : _constraint.secondHash() ),
         mIsNeverPositive( _constraint.mIsNeverPositive ),
         mIsNeverNegative( _constraint.mIsNeverNegative ),
         mIsNeverZero( _constraint.mIsNeverZero ),
@@ -910,7 +910,7 @@ namespace smtrat
         }
         if( anythingChanged )
         {
-            Constraint* constraint = new Constraint( *this );
+            Constraint* constraint = new Constraint( *this, true );
             return constraint;
         }
         else

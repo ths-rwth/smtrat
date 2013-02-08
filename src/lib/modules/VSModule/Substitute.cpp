@@ -1063,23 +1063,25 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << "simplify" << endl;
         #endif
-//        unsigned toSimpSize = _toSimplify.size();
-////        print( _toSimplify );
-//        for( unsigned pos = 0; pos < toSimpSize; )
-//        {
-//            if( !_toSimplify.begin()->empty() )
-//            {
-//                DisjunctionOfConstraintConjunctions temp = splitProducts( _toSimplify[pos] );
-//                _toSimplify.erase( _toSimplify.begin() );
-//                _toSimplify.insert( _toSimplify.end(), temp.begin(), temp.end() );
-//                --toSimpSize;
-//            }
-//            else
-//            {
-//                ++pos;
-//            }
-//        }
+        #ifdef CONSTRAINT_FACTORIZATION
+        unsigned toSimpSize = _toSimplify.size();
 //        print( _toSimplify );
+        for( unsigned pos = 0; pos < toSimpSize; )
+        {
+            if( !_toSimplify.begin()->empty() )
+            {
+                DisjunctionOfConstraintConjunctions temp = splitProducts( _toSimplify[pos] );
+                _toSimplify.erase( _toSimplify.begin() );
+                _toSimplify.insert( _toSimplify.end(), temp.begin(), temp.end() );
+                --toSimpSize;
+            }
+            else
+            {
+                ++pos;
+            }
+        }
+//        print( _toSimplify );
+        #endif
         bool                                          containsEmptyDisjunction = false;
         DisjunctionOfConstraintConjunctions::iterator conj                     = _toSimplify.begin();
         while( conj != _toSimplify.end() )
