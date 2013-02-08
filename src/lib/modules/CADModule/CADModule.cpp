@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-02-07
+ * @version 2013-02-08
  */
 
 //#define MODULE_VERBOSE
@@ -117,6 +117,7 @@ namespace smtrat
         #endif
 
         setting.trimVariables = false; // maintains the dimension important for the constraint checking
+        setting.autoSeparateEquations = false; // <- @TODO: find a correct implementation of the MIS for the only-strict or only-equations optimizations
         mCAD.alterSetting( setting );
     }
 
@@ -325,7 +326,7 @@ namespace smtrat
         mConstraints.erase( mConstraints.begin() + constraintIndex );    // erase the (constraintIt->second)-th element
         // update the constraint / index map, i.e., decrement all indices above the removed one
         updateConstraintMap( constraintIndex, true );
-        
+
         // remove the corresponding polynomial if it is not occurring in another constraint
         bool doDelete = true;
         for( vector<GiNaCRA::Constraint>::const_reverse_iterator c = mConstraints.rbegin(); c != mConstraints.rend(); ++c )
