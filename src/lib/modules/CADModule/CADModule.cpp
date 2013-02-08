@@ -60,7 +60,7 @@ using namespace std;
 //#define SMTRAT_CAD_GENERIC_SETTING
 //#define SMTRAT_CAD_DISABLE_SMT
 #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
-//#define SMTRAT_CAD_DISABLE_MIS
+#define SMTRAT_CAD_DISABLE_MIS
 
 #ifdef SMTRAT_CAD_DISABLE_SMT
     #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
@@ -117,7 +117,7 @@ namespace smtrat
         #endif
 
         setting.trimVariables = false; // maintains the dimension important for the constraint checking
-        setting.autoSeparateEquations = false; // <- @TODO: find a correct implementation of the MIS for the only-strict or only-equations optimizations
+//        setting.autoSeparateEquations = false; // <- @TODO: find a correct implementation of the MIS for the only-strict or only-equations optimizations
         mCAD.alterSetting( setting );
     }
 
