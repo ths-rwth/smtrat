@@ -936,7 +936,7 @@ EndSwitch:;
                 }
                 constraintHasZeros = isAdded >= 0;
 
-                if( constraintHasZeros && constraint.relation() == CR_EQ )
+                if( !constraintHasZeros && constraint.relation() == CR_EQ )
                 {
                     generatedTestCandidateBeingASolution = true;
                 }

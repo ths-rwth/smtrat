@@ -405,6 +405,7 @@ namespace smtrat
                             if( learnedBound.newBound != NULL )
                             {
                                 const Constraint* newConstraint = learnedBound.newBound->pAsConstraint();
+                                addConstraintToInform( newConstraint );
                                 mLinearConstraints.insert( newConstraint );
                                 vector< const Bound* >* boundVector = new vector< const Bound* >();
                                 boundVector->push_back( learnedBound.newBound );
