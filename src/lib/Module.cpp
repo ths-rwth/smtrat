@@ -157,13 +157,13 @@ namespace smtrat
 
     /**
      * This is an alternative method for removeSubformula, in which the passed subformula is given explicitely.
-     * Notice that this is generally less save then using remove, 
-     * but in case the module is simple and manages passing and receiving itself, it may be beneficial to use this method. 
+     * Notice that this is generally less save then using remove,
+     * but in case the module is simple and manages passing and receiving itself, it may be beneficial to use this method.
      * @param _receivedSubformula The received subformula which is to be removed
      * @param _passed The subformula in the passed formula which originates from this received subformula.
      */
     void Module::clearReceivedFormula(Formula::const_iterator _receivedSubformula, Formula::iterator _passed )
-    { 
+    {
         if( _passed != mpPassedFormula->end() )
         {
             removeSubformulaFromPassedFormula( _passed, false, true );
@@ -229,7 +229,7 @@ namespace smtrat
                 /*
                  * If the received formula is in the set of origins, erase it.
                  */
-                
+
                 if( formulaOrigin->find( *_receivedSubformula ) != formulaOrigin->end() )
                 {
                     // Erase the changed set.
@@ -549,7 +549,7 @@ namespace smtrat
             {
                 vec_set_const_pFormula formOrigins = vec_set_const_pFormula();
                 getOrigins( *cons, formOrigins );
-                
+
 
                 /*
                  * Find the smallest set of origins.
