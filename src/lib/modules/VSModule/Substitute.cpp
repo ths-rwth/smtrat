@@ -104,7 +104,6 @@ namespace vs
                 cout << "Error in substitute: unexpected type of substitution." << endl;
             }
         }
-        simplify( _substitutionResults );
         #ifdef VS_DEBUG_SUBSTITUTION
         print( _substitutionResults );
         #endif
@@ -718,6 +717,7 @@ namespace vs
                     default:
                         assert( false );
                 }
+                simplify( _substitutionResults );
             }
             else
             {
@@ -887,6 +887,7 @@ namespace vs
                 {
                     substituteInfLessGreater( *_constraint, _substitution, _substitutionResults );
                 }
+                simplify( _substitutionResults );
             }
             else
             {
@@ -1049,736 +1050,6 @@ namespace vs
         }
     }
 
-    #ifdef VS_CUBIC_CASE
-
-    /**
-     * Applies the given substitution to the given constraint. Note, that the test candidates
-     * for which the variable in the substitution gets substituted are all possible roots
-     * of a cubic polynomial.
-     *
-     * @param _constraint           The constraint to substitute in.
-     * @param _substitution         The substitution to apply.
-     * @param _substitutionResults  The vector, in which to store the results of this substitution.
-     */
-    void substituteCubicRoot( const smtrat::Constraint& _constraint,
-                              const Substitution& _substitution,
-                              DisjunctionOfConstraintConjunctions& _substitutionResults )
-    {
-        #ifdef VS_DEBUG_METHODS
-        cout << __func__ << endl;
-        #endif
-        symbol sym;
-        if( _constraint.variable( _substitution.variable(), sym ) )
-        {
-            /*
-             * Get the variables of the constraint merged with those of the substitution.
-             */
-            symtab variables = symtab();
-            for( symtab::const_iterator var = _constraint.variables().begin(); var != _constraint.variables().end(); ++var )
-            {
-                variables.insert( *var );
-            }
-            for( symtab::const_iterator var = _substitution.termVariables().begin(); var != _substitution.termVariables().end(); ++var )
-            {
-                variables.insert( *var );
-            }
-
-            /*
-             * Get the functions f, which provides the test candidates and the function
-             * g in which to substitute in.
-             */
-            const ex& f = _substitution.term().expression();
-            ex g = _constraint.lhs();
-
-            if( g.degree( ex( sym ) ) > 2 )
-            {
-                signed degreeDifference = g.degree( ex( sym ) ) - f.degree( ex( sym ) );
-                if( fmod( degreeDifference, 2.0 ) == 0.0 )
-                {
-                    degreeDifference += 2;
-                }
-                else
-                {
-                    ++degreeDifference;
-                }
-                ex dividend = pow( f.lcoeff( ex( sym ) ), degreeDifference ) * g;
-                ex   quotient;
-                bool multivariatePolynomDivisionSuccessful = divide( dividend, f, quotient );
-                assert( multivariatePolynomDivisionSuccessful );
-                ex g = dividend - f * quotient;
-                smtrat::Constraint::normalize( g );
-                assert( g.degree( ex( sym ) ) < 3 );
-            }
-
-            if( g.degree( ex( sym ) ) == 1 )
-            {
-                substituteCubicRootInLinear( _constraint, _substitution, f, g, _substitutionResults, sym );
-            }
-            else
-            {
-                assert( g.degree( ex( sym ) ) == 2 );
-
-                substituteCubicRootInQuadratic( _constraint, _substitution, f, g, _substitutionResults, sym );
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    void substituteCubicRootInLinear( const smtrat::Constraint& _constraint,
-                                      const Substitution& _substitution,
-                                      const ex& _f,
-                                      const ex& _g,
-                                      DisjunctionOfConstraintConjunctions& _substitutionResults,
-                                      const symbol& _symbol )
-    {
-        bool plusEpsilon     = _substitution.type() == ST_SINGLE_CUBIC_ROOT_PLUS_EPS || _substitution.type() == ST_TRIPLE_CUBIC_ROOT_PLUS_EPS;
-        bool singleCubicRoot = _substitution.type() == ST_SINGLE_CUBIC_ROOT || _substitution.type() == ST_SINGLE_CUBIC_ROOT_PLUS_EPS;
-
-        /*
-         * Calculate the zero of g.
-         */
-        vector<ex> coeffs = vector<ex>();
-        for( int i = 0; i <= _g.degree( _variable ); ++i )
-        {
-            coeffs.push_back( ex( _g.coeff( _variable, i ) ) );
-        }
-
-        /*
-         * Leading coefficient is not zero.
-         */
-        SqrtEx zeroOfG            = SqrtEx( coeffs.at( 0 ), 0, coeffs.at( 1 ), 0 );
-        Substitution subByZeroOfG = Substitution( _substitution.variable(), zeroOfG, ST_NORMAL, _substitution.originalConditions() );
-
-        _substitutionResults.push_back( TS_ConstraintConjunction() );
-        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( coeffs.at( 1 ), smtrat::CR_NEQ ) );
-        if( _substitutionResults.back().back()->isConsistent() == 1 )
-        {
-            if( _constraint.relation() == smtrat::CR_EQ || _constraint.relation() == smtrat::CR_GEQ || _constraint.relation() == smtrat::CR_LEQ )
-            {
-                /*
-                 * Add the result of f(x)[beta/x]=0 to _substitutionResults, where beta is the zero of the constraint to substitute in.
-                 */
-                smtrat::Constraint constraint = smtrat::Constraint( _f, smtrat::CR_EQ );
-                substituteNormal( constraint, subByZeroOfG, _substitutionResults );
-            }
-
-            if( _constraint.relation() == smtrat::CR_GEQ || _constraint.relation() == smtrat::CR_GREATER || _constraint.relation() == smtrat::CR_NEQ )
-            {
-                if( singleCubicRoot )
-                {
-                    /*
-                     * Add the result of f(x)[beta/x]<0 to _substitutionResults, where beta is the zero of the constraint to substitute in.
-                     */
-                    smtrat::Constraint constraint = smtrat::Constraint( _f, smtrat::CR_LESS );
-                    substituteNormal( constraint, subByZeroOfG, _substitutionResults );
-                }
-                else
-                {
-                    _substitutionResults.push_back( TS_ConstraintConjunction() );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().denominator(),
-                                                                                   smtrat::CR_NEQ ) );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().radicand(),
-                                                                                   smtrat::CR_GEQ ) );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().denominator(),
-                                                                                   smtrat::CR_NEQ ) );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().radicand(),
-                                                                                   smtrat::CR_GEQ ) );
-
-                    Substitution_Type subType = ST_NORMAL;
-                    if( plusEpsilon )
-                    {
-                        subType = ST_PLUS_EPSILON;
-                    }
-                    Substitution
-                    subByFirstZeroOfFPrime = Substitution( _substitution.variable(), _substitution.firstZeroOfDerivOfOCond(), subType,
-                                                           _substitution.originalConditions() );
-                    Substitution
-                    subBySecondZeroOfFPrime = Substitution( _substitution.variable(), _substitution.secondZeroOfDerivOfOCond(), subType,
-                                                            _substitution.originalConditions() );
-                    substituteTripleCubicRootInLinear( _f,
-                                                       _g,
-                                                       false,
-                                                       subByZeroOfG,
-                                                       subByFirstZeroOfFPrime,
-                                                       subBySecondZeroOfFPrime,
-                                                       _substitutionResults,
-                                                       _variables );
-                }
-            }
-
-            if( _constraint.relation() == smtrat::CR_LEQ || _constraint.relation() == smtrat::CR_LESS || _constraint.relation() == smtrat::CR_NEQ )
-            {
-                if( singleCubicRoot )
-                {
-                    /*
-                     * Add the result of f(x)[beta/x]<0 to _substitutionResults, where beta is the zero of the constraint to substitute in.
-                     */
-                    smtrat::Constraint constraint = smtrat::Constraint( _f, smtrat::CR_GREATER );
-                    substituteNormal( constraint, subByZeroOfG, _substitutionResults );
-                }
-                else
-                {
-                    _substitutionResults.push_back( TS_ConstraintConjunction() );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().denominator(),
-                                                                                   smtrat::CR_NEQ ) );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().radicand(),
-                                                                                   smtrat::CR_GEQ ) );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().denominator(),
-                                                                                   smtrat::CR_NEQ ) );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().radicand(),
-                                                                                   smtrat::CR_GEQ ) );
-
-                    Substitution_Type subType = ST_NORMAL;
-                    if( plusEpsilon )
-                    {
-                        subType = ST_PLUS_EPSILON;
-                    }
-                    Substitution
-                    subByFirstZeroOfFPrime = Substitution( _substitution.variable(), _substitution.firstZeroOfDerivOfOCond(), subType,
-                                                           _substitution.originalConditions() );
-                    Substitution
-                    subBySecondZeroOfFPrime = Substitution( _substitution.variable(), _substitution.secondZeroOfDerivOfOCond(), subType,
-                                                            _substitution.originalConditions() );
-                    substituteTripleCubicRootInLinear( _f,
-                                                       _g,
-                                                       true,
-                                                       subByZeroOfG,
-                                                       subByFirstZeroOfFPrime,
-                                                       subBySecondZeroOfFPrime,
-                                                       _substitutionResults,
-                                                       _variables );
-                }
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    void substituteCubicRootInQuadratic( const smtrat::Constraint& _constraint,
-                                         const Substitution& _substitution,
-                                         const ex& _f,
-                                         const ex& _g,
-                                         DisjunctionOfConstraintConjunctions& _substitutionResults,
-                                         const ex& _variable )
-    {
-        bool plusEpsilon     = _substitution.type() == ST_SINGLE_CUBIC_ROOT_PLUS_EPS || _substitution.type() == ST_TRIPLE_CUBIC_ROOT_PLUS_EPS;
-        bool singleCubicRoot = _substitution.type() == ST_SINGLE_CUBIC_ROOT || _substitution.type() == ST_SINGLE_CUBIC_ROOT_PLUS_EPS;
-
-        /*
-         * Calculate the zero of g.
-         */
-        vector<ex> coeffs = vector<ex>();
-        for( int i = 0; i <= _g.degree( _variable ); ++i )
-        {
-            coeffs.push_back( ex( _g.coeff( _variable, i ) ) );
-        }
-        ex radicand = ex( pow( coeffs.at( 1 ), 2 ) - 4 * coeffs.at( 2 ) * coeffs.at( 0 ) );
-        smtrat::Constraint::normalize( radicand );
-
-        /*
-         * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-         *
-         * Leading coefficient is not zero.
-         */
-        SqrtEx firstZeroOfG = SqrtEx( -coeffs.at( 1 ), 1, 2 * coeffs.at( 2 ), radicand );
-        Substitution
-        subByFirstZeroOfG   = Substitution( _substitution.variable(), firstZeroOfG, ST_NORMAL, _substitution.originalConditions() );
-        SqrtEx secondZeroOfG = SqrtEx( -coeffs.at( 1 ), -1, 2 * coeffs.at( 2 ), radicand );
-        Substitution
-        subBySecondZeroOfG   = Substitution( _substitution.variable(), secondZeroOfG, ST_NORMAL, _substitution.originalConditions() );
-
-        _substitutionResults.push_back( TS_ConstraintConjunction() );
-        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( coeffs.at( 2 ), smtrat::CR_NEQ ) );
-        if( _substitutionResults.back().back()->isConsistent() == 1 )
-        {
-            _substitutionResults.back().push_back( smtrat::Formula::newConstraint( radicand, smtrat::CR_GEQ ) );
-            if( _substitutionResults.back().back()->isConsistent() == 1 )
-            {
-                if( _constraint.relation() == smtrat::CR_EQ || _constraint.relation() == smtrat::CR_GEQ || _constraint.relation() == smtrat::CR_LEQ )
-                {
-                    /*
-                     * Add the result of f(x)[beta_1/x]=0 or f(x)[beta_3/x]=0 to _substitutionResults,
-                     * where beta_1 and beta_2  is the zero of the constraint to substitute in.
-                     */
-                    smtrat::Constraint constraint = smtrat::Constraint( _f, smtrat::CR_EQ );
-
-                    substituteNormal( constraint, subByFirstZeroOfG, _substitutionResults );
-                    substituteNormal( constraint, subBySecondZeroOfG, _substitutionResults );
-                }
-
-                if( _constraint.relation() == smtrat::CR_GEQ || _constraint.relation() == smtrat::CR_GREATER
-                        || _constraint.relation() == smtrat::CR_NEQ )
-                {
-                    if( singleCubicRoot )
-                    {
-                        substituteSingleCubicRootInQuadraticGreaterZero( _f,
-                                                                         subByFirstZeroOfG,
-                                                                         subBySecondZeroOfG,
-                                                                         _substitutionResults,
-                                                                         _variables );
-                    }
-                    else
-                    {
-                        _substitutionResults.push_back( TS_ConstraintConjunction() );
-                        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().denominator(),
-                                                                                       smtrat::CR_NEQ ) );
-                        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().radicand(),
-                                                                                       smtrat::CR_GEQ ) );
-                        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().denominator(),
-                                                                                       smtrat::CR_NEQ ) );
-                        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().radicand(),
-                                                                                       smtrat::CR_GEQ ) );
-
-                        Substitution_Type subType = ST_NORMAL;
-                        if( plusEpsilon )
-                        {
-                            subType = ST_PLUS_EPSILON;
-                        }
-                        Substitution
-                        subByFirstZeroOfFPrime = Substitution( _substitution.variable(), _substitution.firstZeroOfDerivOfOCond(), subType,
-                                                               _variables, _substitution.originalConditions() );
-                        Substitution
-                        subBySecondZeroOfFPrime = Substitution( _substitution.variable(), _substitution.secondZeroOfDerivOfOCond(), subType,
-                                                                _variables, _substitution.originalConditions() );
-                        substituteTripleCubicRootInQuadratic( _f,
-                                                              _g,
-                                                              false,
-                                                              subByFirstZeroOfG,
-                                                              subBySecondZeroOfG,
-                                                              subByFirstZeroOfFPrime,
-                                                              subBySecondZeroOfFPrime,
-                                                              _substitutionResults,
-                                                              _variables );
-                    }
-                }
-
-                if( _constraint.relation() == smtrat::CR_LEQ || _constraint.relation() == smtrat::CR_LESS
-                        || _constraint.relation() == smtrat::CR_NEQ )
-                {
-                    if( singleCubicRoot )
-                    {
-                        substituteSingleCubicRootInQuadraticLessZero( _f, subByFirstZeroOfG, subBySecondZeroOfG, _substitutionResults );
-                    }
-                    else
-                    {
-                        _substitutionResults.push_back( TS_ConstraintConjunction() );
-                        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().denominator(),
-                                                                                       smtrat::CR_NEQ ) );
-                        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.firstZeroOfDerivOfOCond().radicand(),
-                                                                                       smtrat::CR_GEQ ) );
-                        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().denominator(),
-                                                                                       smtrat::CR_NEQ ) );
-                        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _substitution.secondZeroOfDerivOfOCond().radicand(),
-                                                                                       smtrat::CR_GEQ ) );
-
-                        Substitution_Type subType = ST_NORMAL;
-                        if( plusEpsilon )
-                        {
-                            subType = ST_PLUS_EPSILON;
-                        }
-                        Substitution
-                        subByFirstZeroOfFPrime = Substitution( _substitution.variable(), _substitution.firstZeroOfDerivOfOCond(), subType,
-                                                               _variables, _substitution.originalConditions() );
-                        Substitution
-                        subBySecondZeroOfFPrime = Substitution( _substitution.variable(), _substitution.secondZeroOfDerivOfOCond(), subType,
-                                                                _variables, _substitution.originalConditions() );
-                        substituteTripleCubicRootInQuadratic( _f,
-                                                              _g,
-                                                              true,
-                                                              subByFirstZeroOfG,
-                                                              subBySecondZeroOfG,
-                                                              subByFirstZeroOfFPrime,
-                                                              subBySecondZeroOfFPrime,
-                                                              _substitutionResults,
-                                                              _variables );
-                    }
-                }
-            }
-        }
-
-        /*
-         * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-         *
-         * Leading coefficient is zero.
-         */
-
-        // TODO: The problem is, that here we need a case distinction and this cannot be expressed in _substitutionResult.
-        //       The obvious but very expensiv approach would be to copy the state.
-    }
-
-    /**
-     * @param _f                    The cubic polynomial, which provides the test candidates (zeros).
-     * @param _subByFirstZeroOfG    The substitution mapping the variable to substitute to the first zero of
-     *                              the function of the constraint to substitute in.
-     * @param _subBySecondZeroOfG   The substitution mapping the variable to substitute to the second zero of
-     *                              the function of the constraint to substitute in.
-     * @param _substitutionResults  The vector, in which to store the results of this substitution.
-     * @param _variables            The variables, which the substitution term and the condition to
-     *                              substitute in contain.
-     */
-    void substituteSingleCubicRootInQuadraticGreaterZero( const ex& _f,
-                                                          const Substitution& _subByFirstZeroOfG,
-                                                          const Substitution& _subBySecondZeroOfG,
-                                                          DisjunctionOfConstraintConjunctions& _substitutionResults )
-    {
-        #ifdef VS_DEBUG_METHODS
-        cout << __func__ << endl;
-        #endif
-
-        smtrat::Constraint constraintOne = smtrat::Constraint( _f, smtrat::CR_LESS );
-        smtrat::Constraint constraintTwo = smtrat::Constraint( _f, smtrat::CR_GREATER );
-
-        /*
-         * Create a vector to store the results of each single substitution.
-         */
-        vector<DisjunctionOfConstraintConjunctions> substitutionResultsVector;
-        substitutionResultsVector = vector<DisjunctionOfConstraintConjunctions>();
-
-        /*
-         * Apply f(x)[beta_1/x]<0, where beta_1 is the first zero in x of the constraint to substitute in.
-         */
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteNormal( constraintOne, _subByFirstZeroOfG, substitutionResultsVector.back() );
-
-        /*
-         * Apply f(x)[beta_2/x]<0, where beta_1 is the first zero in x of the constraint to substitute in.
-         */
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteNormal( constraintOne, _subBySecondZeroOfG, substitutionResultsVector.back() );
-
-        /*
-         * Add f(x)[beta_1/x]<0 and f(x)[beta_2/x]<0 in DNF to the _substitutionResults vector.
-         */
-        combine( substitutionResultsVector, _substitutionResults );
-
-        /*
-         * Clear the substitutions results vector.
-         */
-        while( !substitutionResultsVector.empty() )
-        {
-            clear( substitutionResultsVector.back() );
-            substitutionResultsVector.pop_back();
-        }
-
-        /*
-         * Apply f(x)[beta_1/x]>0, where beta_1 is the first zero in x of the constraint to substitute in.
-         */
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteNormal( constraintTwo, _subByFirstZeroOfG, substitutionResultsVector.back() );
-
-        /*
-         * Apply f(x)[beta_2/x]>0, where beta_1 is the first zero in x of the constraint to substitute in.
-         */
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteNormal( constraintTwo, _subBySecondZeroOfG, substitutionResultsVector.back() );
-
-        /*
-         * Add f(x)[beta_1/x]>0 and f(x)[beta_2/x]>0 in DNF to the _substitutionResults vector.
-         */
-        combine( substitutionResultsVector, _substitutionResults );
-
-        /*
-         * Clear the substitutions results vector.
-         */
-        while( !substitutionResultsVector.empty() )
-        {
-            clear( substitutionResultsVector.back() );
-            substitutionResultsVector.pop_back();
-        }
-    }
-
-    /**
-     * @param _f                    The cubic polynomial, which provides the test candidates (zeros).
-     * @param _subByFirstZeroOfG    The substitution mapping the variable to substitute to the first zero of
-     *                              the function of the constraint to substitute in.
-     * @param _subBySecondZeroOfG   The substitution mapping the variable to substitute to the second zero of
-     *                              the function of the constraint to substitute in.
-     * @param _substitutionResults  The vector, in which to store the results of this substitution.
-     * @param _variables            The variables, which the substitution term and the condition to
-     *                              substitute in contain.
-     */
-    void substituteSingleCubicRootInQuadraticLessZero( const ex& _f,
-                                                       const Substitution& _subByFirstZeroOfG,
-                                                       const Substitution& _subBySecondZeroOfG,
-                                                       DisjunctionOfConstraintConjunctions& _substitutionResults )
-    {
-        #ifdef VS_DEBUG_METHODS
-        cout << __func__ << endl;
-        #endif
-
-        smtrat::Constraint constraintOne = smtrat::Constraint( _f, smtrat::CR_LESS );
-        smtrat::Constraint constraintTwo = smtrat::Constraint( _f, smtrat::CR_GREATER );
-
-        /*
-         * Create a vector to store the results of each single substitution.
-         */
-        vector<DisjunctionOfConstraintConjunctions> substitutionResultsVector;
-        substitutionResultsVector = vector<DisjunctionOfConstraintConjunctions>();
-
-        /*
-         * Apply f(x)[beta_1/x]>0, where beta_1 is the first zero in x of the constraint to substitute in.
-         */
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteNormal( constraintTwo, _subByFirstZeroOfG, substitutionResultsVector.back() );
-
-        /*
-         * Apply f(x)[beta_2/x]<0, where beta_1 is the first zero in x of the constraint to substitute in.
-         */
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteNormal( constraintOne, _subBySecondZeroOfG, substitutionResultsVector.back() );
-
-        /*
-         * Add f(x)[beta_1/x]>0 and f(x)[beta_2/x]<0 in DNF to the _substitutionResults vector.
-         */
-        combine( substitutionResultsVector, _substitutionResults );
-
-        /*
-         * Clear the substitutions results vector.
-         */
-        while( !substitutionResultsVector.empty() )
-        {
-            clear( substitutionResultsVector.back() );
-            substitutionResultsVector.pop_back();
-        }
-
-        /*
-         * Apply f(x)[beta_1/x]<0, where beta_1 is the first zero in x of the constraint to substitute in.
-         */
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteNormal( constraintOne, _subByFirstZeroOfG, substitutionResultsVector.back() );
-
-        /*
-         * Apply f(x)[beta_2/x]>0, where beta_1 is the first zero in x of the constraint to substitute in.
-         */
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteNormal( constraintTwo, _subBySecondZeroOfG, substitutionResultsVector.back() );
-
-        /*
-         * Add f(x)[beta_1/x]<0 and f(x)[beta_2/x]>0 in DNF to the _substitutionResults vector.
-         */
-        combine( substitutionResultsVector, _substitutionResults );
-
-        /*
-         * Clear the substitutions results vector.
-         */
-        while( !substitutionResultsVector.empty() )
-        {
-            clear( substitutionResultsVector.back() );
-            substitutionResultsVector.pop_back();
-        }
-    }
-
-    /**
-     * @param _f                    The cubic polynomial, which provides the test candidates (zeros).
-     * @param _g                    The linear polynomial, which correponds to the lefthandside of the
-     *                              constraint to substitute in.
-     * @param _relationLess         True, if the relation of the constraint to substitute in is 'less than';
-     *                              False, otherwise. -> The relation is 'greater than'.
-     * @param _subByZeroOfG         The substitution mapping the variable to substitute to the zero of
-     *                              the function of the constraint to substitute in.
-     * @param _subByFirstZeroOfF    The substitution mapping the variable to substitute to the first zero of
-     *                              the derivative of the cubic function providing the test candidates.
-     * @param _subBySecondZeroOfF   The substitution mapping the variable to substitute to the second zero of
-     *                              the derivative of the cubic function providing the test candidates.
-     * @param _substitutionResults  The vector, in which to store the results of this substitution.
-     * @param _variables            The variables, which the substitution term and the condition to
-     *                              substitute in contain.
-     */
-    void substituteTripleCubicRootInLinear( const ex& _f,
-                                            const ex& _g,
-                                            const bool _relationLess,
-                                            const Substitution& _subByZeroOfG,
-                                            const Substitution& _subByFirstZeroOfFPrime,
-                                            const Substitution& _subBySecondZeroOfFPrime,
-                                            DisjunctionOfConstraintConjunctions& _substitutionResults )
-    {
-        #ifdef VS_DEBUG_METHODS
-        cout << __func__ << endl;
-        #endif
-        smtrat::Constraint_Relation relationA = smtrat::CR_LESS;
-        smtrat::Constraint_Relation relationB = smtrat::CR_GREATER;
-        if( _relationLess )
-        {
-            relationA = smtrat::CR_GREATER;
-            relationB = smtrat::CR_LESS;
-        }
-
-        smtrat::Constraint constraintOne   = smtrat::Constraint( _f, relationA );
-        smtrat::Constraint constraintTwo   = smtrat::Constraint( _f, relationB );
-        smtrat::Constraint constraintThree = smtrat::Constraint( _g, relationB );
-
-        /*
-         * Add the result of f(x)[beta/x] </> 0 to the _substitutionResults vector, where beta is the
-         * zero in x of the constraint to substitute in.
-         */
-        substituteNormal( constraintOne, _subByZeroOfG, _substitutionResults );
-
-        /*
-         * Create a vector to store the results of each single substitution.
-         */
-        vector<DisjunctionOfConstraintConjunctions> substitutionResultsVector;
-        substitutionResultsVector = vector<DisjunctionOfConstraintConjunctions>();
-
-        /*
-         * Apply f(x)[beta/x] >\< 0, where beta is the zero in x of the constraint to substitute in.
-         */
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteNormal( constraintTwo, _subByZeroOfG, substitutionResultsVector.back() );
-
-        /*
-         * Apply g(x)[alpha_1/x] >\< 0, where alpha_1 is the first zero in x of the derivative
-         * of the polynomial providing the test candidates.
-         */
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteNormal( constraintThree, _subByFirstZeroOfFPrime, substitutionResultsVector.back() );
-
-        /*
-         * Add f(x)[beta/x] >\< 0 and g(x)[alpha_1/x] >\< 0 in DNF to the _substitutionResults vector.
-         */
-        combine( substitutionResultsVector, _substitutionResults );
-
-        /*
-         * Clear the substitutions results vector.
-         */
-        while( !substitutionResultsVector.empty() )
-        {
-            clear( substitutionResultsVector.back() );
-            substitutionResultsVector.pop_back();
-        }
-
-        /*
-         * Apply f(x)[beta/x] >\< 0, where beta is the zero in x of the constraint to substitute in.
-         */
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteNormal( constraintTwo, _subByZeroOfG, substitutionResultsVector.back() );
-
-        /*
-         * Apply g(x)[alpha_1/x] >\< 0, where alpha_1 is the first zero in x of the derivative
-         * of the polynomial providing the test candidates.
-         */
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteNormal( constraintThree, _subBySecondZeroOfFPrime, substitutionResultsVector.back() );
-
-        /*
-         * Add f(x)[beta/x] >\< 0 and g(x)[alpha_2/x] >\< 0 in DNF to the _substitutionResults vector.
-         */
-        combine( substitutionResultsVector, _substitutionResults );
-
-        /*
-         * Clear the substitutions results vector.
-         */
-        while( !substitutionResultsVector.empty() )
-        {
-            clear( substitutionResultsVector.back() );
-            substitutionResultsVector.pop_back();
-        }
-    }
-
-    /**
-     * @param _f                    The cubic polynomial, which provides the test candidates (zeros).
-     * @param _g                    The quadratic polynomial, which correponds to the lefthandside of the
-     *                              constraint to substitute in.
-     * @param _relationLess         True, if the relation of the constraint to substitute in is 'less than';
-     *                              False, otherwise. -> The relation is 'greater than'.
-     * @param _subByFirstZeroOfG    The substitution mapping the variable to substitute to the first zero of
-     *                              the function of the constraint to substitute in.
-     * @param _subBySecondZeroOfG   The substitution mapping the variable to substitute to the second zero of
-     *                              the function of the constraint to substitute in.
-     * @param _subByFirstZeroOfF    The substitution mapping the variable to substitute to the first zero of
-     *                              the derivative of the cubic function providing the test candidates.
-     * @param _subBySecondZeroOfF   The substitution mapping the variable to substitute to the second zero of
-     *                              the derivative of the cubic function providing the test candidates.
-     * @param _substitutionResults  The vector, in which to store the results of this substitution.
-     * @param _variables            The variables, which the substitution term and the condition to
-     *                              substitute in contain.
-     */
-    void substituteTripleCubicRootInQuadratic( const ex& _f,
-                                               const ex& _g,
-                                               const bool _relationLess,
-                                               const Substitution& _subByFirstZeroOfG,
-                                               const Substitution& _subBySecondZeroOfG,
-                                               const Substitution& _subByFirstZeroOfFPrime,
-                                               const Substitution& _subBySecondZeroOfFPrime,
-                                               DisjunctionOfConstraintConjunctions& _substitutionResults )
-    {
-        #ifdef VS_DEBUG_METHODS
-        cout << __func__ << endl;
-        #endif
-
-        bool relationALess = !_relationLess;
-        bool relationBLess = _relationLess;
-
-        /*
-         * Create a vector to store the results of each single substitution.
-         */
-        vector<DisjunctionOfConstraintConjunctions> substitutionResultsVector;
-        substitutionResultsVector = vector<DisjunctionOfConstraintConjunctions>();
-
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteTripleCubicRootInLinear( _f,
-                                           _g,
-                                           relationALess,
-                                           _subByFirstZeroOfG,
-                                           _subByFirstZeroOfFPrime,
-                                           _subBySecondZeroOfFPrime,
-                                           substitutionResultsVector.back(),
-                                           _variables );
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteTripleCubicRootInLinear( _f,
-                                           _g,
-                                           true,
-                                           _subBySecondZeroOfG,
-                                           _subByFirstZeroOfFPrime,
-                                           _subBySecondZeroOfFPrime,
-                                           substitutionResultsVector.back(),
-                                           _variables );
-
-        combine( substitutionResultsVector, _substitutionResults );
-
-        /*
-         * Clear the substitutions results vector.
-         */
-        while( !substitutionResultsVector.empty() )
-        {
-            clear( substitutionResultsVector.back() );
-            substitutionResultsVector.pop_back();
-        }
-
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteTripleCubicRootInLinear( _f,
-                                           _g,
-                                           relationBLess,
-                                           _subByFirstZeroOfG,
-                                           _subByFirstZeroOfFPrime,
-                                           _subBySecondZeroOfFPrime,
-                                           substitutionResultsVector.back(),
-                                           _variables );
-        substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-        substituteTripleCubicRootInLinear( _f,
-                                           _g,
-                                           false,
-                                           _subBySecondZeroOfG,
-                                           _subByFirstZeroOfFPrime,
-                                           _subBySecondZeroOfFPrime,
-                                           substitutionResultsVector.back(),
-                                           _variables );
-
-        combine( substitutionResultsVector, _substitutionResults );
-
-        /*
-         * Clear the substitutions results vector.
-         */
-        while( !substitutionResultsVector.empty() )
-        {
-            clear( substitutionResultsVector.back() );
-            substitutionResultsVector.pop_back();
-        }
-    }
-    #endif
-
     /**
      * Simplifies a disjunction of conjunctions of constraints by deleting consistent
      * constraint and inconsistent conjunctions of constraints. If a conjunction of
@@ -1792,6 +1063,23 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << "simplify" << endl;
         #endif
+        unsigned toSimpSize = _toSimplify.size();
+//        print( _toSimplify );
+        for( unsigned pos = 0; pos < toSimpSize; )
+        {
+            if( !_toSimplify.begin()->empty() )
+            {
+                DisjunctionOfConstraintConjunctions temp = splitProducts( _toSimplify[pos] );
+                _toSimplify.erase( _toSimplify.begin() );
+                _toSimplify.insert( _toSimplify.end(), temp.begin(), temp.end() );
+                --toSimpSize;
+            }
+            else
+            {
+                ++pos;
+            }
+        }
+//        print( _toSimplify );
         bool                                          containsEmptyDisjunction = false;
         DisjunctionOfConstraintConjunctions::iterator conj                     = _toSimplify.begin();
         while( conj != _toSimplify.end() )
@@ -1832,64 +1120,82 @@ namespace vs
                 containsEmptyDisjunction = true;
             }
         }
+//        print( _toSimplify );
+    }
 
-//        DisjunctionOfConstraintConjunctions::iterator conjA = _toSimplify.begin();
-//        while( conjA != _toSimplify.end() )
-//        {
-//            if( conjA->size() == 1 )
-//            {
-//                const smtrat::Constraint* result = NULL;
-//                DisjunctionOfConstraintConjunctions::iterator conjB = conjA;
-//                ++conjB;
-//                while( conjB != _toSimplify.end() )
-//                {
-//                    if( conjB->size() == 1 )
+    /**
+     *
+     * @param _constraintConjunction
+     * @return
+     */
+    DisjunctionOfConstraintConjunctions splitProducts( const TS_ConstraintConjunction& _constraintConjunction )
+    {
+        DisjunctionOfConstraintConjunctions result = DisjunctionOfConstraintConjunctions();
+        vector<DisjunctionOfConstraintConjunctions> toCombine = vector<DisjunctionOfConstraintConjunctions>();
+        for( auto constraint = _constraintConjunction.begin(); constraint != _constraintConjunction.end(); ++constraint )
+        {
+            if( (*constraint)->hasFactorization() )
+            {
+                switch( (*constraint)->relation() )
+                {
+                    case smtrat::CR_EQ:
+                    {
+                        toCombine.push_back( DisjunctionOfConstraintConjunctions() );
+                        const ex& factorization = (*constraint)->factorization();
+                        for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
+                        {
+                            const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_EQ, (*constraint)->variables() );
+                            toCombine.back().push_back( TS_ConstraintConjunction() );
+                            toCombine.back().back().push_back( cons );
+                        }
+                        break;
+                    }
+                    case smtrat::CR_NEQ:
+                    {
+                        toCombine.push_back( DisjunctionOfConstraintConjunctions() );
+                        toCombine.back().push_back( TS_ConstraintConjunction() );
+                        const ex& factorization = (*constraint)->factorization();
+                        for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
+                        {
+                            const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_NEQ, (*constraint)->variables() );
+                            toCombine.back().back().push_back( cons );
+                        }
+                        break;
+                    }
+//                    case CR_LEQ:
 //                    {
-//                        result = smtrat::Constraint::mergeConstraints( conjA->back(), conjB->back() );
-//                        cout << "mergeConstraints( " << *conjA->back() << " , " << *conjB->back() << " ) = ";
-//                        if( result != NULL )
-//                        {
-//                            cout << *result << endl;
-//                            //Check if merging led to a consistent constraint.
-//                            assert( result->isConsistent() != 0 );
-//                            break;
-//                        }
-//                        else
-//                        {
-//                            cout << "NULL" << endl;
-//                            conjB++;
-//                        }
+//                        break;
 //                    }
-//                    else
+//                    case CR_GEQ:
 //                    {
-//                        conjB++;
+//                        break;
 //                    }
-//                }
-//                if( result != NULL )
-//                {
-//                    // Delete the second conjunction.
-//                    _toSimplify.erase( conjB );
-//                    if( result->isConsistent() == 2 )
+//                    case CR_LESS:
 //                    {
-//                        conjA->pop_back();
-//                        conjA->push_back( result );
-//                        conjA++;
+//                        break;
 //                    }
-//                    else
+//                    case CR_GREATER:
 //                    {
-//                        conjA = _toSimplify.erase( conjA );
+//                        break;
 //                    }
-//                }
-//                else
-//                {
-//                    conjA++;
-//                }
-//            }
-//            else
-//            {
-//                conjA++;
-//            }
-//        }
+                    default:
+                    {
+//                        assert( false );
+                        toCombine.push_back( DisjunctionOfConstraintConjunctions() );
+                        toCombine.back().push_back( TS_ConstraintConjunction() );
+                        toCombine.back().back().push_back( *constraint );
+                    }
+                }
+            }
+            else
+            {
+                toCombine.push_back( DisjunctionOfConstraintConjunctions() );
+                toCombine.back().push_back( TS_ConstraintConjunction() );
+                toCombine.back().back().push_back( *constraint );
+            }
+        }
+        combine( toCombine, result );
+        return result;
     }
 
     ex simplify( const ex& _expression, const symtab& _variables )
@@ -1943,6 +1249,5 @@ namespace vs
         }
         cout << endl;
     }
-
 }    // end namspace vs
 

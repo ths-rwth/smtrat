@@ -185,6 +185,11 @@ namespace smtrat
                 return *mpMultiRootLessLhs;
             }
 
+            bool hasFactorization() const
+            {
+                return (mpFactorization != pLhs);
+            }
+
             const GiNaC::ex& factorization() const
             {
                 return *mpFactorization;

@@ -34,6 +34,7 @@ using namespace std;
 using namespace GiNaC;
 using namespace vs;
 
+//#define VS_DEBUG
 #define VS_WITH_BACKEND
 #ifdef VS_WITH_BACKEND
 //#define CHECK_STRICT_INEQUALITIES_WITH_BACKEND
