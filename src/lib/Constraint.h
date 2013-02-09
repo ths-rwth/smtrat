@@ -263,7 +263,7 @@ namespace smtrat
             void print2( std::ostream& _out = std::cout ) const;
             void printInPrefix( std::ostream& _out = std::cout ) const;
             const std::string prefixStringOf( const GiNaC::ex& ) const;
-            void printPropositions( std::ostream& = std::cout ) const;
+            void printProperties( std::ostream& = std::cout ) const;
             std::string smtlibString() const;
 
             //

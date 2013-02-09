@@ -837,11 +837,6 @@ namespace smtrat
         }
         if( mVarInfoMap.size() == 1 && mNumMonomials == 1 && mMaxMonomeDegree > 1 )
         {
-            anythingChanged = true;
-            mMaxMonomeDegree = 1;
-            mMinMonomeDegree = 1;
-            mVarInfoMap.begin()->second.maxDegree = 1;
-            mVarInfoMap.begin()->second.minDegree = 1;
 
             switch( mRelation )
             {
@@ -861,14 +856,26 @@ namespace smtrat
                 }
                 case CR_LEQ:
                 {
-                    assert( fmod( mVarInfoMap.begin()->second.maxDegree, 2.0 ) != 0.0 );
-                    *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                    if( mIsNeverPositive )
+                    {
+                        *pLhs = (-1) * mVariables.begin()->second * mVariables.begin()->second;
+                    }
+                    else
+                    {
+                        *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                    }
                     break;
                 }
                 case CR_GEQ:
                 {
-                    assert( fmod( mVarInfoMap.begin()->second.maxDegree, 2.0 ) != 0.0 );
-                    *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                    if( mIsNeverNegative )
+                    {
+                        *pLhs = mVariables.begin()->second * mVariables.begin()->second;
+                    }
+                    else
+                    {
+                        *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                    }
                     break;
                 }
                 case CR_LESS:
@@ -881,8 +888,14 @@ namespace smtrat
                     }
                     else
                     {
-                        assert( fmod( mVarInfoMap.begin()->second.maxDegree, 2.0 ) != 0.0 );
-                        *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                        if( mIsNeverNegative )
+                        {
+                            *pLhs = mVariables.begin()->second * mVariables.begin()->second;
+                        }
+                        else
+                        {
+                            *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                        }
                     }
                     break;
                 }
@@ -896,8 +909,14 @@ namespace smtrat
                     }
                     else
                     {
-                        assert( fmod( mVarInfoMap.begin()->second.maxDegree, 2.0 ) != 0.0 );
-                        *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                        if( mIsNeverPositive )
+                        {
+                            *pLhs = (-1) * mVariables.begin()->second * mVariables.begin()->second;
+                        }
+                        else
+                        {
+                            *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                        }
                     }
                     break;
                 }
@@ -906,6 +925,11 @@ namespace smtrat
                     assert( false );
                     anythingChanged = false;
                 }
+                anythingChanged = true;
+                mMaxMonomeDegree = 1;
+                mMinMonomeDegree = 1;
+                mVarInfoMap.begin()->second.maxDegree = 1;
+                mVarInfoMap.begin()->second.minDegree = 1;
             }
         }
         if( anythingChanged )
@@ -1404,9 +1428,9 @@ namespace smtrat
      *
      * @param _out
      */
-    void Constraint::printPropositions( ostream& _out ) const
+    void Constraint::printProperties( ostream& _out ) const
     {
-        _out << "Propostions:" << endl;
+        _out << "Properties:" << endl;
         _out << "   mIsNeverPositive = " << (mIsNeverPositive ? "true" : "false") << endl;
         _out << "   mIsNeverNegative = " << (mIsNeverNegative ? "true" : "false") << endl;
         _out << "   mCannotBeZero    = " << (mIsNeverZero ? "true" : "false") << endl;

@@ -30,9 +30,6 @@
 #ifndef SMTRAT_VS_SUBSTITUTE_H
 #define SMTRAT_VS_SUBSTITUTE_H
 
-//#define VS_DEBUG_METHODS
-//#define VS_DEBUG_SUBSTITUTION
-
 #include "Substitution.h"
 #include "Tools.h"
 #include <cmath>
@@ -89,7 +86,6 @@ namespace vs
     void substitutePlusEps( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteEpsGradients( const smtrat::Constraint&,
                                  const Substitution&,
-                                 const smtrat::Constraint_Relation,
                                  const smtrat::Constraint_Relation,
                                  DisjunctionOfConstraintConjunctions& );
     void substituteMinusInf( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );

@@ -223,7 +223,7 @@ namespace smtrat
             {
                 if( mInfeasibleSubsets.empty() )
                 {
-                    #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                    #ifdef VS_LOG_INTERMEDIATE_STEPS
                     checkAnswer();
                     #endif
                     #ifdef VS_PRINT_ANSWERS
@@ -241,7 +241,7 @@ namespace smtrat
             mConditionsChanged = false;
             if( mpReceivedFormula->empty() )
             {
-                #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                #ifdef VS_LOG_INTERMEDIATE_STEPS
                 checkAnswer();
                 #endif
                 #ifdef VS_PRINT_ANSWERS
@@ -398,7 +398,7 @@ namespace smtrat
                                                 #ifdef VS_DEBUG
                                                 printAll( cout );
                                                 #endif
-                                                #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                                                #ifdef VS_LOG_INTERMEDIATE_STEPS
                                                 checkAnswer();
                                                 #endif
                                                 #ifdef VS_PRINT_ANSWERS
@@ -495,7 +495,7 @@ namespace smtrat
                                                 #ifdef VS_DEBUG
                                                 printAll( cout );
                                                 #endif
-                                                #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                                                #ifdef VS_LOG_INTERMEDIATE_STEPS
                                                 checkAnswer();
                                                 #endif
                                                 #ifdef VS_PRINT_ANSWERS
@@ -630,7 +630,7 @@ namespace smtrat
                                                                 #ifdef VS_DEBUG
                                                                 printAll( cout );
                                                                 #endif
-                                                                #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                                                                #ifdef VS_LOG_INTERMEDIATE_STEPS
                                                                 checkAnswer();
                                                                 #endif
                                                                 #ifdef VS_PRINT_ANSWERS
@@ -736,7 +736,7 @@ EndSwitch:;
                 }
                 else
                 {
-                    outA << sub.term().expression().expand().normal();
+                    outA << sub.term().asExpression();
                     if( sub.type() == ST_PLUS_EPSILON )
                     {
                         outA << "+eps_" << mId << "_" << state->treeDepth();
@@ -1565,7 +1565,7 @@ EndSwitch:;
         {
             const Substitution& sub = currentState->substitution();
             uncheckedVariables.erase( sub.variable() );
-            pair<Substitution_Type, ex>                symValue        = pair<Substitution_Type, ex>( sub.type(), sub.term().expression() );
+            pair<Substitution_Type, ex>                symValue        = pair<Substitution_Type, ex>( sub.type(), sub.term().asExpression() );
             pair<string, pair<Substitution_Type, ex> > symVarValuePair = pair<string, pair<Substitution_Type, ex> >( sub.variable(), symValue );
             resultTmp.push_back( symVarValuePair );
             currentState = (*currentState).pFather();
@@ -1935,12 +1935,15 @@ EndSwitch:;
      */
     void VSModule::logConditions( const State& _state, bool _assumption, const string& _description ) const
     {
-        set<const smtrat::Constraint*> constraints = set<const smtrat::Constraint*>();
-        for( ConditionVector::const_iterator cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
+        if( !_state.conditions().empty() )
         {
-            constraints.insert( (**cond).pConstraint() );
+            set<const smtrat::Constraint*> constraints = set<const smtrat::Constraint*>();
+            for( ConditionVector::const_iterator cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
+            {
+                constraints.insert( (**cond).pConstraint() );
+            }
+            smtrat::Module::addAssumptionToCheck( constraints, _assumption, _description );
         }
-        smtrat::Module::addAssumptionToCheck( constraints, _assumption, _description );
     }
     #endif
 
@@ -2000,7 +2003,7 @@ EndSwitch:;
             const State* currentState = mRanking.begin()->second;
             while( !(*currentState).isRoot() )
             {
-                _out << "***           " << (*currentState).substitution().toString2() << endl;
+                _out << "***           " << (*currentState).substitution().toString( true ) << endl;
                 currentState = (*currentState).pFather();
             }
         }

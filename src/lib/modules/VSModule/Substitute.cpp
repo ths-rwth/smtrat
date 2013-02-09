@@ -29,6 +29,9 @@
 
 #include "Substitute.h"
 
+//#define VS_DEBUG_METHODS
+//#define VS_DEBUG_SUBSTITUTION
+
 //#define VS_SUBSTITUTION_ACCORDING_PAPER
 
 namespace vs
@@ -52,9 +55,7 @@ namespace vs
         cout << "substitute" << endl;
         #endif
         #ifdef VS_DEBUG_SUBSTITUTION
-        cout << "substitute: ( ";
-        _constraint.print( cout );
-        cout << " )" << _substitution << endl;
+        cout << "substitute: ( " << *_constraint << " )" << _substitution << endl;
         #endif
 
         /*
@@ -77,28 +78,6 @@ namespace vs
                 substituteMinusInf( _constraint, _substitution, _substitutionResults );
                 break;
             }
-            #ifdef VS_CUBIC_CASE
-            case ST_SINGLE_CUBIC_ROOT:
-            {
-                substituteCubicRoot( _constraint, _substitution, _substitutionResults );
-                break;
-            }
-            case ST_TRIPLE_CUBIC_ROOT:
-            {
-                substituteCubicRoot( _constraint, _substitution, _substitutionResults );
-                break;
-            }
-            case ST_SINGLE_CUBIC_ROOT_PLUS_EPS:
-            {
-                substituteCubicRoot( _constraint, _substitution, _substitutionResults );
-                break;
-            }
-            case ST_TRIPLE_CUBIC_ROOT_PLUS_EPS:
-            {
-                substituteCubicRoot( _constraint, _substitution, _substitutionResults );
-                break;
-            }
-            #endif
             default:
             {
                 cout << "Error in substitute: unexpected type of substitution." << endl;
@@ -311,6 +290,7 @@ namespace vs
             _substitutionResults.push_back( TS_ConstraintConjunction() );
             _substitutionResults.back().push_back( _constraint );
         }
+
         simplify( _substitutionResults );
     }
 
@@ -694,24 +674,24 @@ namespace vs
                     }
                     case smtrat::CR_LESS:
                     {
-                        substituteEpsGradients( *_constraint, _substitution, smtrat::CR_LESS, smtrat::CR_LESS, _substitutionResults );
+                        substituteEpsGradients( *_constraint, _substitution, smtrat::CR_LESS, _substitutionResults );
                         break;
                     }
                     case smtrat::CR_GREATER:
                     {
-                        substituteEpsGradients( *_constraint, _substitution, smtrat::CR_GREATER, smtrat::CR_GREATER, _substitutionResults );
+                        substituteEpsGradients( *_constraint, _substitution, smtrat::CR_GREATER, _substitutionResults );
                         break;
                     }
                     case smtrat::CR_LEQ:
                     {
                         substituteTrivialCase( *_constraint, _substitution, _substitutionResults );
-                        substituteEpsGradients( *_constraint, _substitution, smtrat::CR_LESS, smtrat::CR_LESS, _substitutionResults );
+                        substituteEpsGradients( *_constraint, _substitution, smtrat::CR_LESS, _substitutionResults );
                         break;
                     }
                     case smtrat::CR_GEQ:
                     {
                         substituteTrivialCase( *_constraint, _substitution, _substitutionResults );
-                        substituteEpsGradients( *_constraint, _substitution, smtrat::CR_GREATER, smtrat::CR_GREATER, _substitutionResults );
+                        substituteEpsGradients( *_constraint, _substitution, smtrat::CR_GREATER, _substitutionResults );
                         break;
                     }
                     default:
@@ -748,8 +728,7 @@ namespace vs
      */
     void substituteEpsGradients( const smtrat::Constraint& _constraint,
                                  const Substitution& _substitution,
-                                 const smtrat::Constraint_Relation _relation1,
-                                 const smtrat::Constraint_Relation _relation2,
+                                 const smtrat::Constraint_Relation _relation,
                                  DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
         #ifdef VS_DEBUG_METHODS
@@ -759,10 +738,8 @@ namespace vs
         symbol sym;
         _constraint.variable( _substitution.variable(), sym );
 
-        /*
-         * Create a substitution formed by the given one without an addition of epsilon.
-         */
-        Substitution substitution1 = Substitution( _substitution.variable(), sym, _substitution.term(), ST_NORMAL, _substitution.originalConditions() );
+        // Create a substitution formed by the given one without an addition of epsilon.
+        Substitution substitution = Substitution( _substitution.variable(), sym, _substitution.term(), ST_NORMAL, _substitution.originalConditions() );
 
         /*
          * Create the vector of constraints which serves as a collection of the necessary constraints.
@@ -775,16 +752,12 @@ namespace vs
          * Call the method substituteNormal with the constraint f(x)~0 and the substitution [x -> t],
          * where the parameter relation is ~.
          */
-        collection.push_back( smtrat::Formula::newConstraint( _constraint.lhs(), _relation1, _constraint.variables() ) );
+        collection.push_back( smtrat::Formula::newConstraint( _constraint.lhs(), _relation, _constraint.variables() ) );
 
-        /*
-         * Check:  (f(x)~0) [x -> t]
-         */
-        substituteNormal( collection.back(), substitution1, _substitutionResults );
+        // Check:  (f(x)~0) [x -> t]
+        substituteNormal( collection.back(), substitution, _substitutionResults );
 
-        /*
-         * Create a vector to store the results of each single substitution.
-         */
+        // Create a vector to store the results of each single substitution.
         vector<DisjunctionOfConstraintConjunctions> substitutionResultsVector;
         substitutionResultsVector = vector<DisjunctionOfConstraintConjunctions>();
 
@@ -796,61 +769,36 @@ namespace vs
          *
          * where the relation is ~.
          */
+        unsigned pos = 0;
         ex derivative = ex( _constraint.lhs() );
         while( derivative.has( ex( sym ) ) )
         {
-            /*
-             * Change the relation symbol of the last added constraint to "=".
-             */
+            // Change the relation symbol of the last added constraint to "=".
             const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( derivative, smtrat::CR_EQ, _constraint.variables() );
             collection.pop_back();
             collection.push_back( constraint );
 
-            /*
-             * Form the derivate of the left hand side of the last added constraint.
-             */
-            derivative = ex( constraint->lhs().diff( sym, 1 ) );
+            // Form the derivate of the left hand side of the last added constraint.
+            derivative = constraint->lhs().diff( sym, 1 );
             simplify( derivative, ex( sym ) );
 
-            /*
-             * Check, whether the degree of the variable we derivate for has decreased.
-             */
             assert( derivative.degree( ex( sym ) ) < collection.back()->lhs().degree( ex( sym ) ) );
 
-            /*
-             * Add a constraint, which has the just formed derivate as left hand side and the
-             * relation corresponding to the number of the derivate.
-             */
-            if( div( collection.size(), 2 ).rem != 0 )
-            {
-                /*
-                 * If it is an odd derivative.
-                 */
-                collection.push_back( smtrat::Formula::newConstraint( derivative, _relation2, _constraint.variables() ) );
-            }
-            else
-            {
-                /*
-                 * If it is an even derivative.
-                 */
-                collection.push_back( smtrat::Formula::newConstraint( derivative, _relation1, _constraint.variables() ) );
-            }
+            // Add the constraint f^i(x)~0.
+            collection.push_back( smtrat::Formula::newConstraint( derivative, _relation, _constraint.variables() ) );
 
-            /*
-             * Apply the substitution (without epsilon) to each constraint in the collection.
-             */
-            for( TS_ConstraintConjunction::const_iterator cons = collection.begin(); cons != collection.end(); ++cons )
+            // Apply the substitution (without epsilon) to each constraint in the collection.
+            for( unsigned i = pos; i < collection.size(); ++i )
             {
                 substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-                substituteNormal( *cons, substitution1, substitutionResultsVector.back() );
+                substituteNormal( collection[i], substitution, substitutionResultsVector.back() );
             }
 
             combine( substitutionResultsVector, _substitutionResults );
 
-            /*
-             * Delete the results of the last substitution.
-             */
-            substitutionResultsVector.clear();
+            // Remove the last substitution result.
+            substitutionResultsVector.pop_back();
+            ++pos;
         }
     }
 
