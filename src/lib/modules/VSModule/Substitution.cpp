@@ -36,7 +36,7 @@ namespace vs
     /**
     * Constructors:
     */
-    Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const Substitution_Type& _type, const ConditionSet& _oConditions, const ConditionSet& _sideCondition ):
+    Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const Substitution_Type& _type, const ConditionSet& _oConditions, const smtrat::ConstraintSet& _sideCondition ):
         mpVariable( new string( _variable ) ),
         mpVarAsEx( new ex( _varAsEx ) ),
         mpTerm( new SqrtEx() ),
@@ -45,7 +45,7 @@ namespace vs
         mSideCondition( _sideCondition )
     {}
 
-    Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const SqrtEx& _term, const Substitution_Type& _type, const ConditionSet& _oConditions, const ConditionSet& _sideCondition ):
+    Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const SqrtEx& _term, const Substitution_Type& _type, const ConditionSet& _oConditions, const smtrat::ConstraintSet& _sideCondition ):
         mpVariable( new string( _variable ) ),
         mpVarAsEx( new ex( _varAsEx ) ),
         mpTerm( new SqrtEx( _term ) ),
@@ -171,7 +171,7 @@ namespace vs
                 {
                     _out << " and ";
                 }
-                _out << (*sCons)->constraint();
+                _out << **sCons;
             }
         }
         _out << endl;

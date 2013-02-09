@@ -49,20 +49,20 @@ namespace vs
             /**
              * Members:
              */
-            std::string*      mpVariable;
-            GiNaC::ex*        mpVarAsEx;
-            SqrtEx*           mpTerm;
-            Substitution_Type mType;
-            ConditionSet*     mpOriginalConditions;
-            ConditionSet      mSideCondition;
+            std::string*          mpVariable;
+            GiNaC::ex*            mpVarAsEx;
+            SqrtEx*               mpTerm;
+            Substitution_Type     mType;
+            ConditionSet*         mpOriginalConditions;
+            smtrat::ConstraintSet mSideCondition;
 
         public:
 
             /**
              * Constructors:
              */
-            Substitution( const std::string&, const GiNaC::ex&, const Substitution_Type&, const ConditionSet&, const ConditionSet& = ConditionSet() );
-            Substitution( const std::string&, const GiNaC::ex&, const SqrtEx&, const Substitution_Type&, const ConditionSet&, const ConditionSet& = ConditionSet() );
+            Substitution( const std::string&, const GiNaC::ex&, const Substitution_Type&, const ConditionSet&, const smtrat::ConstraintSet& = smtrat::ConstraintSet() );
+            Substitution( const std::string&, const GiNaC::ex&, const SqrtEx&, const Substitution_Type&, const ConditionSet&, const smtrat::ConstraintSet& = smtrat::ConstraintSet() );
             Substitution( const Substitution& );
 
             /**
@@ -112,12 +112,7 @@ namespace vs
                 return *mpOriginalConditions;
             }
 
-            const ConditionSet& sideCondition() const
-            {
-                return mSideCondition;
-            }
-
-            ConditionSet& rSideCondition()
+            const smtrat::ConstraintSet& sideCondition() const
             {
                 return mSideCondition;
             }

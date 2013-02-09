@@ -862,7 +862,7 @@ namespace smtrat
                     }
                     else
                     {
-                        *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                        *pLhs = (pLhs->coeff( mVariables.begin()->second, mMaxMonomeDegree ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
                     }
                     break;
                 }
@@ -874,7 +874,7 @@ namespace smtrat
                     }
                     else
                     {
-                        *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                        *pLhs = (pLhs->coeff( mVariables.begin()->second, mMaxMonomeDegree ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
                     }
                     break;
                 }
@@ -894,7 +894,7 @@ namespace smtrat
                         }
                         else
                         {
-                            *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                            *pLhs = (pLhs->coeff( mVariables.begin()->second, mMaxMonomeDegree ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
                         }
                     }
                     break;
@@ -915,7 +915,7 @@ namespace smtrat
                         }
                         else
                         {
-                            *pLhs = (pLhs->coeff( mVariables.begin()->second, 1 ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                            *pLhs = (pLhs->coeff( mVariables.begin()->second, mMaxMonomeDegree ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
                         }
                     }
                     break;

@@ -241,20 +241,16 @@ namespace smtrat
                                     auto unequalCons = mBoundToUnequalConstraintMap.find( *bound );
                                     if( unequalCons != mBoundToUnequalConstraintMap.end() )
                                     {
-                                        vector< const Bound* >* bounds = mConstraintToBound[constraint];
-                                        assert( bounds != NULL );
-                                        assert( bounds->size() == 2 );
-                                        if( !(*bounds)[0]->isActive() && !(*bounds)[1]->isActive() )
+                                        vector< const Bound* >* uebounds = mConstraintToBound[unequalCons->second];
+                                        assert( uebounds != NULL );
+                                        assert( uebounds->size() == 2 );
+                                        if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() )
                                         {
-                                            auto unequalCons = mBoundToUnequalConstraintMap.find( *bound );
-                                            if( unequalCons != mBoundToUnequalConstraintMap.end() )
+                                            auto pos = mActiveResolvedNEQConstraints.find( unequalCons->second );
+                                            if( pos != mActiveResolvedNEQConstraints.end() )
                                             {
-                                                auto pos = mActiveResolvedNEQConstraints.find( unequalCons->second );
-                                                if( pos != mActiveResolvedNEQConstraints.end() )
-                                                {
-                                                    mActiveResolvedNEQConstraints.erase( pos );
-                                                    mActiveUnresolvedNEQConstraints.insert( unequalCons->second );
-                                                }
+                                                mActiveResolvedNEQConstraints.erase( pos );
+                                                mActiveUnresolvedNEQConstraints.insert( unequalCons->second );
                                             }
                                         }
                                     }

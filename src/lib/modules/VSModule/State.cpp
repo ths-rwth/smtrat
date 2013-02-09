@@ -1666,29 +1666,6 @@ namespace vs
             while( child != children().end() )
             {
                 /*
-                 * Remove the side conditions having the condition to delete as original condition.
-                 */
-                for( ConditionVector::const_iterator condToDel = _conditionsToDelete.begin(); condToDel != _conditionsToDelete.end(); ++condToDel )
-                {
-                    ConditionSet::iterator cond = (**child).rSubstitution().rSideCondition().begin();
-                    while( cond != (**child).substitution().sideCondition().end() )
-                    {
-                        if( (*cond)->originalConditions().size() != 1 )
-                        {
-                            printAlone();
-                        }
-                        assert( (*cond)->originalConditions().size() == 1 );
-                        if( *(*cond)->originalConditions().begin() == *condToDel )
-                        {
-                            (**child).rSubstitution().rSideCondition().erase( cond++ );
-                        }
-                        else
-                        {
-                            ++cond;
-                        }
-                    }
-                }
-                /*
                  * Check if the substitution has a condition to delete as original condition.
                  */
                 for( ConditionVector::const_iterator condToDel = _conditionsToDelete.begin(); condToDel != _conditionsToDelete.end(); ++condToDel )
@@ -2150,11 +2127,10 @@ namespace vs
         if( isConsConsistent != 0 )
         {
             SqrtEx sqEx = SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand, _variables );
-            ConditionSet sideCond = ConditionSet();
-            if( isConsConsistent != 1 )
-            {
-                sideCond.insert( new Condition( cons, false, _oConditions, 0, false ) );
-            }
+
+            smtrat::ConstraintSet sideCond = smtrat::ConstraintSet();
+            if( isConsConsistent != 1 ) sideCond.insert( cons );
+
             Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, sqEx, _substitutionType, _oConditions, sideCond );
             if( !updateOCondsOfSubstitutions( sub ) )
             {
@@ -2166,8 +2142,7 @@ namespace vs
                     subResults.push_back( DisjunctionOfConditionConjunctions() );
                     subResults.back().push_back( ConditionVector() );
 
-                    (*sideCond.begin())->rValuation() = (*state).treeDepth();
-                    subResults.back().back().push_back( *sideCond.begin() );
+                    subResults.back().back().push_back( new Condition( *sideCond.begin(), false, _oConditions, (*state).treeDepth(), false ) );
 
                     state->addSubstitutionResults( subResults );
                     state->rStateType() = SUBSTITUTION_TO_APPLY;
@@ -2235,15 +2210,11 @@ namespace vs
             if( isCons2Consistent != 0 )
             {
                 SqrtEx sqEx = SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand, _variables );
-                ConditionSet sideCond = ConditionSet();
-                if( isCons1Consistent != 1 )
-                {
-                    sideCond.insert( new Condition( cons1, false, _oConditions, 0, false ) );
-                }
-                if( isCons2Consistent != 1 )
-                {
-                    sideCond.insert( new Condition( cons2, false, _oConditions, 0, false ) );
-                }
+
+                smtrat::ConstraintSet sideCond = smtrat::ConstraintSet();
+                if( isCons1Consistent != 1 ) sideCond.insert( cons1 );
+                if( isCons2Consistent != 1 ) sideCond.insert( cons2 );
+
                 Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, sqEx, _substitutionType, _oConditions, sideCond );
                 if( !updateOCondsOfSubstitutions( sub ) )
                 {
@@ -2254,10 +2225,9 @@ namespace vs
                         std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
                         subResults.push_back( DisjunctionOfConditionConjunctions() );
                         subResults.back().push_back( ConditionVector() );
-                        for( auto cond = sideCond.begin(); cond != sideCond.end(); ++cond )
+                        for( auto cons = sideCond.begin(); cons != sideCond.end(); ++cons )
                         {
-                            (*cond)->rValuation() = treeDepth;
-                            subResults.back().back().push_back( *cond );
+                            subResults.back().back().push_back( new Condition( *cons, false, _oConditions, treeDepth, false ) );
                         }
                         state->addSubstitutionResults( subResults );
                         state->rStateType() = SUBSTITUTION_TO_APPLY;
@@ -2783,7 +2753,6 @@ namespace vs
         {
             _out << _initiation + "   " << "Substitution: ";
             substitution().print( _out );
-            _out << endl;
         }
         printSubstitutionResults( _initiation + "   ", _out );
         _out << _initiation << endl;
