@@ -60,7 +60,7 @@ using namespace std;
 //#define SMTRAT_CAD_GENERIC_SETTING
 //#define SMTRAT_CAD_DISABLE_SMT
 #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
-#define SMTRAT_CAD_DISABLE_MIS
+//#define SMTRAT_CAD_DISABLE_MIS
 
 #ifdef SMTRAT_CAD_DISABLE_SMT
     #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
@@ -228,9 +228,17 @@ namespace smtrat
             #endif
             #ifdef SMTRAT_CAD_DISABLE_MIS
             // construct a trivial infeasible subset
+            #ifdef CAD_USE_VARIABLE_BOUNDS
+            set<const Formula*> boundConstraints = mVariableBounds.getOriginsOfBounds();
+            #endif
             mInfeasibleSubsets.push_back( set<const Formula*>() );
             for( ConstraintIndexMap::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
+            {
                 mInfeasibleSubsets.back().insert( *i->first );
+                #ifdef CAD_USE_VARIABLE_BOUNDS
+                mInfeasibleSubsets.back().insert( boundConstraints.begin(), boundConstraints.end() );
+                #endif
+            }
             #else
             // construct an infeasible subset
             assert( mCAD.setting().computeConflictGraph );
@@ -260,7 +268,7 @@ namespace smtrat
             cout << "CAD complete: " << mCAD.isComplete() << endl;
             printInfeasibleSubsets();
             cout << "Performance gain: " << (mpReceivedFormula->size() - mInfeasibleSubsets.front().size()) << endl << endl;
-            mCAD.printSampleTree();
+//            mCAD.printSampleTree();
             #endif
             mSolverState = False;
             mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
@@ -275,7 +283,7 @@ namespace smtrat
         cout << "Result: true" << endl;
         cout << "CAD complete: " << mCAD.isComplete() << endl;
         cout << "Solution point: " << mRealAlgebraicSolution << endl << endl;
-        mCAD.printSampleTree();
+//        mCAD.printSampleTree();
         #endif
         mInfeasibleSubsets.clear();
         #ifndef SMTRAT_CAD_DISABLE_THEORYPROPAGATION
