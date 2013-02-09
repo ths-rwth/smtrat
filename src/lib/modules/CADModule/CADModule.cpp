@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-02-08
+ * @version 2013-02-09
  */
 
 //#define MODULE_VERBOSE
@@ -60,7 +60,7 @@ using namespace std;
 //#define SMTRAT_CAD_GENERIC_SETTING
 //#define SMTRAT_CAD_DISABLE_SMT
 #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
-#define SMTRAT_CAD_DISABLE_MIS
+//#define SMTRAT_CAD_DISABLE_MIS
 
 #ifdef SMTRAT_CAD_DISABLE_SMT
     #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
@@ -187,11 +187,12 @@ namespace smtrat
         }
         GiNaCRA::BoundMap boundMap = GiNaCRA::BoundMap();
         GiNaCRA::evalintervalmap eiMap = mVariableBounds.getEvalIntervalMap();
-        for( GiNaCRA::evalintervalmap::const_iterator iter = eiMap.begin(); iter != eiMap.end(); ++iter )
+        vector<symbol> variables = mCAD.variables();
+        for( unsigned v = 0; v < variables.size(); ++v )
         {
-            unsigned pos = mCAD.variable( iter->first );
-            assert( boundMap.find( pos ) == boundMap.end() );
-            boundMap[pos] = iter->second;
+            GiNaCRA::evalintervalmap::const_iterator vPos = eiMap.find( variables[v] );
+            if( vPos != eiMap.end() )
+                boundMap[v] = vPos->second;
         }
         #ifdef MODULE_VERBOSE
         cout << "within " << ( boundMap.empty() ? "no bounds." : "the bounds:" ) << endl;
@@ -227,9 +228,17 @@ namespace smtrat
             #endif
             #ifdef SMTRAT_CAD_DISABLE_MIS
             // construct a trivial infeasible subset
+            #ifdef CAD_USE_VARIABLE_BOUNDS
+            set<const Formula*> boundConstraints = mVariableBounds.getOriginsOfBounds();
+            #endif
             mInfeasibleSubsets.push_back( set<const Formula*>() );
             for( ConstraintIndexMap::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
+            {
                 mInfeasibleSubsets.back().insert( *i->first );
+                #ifdef CAD_USE_VARIABLE_BOUNDS
+                mInfeasibleSubsets.back().insert( boundConstraints.begin(), boundConstraints.end() );
+                #endif
+            }
             #else
             // construct an infeasible subset
             assert( mCAD.setting().computeConflictGraph );
@@ -259,7 +268,7 @@ namespace smtrat
             cout << "CAD complete: " << mCAD.isComplete() << endl;
             printInfeasibleSubsets();
             cout << "Performance gain: " << (mpReceivedFormula->size() - mInfeasibleSubsets.front().size()) << endl << endl;
-            mCAD.printSampleTree();
+//            mCAD.printSampleTree();
             #endif
             mSolverState = False;
             mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
@@ -274,7 +283,7 @@ namespace smtrat
         cout << "Result: true" << endl;
         cout << "CAD complete: " << mCAD.isComplete() << endl;
         cout << "Solution point: " << mRealAlgebraicSolution << endl << endl;
-        mCAD.printSampleTree();
+//        mCAD.printSampleTree();
         #endif
         mInfeasibleSubsets.clear();
         #ifndef SMTRAT_CAD_DISABLE_THEORYPROPAGATION
