@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-02-08
+ * @version 2013-02-09
  */
 
 //#define MODULE_VERBOSE
@@ -187,11 +187,12 @@ namespace smtrat
         }
         GiNaCRA::BoundMap boundMap = GiNaCRA::BoundMap();
         GiNaCRA::evalintervalmap eiMap = mVariableBounds.getEvalIntervalMap();
-        for( GiNaCRA::evalintervalmap::const_iterator iter = eiMap.begin(); iter != eiMap.end(); ++iter )
+        vector<symbol> variables = mCAD.variables();
+        for( unsigned v = 0; v < variables.size(); ++v )
         {
-            unsigned pos = mCAD.variable( iter->first );
-            assert( boundMap.find( pos ) == boundMap.end() );
-            boundMap[pos] = iter->second;
+            GiNaCRA::evalintervalmap::const_iterator vPos = eiMap.find( variables[v] );
+            if( vPos != eiMap.end() )
+                boundMap[v] = vPos->second;
         }
         #ifdef MODULE_VERBOSE
         cout << "within " << ( boundMap.empty() ? "no bounds." : "the bounds:" ) << endl;
