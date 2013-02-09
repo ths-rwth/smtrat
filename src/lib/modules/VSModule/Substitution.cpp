@@ -239,7 +239,7 @@ namespace vs
             {
                 if( term() == _substitution.term() )
                 {
-                    if( sideCondition() <= _substitution.sideCondition() || sideCondition() > _substitution.sideCondition() )
+                    if( sideCondition() == _substitution.sideCondition() )
                     {
                         return true;
                     }
@@ -311,6 +311,10 @@ namespace vs
                         {
                             signed denominatorCompResult = smtrat::Constraint::exCompare( term().denominator(), termVariables(), _substitution.term().denominator(), _substitution.termVariables() );
                             if( denominatorCompResult==-1 )
+                            {
+                                return true;
+                            }
+                            else if( sideCondition() < _substitution.sideCondition() )
                             {
                                 return true;
                             }

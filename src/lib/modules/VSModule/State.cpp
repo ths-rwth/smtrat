@@ -637,7 +637,7 @@ namespace vs
                     if( !simplify( fixedConditions->back().first, redundantConditions, conflictingConditionPairs ) )
                     {
                         addConflicts( NULL, conflictingConditionPairs );
-                        if( !isRoot() ) passConflictToFather();
+//                        if( !isRoot() ) passConflictToFather();
                     }
                 }
             }
@@ -1035,6 +1035,10 @@ namespace vs
     {
         for( StateVector::iterator child = rChildren().begin(); child != children().end(); ++child )
         {
+            // TODO: If there is a child with a test candidate whose side conditions are a superset of the side conditions of the
+            // given substitution, remove the child and add the test candidates original conditions to the original conditions of
+            // the given substitution. However, when deleting later the original condition of the given substitution, the its
+            // getting nasty.
             if( (**child).substitution() == _substitution )
             {
                 (**child).rSubstitution().rOriginalConditions().insert( _substitution.originalConditions().begin(),
@@ -2440,7 +2444,20 @@ namespace vs
         rTakeSubResultCombAgain()     = false;
         rFather().rMarkedAsDeleted() = false;
 
-        if( coverSetOCondsContainIndexOfFather )
+        bool fixedConditions = false;
+        if( hasSubResultsCombination() )
+        {
+            if( subResultCombination().size() == 1 )
+            {
+                fixedConditions = substitutionResults().at( subResultCombination().back().first ).size() == 1;
+            }
+        }
+        else
+        {
+            fixedConditions = true;
+        }
+
+        if( coverSetOCondsContainIndexOfFather && !fixedConditions )
         {
             rMarkedAsDeleted() = false;
             rInconsistent() = false;
@@ -2502,7 +2519,7 @@ namespace vs
                 #ifdef VS_VB_DEBUG
                 cout << "case 2" << endl;
                 printAlone();
-                cout << substitution().term().expression() << "  substituted by " << endl;
+                cout << substitution().term().asExpression() << "  substituted by " << endl;
                 father().variableBounds().print( cout, "          " );
                 cout << endl;
                 #endif

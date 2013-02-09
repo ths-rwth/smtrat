@@ -83,6 +83,9 @@ namespace vs
                 cout << "Error in substitute: unexpected type of substitution." << endl;
             }
         }
+        #ifdef CONSTRAINT_FACTORIZATION
+        splitProducts( _substitutionResults );
+        #endif
         #ifdef VS_DEBUG_SUBSTITUTION
         print( _substitutionResults );
         #endif
@@ -1011,25 +1014,6 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << "simplify" << endl;
         #endif
-        #ifdef CONSTRAINT_FACTORIZATION
-        unsigned toSimpSize = _toSimplify.size();
-//        print( _toSimplify );
-        for( unsigned pos = 0; pos < toSimpSize; )
-        {
-            if( !_toSimplify.begin()->empty() )
-            {
-                DisjunctionOfConstraintConjunctions temp = splitProducts( _toSimplify[pos] );
-                _toSimplify.erase( _toSimplify.begin() );
-                _toSimplify.insert( _toSimplify.end(), temp.begin(), temp.end() );
-                --toSimpSize;
-            }
-            else
-            {
-                ++pos;
-            }
-        }
-//        print( _toSimplify );
-        #endif
         bool                                          containsEmptyDisjunction = false;
         DisjunctionOfConstraintConjunctions::iterator conj                     = _toSimplify.begin();
         while( conj != _toSimplify.end() )
@@ -1070,7 +1054,29 @@ namespace vs
                 containsEmptyDisjunction = true;
             }
         }
-//        print( _toSimplify );
+    }
+
+    /**
+     * 
+     * @param _toSimplify
+     */
+    void splitProducts( DisjunctionOfConstraintConjunctions& _toSimplify )
+    {
+        unsigned toSimpSize = _toSimplify.size();
+        for( unsigned pos = 0; pos < toSimpSize; )
+        {
+            if( !_toSimplify.begin()->empty() )
+            {
+                DisjunctionOfConstraintConjunctions temp = splitProducts( _toSimplify[pos] );
+                _toSimplify.erase( _toSimplify.begin() );
+                _toSimplify.insert( _toSimplify.end(), temp.begin(), temp.end() );
+                --toSimpSize;
+            }
+            else
+            {
+                ++pos;
+            }
+        }
     }
 
     /**
@@ -1098,6 +1104,7 @@ namespace vs
                             toCombine.back().push_back( TS_ConstraintConjunction() );
                             toCombine.back().back().push_back( cons );
                         }
+                        simplify( toCombine.back() );
                         break;
                     }
                     case smtrat::CR_NEQ:
@@ -1110,6 +1117,7 @@ namespace vs
                             const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_NEQ, (*constraint)->variables() );
                             toCombine.back().back().push_back( cons );
                         }
+                        simplify( toCombine.back() );
                         break;
                     }
 //                    case CR_LEQ:
@@ -1145,6 +1153,7 @@ namespace vs
             }
         }
         combine( toCombine, result );
+        simplify( result );
         return result;
     }
 

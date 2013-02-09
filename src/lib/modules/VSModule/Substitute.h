@@ -93,6 +93,7 @@ namespace vs
     void substituteTrivialCase( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteNotTrivialCase( const smtrat::Constraint&, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void simplify( DisjunctionOfConstraintConjunctions& );
+    void splitProducts( DisjunctionOfConstraintConjunctions& );
     DisjunctionOfConstraintConjunctions splitProducts( const TS_ConstraintConjunction& );
     GiNaC::ex simplify( const GiNaC::ex&, const GiNaC::symtab&  );
     void print( DisjunctionOfConstraintConjunctions& );

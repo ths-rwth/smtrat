@@ -35,8 +35,6 @@
 #include "ConstraintPool.h"
 #include "Formula.h"
 
-#define CONSTRAINT_FACTORIZATION
-
 using namespace std;
 using namespace GiNaC;
 

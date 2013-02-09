@@ -1739,10 +1739,6 @@ EndSwitch:;
                 const Constraint* constraint = (*cond)->pConstraint();
                 switch( constraint->relation() )
                 {
-                    case CR_EQ:
-                    {
-                        break;
-                    }
                     case CR_GEQ:
                     {
                         const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), CR_GREATER, constraint->variables() );
@@ -1828,7 +1824,6 @@ EndSwitch:;
         adaptPassedFormula( *_state, formulaToConditions );
         #endif
 
-//        _state->printAlone();
         switch( runBackends() )
         {
             case True:
