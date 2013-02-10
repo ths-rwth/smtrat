@@ -637,7 +637,7 @@ namespace vs
                     if( !simplify( fixedConditions->back().first, redundantConditions, conflictingConditionPairs ) )
                     {
                         addConflicts( NULL, conflictingConditionPairs );
-                        if( !isRoot() ) passConflictToFather();
+//                        if( !isRoot() ) passConflictToFather();
                     }
                 }
             }
@@ -726,7 +726,6 @@ namespace vs
                         redundantConditionSet.insert( condB );
 
                     }
-
                     /*
                      * If cond1's solution space is a subset of the solution space of cond2.
                      */
@@ -734,7 +733,6 @@ namespace vs
                     {
                         redundantConditionSet.insert( condB );
                     }
-
                     /*
                      * If it is easy to give a condition whose solution space is the intersection of
                      * the solution spaces of cond1 and cond2.
@@ -824,7 +822,6 @@ namespace vs
                             assert( false );
                         }
                     }
-
                     /*
                      * If cond1's solution space is a superset of the solution space of cond2.
                      */
@@ -832,14 +829,12 @@ namespace vs
                     {
                         redundantConditionSet.insert( condA );
                     }
-
                     /*
                      * If it is easy to decide that cond1 and cond2 are conflicting.
                      */
                     else if( strongProp == -2 || strongProp == -4 )
                     {
                         ConditionSet condSet = ConditionSet();
-
                         condSet.insert( condA );
                         condSet.insert( condB );
 
@@ -1040,6 +1035,10 @@ namespace vs
     {
         for( StateVector::iterator child = rChildren().begin(); child != children().end(); ++child )
         {
+            // TODO: If there is a child with a test candidate whose side conditions are a superset of the side conditions of the
+            // given substitution, remove the child and add the test candidates original conditions to the original conditions of
+            // the given substitution. However, when deleting later the original condition of the given substitution, the its
+            // getting nasty.
             if( (**child).substitution() == _substitution )
             {
                 (**child).rSubstitution().rOriginalConditions().insert( _substitution.originalConditions().begin(),
@@ -1448,7 +1447,6 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
         #endif
-//        printConditions();
 
         mTryToRefreshIndex = false;
 
@@ -2072,9 +2070,11 @@ namespace vs
      *                              element of a substitution.
      * @param _substitutionType     The type of the substitution we create.
      *
-     * @return True, if a state was successfully added.
+     * @return  1,  if a state was successfully added;
+     *          0,  if a the state already exists;
+     *         -1,  if the side conditions fail.
      */
-    bool State::addChild( const string& _eliminationVar, const ex& _elimVarAsEx, const Substitution_Type& _substitutionType, const ConditionSet& _oConditions )
+    int State::addChild( const string& _eliminationVar, const ex& _elimVarAsEx, const Substitution_Type& _substitutionType, const ConditionSet& _oConditions )
     {
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
@@ -2085,11 +2085,11 @@ namespace vs
             State * dt = new State( this, sub );
             (*dt).updateValuation();
             rChildren().push_back( dt );
-            return true;
+            return 1;
         }
         else
         {
-            return false;
+            return 0;
         }
     }
 
@@ -2107,9 +2107,11 @@ namespace vs
      * @param _subTermDenom         The denominator of the term to which the variable is mapped.
      * @param _substitutionType     The type of the substitution we create.
      *
-     * @return True, if a state was successfully added.
+     * @return  1,  if a state was successfully added;
+     *          0,  if a the state already exists;
+     *         -1,  if the side conditions fail.
      */
-    bool State::addChild( const ex& _lhsCondition,
+    int State::addChild( const ex& _lhsCondition,
                           const smtrat::Constraint_Relation& _relationCondition,
                           const string& _eliminationVar,
                           const ex& _elimVarAsEx,
@@ -2124,38 +2126,43 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
         #endif
-        const smtrat::Constraint * cons = smtrat::Formula::newConstraint( _lhsCondition, _relationCondition, _variables );
+        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( _lhsCondition, _relationCondition, _variables );
         unsigned isConsConsistent = (*cons).isConsistent();
         if( isConsConsistent != 0 )
         {
             SqrtEx sqEx = SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand, _variables );
-            Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, sqEx, _substitutionType, _oConditions );
+
+            smtrat::ConstraintSet sideCond = smtrat::ConstraintSet();
+            if( isConsConsistent != 1 ) sideCond.insert( cons );
+
+            Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, sqEx, _substitutionType, _oConditions, sideCond );
             if( !updateOCondsOfSubstitutions( sub ) )
             {
                 State* state = new State( this, sub );
+
                 if( isConsConsistent != 1 )
                 {
                     std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
                     subResults.push_back( DisjunctionOfConditionConjunctions() );
                     subResults.back().push_back( ConditionVector() );
 
-                    subResults.back().back().push_back( new Condition( cons, false, _oConditions, (*state).treeDepth(), false ) );
+                    subResults.back().back().push_back( new Condition( *sideCond.begin(), false, _oConditions, (*state).treeDepth(), false ) );
 
                     state->addSubstitutionResults( subResults );
                     state->rStateType() = SUBSTITUTION_TO_APPLY;
                 }
                 (*state).updateValuation();
                 rChildren().push_back( state );
-                return true;
+                return 1;
             }
             else
             {
-                return false;
+                return 0;
             }
         }
         else
         {
-            return false;
+            return -1;
         }
     }
 
@@ -2177,9 +2184,11 @@ namespace vs
      * @param _subTermDenom         The denominator of the term to which the variable is mapped.
      * @param _substitutionType     The type of the substitution we create.
      *
-     * @return True, if a state was successfully added.
+     * @return  1,  if a state was successfully added;
+     *          0,  if a the state already exists;
+     *         -1,  if the side conditions fail.
      */
-    bool State::addChild( const ex& _lhsCondition1,
+    int State::addChild( const ex& _lhsCondition1,
                           const smtrat::Constraint_Relation& _relationCondition1,
                           const ex& _lhsCondition2,
                           const smtrat::Constraint_Relation& _relationCondition2,
@@ -2205,44 +2214,45 @@ namespace vs
             if( isCons2Consistent != 0 )
             {
                 SqrtEx sqEx = SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand, _variables );
-                Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, sqEx, _substitutionType, _oConditions );
+
+                smtrat::ConstraintSet sideCond = smtrat::ConstraintSet();
+                if( isCons1Consistent != 1 ) sideCond.insert( cons1 );
+                if( isCons2Consistent != 1 ) sideCond.insert( cons2 );
+
+                Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, sqEx, _substitutionType, _oConditions, sideCond );
                 if( !updateOCondsOfSubstitutions( sub ) )
                 {
                     State* state = new State( this, sub );
-                    std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
-                    subResults.push_back( DisjunctionOfConditionConjunctions() );
-                    subResults.back().push_back( ConditionVector() );
-
-                    if( isCons1Consistent != 1 )
+                    if( !sideCond.empty() )
                     {
-                        subResults.back().back().push_back( new Condition( cons1, false, _oConditions, (*state).treeDepth(), false ) );
-                    }
-                    if( isCons2Consistent != 1 )
-                    {
-                        subResults.back().back().push_back( new Condition( cons2, false, _oConditions, (*state).treeDepth(), false ) );
-                    }
-                    if( !subResults.back().back().empty() )
-                    {
+                        unsigned treeDepth = (*state).treeDepth();
+                        std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
+                        subResults.push_back( DisjunctionOfConditionConjunctions() );
+                        subResults.back().push_back( ConditionVector() );
+                        for( auto cons = sideCond.begin(); cons != sideCond.end(); ++cons )
+                        {
+                            subResults.back().back().push_back( new Condition( *cons, false, _oConditions, treeDepth, false ) );
+                        }
                         state->addSubstitutionResults( subResults );
                         state->rStateType() = SUBSTITUTION_TO_APPLY;
                     }
                     state->updateValuation();
                     rChildren().push_back( state );
-                    return true;
+                    return 1;
                 }
                 else
                 {
-                    return false;
+                    return 0;
                 }
             }
             else
             {
-                return false;
+                return -1;
             }
         }
         else
         {
-            return false;
+            return -1;
         }
     }
 
@@ -2299,7 +2309,7 @@ namespace vs
     /**
      * Passes the original conditions of the covering set of the conflicts of this state to its father.
      */
-    void State::passConflictToFather()
+    void State::passConflictToFather( bool _includeInconsistentTestCandidates )
     {
         #ifdef VS_DEBUG_METHODS_X
         cout << __func__ << endl;
@@ -2312,7 +2322,7 @@ namespace vs
         ConditionSet covSet         = ConditionSet();
         ConditionSetSetSet confSets = ConditionSetSetSet();
         ConflictSets::iterator nullConfSet = rConflictSets().find( NULL );
-        if( nullConfSet != conflictSets().end() )
+        if( nullConfSet != conflictSets().end() && !_includeInconsistentTestCandidates )
         {
             confSets.insert( nullConfSet->second.begin(), nullConfSet->second.end() );
         }
@@ -2434,7 +2444,20 @@ namespace vs
         rTakeSubResultCombAgain()     = false;
         rFather().rMarkedAsDeleted() = false;
 
-        if( coverSetOCondsContainIndexOfFather )
+        bool fixedConditions = false;
+        if( hasSubResultsCombination() )
+        {
+            if( subResultCombination().size() == 1 )
+            {
+                fixedConditions = substitutionResults().at( subResultCombination().back().first ).size() == 1;
+            }
+        }
+        else
+        {
+            fixedConditions = true;
+        }
+
+        if( coverSetOCondsContainIndexOfFather && !fixedConditions )
         {
             rMarkedAsDeleted() = false;
             rInconsistent() = false;
@@ -2496,7 +2519,7 @@ namespace vs
                 #ifdef VS_VB_DEBUG
                 cout << "case 2" << endl;
                 printAlone();
-                cout << substitution().term().expression() << "  substituted by " << endl;
+                cout << substitution().term().asExpression() << "  substituted by " << endl;
                 father().variableBounds().print( cout, "          " );
                 cout << endl;
                 #endif
@@ -2747,7 +2770,6 @@ namespace vs
         {
             _out << _initiation + "   " << "Substitution: ";
             substitution().print( _out );
-            _out << endl;
         }
         printSubstitutionResults( _initiation + "   ", _out );
         _out << _initiation << endl;
@@ -2903,17 +2925,7 @@ namespace vs
         {
             if( conflictSet->first != NULL )
             {
-                _out << _initiation << "    " << conflictSet->first->toString() << " from {";
-                for( ConditionSet::const_iterator oCond = conflictSet->first->originalConditions().begin();
-                        oCond != conflictSet->first->originalConditions().end(); ++oCond )
-                {
-                    if( oCond != conflictSet->first->originalConditions().begin() )
-                    {
-                        _out << ", ";
-                    }
-                    (**oCond).constraint().print( _out );
-                }
-                _out << "}" << endl;
+                conflictSet->first->print( true, true, _out, _initiation + "    " );
             }
             else
             {

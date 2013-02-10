@@ -37,22 +37,31 @@ namespace vs
     /**
      * Constructors:
      */
-    SqrtEx::SqrtEx()
+    SqrtEx::SqrtEx():
+        mpConstantPart( new ex( 0 ) ),
+        mpFactor( new ex( 0 ) ),
+        mpDenominator( new ex( 1 ) ),
+        mpRadicand( new ex( 0 ) ),
+        mVariables()
     {
-        mpConstantPart = new ex( 0 );
-        mpFactor       = new ex( 0 );
-        mpDenominator  = new ex( 1 );
-        mpRadicand     = new ex( 0 );
-        mVariables = symtab();
+        if( hasSqrt() )
+        {
+            mpAsExpression = new ex( ex( (constantPart() + factor() * sqrt( radicand() )) / denominator() ).expand().normal() );
+        }
+        else
+        {
+            mpAsExpression = new ex( ex( constantPart() / denominator() ).expand().normal() );
+        }
     }
 
-    SqrtEx::SqrtEx( const GiNaC::ex& _ex, const symtab& _variables )
+    SqrtEx::SqrtEx( const GiNaC::ex& _ex, const symtab& _variables ):
+        mpConstantPart( new ex( _ex.numer() ) ),
+        mpFactor( new ex( 0 ) ),
+        mpDenominator( new ex( _ex.denom() ) ),
+        mpRadicand( new ex( 0 ) ),
+        mpAsExpression( new ex( _ex  ) ),
+        mVariables()
     {
-        mpConstantPart = new ex( _ex.numer() );
-        mpFactor       = new ex( 0 );
-        mpDenominator  = new ex( _ex.denom() );
-        mpRadicand     = new ex( 0 );
-        mVariables = symtab();
         for( auto var = _variables.begin(); var != _variables.end(); ++var )
         {
             if( _ex.has( var->second ) )
@@ -62,36 +71,23 @@ namespace vs
         }
     }
 
-    SqrtEx::SqrtEx( const GiNaC::ex& _constantPart, const GiNaC::ex& _factor, const GiNaC::ex& _denominator, const GiNaC::ex& _radicand, const symtab& _variables )
+    SqrtEx::SqrtEx( const GiNaC::ex& _constantPart, const GiNaC::ex& _factor, const GiNaC::ex& _denominator, const GiNaC::ex& _radicand, const symtab& _variables ):
+        mpConstantPart( new ex( _constantPart ) ),
+        mpFactor( new ex( _radicand == 0 ? 0 : _factor ) ),
+        mpDenominator( new ex( (*mpFactor == 0 && _constantPart == 0) ? 1 : _denominator ) ),
+        mpRadicand( new ex( _factor == 0 ? 0 : _radicand ) ),
+        mVariables()
     {
         assert( _denominator != 0 );
         assert( !_radicand.info( info_flags::rational ) || _radicand.info( info_flags::nonnegative ) );
-        mpConstantPart = new ex( _constantPart );
-        if( _radicand == 0 )
+        if( hasSqrt() )
         {
-            mpFactor = new ex( 0 );
+            mpAsExpression = new ex( ex( (constantPart() + factor() * sqrt( radicand() )) / denominator() ).expand().normal() );
         }
         else
         {
-            mpFactor = new ex( _factor );
+            mpAsExpression = new ex( ex( constantPart() / denominator() ).expand().normal() );
         }
-        if( _factor == 0 )
-        {
-            mpRadicand = new ex( 0 );
-        }
-        else
-        {
-            mpRadicand = new ex( _radicand );
-        }
-        if( *mpFactor == 0 && *mpConstantPart == 0 )
-        {
-            mpDenominator = new ex( 1 );
-        }
-        else
-        {
-            mpDenominator = new ex( _denominator );
-        }
-        mVariables = symtab();
         for( auto var = _variables.begin(); var != _variables.end(); ++var )
         {
             if( _constantPart.has( var->second ) )
@@ -122,14 +118,14 @@ namespace vs
         }
     }
 
-    SqrtEx::SqrtEx( const SqrtEx& _sqrtEx )
-    {
-        mpConstantPart = new ex( _sqrtEx.constantPart() );
-        mpFactor       = new ex( _sqrtEx.factor() );
-        mpDenominator  = new ex( _sqrtEx.denominator() );
-        mpRadicand     = new ex( _sqrtEx.radicand() );
-        mVariables     = symtab( _sqrtEx.variables() );
-    }
+    SqrtEx::SqrtEx( const SqrtEx& _sqrtEx ):
+        mpConstantPart( new ex( _sqrtEx.constantPart() ) ),
+        mpFactor( new ex( _sqrtEx.factor() ) ),
+        mpDenominator( new ex( _sqrtEx.denominator() ) ),
+        mpRadicand( new ex( _sqrtEx.radicand() ) ),
+        mpAsExpression( new ex( _sqrtEx.asExpression() ) ),
+        mVariables( _sqrtEx.variables() )
+    {}
 
     /**
      * Destructor:
@@ -160,23 +156,6 @@ namespace vs
     }
 
     /**
-     * Gives the expression corresponding to the square root expression.
-     *
-     * @return Expression, which corresponds to the square root expression.
-     */
-    ex SqrtEx::expression() const
-    {
-        if( hasSqrt() )
-        {
-            return (constantPart() + factor() * sqrt( radicand() )) / denominator();
-        }
-        else
-        {
-            return constantPart() / denominator();
-        }
-    }
-
-    /**
      * @param _sqrtEx   Square root expression to compare with.
      *
      * @return  true,   if this square root expression and the given one are equal;
@@ -184,7 +163,7 @@ namespace vs
      */
     bool SqrtEx::operator ==( const SqrtEx& _sqrtEx ) const
     {
-        ex difference = expression() - _sqrtEx.expression();
+        ex difference = asExpression() - _sqrtEx.asExpression();
         normalize( difference );
         if( difference == 0 )
         {
@@ -217,6 +196,7 @@ namespace vs
             {
                 mpRadicand = new ex( _sqrtEx.radicand() );
             }
+            mpAsExpression  = new ex( _sqrtEx.asExpression() );
         }
         return *this;
     }
@@ -407,39 +387,6 @@ namespace vs
             resConstantPart += _ex.coeff( _var, i ) * qk[i - 1] * sk[n - i];
             resFactor       += _ex.coeff( _var, i ) * rk[i - 1] * sk[n - i];
         }
-//        for( auto var = _variables.begin(); var != _variables.end(); ++var )
-//        {
-//            if( resConstantPart.has( var->second ) )
-//            {
-//                simplify( resConstantPart, var->second );
-//                break;
-//            }
-//        }
-//        for( auto var = _variables.begin(); var != _variables.end(); ++var )
-//        {
-//            if( resFactor.has( var->second ) )
-//            {
-//                simplify( resFactor, var->second );
-//                break;
-//            }
-//        }
-//        for( auto var = _variables.begin(); var != _variables.end(); ++var )
-//        {
-//            if( sk[n].has( var->second ) )
-//            {
-//                simplify( sk[n], var->second );
-//                break;
-//            }
-//        }
-//        ex radicand = _subTerm.radicand();
-//        for( auto var = _variables.begin(); var != _variables.end(); ++var )
-//        {
-//            if( radicand.has( var->second ) )
-//            {
-//                simplify( radicand, var->second );
-//                break;
-//            }
-//        }
         SqrtEx result = SqrtEx( resConstantPart, resFactor, sk[n], _subTerm.radicand(), _variables );
         return result;
     }

@@ -34,6 +34,7 @@ using namespace std;
 using namespace GiNaC;
 using namespace vs;
 
+//#define VS_DEBUG
 #define VS_WITH_BACKEND
 #ifdef VS_WITH_BACKEND
 //#define CHECK_STRICT_INEQUALITIES_WITH_BACKEND
@@ -222,7 +223,7 @@ namespace smtrat
             {
                 if( mInfeasibleSubsets.empty() )
                 {
-                    #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                    #ifdef VS_LOG_INTERMEDIATE_STEPS
                     checkAnswer();
                     #endif
                     #ifdef VS_PRINT_ANSWERS
@@ -240,7 +241,7 @@ namespace smtrat
             mConditionsChanged = false;
             if( mpReceivedFormula->empty() )
             {
-                #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                #ifdef VS_LOG_INTERMEDIATE_STEPS
                 checkAnswer();
                 #endif
                 #ifdef VS_PRINT_ANSWERS
@@ -397,7 +398,7 @@ namespace smtrat
                                                 #ifdef VS_DEBUG
                                                 printAll( cout );
                                                 #endif
-                                                #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                                                #ifdef VS_LOG_INTERMEDIATE_STEPS
                                                 checkAnswer();
                                                 #endif
                                                 #ifdef VS_PRINT_ANSWERS
@@ -494,7 +495,7 @@ namespace smtrat
                                                 #ifdef VS_DEBUG
                                                 printAll( cout );
                                                 #endif
-                                                #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                                                #ifdef VS_LOG_INTERMEDIATE_STEPS
                                                 checkAnswer();
                                                 #endif
                                                 #ifdef VS_PRINT_ANSWERS
@@ -629,7 +630,7 @@ namespace smtrat
                                                                 #ifdef VS_DEBUG
                                                                 printAll( cout );
                                                                 #endif
-                                                                #ifdef VS_LOG_INTERMEDIATE_STEPS_OF_ASSIGNMENT
+                                                                #ifdef VS_LOG_INTERMEDIATE_STEPS
                                                                 checkAnswer();
                                                                 #endif
                                                                 #ifdef VS_PRINT_ANSWERS
@@ -735,7 +736,7 @@ EndSwitch:;
                 }
                 else
                 {
-                    outA << sub.term().expression().expand().normal();
+                    outA << sub.term().asExpression();
                     if( sub.type() == ST_PLUS_EPSILON )
                     {
                         outA << "+eps_" << mId << "_" << state->treeDepth();
@@ -832,8 +833,9 @@ EndSwitch:;
                 /*
                  * Create state ({b!=0} + oldConditions, [x -> -c/b]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 1 ), CR_NEQ, _eliminationVar, sym, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, vars,
-                                               oConditions ) )
+                int isAdded = (*_currentState).addChild( coeffs.at( 1 ), CR_NEQ, _eliminationVar, sym, -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, subType, vars,
+                                               oConditions );
+                if( isAdded > 0 )
                 {
                     if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
@@ -850,7 +852,7 @@ EndSwitch:;
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
                 }
-                else if( constraint.relation() == CR_EQ )
+                else if( isAdded < 0 && constraint.relation() == CR_EQ )
                 {
                     generatedTestCandidateBeingASolution = true;
                 }
@@ -861,12 +863,13 @@ EndSwitch:;
             {
                 ex radicand = ex( pow( coeffs.at( 1 ), 2 ) - 4 * coeffs.at( 2 ) * coeffs.at( 0 ) );
                 Constraint::normalize( radicand );
-
+                bool constraintHasZeros = false;
                 /*
                  * Create state ({a==0, b!=0} + oldConditions, [x -> -c/b]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_EQ, coeffs.at( 1 ), CR_NEQ, _eliminationVar, sym, -coeffs.at( 0 ), 0,
-                                               coeffs.at( 1 ), 0, subType, vars, oConditions ) )
+                int isAdded = (*_currentState).addChild( coeffs.at( 2 ), CR_EQ, coeffs.at( 1 ), CR_NEQ, _eliminationVar, sym, -coeffs.at( 0 ), 0,
+                                               coeffs.at( 1 ), 0, subType, vars, oConditions );
+                if( isAdded > 0 )
                 {
                     if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
@@ -883,13 +886,14 @@ EndSwitch:;
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
                 }
-                else
+                constraintHasZeros = isAdded >= 0;
 
                 /*
                  * Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, sym, -coeffs.at( 1 ), 1,
-                                               2 * coeffs.at( 2 ), radicand, subType, vars, oConditions ) )
+                isAdded = (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, sym, -coeffs.at( 1 ), 1,
+                                               2 * coeffs.at( 2 ), radicand, subType, vars, oConditions );
+                if( isAdded > 0 )
                 {
                     if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
@@ -906,12 +910,14 @@ EndSwitch:;
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
                 }
+                constraintHasZeros = isAdded >= 0;
 
                 /*
                  * Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
                  */
-                if( (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, sym, -coeffs.at( 1 ), -1,
-                                               2 * coeffs.at( 2 ), radicand, subType , vars, oConditions ) )
+                isAdded = (*_currentState).addChild( coeffs.at( 2 ), CR_NEQ, radicand, CR_GEQ, _eliminationVar, sym, -coeffs.at( 1 ), -1,
+                                               2 * coeffs.at( 2 ), radicand, subType , vars, oConditions );
+                if( isAdded > 0 )
                 {
                     if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
@@ -928,8 +934,9 @@ EndSwitch:;
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
                 }
+                constraintHasZeros = isAdded >= 0;
 
-                if( numberOfAddedChildren == 0 && constraint.relation() == CR_EQ )
+                if( !constraintHasZeros && constraint.relation() == CR_EQ )
                 {
                     generatedTestCandidateBeingASolution = true;
                 }
@@ -1473,7 +1480,7 @@ EndSwitch:;
     /**
      * Updates the infeasible subset.
      */
-    void VSModule::updateInfeasibleSubset()
+    void VSModule::updateInfeasibleSubset( bool _includeInconsistentTestCandidates )
     {
         #ifdef VS_INFEASIBLE_SUBSET_GENERATION
         /*
@@ -1482,7 +1489,7 @@ EndSwitch:;
         ConditionSetSet minCoverSets = ConditionSetSet();
         ConditionSetSetSet confSets  = ConditionSetSetSet();
         ConflictSets::iterator nullConfSet = mpStateTree->rConflictSets().find( NULL );
-        if( nullConfSet != mpStateTree->rConflictSets().end() )
+        if( nullConfSet != mpStateTree->rConflictSets().end() && !_includeInconsistentTestCandidates )
         {
             confSets.insert( nullConfSet->second.begin(), nullConfSet->second.end() );
         }
@@ -1558,7 +1565,7 @@ EndSwitch:;
         {
             const Substitution& sub = currentState->substitution();
             uncheckedVariables.erase( sub.variable() );
-            pair<Substitution_Type, ex>                symValue        = pair<Substitution_Type, ex>( sub.type(), sub.term().expression() );
+            pair<Substitution_Type, ex>                symValue        = pair<Substitution_Type, ex>( sub.type(), sub.term().asExpression() );
             pair<string, pair<Substitution_Type, ex> > symVarValuePair = pair<string, pair<Substitution_Type, ex> >( sub.variable(), symValue );
             resultTmp.push_back( symVarValuePair );
             currentState = (*currentState).pFather();
@@ -1732,10 +1739,6 @@ EndSwitch:;
                 const Constraint* constraint = (*cond)->pConstraint();
                 switch( constraint->relation() )
                 {
-                    case CR_EQ:
-                    {
-                        break;
-                    }
                     case CR_GEQ:
                     {
                         const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), CR_GREATER, constraint->variables() );
@@ -1793,6 +1796,7 @@ EndSwitch:;
             vec_set_const_pFormula origins = vec_set_const_pFormula();
             Formula* formula = new smtrat::Formula( iter->first );
             _formulaCondMap[formula] = iter->second;
+            addConstraintToInform( iter->first );
             addSubformulaToPassedFormula( formula, origins );
         }
         return changedPassedFormula;
@@ -1820,7 +1824,6 @@ EndSwitch:;
         adaptPassedFormula( *_state, formulaToConditions );
         #endif
 
-//        _state->printAlone();
         switch( runBackends() )
         {
             case True:
@@ -1927,12 +1930,15 @@ EndSwitch:;
      */
     void VSModule::logConditions( const State& _state, bool _assumption, const string& _description ) const
     {
-        set<const smtrat::Constraint*> constraints = set<const smtrat::Constraint*>();
-        for( ConditionVector::const_iterator cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
+        if( !_state.conditions().empty() )
         {
-            constraints.insert( (**cond).pConstraint() );
+            set<const smtrat::Constraint*> constraints = set<const smtrat::Constraint*>();
+            for( ConditionVector::const_iterator cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
+            {
+                constraints.insert( (**cond).pConstraint() );
+            }
+            smtrat::Module::addAssumptionToCheck( constraints, _assumption, _description );
         }
-        smtrat::Module::addAssumptionToCheck( constraints, _assumption, _description );
     }
     #endif
 
@@ -1992,7 +1998,7 @@ EndSwitch:;
             const State* currentState = mRanking.begin()->second;
             while( !(*currentState).isRoot() )
             {
-                _out << "***           " << (*currentState).substitution().toString2() << endl;
+                _out << "***           " << (*currentState).substitution().toString( true ) << endl;
                 currentState = (*currentState).pFather();
             }
         }

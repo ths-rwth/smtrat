@@ -44,15 +44,18 @@ namespace smtrat
         mIdAllocator( 1 ),
         mAuxiliaryBooleanCounter( 0 ),
         mAuxiliaryRealCounter( 0 ),
+        mConsistentConstraint( new Constraint( 0, CR_EQ, symtab(), 1 ) ),
+        mInconsistentConstraint( new Constraint( 0, CR_LESS, symtab(), 2 ) ),
         mAuxiliaryBooleanNamePrefix( "h_b_" ),
         mAuxiliaryRealNamePrefix( "h_r_" ),
         mAllRealVariables(),
         mAllBooleanVariables(),
-        mAllConstraints(),
-        mAllVariableFreeConstraints()
+        mAllConstraints()
     {
         mAllConstraints.reserve( _capacity );
-        mIdAllocator = 1;
+        mAllConstraints.insert( mConsistentConstraint );
+        mAllConstraints.insert( mInconsistentConstraint );
+        mIdAllocator = 3;
     }
 
     /**
@@ -66,24 +69,6 @@ namespace smtrat
             mAllConstraints.erase( mAllConstraints.begin() );
             delete pCons;
         }
-        while( !mAllVariableFreeConstraints.empty() )
-        {
-            const Constraint* pCons = *mAllVariableFreeConstraints.begin();
-            mAllVariableFreeConstraints.erase( mAllVariableFreeConstraints.begin() );
-            delete pCons;
-        }
-    }
-
-    /**
-     *
-     */
-    void ConstraintPool::clear()
-    {
-        mAllRealVariables.clear();
-        mAllBooleanVariables.clear();
-        mAllConstraints.clear();
-        mAllVariableFreeConstraints.clear();
-        mIdAllocator = 1;
     }
 
     /**
@@ -527,31 +512,42 @@ namespace smtrat
      */
     const Constraint* ConstraintPool::addConstraintToPool( Constraint* _constraint )
     {
-        if( _constraint->isConsistent() == 2 )
+        unsigned constraintConsistent = _constraint->isConsistent();
+        if( constraintConsistent == 2 )
         {
+            // Constraint contains variables.
             pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllConstraints.insert( _constraint );
             if( !iterBoolPair.second )
             {
+                // Constraint has already been generated.
                 delete _constraint;
             }
             else
             {
                 _constraint->collectProperties();
-                Constraint* constraint = _constraint->updateRelation();
+                Constraint* constraint = _constraint->simplify();
                 if( constraint != NULL )
                 {
+                    // Constraint could be simplified.
                     pair<fastConstraintSet::iterator, bool> iterBoolPairB = mAllConstraints.insert( constraint );
-                    if( !iterBoolPair.second )
+                    if( !iterBoolPairB.second )
                     {
+                        // Simplified version already exists, then set the id of the generated constraint to the id of the simplified one.
                         _constraint->rId() = (*iterBoolPairB.first)->id();
+                        delete constraint;
                     }
                     else
                     {
+                        // Simplified version has not been generated before.
+                        constraint->init();
                         ++mIdAllocator;
                     }
+                    return *iterBoolPairB.first;
                 }
                 else
                 {
+                    // Constraint could not be simplified.
+                    _constraint->init();
                     ++mIdAllocator;
                 }
             }
@@ -559,14 +555,9 @@ namespace smtrat
         }
         else
         {
-            pair<fastConstraintSet::iterator, bool> iterBoolPair = mAllVariableFreeConstraints.insert( _constraint );
-            if( !iterBoolPair.second )
-            {
-                ++mIdAllocator;
-                _constraint->collectProperties();
-                delete _constraint;
-            }
-            return *iterBoolPair.first;
+            // Constraint contains no variables.
+            delete _constraint;
+            return (constraintConsistent != 0 ? mConsistentConstraint : mInconsistentConstraint );
         }
     }
 

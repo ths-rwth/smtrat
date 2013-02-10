@@ -36,6 +36,7 @@
 //#define NDEBUG
 #define VS_USE_GINAC_EXPAND
 //#define VS_USE_GINAC_NORMAL
+//#define CONSTRAINT_FACTORIZATION
 
 #include <ginac/ginac.h>
 #include <ginac/flags.h>
@@ -51,11 +52,6 @@ namespace smtrat
     //
     // Type and object definitions
     //
-
-    /*
-     * The expected number of variables occurring in the constraint.
-     */
-    const unsigned VS_EXPECTED_NUMBER_OF_VARIABLES = 10;
 
     enum Constraint_Relation
     {
@@ -116,6 +112,7 @@ namespace smtrat
              * Attributes:
              */
             unsigned             mID;
+            unsigned             mFirstHash;
             unsigned             mSecondHash;
             bool                 mIsNeverPositive;
             bool                 mIsNeverNegative;
@@ -126,20 +123,20 @@ namespace smtrat
             Constraint_Relation  mRelation;
             GiNaC::ex*           pLhs;
             GiNaC::ex*           mpMultiRootLessLhs;
+            GiNaC::ex*           mpFactorization;
             Coefficients*        mpCoefficients;
             GiNaC::numeric       mConstantPart;
             GiNaC::symtab        mVariables;
             VarInfoMap           mVarInfoMap;
 
         public:
-
             /*
              * Constructors:
              */
             Constraint();
             Constraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab&, unsigned = 0 );
             Constraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation&, const GiNaC::symtab&, unsigned = 0 );
-            Constraint( const Constraint& );
+            Constraint( const Constraint&, bool = false );
 
             /*
              * Destructor:
@@ -174,6 +171,11 @@ namespace smtrat
                 return mID;
             }
 
+            unsigned firstHash() const
+            {
+                return mFirstHash;
+            }
+
             unsigned secondHash() const
             {
                 return mSecondHash;
@@ -182,6 +184,16 @@ namespace smtrat
             const GiNaC::ex& multiRootLessLhs() const
             {
                 return *mpMultiRootLessLhs;
+            }
+
+            bool hasFactorization() const
+            {
+                return (mpFactorization != pLhs);
+            }
+
+            const GiNaC::ex& factorization() const
+            {
+                return *mpFactorization;
             }
 
             unsigned numMonomials() const
@@ -234,12 +246,7 @@ namespace smtrat
             bool isLinear() const;
             unsigned maxDegree() const;
             std::map<const std::string, GiNaC::numeric, strCmp> linearAndConstantCoefficients() const;
-            void collectProperties();
-            Constraint* updateRelation();
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
-
-            // Data access methods (read and write).
-            const GiNaC::ex& multiRootLessLhs( const std::string& ) const;
 
             // Operators.
             bool operator <( const Constraint& ) const;
@@ -247,7 +254,9 @@ namespace smtrat
             friend std::ostream& operator <<( std::ostream&, const Constraint& );
 
             // Manipulating methods.
-            void simplify();
+            void collectProperties();
+            Constraint* simplify();
+            void init();
 
             // Printing methods.
             std::string toString() const;
@@ -255,6 +264,7 @@ namespace smtrat
             void print2( std::ostream& _out = std::cout ) const;
             void printInPrefix( std::ostream& _out = std::cout ) const;
             const std::string prefixStringOf( const GiNaC::ex& ) const;
+            void printProperties( std::ostream& = std::cout ) const;
             std::string smtlibString() const;
 
             //
@@ -275,7 +285,7 @@ namespace smtrat
             return (*pConstraintA) < (*pConstraintB);
         }
     };
-    
+
     struct constraintIdComp
     {
         bool operator() (const Constraint* const pConstraintA, const Constraint* const pConstraintB ) const
@@ -283,7 +293,7 @@ namespace smtrat
             return pConstraintA->id() < pConstraintB->id();
         }
     };
-    
+
     typedef std::set< const Constraint*, constraintPointerComp > ConstraintSet;
 }    // namespace smtrat
 

@@ -51,7 +51,7 @@ namespace smtrat
     {
         size_t operator ()( const Constraint* const _constraint ) const
         {
-            return _constraint->lhs().gethash() * 6 + _constraint->secondHash();
+            return _constraint->firstHash() * 6 + _constraint->secondHash();
         }
     };
 
@@ -78,6 +78,10 @@ namespace smtrat
             unsigned mAuxiliaryBooleanCounter;
             /// A counter for the auxiliary Booleans defined in this formula.
             unsigned mAuxiliaryRealCounter;
+            ///
+            Constraint* mConsistentConstraint;
+            ///
+            Constraint* mInconsistentConstraint;
             /// The prefix for any auxiliary Boolean defined in this formula.
             const std::string mAuxiliaryBooleanNamePrefix;
             /// The prefix for any auxiliary Boolean defined in this formula.
@@ -88,8 +92,6 @@ namespace smtrat
             std::set<std::string> mAllBooleanVariables;
             /// for each string representation its constraint (considering all constraints of which the manager has already been informed)
             fastConstraintSet mAllConstraints;
-            /// variable-free constraints
-            fastConstraintSet mAllVariableFreeConstraints;
 
             // Methods:
 

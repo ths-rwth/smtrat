@@ -249,6 +249,7 @@ namespace smtrat
             int64_t               propagation_budget; // -1 means no budget.
             bool                  asynch_interrupt;
 
+            bool                  mChangedPassedFormula;
             BooleanConstraintMap  mBooleanConstraintMap;
             ConstraintLiteralMap  mConstraintLiteralMap;
             BooleanVarMap         mBooleanVarMap;
@@ -375,6 +376,8 @@ namespace smtrat
             // (helper method for 'analyze()')
             bool litRedundant( Minisat::Lit p, uint32_t abstract_levels );
             //
+            bool processLemmas();
+            //
             Minisat::CRef learnTheoryConflict( const std::set<const Formula*>& );
             // Search for a given number of conflicts.
             Minisat::lbool search( int nof_conflicts = 100 );
@@ -449,7 +452,7 @@ namespace smtrat
             Minisat::Lit getLiteral( const Formula&, const Formula* = NULL, bool = true );
             //Deprecated method
             Minisat::Lit getLiteral( const Constraint*, const Formula* = NULL, double = 0, bool = false, bool = true );
-            bool adaptPassedFormula();
+            void adaptPassedFormula();
     };
 
     //=================================================================================================

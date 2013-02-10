@@ -36,83 +36,32 @@ namespace vs
     /**
     * Constructors:
     */
-    Substitution::Substitution()
-    {
-        mpVariable 					= new string		( "RandomVariable" );
-        mpVarAsEx                   = new ex( 0 );
-        mpTerm 						= new SqrtEx			( )					;
-        #ifdef VS_CUBIC_CASE
-        mpMultiRootLessOcond		= new ex			( 0 )				;
-        mpFirstZeroOfDerivOfOCond	= new SqrtEx			( )					;
-        mpSecondZeroOfDerivOfOCond	= new SqrtEx			( )					;
-        #endif
-        mType						= ST_NORMAL									;
-        mpOriginalConditions		= new ConditionSet	( )					;
-    }
+    Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const Substitution_Type& _type, const ConditionSet& _oConditions, const smtrat::ConstraintSet& _sideCondition ):
+        mpVariable( new string( _variable ) ),
+        mpVarAsEx( new ex( _varAsEx ) ),
+        mpTerm( new SqrtEx() ),
+        mType( _type ),
+        mpOriginalConditions( new ConditionSet( _oConditions ) ),
+        mSideCondition( _sideCondition )
+    {}
 
+    Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const SqrtEx& _term, const Substitution_Type& _type, const ConditionSet& _oConditions, const smtrat::ConstraintSet& _sideCondition ):
+        mpVariable( new string( _variable ) ),
+        mpVarAsEx( new ex( _varAsEx ) ),
+        mpTerm( new SqrtEx( _term ) ),
+        mType( _type ),
+        mpOriginalConditions( new ConditionSet( _oConditions ) ),
+        mSideCondition( _sideCondition )
+    {}
 
-    Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const Substitution_Type& _type, const ConditionSet& _oConditions )
-    {
-        mpVariable 					= new string		( _variable )	;
-        mpVarAsEx 					= new ex            ( _varAsEx )	;
-        mpTerm 						= new SqrtEx		( )				;
-        #ifdef VS_CUBIC_CASE
-        mpMultiRootLessOcond		= new ex			( 0 )			;
-        mpFirstZeroOfDerivOfOCond	= new SqrtEx			( )				;
-        mpSecondZeroOfDerivOfOCond	= new SqrtEx			( )				;
-        #endif
-        mType						= Substitution_Type		( _type )		;
-        mpOriginalConditions		= new ConditionSet	( _oConditions );
-    }
-
-    Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const SqrtEx& _term, const Substitution_Type& _type, const ConditionSet& _oConditions )
-    {
-        mpVariable 					= new string	( _variable )	;
-        mpVarAsEx 					= new ex            ( _varAsEx )	;
-        mpTerm 						= new SqrtEx		( _term )		;
-        #ifdef VS_CUBIC_CASE
-        mpMultiRootLessOcond		= new ex		( 0 )			;
-        mpFirstZeroOfDerivOfOCond	= new SqrtEx		( )				;
-        mpSecondZeroOfDerivOfOCond	= new SqrtEx		( )				;
-        #endif
-        mType						= Substitution_Type	( _type )		;
-        mpOriginalConditions		= new ConditionSet	( _oConditions );
-    }
-
-    #ifdef VS_CUBIC_CASE
-    Substitution::Substitution( const string& _variable, const ex& _multiRootLessOcond, const SqrtEx& _firstZeroOfDerivOfOCond, const SqrtEx& _secondZeroOfDerivOfOCond, const Substitution_Type& _type, const ConditionSet& _oConditions )
-    {
-        mpVariable 					= new string	( _variable )					;
-        mpMultiRootLessOcond		= new ex		( _multiRootLessOcond )			;
-        mpFirstZeroOfDerivOfOCond	= new SqrtEx		( _firstZeroOfDerivOfOCond )	;
-        mpSecondZeroOfDerivOfOCond	= new SqrtEx		( _secondZeroOfDerivOfOCond )	;
-        mType						= Substitution_Type	( _type )						;
-        mpOriginalConditions		= new ConditionSet	( _oConditions )				;
-        for( symtab::const_iterator var = _vars.begin();
-            var!= _vars.end();
-            ++var )
-        {
-            if( _multiRootLessOcond.has( ex( var->second ) ) )
-            {
-                mTermVariables.insert( make_pair( string( var->first ), var->second ) );
-            }
-        }
-    }
-    #endif
-
-    Substitution::Substitution( const Substitution& _sub )
-    {
-        mpVariable 					= new string	( _sub.variable() )                     ;
-        mpVarAsEx 					= new ex        ( _sub.varAsEx() )                      ;
-        mType	   					= Substitution_Type	( _sub.type() )						;
-        mpTerm 						= new SqrtEx		( _sub.term() )						;
-        #ifdef VS_CUBIC_CASE
-        mpMultiRootLessOcond		= new ex		( _sub.multiRootLessOcond() )		;
-        mpFirstZeroOfDerivOfOCond	= new SqrtEx		( _sub.firstZeroOfDerivOfOCond() )	;
-        mpSecondZeroOfDerivOfOCond	= new SqrtEx		( _sub.secondZeroOfDerivOfOCond() )	;
-        #endif
-        mpOriginalConditions		= new ConditionSet	( _sub.originalConditions() )		;
-    }
+    Substitution::Substitution( const Substitution& _sub ):
+        mpVariable( new string( _sub.variable() ) ),
+        mpVarAsEx( new ex( _sub.varAsEx() ) ),
+        mpTerm( new SqrtEx( _sub.term() ) ),
+        mType( _sub.type() ),
+        mpOriginalConditions( new ConditionSet( _sub.originalConditions() ) ),
+        mSideCondition( _sub.sideCondition() )
+    {}
 
     /**
     * Destructor:
@@ -122,11 +71,6 @@ namespace vs
         delete mpVariable					;
         delete mpVarAsEx                    ;
         delete mpTerm						;
-        #ifdef VS_CUBIC_CASE
-        delete mpMultiRootLessOcond			;
-        delete mpFirstZeroOfDerivOfOCond	;
-        delete mpSecondZeroOfDerivOfOCond	;
-        #endif
         delete mpOriginalConditions			;
     }
 
@@ -202,68 +146,35 @@ namespace vs
     *
     * @param _out The output stream, where it should print.
     */
-    void Substitution::print( ostream& _out ) const
+    void Substitution::print( bool _withOrigins, bool _withSideConditions, ostream& _out, const string& _init ) const
     {
-        switch( type() )
+        _out << _init << toString();
+        if( _withOrigins )
         {
-            case ST_NORMAL:
+            _out << " from {";
+            for( auto oCond = originalConditions().begin(); oCond != originalConditions().end(); ++oCond )
             {
-                _out << "[" << variable();
-                _out << " -> " << term() << "]";
-                break;
+                if( oCond != originalConditions().begin() )
+                {
+                    _out << ", ";
+                }
+                (**oCond).constraint().print( _out );
             }
-            case ST_PLUS_EPSILON:
+            _out << "}";
+        }
+        if( _withSideConditions && !sideCondition().empty() )
+        {
+            _out << "  if  ";
+            for( auto sCons = sideCondition().begin(); sCons != sideCondition().end(); ++sCons )
             {
-                _out << "[" << variable();
-                _out << " -> " << term() << " + epsilon]";
-                break;
-            }
-            case ST_MINUS_INFINITY:
-            {
-                _out << "[" << variable() << " ->  -infinity]";
-                break;
-            }
-            #ifdef VS_CUBIC_CASE
-            case ST_SINGLE_CUBIC_ROOT:
-            {
-                _out << "["+ variable() + " -> its only root in ";
-                _out << multiRootLessOcond() << "]";
-                break;
-            }
-            case ST_TRIPLE_CUBIC_ROOT:
-            {
-                _out << "["+ variable() + " -> its three different roots in ";
-                _out << multiRootLessOcond() << "]";
-                break;
-            }
-            case ST_SINGLE_CUBIC_ROOT_PLUS_EPS:
-            {
-                _out << "["+ variable() + " -> its only root in ";
-                _out << multiRootLessOcond() << " + epsilon]";
-                break;
-            }
-            case ST_TRIPLE_CUBIC_ROOT_PLUS_EPS:
-            {
-                _out << "["+ variable() + " -> its three different roots in ";
-                _out << multiRootLessOcond() << " + epsilon]";
-                break;
-            }
-            #endif
-            default:
-            {
-                cout << "Unknown substitution type!" << endl;
-                assert( false );
+                if( sCons != sideCondition().begin() )
+                {
+                    _out << " and ";
+                }
+                _out << **sCons;
             }
         }
-
-        _out << "  {";
-        for( ConditionSet::const_iterator oCond = originalConditions().begin();
-            oCond!= originalConditions().end();
-            ++oCond )
-        {
-            _out << " ( " << (**oCond).constraint().toString() << " )";
-        }
-        _out << " }";
+        _out << endl;
     }
 
     /**
@@ -271,7 +182,7 @@ namespace vs
     *
     * @return The string representation of this substitution.
     */
-    string	Substitution::toString() const
+    string Substitution::toString( bool _compact ) const
     {
         string stringRepresentation = "";
         switch( type() )
@@ -281,7 +192,8 @@ namespace vs
                 stringRepresentation += "[" + variable();
                 stringRepresentation += " -> ";
                 ostringstream tempOStream;
-                tempOStream << term();
+                if( _compact ) tempOStream << term().asExpression();
+                else tempOStream << term();
                 stringRepresentation += tempOStream.str();
                 stringRepresentation += "]";
                 break;
@@ -291,7 +203,8 @@ namespace vs
                 stringRepresentation += "[" + variable();
                 stringRepresentation += " -> ";
                 ostringstream tempOStream;
-                tempOStream << term();
+                if( _compact ) tempOStream << term().asExpression();
+                else tempOStream << term();
                 stringRepresentation += tempOStream.str();
                 stringRepresentation += " + epsilon]";
                 break;
@@ -301,126 +214,6 @@ namespace vs
                 stringRepresentation += "[" + variable() + " ->  -infinity]";
                 break;
             }
-            #ifdef VS_CUBIC_CASE
-            case ST_SINGLE_CUBIC_ROOT:
-            {
-                stringRepresentation += "["+ variable() + " -> its only root in ";
-                ostringstream tempOStream;
-                tempOStream << multiRootLessOcond();
-                stringRepresentation += tempOStream.str();
-                stringRepresentation += "]";
-                break;
-            }
-            case ST_TRIPLE_CUBIC_ROOT:
-            {
-                stringRepresentation += "["+ variable() + " -> its three different roots in ";
-                ostringstream tempOStream;
-                tempOStream << multiRootLessOcond();
-                stringRepresentation += tempOStream.str();
-                stringRepresentation += "]";
-                break;
-            }
-            case ST_SINGLE_CUBIC_ROOT_PLUS_EPS:
-            {
-                stringRepresentation += "["+ variable() + " -> its only root in ";
-                ostringstream tempOStream;
-                tempOStream << multiRootLessOcond();
-                stringRepresentation += tempOStream.str();
-                stringRepresentation += " + epsilon]";
-                break;
-            }
-            case ST_TRIPLE_CUBIC_ROOT_PLUS_EPS:
-            {
-                stringRepresentation += "["+ variable() + " -> its three different roots in ";
-                ostringstream tempOStream;
-                tempOStream << multiRootLessOcond();
-                stringRepresentation += tempOStream.str();
-                stringRepresentation += " + epsilon]";
-                break;
-            }
-            #endif
-            default:
-            {
-                cout << "Unknown substitution type!" << endl;
-                assert( false );
-            }
-        }
-        return stringRepresentation;
-    }
-
-    /**
-    * Gives the string representation of this substitution.
-    *
-    * @return The string representation of this substitution.
-    */
-    string	Substitution::toString2() const
-    {
-        string stringRepresentation = "";
-        switch( type() )
-        {
-            case ST_NORMAL:
-            {
-                stringRepresentation += "[" + variable();
-                stringRepresentation += " -> ";
-                ostringstream tempOStream;
-                tempOStream << term().expression();
-                stringRepresentation += tempOStream.str();
-                stringRepresentation += "]";
-                break;
-            }
-            case ST_PLUS_EPSILON:
-            {
-                stringRepresentation += "[" + variable();
-                stringRepresentation += " -> ";
-                ostringstream tempOStream;
-                tempOStream << term().expression();
-                stringRepresentation += tempOStream.str();
-                stringRepresentation += " + epsilon]";
-                break;
-            }
-            case ST_MINUS_INFINITY:
-            {
-                stringRepresentation += "[" + variable() + " ->  -infinity]";
-                break;
-            }
-            #ifdef VS_CUBIC_CASE
-            case ST_SINGLE_CUBIC_ROOT:
-            {
-                stringRepresentation += "["+ variable() + " -> its only root in ";
-                ostringstream tempOStream;
-                tempOStream << multiRootLessOcond();
-                stringRepresentation += tempOStream.str();
-                stringRepresentation += "]";
-                break;
-            }
-            case ST_TRIPLE_CUBIC_ROOT:
-            {
-                stringRepresentation += "["+ variable() + " -> its three different roots in ";
-                ostringstream tempOStream;
-                tempOStream << multiRootLessOcond();
-                stringRepresentation += tempOStream.str();
-                stringRepresentation += "]";
-                break;
-            }
-            case ST_SINGLE_CUBIC_ROOT_PLUS_EPS:
-            {
-                stringRepresentation += "["+ variable() + " -> its only root in ";
-                ostringstream tempOStream;
-                tempOStream << multiRootLessOcond();
-                stringRepresentation += tempOStream.str();
-                stringRepresentation += " + epsilon]";
-                break;
-            }
-            case ST_TRIPLE_CUBIC_ROOT_PLUS_EPS:
-            {
-                stringRepresentation += "["+ variable() + " -> its three different roots in ";
-                ostringstream tempOStream;
-                tempOStream << multiRootLessOcond();
-                stringRepresentation += tempOStream.str();
-                stringRepresentation += " + epsilon]";
-                break;
-            }
-            #endif
             default:
             {
                 cout << "Unknown substitution type!" << endl;
@@ -440,14 +233,13 @@ namespace vs
     */
     bool Substitution::operator==( const Substitution& _substitution ) const
     {
-        if( variable().compare( _substitution.variable() )==0 )
+        if( variable().compare( _substitution.variable() ) == 0 )
         {
-            if( type()==_substitution.type() )
+            if( type() == _substitution.type() )
             {
-                if( term()==_substitution.term() )
+                if( term() == _substitution.term() )
                 {
-                    #ifdef VS_CUBIC_CASE
-                    if( multiRootLessOcond()==_substitution.multiRootLessOcond() )
+                    if( sideCondition() == _substitution.sideCondition() )
                     {
                         return true;
                     }
@@ -455,9 +247,6 @@ namespace vs
                     {
                         return false;
                     }
-                    #else
-                    return true;
-                    #endif
                 }
                 else
                 {
@@ -525,23 +314,10 @@ namespace vs
                             {
                                 return true;
                             }
-                            #ifdef VS_CUBIC_CASE
-                            else if( denominatorCompResult==0 )
+                            else if( sideCondition() < _substitution.sideCondition() )
                             {
-                                if( multiRootLessOcond().constraint()<_substitution.multiRootLessOcond() )
-                                {
-                                    return true;
-                                }
-                                else
-                                {
-                                    return false;
-                                }
+                                return true;
                             }
-                            else
-                            {
-                                return false;
-                            }
-                            #endif
                             else
                             {
                                 return false;
@@ -583,7 +359,7 @@ namespace vs
      */
     ostream& operator <<( ostream& _ostream, const Substitution& _substitution )
     {
-        _ostream << _substitution.toString();
+        _ostream << _substitution.toString( true );
         return _ostream;
     }
 

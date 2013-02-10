@@ -30,8 +30,6 @@
 #ifndef SMTRAT_VS_SUBSTITUTION_H
 #define SMTRAT_VS_SUBSTITUTION_H
 
-//#define VS_CUBIC_CASE
-
 #include <ginac/flags.h>
 #include "Condition.h"
 #include "SqrtEx.h"
@@ -42,13 +40,7 @@ namespace vs
      *  Type and object definitions:
      */
 
-    enum Substitution_Type
-    {
-        ST_NORMAL, ST_PLUS_EPSILON, ST_MINUS_INFINITY
-        #ifdef VS_CUBIC_CASE
-                , ST_SINGLE_CUBIC_ROOT, ST_TRIPLE_CUBIC_ROOT, ST_SINGLE_CUBIC_ROOT_PLUS_EPS, ST_TRIPLE_CUBIC_ROOT_PLUS_EPS
-        #endif
-            };
+    enum Substitution_Type { ST_NORMAL, ST_PLUS_EPSILON, ST_MINUS_INFINITY };
 
     class Substitution
     {
@@ -57,28 +49,20 @@ namespace vs
             /**
              * Members:
              */
-            std::string*      mpVariable;
-            GiNaC::ex*        mpVarAsEx;
-            SqrtEx*           mpTerm;
-            #ifdef VS_CUBIC_CASE
-            GiNaC::ex*        mpMultiRootLessOcond;
-            SqrtEx*           mpFirstZeroOfDerivOfOCond;
-            SqrtEx*           mpSecondZeroOfDerivOfOCond;
-            #endif
-            Substitution_Type mType;
-            ConditionSet*     mpOriginalConditions;
+            std::string*          mpVariable;
+            GiNaC::ex*            mpVarAsEx;
+            SqrtEx*               mpTerm;
+            Substitution_Type     mType;
+            ConditionSet*         mpOriginalConditions;
+            smtrat::ConstraintSet mSideCondition;
 
         public:
 
             /**
              * Constructors:
              */
-            Substitution();
-            Substitution( const std::string&, const GiNaC::ex&, const Substitution_Type&, const ConditionSet& );
-            Substitution( const std::string&, const GiNaC::ex&, const SqrtEx&, const Substitution_Type&, const ConditionSet& );
-            #ifdef VS_CUBIC_CASE
-            Substitution( const std::string&, const GiNaC::ex&, const SqrtEx&, const SqrtEx&, const Substitution_Type&, const ConditionSet& );
-            #endif
+            Substitution( const std::string&, const GiNaC::ex&, const Substitution_Type&, const ConditionSet&, const smtrat::ConstraintSet& = smtrat::ConstraintSet() );
+            Substitution( const std::string&, const GiNaC::ex&, const SqrtEx&, const Substitution_Type&, const ConditionSet&, const smtrat::ConstraintSet& = smtrat::ConstraintSet() );
             Substitution( const Substitution& );
 
             /**
@@ -102,23 +86,6 @@ namespace vs
             {
                 return *mpTerm;
             }
-
-            #ifdef VS_CUBIC_CASE
-            const GiNaC::ex& multiRootLessOcond() const
-            {
-                return *mpMultiRootLessOcond;
-            }
-
-            const SqrtEx& firstZeroOfDerivOfOCond() const
-            {
-                return *mpFirstZeroOfDerivOfOCond;
-            }
-
-            const SqrtEx& secondZeroOfDerivOfOCond() const
-            {
-                return *mpSecondZeroOfDerivOfOCond;
-            }
-            #endif
 
             const GiNaC::symtab& termVariables() const
             {
@@ -145,6 +112,11 @@ namespace vs
                 return *mpOriginalConditions;
             }
 
+            const smtrat::ConstraintSet& sideCondition() const
+            {
+                return mSideCondition;
+            }
+
             // Data access methods (read only).
             unsigned valuate() const;
 
@@ -154,9 +126,8 @@ namespace vs
             friend std::ostream& operator <<( std::ostream&, const Substitution& );
 
             // Printing methods.
-            void print( std::ostream& ) const;
-            std::string toString() const;
-            std::string toString2() const;
+            void print( bool = false, bool = false, std::ostream& = std::cout, const std::string& = "" ) const;
+            std::string toString( bool = false ) const;
         private:
             void getVariables( const GiNaC::ex&, GiNaC::symtab& );
     };

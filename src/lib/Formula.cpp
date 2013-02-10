@@ -29,6 +29,7 @@
  */
 
 //#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
+//#define REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
 
 #include "Formula.h"
 
@@ -36,7 +37,7 @@ using namespace std;
 
 namespace smtrat
 {
-    ConstraintPool Formula::mConstraintPool             = ConstraintPool();
+    ConstraintPool Formula::mConstraintPool = ConstraintPool();
 
     Formula::Formula():
         mDeducted( false ),
@@ -1230,9 +1231,13 @@ namespace smtrat
                     {
                         case CR_EQ:
                         {
+                            #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
                             _formula.copyAndDelete( new Formula( OR ));
                             _formula.addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
                             _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            #else
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), CR_NEQ, constraint->variables() )));
+                            #endif
                             return true;
                         }
                         case CR_LEQ:

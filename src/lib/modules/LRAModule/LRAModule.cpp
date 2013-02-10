@@ -50,13 +50,15 @@ namespace smtrat
         Module(_type, _formula, _tsManager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
-        mNumberOfReceivedNeqConstraints( 0 ),
         mTableau( mpPassedFormula->end() ),
         mLinearConstraints(),
         mNonlinearConstraints(),
+        mActiveResolvedNEQConstraints(),
+        mActiveUnresolvedNEQConstraints(),
         mOriginalVars(),
         mSlackVars(),
         mConstraintToBound(),
+        mBoundToUnequalConstraintMap(),
         mBoundCandidatesToPass()
     {
 
@@ -104,7 +106,7 @@ namespace smtrat
         cout << "inform about " << *_constraint << endl;
         #endif
         Module::inform( _constraint );
-        if( !_constraint->variables().empty() && _constraint->isLinear() && _constraint->relation() != CR_NEQ )
+        if( !_constraint->variables().empty() && _constraint->isLinear() )
         {
             bool elementInserted = mLinearConstraints.insert( _constraint ).second;
             if( elementInserted && mInitialized )
@@ -143,16 +145,38 @@ namespace smtrat
                     {
                         vector< const Bound* >* bounds = mConstraintToBound[constraint];
                         assert( bounds != NULL );
+
                         set<const Formula*> originSet = set<const Formula*>();
                         originSet.insert( *_subformula );
                         activateBound( *bounds->begin(), originSet );
+
+                        auto unequalCons = mBoundToUnequalConstraintMap.find( *bounds->begin() );
+                        if( unequalCons != mBoundToUnequalConstraintMap.end() )
+                        {
+                            auto pos = mActiveUnresolvedNEQConstraints.find( unequalCons->second );
+                            if( pos != mActiveUnresolvedNEQConstraints.end() )
+                            {
+                                mActiveUnresolvedNEQConstraints.erase( pos );
+                                mActiveResolvedNEQConstraints.insert( unequalCons->second );
+                            }
+                        }
 
                         assert( mInfeasibleSubsets.empty() || !mInfeasibleSubsets.begin()->empty() );
                         return mInfeasibleSubsets.empty() || !mNonlinearConstraints.empty();
                     }
                     else
                     {
-                        ++mNumberOfReceivedNeqConstraints;
+                        vector< const Bound* >* bounds = mConstraintToBound[constraint];
+                        assert( bounds != NULL );
+                        assert( bounds->size() == 2 );
+                        if( (*bounds)[0]->isActive() || (*bounds)[1]->isActive() )
+                        {
+                            mActiveResolvedNEQConstraints.insert( constraint );
+                        }
+                        else
+                        {
+                            mActiveUnresolvedNEQConstraints.insert( constraint );
+                        }
                     }
                 }
                 else
@@ -214,6 +238,22 @@ namespace smtrat
                                 }
                                 if( (*bound)->origins().empty() )
                                 {
+                                    auto unequalCons = mBoundToUnequalConstraintMap.find( *bound );
+                                    if( unequalCons != mBoundToUnequalConstraintMap.end() )
+                                    {
+                                        vector< const Bound* >* uebounds = mConstraintToBound[unequalCons->second];
+                                        assert( uebounds != NULL );
+                                        assert( uebounds->size() == 2 );
+                                        if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() )
+                                        {
+                                            auto pos = mActiveResolvedNEQConstraints.find( unequalCons->second );
+                                            if( pos != mActiveResolvedNEQConstraints.end() )
+                                            {
+                                                mActiveResolvedNEQConstraints.erase( pos );
+                                                mActiveUnresolvedNEQConstraints.insert( unequalCons->second );
+                                            }
+                                        }
+                                    }
                                     (*bound)->pVariable()->deactivateBound( *bound, mpPassedFormula->end() );
                                     if( !(*bound)->pVariable()->pSupremum()->isInfinite() )
                                     {
@@ -249,7 +289,10 @@ namespace smtrat
                     }
                     else
                     {
-                        --mNumberOfReceivedNeqConstraints;
+                        if( mActiveResolvedNEQConstraints.erase( (*_subformula)->pConstraint() ) == 0 )
+                        {
+                            mActiveUnresolvedNEQConstraints.erase( (*_subformula)->pConstraint() );
+                        }
                     }
                 }
                 else
@@ -275,7 +318,8 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "check for consistency" << endl;
         #endif
-        if( mpReceivedFormula->isConstraintConjunction() && mNumberOfReceivedNeqConstraints == 0 )
+        if( !mpReceivedFormula->isConstraintConjunction() ) return Unknown;
+        if( mActiveUnresolvedNEQConstraints.empty() )
         {
             if( !mInfeasibleSubsets.empty() )
             {
@@ -330,19 +374,13 @@ namespace smtrat
                     else
                     {
                         mTableau.pivot( pivotingElement.first );
-//                        printConstraintToBound();
                         while( posNewLearnedBound < mTableau.rLearnedBounds().size() )
                         {
                             set< const Formula*> originSet = set< const Formula*>();
                             Tableau::LearnedBound& learnedBound = mTableau.rLearnedBounds()[posNewLearnedBound];
-//                            if( learnedBound.newBound != NULL ) { cout << "newBound       : "; learnedBound.newBound->print( true, cout, true ); cout << endl; }
-//                            else cout << "newBound       : NULL" << endl;
-//                            cout << "nextWeakerBound: "; learnedBound.nextWeakerBound->print( true, cout, true ); cout << endl;
-//                            cout << "premise        : " << endl;
                             vector<const Bound*>& bounds = *learnedBound.premise;
                             for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
                             {
-//                                cout << "    "; (*bound)->print( true, cout, true ); cout << endl;
                                 assert( !(*bound)->origins().empty() );
                                 originSet.insert( (*bound)->origins().begin()->begin(), (*bound)->origins().begin()->end() );
                                 for( auto origin = (*bound)->origins().begin()->begin(); origin != (*bound)->origins().begin()->end(); ++origin )
@@ -363,6 +401,7 @@ namespace smtrat
                             if( learnedBound.newBound != NULL )
                             {
                                 const Constraint* newConstraint = learnedBound.newBound->pAsConstraint();
+                                addConstraintToInform( newConstraint );
                                 mLinearConstraints.insert( newConstraint );
                                 vector< const Bound* >* boundVector = new vector< const Bound* >();
                                 boundVector->push_back( learnedBound.newBound );
@@ -372,7 +411,6 @@ namespace smtrat
                             #endif
                             ++posNewLearnedBound;
                         }
-//                        printConstraintToBound();
                         if( !mInfeasibleSubsets.empty() )
                         {
                             learnRefinements();
@@ -421,6 +459,39 @@ namespace smtrat
         }
         else
         {
+            for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
+            {
+                const Constraint* unequalConstraint = *iter;
+                const Constraint* lessConstraint = Formula::newConstraint( unequalConstraint->lhs(), CR_LESS, unequalConstraint->variables() );
+                const Constraint* greaterConstraint = Formula::newConstraint( unequalConstraint->lhs(), CR_GREATER, unequalConstraint->variables() );
+                Formula* deductionA = new Formula( OR );
+                Formula* notConstraint = new Formula( NOT );
+                notConstraint->addSubformula( unequalConstraint );
+                deductionA->addSubformula( notConstraint );
+                deductionA->addSubformula( lessConstraint );
+                deductionA->addSubformula( greaterConstraint );
+                addDeduction( deductionA );
+                Formula* deductionB = new Formula( OR );
+                Formula* notLessConstraint = new Formula( NOT );
+                notLessConstraint->addSubformula( lessConstraint );
+                deductionB->addSubformula( notLessConstraint );
+                deductionB->addSubformula( unequalConstraint );
+                addDeduction( deductionB );
+                Formula* deductionC = new Formula( OR );
+                Formula* notGreaterConstraint = new Formula( NOT );
+                notGreaterConstraint->addSubformula( greaterConstraint );
+                deductionC->addSubformula( notGreaterConstraint );
+                deductionC->addSubformula( unequalConstraint );
+                addDeduction( deductionC );
+                Formula* deductionD = new Formula( OR );
+                Formula* notGreaterConstraintB = new Formula( NOT );
+                notGreaterConstraintB->addSubformula( greaterConstraint );
+                Formula* notLessConstraintB = new Formula( NOT );
+                notLessConstraintB->addSubformula( lessConstraint );
+                deductionD->addSubformula( notGreaterConstraintB );
+                deductionD->addSubformula( notLessConstraintB );
+                addDeduction( deductionD );
+            }
             return Unknown;
         }
     }
@@ -933,63 +1004,96 @@ namespace smtrat
             }
             #endif
         }
-        else if( _constraint->relation() == CR_LESS )
+        else
         {
-            Value* value = new Value( _boundValue, (_constraintInverted ? 1 : -1) );
-            pair<const Bound*,pair<const Bound*, const Bound*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), _constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), _constraint );
-            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
-            findSimpleConflicts( *result.first );
-            #endif
-            vector< const Bound* >* boundVector = new vector< const Bound* >();
-            boundVector->push_back( result.first );
-            mConstraintToBound[_constraint] = boundVector;
-            #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            if( result.second.first != NULL && !result.second.first->isInfinite() )
+            if( _constraint->relation() == CR_LESS || _constraint->relation() == CR_NEQ )
             {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
-                deduction->addSubformula( _constraint );
-                addDeduction( deduction );
+                const Constraint* constraint;
+                if( _constraint->relation() != CR_NEQ )
+                {
+                    constraint = _constraint;
+                }
+                else
+                {
+                    constraint = Formula::newConstraint( _constraint->lhs(), CR_LESS, _constraint->variables() );
+                }
+                Value* value = new Value( _boundValue, (_constraintInverted ? 1 : -1) );
+                pair<const Bound*,pair<const Bound*, const Bound*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
+                #ifdef LRA_SIMPLE_CONFLICT_SEARCH
+                findSimpleConflicts( *result.first );
+                #endif
+                vector< const Bound* >* boundVector = new vector< const Bound* >();
+                boundVector->push_back( result.first );
+                mConstraintToBound[constraint] = boundVector;
+                if( _constraint->relation() == CR_NEQ )
+                {
+                    vector< const Bound* >* boundVectorB = new vector< const Bound* >();
+                    boundVectorB->push_back( result.first );
+                    mConstraintToBound[_constraint] = boundVectorB;
+                    mBoundToUnequalConstraintMap[result.first] = _constraint;
+                }
+                #ifdef LRA_SIMPLE_THEORY_PROPAGATION
+                if( result.second.first != NULL && !result.second.first->isInfinite() )
+                {
+                    Formula* deduction = new Formula( OR );
+                    deduction->addSubformula( new Formula( NOT ) );
+                    deduction->back()->addSubformula( result.second.first->pAsConstraint() );
+                    deduction->addSubformula( constraint );
+                    addDeduction( deduction );
+                }
+                if( result.second.second != NULL && !result.second.second->isInfinite() )
+                {
+                    Formula* deduction = new Formula( OR );
+                    deduction->addSubformula( new Formula( NOT ) );
+                    deduction->back()->addSubformula( constraint );
+                    deduction->addSubformula( result.second.second->pAsConstraint() );
+                    addDeduction( deduction );
+                }
+                #endif
             }
-            if( result.second.second != NULL && !result.second.second->isInfinite() )
+            if( _constraint->relation() == CR_GREATER || _constraint->relation() == CR_NEQ )
             {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( _constraint );
-                deduction->addSubformula( result.second.second->pAsConstraint() );
-                addDeduction( deduction );
+                const Constraint* constraint;
+                if( _constraint->relation() != CR_NEQ )
+                {
+                    constraint = _constraint;
+                }
+                else
+                {
+                    constraint = Formula::newConstraint( _constraint->lhs(), CR_GREATER, _constraint->variables() );
+                }
+                Value* value = new Value( _boundValue, (_constraintInverted ? -1 : 1) );
+                pair<const Bound*,pair<const Bound*, const Bound*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
+                #ifdef LRA_SIMPLE_CONFLICT_SEARCH
+                findSimpleConflicts( *result.first );
+                #endif
+                vector< const Bound* >* boundVector = new vector< const Bound* >();
+                boundVector->push_back( result.first );
+                mConstraintToBound[constraint] = boundVector;
+                if( _constraint->relation() == CR_NEQ )
+                {
+                    mConstraintToBound[_constraint]->push_back( result.first );
+                    mBoundToUnequalConstraintMap[result.first] = _constraint;
+                }
+                #ifdef LRA_SIMPLE_THEORY_PROPAGATION
+                if( result.second.first != NULL && !result.second.first->isInfinite() )
+                {
+                    Formula* deduction = new Formula( OR );
+                    deduction->addSubformula( new Formula( NOT ) );
+                    deduction->back()->addSubformula( result.second.first->pAsConstraint() );
+                    deduction->addSubformula( constraint );
+                    addDeduction( deduction );
+                }
+                if( result.second.second != NULL && !result.second.second->isInfinite() )
+                {
+                    Formula* deduction = new Formula( OR );
+                    deduction->addSubformula( new Formula( NOT ) );
+                    deduction->back()->addSubformula( constraint );
+                    deduction->addSubformula( result.second.second->pAsConstraint() );
+                    addDeduction( deduction );
+                }
+                #endif
             }
-            #endif
-        }
-        else if( _constraint->relation() == CR_GREATER )
-        {
-            Value* value = new Value( _boundValue, (_constraintInverted ? -1 : 1) );
-            pair<const Bound*,pair<const Bound*, const Bound*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), _constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), _constraint );
-            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
-            findSimpleConflicts( *result.first );
-            #endif
-            vector< const Bound* >* boundVector = new vector< const Bound* >();
-            boundVector->push_back( result.first );
-            mConstraintToBound[_constraint] = boundVector;
-            #ifdef LRA_SIMPLE_THEORY_PROPAGATION
-            if( result.second.first != NULL && !result.second.first->isInfinite() )
-            {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( result.second.first->pAsConstraint() );
-                deduction->addSubformula( _constraint );
-                addDeduction( deduction );
-            }
-            if( result.second.second != NULL && !result.second.second->isInfinite() )
-            {
-                Formula* deduction = new Formula( OR );
-                deduction->addSubformula( new Formula( NOT ) );
-                deduction->back()->addSubformula( _constraint );
-                deduction->addSubformula( result.second.second->pAsConstraint() );
-                addDeduction( deduction );
-            }
-            #endif
         }
     }
 
@@ -1250,6 +1354,17 @@ namespace smtrat
         }
     }
 
+    void LRAModule::printRationalModel( ostream& _out, const string _init ) const
+    {
+        exmap rmodel = getRationalModel();
+        _out << _init << "Rational model:" << endl;
+        for( auto assign = rmodel.begin(); assign != rmodel.end(); ++assign )
+        {
+            _out << _init;
+            _out << setw(10) << assign->first;
+            _out << " -> " << assign->second << endl;
+        }
+    }
 
 }    // namespace smtrat
 

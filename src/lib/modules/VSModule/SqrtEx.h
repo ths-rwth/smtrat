@@ -47,8 +47,9 @@ namespace vs
              */
             GiNaC::ex* mpConstantPart;
             GiNaC::ex* mpFactor;
-            GiNaC::ex* mpRadicand;
             GiNaC::ex* mpDenominator;
+            GiNaC::ex* mpRadicand;
+            GiNaC::ex* mpAsExpression;
             GiNaC::symtab mVariables;
 
         public:
@@ -108,6 +109,11 @@ namespace vs
                 return *mpDenominator;
             }
 
+            GiNaC::ex& asExpression() const
+            {
+                return *mpAsExpression;
+            }
+
             const GiNaC::symtab& variables() const
             {
                 return mVariables;
@@ -135,7 +141,6 @@ namespace vs
 
             // Data access methods (read only).
             bool hasVariable( const std::string& ) const;
-            GiNaC::ex expression() const;
 
             // Operators.
             bool operator ==( const SqrtEx& ) const;

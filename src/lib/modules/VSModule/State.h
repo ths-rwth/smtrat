@@ -379,11 +379,11 @@ public:
 																				  const unsigned 		   ,
 																				  const bool 				)										;
 	void									deleteConditions					( ConditionVector& )												;
-	bool									addChild							( const std::string& 	   ,
+	int                                     addChild							( const std::string& 	   ,
 																				  const GiNaC::ex&         ,
 																				  const Substitution_Type& ,
 																				  const ConditionSet&	)										;
-	bool									addChild							( const GiNaC::ex& 			,
+	int                                     addChild							( const GiNaC::ex& 			,
 																				  const smtrat::Constraint_Relation&,
 																				  const std::string& 		,
 																				  const GiNaC::ex&			,
@@ -394,7 +394,7 @@ public:
 																				  const Substitution_Type& 	,
                                                                                   const GiNaC::symtab&      ,
 																				  const ConditionSet&	 )										;
-	bool									addChild							( const GiNaC::ex& 			,
+	int                                     addChild							( const GiNaC::ex& 			,
 																				  const smtrat::Constraint_Relation&,
 																				  const GiNaC::ex& 			,
 																				  const smtrat::Constraint_Relation&,
@@ -408,7 +408,7 @@ public:
                                                                                   const GiNaC::symtab&      ,
 																				  const ConditionSet&	 )										;
 	void									updateValuation						( )	      			       											;
-	void									passConflictToFather				( )																	;
+	void									passConflictToFather				( bool = false )													;
     #ifdef VS_USE_VARIABLE_BOUNDS
     bool                                    checkTestCandidatesForBounds        ( )                                                                 ;
     #endif

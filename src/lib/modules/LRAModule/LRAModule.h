@@ -62,6 +62,7 @@ namespace smtrat
             };
             typedef std::map<const GiNaC::ex*, lra::Variable*, exPointerComp>                               ExVariableMap;
             typedef std::map< const Constraint*, std::vector< const lra::Bound* >*, constraintPointerComp > ConstraintBoundsMap;
+            typedef std::map< const lra::Bound*, const Constraint* >                                        BoundConstraintMap;
 
         private:
 
@@ -70,13 +71,15 @@ namespace smtrat
              */
             bool                        mInitialized;
             bool                        mAssignmentFullfilsNonlinearConstraints;
-            unsigned                    mNumberOfReceivedNeqConstraints;
             lra::Tableau                mTableau;
             ConstraintSet               mLinearConstraints;
             ConstraintSet               mNonlinearConstraints;
+            ConstraintSet               mActiveResolvedNEQConstraints;
+            ConstraintSet               mActiveUnresolvedNEQConstraints;
             ExVariableMap               mOriginalVars;
             ExVariableMap               mSlackVars;
             ConstraintBoundsMap         mConstraintToBound;
+            BoundConstraintMap          mBoundToUnequalConstraintMap;
             std::vector<const lra::Bound* >  mBoundCandidatesToPass;
 
         public:
@@ -113,6 +116,8 @@ namespace smtrat
             void printSlackVars ( std::ostream& = std::cout, const std::string = "" ) const;
             void printConstraintToBound ( std::ostream& = std::cout, const std::string = "" ) const;
             void printBoundCandidatesToPass ( std::ostream& = std::cout, const std::string = "" ) const;
+            void printRationalModel ( std::ostream& = std::cout, const std::string = "" ) const;
+
 
             void printTableau ( std::ostream& _out = std::cout, const std::string _init = "" ) const
             {
