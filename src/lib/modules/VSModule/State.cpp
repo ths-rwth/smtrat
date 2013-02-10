@@ -37,7 +37,7 @@
 //#define VS_DEBUG_METHODS_X
 //#define VS_DEBUG_BACKENDS
 //#define VS_DEBUG_BACKENDS_EXTENDED
-//#define VS_LOG_INFSUBSETS
+#define VS_LOG_INFSUBSETS
 
 namespace vs
 {
@@ -2002,8 +2002,8 @@ namespace vs
                     {
                         (*child)->rStateType() = COMBINE_SUBRESULTS;
                         (*child)->rTakeSubResultCombAgain() = true;
-                        (*child)->rInconsistent() = false;
                     }
+                    (*child)->rInconsistent() = false;
                 }
                 ++child;
             }
