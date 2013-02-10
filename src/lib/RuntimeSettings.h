@@ -32,6 +32,9 @@
 #include <map>
 
 namespace smtrat{
+/**
+ * A base class for settings which can be passed to the modules.
+ */
 class RuntimeSettings 
 {
     protected:
