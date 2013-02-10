@@ -75,7 +75,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         while( receivedSubformula != mpReceivedFormula->end() )
         {
             Formula* formulaToAssert = new Formula( **receivedSubformula );
-            formulaToAssert->print();
+            // Inequations are transformed.
             RewritePotentialInequalities(formulaToAssert);
             #ifdef ADDLINEARDEDUCTIONS
             if(formulaToAssert->getType() == AND) 
@@ -83,21 +83,15 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 addLinearDeductions(formulaToAssert);
             }
             #endif
-            printReceivedFormula();
-            formulaToAssert->print();
+            // Estimate the difficulty bottum up for the formula.
             setDifficulty(formulaToAssert,false);
-            /*
-             * Create the origins containing only the currently considered formula of
-             * the received formula.
-             */
+            // Create the origins containing only the currently considered formula of
+            // the received formula.
             vec_set_const_pFormula origins = vec_set_const_pFormula();
             origins.push_back( std::set<const Formula*>() );
             origins.back().insert( *receivedSubformula );
-
-            /*
-             * Add the currently considered formula of the received constraint as clauses
-             * to the passed formula.
-             */
+            // Add the currently considered formula of the received constraint as clauses
+            // to the passed formula.
             Formula::toCNF( *formulaToAssert, false );
 
             if( formulaToAssert->getType() == TTRUE )
@@ -106,6 +100,8 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             }
             else if( formulaToAssert->getType() == FFALSE )
             {
+                // Infeasible subset missing?
+                mSolverState = False;
                 return False;
             }
             else
@@ -125,9 +121,9 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             }
             ++receivedSubformula;
         }
-        //std::cout << "Passed formula: " << std::endl;
         assignActivitiesToPassedFormula();
         //mpPassedFormula->print();
+        
         // Call backends.
         Answer ans = runBackends();
         if( ans == False )
