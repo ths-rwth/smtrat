@@ -75,6 +75,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         while( receivedSubformula != mpReceivedFormula->end() )
         {
             Formula* formulaToAssert = new Formula( **receivedSubformula );
+            formulaToAssert->print();
             RewritePotentialInequalities(formulaToAssert);
             #ifdef ADDLINEARDEDUCTIONS
             if(formulaToAssert->getType() == AND) 
@@ -82,6 +83,8 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 addLinearDeductions(formulaToAssert);
             }
             #endif
+            printReceivedFormula();
+            formulaToAssert->print();
             setDifficulty(formulaToAssert,false);
             /*
              * Create the origins containing only the currently considered formula of
@@ -163,10 +166,10 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             else if(subformula->getType() == REALCONSTRAINT)
             {
                 const Constraint* constraint = subformula->pConstraint();
-                formula->pop_back();
                 // Since we are considering a not, invert is in fact "inverted" ;-)
                 if(!invert)
                 {
+                    formula->pop_back();
                     switch( constraint->relation() )
                     {
                         case CR_EQ:
