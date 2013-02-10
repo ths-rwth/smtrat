@@ -724,7 +724,7 @@ namespace smtrat
             }
             else
             {
-                ok = false;
+                ok = value( add_tmp[0] ) == l_True;
             }
             return false;
         }
@@ -751,14 +751,14 @@ namespace smtrat
                 }
             }
             attachClause( cr );
-            // Clause is unit
+//            // Clause is unit
             if( _type == DEDUCTED_CLAUSE )
             {
                 Clause& c = ca[cr];
                 if( value( c[0] ) == l_Undef && value( c[1] ) == l_False )
                 {
                     uncheckedEnqueue( c[0], cr );
-                    ok = ok && (propagate() == CRef_Undef);
+//                    ok = ok && (propagate() == CRef_Undef);
                 }
             }
         }
@@ -1180,7 +1180,6 @@ FindSecond:
             if(deductionsLearned) continue;
             #endif
 
-
             #ifdef SATMODULE_WITH_CALL_NUMBER
             #ifndef DEBUG_SATMODULE
             #ifdef WITH_PROGRESS_ESTIMATION
@@ -1191,7 +1190,6 @@ FindSecond:
             cout.flush();
             #endif
             #endif
-
 
             if( confl != CRef_Undef )
             {
@@ -1798,8 +1796,8 @@ NextClause:
         while( backend != usedBackends().end() )
         {
             /*
-                * Learn the deductions.
-                */
+             * Learn the deductions.
+             */
             (*backend)->updateDeductions();
             for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
                     deduction != (*backend)->deductions().end(); ++deduction )
@@ -1841,7 +1839,7 @@ NextClause:
             #ifdef DEBUG_SATMODULE
             if( subformula != _theoryReason.begin() )
             {
-                cout << ", " << endl;;
+                cout << ", ";
             }
             (*subformula)->print();
             #endif
