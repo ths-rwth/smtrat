@@ -199,7 +199,6 @@ namespace smtrat
      */
     const string Driver::addBooleanVariable( const class location& _loc, const string& _varName, bool _isBindingVariable )
     {
-        assert( !_varName.empty() );
         string booleanName = "";
         if( _isBindingVariable )
         {
@@ -228,7 +227,6 @@ namespace smtrat
      */
     RealVarMap::const_iterator Driver::addRealVariable( const class location& _loc, const string& _varName, bool _isBindingVariable )
     {
-        assert( !_varName.empty() );
         pair< string, ex > ginacConformVar;
         if( _isBindingVariable )
         {
@@ -456,8 +454,8 @@ namespace smtrat
      */
     string* Driver::mkIteInExpr( const class location& _loc, Formula* _condition, pair< ex, vector< RealVarMap::const_iterator > >& _then, pair< ex, vector< RealVarMap::const_iterator > >& _else )
     {
-        RealVarMap::const_iterator auxRealVar = addRealVariable( _loc );
-        string conditionBool = addBooleanVariable( _loc );
+        RealVarMap::const_iterator auxRealVar = addRealVariable( _loc, "", true );
+        string conditionBool = addBooleanVariable( _loc, "", true );
         pair< ex, vector< RealVarMap::const_iterator > >* lhs = mkPolynomial( _loc, auxRealVar );
         Formula* constraintA = mkConstraint( *lhs, _then, CR_EQ );
         Formula* constraintB = mkConstraint( *lhs, _else, CR_EQ );

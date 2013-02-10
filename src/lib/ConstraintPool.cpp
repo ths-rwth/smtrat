@@ -71,6 +71,19 @@ namespace smtrat
         }
     }
 
+    void ConstraintPool::clear()
+    {
+        while( !mAllConstraints.empty() )
+        {
+            const Constraint* pCons = *mAllConstraints.begin();
+            mAllConstraints.erase( mAllConstraints.begin() );
+            delete pCons;
+        }
+        mAllConstraints.insert( mConsistentConstraint );
+        mAllConstraints.insert( mInconsistentConstraint );
+        mIdAllocator = 3;
+    }
+
     /**
      *
      * @return
