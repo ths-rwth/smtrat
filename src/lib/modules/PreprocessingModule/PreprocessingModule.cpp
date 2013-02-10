@@ -407,7 +407,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                     {
                         const Constraint* constraint = (*jt)->pConstraint();
                         
-                        if(constraint->relation() == CR_EQ && constraint->isLinear() && constraint->numMonomials() <= 2)
+                        if(constraint->relation() == CR_EQ && constraint->isLinear() && constraint->numMonomials() <= 20)
                         {
                             (*jt)->setActivity(-100);
                             continue;
