@@ -36,7 +36,7 @@
 //#define NDEBUG
 #define VS_USE_GINAC_EXPAND
 //#define VS_USE_GINAC_NORMAL
-#define CONSTRAINT_FACTORIZATION
+//#define CONSTRAINT_FACTORIZATION
 
 #include <ginac/ginac.h>
 #include <ginac/flags.h>

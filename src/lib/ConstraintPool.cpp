@@ -73,12 +73,16 @@ namespace smtrat
 
     void ConstraintPool::clear()
     {
+        mAllConstraints.erase( mConsistentConstraint );
+        mAllConstraints.erase( mInconsistentConstraint );
         while( !mAllConstraints.empty() )
         {
             const Constraint* pCons = *mAllConstraints.begin();
             mAllConstraints.erase( mAllConstraints.begin() );
             delete pCons;
         }
+        mAllRealVariables.clear();
+        mAllBooleanVariables.clear();
         mAllConstraints.insert( mConsistentConstraint );
         mAllConstraints.insert( mInconsistentConstraint );
         mIdAllocator = 3;
