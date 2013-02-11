@@ -42,10 +42,6 @@
 //#define LRA_INTRODUCE_NEW_CONSTRAINTS
 #endif
 
-// TODO: Make it templated, such that the coefficients, bounds and assignments can be any kind of arithmetic data type.
-//       You could also use double, once assuring they underapproximate and a satisfiable result is indeed satisfiable,
-//       and once assuring they overapproximate and a unsatisfiable result is indeed unsatisfiable.
-
 namespace lra
 {
     typedef unsigned EntryID;

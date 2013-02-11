@@ -1022,7 +1022,7 @@ FindSecond:
         for( ; ; )
         {
             bool deductionsLearned = false;
-            Answer currentAssignmentConsistent = Unknown;
+            Answer currentAssignmentConsistent = True;
             CRef confl = propagate();
 
             #ifdef DEBUG_SATMODULE
