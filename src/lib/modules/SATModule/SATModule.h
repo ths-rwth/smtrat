@@ -378,7 +378,7 @@ namespace smtrat
             //
             bool processLemmas();
             //
-            Minisat::CRef learnTheoryConflict( const std::set<const Formula*>& );
+            Minisat::CRef learnTheoryConflict();
             // Search for a given number of conflicts.
             Minisat::lbool search( int nof_conflicts = 100 );
             // Reduce the set of learned clauses.

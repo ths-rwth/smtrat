@@ -1180,7 +1180,7 @@ namespace smtrat
      *
      * @return The string representation of the constraint.
      */
-    string Constraint::toString() const
+    string Constraint::toString( bool _unequalSwitch ) const
     {
         string result = "";
         ostringstream sstream;
@@ -1192,7 +1192,7 @@ namespace smtrat
                 result += "  = ";
                 break;
             case CR_NEQ:
-                result += " <> ";
+                result += _unequalSwitch ? " != " : " <> ";
                 break;
             case CR_LESS:
                 result += "  < ";

@@ -259,7 +259,7 @@ namespace smtrat
             void init();
 
             // Printing methods.
-            std::string toString() const;
+            std::string toString( bool = false ) const;
             void print( std::ostream& _out = std::cout ) const;
             void print2( std::ostream& _out = std::cout ) const;
             void printInPrefix( std::ostream& _out = std::cout ) const;

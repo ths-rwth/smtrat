@@ -54,7 +54,6 @@
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 #define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
-#define STORE_ONLY_ONE_REASON
 #define SAT_MODULE_THEORY_PROPAGATION
 #define SAT_MODULE_DETECT_DEDUCTIONS
 
@@ -1071,7 +1070,6 @@ FindSecond:
                     {
                         case True:
                         {
-                            learnt_clause.clear();
                             #ifdef SAT_MODULE_THEORY_PROPAGATION
                             //Theory propagation.
                             deductionsLearned = processLemmas();
@@ -1086,63 +1084,8 @@ FindSecond:
                             #ifdef DEBUG_SATMODULE
                             cout << "### Result: False!" << endl;
                             #endif
-                            learnt_clause.clear();
-                            vector<Module*>::const_iterator backend = usedBackends().begin();
-                            while( backend != usedBackends().end() )
-                            {
-                                if( !(*backend)->infeasibleSubsets().empty() )
-                                {
-                                    #ifdef STORE_ONLY_ONE_REASON
-                                    vec_set_const_pFormula::const_iterator bestInfeasibleSubset = (*backend)->infeasibleSubsets().begin();
-                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
-                                            infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
-                                    {
-                                        #ifdef SMTRAT_DEVOPTION_Validation
-                                        if( validationSettings->logInfSubsets() )
-                                        {
-                                            addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
-                                        }
-                                        #endif
-                                        if( bestInfeasibleSubset->size() > infsubset->size() )
-                                        {
-                                            bestInfeasibleSubset = infsubset;
-                                        }
-                                    }
-                                    #ifdef DEBUG_SATMODULE
-                                    (*backend)->printInfeasibleSubsets();
-                                    #endif
-                                    confl = learnTheoryConflict( *bestInfeasibleSubset );
-                                    if( !ok ) return l_False;
-                                    #else
-                                    int conflictSize = mpPassedFormula->size() + 1;
-                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->rInfeasibleSubsets().begin();
-                                            infsubset != (*backend)->rInfeasibleSubsets().end(); ++infsubset )
-                                    {
-                                        #ifdef DEBUG_SATMODULE
-                                        (*backend)->printInfeasibleSubsets();
-                                        #endif
-
-                                        #ifdef SMTRAT_DEVOPTION_Validation
-                                        if( validationSettings->logInfSubsets() )
-                                        {
-                                            addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
-                                        }
-                                        #endif
-
-                                        CRef tmpConfl = learnTheoryConflict( *infsubset );
-                                        if( ca[tmpConfl].size() < conflictSize )
-                                        {
-                                            confl        = tmpConfl;
-                                            conflictSize = ca[tmpConfl].size();
-                                        }
-                                    }
-                                    #endif
-                                    break;
-                                }
-                                ++backend;
-                            }
-                            assert( backend != usedBackends().end() );
-
+                            confl = learnTheoryConflict();
+                            if( !ok ) return l_False;
                             break;
                         }
                         case Unknown:
@@ -1150,12 +1093,6 @@ FindSecond:
                             #ifdef SAT_MODULE_THEORY_PROPAGATION
                             //Theory propagation.
                             deductionsLearned = processLemmas();
-                            #else
-                            #ifdef DEBUG_SATMODULE
-                            cout << "### Result: Unknown!" << endl;
-                            cout << "Warning! Unknown as answer in SAT solver." << endl;
-                            #endif
-                            return l_Undef;
                             #endif
                             break;
                         }
@@ -1258,6 +1195,11 @@ FindSecond:
 
                 varDecayActivity();
                 claDecayActivity();
+
+                #ifdef SAT_MODULE_THEORY_PROPAGATION
+                //Theory propagation.
+                deductionsLearned = processLemmas();
+                #endif
 
                 if( --learntsize_adjust_cnt == 0 )
                 {
@@ -1797,9 +1739,7 @@ NextClause:
         vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )
         {
-            /*
-             * Learn the deductions.
-             */
+            // Learn the deductions.
             (*backend)->updateDeductions();
             for( vector<Formula*>::const_iterator deduction = (*backend)->deductions().begin();
                     deduction != (*backend)->deductions().end(); ++deduction )
@@ -1831,40 +1771,69 @@ NextClause:
      * @param _theoryReason
      * @return
      */
-    CRef SATModule::learnTheoryConflict( const set<const Formula*>& _theoryReason )
+    CRef SATModule::learnTheoryConflict()
     {
-        assert( !_theoryReason.empty() );
-        vec<Lit> learnt_clause;
-
-        #ifdef DEBUG_SATMODULE
-        cout << "### { ";
-        #endif
-        // Add the according literals to the conflict clause.
-        for( auto subformula = _theoryReason.begin(); subformula != _theoryReason.end(); ++subformula )
+        CRef conflictClause = CRef_Undef;
+        int lowestLevel = decisionLevel()+1;
+        vector<Module*>::const_iterator backend = usedBackends().begin();
+        while( backend != usedBackends().end() )
         {
-            #ifdef DEBUG_SATMODULE
-            if( subformula != _theoryReason.begin() )
+            const vec_set_const_pFormula& infSubsets = (*backend)->infeasibleSubsets();
+            for( auto infsubset = infSubsets.begin(); infsubset != infSubsets.end(); ++infsubset )
             {
-                cout << ", ";
+                #ifdef SMTRAT_DEVOPTION_Validation
+                if( validationSettings->logInfSubsets() )
+                {
+                    addAssumptionToCheck( *infsubset, false, moduleName( (*backend)->type() ) + "_infeasible_subset" );
+                }
+                #endif
+                #ifdef DEBUG_SATMODULE
+                (*backend)->printInfeasibleSubsets();
+                #endif
+                // Add the according literals to the conflict clause.
+                bool betterConflict = false;
+                vec<Lit> learnt_clause;
+                if( infsubset->size() == 1 )
+                {
+                    Lit lit = getLiteral( **infsubset->begin() );
+                    if( level( var( lit ) ) <= lowestLevel )
+                    {
+                        lowestLevel = level( var( lit ) );
+                        betterConflict = true;
+                    }
+                    learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
+                }
+                else
+                {
+                    int clauseLevel = 0;
+                    for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
+                    {
+                        Lit lit = getLiteral( **subformula );
+                        if( level( var( lit ) ) > clauseLevel )
+                        {
+                            clauseLevel = level( var( lit ) );
+                        }
+                        learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
+                    }
+                    if( clauseLevel < lowestLevel )
+                    {
+                        lowestLevel = clauseLevel;
+                        betterConflict = true;
+                    }
+                }
+                if( addClause( learnt_clause, CONFLICT_CLAUSE ) && betterConflict )
+                {
+                    conflictClause = learnts.last();
+                }
+                else if( betterConflict )
+                {
+                    conflictClause = CRef_Undef;
+                }
             }
-            (*subformula)->print();
-            #endif
-            Lit lit = getLiteral( **subformula );
-            learnt_clause.push( mkLit( var( lit ), !sign( lit ) ) );
+            ++backend;
         }
-        #ifdef DEBUG_SATMODULE
-        cout << " }";
-        cout << endl;
-        #endif
-        if( addClause( learnt_clause, CONFLICT_CLAUSE ) )
-        {
-            CRef conflictClause = learnts.last();
-            return conflictClause;
-        }
-        else
-        {
-            return CRef_Undef;
-        }
+        assert( lowestLevel < decisionLevel()+1 );
+        return conflictClause;
     }
 
     /**
