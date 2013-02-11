@@ -33,6 +33,9 @@
 #include "Substitution.h"
 #include "Tools.h"
 #include <cmath>
+#include <bitset>
+
+const unsigned MAX_PRODUCT_SPLIT_NUMBER = 64;
 
 namespace vs
 {
@@ -95,6 +98,9 @@ namespace vs
     void simplify( DisjunctionOfConstraintConjunctions& );
     void splitProducts( DisjunctionOfConstraintConjunctions& );
     DisjunctionOfConstraintConjunctions splitProducts( const TS_ConstraintConjunction& );
+    DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::Constraint* );
+    void getOddBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >&, unsigned = 0 );
+    void getEvenBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >&, unsigned = 0 );
     GiNaC::ex simplify( const GiNaC::ex&, const GiNaC::symtab&  );
     void print( DisjunctionOfConstraintConjunctions& );
 }    // end namspace vs

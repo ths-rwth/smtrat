@@ -1057,7 +1057,7 @@ namespace vs
     }
 
     /**
-     * 
+     *
      * @param _toSimplify
      */
     void splitProducts( DisjunctionOfConstraintConjunctions& _toSimplify )
@@ -1104,7 +1104,6 @@ namespace vs
                             toCombine.back().push_back( TS_ConstraintConjunction() );
                             toCombine.back().back().push_back( cons );
                         }
-                        simplify( toCombine.back() );
                         break;
                     }
                     case smtrat::CR_NEQ:
@@ -1117,32 +1116,15 @@ namespace vs
                             const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_NEQ, (*constraint)->variables() );
                             toCombine.back().back().push_back( cons );
                         }
-                        simplify( toCombine.back() );
                         break;
                     }
-//                    case CR_LEQ:
-//                    {
-//                        break;
-//                    }
-//                    case CR_GEQ:
-//                    {
-//                        break;
-//                    }
-//                    case CR_LESS:
-//                    {
-//                        break;
-//                    }
-//                    case CR_GREATER:
-//                    {
-//                        break;
-//                    }
                     default:
                     {
-//                        assert( false );
-                        toCombine.push_back( DisjunctionOfConstraintConjunctions() );
-                        toCombine.back().push_back( TS_ConstraintConjunction() );
-                        toCombine.back().back().push_back( *constraint );
+//                        cout << "getSignCombinations: " << **constraint << endl;
+                        toCombine.push_back( getSignCombinations( *constraint ) );
+//                        print( toCombine.back() );
                     }
+                    simplify( toCombine.back() );
                 }
             }
             else
@@ -1157,6 +1139,140 @@ namespace vs
         return result;
     }
 
+    /**
+     *
+     * @param _product
+     * @param _positive
+     * @param _zero
+     * @param _variables
+     * @return
+     */
+    DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::Constraint* _constraint )
+    {
+        DisjunctionOfConstraintConjunctions combinations = DisjunctionOfConstraintConjunctions();
+        if( _constraint->hasFactorization() && _constraint->factorization().nops() <= MAX_PRODUCT_SPLIT_NUMBER )
+        {
+            assert( _constraint->relation() == smtrat::CR_GREATER || _constraint->relation() == smtrat::CR_LESS
+                    || _constraint->relation() == smtrat::CR_GEQ || _constraint->relation() == smtrat::CR_LEQ );
+            smtrat::Constraint_Relation relPos = smtrat::CR_GREATER;
+            smtrat::Constraint_Relation relNeg = smtrat::CR_LESS;
+            if( _constraint->relation() == smtrat::CR_GEQ || _constraint->relation() == smtrat::CR_LEQ )
+            {
+                relPos = smtrat::CR_GEQ;
+                relNeg = smtrat::CR_LEQ;
+            }
+            bool positive = (_constraint->relation() == smtrat::CR_GEQ || _constraint->relation() == smtrat::CR_GREATER);
+            TS_ConstraintConjunction positives = TS_ConstraintConjunction();
+            TS_ConstraintConjunction alwayspositives = TS_ConstraintConjunction();
+            TS_ConstraintConjunction negatives = TS_ConstraintConjunction();
+            TS_ConstraintConjunction alwaysnegatives = TS_ConstraintConjunction();
+            unsigned numOfAlwaysNegatives = 0;
+            const ex& product = _constraint->factorization();
+            for( GiNaC::const_iterator summand = product.begin(); summand != product.end(); ++summand )
+            {
+                const smtrat::Constraint* consPos = smtrat::Formula::newConstraint( *summand, relPos, _constraint->variables() );
+                unsigned posConsistent = consPos->isConsistent();
+                if( posConsistent != 0 )
+                {
+                    positives.push_back( consPos );
+                }
+                const smtrat::Constraint* consNeg = smtrat::Formula::newConstraint( *summand, relNeg, _constraint->variables() );
+                unsigned negConsistent = consNeg->isConsistent();
+                if( negConsistent == 0 )
+                {
+                    if( posConsistent == 0 ) return combinations;
+                    if( posConsistent != 1 ) alwayspositives.push_back( positives.back() );
+                    positives.pop_back();
+                }
+                else
+                {
+                    if( posConsistent == 0 )
+                    {
+                        ++numOfAlwaysNegatives;
+                        if( negConsistent != 1 ) alwaysnegatives.push_back( consNeg );
+                    }
+                    else negatives.push_back( consNeg );
+                }
+            }
+            assert( positives.size() == negatives.size() );
+            vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> > combSelector = vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >();
+            if( fmod( alwaysnegatives.size(), 2.0 ) != 0.0 )
+            {
+                if( positive ) getOddBitStrings( positives.size(), combSelector );
+                else getEvenBitStrings( positives.size(), combSelector );
+            }
+            else
+            {
+                if( positive ) getEvenBitStrings( positives.size(), combSelector );
+                else getOddBitStrings( positives.size(), combSelector );
+            }
+            for( auto comb = combSelector.begin(); comb != combSelector.end(); ++comb )
+            {
+                combinations.push_back( TS_ConstraintConjunction( alwaysnegatives ) );
+                combinations.back().insert( combinations.back().end(), alwayspositives.begin(), alwayspositives.end() );
+                for( unsigned pos = 0; pos < positives.size(); ++pos )
+                {
+                    if( (*comb)[pos] ) combinations.back().push_back( negatives[pos] );
+                    else combinations.back().push_back( positives[pos] );
+                }
+            }
+        }
+        else
+        {
+            combinations.push_back( TS_ConstraintConjunction() );
+            combinations.back().push_back( _constraint );
+        }
+        return combinations;
+    }
+
+    /**
+     *
+     * @param _length
+     * @param _strings
+     */
+    void getOddBitStrings( unsigned _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings, unsigned _pos  )
+    {
+        if( _length == 1 )  _strings.push_back( bitset<MAX_PRODUCT_SPLIT_NUMBER>( 1 ) );
+        else
+        {
+            getEvenBitStrings( _length - 1, _strings, _pos );
+            for( ; _pos < _strings.size(); ++_pos )
+            {
+                _strings[_pos] <<= 1;
+                _strings[_pos].flip(0);
+            }
+            getOddBitStrings( _length - 1, _strings, _pos );
+            for( ; _pos < _strings.size(); ++_pos ) _strings[_pos] <<= 1;
+        }
+    }
+
+    /**
+     *
+     * @param _length
+     * @param _strings
+     */
+    void getEvenBitStrings( unsigned _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings, unsigned _pos )
+    {
+        if( _length == 1 ) _strings.push_back( bitset<MAX_PRODUCT_SPLIT_NUMBER>( 0 ) );
+        else
+        {
+            getEvenBitStrings( _length - 1, _strings );
+            for( ; _pos < _strings.size(); ++_pos ) _strings[_pos] <<= 1;
+            getOddBitStrings( _length - 1, _strings );
+            for( ; _pos < _strings.size(); ++_pos )
+            {
+                _strings[_pos] <<= 1;
+                _strings[_pos].flip(0);
+            }
+        }
+    }
+
+    /**
+     *
+     * @param _expression
+     * @param _variables
+     * @return
+     */
     ex simplify( const ex& _expression, const symtab& _variables )
     {
         for( symtab::const_iterator var = _variables.begin(); var != _variables.end(); ++var )
@@ -1181,7 +1297,6 @@ namespace vs
      */
     void print( DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
-        cout << "Result of Substitution: " << endl;
         DisjunctionOfConstraintConjunctions::const_iterator conj = _substitutionResults.begin();
         while( conj != _substitutionResults.end() )
         {
