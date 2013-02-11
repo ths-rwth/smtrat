@@ -163,7 +163,7 @@ bv[0-9]+ {
     return token::DEC;
 }
 
-[a-zA-Z0-9._+\-*=%/?!$_~&^<>@]+ {
+[a-zA-Z0-9._+\-*=\"%/?!$_~&^<>@]+ {
     yylval->sval = new string( yytext );
     if( mRealVariables.find( yytext ) != mRealVariables.end() )
     {
