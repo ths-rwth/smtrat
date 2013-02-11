@@ -76,6 +76,7 @@ namespace smtrat
             ConstraintSet               mNonlinearConstraints;
             ConstraintSet               mActiveResolvedNEQConstraints;
             ConstraintSet               mActiveUnresolvedNEQConstraints;
+            ConstraintSet               mResolvedNEQConstraints;
             ExVariableMap               mOriginalVars;
             ExVariableMap               mSlackVars;
             ConstraintBoundsMap         mConstraintToBound;

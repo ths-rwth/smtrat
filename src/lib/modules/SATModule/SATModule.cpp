@@ -720,7 +720,7 @@ namespace smtrat
             if( value( add_tmp[0] ) == l_Undef )
             {
                 uncheckedEnqueue( add_tmp[0] );
-                ok = ok && (propagate() == CRef_Undef);
+//                ok = ok && (propagate() == CRef_Undef);
             }
             else
             {
@@ -1022,6 +1022,7 @@ FindSecond:
         for( ; ; )
         {
             bool deductionsLearned = false;
+            Answer currentAssignmentConsistent = Unknown;
             CRef confl = propagate();
 
             #ifdef DEBUG_SATMODULE
@@ -1065,7 +1066,8 @@ FindSecond:
                     cout << "}" << endl;
                     #endif
                     mChangedPassedFormula = false;
-                    switch( runBackends() )
+                    currentAssignmentConsistent = runBackends();
+                    switch( currentAssignmentConsistent )
                     {
                         case True:
                         {
@@ -1108,7 +1110,6 @@ FindSecond:
                                     }
                                     #ifdef DEBUG_SATMODULE
                                     (*backend)->printInfeasibleSubsets();
-                                    cout << "### { ";
                                     #endif
                                     confl = learnTheoryConflict( *bestInfeasibleSubset );
                                     if( !ok ) return l_False;
@@ -1119,7 +1120,6 @@ FindSecond:
                                     {
                                         #ifdef DEBUG_SATMODULE
                                         (*backend)->printInfeasibleSubsets();
-                                        cout << "### { ";
                                         #endif
 
                                         #ifdef SMTRAT_DEVOPTION_Validation
@@ -1150,14 +1150,6 @@ FindSecond:
                             #ifdef SAT_MODULE_THEORY_PROPAGATION
                             //Theory propagation.
                             deductionsLearned = processLemmas();
-                            if( !deductionsLearned )
-                            {
-                                #ifdef DEBUG_SATMODULE
-                                cout << "### Result: Unknown!" << endl;
-                                cout << "Warning! Unknown as answer in SAT solver." << endl;
-                                #endif
-                                return l_Undef;
-                            }
                             #else
                             #ifdef DEBUG_SATMODULE
                             cout << "### Result: Unknown!" << endl;
@@ -1335,8 +1327,18 @@ FindSecond:
                     next = pickBranchLit();
 
                     if( next == lit_Undef )
-                        // Model found:
-                        return l_True;
+                    {
+                        if( currentAssignmentConsistent == True )
+                        {
+                            // Model found:
+                            return l_True;
+                        }
+                        else
+                        {
+                            assert( currentAssignmentConsistent == Unknown );
+                            return l_Undef;
+                        }
+                    }
                 }
 
                 // Increase decision level and enqueue 'next'
@@ -1833,6 +1835,10 @@ NextClause:
     {
         assert( !_theoryReason.empty() );
         vec<Lit> learnt_clause;
+
+        #ifdef DEBUG_SATMODULE
+        cout << "### { ";
+        #endif
         // Add the according literals to the conflict clause.
         for( auto subformula = _theoryReason.begin(); subformula != _theoryReason.end(); ++subformula )
         {
@@ -2057,7 +2063,7 @@ NextClause:
             if( mBooleanConstraintMap[k].formula != NULL )
             {
                 _out << _init << "   " << k << "  ->  " << mBooleanConstraintMap[k].formula->constraint();
-                _out << "  (" << setw( 7 ) << activity[k] << ") " << endl;
+                _out << "  (" << setw( 7 ) << activity[k] << ") [" << mBooleanConstraintMap[k].updateInfo << "]" << endl;
             }
         }
     }

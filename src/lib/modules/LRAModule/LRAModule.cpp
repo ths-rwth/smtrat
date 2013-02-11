@@ -55,6 +55,7 @@ namespace smtrat
         mNonlinearConstraints(),
         mActiveResolvedNEQConstraints(),
         mActiveUnresolvedNEQConstraints(),
+        mResolvedNEQConstraints(),
         mOriginalVars(),
         mSlackVars(),
         mConstraintToBound(),
@@ -319,40 +320,40 @@ namespace smtrat
         cout << "check for consistency" << endl;
         #endif
         if( !mpReceivedFormula->isConstraintConjunction() ) return Unknown;
-        if( mActiveUnresolvedNEQConstraints.empty() )
+        if( !mInfeasibleSubsets.empty() )
         {
-            if( !mInfeasibleSubsets.empty() )
+            return False;
+        }
+        unsigned posNewLearnedBound = 0;
+        for( ; ; )
+        {
+            #ifdef DEBUG_LRA_MODULE
+            cout << endl;
+            mTableau.printVariables( cout, "    " );
+            cout << endl;
+            mTableau.print( cout, 15, "    " );
+            cout << endl;
+            #endif
+
+            pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
+
+            #ifdef DEBUG_LRA_MODULE
+            cout << "    Next pivoting element: ";
+            mTableau.printEntry( cout, pivotingElement.first );
+            cout << (pivotingElement.second ? "(True)" : "(False)");
+            cout << " [" << pivotingElement.first << "]" << endl;
+            #endif
+
+            if( pivotingElement.second )
             {
-                return False;
-            }
-            unsigned posNewLearnedBound = 0;
-            for( ; ; )
-            {
-                #ifdef DEBUG_LRA_MODULE
-                cout << endl;
-                mTableau.printVariables( cout, "    " );
-                cout << endl;
-                mTableau.print( cout, 15, "    " );
-                cout << endl;
-                #endif
-
-                pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
-
-                #ifdef DEBUG_LRA_MODULE
-                cout << "    Next pivoting element: ";
-                mTableau.printEntry( cout, pivotingElement.first );
-                cout << (pivotingElement.second ? "(True)" : "(False)");
-                cout << " [" << pivotingElement.first << "]" << endl;
-                #endif
-
-                if( pivotingElement.second )
+                if( pivotingElement.first == 0 )
                 {
-                    if( pivotingElement.first == 0 )
+                    #ifdef DEBUG_LRA_MODULE
+                    cout << "True" << endl;
+                    #endif
+                    if( checkAssignmentForNonlinearConstraint() )
                     {
-                        #ifdef DEBUG_LRA_MODULE
-                        cout << "True" << endl;
-                        #endif
-                        if( checkAssignmentForNonlinearConstraint() )
+                        if( mActiveUnresolvedNEQConstraints.empty() )
                         {
                             learnRefinements();
                             mSolverState = True;
@@ -360,140 +361,146 @@ namespace smtrat
                         }
                         else
                         {
-                            adaptPassedFormula();
-                            Answer a = runBackends();
-                            if( a == False )
+                            for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
                             {
-                                getInfeasibleSubsets();
+                                if( mResolvedNEQConstraints.find( *iter ) == mResolvedNEQConstraints.end() )
+                                {
+                                    mResolvedNEQConstraints.insert( *iter );
+                                    const Constraint* unequalConstraint = *iter;
+                                    const Constraint* lessConstraint = Formula::newConstraint( unequalConstraint->lhs(), CR_LESS, unequalConstraint->variables() );
+                                    const Constraint* greaterConstraint = Formula::newConstraint( unequalConstraint->lhs(), CR_GREATER, unequalConstraint->variables() );
+                                    Formula* deductionA = new Formula( OR );
+                                    Formula* notConstraint = new Formula( NOT );
+                                    notConstraint->addSubformula( unequalConstraint );
+                                    deductionA->addSubformula( notConstraint );
+                                    deductionA->addSubformula( lessConstraint );
+                                    deductionA->addSubformula( greaterConstraint );
+                                    addDeduction( deductionA );
+                                    Formula* deductionB = new Formula( OR );
+                                    Formula* notLessConstraint = new Formula( NOT );
+                                    notLessConstraint->addSubformula( lessConstraint );
+                                    deductionB->addSubformula( notLessConstraint );
+                                    deductionB->addSubformula( unequalConstraint );
+                                    addDeduction( deductionB );
+                                    Formula* deductionC = new Formula( OR );
+                                    Formula* notGreaterConstraint = new Formula( NOT );
+                                    notGreaterConstraint->addSubformula( greaterConstraint );
+                                    deductionC->addSubformula( notGreaterConstraint );
+                                    deductionC->addSubformula( unequalConstraint );
+                                    addDeduction( deductionC );
+                                    Formula* deductionD = new Formula( OR );
+                                    Formula* notGreaterConstraintB = new Formula( NOT );
+                                    notGreaterConstraintB->addSubformula( greaterConstraint );
+                                    Formula* notLessConstraintB = new Formula( NOT );
+                                    notLessConstraintB->addSubformula( lessConstraint );
+                                    deductionD->addSubformula( notGreaterConstraintB );
+                                    deductionD->addSubformula( notLessConstraintB );
+                                    addDeduction( deductionD );
+                                }
                             }
                             learnRefinements();
-                            mSolverState = a;
-                            return a;
+                            mSolverState = Unknown;
+                            return Unknown;
                         }
                     }
                     else
                     {
-                        mTableau.pivot( pivotingElement.first );
-                        while( posNewLearnedBound < mTableau.rLearnedBounds().size() )
+                        adaptPassedFormula();
+                        Answer a = runBackends();
+                        if( a == False )
                         {
-                            set< const Formula*> originSet = set< const Formula*>();
-                            Tableau::LearnedBound& learnedBound = mTableau.rLearnedBounds()[posNewLearnedBound];
-                            vector<const Bound*>& bounds = *learnedBound.premise;
-                            for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
-                            {
-                                assert( !(*bound)->origins().empty() );
-                                originSet.insert( (*bound)->origins().begin()->begin(), (*bound)->origins().begin()->end() );
-                                for( auto origin = (*bound)->origins().begin()->begin(); origin != (*bound)->origins().begin()->end(); ++origin )
-                                {
-                                    const Constraint* constraint = (*origin)->pConstraint();
-                                    if( constraint != NULL )
-                                    {
-                                        vector< const Bound* >* constraintToBounds = mConstraintToBound[constraint];
-                                        constraintToBounds->push_back( learnedBound.nextWeakerBound );
-                                        #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
-                                        if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
-                                        #endif
-                                    }
-                                }
-                            }
-                            activateBound( learnedBound.nextWeakerBound, originSet );
-                            #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
-                            if( learnedBound.newBound != NULL )
-                            {
-                                const Constraint* newConstraint = learnedBound.newBound->pAsConstraint();
-                                addConstraintToInform( newConstraint );
-                                mLinearConstraints.insert( newConstraint );
-                                vector< const Bound* >* boundVector = new vector< const Bound* >();
-                                boundVector->push_back( learnedBound.newBound );
-                                mConstraintToBound[newConstraint] = boundVector;
-                                activateBound( learnedBound.newBound, originSet );
-                            }
-                            #endif
-                            ++posNewLearnedBound;
+                            getInfeasibleSubsets();
                         }
-                        if( !mInfeasibleSubsets.empty() )
-                        {
-                            learnRefinements();
-                            mSolverState = False;
-                            return False;
-                        }
+                        learnRefinements();
+                        mSolverState = a;
+                        return a;
                     }
                 }
                 else
                 {
-                    mInfeasibleSubsets.clear();
-                    #ifdef LRA_ONE_REASON
-                    vector< const Bound* > conflict = mTableau.getConflict( pivotingElement.first );
-                    set< const Formula* > infSubSet = set< const Formula* >();
-                    for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
+                    mTableau.pivot( pivotingElement.first );
+                    while( posNewLearnedBound < mTableau.rLearnedBounds().size() )
                     {
-                        assert( (*bound)->isActive() );
-                        infSubSet.insert( (*bound)->pOrigins()->begin()->begin(), (*bound)->pOrigins()->begin()->end() );
-                    }
-                    mInfeasibleSubsets.push_back( infSubSet );
-                    #else
-                    vector< set< const Bound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
-                    for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
-                    {
-                        set< const Formula* > infSubSet = set< const Formula* >();
-                        for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
+                        set< const Formula*> originSet = set< const Formula*>();
+                        Tableau::LearnedBound& learnedBound = mTableau.rLearnedBounds()[posNewLearnedBound];
+                        vector<const Bound*>& bounds = *learnedBound.premise;
+                        for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
                         {
-                            assert( (*bound)->isActive() );
-                            infSubSet.insert( *(*bound)->pOrigins()->begin() );
+                            assert( !(*bound)->origins().empty() );
+                            originSet.insert( (*bound)->origins().begin()->begin(), (*bound)->origins().begin()->end() );
+                            for( auto origin = (*bound)->origins().begin()->begin(); origin != (*bound)->origins().begin()->end(); ++origin )
+                            {
+                                const Constraint* constraint = (*origin)->pConstraint();
+                                if( constraint != NULL )
+                                {
+                                    vector< const Bound* >* constraintToBounds = mConstraintToBound[constraint];
+                                    constraintToBounds->push_back( learnedBound.nextWeakerBound );
+                                    #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                                    if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
+                                    #endif
+                                }
+                            }
                         }
-                        mInfeasibleSubsets.push_back( infSubSet );
+                        activateBound( learnedBound.nextWeakerBound, originSet );
+                        #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                        if( learnedBound.newBound != NULL )
+                        {
+                            const Constraint* newConstraint = learnedBound.newBound->pAsConstraint();
+                            addConstraintToInform( newConstraint );
+                            mLinearConstraints.insert( newConstraint );
+                            vector< const Bound* >* boundVector = new vector< const Bound* >();
+                            boundVector->push_back( learnedBound.newBound );
+                            mConstraintToBound[newConstraint] = boundVector;
+                            activateBound( learnedBound.newBound, originSet );
+                        }
+                        #endif
+                        ++posNewLearnedBound;
                     }
-                    #endif
-                    learnRefinements();
-                    #ifdef DEBUG_LRA_MODULE
-                    cout << "False" << endl;
-                    #endif
-                    mSolverState = False;
-                    return False;
+                    if( !mInfeasibleSubsets.empty() )
+                    {
+                        learnRefinements();
+                        mSolverState = False;
+                        return False;
+                    }
                 }
             }
-            assert( false );
-            learnRefinements();
-            mSolverState = True;
-            return True;
-        }
-        else
-        {
-            for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
+            else
             {
-                const Constraint* unequalConstraint = *iter;
-                const Constraint* lessConstraint = Formula::newConstraint( unequalConstraint->lhs(), CR_LESS, unequalConstraint->variables() );
-                const Constraint* greaterConstraint = Formula::newConstraint( unequalConstraint->lhs(), CR_GREATER, unequalConstraint->variables() );
-                Formula* deductionA = new Formula( OR );
-                Formula* notConstraint = new Formula( NOT );
-                notConstraint->addSubformula( unequalConstraint );
-                deductionA->addSubformula( notConstraint );
-                deductionA->addSubformula( lessConstraint );
-                deductionA->addSubformula( greaterConstraint );
-                addDeduction( deductionA );
-                Formula* deductionB = new Formula( OR );
-                Formula* notLessConstraint = new Formula( NOT );
-                notLessConstraint->addSubformula( lessConstraint );
-                deductionB->addSubformula( notLessConstraint );
-                deductionB->addSubformula( unequalConstraint );
-                addDeduction( deductionB );
-                Formula* deductionC = new Formula( OR );
-                Formula* notGreaterConstraint = new Formula( NOT );
-                notGreaterConstraint->addSubformula( greaterConstraint );
-                deductionC->addSubformula( notGreaterConstraint );
-                deductionC->addSubformula( unequalConstraint );
-                addDeduction( deductionC );
-                Formula* deductionD = new Formula( OR );
-                Formula* notGreaterConstraintB = new Formula( NOT );
-                notGreaterConstraintB->addSubformula( greaterConstraint );
-                Formula* notLessConstraintB = new Formula( NOT );
-                notLessConstraintB->addSubformula( lessConstraint );
-                deductionD->addSubformula( notGreaterConstraintB );
-                deductionD->addSubformula( notLessConstraintB );
-                addDeduction( deductionD );
+                mInfeasibleSubsets.clear();
+                #ifdef LRA_ONE_REASON
+                vector< const Bound* > conflict = mTableau.getConflict( pivotingElement.first );
+                set< const Formula* > infSubSet = set< const Formula* >();
+                for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
+                {
+                    assert( (*bound)->isActive() );
+                    infSubSet.insert( (*bound)->pOrigins()->begin()->begin(), (*bound)->pOrigins()->begin()->end() );
+                }
+                mInfeasibleSubsets.push_back( infSubSet );
+                #else
+                vector< set< const Bound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
+                for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
+                {
+                    set< const Formula* > infSubSet = set< const Formula* >();
+                    for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
+                    {
+                        assert( (*bound)->isActive() );
+                        infSubSet.insert( *(*bound)->pOrigins()->begin() );
+                    }
+                    mInfeasibleSubsets.push_back( infSubSet );
+                }
+                #endif
+                learnRefinements();
+                #ifdef DEBUG_LRA_MODULE
+                cout << "False" << endl;
+                #endif
+                mSolverState = False;
+                return False;
             }
-            return Unknown;
         }
+        assert( false );
+        learnRefinements();
+        mSolverState = True;
+        return True;
     }
 
     /**
@@ -837,7 +844,7 @@ namespace smtrat
         }
         if( _bound->isUpperBound() )
         {
-            if( *var.pInfimum() > _bound->limit() )
+            if( *var.pInfimum() > _bound->limit() && !_bound->deduced() )
             {
                 set<const Formula*> infsubset = set<const Formula*>();
                 infsubset.insert( _bound->pOrigins()->begin()->begin(), _bound->pOrigins()->begin()->end() );
@@ -863,7 +870,7 @@ namespace smtrat
         }
         if( _bound->isLowerBound() )
         {
-            if( *var.pSupremum() < _bound->limit() )
+            if( *var.pSupremum() < _bound->limit() && !_bound->deduced() )
             {
                 set<const Formula*> infsubset = set<const Formula*>();
                 infsubset.insert( _bound->pOrigins()->begin()->begin(), _bound->pOrigins()->begin()->end() );

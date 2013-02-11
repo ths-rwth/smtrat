@@ -243,7 +243,7 @@ bind :
                          $$ = new pair< string, unsigned >( *$2, 1 ); delete $3;
                          dv.pLexer()->mRealVariables.insert( *$2 ); delete $2; }
 	|	OB SYM form CB { const string boolVarName = dv.addBooleanVariable( yyloc, *$2, true );
-                         dv.rFormulaRoot().addSubformula( dv.mkFormula( smtrat::IMPLIES, new Formula( boolVarName ), $3 ) );
+                         dv.rFormulaRoot().addSubformula( dv.mkFormula( smtrat::IFF, new Formula( boolVarName ), $3 ) );
                          $$ = new pair< string, unsigned >( *$2, 0 );
                          dv.pLexer()->mBooleanVariables.insert( *$2 ); delete $2; }
 

@@ -635,6 +635,7 @@ namespace smtrat
                 (*module)->stopAddTimer();
                 #endif
             }
+            mFirstSubformulaToPass = mpPassedFormula->end();
             mFirstConstraintToInform = mConstraintsToInform.end();
             if( assertionFailed )
             {
@@ -644,8 +645,7 @@ namespace smtrat
                 return False;
             }
         }
-        mFirstSubformulaToPass = mpPassedFormula->end();
-        Answer result          = Unknown;
+        Answer result = Unknown;
 
         /*
          * Run the backend solver sequentially until the first answers true or false.
