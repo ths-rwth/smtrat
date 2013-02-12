@@ -157,8 +157,10 @@ namespace smtrat
                             auto pos = mActiveUnresolvedNEQConstraints.find( unequalCons->second );
                             if( pos != mActiveUnresolvedNEQConstraints.end() )
                             {
+                                auto entry = mActiveResolvedNEQConstraints.insert( *pos );
+                                removeSubformulaFromPassedFormula( pos->second.position );
+                                entry.first->second.position = mpPassedFormula->end();
                                 mActiveUnresolvedNEQConstraints.erase( pos );
-                                mActiveResolvedNEQConstraints.insert( unequalCons->second );
                             }
                         }
 
@@ -172,11 +174,18 @@ namespace smtrat
                         assert( bounds->size() == 2 );
                         if( (*bounds)[0]->isActive() || (*bounds)[1]->isActive() )
                         {
-                            mActiveResolvedNEQConstraints.insert( constraint );
+                            Context context = Context();
+                            context.origin = *_subformula;
+                            context.position = mpPassedFormula->end();
+                            mActiveResolvedNEQConstraints.insert( pair< const Constraint*, Context >( constraint, context ) );
                         }
                         else
                         {
-                            mActiveUnresolvedNEQConstraints.insert( constraint );
+                            addSubformulaToPassedFormula( new Formula( constraint ), *_subformula );
+                            Context context = Context();
+                            context.origin = *_subformula;
+                            context.position = mpPassedFormula->last();
+                            mActiveUnresolvedNEQConstraints.insert( pair< const Constraint*, Context >( constraint, context ) );
                         }
                     }
                 }
@@ -250,8 +259,10 @@ namespace smtrat
                                             auto pos = mActiveResolvedNEQConstraints.find( unequalCons->second );
                                             if( pos != mActiveResolvedNEQConstraints.end() )
                                             {
+                                                auto entry = mActiveUnresolvedNEQConstraints.insert( *pos );
                                                 mActiveResolvedNEQConstraints.erase( pos );
-                                                mActiveUnresolvedNEQConstraints.insert( unequalCons->second );
+                                                addSubformulaToPassedFormula( new Formula( entry.first->first ), entry.first->second.origin );
+                                                entry.first->second.position = mpPassedFormula->last();
                                             }
                                         }
                                     }
@@ -292,7 +303,12 @@ namespace smtrat
                     {
                         if( mActiveResolvedNEQConstraints.erase( (*_subformula)->pConstraint() ) == 0 )
                         {
-                            mActiveUnresolvedNEQConstraints.erase( (*_subformula)->pConstraint() );
+                            auto iter = mActiveUnresolvedNEQConstraints.find( (*_subformula)->pConstraint() );
+                            if( iter != mActiveUnresolvedNEQConstraints.end() )
+                            {
+                                removeSubformulaFromPassedFormula( iter->second.position );
+                                mActiveUnresolvedNEQConstraints.erase( iter );
+                            }
                         }
                     }
                 }
@@ -363,39 +379,10 @@ namespace smtrat
                         {
                             for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
                             {
-                                if( mResolvedNEQConstraints.find( *iter ) == mResolvedNEQConstraints.end() )
+                                if( mResolvedNEQConstraints.find( iter->first ) == mResolvedNEQConstraints.end() )
                                 {
-                                    mResolvedNEQConstraints.insert( *iter );
-                                    const Constraint* unequalConstraint = *iter;
-                                    const Constraint* lessConstraint = Formula::newConstraint( unequalConstraint->lhs(), CR_LESS, unequalConstraint->variables() );
-                                    const Constraint* greaterConstraint = Formula::newConstraint( unequalConstraint->lhs(), CR_GREATER, unequalConstraint->variables() );
-                                    Formula* deductionA = new Formula( OR );
-                                    Formula* notConstraint = new Formula( NOT );
-                                    notConstraint->addSubformula( unequalConstraint );
-                                    deductionA->addSubformula( notConstraint );
-                                    deductionA->addSubformula( lessConstraint );
-                                    deductionA->addSubformula( greaterConstraint );
-                                    addDeduction( deductionA );
-                                    Formula* deductionB = new Formula( OR );
-                                    Formula* notLessConstraint = new Formula( NOT );
-                                    notLessConstraint->addSubformula( lessConstraint );
-                                    deductionB->addSubformula( notLessConstraint );
-                                    deductionB->addSubformula( unequalConstraint );
-                                    addDeduction( deductionB );
-                                    Formula* deductionC = new Formula( OR );
-                                    Formula* notGreaterConstraint = new Formula( NOT );
-                                    notGreaterConstraint->addSubformula( greaterConstraint );
-                                    deductionC->addSubformula( notGreaterConstraint );
-                                    deductionC->addSubformula( unequalConstraint );
-                                    addDeduction( deductionC );
-                                    Formula* deductionD = new Formula( OR );
-                                    Formula* notGreaterConstraintB = new Formula( NOT );
-                                    notGreaterConstraintB->addSubformula( greaterConstraint );
-                                    Formula* notLessConstraintB = new Formula( NOT );
-                                    notLessConstraintB->addSubformula( lessConstraint );
-                                    deductionD->addSubformula( notGreaterConstraintB );
-                                    deductionD->addSubformula( notLessConstraintB );
-                                    addDeduction( deductionD );
+                                    splitUnequalConstraint( iter->first );
+                                    mResolvedNEQConstraints.insert( iter->first );
                                 }
                             }
                             learnRefinements();
@@ -405,6 +392,14 @@ namespace smtrat
                     }
                     else
                     {
+                        for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
+                        {
+                            if( mResolvedNEQConstraints.find( iter->first ) == mResolvedNEQConstraints.end() )
+                            {
+                                splitUnequalConstraint( iter->first );
+                                mResolvedNEQConstraints.insert( iter->first );
+                            }
+                        }
                         adaptPassedFormula();
                         Answer a = runBackends();
                         if( a == False )
@@ -800,6 +795,39 @@ namespace smtrat
             mAssignmentFullfilsNonlinearConstraints = true;
             return true;
         }
+    }
+
+    void LRAModule::splitUnequalConstraint( const Constraint* _unequalConstraint )
+    {
+        const Constraint* lessConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_LESS, _unequalConstraint->variables() );
+        const Constraint* greaterConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_GREATER, _unequalConstraint->variables() );
+        Formula* deductionA = new Formula( OR );
+        Formula* notConstraint = new Formula( NOT );
+        notConstraint->addSubformula( _unequalConstraint );
+        deductionA->addSubformula( notConstraint );
+        deductionA->addSubformula( lessConstraint );
+        deductionA->addSubformula( greaterConstraint );
+        addDeduction( deductionA );
+        Formula* deductionB = new Formula( OR );
+        Formula* notLessConstraint = new Formula( NOT );
+        notLessConstraint->addSubformula( lessConstraint );
+        deductionB->addSubformula( notLessConstraint );
+        deductionB->addSubformula( _unequalConstraint );
+        addDeduction( deductionB );
+        Formula* deductionC = new Formula( OR );
+        Formula* notGreaterConstraint = new Formula( NOT );
+        notGreaterConstraint->addSubformula( greaterConstraint );
+        deductionC->addSubformula( notGreaterConstraint );
+        deductionC->addSubformula( _unequalConstraint );
+        addDeduction( deductionC );
+        Formula* deductionD = new Formula( OR );
+        Formula* notGreaterConstraintB = new Formula( NOT );
+        notGreaterConstraintB->addSubformula( greaterConstraint );
+        Formula* notLessConstraintB = new Formula( NOT );
+        notLessConstraintB->addSubformula( lessConstraint );
+        deductionD->addSubformula( notGreaterConstraintB );
+        deductionD->addSubformula( notLessConstraintB );
+        addDeduction( deductionD );
     }
 
     /**

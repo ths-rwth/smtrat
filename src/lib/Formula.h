@@ -544,6 +544,7 @@ namespace smtrat
             void setFather( Formula* );
             void addSubformula( Formula* );
             void addSubformula( const Constraint* );
+            iterator replace( iterator, Formula* );
             void pop_back();
             void pop_front();
             void erase( unsigned );

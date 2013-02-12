@@ -401,6 +401,31 @@ namespace smtrat
 
     /**
      *
+     * @param _subformula
+     * @return
+     */
+    Formula::iterator Formula::replace( Formula::iterator _toReplace, Formula* _replacement )
+    {
+        assert( isBooleanCombination() );
+        assert( _toReplace != mpSubformulas->end() );
+        Formula* pSubFormula = *_toReplace;
+        Formula::iterator result = mpSubformulas->erase( _toReplace );
+        delete pSubFormula;
+
+        _replacement->setFather( this );
+        /*
+         * Add the variables of the formula to add to this formula.
+         */
+        mRealValuedVars.insert( _replacement->realValuedVars().begin(), _replacement->realValuedVars().end() );
+        mBooleanVars.insert( _replacement->booleanVars().begin(), _replacement->booleanVars().end() );
+
+        result = mpSubformulas->insert( result, _replacement );
+        mPropositionsUptodate = false;
+        return result;
+    }
+
+    /**
+     *
      */
     void Formula::pop_back()
     {
