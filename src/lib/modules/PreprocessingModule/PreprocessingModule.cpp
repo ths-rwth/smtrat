@@ -34,6 +34,11 @@
 #include <bits/stl_map.h>
 
 //#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION (Not working)
+#define ADDLINEARDEDUCTIONS
+//#define PREPROCESSING_DEVELOP_MODE
+#ifdef CONSTRAINT_FACTORIZATION
+#define PREPROCESSING_FACTORIZATION
+#endif
 
 namespace smtrat {
 PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager )
@@ -75,21 +80,17 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         Formula::const_iterator receivedSubformula = firstUncheckedReceivedSubformula();
         while( receivedSubformula != mpReceivedFormula->end() )
         {
+            #ifdef PREPROCESSING_FACTORIZATION
             Formula* formulaToAssert = new Formula( **receivedSubformula );
             // Split constraints over polynomials being products.
             Formula* afterProductSplitting = splitProductConstraints( formulaToAssert );
             if( afterProductSplitting != formulaToAssert )
             {
-                #ifdef SMTRAT_DEVOPTION_Validation
-                Formula assumption = Formula( NOT );
-                Formula* iffFormula = new Formula( IFF );
-                iffFormula->addSubformula( new Formula( *formulaToAssert ) );
-                iffFormula->addSubformula( new Formula( *afterProductSplitting ) );
-                assumption.addSubformula( iffFormula );
-                Module::addAssumptionToCheck( assumption, false, "FactorizationInPreprocessing" );
-                #endif
                 delete formulaToAssert;
             }
+            #else
+            Formula* afterProductSplitting = new Formula( **receivedSubformula );
+            #endif
             // Inequations are transformed.
             rewritePotentialInequalities( afterProductSplitting );
             #ifdef ADDLINEARDEDUCTIONS
@@ -167,50 +168,60 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
     {
         if( _formula->getType() == REALCONSTRAINT )
         {
+            #ifdef SMTRAT_DEVOPTION_Validation
+            Formula assumption = Formula( NOT );
+            Formula* iffFormula = new Formula( IFF );
+            iffFormula->addSubformula( new Formula( *_formula ) );
+            #endif
+            Formula* result;
             vs::DisjunctionOfConstraintConjunctions splittedForm = vs::getSignCombinations( _formula->pConstraint() );
             if( splittedForm.empty() )
             {
-                return new Formula( smtrat::FFALSE );
+                result = new Formula( smtrat::FFALSE );
             }
             else if( splittedForm.size() == 1 )
             {
                 assert( !splittedForm.back().empty() );
                 if( splittedForm.back().size() == 1 )
                 {
-                    return new Formula( splittedForm.back().back() );
+                    result = new Formula( splittedForm.back().back() );
                 }
                 else
                 {
-                    Formula* conjunction = new Formula( AND );
+                    result = new Formula( AND );
                     for( auto cons = splittedForm.back().begin(); cons != splittedForm.back().end(); ++cons )
                     {
-                        conjunction->addSubformula( *cons );
+                        result->addSubformula( *cons );
                     }
-                    return conjunction;
                 }
             }
             else
             {
-                Formula* disjunction = new Formula( OR );
+                result = new Formula( OR );
                 for( auto conj = splittedForm.begin(); conj != splittedForm.end(); ++conj )
                 {
                     assert( !conj->empty() );
                     if( conj->size() == 1 )
                     {
-                        disjunction->addSubformula( conj->back() );
+                        result->addSubformula( conj->back() );
                     }
                     else
                     {
                         Formula* conjunction = new Formula( AND );
-                        disjunction->addSubformula( conjunction );
+                        result->addSubformula( conjunction );
                         for( auto cons = conj->begin(); cons != conj->end(); ++cons )
                         {
                             conjunction->addSubformula( *cons );
                         }
                     }
                 }
-                return disjunction;
             }
+            #ifdef SMTRAT_DEVOPTION_Validation
+            iffFormula->addSubformula( new Formula( *result ) );
+            assumption.addSubformula( iffFormula );
+            Module::addAssumptionToCheck( assumption, false, "FactorizationInPreprocessing" );
+            #endif
+            return result;
         }
         else if( _formula->isBooleanCombination() )
         {
