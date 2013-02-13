@@ -67,23 +67,23 @@ import org.apache.commons.collections15.functors.ConstantTransformer;
 public class GUI extends JFrame implements WindowListener
 {
     // GUI
-    private static final String TITLE = "SMT-XRAT";
+    public static final String TITLE = "SMT-XRAT";
 // HTML_ABOUT to be changed
-    private static final String HTML_ABOUT = "<html><p>" + TITLE + " is a graphical user interface to<br />export and manage NRA Solvers according<br />to a user-defined strategy.<br /><br />Support:<br />Ulrich Loup (<a href=\"mailto:loup@cs.rwth-aachen.de\">loup@cs.rwth-aachen.de</a>)<br />Florian Corzilius (<a href=\"mailto:corzilius@cs.rwth-aachen.de\">corzilius@cs.rwth-aachen.de</a>)<br /><br />GUI by Henrik Schmitz.<br /><br />Copyright (C) 2012<br />Florian Corzilius, Ulrich Loup, Erika Abraham,<br />Sebastian Junges</p></html>";
-    private static final String PATH_ICON_ABOUT = IOTools.SMTRAT_GRAPHICS_DIR + File.separator + "logoBig.png";
-    private static final String PATH_ICON_GUI = IOTools.SMTRAT_GRAPHICS_DIR + File.separator + "icon.png";
+    public static final String HTML_ABOUT = "<html><p>" + TITLE + " is a graphical user interface to<br />export and manage NRA Solvers according<br />to a user-defined strategy.<br /><br />Support:<br />Ulrich Loup (<a href=\"mailto:loup@cs.rwth-aachen.de\">loup@cs.rwth-aachen.de</a>)<br />Florian Corzilius (<a href=\"mailto:corzilius@cs.rwth-aachen.de\">corzilius@cs.rwth-aachen.de</a>)<br /><br />GUI by Henrik Schmitz.<br /><br />Copyright (C) 2012<br />Florian Corzilius, Ulrich Loup, Erika Abraham,<br />Sebastian Junges</p></html>";
+    public static final String PATH_ICON_ABOUT = IOTools.SMTRAT_GRAPHICS_DIR + File.separator + "logoBig.png";
+    public static final String PATH_ICON_GUI = IOTools.SMTRAT_GRAPHICS_DIR + File.separator + "icon.png";
     
     // Visualization
 // VISUALIZATION_HEIGHT to be changed
-    private static final int VISUALIZATION_HEIGHT = 500;
+    public static final int VISUALIZATION_HEIGHT = 500;
 // VISUALIZATION_PADDING to be changed
-    private static final int VISUALIZATION_PADDING = 50;
+    public static final int VISUALIZATION_PADDING = 50;
 // VISUALIZATION_WIDTH to be changed
-    private static final int VISUALIZATION_WIDTH = 750;
+    public static final int VISUALIZATION_WIDTH = 750;
     
     // Edge
     public static final Color EDGE_COLOR = Color.LIGHT_GRAY;
-    private static final double EDGE_QUAD_CURVE_OFFSET = 50.0d;
+    public static final double EDGE_QUAD_CURVE_OFFSET = 50.0d;
     
     // Edge label
     private static final double EDGE_LABEL_CLOSENESS = 0.5d;
