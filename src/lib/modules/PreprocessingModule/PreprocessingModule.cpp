@@ -472,9 +472,28 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                     GiNaC::ex expression = constraint->lhs();
                     
                     GiNaC::numeric constPart = constraint->constantPart() ;
+                    assert( GiNaC::is_exactly_a<GiNaC::add>( expression ) ); 
+                    
+                    // We look for a_1
+                    GiNaC::const_iterator term = expression->begin();
+                    // If it is the constant part, skip.
+                    if(GiNaC::is_exactly_a<GiNaC::numeric>(*term)) ++term;
+                    // If it is a power, it is a power of a variable only, so the coefficient would be 1 and we are fine.
+                    // Therefore, it has to be a multiplication
+                    assert( GiNaC::is_exactly_a<GiNaC::multiplication>(*term) );
+                    // Now, we can traverse it and look for a constant part. 
+                    // As the expression is expanded, we just look for one numeric value.
+                    for( GiNaC::const_iterator part = term->begin(); part != term->end(); ++part)
+                    {
+                        if( GiNaC::is_exactly_a<GiNaC::numeric>(*part)) 
+                        {
+                            constPart = constPart.div( GiNaC::ex_to<GiNaC::numeric>(*part) );
+                            break;
+                        }
+                    }
+                    
                     if(constPart == (GiNaC::numeric)0 ) continue;
                     
-                    assert( GiNaC::is_exactly_a<GiNaC::add>( expression ) ); 
                     if(degree > 2) continue;
                     Formula* deduction = new Formula(OR);
                         
