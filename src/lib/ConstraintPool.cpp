@@ -63,6 +63,7 @@ namespace smtrat
      */
     ConstraintPool::~ConstraintPool()
     {
+        cout << "Number of constraints: " << mAllConstraints.size() << endl;
         while( !mAllConstraints.empty() )
         {
             const Constraint* pCons = *mAllConstraints.begin();

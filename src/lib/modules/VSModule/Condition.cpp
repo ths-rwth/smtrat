@@ -111,6 +111,7 @@ namespace vs
     {
         (*mpOriginalConditions).clear();
         delete mpOriginalConditions;
+        delete mpInfo;
     }
 
     /**

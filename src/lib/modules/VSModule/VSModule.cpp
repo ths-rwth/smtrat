@@ -65,6 +65,7 @@ namespace smtrat
      */
     VSModule::~VSModule()
     {
+        cout << "Number of states in VSModule: " << mpStateTree->numberOfNodes() << endl;
         while( !mFormulaConditionMap.empty() )
         {
             const vs::Condition* pRecCond = mFormulaConditionMap.begin()->second;
@@ -178,7 +179,9 @@ namespace smtrat
                 }
                 if( oCond != (*cond)->originalConditions().end() )
                 {
+                    const vs::Condition* toDelete = *cond;
                     cond = subResult.erase( cond );
+                    delete toDelete;
                 }
                 else
                 {
@@ -196,6 +199,12 @@ namespace smtrat
                 }
             }
             mpStateTree->deleteConditions( condsToDelete );
+            while( !condsToDelete.empty() )
+            {
+                const vs::Condition* toDelete = condsToDelete.back();
+                condsToDelete.pop_back();
+                delete toDelete;
+            }
             mpStateTree->rStateType() = COMBINE_SUBRESULTS;
             mpStateTree->rTakeSubResultCombAgain() = true;
             insertDTinRanking( mpStateTree );

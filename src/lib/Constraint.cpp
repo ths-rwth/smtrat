@@ -150,6 +150,7 @@ namespace smtrat
      */
     Constraint::~Constraint()
     {
+        delete mpCoefficients;
         if( mpMultiRootLessLhs != pLhs ) delete mpMultiRootLessLhs;
         if( mpFactorization != pLhs ) delete mpFactorization;
         delete pLhs;

@@ -136,6 +136,7 @@ namespace vs
         delete mpFactor;
         delete mpDenominator;
         delete mpRadicand;
+        delete mpAsExpression;
     }
 
     /**
