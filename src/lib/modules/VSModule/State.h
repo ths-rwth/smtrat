@@ -28,14 +28,13 @@
 #ifndef SMTRAT_VS_STATE_H
 #define SMTRAT_VS_STATE_H
 
-#define VS_USE_VARIABLE_BOUNDS
-
 #include <map>
 #include <limits.h>
 #include <ginacra/ginacra.h>
 #include "Substitution.h"
 #include "Tools.h"
-#ifdef VS_USE_VARIABLE_BOUNDS
+#include "config.h"
+#ifdef SMTRAT_VS_VARIABLEBOUNDS
 #include "../../VariableBounds.h"
 #endif
 
@@ -228,7 +227,7 @@ public:
 	typedef std::vector < std::pair< ConditionVector, bool > > 						SubstitutionResult	;
 	typedef std::vector < SubstitutionResult > 										SubstitutionResults	;
 	typedef std::vector < std::pair< unsigned, unsigned  > >						SubResultCombination;
-    #ifdef VS_USE_VARIABLE_BOUNDS
+    #ifdef SMTRAT_VS_VARIABLEBOUNDS
     typedef smtrat::vb::VariableBounds< Condition >                                 VariableBounds      ;
     #endif
 private:
@@ -243,7 +242,7 @@ private:
 	bool					 mMarkedAsDeleted			;
 	bool					 mSubResultsSimplified		;
 	bool					 mTakeSubResultCombAgain	;
-    #ifdef VS_USE_VARIABLE_BOUNDS
+    #ifdef SMTRAT_VS_VARIABLEBOUNDS
     bool                     mTestCandidateCheckedForBounds;
     bool                     mTestCandidateInBoundsCreated;
     #endif
@@ -261,7 +260,7 @@ private:
 	ConditionVector* 		 mpConditions				;
 	ConflictSets*			 mpConflictSets				;
 	StateVector* 			 mpChildren					;
-    #ifdef VS_USE_VARIABLE_BOUNDS
+    #ifdef SMTRAT_VS_VARIABLEBOUNDS
     VariableBounds           mVariableBounds            ;
     #endif
 public:
@@ -327,7 +326,7 @@ public:
 	StateType&				rStateType					( ) 		{ return mStateType														; }
 	const Condition*		pOriginalCondition			( )	const 	{ return mpOriginalCondition											; }
 	const Condition& 		originalCondition			( )	const 	{ return *mpOriginalCondition											; }
-    #ifdef VS_USE_VARIABLE_BOUNDS
+    #ifdef SMTRAT_VS_VARIABLEBOUNDS
 	const VariableBounds&   variableBounds  			( )	const 	{ return mVariableBounds    											; }
 	VariableBounds&         rVariableBounds  			( )      	{ return mVariableBounds    											; }
     #endif
@@ -409,7 +408,7 @@ public:
 																				  const ConditionSet&	 )										;
 	void									updateValuation						( )	      			       											;
 	void									passConflictToFather				( bool = false )													;
-    #ifdef VS_USE_VARIABLE_BOUNDS
+    #ifdef SMTRAT_VS_VARIABLEBOUNDS
     bool                                    checkTestCandidatesForBounds        ( )                                                                 ;
     #endif
 

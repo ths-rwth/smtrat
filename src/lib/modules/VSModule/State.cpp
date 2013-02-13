@@ -43,7 +43,7 @@ namespace vs
 {
     using namespace std;
     using namespace GiNaC;
-    #ifdef VS_USE_VARIABLE_BOUNDS
+    #ifdef SMTRAT_VS_VARIABLEBOUNDS
     using namespace GiNaCRA;
     #endif
 
@@ -58,7 +58,7 @@ namespace vs
         mMarkedAsDeleted( false ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
-        #ifdef VS_USE_VARIABLE_BOUNDS
+        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         mTestCandidateCheckedForBounds( false ),
         mTestCandidateInBoundsCreated( false ),
         #endif
@@ -76,7 +76,7 @@ namespace vs
         mpConditions( new ConditionVector() ),
         mpConflictSets( new ConflictSets() ),
         mpChildren( new StateVector() )
-        #ifdef VS_USE_VARIABLE_BOUNDS
+        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         ,
         mVariableBounds()
         #endif
@@ -91,7 +91,7 @@ namespace vs
         mMarkedAsDeleted( false ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
-        #ifdef VS_USE_VARIABLE_BOUNDS
+        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         mTestCandidateCheckedForBounds( false ),
         mTestCandidateInBoundsCreated( false ),
         #endif
@@ -109,7 +109,7 @@ namespace vs
         mpConditions( new ConditionVector() ),
         mpConflictSets( new ConflictSets() ),
         mpChildren( new StateVector() )
-        #ifdef VS_USE_VARIABLE_BOUNDS
+        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         ,
         mVariableBounds()
         #endif
@@ -133,7 +133,7 @@ namespace vs
         {
             const Condition* pCond = rConditions().back();
             rConditions().pop_back();
-            #ifdef VS_USE_VARIABLE_BOUNDS
+            #ifdef SMTRAT_VS_VARIABLEBOUNDS
             mVariableBounds.removeBound( pCond->pConstraint(), pCond );
             #endif
             delete pCond;
@@ -1626,14 +1626,14 @@ namespace vs
                         || constraintWithFinitlyManySolutionCandidatesInIndexExists )
                 {
                     rConditions().push_back( new Condition( _constraint, true, _originalConditions, _valutation, _recentlyAdded ) );
-                    #ifdef VS_USE_VARIABLE_BOUNDS
+                    #ifdef SMTRAT_VS_VARIABLEBOUNDS
                     mVariableBounds.addBound( _constraint, rConditions().back() );
                     #endif
                 }
                 else
                 {
                     rConditions().push_back( new Condition( _constraint, false, _originalConditions, _valutation, _recentlyAdded ) );
-                    #ifdef VS_USE_VARIABLE_BOUNDS
+                    #ifdef SMTRAT_VS_VARIABLEBOUNDS
                     mVariableBounds.addBound( _constraint, rConditions().back() );
                     #endif
                 }
@@ -1645,7 +1645,7 @@ namespace vs
             else
             {
                 rConditions().push_back( new Condition( _constraint, false, _originalConditions, _valutation, false ) );
-                #ifdef VS_USE_VARIABLE_BOUNDS
+                #ifdef SMTRAT_VS_VARIABLEBOUNDS
                 mVariableBounds.addBound( _constraint, rConditions().back() );
                 #endif
             }
@@ -2029,7 +2029,7 @@ namespace vs
                 }
                 if( condToDel != _conditionsToDelete.end() )
                 {
-                    #ifdef VS_USE_VARIABLE_BOUNDS
+                    #ifdef SMTRAT_VS_VARIABLEBOUNDS
                     mVariableBounds.removeBound( (*cond)->pConstraint(), *cond );
                     #endif
                     conditionDeleted = true;
@@ -2431,7 +2431,7 @@ namespace vs
         {
             const Condition* pCond = rConditions().back();
             rConditions().pop_back();
-            #ifdef VS_USE_VARIABLE_BOUNDS
+            #ifdef SMTRAT_VS_VARIABLEBOUNDS
             mVariableBounds.removeBound( pCond->pConstraint(), pCond );
             #endif
             delete pCond;
@@ -2465,7 +2465,7 @@ namespace vs
         }
     }
 
-    #ifdef VS_USE_VARIABLE_BOUNDS
+    #ifdef SMTRAT_VS_VARIABLEBOUNDS
 //    #define VS_VB_DEBUG
     /**
      *
@@ -2776,7 +2776,7 @@ namespace vs
         printSubstitutionResultCombination( _initiation + "   ", _out );
         _out << _initiation << endl;
         printConflictSets( _initiation + "   ", _out );
-        #ifdef VS_USE_VARIABLE_BOUNDS
+        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         _out << _initiation << endl;
         mVariableBounds.print( _out, _initiation );
         _out << endl;

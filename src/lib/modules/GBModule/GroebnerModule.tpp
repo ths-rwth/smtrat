@@ -138,11 +138,11 @@ void GroebnerModule<Settings>::handleConstraintToGBQueue(Formula::const_iterator
     pushBacktrackPoint( _formula );
     if((*_formula)->constraint( ).relation() == CR_EQ)
     {
-        mBasis.addPolynomial( Polynomial( (*_formula)->constraint( ).lhs( ) ) );
+        mBasis.addPolynomial( Polynomial( (*_formula)->constraint( ).lhs( ) ), mBacktrackPoints.size() - 2  );
     }
     else
     {
-        mBasis.addPolynomial( transformIntoEquality( _formula ) );
+        mBasis.addPolynomial( transformIntoEquality( _formula ), mBacktrackPoints.size() - 2 );
     }
     saveState( );
 
@@ -202,14 +202,18 @@ Answer GroebnerModule<Settings>::isConsistent( )
     mStats->called();
     #endif
 
-    assert( mBacktrackPoints.size( ) - 1 == mBasis.nrOriginalConstraints( ) );
+    
+    //assert( mBacktrackPoints.size( ) - 1 == mBasis.nrOriginalConstraints( ) );
     assert( mInfeasibleSubsets.empty( ) );
     // New elements queued for adding to the gb have to be handled.
 
     if( !mBasis.inputEmpty( ) )
     {
         #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
-        mBasis.applyVariableRewriteRulesToInput(mRewriteRules);
+        if(mRewriteRules.size() > 0) 
+        {
+            mBasis.applyVariableRewriteRulesToInput(mRewriteRules);
+        }
         #endif
         //first, we interreduce the input!
         std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> > results = mBasis.reduceInput( );
@@ -248,7 +252,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
     //If the GB needs to be updated, we do so. Otherwise we skip.
     // Notice that we might to update the gb after backtracking (mRecalculateGB flag).
-    if( !mBasis.inputEmpty( ) || (mRecalculateGB && mBasis.nrOriginalConstraints() > 0) )
+    if( !mBasis.inputEmpty( ) || (mRecalculateGB && mBacktrackPoints.size() > 1 ) )
         {
         //now, we calculate the groebner basis
 #ifdef GB_OUTPUT
@@ -259,13 +263,12 @@ Answer GroebnerModule<Settings>::isConsistent( )
         std::cout << "basis calculated" << std::endl;
 #endif
         mRecalculateGB = false;
-        //std::cout << "search rules" << std::endl;
-        searchForRadicalMembers();
-
+        if( !mBasis.isConstant( ) )
+        {
+            searchForRadicalMembers();
+        }
         //std::cout << "rules found" << std::endl;
-#ifdef SEARCH_FOR_RADICALMEMBERS
 
-        #endif
         Polynomial witness;
         #ifdef USE_NSS
         // On linear systems, all solutions lie in Q. So we do not have to check for a solution.
@@ -360,17 +363,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
         if( Settings::checkInequalities != NEVER )
         {
             Answer ans = Unknown;
-            #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
-            ans = mInequalities.reduceWRTVariableRewriteRules(mRewriteRules);
-            #endif
-            // TODO do we really have to clear them now?
-            mNewInequalities.clear( );
-            if( ans == False )
-            {
-                mSolverState = ans;
-                return ans;
-            }
-            ans = mInequalities.reduceWRTGroebnerBasis( mBasis.getGbIdeal( ) );
+            ans = mInequalities.reduceWRTGroebnerBasis( mBasis.getGbIdeal( ), mRewriteRules );
 
             if( ans == False )
             {
@@ -394,6 +387,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
                     ++i;
                 }
             }
+
             passGB( );
         }
     }
@@ -401,19 +395,8 @@ Answer GroebnerModule<Settings>::isConsistent( )
     else if( Settings::checkInequalities == ALWAYS )
     {
         Answer ans = Unknown;
-        #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
-        ans = mInequalities.reduceWRTVariableRewriteRules( mNewInequalities, mRewriteRules);
-        #endif
-        if( ans != Unknown )
-        {
-            // New inequalities are handled now, no need to longer save them as new.
-            mNewInequalities.clear( );
-
-            mSolverState = ans;
-            return ans;
-        }
         // We only check those inequalities which are new, as the others are unchanged and have already been reduced wrt the latest GB
-        ans = mInequalities.reduceWRTGroebnerBasis( mNewInequalities, mBasis.getGbIdeal( ) );
+        ans = mInequalities.reduceWRTGroebnerBasis( mNewInequalities, mBasis.getGbIdeal( ), mRewriteRules );
         // New inequalities are handled now, no need to longer save them as new.
         mNewInequalities.clear( );
         // If we managed to get an answer, we can return that.
@@ -423,7 +406,8 @@ Answer GroebnerModule<Settings>::isConsistent( )
             return ans;
         }
     }
-
+    
+    
     // call other modules as the groebner module cannot decide satisfiability.
     Answer ans = runBackends( );
     if( ans == False )
@@ -450,30 +434,31 @@ template<class Settings>
 bool GroebnerModule<Settings>::searchForRadicalMembers()
 {
     #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
-    std::list<Polynomial> gbpolynomials = mBasis.getGb();
-    std::cout << "Original gb" << std::endl;
-    for(typename std::list<Polynomial>::const_iterator it = gbpolynomials.begin(); it != gbpolynomials.end(); ++it )
-    {
-        std::cout << *it << std::endl;
-    }
-
+    
     std::list<Polynomial> polynomials = mBasis.getGb();
-    std::map<unsigned, Term> gatheredRewrites;
     bool newRuleFound = true;
 
+    // The parameters of the new rule.
     unsigned ruleVar;
     Term ruleTerm;
     GiNaCRA::BitVector ruleReasons;
 
-    std::map<unsigned, std::pair<Term, BitVector> > rewrites;
+    std::map<unsigned, std::pair<Term, BitVector> >& rewrites = mRewriteRules;
+    GiNaCRA::Buchberger<typename Settings::Order> basis;
+            
     while(newRuleFound)
     {
         newRuleFound = false;
+#ifdef GB_OUTPUT
         std::cout << "current gb" << std::endl;
         for(typename std::list<Polynomial>::const_iterator it = polynomials.begin(); it != polynomials.end(); ++it )
         {
-            std::cout << *it << std::endl;
+            std::cout << *it;
+            it->getOrigins().getBitVector().print();
+            std::cout << std::endl;
         }
+        std::cout << "----" << std::endl;
+#endif
 
         for(typename std::list<Polynomial>::iterator it = polynomials.begin(); it != polynomials.end();)
         {
@@ -487,18 +472,18 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
             }
             else if( it->nrOfTerms() == 2 )
             {
-                // todo fix the coefficients
+                // TODO check that the variable does not appear in the other term. If it does, call factorisation.
                 if(it->lterm().tdeg() == 1 )
                 {
                     ruleVar = it->lterm().getSingleVariableNr();
-                    ruleTerm = it->trailingTerm();
+                    ruleTerm = -1 * it->trailingTerm();
                     ruleReasons = it->getOrigins().getBitVector();
                     newRuleFound = true;
                 }
                 else if(it->trailingTerm().tdeg() == 1 )
                 {
                     ruleVar = it->trailingTerm().getSingleVariableNr();
-                    ruleTerm = it->lterm().divide(it->trailingTerm().getCoeff());
+                    ruleTerm = it->lterm().divide(-it->trailingTerm().getCoeff());
                     ruleReasons = it->getOrigins().getBitVector();
                     newRuleFound = true;
                 }
@@ -514,33 +499,30 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
             }
         }
 
-        if(polynomials.empty())
-        {
-            break;
-        }
-
         if(newRuleFound)
         {
             rewrites.insert(std::pair<unsigned, std::pair<Term, BitVector> >(ruleVar, std::pair<Term, BitVector>(ruleTerm, ruleReasons ) ) );
-            std::cout << "variable to be substituted: " << ruleVar << std::endl;
-
-
-            std::cout << "Remaining gb" << std::endl;
+            
             std::list<Polynomial> resultingGb;
-            GiNaCRA::Buchberger<typename Settings::Order> basis;
+            basis = GiNaCRA::Buchberger<typename Settings::Order>();
             for(typename std::list<Polynomial>::const_iterator it = polynomials.begin(); it != polynomials.end(); ++it )
             {
-                std::cout << *it << " ---- > ";
-                std::cout.flush();
                 resultingGb.push_back(it->rewriteVariables(ruleVar, ruleTerm, ruleReasons));
                 basis.addPolynomial(resultingGb.back(), false);
+                #ifdef GB_OUTPUT
+                std::cout << *it << " ---- > ";
+                std::cout.flush();
                 std::cout << resultingGb.back() << std::endl;
+                #endif
             }
-            basis.reduceInput();
-            basis.calculate();
-            polynomials = basis.getGb();
+            
+            if( !basis.inputEmpty( ) )
+            {
+                basis.reduceInput();
+                basis.calculate();
+                polynomials = basis.getGb();
+            }
 
-            std::cout << "rewrite rules" << std::endl;
             for( std::map<unsigned, std::pair<Term, BitVector> >::iterator it = rewrites.begin(); it != rewrites.end(); ++it )
             {
                 std::pair<Term, bool> reducedRule = it->second.first.rewriteVariables(ruleVar, ruleTerm);
@@ -549,14 +531,14 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
                     it->second.first = reducedRule.first;
                     it->second.second |= ruleReasons;
                 }
-                std::cout << it->first << " -> " << it->second.first << " [";
-                it->second.second.print();
-                std::cout <<  "]" << std::endl;
             }
 
         }
     }
 
+    mBasis = basis;
+    saveState();
+    
     #endif
     #ifdef SEARCH_FOR_RADICALMEMBERS
     std::set<unsigned> variableNumbers(mBasis.getGbIdeal().gatherVariables());
@@ -566,7 +548,7 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
     // Iterate over all variables in the GB
     for(std::set<unsigned>::const_iterator it =  variableNumbers.begin(); it != variableNumbers.end(); ++it) {
         // We search until a given (static) maximal exponent
-        for(unsigned exponent = 3; exponent <= Settings::maxSearchExponent; ++(++exponent))
+        for(unsigned exponent = 3; exponent <= 17; ++(++exponent) )
         {
             // Construct x^exp
             Term t(Rational(1), *it, exponent);
@@ -583,8 +565,9 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
                 // calculate q-root(reduce);
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mStats->FoundEqualities();
-                std::cout << t << " -> " << reduce << std::endl;
                 #endif
+                std::cout << t << " -> " << reduce << std::endl;
+                
                 break;
             }
             //x^(m+1) - y^(n+1)
@@ -592,8 +575,9 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mStats->FoundIdentities();
-                std::cout << t << " -> " << reduce << std::endl;
                 #endif
+                std::cout << t << " -> " << reduce << std::endl;
+                
                 break;
             }
         }
@@ -750,7 +734,7 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
     // Load the state to be restored;
     mBasis = mStateHistory.back( ).getBasis( );
     mRewriteRules = mStateHistory.back().getRewriteRules();
-    assert( mBasis.nrOriginalConstraints( ) == mBacktrackPoints.size( ) - 1 );
+    //assert( mBasis.nrOriginalConstraints( ) == mBacktrackPoints.size( ) - 1 );
 
     if( Settings::checkInequalities != NEVER )
     {
@@ -768,12 +752,12 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
         if( isInGb )
         {
             pushBacktrackPoint( *it );
-            mBasis.addPolynomial( relation == CR_EQ ? Polynomial( (**it)->constraint( ).lhs( ) ) : transformIntoEquality( *it ) );
+            mBasis.addPolynomial( (relation == CR_EQ ? Polynomial( (**it)->constraint( ).lhs( ) ) : transformIntoEquality( *it )), mBacktrackPoints.size()-2 );
             // and save them
             saveState( );
         }
     }
-    assert( mBasis.nrOriginalConstraints( ) == mBacktrackPoints.size( ) - 1 );
+    //assert( mBasis.nrOriginalConstraints( ) == mBacktrackPoints.size( ) - 1 );
 }
 
 /**
@@ -876,11 +860,12 @@ void GroebnerModule<Settings>::passGB( )
         }
     }
 
+    //std::cout << "Passing gb" << std::endl;
     // The gb should be passed
     std::list<Polynomial> simplified = mBasis.getGb( );
     for( typename std::list<Polynomial>::const_iterator simplIt = simplified.begin( ); simplIt != simplified.end( ); ++simplIt )
     {
-        if( Settings::checkEqualitiesForTrivialSumOfSquares && simplIt->isTrivialSumOfSquares( ) ) std::cout << "Found trivial sum of square" << std::endl;
+        //std::cout << *simplIt << std::endl;
         if( Settings::passWithMinimalReasons )
         {
             originals.front( ) = generateReasons( simplIt->getOrigins( ).getBitVector( ) );
@@ -936,6 +921,18 @@ void GroebnerModule<Settings>::printStateHistory( )
     }
     std::cout << "]" << std::endl;
 }
+
+template<class Settings>
+void GroebnerModule<Settings>::printRewriteRules( )
+{
+    for(auto it = mRewriteRules.begin(); it != mRewriteRules.end(); ++it)
+    {
+        std::cout << it->first << " -> " << it->second.first << " [";
+        it->second.second.print();
+        std::cout <<  "]" << std::endl;
+    }
+}
+
 
 /**
  * A validity check of the data structures which can be used to assert valid behaviour.
@@ -1102,16 +1099,19 @@ void InequalitiesTable<Settings>::popBacktrackPoint( unsigned nrOfBacktracks )
  */
 
 template<class Settings>
-Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const Ideal& gb )
+Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const Ideal& gb, const RewriteRules& rules )
 {
     for( auto it = mReducedInequalities.begin( ); it != mReducedInequalities.end( ); ++it )
     {
-        // The formula is not passed because it is satisfiable.
-        if( !reduceWRTGroebnerBasis( it, gb ) ) {
+        // The formula is not passed because it is unsatisfiable.
+        if( !reduceWRTGroebnerBasis( it, gb, rules ) ) {
             #ifdef SMTRAT_DEVOPTION_Statistics
             mStats->infeasibleInequality();
             #endif
-            return False;
+            if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
+            {
+                return False;
+            }
         }
     }
     if( Settings::withInfeasibleSubset != RETURN_DIRECTLY )
@@ -1143,16 +1143,19 @@ Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const Ideal& gb )
  */
 
 template<class Settings>
-Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const std::list<typename Rows::iterator>& ineqToBeReduced, const Ideal& gb )
+Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const std::list<typename Rows::iterator>& ineqToBeReduced, const Ideal& gb, const RewriteRules& rules )
 {
     for( auto it = ineqToBeReduced.begin( ); it != ineqToBeReduced.end( ); ++it )
     {
         assert( std::get < 1 > ((*it)->second) != CR_EQ );
-        if( !reduceWRTGroebnerBasis( *it, gb ) ) {
+        if( !reduceWRTGroebnerBasis( *it, gb, rules ) ) {
             #ifdef SMTRAT_DEVOPTION_Statistics
             mStats->infeasibleInequality();
             #endif
-            return False;
+            if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
+            {
+                return False;
+            }
         }
     }
     if( Settings::withInfeasibleSubset != RETURN_DIRECTLY )
@@ -1179,27 +1182,48 @@ Answer InequalitiesTable<Settings>::reduceWRTGroebnerBasis( const std::list<type
  * Reduce the given row with respect to the given Groebner basis.
  * @param ineqToBeReduced A pointer to the row which should be updated.
  * @param gb The Groebner basis.
- * @return If one of the inequalities yields a contradiction, False, else Unknown.
+ * @return If one of the inequalities yields a contradiction, false, else true.
  */
 
 template<class Settings>
-bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterator it, const Ideal& gb )
+bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterator it, const Ideal& gb, const RewriteRules& rules )
 {
     assert( std::get < 1 > (it->second) != CR_EQ );
 
     Polynomial& p = std::get<2>(it->second).back( ).second;
     Polynomial reduced;
-
+    
     bool reductionOccured = false;
+    bool rewriteOccured = false;
     if( !p.isZero( ) && !p.isConstant( ) )
     {
-        GiNaCRA::BaseReductor<typename Settings::Order> reductor( gb, p );
-        reduced = reductor.fullReduce( );
-        reductionOccured = reductor.reductionOccured( );
+        if(rules.size() == 0)
+        {
+            GiNaCRA::BaseReductor<typename Settings::Order> reductor( gb, p );
+            reduced = reductor.fullReduce( );
+            reductionOccured = reductor.reductionOccured( );
+        }
+        else
+        {
+            Polynomial ptemp = p.rewriteVariables(rules); 
+            rewriteOccured = (ptemp != p);
+            if(rewriteOccured) std::cout << "Rewrite occured" << std::endl;
+            if( !ptemp.isZero() && !ptemp.isConstant() )
+            {
+                GiNaCRA::BaseReductor<typename Settings::Order> reductor( gb, ptemp );
+                reduced = reductor.fullReduce( );
+                reductionOccured = reductor.reductionOccured( );
+            }
+            else
+            {
+                reduced = ptemp;
+                reduced.setOrigins(ptemp.getOrigins());
+            }
+        }
     }
 
     Constraint_Relation relation = std::get < 1 > (it->second);
-    if( reductionOccured )
+    if( rewriteOccured || reductionOccured )
     {
         assert(std::get < 0 > (it->second) != mModule->mpPassedFormula->end());
         if( reduced.isZero( ) || reduced.isConstant( ) )
@@ -1281,8 +1305,6 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
         }
         else if( Settings::withInfeasibleSubset == PROCEED_ALLINEQUALITIES || mModule->mInfeasibleSubsets.empty( ) )
         {
-            if( Settings::checkEqualitiesForTrivialSumOfSquares && reduced.isTrivialSumOfSquares( ) ) std::cout << "Found trivial sum of square inequality" << std::endl;
-
             bool pass;
             if( Settings::passInequalities == FULL_REDUCED_IF )
             {
@@ -1314,6 +1336,85 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
     return true;
 }
 
+template<class Settings>
+Answer InequalitiesTable<Settings>::reduceWRTVariableRewriteRules(const RewriteRules& rules)
+{
+    for( auto it = mReducedInequalities.begin( ); it != mReducedInequalities.end( ); ++it )
+    {
+        assert( std::get < 1 > ((*it)->second) != CR_EQ );
+        if( !reduceWRTVariableRewriteRules( *it, rules ) ) {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mStats->infeasibleInequality();
+            #endif
+            if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
+            {
+                return False;
+            }
+        }
+    }
+    if( Settings::withInfeasibleSubset != RETURN_DIRECTLY )
+    {
+        if( mModule->mInfeasibleSubsets.empty( ) )
+        {
+            return Unknown;
+        }
+        else
+        {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mStats->infeasibleInequality();
+            #endif
+            return False;
+        }
+    }
+    else
+    {
+        return Unknown;
+    }
+}
+
+template<class Settings>
+Answer InequalitiesTable<Settings>::reduceWRTVariableRewriteRules(const  std::list< typename Rows::iterator>& ineqToBeReduced, const RewriteRules& rules )
+{
+    for( auto it = ineqToBeReduced.begin( ); it != ineqToBeReduced.end( ); ++it )
+    {
+        assert( std::get < 1 > ((*it)->second) != CR_EQ );
+        if( !reduceWRTVariableRewriteRules( *it, rules ) ) {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mStats->infeasibleInequality();
+            #endif
+            if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
+            {
+                return False;
+            }
+        }
+    }
+    if( Settings::withInfeasibleSubset != RETURN_DIRECTLY )
+    {
+        if( mModule->mInfeasibleSubsets.empty( ) )
+        {
+            return Unknown;
+        }
+        else
+        {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mStats->infeasibleInequality();
+            #endif
+            return False;
+        }
+    }
+    else
+    {
+        return Unknown;
+    }
+}
+
+template<class Settings>
+bool InequalitiesTable<Settings>::reduceWRTVariableRewriteRules( typename Rows::iterator it, const RewriteRules& rules )
+{
+    assert(false);
+}
+
+
 /**
  * Removes the row corresponding to this constraint from the inequalities table.
  * @param _formula A pointer to the constraint in the receivedFormula which has to be removed.
@@ -1344,7 +1445,10 @@ void InequalitiesTable<Settings>::print( std::ostream& os ) const
         std::cout << *(it->first) << " -> " << *(std::get < 0 > (it->second)) << std::endl;
         for(typename std::list<CellEntry>::const_iterator jt = std::get < 2 > (it->second).begin( ); jt != listEnd; ++jt )
         {
-            std::cout << "\t(" << jt->first << ") " << jt->second << std::endl;
+            std::cout << "\t(" << jt->first << ") " << jt->second << " [";
+            jt->second.getOrigins().print();
+            std::cout << "] " << std::endl;
+            
         }
     }
 }
