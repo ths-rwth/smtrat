@@ -568,12 +568,12 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                     assert( GiNaC::is_exactly_a<GiNaC::add>( expression ) ); 
                     
                     // We look for a_1
-                    GiNaC::const_iterator term = expression->begin();
+                    GiNaC::const_iterator term = expression.begin();
                     // If it is the constant part, skip.
                     if(GiNaC::is_exactly_a<GiNaC::numeric>(*term)) ++term;
                     // If it is a power, it is a power of a variable only, so the coefficient would be 1 and we are fine.
                     // Therefore, it has to be a multiplication
-                    assert( GiNaC::is_exactly_a<GiNaC::multiplication>(*term) );
+                    assert( GiNaC::is_exactly_a<GiNaC::mul>(*term) );
                     // Now, we can traverse it and look for a constant part. 
                     // As the expression is expanded, we just look for one numeric value.
                     for( GiNaC::const_iterator part = term->begin(); part != term->end(); ++part)
