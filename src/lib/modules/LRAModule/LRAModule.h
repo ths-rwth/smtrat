@@ -60,8 +60,14 @@ namespace smtrat
                     return GiNaC::ex_is_less()( *pExA, *pExB );
                 }
             };
-            typedef std::map<const GiNaC::ex*, lra::Variable*, exPointerComp>                               ExVariableMap;
+            struct Context
+            {
+                const smtrat::Formula* origin;
+                smtrat::Formula::iterator position;
+            };
+            typedef std::map< const GiNaC::ex*, lra::Variable*, exPointerComp>                              ExVariableMap;
             typedef std::map< const Constraint*, std::vector< const lra::Bound* >*, constraintPointerComp > ConstraintBoundsMap;
+            typedef std::map< const Constraint*, Context, constraintPointerComp >                           ConstraintContextMap;
             typedef std::map< const lra::Bound*, const Constraint* >                                        BoundConstraintMap;
 
         private:
@@ -69,19 +75,19 @@ namespace smtrat
             /**
              * Members:
              */
-            bool                        mInitialized;
-            bool                        mAssignmentFullfilsNonlinearConstraints;
-            lra::Tableau                mTableau;
-            ConstraintSet               mLinearConstraints;
-            ConstraintSet               mNonlinearConstraints;
-            ConstraintSet               mActiveResolvedNEQConstraints;
-            ConstraintSet               mActiveUnresolvedNEQConstraints;
-            ConstraintSet               mResolvedNEQConstraints;
-            ExVariableMap               mOriginalVars;
-            ExVariableMap               mSlackVars;
-            ConstraintBoundsMap         mConstraintToBound;
-            BoundConstraintMap          mBoundToUnequalConstraintMap;
-            std::vector<const lra::Bound* >  mBoundCandidatesToPass;
+            bool                            mInitialized;
+            bool                            mAssignmentFullfilsNonlinearConstraints;
+            lra::Tableau                    mTableau;
+            ConstraintSet                   mLinearConstraints;
+            ConstraintSet                   mNonlinearConstraints;
+            ConstraintContextMap            mActiveResolvedNEQConstraints;
+            ConstraintContextMap            mActiveUnresolvedNEQConstraints;
+            ConstraintSet                   mResolvedNEQConstraints;
+            ExVariableMap                   mOriginalVars;
+            ExVariableMap                   mSlackVars;
+            ConstraintBoundsMap             mConstraintToBound;
+            BoundConstraintMap              mBoundToUnequalConstraintMap;
+            std::vector<const lra::Bound* > mBoundCandidatesToPass;
 
         public:
 
@@ -146,6 +152,7 @@ namespace smtrat
             #endif
             void adaptPassedFormula();
             bool checkAssignmentForNonlinearConstraint();
+            void splitUnequalConstraint( const Constraint* );
             bool activateBound( const lra::Bound*, std::set<const Formula*>& );
             void setBound( lra::Variable&, bool, const GiNaC::numeric&, const Constraint* );
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH

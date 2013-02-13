@@ -29,10 +29,16 @@
 
 #include "PreprocessingModule.h"
 #include "../../../solver/ExitCodes.h"
+#include "../VSModule/Substitute.h"
 #include <limits.h>
 #include <bits/stl_map.h>
 
 //#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION (Not working)
+#define ADDLINEARDEDUCTIONS
+//#define PREPROCESSING_DEVELOP_MODE
+#ifdef CONSTRAINT_FACTORIZATION
+#define PREPROCESSING_FACTORIZATION
+#endif
 
 namespace smtrat {
 PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager )
@@ -74,17 +80,27 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         Formula::const_iterator receivedSubformula = firstUncheckedReceivedSubformula();
         while( receivedSubformula != mpReceivedFormula->end() )
         {
+            #ifdef PREPROCESSING_FACTORIZATION
             Formula* formulaToAssert = new Formula( **receivedSubformula );
-            // Inequations are transformed.
-            RewritePotentialInequalities(formulaToAssert);
-            #ifdef ADDLINEARDEDUCTIONS
-            if(formulaToAssert->getType() == AND) 
+            // Split constraints over polynomials being products.
+            Formula* afterProductSplitting = splitProductConstraints( formulaToAssert );
+            if( afterProductSplitting != formulaToAssert )
             {
-                addLinearDeductions(formulaToAssert);
+                delete formulaToAssert;
+            }
+            #else
+            Formula* afterProductSplitting = new Formula( **receivedSubformula );
+            #endif
+            // Inequations are transformed.
+            rewritePotentialInequalities( afterProductSplitting );
+            #ifdef ADDLINEARDEDUCTIONS
+            if( afterProductSplitting->getType() == AND )
+            {
+                addLinearDeductions( afterProductSplitting );
             }
             #endif
             // Estimate the difficulty bottum up for the formula.
-            setDifficulty(formulaToAssert,false);
+            setDifficulty(afterProductSplitting,false);
             // Create the origins containing only the currently considered formula of
             // the received formula.
             vec_set_const_pFormula origins = vec_set_const_pFormula();
@@ -92,13 +108,13 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             origins.back().insert( *receivedSubformula );
             // Add the currently considered formula of the received constraint as clauses
             // to the passed formula.
-            Formula::toCNF( *formulaToAssert, false );
+            Formula::toCNF( *afterProductSplitting, false );
 
-            if( formulaToAssert->getType() == TTRUE )
+            if( afterProductSplitting->getType() == TTRUE )
             {
                 // No need to add it.
             }
-            else if( formulaToAssert->getType() == FFALSE )
+            else if( afterProductSplitting->getType() == FFALSE )
             {
                 // Infeasible subset missing?
                 mSolverState = False;
@@ -106,24 +122,24 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             }
             else
             {
-                if( formulaToAssert->getType() == AND )
+                if( afterProductSplitting->getType() == AND )
                 {
-                    while( !formulaToAssert->empty() )
+                    while( !afterProductSplitting->empty() )
                     {
-                        addSubformulaToPassedFormula( formulaToAssert->pruneBack(), origins );
+                        addSubformulaToPassedFormula( afterProductSplitting->pruneBack(), origins );
                     }
-                    delete formulaToAssert;
+                    delete afterProductSplitting;
                 }
                 else
                 {
-                    addSubformulaToPassedFormula( formulaToAssert, origins );
+                    addSubformulaToPassedFormula( afterProductSplitting, origins );
                 }
             }
             ++receivedSubformula;
         }
         assignActivitiesToPassedFormula();
         //mpPassedFormula->print();
-        
+
         // Call backends.
         Answer ans = runBackends();
         if( ans == False )
@@ -145,11 +161,88 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
     }
 
     /**
+     *
+     * @param formula
+     */
+    Formula* PreprocessingModule::splitProductConstraints( Formula* _formula )
+    {
+        if( _formula->getType() == REALCONSTRAINT )
+        {
+            #ifdef SMTRAT_DEVOPTION_Validation
+            Formula assumption = Formula( NOT );
+            Formula* iffFormula = new Formula( IFF );
+            iffFormula->addSubformula( new Formula( *_formula ) );
+            #endif
+            Formula* result;
+            vs::DisjunctionOfConstraintConjunctions splittedForm = vs::getSignCombinations( _formula->pConstraint() );
+            if( splittedForm.empty() )
+            {
+                result = new Formula( smtrat::FFALSE );
+            }
+            else if( splittedForm.size() == 1 )
+            {
+                assert( !splittedForm.back().empty() );
+                if( splittedForm.back().size() == 1 )
+                {
+                    result = new Formula( splittedForm.back().back() );
+                }
+                else
+                {
+                    result = new Formula( AND );
+                    for( auto cons = splittedForm.back().begin(); cons != splittedForm.back().end(); ++cons )
+                    {
+                        result->addSubformula( *cons );
+                    }
+                }
+            }
+            else
+            {
+                result = new Formula( OR );
+                for( auto conj = splittedForm.begin(); conj != splittedForm.end(); ++conj )
+                {
+                    assert( !conj->empty() );
+                    if( conj->size() == 1 )
+                    {
+                        result->addSubformula( conj->back() );
+                    }
+                    else
+                    {
+                        Formula* conjunction = new Formula( AND );
+                        result->addSubformula( conjunction );
+                        for( auto cons = conj->begin(); cons != conj->end(); ++cons )
+                        {
+                            conjunction->addSubformula( *cons );
+                        }
+                    }
+                }
+            }
+            #ifdef SMTRAT_DEVOPTION_Validation
+            iffFormula->addSubformula( new Formula( *result ) );
+            assumption.addSubformula( iffFormula );
+            Module::addAssumptionToCheck( assumption, false, "FactorizationInPreprocessing" );
+            #endif
+            return result;
+        }
+        else if( _formula->isBooleanCombination() )
+        {
+            for( auto subFormula = _formula->begin(); subFormula != _formula->end(); ++subFormula )
+            {
+                Formula* result = splitProductConstraints( *subFormula );
+                if( result != *subFormula )
+                {
+                    subFormula = _formula->replace( subFormula, result );
+                }
+            }
+        }
+        return _formula;
+    }
+
+    /**
      * Res
      * @param formula
      * @param invert
      */
-    void PreprocessingModule::RewritePotentialInequalities( Formula* formula, bool invert )
+    void PreprocessingModule::rewritePotentialInequalities( Formula* formula, bool invert )
     {
         if( formula->getType() == NOT )
         {
@@ -157,7 +250,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             Formula* subformula = formula->subformulas().front();
             if(subformula->isBooleanCombination())
             {
-                RewritePotentialInequalities(subformula, !invert);
+                rewritePotentialInequalities(subformula, !invert);
             }
             else if(subformula->getType() == REALCONSTRAINT)
             {
@@ -220,13 +313,13 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                             return;
                         }
                         case CR_LESS:
-                        {                            
+                        {
                             return;
 
                         }
                         case CR_NEQ:
                         {
-                            subformula->copyAndDelete( new Formula( OR ));                            
+                            subformula->copyAndDelete( new Formula( OR ));
                             subformula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
                             subformula->addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
                             return;
@@ -238,14 +331,14 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                         }
                     }
                 }
-                #endif         
+                #endif
             }
         }
         else if( formula->getType() == OR || formula->getType() == AND || formula->getType() == XOR || formula->getType() == IFF  )
         {
             for( std::list<Formula*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
             {
-                RewritePotentialInequalities(*it, invert);
+                rewritePotentialInequalities(*it, invert);
             }
         }
         #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
@@ -253,7 +346,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         {
             formula->print();
             const Constraint* constraint = formula->pConstraint();
-            
+
             switch( constraint->relation() )
             {
                 case CR_EQ:
@@ -270,7 +363,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                     formula->pFather()->erase(formula);
                 }
                 case CR_LESS:
-                {                            
+                {
                     return;
 
                 }
@@ -289,7 +382,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             }
         }
         #endif
-        
+
         return;
 
     }
@@ -363,7 +456,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 difficulty = 300;
             }
             // Equalities allow for a small solution space, so we find them easier.
-            
+
             difficulty += (constraint->numMonomials()-1) * 8;
             if( constraint->relation() == CR_EQ )
             {
@@ -394,7 +487,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 }
             }
         }
-        
+
         for( std::list<Formula*>::const_iterator it = mpPassedFormula->subformulas().begin(); it != mpPassedFormula->subformulas().end(); ++it )
         {
             if((*it)->getType() != OR) continue;
@@ -403,22 +496,22 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 for( std::list<Formula*>::const_iterator jt = (*it)->subformulas().begin(); jt != (*it)->subformulas().end(); ++jt )
                 {
                     // Special treatment for identities.
-                    if( (*jt)->getType() == REALCONSTRAINT ) 
+                    if( (*jt)->getType() == REALCONSTRAINT )
                     {
                         const Constraint* constraint = (*jt)->pConstraint();
-                        
+
                         if(constraint->relation() == CR_EQ && constraint->isLinear() && constraint->numMonomials() <= 20)
                         {
                             (*jt)->setActivity(-100);
                             continue;
                         }
-                        
+
                     }
                     // Otherwise we just set the activity according to the difficulty.
                     (*jt)->setActivity( 100 * ((*jt)->difficulty()/globalMaxDifficulty) );
                 }
             }
-        }        
+        }
         // set certain activities negative, such that the sat solver knows that they should preferably be send to the tsolver.
 //        for( std::list<Formula*>::const_iterator it = mpPassedFormula->subformulas().begin(); it != mpPassedFormula->subformulas().end(); ++it )
 //        {
@@ -433,13 +526,13 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
 //                }
 //            }
 //        }
-        
+
     }
-    
+
     /**
      * Notice: This method has not been finished yet.
-     * 
-     * Search in the current AND formula for real constraints which have to hold. 
+     *
+     * Search in the current AND formula for real constraints which have to hold.
      * If the are nonlinear, we try to find linear equations which can be deduced from this and add them to the formula.
      * @param formula
      */
@@ -448,11 +541,11 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         assert(formula->getType() == AND);
         for( std::list<Formula*>::const_iterator it = formula->subformulas().begin(); it != formula->subformulas().end(); ++it )
         {
-            if((*it)->getType() == REALCONSTRAINT) 
+            if((*it)->getType() == REALCONSTRAINT)
             {
                 const Constraint* constraint = (*it)->pConstraint();
                 // If we already have a linear equation, we are not going to extract other linear equations from it
-                if( constraint->isLinear() ) 
+                if( constraint->isLinear() )
                 {
                     continue;
                 }
@@ -470,7 +563,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 else if( constraint->numMonomials() == 2 )
                 {
                     GiNaC::ex expression = constraint->lhs();
-                    
+
                     GiNaC::numeric constPart = constraint->constantPart() ;
                     assert( GiNaC::is_exactly_a<GiNaC::add>( expression ) ); 
                     
@@ -496,7 +589,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                     
                     if(degree > 2) continue;
                     Formula* deduction = new Formula(OR);
-                        
+
                     switch(constraint->relation())
                     {
                         case CR_LEQ:
@@ -542,11 +635,11 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 }
             }
         }
-        
+
     }
-    
-    void PreprocessingModule::addUpperBounds(Formula* formula, const GiNaC::symtab& symbols, GiNaC::numeric boundary, bool strict  ) const 
-    {   
+
+    void PreprocessingModule::addUpperBounds(Formula* formula, const GiNaC::symtab& symbols, GiNaC::numeric boundary, bool strict  ) const
+    {
         for(GiNaC::symtab::const_iterator it = symbols.begin(); it != symbols.end(); ++it )
         {
            GiNaC::ex lhs(it->second - boundary);
@@ -554,12 +647,12 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
            sym.insert(*it);
            const Constraint* constraint = Formula::newConstraint( lhs, (strict ? CR_LESS : CR_LEQ), sym );
            formula->addSubformula(constraint);
-        }      
+        }
     }
-    
+
     /**
      * TODO extend this method for more than degree 2
-     * Given a constraint at - c lessequal 0 with t being a monomial and a and c constants, we deduce an upper bound for one of the variables each. 
+     * Given a constraint at - c lessequal 0 with t being a monomial and a and c constants, we deduce an upper bound for one of the variables each.
      * @return A constant d such that we have (x_1 - d lessequal 0 or ... or x_n - d lessequal 0)
      */
     GiNaC::numeric PreprocessingModule::determineUpperBounds(unsigned degree, const GiNaC::numeric& constPart) const

@@ -1180,7 +1180,12 @@ namespace vs
                 unsigned negConsistent = consNeg->isConsistent();
                 if( negConsistent == 0 )
                 {
-                    if( posConsistent == 0 ) return combinations;
+                    if( posConsistent == 0 )
+                    {
+                        combinations.push_back( TS_ConstraintConjunction() );
+                        combinations.back().push_back( consNeg );
+                        return combinations;
+                    }
                     if( posConsistent != 1 ) alwayspositives.push_back( positives.back() );
                     positives.pop_back();
                 }
@@ -1195,26 +1200,34 @@ namespace vs
                 }
             }
             assert( positives.size() == negatives.size() );
-            vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> > combSelector = vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >();
-            if( fmod( alwaysnegatives.size(), 2.0 ) != 0.0 )
+            if( positives.size() > 0 )
             {
-                if( positive ) getOddBitStrings( positives.size(), combSelector );
-                else getEvenBitStrings( positives.size(), combSelector );
+                vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> > combSelector = vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >();
+                if( fmod( numOfAlwaysNegatives, 2.0 ) != 0.0 )
+                {
+                    if( positive ) getOddBitStrings( positives.size(), combSelector );
+                    else getEvenBitStrings( positives.size(), combSelector );
+                }
+                else
+                {
+                    if( positive ) getEvenBitStrings( positives.size(), combSelector );
+                    else getOddBitStrings( positives.size(), combSelector );
+                }
+                for( auto comb = combSelector.begin(); comb != combSelector.end(); ++comb )
+                {
+                    combinations.push_back( TS_ConstraintConjunction( alwaysnegatives ) );
+                    combinations.back().insert( combinations.back().end(), alwayspositives.begin(), alwayspositives.end() );
+                    for( unsigned pos = 0; pos < positives.size(); ++pos )
+                    {
+                        if( (*comb)[pos] ) combinations.back().push_back( negatives[pos] );
+                        else combinations.back().push_back( positives[pos] );
+                    }
+                }
             }
             else
             {
-                if( positive ) getEvenBitStrings( positives.size(), combSelector );
-                else getOddBitStrings( positives.size(), combSelector );
-            }
-            for( auto comb = combSelector.begin(); comb != combSelector.end(); ++comb )
-            {
                 combinations.push_back( TS_ConstraintConjunction( alwaysnegatives ) );
                 combinations.back().insert( combinations.back().end(), alwayspositives.begin(), alwayspositives.end() );
-                for( unsigned pos = 0; pos < positives.size(); ++pos )
-                {
-                    if( (*comb)[pos] ) combinations.back().push_back( negatives[pos] );
-                    else combinations.back().push_back( positives[pos] );
-                }
             }
         }
         else
@@ -1232,6 +1245,7 @@ namespace vs
      */
     void getOddBitStrings( unsigned _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings, unsigned _pos  )
     {
+        assert( _length > 0 );
         if( _length == 1 )  _strings.push_back( bitset<MAX_PRODUCT_SPLIT_NUMBER>( 1 ) );
         else
         {
@@ -1253,6 +1267,7 @@ namespace vs
      */
     void getEvenBitStrings( unsigned _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings, unsigned _pos )
     {
+        assert( _length > 0 );
         if( _length == 1 ) _strings.push_back( bitset<MAX_PRODUCT_SPLIT_NUMBER>( 0 ) );
         else
         {

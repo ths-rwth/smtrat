@@ -41,9 +41,9 @@ using namespace GiNaC;
 namespace smtrat
 {
     const unsigned MAX_DEGREE_FOR_FACTORIZATION = 40;
-    const unsigned MIN_DEGREE_FOR_FACTORIZATION = 3;
-    const unsigned MAX_DIMENSION_FOR_FACTORIZATION = 4;
-    const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 6;
+    const unsigned MIN_DEGREE_FOR_FACTORIZATION = 2;
+    const unsigned MAX_DIMENSION_FOR_FACTORIZATION = 5;
+    const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 15;
 
     /**
      * Constructors:

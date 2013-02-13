@@ -867,7 +867,7 @@ namespace smtrat
      * @param _consistent
      * @see Module::storeAssumptionsToCheck
      */
-    void Module::addAssumptionToCheck( const Formula& _formula, bool _consistent, const string _moduleName )
+    void Module::addAssumptionToCheck( const Formula& _formula, bool _consistent, const string& _moduleName )
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
@@ -887,7 +887,7 @@ namespace smtrat
      * @param _consistent
      * @see Module::storeAssumptionsToCheck
      */
-    void Module::addAssumptionToCheck( const set<const Formula*>& _formulas, bool _consistent, const string _moduleName )
+    void Module::addAssumptionToCheck( const set<const Formula*>& _formulas, bool _consistent, const string& _moduleName )
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
@@ -911,7 +911,7 @@ namespace smtrat
      * @param _consistent
      * @see Module::storeAssumptionsToCheck
      */
-    void Module::addAssumptionToCheck( const set<const Constraint*>& _constraints, bool _consistent, const string _moduleName )
+    void Module::addAssumptionToCheck( const set<const Constraint*>& _constraints, bool _consistent, const string& _moduleName )
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
@@ -978,7 +978,7 @@ namespace smtrat
      * @param
      * @param
      */
-    void Module::storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> & subformulae, const std::string filename) const {
+    void Module::storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> & subformulae, const std::string& filename) const {
         stringstream _filename;
         _filename << filename << "_" << moduleName(mModuleType) << "_" << mSmallerMusesCheckCounter << ".smt2";
         ofstream smtlibFile;
