@@ -75,7 +75,7 @@ namespace smtrat
         mConstraints(),
         mConstraintsMap(),
         mRealAlgebraicSolution()
-        #ifdef CAD_USE_VARIABLE_BOUNDS
+        #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         ,
         mVariableBounds()
         #endif
@@ -91,7 +91,7 @@ namespace smtrat
             #ifdef SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
                 setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::GENERIC_CADSETTING );
             #else
-                #ifdef CAD_USE_VARIABLE_BOUNDS
+                #ifdef SMTRAT_CAD_VARIABLEBOUNDS
                 setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::BOUNDED_CADSETTING ); // standard
                 #else
                 setting = GiNaCRA::CADSettings::getSettings( GiNaCRA::EQUATIONDETECT_CADSETTING ); // standard
@@ -135,7 +135,7 @@ namespace smtrat
     {
         assert( (*_subformula)->getType() == REALCONSTRAINT );
         Module::assertSubformula( _subformula );
-        #ifdef CAD_USE_VARIABLE_BOUNDS
+        #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         if( mVariableBounds.addBound( (*_subformula)->pConstraint(), *_subformula ) )
             return true;
         #endif
@@ -177,7 +177,7 @@ namespace smtrat
             cout << " " << *k << endl;
         #endif
         // check the extended constraints for satisfiability
-        #ifdef CAD_USE_VARIABLE_BOUNDS
+        #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         if( variableBounds().isConflicting() )
         {
             mInfeasibleSubsets.push_back( variableBounds().getConflict() );
@@ -211,7 +211,7 @@ namespace smtrat
         #endif
         ConflictGraph conflictGraph;
         list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > > deductions;
-        #ifdef CAD_USE_VARIABLE_BOUNDS
+        #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         if( !mCAD.check( mConstraints, mRealAlgebraicSolution, conflictGraph, boundMap, deductions, false, false ) )
         #else
         if( !mCAD.check( mConstraints, mRealAlgebraicSolution, conflictGraph, deductions, false, false ) )
@@ -228,14 +228,14 @@ namespace smtrat
             #endif
             #ifdef SMTRAT_CAD_DISABLE_MIS
             // construct a trivial infeasible subset
-            #ifdef CAD_USE_VARIABLE_BOUNDS
+            #ifdef SMTRAT_CAD_VARIABLEBOUNDS
             set<const Formula*> boundConstraints = mVariableBounds.getOriginsOfBounds();
             #endif
             mInfeasibleSubsets.push_back( set<const Formula*>() );
             for( ConstraintIndexMap::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
             {
                 mInfeasibleSubsets.back().insert( *i->first );
-                #ifdef CAD_USE_VARIABLE_BOUNDS
+                #ifdef SMTRAT_CAD_VARIABLEBOUNDS
                 mInfeasibleSubsets.back().insert( boundConstraints.begin(), boundConstraints.end() );
                 #endif
             }
@@ -247,13 +247,13 @@ namespace smtrat
             cout << "conflict graph: " << endl << conflictGraph << endl << endl;
             #endif
             vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( conflictGraph );
-            #ifdef CAD_USE_VARIABLE_BOUNDS
+            #ifdef SMTRAT_CAD_VARIABLEBOUNDS
             set<const Formula*> boundConstraints = mVariableBounds.getOriginsOfBounds();
             #endif
             for( vec_set_const_pFormula::const_iterator i = infeasibleSubsets.begin(); i != infeasibleSubsets.end(); ++i )
             {
                 mInfeasibleSubsets.push_back( *i );
-                #ifdef CAD_USE_VARIABLE_BOUNDS
+                #ifdef SMTRAT_CAD_VARIABLEBOUNDS
                 mInfeasibleSubsets.back().insert( boundConstraints.begin(), boundConstraints.end() );
                 #endif
             }
@@ -305,7 +305,7 @@ namespace smtrat
             Module::removeSubformula( _subformula );
             return;
         }
-        #ifdef CAD_USE_VARIABLE_BOUNDS
+        #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         if( mVariableBounds.removeBound( (*_subformula)->pConstraint(), *_subformula ) != 0 )
         { // constraint was added as bound, so there is no respective constraint stored
             Module::removeSubformula( _subformula );
@@ -387,7 +387,7 @@ namespace smtrat
                 }
                 mModel.insert( pair< const string, string >( outA.str(), outB.str() ) );
             }
-            #ifdef CAD_USE_VARIABLE_BOUNDS
+            #ifdef SMTRAT_CAD_VARIABLEBOUNDS
             // bounds for variables which were not handled in the solution point
             GiNaCRA::evaldoubleintervalmap intervalMap = mVariableBounds.getIntervalMap();
             for( GiNaCRA::evaldoubleintervalmap::const_iterator b = intervalMap.begin(); b != intervalMap.end(); ++b )

@@ -31,7 +31,7 @@
 #ifndef SMTRAT_CADMODULE_H
 #define SMTRAT_CADMODULE_H
 
-#define CAD_USE_VARIABLE_BOUNDS
+
 
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
@@ -40,7 +40,7 @@
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
 
-#ifdef CAD_USE_VARIABLE_BOUNDS
+#ifdef SMTRAT_CAD_VARIABLEBOUNDS
 #include "../../VariableBounds.h"
 #endif
 
@@ -68,7 +68,7 @@ namespace smtrat
         public Module
     {
         typedef std::unordered_map<Formula::const_iterator, unsigned, FormulaIteratorHasher> ConstraintIndexMap;
-        #ifdef CAD_USE_VARIABLE_BOUNDS
+        #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         typedef smtrat::vb::VariableBounds< Formula > VariableBounds;
         #endif
 
@@ -84,7 +84,7 @@ namespace smtrat
         ConstraintIndexMap mConstraintsMap;
         /// a satisfying assignment of the received constraints if existent; otherwise it is empty
         GiNaCRA::RealAlgebraicPoint mRealAlgebraicSolution;
-        #ifdef CAD_USE_VARIABLE_BOUNDS
+        #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         VariableBounds mVariableBounds;
         #endif
 
@@ -99,7 +99,7 @@ namespace smtrat
             void updateModel();
 
 
-            #ifdef CAD_USE_VARIABLE_BOUNDS
+            #ifdef SMTRAT_CAD_VARIABLEBOUNDS
             const VariableBounds&   variableBounds  ()	const 	{ return mVariableBounds; }
             VariableBounds&         rVariableBounds ()      	{ return mVariableBounds; }
             #endif

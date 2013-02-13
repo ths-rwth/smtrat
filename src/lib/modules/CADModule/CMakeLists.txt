@@ -11,6 +11,8 @@ if(${enabled})
 	set(modulesSources ${modulesSources} ${sources} PARENT_SCOPE) 
 endif()
 
+option( SMTRAT_CAD_VARIABLEBOUNDS "CAD using variable bounds" ON )
+
 # options for the CADModule settings
 set( SMTRAT_CADSETTING "1" CACHE STRING "All SMT features with equation detection optimization" )
 set( SMTRAT_CADSETTING "2" CACHE STRING "Setting 1 w/o SMT features" )
