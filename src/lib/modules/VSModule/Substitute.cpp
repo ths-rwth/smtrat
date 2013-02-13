@@ -83,7 +83,7 @@ namespace vs
                 cout << "Error in substitute: unexpected type of substitution." << endl;
             }
         }
-        #ifdef CONSTRAINT_FACTORIZATION
+        #ifdef SMTRAT_DEVOPTION_Statistics
         splitProducts( _substitutionResults );
         #endif
         #ifdef VS_DEBUG_SUBSTITUTION
