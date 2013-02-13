@@ -319,7 +319,7 @@ namespace smtrat
                     }
                     else
                     {
-                        #ifdef VS_USE_VARIABLE_BOUNDS
+                        #ifdef SMTRAT_VS_VARIABLEBOUNDS
                         if( !currentState->checkTestCandidatesForBounds() )
                         {
                             currentState->rInconsistent() = true;
@@ -691,7 +691,7 @@ namespace smtrat
 #ifdef CHECK_STRICT_INEQUALITIES_WITH_BACKEND
 EndSwitch:;
 #endif
-                            #ifdef VS_USE_VARIABLE_BOUNDS
+                            #ifdef SMTRAT_VS_VARIABLEBOUNDS
                         }
                         #endif
                     }
@@ -1172,7 +1172,7 @@ EndSwitch:;
             {
                 const vs::Condition* pCond = _currentState->rConditions().back();
                 _currentState->rConditions().pop_back();
-                #ifdef VS_USE_VARIABLE_BOUNDS
+                #ifdef SMTRAT_VS_VARIABLEBOUNDS
                 _currentState->rVariableBounds().removeBound( pCond->pConstraint(), pCond );
                 #endif
                 delete pCond;
