@@ -122,6 +122,7 @@ public:
     typedef typename std::tuple<Formula::iterator, Constraint_Relation, std::list<CellEntry> > RowEntry;
     typedef typename std::map<Formula::const_iterator, RowEntry, FormulaConstraintCompare> Rows;
     typedef typename std::pair<Formula::const_iterator, RowEntry> Row;
+    typedef typename std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> > RewriteRules;
 
     InequalitiesTable( GroebnerModule<Settings>* module );
 
@@ -131,9 +132,14 @@ public:
 
     void popBacktrackPoint( unsigned nrBacktracks );
 
-    Answer reduceWRTGroebnerBasis( const Ideal& gb );
-    bool reduceWRTGroebnerBasis( typename  Rows::iterator, const Ideal& gb );
-    Answer reduceWRTGroebnerBasis( const  std::list< typename Rows::iterator>& ineqToBeReduced, const Ideal& gb );
+    Answer reduceWRTGroebnerBasis( const Ideal& gb, const RewriteRules& rules );
+    bool reduceWRTGroebnerBasis( typename  Rows::iterator, const Ideal& gb, const RewriteRules& rules );
+    Answer reduceWRTGroebnerBasis( const  std::list< typename Rows::iterator>& ineqToBeReduced, const Ideal& gb, const RewriteRules& rules );
+    
+    Answer reduceWRTVariableRewriteRules( const RewriteRules& rules );
+    bool reduceWRTVariableRewriteRules( typename Rows::iterator it, const RewriteRules& rules );
+    Answer reduceWRTVariableRewriteRules( const  std::list< typename Rows::iterator>& ineqToBeReduced, const RewriteRules& rules );
+    
 
     void removeInequality( Formula::const_iterator _formula );
 
@@ -213,6 +219,7 @@ protected:
     bool validityCheck( );
 public:
     void printStateHistory( );
+    void printRewriteRules( );
     
 private:
     #ifdef SMTRAT_DEVOPTION_Statistics

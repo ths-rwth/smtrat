@@ -75,8 +75,6 @@ namespace smtrat
         static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_ALLINEQUALITIES;
         static const theory_deductions                   addTheoryDeductions                     = ALL_CONSTRAINTS;
         static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
-        static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
-        static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
 		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQUALITIES;
         
         static const unsigned                            maxSearchExponent                       = 11;
