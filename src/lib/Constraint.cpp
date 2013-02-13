@@ -957,7 +957,7 @@ namespace smtrat
                 mpMultiRootLessLhs = new ex( quotient );
             }
         }
-        #ifdef CONSTRAINT_FACTORIZATION
+        #ifdef SMTRAT_STRAT_Factorization
         if( mNumMonomials <= MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION && mVariables.size() <= MAX_DIMENSION_FOR_FACTORIZATION
             && mMaxMonomeDegree <= MAX_DEGREE_FOR_FACTORIZATION && mMaxMonomeDegree >= MIN_DEGREE_FOR_FACTORIZATION )
         {

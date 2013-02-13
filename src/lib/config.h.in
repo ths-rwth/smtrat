@@ -21,6 +21,8 @@
 #cmakedefine SMTRAT_ENABLE_LRAModule
 #cmakedefine SMTRAT_ENABLE_CacheModule
 
+#cmakedefine SMTRAT_STRAT_Factorization
+
 // Take the GBsetting from cmake
 #define GBModuleSettings @SMTRAT_GBMODULE_SETTINGS@
 

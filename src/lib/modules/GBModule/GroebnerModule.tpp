@@ -1412,6 +1412,7 @@ template<class Settings>
 bool InequalitiesTable<Settings>::reduceWRTVariableRewriteRules( typename Rows::iterator it, const RewriteRules& rules )
 {
     assert(false);
+    return true;
 }
 
 

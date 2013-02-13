@@ -36,6 +36,7 @@ option(USE_NSS "Compile the NSS Module" OFF)
 option(USE_GINACRA "Compile modules using GiNaCRA" ON)
 
 # Strategy
+option( SMTRAT_STRAT_Factorization "Factorization" ON )
 set(SMTRAT_Strategy "NRATSolver" CACHE STRING "Used strategy in the solver")
 
 # Development options
