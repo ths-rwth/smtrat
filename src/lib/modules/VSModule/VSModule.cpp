@@ -65,7 +65,6 @@ namespace smtrat
      */
     VSModule::~VSModule()
     {
-        cout << "Number of states in VSModule: " << mpStateTree->numberOfNodes() << endl;
         while( !mFormulaConditionMap.empty() )
         {
             const vs::Condition* pRecCond = mFormulaConditionMap.begin()->second;
