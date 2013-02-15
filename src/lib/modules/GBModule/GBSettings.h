@@ -70,7 +70,7 @@ namespace smtrat
         static const bool                                passGB                                  = true;
         static const bool                                getReasonsForInfeasibility              = true;
         static const bool                                passWithMinimalReasons                  = true;
-        static const check_inequalities                  checkInequalities                       = AFTER_NEW_GB;
+        static const check_inequalities                  checkInequalities                       = ALWAYS;
         static const pass_inequalities                   passInequalities                        = FULL_REDUCED;
         static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_ALLINEQUALITIES;
         static const theory_deductions                   addTheoryDeductions                     = ALL_CONSTRAINTS;

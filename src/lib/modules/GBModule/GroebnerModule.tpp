@@ -253,7 +253,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
     //If the GB needs to be updated, we do so. Otherwise we skip.
     // Notice that we might to update the gb after backtracking (mRecalculateGB flag).
     if( !mBasis.inputEmpty( ) || (mRecalculateGB && mBacktrackPoints.size() > 1 ) )
-        {
+    {
         //now, we calculate the groebner basis
 #ifdef GB_OUTPUT
         std::cout << "basis calculate call" << std::endl;
@@ -267,7 +267,6 @@ Answer GroebnerModule<Settings>::isConsistent( )
         {
             searchForRadicalMembers();
         }
-        //std::cout << "rules found" << std::endl;
 
         Polynomial witness;
         #ifdef USE_NSS
@@ -408,6 +407,9 @@ Answer GroebnerModule<Settings>::isConsistent( )
     }
     
     
+    print();
+    mInequalities.print();
+    mBasis.getGbIdeal().print();
     // call other modules as the groebner module cannot decide satisfiability.
     Answer ans = runBackends( );
     if( ans == False )
@@ -1197,6 +1199,7 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
     bool rewriteOccured = false;
     if( !p.isZero( ) && !p.isConstant( ) )
     {
+        std::cout << p << std::endl;
         if(rules.size() == 0)
         {
             GiNaCRA::BaseReductor<typename Settings::Order> reductor( gb, p );
