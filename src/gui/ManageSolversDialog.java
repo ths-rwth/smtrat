@@ -70,7 +70,7 @@ public class ManageSolversDialog extends JDialog
     public ManageSolversDialog( GUI gui, String solverNameSuggestion )
     {
         super( gui, "Manage Solvers", true );
-        notAllowedSolverName = IOTools.STRATEGIES_CLASS;
+        notAllowedSolverName = IOTools.STRATEGIES_HEADER_CLASS;
         existingSolverNames = IOTools.existingSolverNames;
 
         ExportSolverAction exportSolverAction = new ExportSolverAction();

@@ -46,6 +46,7 @@
 #include <string.h>
 #include <sstream>
 #include <assert.h>
+#include <ginacra/utilities.h>
 
 namespace smtrat
 {
@@ -226,6 +227,8 @@ namespace smtrat
                 #endif
                 #else
                 #ifdef VS_USE_GINAC_EXPAND
+                GiNaC::numeric commonDenom = GiNaC::mdenom( _exp );
+                if( commonDenom != 1 ) _exp *= commonDenom;
                 _exp = _exp.expand();
                 #endif
                 #endif

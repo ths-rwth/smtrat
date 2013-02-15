@@ -42,7 +42,7 @@ namespace smtrat
 {
     const unsigned MAX_DEGREE_FOR_FACTORIZATION = 40;
     const unsigned MIN_DEGREE_FOR_FACTORIZATION = 2;
-    const unsigned MAX_DIMENSION_FOR_FACTORIZATION = 5;
+    const unsigned MAX_DIMENSION_FOR_FACTORIZATION = 6;
     const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 15;
 
     /**
@@ -150,6 +150,7 @@ namespace smtrat
      */
     Constraint::~Constraint()
     {
+        delete mpCoefficients;
         if( mpMultiRootLessLhs != pLhs ) delete mpMultiRootLessLhs;
         if( mpFactorization != pLhs ) delete mpFactorization;
         delete pLhs;

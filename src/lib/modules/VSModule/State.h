@@ -261,7 +261,7 @@ private:
 	ConflictSets*			 mpConflictSets				;
 	StateVector* 			 mpChildren					;
     #ifdef SMTRAT_VS_VARIABLEBOUNDS
-    VariableBounds           mVariableBounds            ;
+    VariableBounds*          mpVariableBounds            ;
     #endif
 public:
 
@@ -327,8 +327,8 @@ public:
 	const Condition*		pOriginalCondition			( )	const 	{ return mpOriginalCondition											; }
 	const Condition& 		originalCondition			( )	const 	{ return *mpOriginalCondition											; }
     #ifdef SMTRAT_VS_VARIABLEBOUNDS
-	const VariableBounds&   variableBounds  			( )	const 	{ return mVariableBounds    											; }
-	VariableBounds&         rVariableBounds  			( )      	{ return mVariableBounds    											; }
+	const VariableBounds&   variableBounds  			( )	const 	{ return *mpVariableBounds    											; }
+	VariableBounds&         rVariableBounds  			( )      	{ return *mpVariableBounds    											; }
     #endif
 
 	void					setOriginalCondition		( const Condition* const _pOCondition ) 	{ mpOriginalCondition=_pOCondition; }

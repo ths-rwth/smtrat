@@ -78,7 +78,7 @@ namespace vs
         mpChildren( new StateVector() )
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         ,
-        mVariableBounds()
+        mpVariableBounds( new VariableBounds() )
         #endif
     {
     }
@@ -111,7 +111,7 @@ namespace vs
         mpChildren( new StateVector() )
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         ,
-        mVariableBounds()
+        mpVariableBounds( new VariableBounds() )
         #endif
     {
     }
@@ -134,10 +134,13 @@ namespace vs
             const Condition* pCond = rConditions().back();
             rConditions().pop_back();
             #ifdef SMTRAT_VS_VARIABLEBOUNDS
-            mVariableBounds.removeBound( pCond->pConstraint(), pCond );
+            mpVariableBounds->removeBound( pCond->pConstraint(), pCond );
             #endif
             delete pCond;
         }
+        #ifdef SMTRAT_VS_VARIABLEBOUNDS
+        delete mpVariableBounds;
+        #endif
         delete mpConditions;
         if( mpSubstitution != NULL ) delete mpSubstitution;
         delete mpIndex;
@@ -659,6 +662,12 @@ namespace vs
             else
             {
                 deleteConditions( redundantConditions );
+                while( !redundantConditions.empty() )
+                {
+                    const Condition* toDelete = redundantConditions.back();
+                    redundantConditions.pop_back();
+                    delete toDelete;
+                }
             }
             mConditionsSimplified = true;
         }
@@ -1627,14 +1636,14 @@ namespace vs
                 {
                     rConditions().push_back( new Condition( _constraint, true, _originalConditions, _valutation, _recentlyAdded ) );
                     #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    mVariableBounds.addBound( _constraint, rConditions().back() );
+                    mpVariableBounds->addBound( _constraint, rConditions().back() );
                     #endif
                 }
                 else
                 {
                     rConditions().push_back( new Condition( _constraint, false, _originalConditions, _valutation, _recentlyAdded ) );
                     #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    mVariableBounds.addBound( _constraint, rConditions().back() );
+                    mpVariableBounds->addBound( _constraint, rConditions().back() );
                     #endif
                 }
             }
@@ -1646,7 +1655,7 @@ namespace vs
             {
                 rConditions().push_back( new Condition( _constraint, false, _originalConditions, _valutation, false ) );
                 #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                mVariableBounds.addBound( _constraint, rConditions().back() );
+                mpVariableBounds->addBound( _constraint, rConditions().back() );
                 #endif
             }
         }
@@ -2030,7 +2039,7 @@ namespace vs
                 if( condToDel != _conditionsToDelete.end() )
                 {
                     #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    mVariableBounds.removeBound( (*cond)->pConstraint(), *cond );
+                    mpVariableBounds->removeBound( (*cond)->pConstraint(), *cond );
                     #endif
                     conditionDeleted = true;
                     cond = rConditions().erase( cond );
@@ -2432,7 +2441,7 @@ namespace vs
             const Condition* pCond = rConditions().back();
             rConditions().pop_back();
             #ifdef SMTRAT_VS_VARIABLEBOUNDS
-            mVariableBounds.removeBound( pCond->pConstraint(), pCond );
+            mpVariableBounds->removeBound( pCond->pConstraint(), pCond );
             #endif
             delete pCond;
         }
@@ -2778,7 +2787,7 @@ namespace vs
         printConflictSets( _initiation + "   ", _out );
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         _out << _initiation << endl;
-        mVariableBounds.print( _out, _initiation );
+        mpVariableBounds->print( _out, _initiation );
         _out << endl;
         #endif
     }

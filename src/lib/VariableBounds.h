@@ -459,7 +459,7 @@ namespace smtrat
             {
                 const Bound<T>* toDelete = *mLowerbounds.begin();
                 mLowerbounds.erase( mLowerbounds.begin() );
-                if( !toDelete->type() == Bound<T>::EQUAL_BOUND ) delete toDelete;
+                if( toDelete->type() != Bound<T>::EQUAL_BOUND ) delete toDelete;
             }
             while( !mUpperbounds.empty() )
             {
@@ -612,6 +612,7 @@ namespace smtrat
                 mpExVariableMap->erase( mpExVariableMap->begin() );
                 delete toDelete;
             }
+            delete mpExVariableMap;
         }
 
         /**
@@ -674,7 +675,11 @@ namespace smtrat
             {
                 for( auto sym = _constraint->variables().begin(); sym !=  _constraint->variables().end(); ++sym )
                 {
-                    mpExVariableMap->insert( std::pair< const ex, Variable<T>* >( sym->second, new Variable<T>() ) );
+                    Variable<T>* variable = new Variable<T>();
+                    if( !mpExVariableMap->insert( std::pair< const ex, Variable<T>* >( sym->second, variable ) ).second )
+                    {
+                        delete variable;
+                    }
                 }
             }
             return false;
