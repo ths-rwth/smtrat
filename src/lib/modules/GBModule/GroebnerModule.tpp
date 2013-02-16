@@ -40,8 +40,8 @@
 
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
-//#define SMTRAT_GROEBNER_SEARCH_REWRITERULES
-//#define GB_OUTPUT
+#define SMTRAT_GROEBNER_SEARCH_REWRITERULES
+#define GB_OUTPUT
 
 using std::set;
 using GiNaC::ex_to;
@@ -209,12 +209,17 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
     if( !mBasis.inputEmpty( ) )
     {
+        std::cout << "Scheduled: " << std::endl;
+        mBasis.printScheduledPolynomials();
         #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
         if(mRewriteRules.size() > 0) 
         {
             mBasis.applyVariableRewriteRulesToInput(mRewriteRules);
         }
         #endif
+        std::cout << "-------->" << std::endl;
+        mBasis.printScheduledPolynomials();
+        std::cout << "--------|" << std::endl;
         //first, we interreduce the input!
         std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> > results = mBasis.reduceInput( );
         //analyze for deductions
@@ -407,9 +412,13 @@ Answer GroebnerModule<Settings>::isConsistent( )
     }
     
     
-    print();
+    printRewriteRules();
+    
     mInequalities.print();
+    std::cout << "Basis" << std::endl;
     mBasis.getGbIdeal().print();
+    
+    print();
     // call other modules as the groebner module cannot decide satisfiability.
     Answer ans = runBackends( );
     if( ans == False )
@@ -439,7 +448,8 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
     
     std::list<Polynomial> polynomials = mBasis.getGb();
     bool newRuleFound = true;
-
+    bool gbUpdate = false;
+    
     // The parameters of the new rule.
     unsigned ruleVar;
     Term ruleTerm;
@@ -503,6 +513,7 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
 
         if(newRuleFound)
         {
+            gbUpdate = true;
             rewrites.insert(std::pair<unsigned, std::pair<Term, BitVector> >(ruleVar, std::pair<Term, BitVector>(ruleTerm, ruleReasons ) ) );
             
             std::list<Polynomial> resultingGb;
@@ -534,12 +545,16 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
                     it->second.second |= ruleReasons;
                 }
             }
+            printRewriteRules();
 
         }
     }
 
-    mBasis = basis;
-    saveState();
+    if( gbUpdate ) 
+    {
+        mBasis = basis;
+        saveState();
+    }
     
     #endif
     #ifdef SEARCH_FOR_RADICALMEMBERS
