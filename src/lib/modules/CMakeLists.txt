@@ -1,4 +1,4 @@
-ListSubDirs(SUBDIRS ${CMAKE_CURRENT_LIST_DIR})
+ListSubDirs(SUBDIRS ${CMAKE_SOURCE_DIR}/src/lib/modules)
 foreach(subdir ${SUBDIRS})
     add_subdirectory(${subdir})
 endforeach()
