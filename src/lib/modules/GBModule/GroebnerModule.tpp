@@ -230,38 +230,9 @@ Answer GroebnerModule<Settings>::isConsistent( )
     
     if( !mBasis.inputEmpty( ) )
     {
-        std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> > results = mBasis.reduceInput( );
+        std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> > deduced = mBasis.reduceInput( );
         //analyze for deductions
-        for(auto it =  results.rbegin(); it != results.rend(); ++it)
-        {
-            // if the bitvector is not empty, there is a theory deduction
-            if( Settings::addTheoryDeductions == ALL_CONSTRAINTS && !it->second.empty() )
-            {
-                Formula* deduction = new Formula(OR);
-                std::set<const Formula*> deduced( generateReasons( it->first ));
-                std::set<const Formula*> originals( generateReasons( it->second ));
-                std::set<const Formula*> originalsWithoutDeduced;
-
-                std::set_difference(originals.begin(), originals.end(), deduced.begin(), deduced.end(), std::inserter(originalsWithoutDeduced, originalsWithoutDeduced.end()));
-
-
-                for( auto jt =  originalsWithoutDeduced.begin(); jt != originalsWithoutDeduced.end(); ++jt )
-                {
-                    deduction->addSubformula( new Formula( NOT ) );
-                    deduction->back()->addSubformula( (*jt)->pConstraint() );
-                }
-
-                for( auto jt =  deduced.begin(); jt != deduced.end(); ++jt )
-                {
-                    deduction->addSubformula( (*jt)->pConstraint() );
-                }
-
-                addDeduction(deduction);
-                #ifdef SMTRAT_DEVOPTION_Statistics
-                mStats->DeducedEquality();
-                #endif
-            }
-        }
+        knownConstraintDeduction(deduced);
     }
 
     //If the GB needs to be updated, we do so. Otherwise we skip.
@@ -279,7 +250,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
         mRecalculateGB = false;
         if( Settings::iterativeVariableRewriting && !mBasis.isConstant( ) )
         {
-            searchForRadicalMembers();
+            iterativeVariableRewriting();
         }
 
         Polynomial witness;
@@ -386,6 +357,8 @@ Answer GroebnerModule<Settings>::isConsistent( )
         }
         assert( mInfeasibleSubsets.empty( ) );
 
+        
+        // When passing a gb, first remove last and then pass current gb.
         if( Settings::passGB )
         {
             for( Formula::iterator i = mpPassedFormula->begin( ); i != mpPassedFormula->end( ); )
@@ -419,7 +392,8 @@ Answer GroebnerModule<Settings>::isConsistent( )
             return ans;
         }
     }
-    
+    assert( mInfeasibleSubsets.empty( ) );
+
     #ifdef GB_OUTPUT
     printRewriteRules();
     mInequalities.print();
@@ -450,7 +424,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
  */
 
 template<class Settings>
-bool GroebnerModule<Settings>::searchForRadicalMembers()
+bool GroebnerModule<Settings>::iterativeVariableRewriting()
 {
     std::list<Polynomial> polynomials = mBasis.getGb();
     bool newRuleFound = true;
@@ -627,6 +601,42 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
     return false;
     #endif
 }
+
+template<class Settings>
+void GroebnerModule<Settings>::knownConstraintDeduction(const std::list<std::pair<GiNaCRA::BitVector,GiNaCRA::BitVector> >& deductions) 
+{
+    for(auto it =  deductions.rbegin(); it != deductions.rend(); ++it)
+    {
+        // if the bitvector is not empty, there is a theory deduction
+        if( Settings::addTheoryDeductions == ALL_CONSTRAINTS && !it->second.empty() )
+        {
+            Formula* deduction = new Formula(OR);
+            std::set<const Formula*> deduced( generateReasons( it->first ));
+            std::set<const Formula*> originals( generateReasons( it->second ));
+            std::set<const Formula*> originalsWithoutDeduced;
+
+            std::set_difference(originals.begin(), originals.end(), deduced.begin(), deduced.end(), std::inserter(originalsWithoutDeduced, originalsWithoutDeduced.end()));
+
+
+            for( auto jt =  originalsWithoutDeduced.begin(); jt != originalsWithoutDeduced.end(); ++jt )
+            {
+                deduction->addSubformula( new Formula( NOT ) );
+                deduction->back()->addSubformula( (*jt)->pConstraint() );
+            }
+
+            for( auto jt =  deduced.begin(); jt != deduced.end(); ++jt )
+            {
+                deduction->addSubformula( (*jt)->pConstraint() );
+            }
+
+            addDeduction(deduction);
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mStats->DeducedEquality();
+            #endif
+        }
+    }
+}
+
 
 
 /**

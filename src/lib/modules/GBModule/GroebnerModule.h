@@ -219,12 +219,13 @@ protected:
     
     std::set<const Formula*> generateReasons( const GiNaCRA::BitVector& reasons );
     void passGB( );
+    void knownConstraintDeduction( const std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> >& deductions );
     
     Polynomial transformIntoEquality( Formula::const_iterator constraint );
 
     void removeSubformulaFromPassedFormula( Formula::iterator _formula );
     
-    bool searchForRadicalMembers();
+    bool iterativeVariableRewriting();
     
     void processNewConstraint( Formula::const_iterator _formula );
     void handleConstraintToGBQueue( Formula::const_iterator _formula );
