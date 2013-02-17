@@ -216,8 +216,9 @@ Answer GroebnerModule<Settings>::isConsistent( )
         {
             if(mRewriteRules.size() > 0) 
             {
-                std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> > results;
-                results = mBasis.applyVariableRewriteRulesToInput(mRewriteRules);
+                std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> > deductions;
+                deductions = mBasis.applyVariableRewriteRulesToInput(mRewriteRules);
+                knownConstraintDeduction(deductions);
             }
         }
         #ifdef GB_OUTPUT
