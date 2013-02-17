@@ -40,7 +40,6 @@
 
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
-#define SMTRAT_GROEBNER_SEARCH_REWRITERULES
 #undef GB_OUTPUT
 
 using std::set;
@@ -213,13 +212,14 @@ Answer GroebnerModule<Settings>::isConsistent( )
         std::cout << "Scheduled: " << std::endl;
         mBasis.printScheduledPolynomials();
         #endif
-        #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
-        if(mRewriteRules.size() > 0) 
+        if(Settings::iterativeVariableRewriting) 
         {
-            std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> > results;
-            results = mBasis.applyVariableRewriteRulesToInput(mRewriteRules);
+            if(mRewriteRules.size() > 0) 
+            {
+                std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> > results;
+                results = mBasis.applyVariableRewriteRulesToInput(mRewriteRules);
+            }
         }
-        #endif
         #ifdef GB_OUTPUT
         std::cout << "-------->" << std::endl;
         mBasis.printScheduledPolynomials();
@@ -277,7 +277,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
         std::cout << "basis calculated" << std::endl;
 #endif
         mRecalculateGB = false;
-        if( !mBasis.isConstant( ) )
+        if( Settings::iterativeVariableRewriting && !mBasis.isConstant( ) )
         {
             searchForRadicalMembers();
         }
@@ -452,8 +452,6 @@ Answer GroebnerModule<Settings>::isConsistent( )
 template<class Settings>
 bool GroebnerModule<Settings>::searchForRadicalMembers()
 {
-    #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
-    
     std::list<Polynomial> polynomials = mBasis.getGb();
     bool newRuleFound = true;
     bool gbUpdate = false;
@@ -581,7 +579,6 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
         saveState();
     }
     
-    #endif
     #ifdef SEARCH_FOR_RADICALMEMBERS
     std::set<unsigned> variableNumbers(mBasis.getGbIdeal().gatherVariables());
 
