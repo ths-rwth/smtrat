@@ -220,6 +220,7 @@ protected:
     std::set<const Formula*> generateReasons( const GiNaCRA::BitVector& reasons );
     void passGB( );
     void knownConstraintDeduction( const std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> >& deductions );
+    void newConstraintDeduction( );
     
     Polynomial transformIntoEquality( Formula::const_iterator constraint );
 

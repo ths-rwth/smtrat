@@ -71,7 +71,7 @@ mRuntimeSettings(static_cast<GBRuntimeSettings*>(settings))
 template<class Settings>
 GroebnerModule<Settings>::~GroebnerModule( )
 {
-
+    
 }
 
 /**
@@ -186,6 +186,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
 #ifdef GB_OUTPUT
     std::cout << "GB Called" << std::endl;
 #endif
+    // We can only handle conjunctions of constraints.
     if(!mpReceivedFormula->isConstraintConjunction())
     {
         return Unknown;
@@ -201,11 +202,9 @@ Answer GroebnerModule<Settings>::isConsistent( )
     mStats->called();
     #endif
 
-    
-    //assert( mBacktrackPoints.size( ) - 1 == mBasis.nrOriginalConstraints( ) );
     assert( mInfeasibleSubsets.empty( ) );
+    
     // New elements queued for adding to the gb have to be handled.
-
     if( !mBasis.inputEmpty( ) )
     {
         #ifdef GB_OUTPUT
@@ -402,6 +401,8 @@ Answer GroebnerModule<Settings>::isConsistent( )
     mBasis.getGbIdeal().print();
     print();
     #endif
+   
+    
     // call other modules as the groebner module cannot decide satisfiability.
     Answer ans = runBackends( );
     if( ans == False )
@@ -613,6 +614,8 @@ void GroebnerModule<Settings>::knownConstraintDeduction(const std::list<std::pai
         {
             Formula* deduction = new Formula(OR);
             std::set<const Formula*> deduced( generateReasons( it->first ));
+            // When this kind of deduction is greater than one, we would have to determine wich of them is really the deduced one. 
+            if( deduced.size() > 1 ) continue;
             std::set<const Formula*> originals( generateReasons( it->second ));
             std::set<const Formula*> originalsWithoutDeduced;
 
@@ -631,6 +634,7 @@ void GroebnerModule<Settings>::knownConstraintDeduction(const std::list<std::pai
             }
 
             addDeduction(deduction);
+            //deduction->print();
             #ifdef SMTRAT_DEVOPTION_Statistics
             mStats->DeducedEquality();
             #endif
@@ -638,7 +642,12 @@ void GroebnerModule<Settings>::knownConstraintDeduction(const std::list<std::pai
     }
 }
 
-
+template<class Settings>
+void GroebnerModule<Settings>::newConstraintDeduction( ) 
+{
+    
+    
+}
 
 /**
  * Removes the constraint from the GBModule.
@@ -934,6 +943,10 @@ void GroebnerModule<Settings>::passGB( )
 template<class Settings>
 std::set<const Formula*> GroebnerModule<Settings>::generateReasons( const GiNaCRA::BitVector& reasons )
 {
+    if(reasons.empty()) 
+    {
+        return std::set<const Formula*>();
+    }
     GiNaCRA::BitVector::const_iterator origIt = reasons.begin( );
     std::set<const Formula*> origins;
 
@@ -1379,6 +1392,31 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                 mModule->addSubformulaToPassedFormula( new Formula( Formula::newConstraint( reduced.toEx( ), relation, Formula::constraintPool().realVariables() ) ), originals );
                 //set the pointer to the passed formula accordingly.
                 std::get < 0 > (it->second) = mModule->mpPassedFormula->last( );
+            }
+            // new constraint learning
+            // If the original constraint is nonlinear
+            if( !((*(it->first))->pConstraint( ))->isLinear() )
+            {
+                // We only want to learn linear constraints.
+                if( reduced.isLinear() )
+                {
+                    // get the reason set for the reduced polynomial
+                    Formula* deduction = new Formula(OR);
+                    std::vector<std::set<const Formula*> > originals;
+                    originals.push_back( mModule->generateReasons( reduced.getOrigins( ).getBitVector( ) ) );
+                    
+                    for( auto jt =  originals.front().begin(); jt != originals.front().end(); ++jt )
+                    {
+                        deduction->addSubformula( new Formula( NOT ) );
+                        deduction->back()->addSubformula( (*jt)->pConstraint() );
+                    }
+
+                    deduction->addSubformula( new Formula( NOT ) );
+                    deduction->back()->addSubformula( (*it->first)->pConstraint() );
+
+                    deduction->addSubformula(Formula::newConstraint( reduced.toEx( ), relation, Formula::constraintPool().realVariables() ));
+                    mModule->addDeduction(deduction);
+                }
             }
         }
     }
