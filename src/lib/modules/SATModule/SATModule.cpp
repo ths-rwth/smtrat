@@ -248,10 +248,10 @@ namespace smtrat
                 // Notice that we have to handle Unknown backends.
                 result = search();
             }
-#else 
+#else
             lbool result = search();
 #endif
-                
+
             #ifdef SATMODULE_WITH_CALL_NUMBER
             cout << endl << endl;
             #endif
@@ -1063,7 +1063,6 @@ FindSecond:
                     #endif
                     #ifdef SATMODULE_WITH_CALL_NUMBER
                     ++numberOfTheoryCalls;
-                    if( numberOfTheoryCalls > 8000 ) return l_Undef;
                     #ifdef DEBUG_SATMODULE
                     cout << "#" << numberOfTheoryCalls << "  ";
                     #endif
@@ -1846,6 +1845,7 @@ NextClause:
             }
             ++backend;
         }
+        cancelUntil( lowestLevel );
         assert( lowestLevel < decisionLevel()+1 );
         return conflictClause;
     }

@@ -146,19 +146,19 @@ namespace vs
         delete mpIndex;
         if( mpSubstitutionResults != NULL )
         {
-            while( !(*mpSubstitutionResults).empty() )
+            while( !mpSubstitutionResults->empty() )
             {
-                while( !(*mpSubstitutionResults).back().empty() )
+                while( !mpSubstitutionResults->back().empty() )
                 {
-                    while( !(*mpSubstitutionResults).back().back().first.empty() )
+                    while( !mpSubstitutionResults->back().back().first.empty() )
                     {
-                        const Condition* rpCond = (*mpSubstitutionResults).back().back().first.back();
-                        (*mpSubstitutionResults).back().back().first.pop_back();
+                        const Condition* rpCond = mpSubstitutionResults->back().back().first.back();
+                        mpSubstitutionResults->back().back().first.pop_back();
                         delete rpCond;
                     }
-                    (*mpSubstitutionResults).back().pop_back();
+                    mpSubstitutionResults->back().pop_back();
                 }
-                (*mpSubstitutionResults).pop_back();
+                mpSubstitutionResults->pop_back();
             }
             delete mpSubstitutionResults;
             delete mpSubResultCombination;
@@ -237,7 +237,7 @@ namespace vs
         ConditionVector::const_iterator cond = conditions().begin();
         while( cond != conditions().end() )
         {
-            if( (**cond).flag() )
+            if( (*cond)->flag() )
                 ++cond;
             else
                 return true;
@@ -255,7 +255,7 @@ namespace vs
         StateVector::const_iterator child = children().begin();
         while( child != children().end() )
         {
-            if( (**child).id() == 0 )
+            if( (*child)->id() == 0 )
                 ++child;
             else
                 return true;
@@ -273,7 +273,7 @@ namespace vs
     {
         for( ConditionVector::const_iterator cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
-            if( (**cond).constraint().relation() == smtrat::CR_EQ && (**cond).constraint().hasVariable( _variableName ) )
+            if( (*cond)->constraint().relation() == smtrat::CR_EQ && (*cond)->constraint().hasVariable( _variableName ) )
             {
                 return true;
             }
@@ -534,12 +534,24 @@ namespace vs
                         ConditionSetSet conflictingConditionPairs = ConditionSetSet();
                         if( !simplify( condConjunction->first, redundantConditions, conflictingConditionPairs ) )
                         {
+                            while( !condConjunction->first.empty() )
+                            {
+                                const Condition* rpCond = condConjunction->first.back();
+                                condConjunction->first.pop_back();
+                                delete rpCond;
+                            }
                             condConjunction = subResult->erase( condConjunction );
                         }
                         else
                         {
                             if( condConjunction->first.empty() ) containsEmptyCase = true;
                             ++condConjunction;
+                        }
+                        while( !redundantConditions.empty() )
+                        {
+                            const Condition* toDelete = redundantConditions.back();
+                            redundantConditions.pop_back();
+                            delete toDelete;
                         }
                     }
                     if( containsEmptyCase )
@@ -565,6 +577,16 @@ namespace vs
                             }
                         }
                         bool fixedPosWasEndBefore = (fixedConditions == mpSubstitutionResults->end());
+                        while( !subResult->empty() )
+                        {
+                            while( !subResult->back().first.empty() )
+                            {
+                                const Condition* rpCond = subResult->back().first.back();
+                                subResult->back().first.pop_back();
+                                delete rpCond;
+                            }
+                            subResult->pop_back();
+                        }
                         subResult = mpSubstitutionResults->erase( subResult );
                         if( fixedPosWasEndBefore ) fixedConditions = mpSubstitutionResults->end();
                         if( mpSubResultCombination != NULL )
@@ -642,11 +664,16 @@ namespace vs
                         addConflicts( NULL, conflictingConditionPairs );
 //                        if( !isRoot() ) passConflictToFather();
                     }
+                    while( !redundantConditions.empty() )
+                    {
+                        const Condition* toDelete = redundantConditions.back();
+                        redundantConditions.pop_back();
+                        delete toDelete;
+                    }
                 }
             }
             mSubResultsSimplified = true;
         }
-
         /*
          * Simplify the condition vector.
          */
@@ -662,12 +689,12 @@ namespace vs
             else
             {
                 deleteConditions( redundantConditions );
-                while( !redundantConditions.empty() )
-                {
-                    const Condition* toDelete = redundantConditions.back();
-                    redundantConditions.pop_back();
-                    delete toDelete;
-                }
+            }
+            while( !redundantConditions.empty() )
+            {
+                const Condition* toDelete = redundantConditions.back();
+                redundantConditions.pop_back();
+                delete toDelete;
             }
             mConditionsSimplified = true;
         }
@@ -863,8 +890,7 @@ namespace vs
                 ConditionSet::iterator cond = condSet->begin();
                 while( cond != condSet->end() )
                 {
-                    redundantConditionSet.erase( *cond );
-                    ++cond;
+                    redundantConditionSet.erase( *cond++ );
                 }
                 ++condSet;
             }
@@ -877,22 +903,17 @@ namespace vs
             {
                 if( redundantConditionSet.find( *cond ) != redundantConditionSet.end() )
                 {
-                    const Condition* pCond = *cond;
                     cond = _conditionVectorToSimplify.erase( cond );
-                    delete pCond;
                 }
                 else
                 {
                     ++cond;
                 }
             }
-            //cout << "Redundant conditions:" << endl;
             for( set<const Condition*>::iterator redundantCond = redundantConditionSet.begin(); redundantCond != redundantConditionSet.end();
                     ++redundantCond )
             {
                 _redundantConditions.push_back( *redundantCond );
-                //cout << "   ";
-                //(**redundantCond).print( cout );
             }
         }
         #ifdef VS_DEBUG_METHODS_X
@@ -1330,6 +1351,12 @@ namespace vs
             {
                 rInconsistent() = true;
             }
+            while( !redundantConditions.empty() )
+            {
+                const Condition* toDelete = redundantConditions.back();
+                redundantConditions.pop_back();
+                delete toDelete;
+            }
 
             /*
              * Delete the conditions of this combination, which do already occur in the considered conditions
@@ -1401,6 +1428,12 @@ namespace vs
             if( !condsToDelete.empty() )
             {
                 deleteConditions( condsToDelete );
+                while( !condsToDelete.empty() )
+                {
+                    const vs::Condition* toDelete = condsToDelete.back();
+                    condsToDelete.pop_back();
+                    delete toDelete;
+                }
             }
 
             /*
@@ -1899,6 +1932,12 @@ namespace vs
                      * the child.
                      */
                     (**child).deleteConditions( conditionsToDeleteInChild );
+                    while( !conditionsToDeleteInChild.empty() )
+                    {
+                        const vs::Condition* toDelete = conditionsToDeleteInChild.back();
+                        conditionsToDeleteInChild.pop_back();
+                        delete toDelete;
+                    }
                     ++child;
                 }
             }
@@ -2043,7 +2082,7 @@ namespace vs
                     #endif
                     conditionDeleted = true;
                     cond = rConditions().erase( cond );
-                    _conditionsToDelete.erase( condToDel );
+//                    _conditionsToDelete.erase( condToDel );
                 }
                 else
                 {

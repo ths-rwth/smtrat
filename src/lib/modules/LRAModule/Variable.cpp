@@ -55,7 +55,7 @@ namespace lra
         {
             const Bound* b = *mLowerbounds.begin();
             mLowerbounds.erase( mLowerbounds.begin() );
-            if( !b->type() == Bound::EQUAL ) delete b;
+            if( !(b->type() == Bound::EQUAL) ) delete b;
         }
         while( !mUpperbounds.empty() )
         {

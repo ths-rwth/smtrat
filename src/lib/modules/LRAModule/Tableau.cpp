@@ -1297,6 +1297,7 @@ namespace lra
                 }
                 if( *ubound == bvar.pSupremum() )
                 {
+                    delete newlimit;
                     delete uPremise;
                     goto CheckLowerPremise;
                 }
@@ -1321,6 +1322,7 @@ namespace lra
                     learnedBound.newBound = NULL;
                 }
                 #else
+                delete newlimit;
                 learnedBound.newBound = NULL;
                 #endif
                 mLearnedBounds.push_back( learnedBound );
@@ -1361,6 +1363,7 @@ CheckLowerPremise:
                 }
                 if( *lbound == bvar.pInfimum()  )
                 {
+                    delete newlimit;
                     delete lPremise;
                     return;
                 }
@@ -1385,6 +1388,7 @@ CheckLowerPremise:
                     learnedBound.newBound = NULL;
                 }
                 #else
+                delete newlimit;
                 learnedBound.newBound = NULL;
                 #endif
                 mLearnedBounds.push_back( learnedBound );
@@ -1501,6 +1505,7 @@ CheckLowerPremise:
                 }
                 if( *ubound == bvar.pSupremum() )
                 {
+                    delete newlimit;
                     delete uPremise;
                     goto CheckLowerPremise;
                 }
@@ -1525,6 +1530,7 @@ CheckLowerPremise:
                     learnedBound.newBound = NULL;
                 }
                 #else
+                delete newlimit;
                 learnedBound.newBound = NULL;
                 #endif
                 mLearnedBounds.push_back( learnedBound );
@@ -1565,6 +1571,7 @@ CheckLowerPremise:
                 }
                 if( *lbound == bvar.pInfimum()  )
                 {
+                    delete newlimit;
                     delete lPremise;
                     return;
                 }
@@ -1589,6 +1596,7 @@ CheckLowerPremise:
                     learnedBound.newBound = NULL;
                 }
                 #else
+                delete newlimit;
                 learnedBound.newBound = NULL;
                 #endif
                 mLearnedBounds.push_back( learnedBound );
