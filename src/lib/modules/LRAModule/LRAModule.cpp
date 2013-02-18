@@ -61,9 +61,7 @@ namespace smtrat
         mConstraintToBound(),
         mBoundToUnequalConstraintMap(),
         mBoundCandidatesToPass()
-    {
-
-    }
+    {}
 
     /**
      * Destructor:
@@ -1224,7 +1222,7 @@ namespace smtrat
                 Variable* nonBasic = basicIter->second;
                 setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
             }
-
+            delete linearPart;
         }
         else
         {

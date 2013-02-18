@@ -1052,7 +1052,6 @@ FindSecond:
                     #endif
                     #ifdef SATMODULE_WITH_CALL_NUMBER
                     ++numberOfTheoryCalls;
-                    if( numberOfTheoryCalls > 8000 ) return l_Undef;
                     #ifdef DEBUG_SATMODULE
                     cout << "#" << numberOfTheoryCalls << "  ";
                     #endif
