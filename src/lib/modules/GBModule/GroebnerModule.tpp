@@ -40,8 +40,7 @@
 
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
-//#define SMTRAT_GROEBNER_SEARCH_REWRITERULES
-//#define GB_OUTPUT
+#undef GB_OUTPUT
 
 using std::set;
 using GiNaC::ex_to;
@@ -209,13 +208,28 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
     if( !mBasis.inputEmpty( ) )
     {
-        #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
-        if(mRewriteRules.size() > 0) 
+        #ifdef GB_OUTPUT
+        std::cout << "Scheduled: " << std::endl;
+        mBasis.printScheduledPolynomials();
+        #endif
+        if(Settings::iterativeVariableRewriting) 
         {
-            mBasis.applyVariableRewriteRulesToInput(mRewriteRules);
+            if(mRewriteRules.size() > 0) 
+            {
+                std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> > results;
+                results = mBasis.applyVariableRewriteRulesToInput(mRewriteRules);
+            }
         }
+        #ifdef GB_OUTPUT
+        std::cout << "-------->" << std::endl;
+        mBasis.printScheduledPolynomials();
+        std::cout << "--------|" << std::endl;
         #endif
         //first, we interreduce the input!
+    }
+    
+    if( !mBasis.inputEmpty( ) )
+    {
         std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> > results = mBasis.reduceInput( );
         //analyze for deductions
         for(auto it =  results.rbegin(); it != results.rend(); ++it)
@@ -253,7 +267,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
     //If the GB needs to be updated, we do so. Otherwise we skip.
     // Notice that we might to update the gb after backtracking (mRecalculateGB flag).
     if( !mBasis.inputEmpty( ) || (mRecalculateGB && mBacktrackPoints.size() > 1 ) )
-        {
+    {
         //now, we calculate the groebner basis
 #ifdef GB_OUTPUT
         std::cout << "basis calculate call" << std::endl;
@@ -263,11 +277,10 @@ Answer GroebnerModule<Settings>::isConsistent( )
         std::cout << "basis calculated" << std::endl;
 #endif
         mRecalculateGB = false;
-        if( !mBasis.isConstant( ) )
+        if( Settings::iterativeVariableRewriting && !mBasis.isConstant( ) )
         {
             searchForRadicalMembers();
         }
-        //std::cout << "rules found" << std::endl;
 
         Polynomial witness;
         #ifdef USE_NSS
@@ -407,7 +420,13 @@ Answer GroebnerModule<Settings>::isConsistent( )
         }
     }
     
-    
+    #ifdef GB_OUTPUT
+    printRewriteRules();
+    mInequalities.print();
+    std::cout << "Basis" << std::endl;
+    mBasis.getGbIdeal().print();
+    print();
+    #endif
     // call other modules as the groebner module cannot decide satisfiability.
     Answer ans = runBackends( );
     if( ans == False )
@@ -433,11 +452,10 @@ Answer GroebnerModule<Settings>::isConsistent( )
 template<class Settings>
 bool GroebnerModule<Settings>::searchForRadicalMembers()
 {
-    #ifdef SMTRAT_GROEBNER_SEARCH_REWRITERULES
-    
     std::list<Polynomial> polynomials = mBasis.getGb();
     bool newRuleFound = true;
-
+    bool gbUpdate = false;
+    
     // The parameters of the new rule.
     unsigned ruleVar;
     Term ruleTerm;
@@ -472,20 +490,35 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
             }
             else if( it->nrOfTerms() == 2 )
             {
-                // TODO check that the variable does not appear in the other term. If it does, call factorisation.
                 if(it->lterm().tdeg() == 1 )
                 {
                     ruleVar = it->lterm().getSingleVariableNr();
-                    ruleTerm = -1 * it->trailingTerm();
-                    ruleReasons = it->getOrigins().getBitVector();
-                    newRuleFound = true;
+                    if( it->trailingTerm().hasVariable(ruleVar) ) 
+                    {
+                        // TODO deduce a factorisation.
+                    }
+                    else
+                    {
+                        // learned a rule.
+                        ruleTerm = -1 * it->trailingTerm();
+                        ruleReasons = it->getOrigins().getBitVector();
+                        newRuleFound = true;
+                    }
                 }
                 else if(it->trailingTerm().tdeg() == 1 )
                 {
                     ruleVar = it->trailingTerm().getSingleVariableNr();
-                    ruleTerm = it->lterm().divide(-it->trailingTerm().getCoeff());
-                    ruleReasons = it->getOrigins().getBitVector();
-                    newRuleFound = true;
+                    if( it->lterm().hasVariable(ruleVar) )
+                    {
+                        // TODO deduce a factorisation
+                    }
+                    else
+                    {
+                        // learned a rule.
+                        ruleTerm = it->lterm().divide(-it->trailingTerm().getCoeff());
+                        ruleReasons = it->getOrigins().getBitVector();
+                        newRuleFound = true;
+                    }
                 }
             }
             if(newRuleFound)
@@ -501,6 +534,7 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
 
         if(newRuleFound)
         {
+            gbUpdate = true;
             rewrites.insert(std::pair<unsigned, std::pair<Term, BitVector> >(ruleVar, std::pair<Term, BitVector>(ruleTerm, ruleReasons ) ) );
             
             std::list<Polynomial> resultingGb;
@@ -532,14 +566,19 @@ bool GroebnerModule<Settings>::searchForRadicalMembers()
                     it->second.second |= ruleReasons;
                 }
             }
+            #ifdef GB_OUTPUT
+            printRewriteRules();
+            #endif 
 
         }
     }
 
-    mBasis = basis;
-    saveState();
+    if( gbUpdate ) 
+    {
+        mBasis = basis;
+        saveState();
+    }
     
-    #endif
     #ifdef SEARCH_FOR_RADICALMEMBERS
     std::set<unsigned> variableNumbers(mBasis.getGbIdeal().gatherVariables());
 
@@ -1207,7 +1246,6 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
         {
             Polynomial ptemp = p.rewriteVariables(rules); 
             rewriteOccured = (ptemp != p);
-            if(rewriteOccured) std::cout << "Rewrite occured" << std::endl;
             if( !ptemp.isZero() && !ptemp.isConstant() )
             {
                 GiNaCRA::BaseReductor<typename Settings::Order> reductor( gb, ptemp );

@@ -57,6 +57,8 @@
 #define SAT_MODULE_THEORY_PROPAGATION
 #define SAT_MODULE_DETECT_DEDUCTIONS
 
+//#define SAT_WITH_RESTARTS
+
 const static double FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY = 1.02;
 
 using namespace std;
@@ -239,8 +241,17 @@ namespace smtrat
             learntsize_adjust_confl = learntsize_adjust_start_confl;
             learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
 
-            lbool result            = search();
-
+#ifdef SAT_WITH_RESTARTS
+            lbool result = l_Undef;
+            while ( result == l_Undef )
+            {
+                // Notice that we have to handle Unknown backends.
+                result = search();
+            }
+#else 
+            lbool result = search();
+#endif
+                
             #ifdef SATMODULE_WITH_CALL_NUMBER
             cout << endl << endl;
             #endif
@@ -1222,16 +1233,18 @@ FindSecond:
             }
             else
             {
-                // TODO: Consider cleaning the learned clauses and restarts.
-
                 // NO CONFLICT
-                //                if( nof_conflicts >= 0 && (conflictC >= nof_conflicts ||!withinBudget()) )
-                //                {
-                //                    // Reached bound on number of conflicts:
-                //                    progress_estimate = progressEstimate();
-                //                    cancelUntil( 0 );
-                //                    return l_Undef;
-                //                }
+
+                // TODO: Consider cleaning the learned clauses and restarts.
+#ifdef SAT_WITH_RESTARTS
+                if( nof_conflicts >= 0 && (conflictC >= nof_conflicts ||!withinBudget()) )
+                {
+                    // Reached bound on number of conflicts:
+                    progress_estimate = progressEstimate();
+                    cancelUntil( 0 );
+                    return l_Undef;
+                }
+#endif
 
                 // Simplify the set of problem clauses:
                 if( decisionLevel() == 0 && !simplify() )

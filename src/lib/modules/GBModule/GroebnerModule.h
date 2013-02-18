@@ -115,6 +115,7 @@ struct FormulaConstraintCompare
 template<class Settings>
 class InequalitiesTable
 {
+protected:
     typedef typename Settings::Polynomial Polynomial;
     typedef typename Settings::MultivariateIdeal Ideal;
 public:
@@ -123,7 +124,22 @@ public:
     typedef typename std::map<Formula::const_iterator, RowEntry, FormulaConstraintCompare> Rows;
     typedef typename std::pair<Formula::const_iterator, RowEntry> Row;
     typedef typename std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> > RewriteRules;
-
+    
+    
+protected:
+    /// A map of pointers from received iterators to rows.
+    Rows mReducedInequalities;
+    /// The actual number of backtrackpoints
+    unsigned mBtnumber;
+    /// A pointer to the GroebnerModule which uses this table.
+    GroebnerModule<Settings>* mModule;
+    
+    typename Rows::iterator mNewConstraints;
+    
+    
+    unsigned mLastRestart;    
+    
+public:
     InequalitiesTable( GroebnerModule<Settings>* module );
 
     typename Rows::iterator InsertReceivedFormula( Formula::const_iterator received );
@@ -145,16 +161,7 @@ public:
 
     void print( std::ostream& os = std::cout ) const;
 
-    /// A map of pointers from received iterators to rows.
-    Rows mReducedInequalities;
-
-    /// The actual number of backtrackpoints
-    unsigned mBtnumber;
-    /// A pointer to the GroebnerModule which uses this table.
-    GroebnerModule<Settings>* mModule;
-
-    typename Rows::iterator mNewConstraints;
-    unsigned mLastRestart;
+    
 private:
     #ifdef SMTRAT_DEVOPTION_Statistics
     GroebnerModuleStats* mStats;
@@ -169,20 +176,11 @@ private:
  */
 template<class Settings>
 class GroebnerModule : public Module
-{
+{    
     friend class InequalitiesTable<Settings>;
-
 public:
     typedef typename Settings::Order Order;
     typedef typename Settings::Polynomial Polynomial;
-
-    GroebnerModule( ModuleType, const Formula * const, RuntimeSettings* settings  ,Manager * const );
-    virtual ~GroebnerModule( );
-
-    bool assertSubformula( Formula::const_iterator _formula );
-    virtual Answer isConsistent( );
-    void removeSubformula( Formula::const_iterator _formula );
-    
 protected:
     /// The current Groebner basis
     GiNaCRA::Buchberger<typename Settings::Order> mBasis;
@@ -203,34 +201,48 @@ protected:
     /// The rewrite rules for the variables
     std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> > mRewriteRules;
     
-
     std::map<unsigned, unsigned> mAdditionalVarMap;
 
+    
+public:
+    GroebnerModule( ModuleType, const Formula * const, RuntimeSettings* settings  ,Manager * const );
+    virtual ~GroebnerModule( );
+
+    bool assertSubformula( Formula::const_iterator _formula );
+    virtual Answer isConsistent( );
+    void removeSubformula( Formula::const_iterator _formula );
+    
+protected:
     void pushBacktrackPoint( Formula::const_iterator btpoint );
     void popBacktrackPoint( Formula::const_iterator btpoint );
     bool saveState( );
+    
     std::set<const Formula*> generateReasons( const GiNaCRA::BitVector& reasons );
     void passGB( );
+    
     Polynomial transformIntoEquality( Formula::const_iterator constraint );
 
     void removeSubformulaFromPassedFormula( Formula::iterator _formula );
     
     bool searchForRadicalMembers();
+    
+    void processNewConstraint( Formula::const_iterator _formula );
+    void handleConstraintToGBQueue( Formula::const_iterator _formula );
+    void handleConstraintNotToGB( Formula::const_iterator _formula );
+    void removeReceivedFormulaFromNewInequalities( Formula::const_iterator _formula );
+    
     bool validityCheck( );
 public:
     void printStateHistory( );
     void printRewriteRules( );
     
+
 private:
     #ifdef SMTRAT_DEVOPTION_Statistics
     GroebnerModuleStats* mStats;
     GBCalculationStats* mGBStats;
     #endif //SMTRAT_DEVOPTION_Statistics
 
-    void processNewConstraint( Formula::const_iterator _formula );
-    void handleConstraintToGBQueue( Formula::const_iterator _formula );
-    void handleConstraintNotToGB( Formula::const_iterator _formula );
-    void removeReceivedFormulaFromNewInequalities( Formula::const_iterator _formula );
     typedef Module super;
 };
 } // namespace smtrat

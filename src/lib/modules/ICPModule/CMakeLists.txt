@@ -1,0 +1,11 @@
+BeginDefineModule()
+ModuleMainHeader(ICPModule/ICPModule.h)
+ModuleName(ICPModule)
+ModuleClass(ICPModule)
+ModuleDefaultEnabled()
+EndDefineModule(moduleEnabled)
+
+if(${moduleEnabled})
+	FILE(GLOB_RECURSE sources *.cpp)
+	set(modulesSources ${modulesSources} ${sources} PARENT_SCOPE) 
+endif()
