@@ -41,9 +41,9 @@
 #endif
 
 namespace smtrat {
-PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager )
+PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, bool& _conditional, Manager* const _manager )
     :
-    Module( _type, _formula, _tsManager )
+    Module( _type, _formula, _conditional, _manager )
     {
 
     }
@@ -565,8 +565,8 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                     GiNaC::ex expression = constraint->lhs();
 
                     GiNaC::numeric constPart = constraint->constantPart() ;
-                    assert( GiNaC::is_exactly_a<GiNaC::add>( expression ) ); 
-                    
+                    assert( GiNaC::is_exactly_a<GiNaC::add>( expression ) );
+
                     // We look for a_1
                     GiNaC::const_iterator term = expression.begin();
                     // If it is the constant part, skip.
@@ -574,19 +574,19 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                     // If it is a power, it is a power of a variable only, so the coefficient would be 1 and we are fine.
                     // Therefore, it has to be a multiplication
                     assert( GiNaC::is_exactly_a<GiNaC::mul>(*term) );
-                    // Now, we can traverse it and look for a constant part. 
+                    // Now, we can traverse it and look for a constant part.
                     // As the expression is expanded, we just look for one numeric value.
                     for( GiNaC::const_iterator part = term->begin(); part != term->end(); ++part)
                     {
-                        if( GiNaC::is_exactly_a<GiNaC::numeric>(*part)) 
+                        if( GiNaC::is_exactly_a<GiNaC::numeric>(*part))
                         {
                             constPart = constPart.div( GiNaC::ex_to<GiNaC::numeric>(*part) );
                             break;
                         }
                     }
-                    
+
                     if(constPart == (GiNaC::numeric)0 ) continue;
-                    
+
                     if(degree > 2) continue;
                     Formula* deduction = new Formula(OR);
 

@@ -36,12 +36,9 @@ using namespace smtrat::cachemodule;
 
 namespace smtrat
 {
-CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager )
-    :
-    Module( _type, _formula, _tsManager )
-    {
-
-    }
+    CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, bool& _conditional, Manager* const _manager ):
+        Module( _type, _formula, _conditional, _manager )
+    {}
 
     /**
      * Destructor:
@@ -75,9 +72,9 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
      */
     Answer CacheModule::isConsistent()
     {
-        if(callCacheLookup()) 
+        if(callCacheLookup())
         {
-            
+
         }
         else
         {
@@ -86,7 +83,7 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
             {
                 getInfeasibleSubsets();
             }
-            
+
             mSolverState = ans;
             callCacheSave();
         }
@@ -105,8 +102,8 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
         mActualTCall.passedConstraints.setBit((*_subformula)->pConstraint()->id(), false);
         Module::removeSubformula( _subformula );
     }
-    
-    bool CacheModule::callCacheLookup() 
+
+    bool CacheModule::callCacheLookup()
     {
         TCallCache::const_iterator value = mCallCache.find(mActualTCall);
         if(value != mCallCache.end())
@@ -126,8 +123,8 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
         }
         return false;
     }
-    
-    void CacheModule::callCacheSave() 
+
+    void CacheModule::callCacheSave()
     {
         TCallResponse response;
         response.answer = mSolverState;
@@ -137,20 +134,20 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
             mCallCache.insert(std::pair<TCall, TCallResponse>(mActualTCall, response));
         }
 #else
-        if(response.answer == False) 
+        if(response.answer == False)
         {
             response.infSubsets = mInfeasibleSubsets;
         }
         mCallCache.insert(std::pair<TCall, TCallResponse>(mActualTCall, response));
 #endif
-        
+
     }
-    
+
     void CacheModule::printCache()
     {
         std::cout << "actual call:" << std::endl;
         mActualTCall.passedConstraints.print();
-        
+
         std::cout << "call cache:" << std::endl;
         for(TCallCache::const_iterator it = mCallCache.begin(); it != mCallCache.end(); ++it )
         {
@@ -158,4 +155,4 @@ CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, Runti
             std::cout << " --> " << it->second.answer << std::endl;
         }
     }
-}        
+}

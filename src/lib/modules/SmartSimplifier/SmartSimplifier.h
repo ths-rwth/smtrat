@@ -59,7 +59,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            SmartSimplifier( const Formula* const, Manager* const _tsManager );
+            SmartSimplifier( ModuleType _type, const Formula* const, RuntimeSettings*, bool&, Manager* const = NULL );
 
             /**
              * Destructor:

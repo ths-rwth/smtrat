@@ -84,7 +84,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            TLRAModule( const Formula* const _formula, Manager* const _tsManager = NULL );
+            TLRAModule( ModuleType _type, const Formula* const, RuntimeSettings*, bool&, Manager* const = NULL );
 
             /**
              * Destructor:

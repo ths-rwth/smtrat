@@ -20,12 +20,12 @@
  */
 
 
-/** 
+/**
  * @file   PreprocessingModule.h
  *         Created on January 10, 2013, 9:59 PM
  * @author: Sebastian Junges
  *
- * 
+ *
  */
 
 #pragma once
@@ -41,18 +41,18 @@ namespace smtrat
  */
 namespace cachemodule
 {
-    struct TCall 
+    struct TCall
     {
         GiNaCRA::BitVector passedConstraints;
         unsigned nrConstraints;
     };
-    
+
     struct TCallResponse
     {
         Answer answer;
         vec_set_const_pFormula infSubsets;
     };
-    
+
     struct TCallHash
     {
         // TODO write a better hash (something with some bitoperations on the bitvector together with the nr of constraints.
@@ -61,14 +61,14 @@ namespace cachemodule
             return tcall.nrConstraints;
         }
     };
-    
-    
+
+
     struct TCallEqual
     {
         size_t operator() (const TCall& tcall1, const TCall& tcall2) const
         {
             return (tcall1.nrConstraints == tcall2.nrConstraints && tcall1.passedConstraints == tcall2.passedConstraints);
-                   
+
         }
     };
 }
@@ -78,14 +78,14 @@ namespace cachemodule
         typedef std::unordered_map<cachemodule::TCall, cachemodule::TCallResponse, cachemodule::TCallHash, cachemodule::TCallEqual> TCallCache;
         protected:
             TCallCache mCallCache;
-            
+
             cachemodule::TCall mActualTCall;
             std::list<Formula::const_iterator> addingQueue;
         public:
             /**
              * Constructors:
              */
-            CacheModule( ModuleType, const Formula* const,  RuntimeSettings*, Manager* const _tsManager );
+            CacheModule( ModuleType _type, const Formula* const, RuntimeSettings*, bool&, Manager* const = NULL );
 
             /**
              * Destructor:
@@ -100,10 +100,10 @@ namespace cachemodule
             bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
-            
+
             bool callCacheLookup();
             void callCacheSave();
-            
+
             void printCache();
     };
 

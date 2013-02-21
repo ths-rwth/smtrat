@@ -55,7 +55,7 @@ namespace smtrat
     ValidationSettings* Module::validationSettings = new ValidationSettings();
     #endif
 
-    Module::Module( ModuleType type, const Formula* const _formula, Manager* const _tsManager ):
+    Module::Module( ModuleType type, const Formula* const _formula, bool& _conditional, Manager* const _tsManager ):
         mSolverState( Unknown ),
         mId( 0 ),
         mInfeasibleSubsets(),
@@ -64,6 +64,8 @@ namespace smtrat
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),
         mModel(),
+        mBackendFoundAnswer( false ),
+        mFoundAnswer( _conditional ),
         mUsedBackends(),
         mAllBackends(),
         mPassedformulaOrigins(),
@@ -75,13 +77,13 @@ namespace smtrat
         mSmallerMusesCheckCounter(0)
 #ifdef SMTRAT_DEVOPTION_MeasureTime
         ,
-            mTimerAddTotal(0),
-            mTimerCheckTotal(0),
-            mTimerRemoveTotal(0),
-            mTimerAddRunning(false),
-            mTimerCheckRunning(false),
-            mTimerRemoveRunning(false),
-            mNrConsistencyChecks(0)
+        mTimerAddTotal(0),
+        mTimerCheckTotal(0),
+        mTimerRemoveTotal(0),
+        mTimerAddRunning(false),
+        mTimerCheckRunning(false),
+        mTimerRemoveRunning(false),
+        mNrConsistencyChecks(0)
 #endif
     {}
 
@@ -600,7 +602,7 @@ namespace smtrat
         /*
          * Get the backends to be considered from the manager.
          */
-        mUsedBackends = mpManager->getBackends( mpPassedFormula, this );
+        mUsedBackends = mpManager->getBackends( mpPassedFormula, this, mBackendFoundAnswer );
 
         /*
          * Update the backends.
@@ -686,14 +688,6 @@ namespace smtrat
         #endif
         return result;
     }
-
-
-
-    bool operator<(const Formula::iterator& lhs, const Formula::iterator& rhs)
-    {
-        return *lhs < *rhs;
-    }
-
 
     /**
      *

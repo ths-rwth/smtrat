@@ -50,7 +50,7 @@ namespace smtrat
 
         public:
 
-            PreprocessingModule( ModuleType, const Formula* const,  RuntimeSettings*, Manager* const _tsManager );
+            PreprocessingModule( ModuleType _type, const Formula* const, RuntimeSettings*, bool&, Manager* const = NULL );
 
             /**
              * Destructor:

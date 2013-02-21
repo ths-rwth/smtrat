@@ -36,9 +36,8 @@ namespace smtrat {
 
 using namespace vrw;
 
-VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager )
-    :
-    Module( _type, _formula, _tsManager )
+    VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, bool& _conditional, Manager* const _manager ):
+        Module( _type, _formula, _conditional, _manager )
     {
 
     }
@@ -63,7 +62,7 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
     {
         #ifdef SMTRAT_VRW_DEBUGOUTPUT
         std::cout << "assert vrw " << **_subformula << "(" << *_subformula << ")" << std::endl;
-        #endif 
+        #endif
         Module::assertSubformula( _subformula );
         addReceivedSubformulaToPassedFormula(_subformula);
 //        std::cout << "Type" <<  mpPassedFormula->last()->getType() << std::endl;
@@ -77,7 +76,7 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
         }
         std::list<ConstraintNode*>::iterator node = mMatchingGraph.last();
         mConstraintPositions.insert(std::pair<Formula::const_iterator, std::list<ConstraintNode*>::iterator>(_subformula, node));
-        
+
         return true;
     }
 
@@ -87,7 +86,7 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
     Answer VRWModule::isConsistent()
     {
         std::list<std::pair<Formula::iterator, bool> > notNecessary;
-        do 
+        do
         {
             notNecessary = mMatchingGraph.findIrrelevantConstraints(mpPassedFormula->end());
             for(std::list<std::pair<Formula::iterator, bool> >::const_iterator it = notNecessary.begin(); it != notNecessary.end(); ++it)
@@ -96,9 +95,9 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
                 assert(it->first != mpPassedFormula->end());
             }
         } while(!notNecessary.empty());
-        
+
         Answer ans = Unknown;
-        
+
         if(mpPassedFormula->size() > 0) {
             mMatchingGraph.assertConstraints();
             ans = runBackends();
@@ -107,7 +106,7 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
         {
             ans = True;
         }
-            
+
         if( ans == False )
         {
           //  print();
@@ -137,8 +136,8 @@ VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSe
         clearReceivedFormula(_subformula, passedFormula);
         //std::cout << "VRW has removed " << *_subformula << std::endl;
     }
-    
-    void VRWModule::printConstraintPositions() 
+
+    void VRWModule::printConstraintPositions()
     {
         std::cout << "known constraint positions" << std::endl;
         for(auto it = mConstraintPositions.begin(); it != mConstraintPositions.end(); ++it)

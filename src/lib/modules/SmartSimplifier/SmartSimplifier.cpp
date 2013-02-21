@@ -40,8 +40,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    SmartSimplifier::SmartSimplifier( const Formula* const _formula, Manager* const _tsManager ):
-        Module( _formula, _tsManager ),
+    SmartSimplifier::SmartSimplifier( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, bool& _conditional, Manager* const _manager ):
+        Module( _type, _formula, _conditional, _manager ),
         mFreshConstraintReceived( false ),
         mInconsistentConstraintAdded( false ),
         mAllVariables( symtab() )

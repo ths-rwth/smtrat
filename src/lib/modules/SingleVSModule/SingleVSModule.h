@@ -60,7 +60,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            SingleVSModule( const Formula* const _formula, Manager* const _tsManager );
+            SingleVSModule( ModuleType _type, const Formula* const, RuntimeSettings*, bool&, Manager* const = NULL );
 
             /**
              * Destructor:

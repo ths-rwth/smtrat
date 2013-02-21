@@ -69,8 +69,8 @@ using namespace std;
 
 namespace smtrat
 {
-    CADModule::CADModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Manager* const _tsManager ):
-        Module( _type, _formula, _tsManager ),
+    CADModule::CADModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, bool& _conditional, Manager* const _manager ):
+        Module( _type, _formula, _conditional, _manager ),
         mCAD(),
         mConstraints(),
         mConstraintsMap(),

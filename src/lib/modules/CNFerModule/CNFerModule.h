@@ -49,7 +49,7 @@ namespace smtrat
             /**
              * Constructor and destructor.
              */
-            CNFerModule(ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Manager* const _tsManager );
+            CNFerModule( ModuleType _type, const Formula* const, RuntimeSettings*, bool&, Manager* const = NULL );
 
             ~CNFerModule();
 

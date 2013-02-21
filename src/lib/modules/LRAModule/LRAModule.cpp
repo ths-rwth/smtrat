@@ -46,8 +46,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    LRAModule::LRAModule(ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Manager* const _tsManager ):
-        Module(_type, _formula, _tsManager ),
+    LRAModule::LRAModule(ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, bool& _conditional, Manager* const _manager ):
+        Module(_type, _formula, _conditional, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
         mTableau( mpPassedFormula->end() ),

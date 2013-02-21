@@ -54,6 +54,8 @@ namespace smtrat
         friend class Module;
         private:
 
+            ///
+            bool mPrimaryBackendFoundAnswer;
             /// the constraints so far passed to the primary backend
             Formula* mpPassedFormula;
             /// all generated instances of modules
@@ -70,7 +72,7 @@ namespace smtrat
             StrategyGraph mStrategyGraph;
             /// position of the module instance in the strategy
             std::map<const Module* const, unsigned> mModulePositionInStrategy;
-            
+
         public:
             Manager( Formula* = new Formula( AND ) );
             ~Manager();
@@ -126,7 +128,7 @@ namespace smtrat
                 return mStrategyGraph;
             }
 
-            std::vector<Module*> getAllBackends( Module* _module ) 
+            std::vector<Module*> getAllBackends( Module* _module )
             {
                 return mBackendsOfModules[_module];
             }
@@ -135,14 +137,14 @@ namespace smtrat
             {
                 return *mpPassedFormula;
             }
-            
+
             const std::vector<Module*>& getAllGeneratedModules() const
             {
                 return mGeneratedModules;
             }
 
             void printModel( std::ostream& ) const;
-            std::vector<Module*> getBackends( Formula*, Module* );
+            std::vector<Module*> getBackends( Formula*, Module*, bool& );
     };
 }    // namespace smtrat
 

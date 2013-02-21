@@ -46,8 +46,8 @@ namespace smtrat
     /**
      * Constructors:
      */
-    VSModule::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager ):
-        Module( _type, _formula, _tsManager ),
+    VSModule::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, bool& _conditional, Manager* const _manager ):
+        Module( _type, _formula, _conditional, _manager ),
         mConditionsChanged( false ),
         mInconsistentConstraintAdded( false ),
         mIDCounter( 0 ),
