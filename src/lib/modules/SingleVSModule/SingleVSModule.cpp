@@ -37,8 +37,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    SingleVSModule::SingleVSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, bool& _conditional, Manager* const _manager ):
-        Module( _type, _formula, _conditional, _manager ),
+    SingleVSModule::SingleVSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Answer& _answer, Manager* const _manager ):
+        Module( _type, _formula, _answer, _manager ),
         mNumberOfConsideredConstraints( 0 ),
         mTCRanking( TCRanking() )
     {
@@ -102,7 +102,7 @@ namespace smtrat
         //            Formula* subresult =
         //            addReceivedSubformulaToPassedFormula( mNumberOfComparedConstraints );
         //        }
-        return True;
+        return foundAnswer( Unknown );
     }
 
     /**

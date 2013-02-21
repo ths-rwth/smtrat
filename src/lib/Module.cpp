@@ -55,8 +55,7 @@ namespace smtrat
     ValidationSettings* Module::validationSettings = new ValidationSettings();
     #endif
 
-    Module::Module( ModuleType type, const Formula* const _formula, bool& _conditional, Manager* const _tsManager ):
-        mSolverState( Unknown ),
+    Module::Module( ModuleType type, const Formula* const _formula, Answer& _answer, Manager* const _tsManager ):
         mId( 0 ),
         mInfeasibleSubsets(),
         mpManager( _tsManager ),
@@ -64,8 +63,9 @@ namespace smtrat
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),
         mModel(),
-        mBackendFoundAnswer( false ),
-        mFoundAnswer( _conditional ),
+        mSolverState( Unknown ),
+        mBackendsAnswer( Unknown ),
+        mAnswer( _answer ),
         mUsedBackends(),
         mAllBackends(),
         mPassedformulaOrigins(),
@@ -77,13 +77,13 @@ namespace smtrat
         mSmallerMusesCheckCounter(0)
 #ifdef SMTRAT_DEVOPTION_MeasureTime
         ,
-        mTimerAddTotal(0),
-        mTimerCheckTotal(0),
-        mTimerRemoveTotal(0),
-        mTimerAddRunning(false),
-        mTimerCheckRunning(false),
-        mTimerRemoveRunning(false),
-        mNrConsistencyChecks(0)
+        mTimerAddTotal( 0 ),
+        mTimerCheckTotal( 0 ),
+        mTimerRemoveTotal( 0 ),
+        mTimerAddRunning( false ),
+        mTimerCheckRunning( false ),
+        mTimerRemoveRunning( false ),
+        mNrConsistencyChecks( 0 )
 #endif
     {}
 
@@ -120,7 +120,7 @@ namespace smtrat
             getInfeasibleSubsets();
         }
         mSolverState = a;
-        return a;
+        return foundAnswer( a );
     }
 
     /**
@@ -596,13 +596,14 @@ namespace smtrat
     Answer Module::runBackends()
     {
         if( mpManager == NULL ) return Unknown;
+        mBackendsAnswer = Unknown;
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         stopCheckTimer();
         #endif
         /*
          * Get the backends to be considered from the manager.
          */
-        mUsedBackends = mpManager->getBackends( mpPassedFormula, this, mBackendFoundAnswer );
+        mUsedBackends = mpManager->getBackends( mpPassedFormula, this, mBackendsAnswer );
 
         /*
          * Update the backends.
@@ -768,6 +769,30 @@ namespace smtrat
         return result;
     }
 
+    /**
+     *
+     * @param _answer
+     */
+    Answer Module::foundAnswer( Answer _answer )
+    {
+        mSolverState = _answer;
+        // If we are in the SMT environment:
+        if( mpManager != NULL && _answer != Unknown )
+        {
+            // TODO: Make this mutual exclusive.
+            if( mBackendsAnswer == Unknown )
+            {
+                mBackendsAnswer = _answer;
+            }
+        }
+        return _answer;
+    }
+
+    /**
+     *
+     * @param _answer
+     * @param _byBackend
+     */
     void Module::addConstraintToInform( const Constraint* const constraint )
     {
         mConstraintsToInform.push_back(constraint);

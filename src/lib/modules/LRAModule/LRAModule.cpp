@@ -46,8 +46,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    LRAModule::LRAModule(ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, bool& _conditional, Manager* const _manager ):
-        Module(_type, _formula, _conditional, _manager ),
+    LRAModule::LRAModule(ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Answer& _answer, Manager* const _manager ):
+        Module(_type, _formula, _answer, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
         mTableau( mpPassedFormula->end() ),
@@ -199,7 +199,7 @@ namespace smtrat
                 set< const Formula* > infSubSet = set< const Formula* >();
                 infSubSet.insert( *_subformula );
                 mInfeasibleSubsets.push_back( infSubSet );
-                mSolverState = False;
+                foundAnswer( False );
                 return false;
             }
             else
@@ -333,14 +333,18 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "check for consistency" << endl;
         #endif
-        if( !mpReceivedFormula->isConstraintConjunction() ) return Unknown;
+        if( !mpReceivedFormula->isConstraintConjunction() ) return foundAnswer( Unknown );
         if( !mInfeasibleSubsets.empty() )
         {
-            return False;
+            return foundAnswer( False );
         }
         unsigned posNewLearnedBound = 0;
         for( ; ; )
         {
+            if( answerFound() )
+            {
+                return foundAnswer( Unknown );
+            }
             #ifdef DEBUG_LRA_MODULE
             cout << endl;
             mTableau.printVariables( cout, "    " );
@@ -370,8 +374,7 @@ namespace smtrat
                         if( mActiveUnresolvedNEQConstraints.empty() )
                         {
                             learnRefinements();
-                            mSolverState = True;
-                            return True;
+                            return foundAnswer( True );
                         }
                         else
                         {
@@ -384,8 +387,7 @@ namespace smtrat
                                 }
                             }
                             learnRefinements();
-                            mSolverState = Unknown;
-                            return Unknown;
+                            return foundAnswer( Unknown );
                         }
                     }
                     else
@@ -405,8 +407,7 @@ namespace smtrat
                             getInfeasibleSubsets();
                         }
                         learnRefinements();
-                        mSolverState = a;
-                        return a;
+                        return foundAnswer( a );
                     }
                 }
                 else
@@ -452,8 +453,7 @@ namespace smtrat
                     if( !mInfeasibleSubsets.empty() )
                     {
                         learnRefinements();
-                        mSolverState = False;
-                        return False;
+                        return foundAnswer( False );
                     }
                 }
             }
@@ -486,14 +486,12 @@ namespace smtrat
                 #ifdef DEBUG_LRA_MODULE
                 cout << "False" << endl;
                 #endif
-                mSolverState = False;
-                return False;
+                return foundAnswer( False );
             }
         }
         assert( false );
         learnRefinements();
-        mSolverState = True;
-        return True;
+        return foundAnswer( True );
     }
 
     /**
@@ -502,7 +500,7 @@ namespace smtrat
     void LRAModule::updateModel()
     {
         mModel.clear();
-        if( mSolverState == True )
+        if( solverState() == True )
         {
             if( mAssignmentFullfilsNonlinearConstraints )
             {

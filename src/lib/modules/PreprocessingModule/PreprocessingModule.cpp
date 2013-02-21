@@ -41,9 +41,9 @@
 #endif
 
 namespace smtrat {
-PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, bool& _conditional, Manager* const _manager )
+PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Answer& _answer, Manager* const _manager )
     :
-    Module( _type, _formula, _conditional, _manager )
+    Module( _type, _formula, _answer, _manager )
     {
 
     }
@@ -117,8 +117,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             else if( afterProductSplitting->getType() == FFALSE )
             {
                 // Infeasible subset missing?
-                mSolverState = False;
-                return False;
+                return foundAnswer( False );
             }
             else
             {
@@ -146,8 +145,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
         {
             getInfeasibleSubsets();
         }
-        mSolverState = ans;
-        return ans;
+        return foundAnswer( ans );
     }
 
     /**

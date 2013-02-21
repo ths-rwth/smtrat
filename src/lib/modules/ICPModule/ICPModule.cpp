@@ -41,8 +41,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    ICPModule::ICPModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, bool& _conditional, Manager* const _manager ):
-        Module( _type, _formula, _conditional, _manager ),
+    ICPModule::ICPModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Answer& _answer, Manager* const _manager ):
+        Module( _type, _formula, _answer, _manager ),
         mActiveNonlinearConstraints(),
         mActiveLinearConstraints(),
         mNonlinearConstraints(),
@@ -55,8 +55,8 @@ namespace smtrat
         mHistoryRoot(new icp::HistoryNode(mIntervals)),
         mHistoryActual(mHistoryRoot),
         mValidationFormula(new Formula(AND)),
-        mLRAFoundAnswer(false),
-        mLRA(MT_LRAModule, mValidationFormula, new RuntimeSettings, mLRAFoundAnswer),
+        mLRAAnswer(Unknown),
+        mLRA(MT_LRAModule, mValidationFormula, new RuntimeSettings, mLRAAnswer),
         mCenterConstraints(),
         mInitialized(false)
     {
@@ -681,7 +681,7 @@ namespace smtrat
             cout << "Size infeasible subset: " << newSet.size() << endl;
 
             mInfeasibleSubsets.push_back(newSet);
-            return lraAnswer;
+            return foundAnswer( lraAnswer );
         }
         else
         {
@@ -974,12 +974,12 @@ namespace smtrat
                     boxFeasible = false;
 
                     // Todo: Create infeasible subset
-                    return False;
+                    return foundAnswer( False );
                 }
 #else
                 // TODO: Create deductions
 
-                return Unknown;
+                return foundAnswer( Unknown );
 #endif
             }
         }while ( boxFeasible );
@@ -999,8 +999,7 @@ namespace smtrat
         {
             getInfeasibleSubsets();
         }
-        mSolverState = a;
-        return a;
+        return foundAnswer( a );
     }
 
     icp::ContractionCandidate* ICPModule::chooseConstraint()

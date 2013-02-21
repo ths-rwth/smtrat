@@ -55,7 +55,7 @@ namespace smtrat
         private:
 
             ///
-            bool mPrimaryBackendFoundAnswer;
+            Answer mPrimaryBackendAnswer;
             /// the constraints so far passed to the primary backend
             Formula* mpPassedFormula;
             /// all generated instances of modules
@@ -144,7 +144,7 @@ namespace smtrat
             }
 
             void printModel( std::ostream& ) const;
-            std::vector<Module*> getBackends( Formula*, Module*, bool& );
+            std::vector<Module*> getBackends( Formula*, Module*, Answer& );
     };
 }    // namespace smtrat
 

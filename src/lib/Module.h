@@ -87,8 +87,6 @@ namespace smtrat
          * Members:
          */
         protected:
-            /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
-            Answer mSolverState;
             /// A unique ID to identify this module instance. (Could be useful but currently nowhere used)
             unsigned mId;
             /// Stores the infeasible subsets.
@@ -105,10 +103,12 @@ namespace smtrat
             Model mModel;
 
         private:
+            /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
+            Answer mSolverState;
             ///
-            bool mBackendFoundAnswer;
+            Answer mBackendsAnswer;
             ///
-            bool& mFoundAnswer;
+            Answer& mAnswer;
             /// The backends of this module which are currently used (conditions to use this module are fulfilled for the passed formula).
             std::vector<Module*> mUsedBackends;
             /// The backends of this module which have been used.
@@ -141,7 +141,7 @@ namespace smtrat
             //DEPRECATED
             std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForAdding;
 
-            Module( ModuleType type, const Formula* const, bool&, Manager* const = NULL );
+            Module( ModuleType type, const Formula* const, Answer&, Manager* const = NULL );
             virtual ~Module();
 
             static std::vector<std::string> mAssumptionToCheck;
@@ -267,7 +267,15 @@ namespace smtrat
             void storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> &, const std::string& = "smaller_muses") const;
             std::vector<Formula> generateSubformulaeOfInfeasibleSubset( unsigned infeasiblesubset, unsigned size ) const;
             void updateDeductions();
+            
         protected:
+
+            inline bool answerFound() const
+            {
+                return (mAnswer != Unknown);
+            }
+
+            Answer foundAnswer( Answer );
             void addConstraintToInform( const Constraint* const _constraint );
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );
             void addSubformulaToPassedFormula( Formula*, const vec_set_const_pFormula& );

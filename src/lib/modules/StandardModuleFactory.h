@@ -51,7 +51,7 @@ namespace smtrat
 
             ~StandardModuleFactory(){}
 
-            Module* create(ModuleType _type, const Formula* const _formula, bool& _conditional, Manager* const _manager )
+            Module* create(ModuleType _type, const Formula* const _formula, Answer& _conditional, Manager* const _manager )
             {
                 Module* module;
                 module = new Module( _type, _formula, mSettings, _conditional, _manager );

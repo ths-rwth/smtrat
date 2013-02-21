@@ -46,8 +46,8 @@ namespace smtrat
     /**
      * Constructors:
      */
-    VSModule::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, bool& _conditional, Manager* const _manager ):
-        Module( _type, _formula, _conditional, _manager ),
+    VSModule::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Answer& _answer, Manager* const _manager ):
+        Module( _type, _formula, _answer, _manager ),
         mConditionsChanged( false ),
         mInconsistentConstraintAdded( false ),
         mIDCounter( 0 ),
@@ -103,7 +103,7 @@ namespace smtrat
                     mInfeasibleSubsets.push_back( set<const Formula*>() );
                     mInfeasibleSubsets.back().insert( *_subformula );
                     mInconsistentConstraintAdded = true;
-                    mSolverState = False;
+                    foundAnswer( False );
                     return false;
                 }
                 case 1:
@@ -237,13 +237,11 @@ namespace smtrat
                     #ifdef VS_PRINT_ANSWERS
                     printAnswer();
                     #endif
-                    mSolverState = True;
-                    return True;
+                    return foundAnswer( True );
                 }
                 else
                 {
-                    mSolverState = False;
-                    return False;
+                    return foundAnswer( False );
                 }
             }
             mConditionsChanged = false;
@@ -255,19 +253,21 @@ namespace smtrat
                 #ifdef VS_PRINT_ANSWERS
                 printAnswer();
                 #endif
-                mSolverState = True;
-                return True;
+                return foundAnswer( True );
             }
             if( mInconsistentConstraintAdded )
             {
                 assert( !mInfeasibleSubsets.empty() );
                 assert( !mInfeasibleSubsets.back().empty() );
-                mSolverState = False;
-                return False;
+                return foundAnswer( False );
             }
 
             while( !mRanking.empty() )
             {
+                if( answerFound() )
+                {
+                    return foundAnswer( Unknown );
+                }
                 #ifdef VS_STATISTICS
                 ++mStepCounter;
                 #endif
@@ -305,8 +305,7 @@ namespace smtrat
                         if( currentState->isRoot() )
                         {
                             updateInfeasibleSubset();
-                            mSolverState = False;
-                            return False;
+                            return foundAnswer( False );
                         }
                         else
                         {
@@ -412,8 +411,7 @@ namespace smtrat
                                                 #ifdef VS_PRINT_ANSWERS
                                                 printAnswer();
                                                 #endif
-                                                mSolverState = True;
-                                                return True;
+                                                return foundAnswer( True );
                                             }
                                             break;
                                         }
@@ -428,8 +426,7 @@ namespace smtrat
                                         default:
                                         {
                                             cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
-                                            mSolverState = Unknown;
-                                            return Unknown;
+                                            return foundAnswer( Unknown );
                                         }
                                     }
                                     #endif
@@ -509,8 +506,7 @@ namespace smtrat
                                                 #ifdef VS_PRINT_ANSWERS
                                                 printAnswer();
                                                 #endif
-                                                mSolverState = True;
-                                                return True;
+                                                return foundAnswer( True );
                                             }
                                         }
                                         /*
@@ -644,8 +640,7 @@ namespace smtrat
                                                                 #ifdef VS_PRINT_ANSWERS
                                                                 printAnswer();
                                                                 #endif
-                                                                mSolverState = True;
-                                                                return True;
+                                                                return foundAnswer( True );
                                                             }
                                                             break;
                                                         }
@@ -655,14 +650,12 @@ namespace smtrat
                                                         }
                                                         case Unknown:
                                                         {
-                                                            mSolverState = Unknown;
-                                                            return Unknown;
+                                                            return foundAnswer( Unknown );
                                                         }
                                                         default:
                                                         {
                                                             cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
-                                                            mSolverState = Unknown;
-                                                            return Unknown;
+                                                            return foundAnswer( Unknown );
                                                         }
                                                     }
                                                     #else
@@ -671,8 +664,7 @@ namespace smtrat
     //                                                cout << "###                  Unknown!" << endl;
     //                                                cout << "###" << endl;
     //                                                mDeductions.clear();
-                                                    mSolverState = Unknown;
-                                                    return Unknown;
+                                                    return foundAnswer( Unknown );
                                                     #endif
                                                 }
                                                 else
@@ -715,12 +707,11 @@ EndSwitch:;
             #ifdef VS_DEBUG
             printAll( cout );
             #endif
-            mSolverState = False;
-            return False;
+            return foundAnswer( False );
         }
         else
         {
-            return Unknown;
+            return foundAnswer( Unknown );
         }
     }
 
@@ -730,7 +721,7 @@ EndSwitch:;
     void VSModule::updateModel()
     {
         mModel.clear();
-        if( mSolverState == True )
+        if( solverState() == True )
         {
             assert( !mRanking.empty() );
             const State* state = mRanking.begin()->second;

@@ -40,8 +40,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    SmartSimplifier::SmartSimplifier( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, bool& _conditional, Manager* const _manager ):
-        Module( _type, _formula, _conditional, _manager ),
+    SmartSimplifier::SmartSimplifier( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Answer& _answer, Manager* const _manager ):
+        Module( _type, _formula, _answer, _manager ),
         mFreshConstraintReceived( false ),
         mInconsistentConstraintAdded( false ),
         mAllVariables( symtab() )
@@ -82,7 +82,7 @@ namespace smtrat
                     mInfeasibleSubsets.push_back( set<const Formula*>() );
                     mInfeasibleSubsets.back().insert( mpReceivedFormula->back() );
                     mInconsistentConstraintAdded = true;
-                    mSolverState = False;
+                    foundAnswer( False );
                     return false;
                 }
                 case 1:
@@ -128,25 +128,21 @@ namespace smtrat
             {
                 if( mInfeasibleSubsets.empty() )
                 {
-                    mSolverState = True;
-                    return True;
+                    return foundAnswer( True );
                 }
                 else
                 {
-                    mSolverState = False;
-                    return False;
+                    return foundAnswer( False );
                 }
             }
             mFreshConstraintReceived = false;
             if( mpReceivedFormula->empty() )
             {
-                mSolverState = True;
-                return True;
+                return foundAnswer( True );
             }
             if( mInconsistentConstraintAdded )
             {
-                mSolverState = False;
-                return False;
+                return foundAnswer( False );
             }
             else if( mpReceivedFormula->size() > 1 )
             {
@@ -399,13 +395,11 @@ namespace smtrat
                     {
                         getInfeasibleSubsets();
                     }
-                    mSolverState = a;
-                    return a;
+                    return foundAnswer( a );
                 }
                 else
                 {
-                    mSolverState = False;
-                    return False;
+                    return foundAnswer( False );
                 }
             }
             else
@@ -417,13 +411,11 @@ namespace smtrat
                 {
                     case 0:
                     {
-                        mSolverState = False;
-                        return False;
+                        return foundAnswer( False );
                     }
                     case 1:
                     {
-                        mSolverState = True;
-                        return True;
+                        return foundAnswer( True );
                     }
                     case 2:
                     {
@@ -433,21 +425,19 @@ namespace smtrat
                         {
                             getInfeasibleSubsets();
                         }
-                        mSolverState = a;
-                        return a;
+                        return foundAnswer( a );
                     }
                     default:
                     {
                         assert( false );
-                        mSolverState = Unknown;
-                        return Unknown;
+                        return foundAnswer( Unknown );
                     }
                 }
             }
         }
         else
         {
-            return Unknown;
+            return foundAnswer( Unknown );
         }
     }
 

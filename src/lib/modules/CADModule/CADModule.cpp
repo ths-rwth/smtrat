@@ -69,8 +69,8 @@ using namespace std;
 
 namespace smtrat
 {
-    CADModule::CADModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, bool& _conditional, Manager* const _manager ):
-        Module( _type, _formula, _conditional, _manager ),
+    CADModule::CADModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Answer& _answer, Manager* const _manager ):
+        Module( _type, _formula, _answer, _manager ),
         mCAD(),
         mConstraints(),
         mConstraintsMap(),
@@ -139,7 +139,7 @@ namespace smtrat
         if( mVariableBounds.addBound( (*_subformula)->pConstraint(), *_subformula ) )
             return true;
         #endif
-        if( mSolverState == False )
+        if( solverState() == False )
             return false;
         // add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
         if( mConstraintsMap.find( _subformula ) != mConstraintsMap.end() )
@@ -160,9 +160,9 @@ namespace smtrat
     Answer CADModule::isConsistent()
     {
         if( !mpReceivedFormula->isConstraintConjunction() )
-            return Unknown;
+            return foundAnswer( Unknown );
         if( !mInfeasibleSubsets.empty() )
-            return False; // there was no constraint removed which was in a previously generated infeasible subset
+            return foundAnswer( False ); // there was no constraint removed which was in a previously generated infeasible subset
         #ifdef MODULE_VERBOSE
         cout << "Checking constraint set " << endl;
         for( vector<GiNaCRA::Constraint>::const_iterator k = mConstraints.begin(); k != mConstraints.end(); ++k )
@@ -181,9 +181,8 @@ namespace smtrat
         if( variableBounds().isConflicting() )
         {
             mInfeasibleSubsets.push_back( variableBounds().getConflict() );
-            mSolverState = False;
             mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
-            return False;
+            return foundAnswer( False );
         }
         GiNaCRA::BoundMap boundMap = GiNaCRA::BoundMap();
         GiNaCRA::evalintervalmap eiMap = mVariableBounds.getEvalIntervalMap();
@@ -270,9 +269,8 @@ namespace smtrat
             cout << "Performance gain: " << (mpReceivedFormula->size() - mInfeasibleSubsets.front().size()) << endl << endl;
 //            mCAD.printSampleTree();
             #endif
-            mSolverState = False;
             mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
-            return False;
+            return foundAnswer( False );
         }
         #ifdef MODULE_VERBOSE
         cout << endl << "#Samples: " << mCAD.samples().size() << endl;
@@ -294,8 +292,7 @@ namespace smtrat
         #endif
         this->addDeductions( deductions );
         #endif
-        mSolverState = True;
-        return True;
+        return foundAnswer( True );
     }
 
     void CADModule::removeSubformula( Formula::const_iterator _subformula )
@@ -369,7 +366,7 @@ namespace smtrat
     void CADModule::updateModel()
     {
         mModel.clear();
-        if( mSolverState == True )
+        if( solverState() == True )
         {
             // bound-independent part of the model
             vector<symbol> vars = mCAD.variables();

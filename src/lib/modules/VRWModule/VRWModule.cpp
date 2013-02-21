@@ -36,8 +36,8 @@ namespace smtrat {
 
 using namespace vrw;
 
-    VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, bool& _conditional, Manager* const _manager ):
-        Module( _type, _formula, _conditional, _manager )
+    VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Answer& _answer, Manager* const _manager ):
+        Module( _type, _formula, _answer, _manager )
     {
 
     }
@@ -112,8 +112,7 @@ using namespace vrw;
           //  print();
             getInfeasibleSubsets();
         }
-        mSolverState = ans;
-        return ans;
+        return foundAnswer( ans );
     }
 
     /**

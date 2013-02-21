@@ -46,8 +46,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    TLRAModule::TLRAModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, bool& _conditional, Manager* const _manager ):
-        Module( _type, _formula, _conditional, _manager ),
+    TLRAModule::TLRAModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Answer& _answer, Manager* const _manager ):
+        Module( _type, _formula, answer, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
         mNumberOfReceivedLinearNeqConstraints( 0 ),
@@ -167,7 +167,7 @@ namespace smtrat
                 set< const Formula* > infSubSet = set< const Formula* >();
                 infSubSet.insert( *_subformula );
                 mInfeasibleSubsets.push_back( infSubSet );
-                mSolverState = False;
+                foundAnswer( False );
                 return false;
             }
             else
@@ -272,11 +272,15 @@ namespace smtrat
         {
             if( !mInfeasibleSubsets.empty() )
             {
-                return False;
+                return foundAnswer( False );
             }
             unsigned posNewLearnedBound = 0;
             for( ; ; )
             {
+                if( answerFound() )
+                {
+                    return foundAnswer( Unknown );
+                }
                 #ifdef DEBUG_TLRA_MODULE
                 cout << endl;
                 mTableau.printVariables( cout, "    " );
@@ -306,8 +310,7 @@ namespace smtrat
                             #ifdef TLRA_REFINEMENT
                             learnRefinements();
                             #endif
-                            mSolverState = True;
-                            return True;
+                            return foundAnswer( True );
                         }
                         else
                         {
@@ -320,8 +323,7 @@ namespace smtrat
                             #ifdef TLRA_REFINEMENT
                             learnRefinements();
                             #endif
-                            mSolverState = a;
-                            return a;
+                            return foundAnswer( a );
                         }
                     }
                     else
@@ -354,8 +356,7 @@ namespace smtrat
                             #ifdef TLRA_REFINEMENT
                             learnRefinements();
                             #endif
-                            mSolverState = False;
-                            return False;
+                            return foundAnswer( False );
                         }
                     }
                 }
@@ -390,20 +391,18 @@ namespace smtrat
                     #ifdef DEBUG_TLRA_MODULE
                     cout << "False" << endl;
                     #endif
-                    mSolverState = False;
-                    return False;
+                    return foundAnswer( False );
                 }
             }
             assert( false );
             #ifdef TLRA_REFINEMENT
             learnRefinements();
             #endif
-            mSolverState = True;
-            return True;
+            return foundAnswer( True );
         }
         else
         {
-            return Unknown;
+            return foundAnswer( Unknown );
         }
     }
 
@@ -413,7 +412,7 @@ namespace smtrat
     void TLRAModule::updateModel()
     {
         mModel.clear();
-        if( mSolverState == True )
+        if( solverState() == True )
         {
             if( mAssignmentFullfilsNonlinearConstraints )
             {

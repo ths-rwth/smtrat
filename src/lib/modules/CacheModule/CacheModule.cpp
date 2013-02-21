@@ -36,8 +36,8 @@ using namespace smtrat::cachemodule;
 
 namespace smtrat
 {
-    CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, bool& _conditional, Manager* const _manager ):
-        Module( _type, _formula, _conditional, _manager )
+    CacheModule::CacheModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Answer& _answer, Manager* const _manager ):
+        Module( _type, _formula, _answer, _manager )
     {}
 
     /**
@@ -84,10 +84,10 @@ namespace smtrat
                 getInfeasibleSubsets();
             }
 
-            mSolverState = ans;
             callCacheSave();
+            foundAnswer( ans );
         }
-        return mSolverState;
+        return solverState();
     }
 
     /**
@@ -109,11 +109,11 @@ namespace smtrat
         if(value != mCallCache.end())
         {
             //std::cout << "Cache hit: ";
-            mSolverState = value->second.answer;
+            foundAnswer( value->second.answer );
             #ifdef CACHE_ONLY_TRUE
-            assert(mSolverState == True);
+            assert(solverState() == True);
             #else
-            if(mSolverState == False)
+            if(solverState() == False)
             {
                 return false;
                 //mInfeasibleSubsets = value->second.infSubsets;
@@ -127,7 +127,7 @@ namespace smtrat
     void CacheModule::callCacheSave()
     {
         TCallResponse response;
-        response.answer = mSolverState;
+        response.answer = solverState();
 #ifdef CACHE_ONLY_TRUE
         if(response.answer == True)
         {

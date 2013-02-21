@@ -34,8 +34,8 @@ using namespace std;
 
 namespace smtrat
 {
-    CNFerModule::CNFerModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, bool& _conditional, Manager* const _manager ):
-        Module( _type, _formula, _conditional, _manager ),
+    CNFerModule::CNFerModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Answer& _answer, Manager* const _manager ):
+        Module( _type, _formula, _answer, _manager ),
         mFirstNotCheckedFormula()
     {
         this->mModuleType = _type;
@@ -94,7 +94,7 @@ namespace smtrat
             }
             else if( formulaToAssert->getType() == FFALSE )
             {
-                return False;
+                return foundAnswer( False );
             }
             else
             {
@@ -119,8 +119,7 @@ namespace smtrat
         {
             getInfeasibleSubsets();
         }
-        mSolverState = a;
-        return a;
+        return foundAnswer( a );
     }
 
     /**

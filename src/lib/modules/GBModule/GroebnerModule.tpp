@@ -52,8 +52,8 @@ namespace smtrat
 {
 
 template<class Settings>
-GroebnerModule<Settings>::GroebnerModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, bool& _conditional, Manager* const _manager ):
-    Module( _type, _formula, _conditional, _manager ),
+GroebnerModule<Settings>::GroebnerModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Answer& _answer, Manager* const _manager ):
+    Module( _type, _formula, _answer, _manager ),
     mBasis( ),
     mInequalities( this ),
     mStateHistory( ),
@@ -189,13 +189,12 @@ Answer GroebnerModule<Settings>::isConsistent( )
     // We can only handle conjunctions of constraints.
     if(!mpReceivedFormula->isConstraintConjunction())
     {
-        return Unknown;
+        return foundAnswer( Unknown );
     }
     // This check asserts that all the conflicts are handled by the SAT solver. (workaround)
     if( !mInfeasibleSubsets.empty() )
     {
-        mSolverState = False;
-        return False;
+        return foundAnswer( False );
     }
 
     #ifdef SMTRAT_DEVOPTION_Statistics
@@ -338,8 +337,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
             }
 
             #endif
-            mSolverState = False;
-            return False;
+            return foundAnswer( False );
         }
         saveState( );
 
@@ -351,8 +349,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
             if( ans == False )
             {
-                mSolverState = ans;
-                return ans;
+                return foundAnswer( ans );
             }
         }
         assert( mInfeasibleSubsets.empty( ) );
@@ -388,8 +385,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
         // If we managed to get an answer, we can return that.
         if( ans != Unknown )
         {
-            mSolverState = ans;
-            return ans;
+            return foundAnswer( ans );
         }
     }
     assert( mInfeasibleSubsets.empty( ) );
@@ -415,8 +411,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
 
         assert( !mInfeasibleSubsets.empty( ) );
     }
-    mSolverState = ans;
-    return ans;
+    return foundAnswer( ans );
 }
 
 

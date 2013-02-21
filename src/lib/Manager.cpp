@@ -51,9 +51,9 @@ namespace smtrat
      */
 
     Manager::Manager( Formula* _inputFormula ):
-        mPrimaryBackendFoundAnswer( false ),
+        mPrimaryBackendAnswer( Unknown ),
         mpPassedFormula( _inputFormula ),
-        mGeneratedModules( vector<Module*>( 1, new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ) ),
+        mGeneratedModules( vector<Module*>( 1, new Module( MT_Module, mpPassedFormula, mPrimaryBackendAnswer, this ) ) ),
         mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
         mStrategyGraph(),
@@ -124,7 +124,7 @@ namespace smtrat
      * @return  A vector of modules, which the module defined by _requiredBy calls in parallel to achieve
      *          an answer to the given instance.
      */
-    vector<Module*> Manager::getBackends( Formula* _formula, Module* _requiredBy, bool& _conditional )
+    vector<Module*> Manager::getBackends( Formula* _formula, Module* _requiredBy, Answer& _answer )
     {
         vector<Module*>        backends         = vector<Module*>();
         vector<Module*>&       allBackends      = mBackendsOfModules[_requiredBy];
@@ -156,7 +156,7 @@ namespace smtrat
             {
                 auto backendFactory = mpModuleFactories->find( iter->second );
                 assert( backendFactory != mpModuleFactories->end() );
-                Module* pBackend = backendFactory->second->create(iter->second,  _requiredBy->pPassedFormula(), _conditional, this );
+                Module* pBackend = backendFactory->second->create(iter->second,  _requiredBy->pPassedFormula(), _answer, this );
                 mGeneratedModules.push_back( pBackend );
                 pBackend->setId( mGeneratedModules.size()-1 );
                 allBackends.push_back( pBackend );
