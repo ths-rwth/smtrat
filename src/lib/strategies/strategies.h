@@ -8,6 +8,7 @@
 #ifndef STRATEGIES_H
 #define	STRATEGIES_H
 
+#include "StrategyOne.h"
 #include "NRATSolver.h"
 
 

@@ -23,7 +23,7 @@ import java.util.ArrayList;
 
 /**
  * @file Condition.java
- * 
+ *
  * @author  Henrik Schmitz
  * @since   2012-10-25
  * @version 2012-11-19
@@ -31,23 +31,23 @@ import java.util.ArrayList;
 public class Condition
 {
     public static final String TRUE_CONDITION = "TRUE";
-    
+
     private final ArrayList<AllowedConditionValue> values;
-    
+
     public Condition()
     {
         values = new ArrayList<>();
     }
-    
+
     public String addElement( String element )
     {
         return addElement( values.size(), element );
     }
-    
+
     public String addElement( int index, String element )
     {
         if( element.length()==1 )
-        {    
+        {
             if( AllowedConditionValue.isAllowedConditionValue( element ) )
             {
                 AllowedConditionValue av = new AllowedConditionValue( element );
@@ -94,7 +94,7 @@ public class Condition
         else
         {
             return "";
-        }  
+        }
     }
 
     public String addElementAtTextPosition( int textPosition, String element )
@@ -118,7 +118,7 @@ public class Condition
         }
         return index;
     }
-    
+
     public int calculateTextPosition( int oldTextPosition, int currentTextPosition )
     {
         int index = 0, newTextPosition = 0;
@@ -129,30 +129,30 @@ public class Condition
         if( currentTextPosition!=newTextPosition && currentTextPosition<oldTextPosition )
         {
             newTextPosition -= values.get( index-1 ).getLength();
-        }    
+        }
         return newTextPosition;
     }
-    
+
     public int getLength( int index )
     {
         return values.get( index ).getLength();
     }
-    
+
     public String getValue( int index )
     {
         return values.get( index ).getValue();
     }
-    
+
     public String getValueXML( int index )
     {
         return values.get( index ).getValueXML();
     }
-    
+
     public boolean isEmpty()
     {
         return values.isEmpty();
     }
-    
+
     public boolean isTrueCondition()
     {
         return values.size()==1 && values.get( 0 ).getValue().equals( TRUE_CONDITION );
@@ -162,12 +162,12 @@ public class Condition
     {
         values.remove( index );
     }
-    
+
     public int size()
     {
         return values.size();
     }
-    
+
     @Override
     public String toString()
     {
@@ -178,13 +178,40 @@ public class Condition
         }
         return ret.toString();
     }
-    
+
     public String toStringCPP()
     {
         StringBuilder ret = new StringBuilder();
         for( AllowedConditionValue av : values )
         {
             ret.append( av.getValueCPP() );
+        }
+        return ret.toString();
+    }
+
+    public String toStringCPP( String condition )
+    {
+        StringBuilder ret = new StringBuilder();
+        for( AllowedConditionValue av : values )
+        {
+            if( AllowedConditionValue.isAllowedPropositionValue( av.getValue() ) )
+            {
+                ret.append( "(" );
+                ret.append( av.getValueCPP() );
+                ret.append( " <= " );
+                ret.append( condition );
+                ret.append( ")" );
+            }
+            else if( AllowedConditionValue.isAllowedBracketValue( av.getValue() ) )
+            {
+                ret.append( av.getValueCPP() );
+            }
+            else if( AllowedConditionValue.isAllowedLogicalOperatorValue( av.getValue() ) )
+            {
+                ret.append( " " );
+                ret.append( av.getValueCPP() );
+                if( av.getValueCPP() != "!" ) ret.append( " " );
+            }
         }
         return ret.toString();
     }
