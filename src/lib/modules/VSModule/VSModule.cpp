@@ -160,31 +160,42 @@ namespace smtrat
             const vs::Condition* condToDelete = formulaConditionPair->second;
 
             eraseDTsOfRanking( *mpStateTree );
-            assert( mpStateTree->substitutionResults().size() == 1 );
-            assert( mpStateTree->substitutionResults().back().size() == 1 );
-            ConditionVector& subResult = mpStateTree->rSubstitutionResults().back().back().first;
-            auto cond = subResult.begin();
-            while( cond != subResult.end() )
+            auto subResult = mpStateTree->rSubstitutionResults().begin();
+            while( subResult != mpStateTree->substitutionResults().end() )
             {
-                ConditionSet::iterator oCond = (*cond)->pOriginalConditions()->begin();
-                while( oCond != (*cond)->originalConditions().end() )
+                assert( subResult->size() == 1 );
+                ConditionVector& condConj = subResult->back().first;
+                auto cond = condConj.begin();
+                while( cond != condConj.end() )
                 {
-                    if( *oCond == condToDelete )
+                    ConditionSet::iterator oCond = (*cond)->pOriginalConditions()->begin();
+                    while( oCond != (*cond)->originalConditions().end() )
                     {
-                        (*cond)->pOriginalConditions()->erase( oCond );
-                        break;
+                        if( *oCond == condToDelete )
+                        {
+                            (*cond)->pOriginalConditions()->erase( oCond );
+                            break;
+                        }
+                        ++oCond;
                     }
-                    ++oCond;
+                    if( oCond != (*cond)->originalConditions().end() )
+                    {
+                        const vs::Condition* toDelete = *cond;
+                        cond = condConj.erase( cond );
+                        delete toDelete;
+                    }
+                    else
+                    {
+                        ++cond;
+                    }
                 }
-                if( oCond != (*cond)->originalConditions().end() )
+                if( condConj.empty() )
                 {
-                    const vs::Condition* toDelete = *cond;
-                    cond = subResult.erase( cond );
-                    delete toDelete;
+                    subResult = mpStateTree->rSubstitutionResults().erase( subResult );
                 }
                 else
                 {
-                    ++cond;
+                    ++subResult;
                 }
             }
             mpStateTree->rSubResultsSimplified() = false;
@@ -225,8 +236,11 @@ namespace smtrat
     {
         if( mpReceivedFormula->isConstraintConjunction() )
         {
-            assert( !(mpReceivedFormula->size() < mFormulaConditionMap.size()) );
-            assert( !(mpReceivedFormula->size() > mFormulaConditionMap.size()) );
+            if( mpReceivedFormula->size() != mFormulaConditionMap.size())
+            {
+                printFormulaConditionMap();
+            }
+            assert( mpReceivedFormula->size() == mFormulaConditionMap.size() );
             if( !mConditionsChanged )
             {
                 if( mInfeasibleSubsets.empty() )
@@ -1944,35 +1958,48 @@ EndSwitch:;
     /**
      * Prints the history to the output stream.
      *
+     * @param _init The beginning of each row.
      * @param _out The output stream where the history should be printed.
      */
-    void VSModule::printAll( ostream& _out ) const
+    void VSModule::printAll( const string& _init, ostream& _out ) const
     {
-        _out << "*** Current solver status, where the constraints" << endl;
-        for( FormulaConditionMap::const_iterator cond = mFormulaConditionMap.begin(); cond != mFormulaConditionMap.end(); ++cond )
-        {
-            _out << "***    ";
-            cond->first->print( _out );
-            _out << " <-> ";
-            cond->second->print( _out );
-            _out << endl;
-        }
-        _out << "*** have been added:" << endl;
-        _out << "*** mInconsistentConstraintAdded: " << mInconsistentConstraintAdded << endl;
-        _out << "*** mIDCounter: " << mIDCounter << endl;
-        printRanking( cout );
-        _out << "*** State tree:" << endl;
-        mpStateTree->print( "   ", _out );
+        _out << _init << " Current solver status, where the constraints" << endl;
+        printFormulaConditionMap( _init, _out );
+        _out << _init << " have been added:" << endl;
+        _out << _init << " mInconsistentConstraintAdded: " << mInconsistentConstraintAdded << endl;
+        _out << _init << " mIDCounter: " << mIDCounter << endl;
+        _out << _init << " Current ranking:" << endl;
+        printRanking( _init, cout );
+        _out << _init << " State tree:" << endl;
+        mpStateTree->print( _init + "   ", _out );
     }
 
     /**
      * Prints the history to the output stream.
      *
+     * @param _init The beginning of each row.
      * @param _out The output stream where the history should be printed.
      */
-    void VSModule::printRanking( ostream& _out ) const
+    void VSModule::printFormulaConditionMap( const string& _init, ostream& _out ) const
     {
-        _out << "*** Current ranking:" << endl;
+        for( FormulaConditionMap::const_iterator cond = mFormulaConditionMap.begin(); cond != mFormulaConditionMap.end(); ++cond )
+        {
+            _out << _init << "    ";
+            cond->first->print( _out );
+            _out << " <-> ";
+            cond->second->print( _out );
+            _out << endl;
+        }
+    }
+
+    /**
+     * Prints the history to the output stream.
+     *
+     * @param _init The beginning of each row.
+     * @param _out The output stream where the history should be printed.
+     */
+    void VSModule::printRanking( const string& _init, ostream& _out ) const
+    {
         for( ValuationMap::const_iterator valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
         {
             (*(*valDTPair).second).printAlone( "   ", _out );
@@ -1982,22 +2009,23 @@ EndSwitch:;
     /**
      * Prints the answer if existent.
      *
+     * @param _init The beginning of each row.
      * @param _out The output stream where the answer should be printed.
      */
-    void VSModule::printAnswer( ostream& _out ) const
+    void VSModule::printAnswer( const string& _init, ostream& _out ) const
     {
-        _out << "*** Answer:" << endl;
+        _out << _init << " Answer:" << endl;
         if( mRanking.empty() )
         {
-            _out << "***        False." << endl;
+            _out << _init << "        False." << endl;
         }
         else
         {
-            _out << "***        True:" << endl;
+            _out << _init << "        True:" << endl;
             const State* currentState = mRanking.begin()->second;
             while( !(*currentState).isRoot() )
             {
-                _out << "***           " << (*currentState).substitution().toString( true ) << endl;
+                _out << _init << "           " << (*currentState).substitution().toString( true ) << endl;
                 currentState = (*currentState).pFather();
             }
         }

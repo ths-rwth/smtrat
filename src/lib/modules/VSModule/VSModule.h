@@ -112,9 +112,10 @@ namespace smtrat
             void updateModel();
 
             // Printing methods.
-            void printAll( std::ostream& = std::cout ) const;
-            void printRanking( std::ostream& = std::cout ) const;
-            void printAnswer( std::ostream& = std::cout ) const;
+            void printAll( const std::string& = "", std::ostream& = std::cout ) const;
+            void printFormulaConditionMap( const std::string& = "", std::ostream& = std::cout ) const;
+            void printRanking( const std::string& = "", std::ostream& = std::cout ) const;
+            void printAnswer( const std::string& = "", std::ostream& = std::cout ) const;
 
         private:
 

@@ -604,6 +604,7 @@ namespace smtrat
          * Get the backends to be considered from the manager.
          */
         mUsedBackends = mpManager->getBackends( mpPassedFormula, this, mBackendsAnswer );
+        mAllBackends = mpManager->getAllBackends( this );
 
         /*
          * Update the backends.
@@ -614,7 +615,7 @@ namespace smtrat
             // Update the propositions of the passed formula
             mpPassedFormula->getPropositions();
             bool assertionFailed = false;
-            for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+            for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
             {
                 #ifdef SMTRAT_DEVOPTION_MeasureTime
                 (*module)->startAddTimer();
@@ -1131,8 +1132,6 @@ namespace smtrat
             FormulaOrigins::const_iterator formulaOrigins = mPassedformulaOrigins.find( *passedSubformula );
             assert( formulaOrigins != mPassedformulaOrigins.end() );
             _out << _initiation << "  ";
-//            if( formulaOrigins == mPassedformulaOrigins.end() ){
-//                _out << *passedSubformula << endl; _out << mpPassedFormula->size() << endl;_out << endl;  assert( false ); }
             _out << setw( 30 ) << (*passedSubformula)->toString( true );
             stringstream out;
             out << "  [" << *passedSubformula << "]" << " from " << "(";
