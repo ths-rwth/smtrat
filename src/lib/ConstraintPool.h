@@ -63,6 +63,8 @@ namespace smtrat
         }
     };
 
+    enum Variable_Domain { REAL_DOMAIN = 0, INTEGER_DOMAIN = 1 };
+
     typedef std::unordered_set<const Constraint*, constraintHash, constraintEqual> fastConstraintSet;
     typedef fastConstraintSet::const_iterator                                      fcs_const_iterator;
 
