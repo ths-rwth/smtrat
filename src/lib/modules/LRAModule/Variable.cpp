@@ -247,8 +247,8 @@ LowerBounds:
     }
 
     /**
-     * 
-     * @return 
+     *
+     * @return
      */
     GiNaCRA::Interval Variable::getVariableBounds() const
     {
@@ -277,12 +277,9 @@ LowerBounds:
             upperBoundValue = supremum().limit().mainPart();
         }
         GiNaCRA::Interval result = GiNaCRA::Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
-        cout << __func__ << " : ";
-        this->print(); cout << endl;
-        result.dbgprint();
         return result;
     }
-    
+
     /**
      *
      * @param _out

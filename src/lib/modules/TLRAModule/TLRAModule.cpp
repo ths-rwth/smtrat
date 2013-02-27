@@ -37,9 +37,7 @@
 using namespace std;
 using namespace tlra;
 using namespace GiNaC;
-#ifdef TLRA_USE_GINACRA
-using namespace GiNaCRA;
-#endif
+using namespace GiNaCRA;ś
 
 namespace smtrat
 {
@@ -544,7 +542,6 @@ namespace smtrat
         return result;
     }
 
-    #ifdef TLRA_USE_GINACRA
     /**
      * Returns the bounds of the variables as intervals.
      *
@@ -585,7 +582,6 @@ namespace smtrat
         }
         return result;
     }
-    #endif
 
     #ifdef TLRA_REFINEMENT
     /**

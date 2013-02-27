@@ -31,18 +31,14 @@
 #ifndef TLRAMODULE_H
 #define TLRAMODULE_H
 
-#define TLRA_USE_GINACRA
-
-#include "../Module.h"
-#include "TLRAModule/Numeric.h"
-#include "TLRAModule/Value.h"
-#include "TLRAModule/Variable.h"
-#include "TLRAModule/Bound.h"
-#include "TLRAModule/Tableau.h"
+#include "../../Module.h"
+#include "../../RuntimeSettings.h"
+#include "Numeric.h"
+#include "Value.h"
+#include "Variable.h"
+#include "Bound.h"
+#include "Tableau.h"
 #include <stdio.h>
-#ifdef TLRA_USE_GINACRA
-#include <ginacra/ginacra.h>
-#endif
 
 
 #define TLRA_SIMPLE_CONFLICT_SEARCH
@@ -102,9 +98,7 @@ namespace smtrat
             Answer isConsistent();
             void updateModel();
             GiNaC::exmap getRationalModel() const;
-            #ifdef TLRA_USE_GINACRA
             GiNaCRA::evalintervalmap getVariableBounds() const;
-            #endif
             void initialize();
 
         private:

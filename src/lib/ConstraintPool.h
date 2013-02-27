@@ -89,7 +89,7 @@ namespace smtrat
             /// The prefix for any auxiliary Boolean defined in this formula.
             const std::string mAuxiliaryRealNamePrefix;
             /// the symbol table containing the variables of all constraints
-            GiNaC::symtab mAllRealVariables;
+            GiNaC::symtab mArithmeticVariables;
             ///
             std::set<std::string> mAllBooleanVariables;
             /// for each string representation its constraint (considering all constraints of which the manager has already been informed)
@@ -125,7 +125,7 @@ namespace smtrat
 
             const GiNaC::symtab& realVariables() const
             {
-                return mAllRealVariables;
+                return mArithmeticVariables;
             }
 
             const std::set<std::string>& booleanVariables() const

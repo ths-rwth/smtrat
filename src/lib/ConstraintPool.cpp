@@ -48,7 +48,7 @@ namespace smtrat
         mInconsistentConstraint( new Constraint( 0, CR_LESS, symtab(), 2 ) ),
         mAuxiliaryBooleanNamePrefix( "h_b_" ),
         mAuxiliaryRealNamePrefix( "h_r_" ),
-        mAllRealVariables(),
+        mArithmeticVariables(),
         mAllBooleanVariables(),
         mAllConstraints()
     {
@@ -81,7 +81,7 @@ namespace smtrat
             mAllConstraints.erase( mAllConstraints.begin() );
             delete pCons;
         }
-        mAllRealVariables.clear();
+        mArithmeticVariables.clear();
         mAllBooleanVariables.clear();
         mAllConstraints.insert( mConsistentConstraint );
         mAllConstraints.insert( mInconsistentConstraint );
@@ -95,7 +95,7 @@ namespace smtrat
     unsigned ConstraintPool::maxLenghtOfVarName() const
     {
         unsigned result = 0;
-        for( symtab::const_iterator var = mAllRealVariables.begin(); var != mAllRealVariables.end(); ++var )
+        for( symtab::const_iterator var = mArithmeticVariables.begin(); var != mArithmeticVariables.end(); ++var )
         {
             if( var->first.size() > result ) result = var->first.size();
         }
@@ -140,11 +140,11 @@ namespace smtrat
      */
     ex ConstraintPool::newRealVariable( const string& _name )
     {
-        assert( mAllRealVariables.find( _name ) == mAllRealVariables.end() );
+        assert( mArithmeticVariables.find( _name ) == mArithmeticVariables.end() );
         symtab emptySymtab;
         parser reader( emptySymtab );
         ex var = reader( _name );
-        return mAllRealVariables.insert( pair<const string, ex>( _name, var ) ).first->second;
+        return mArithmeticVariables.insert( pair<const string, ex>( _name, var ) ).first->second;
     }
 
     /**
@@ -155,11 +155,11 @@ namespace smtrat
     {
         stringstream out;
         out << mAuxiliaryRealNamePrefix << mAuxiliaryRealCounter++;
-        assert( mAllRealVariables.find( out.str() ) == mAllRealVariables.end() );
+        assert( mArithmeticVariables.find( out.str() ) == mArithmeticVariables.end() );
         symtab emptySymtab;
         parser reader( emptySymtab );
         ex var = reader( out.str() );
-        return *mAllRealVariables.insert( pair<const string, ex>( out.str(), var ) ).first;
+        return *mArithmeticVariables.insert( pair<const string, ex>( out.str(), var ) ).first;
     }
 
     /**
@@ -326,7 +326,7 @@ namespace smtrat
          * Parse the lefthand and righthand side and store their difference as
          * lefthand side of the constraint.
          */
-        parser reader( mAllRealVariables );
+        parser reader( mArithmeticVariables );
         ex lhs, rhs;
         string lhsString = expression.substr( 0, opPos );
         string rhsString = expression.substr( opPos + opSize );
@@ -343,7 +343,7 @@ namespace smtrat
         /*
          * Collect the new variables in the constraint:
          */
-        mAllRealVariables.insert( reader.get_syms().begin(), reader.get_syms().end() );
+        mArithmeticVariables.insert( reader.get_syms().begin(), reader.get_syms().end() );
         return addConstraintToPool( createNormalizedConstraint( lhs-rhs, relation, reader.get_syms() ) );
     }
 
@@ -492,7 +492,7 @@ namespace smtrat
     bool ConstraintPool::hasNoOtherVariables( const ex& _expression ) const
     {
         lst substitutionList = lst();
-        for( symtab::const_iterator var = mAllRealVariables.begin(); var != mAllRealVariables.end(); ++var )
+        for( symtab::const_iterator var = mArithmeticVariables.begin(); var != mArithmeticVariables.end(); ++var )
         {
             substitutionList.append( ex_to<symbol>( var->second ) == 0 );
         }

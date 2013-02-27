@@ -47,8 +47,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    LRAModule::LRAModule(ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Answer& _answer, Manager* const _manager ):
-        Module(_type, _formula, _answer, _manager ),
+    LRAModule::LRAModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Answer& _answer, Manager* const _manager ):
+        Module( _type, _formula, _answer, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
         mTableau( mpPassedFormula->end() ),
@@ -96,7 +96,7 @@ namespace smtrat
     /**
      * Informs this module about the existence of the given constraint, which means
      * that it could be added in future.
-     * 
+     *
      * @param _constraint The constraint to inform about.
      * @return False, if the it can be determined that the constraint itself is conflicting;
      *         True,  otherwise.
