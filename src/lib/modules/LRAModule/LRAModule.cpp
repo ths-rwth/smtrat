@@ -1329,11 +1329,11 @@ namespace smtrat
     {
     Answer RealConsistency = isConsistent();
     if (RealConsistency == Unknown ) return foundAnswer( Unknown );
-    else if (RealConsistency == False ) return foundAnswer( False );   
+    else if (RealConsistency == False ) return foundAnswer( False ); 
     /* To-Do: Check, whether the solution is already integer-valued.
      * Yes: return true.
      * No: Fix the non-integer values recursively.
-     * /
+     */
     }
 
     /**
