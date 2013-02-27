@@ -119,6 +119,7 @@ namespace smtrat
     }
 
     /**
+     * 
      * Adds a sub-formula/constraint to the so far received sub-formula/constraints.
      *
      * @param _subformula The position of the constraint within the received constraints.
@@ -509,6 +510,8 @@ namespace smtrat
         learnRefinements();
         return foundAnswer( True );
     }
+    
+    }    
 
     /**
      * Updates the current assignment into the model. Note, that this is a unique but symbolic assignment still containing delta as a variable.
@@ -1315,6 +1318,22 @@ namespace smtrat
             mTableau.setBlandsRuleStart( mTableau.columns().size() );
             #endif
         }
+    }
+    
+    /**
+     * Checks Integer-Consistency via
+     * Branch and Bound.
+     */
+    
+    Answer LRAModule::isIntegerConsistent()
+    {
+    Answer RealConsistency = isConsistent();
+    if (RealConsistency == Unknown ) return foundAnswer( Unknown );
+    else if (RealConsistency == False ) return foundAnswer( False );   
+    /* To-Do: Check, whether the solution is already integer-valued.
+     * Yes: return true.
+     * No: Fix the non-integer values recursively.
+     * /
     }
 
     /**

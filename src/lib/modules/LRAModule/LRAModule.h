@@ -116,6 +116,7 @@ namespace smtrat
             GiNaCRA::evalintervalmap getVariableBounds() const;
             #endif
             void initialize();
+            Answer isIntegerConsistent();
 
             void printLinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
             void printNonlinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
