@@ -781,9 +781,9 @@ namespace smtrat
         if( mpManager != NULL && _answer != Unknown )
         {
             // TODO: Make this mutual exclusive.
-            if( mBackendsAnswer == Unknown )
+            if( mAnswer == Unknown )
             {
-                mBackendsAnswer = _answer;
+                mAnswer = _answer;
             }
         }
         return _answer;

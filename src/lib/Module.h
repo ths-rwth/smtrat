@@ -267,7 +267,7 @@ namespace smtrat
             void storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> &, const std::string& = "smaller_muses") const;
             std::vector<Formula> generateSubformulaeOfInfeasibleSubset( unsigned infeasiblesubset, unsigned size ) const;
             void updateDeductions();
-            
+
         protected:
 
             inline bool answerFound() const
@@ -329,7 +329,6 @@ namespace smtrat
             void stopRemoveTimer();
             int stopAllTimers();
             void startTimers(int timers);
-        public:
             double getAddTimerMS() const;
             double getCheckTimerMS() const;
             double getRemoveTimerMS() const;

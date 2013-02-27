@@ -18,8 +18,6 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * @file TLRAModule.h
  * @author name surname <emailadress>
@@ -34,10 +32,10 @@
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
 #include "Numeric.h"
-#include "Value.h"
-#include "Variable.h"
-#include "Bound.h"
-#include "Tableau.h"
+#include "../LRAModule/Value.hpp"
+#include "../LRAModule/Variable.hpp"
+#include "../LRAModule/Bound.hpp"
+#include "../LRAModule/Tableau.hpp"
 #include <stdio.h>
 
 

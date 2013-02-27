@@ -405,6 +405,7 @@ namespace tlra
             if( _withOrigins && mpAsConstraint != NULL )
                 _out << "  from  " << *mpAsConstraint;
         }
+        if( mDeduced ) _out << " (deduced) ";
         if( _withOrigins )
         {
             _out << "  ( ";
