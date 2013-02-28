@@ -50,7 +50,8 @@ namespace smtrat
         mAuxiliaryRealNamePrefix( "h_r_" ),
         mArithmeticVariables(),
         mAllBooleanVariables(),
-        mAllConstraints()
+        mAllConstraints(),
+        mDomain()
     {
         mAllConstraints.reserve( _capacity );
         mAllConstraints.insert( mConsistentConstraint );

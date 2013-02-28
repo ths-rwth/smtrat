@@ -41,8 +41,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    ICPModule::ICPModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Answer& _answer, Manager* const _manager ):
-        Module( _type, _formula, _answer, _manager ),
+    ICPModule::ICPModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+        Module( _type, _formula, _conditionals, _manager ),
         mActiveNonlinearConstraints(),
         mActiveLinearConstraints(),
         mNonlinearConstraints(),
@@ -55,8 +55,8 @@ namespace smtrat
         mHistoryRoot(new icp::HistoryNode(mIntervals)),
         mHistoryActual(mHistoryRoot),
         mValidationFormula(new Formula(AND)),
-        mLRAAnswer(Unknown),
-        mLRA(MT_LRAModule, mValidationFormula, new RuntimeSettings, mLRAAnswer),
+        mLRAFoundAnswer( false ),
+        mLRA(MT_LRAModule, mValidationFormula, new RuntimeSettings, mLRAFoundAnswer),
         mCenterConstraints(),
         mInitialized(false)
     {

@@ -89,8 +89,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    SATModule::SATModule( ModuleType type, const Formula* const _formula, RuntimeSettings* settings, Answer& _answer, Manager* const _manager ):
-        Module( type, _formula, _answer, _manager ),
+    SATModule::SATModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+        Module( _type, _formula, _conditionals, _manager ),
         // Parameters (user settable):
         //
         verbosity( 0 ),
@@ -1027,7 +1027,7 @@ FindSecond:
 
         for( ; ; )
         {
-            if( answerFound() )
+            if( anAnswerFound() )
             {
                 return l_Undef;
             }

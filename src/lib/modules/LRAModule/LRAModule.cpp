@@ -38,17 +38,15 @@
 using namespace std;
 using namespace lra;
 using namespace GiNaC;
-#ifdef LRA_USE_GINACRA
 using namespace GiNaCRA;
-#endif
 
 namespace smtrat
 {
     /**
      * Constructor
      */
-    LRAModule::LRAModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Answer& _answer, Manager* const _manager ):
-        Module( _type, _formula, _answer, _manager ),
+    LRAModule::LRAModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+        Module( _type, _formula, _conditionals, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
         mTableau( mpPassedFormula->end() ),
@@ -345,7 +343,7 @@ namespace smtrat
         for( ; ; )
         {
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
-            if( answerFound() )
+            if( anAnswerFound() )
             {
                 return foundAnswer( Unknown );
             }
@@ -382,7 +380,9 @@ namespace smtrat
                         // If there are no unresolved notequal-constraints, return True.
                         if( mActiveUnresolvedNEQConstraints.empty() )
                         {
+                            #ifdef LRA_REFINEMENT
                             learnRefinements();
+                            #endif
                             return foundAnswer( True );
                         }
                         // Otherwise, resolve the notequal-constraints (create the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
@@ -396,7 +396,9 @@ namespace smtrat
                                     mResolvedNEQConstraints.insert( iter->first );
                                 }
                             }
+                            #ifdef LRA_REFINEMENT
                             learnRefinements();
+                            #endif
                             return foundAnswer( Unknown );
                         }
                     }
@@ -417,7 +419,9 @@ namespace smtrat
                         {
                             getInfeasibleSubsets();
                         }
+                        #ifdef LRA_REFINEMENT
                         learnRefinements();
+                        #endif
                         return foundAnswer( a );
                     }
                 }
@@ -466,7 +470,9 @@ namespace smtrat
                     // Maybe a easy conflict occurred with the learned bounds.
                     if( !mInfeasibleSubsets.empty() )
                     {
+                        #ifdef LRA_REFINEMENT
                         learnRefinements();
+                        #endif
                         return foundAnswer( False );
                     }
                 }
@@ -498,7 +504,9 @@ namespace smtrat
                     mInfeasibleSubsets.push_back( infSubSet );
                 }
                 #endif
+                #ifdef LRA_REFINEMENT
                 learnRefinements();
+                #endif
                 // Return False.
                 #ifdef DEBUG_LRA_MODULE
                 cout << "False" << endl;
@@ -507,7 +515,9 @@ namespace smtrat
             }
         }
         assert( false );
+        #ifdef LRA_REFINEMENT
         learnRefinements();
+        #endif
         return foundAnswer( True );
     }
 
@@ -649,7 +659,6 @@ namespace smtrat
         return result;
     }
 
-    #ifdef LRA_USE_GINACRA
     /**
      * Returns the bounds of the variables as intervals.
      *
@@ -690,7 +699,6 @@ namespace smtrat
         }
         return result;
     }
-    #endif
 
     #ifdef LRA_REFINEMENT
     /**
@@ -830,6 +838,7 @@ namespace smtrat
         assert( _unequalConstraint->relation() == CR_NEQ );
         const Constraint* lessConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_LESS, _unequalConstraint->variables() );
         const Constraint* greaterConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_GREATER, _unequalConstraint->variables() );
+        // (not p!=0 or p<0 or p>0)
         Formula* deductionA = new Formula( OR );
         Formula* notConstraint = new Formula( NOT );
         notConstraint->addSubformula( _unequalConstraint );
@@ -837,18 +846,21 @@ namespace smtrat
         deductionA->addSubformula( lessConstraint );
         deductionA->addSubformula( greaterConstraint );
         addDeduction( deductionA );
+        // (not p<0 or p!=0)
         Formula* deductionB = new Formula( OR );
         Formula* notLessConstraint = new Formula( NOT );
         notLessConstraint->addSubformula( lessConstraint );
         deductionB->addSubformula( notLessConstraint );
         deductionB->addSubformula( _unequalConstraint );
         addDeduction( deductionB );
+        // (not p>0 or p!=0)
         Formula* deductionC = new Formula( OR );
         Formula* notGreaterConstraint = new Formula( NOT );
         notGreaterConstraint->addSubformula( greaterConstraint );
         deductionC->addSubformula( notGreaterConstraint );
         deductionC->addSubformula( _unequalConstraint );
         addDeduction( deductionC );
+        // (not p>0 or not p>0)
         Formula* deductionD = new Formula( OR );
         Formula* notGreaterConstraintB = new Formula( NOT );
         notGreaterConstraintB->addSubformula( greaterConstraint );
@@ -858,6 +870,8 @@ namespace smtrat
         deductionD->addSubformula( notLessConstraintB );
         addDeduction( deductionD );
     }
+
+    // (x-i<=0 or x-i-1>=0)   wobei wir das rationale assignment x -> r, i=abs(r)
 
     /**
      * Activate the given bound and update the supremum, the infimum and the assignment of

@@ -95,7 +95,7 @@ namespace smtrat
             /*
              * Constructors:
              */
-            VSModule( ModuleType _type, const Formula* const, RuntimeSettings*, Answer&, Manager* const = NULL );
+            VSModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /*
              * Destructor:

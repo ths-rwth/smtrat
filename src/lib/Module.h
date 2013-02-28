@@ -43,10 +43,12 @@
 #include <string>
 #include <ginac/ginac.h>
 #include <chrono>
+#include <atomic>
 
 #include "Answer.h"
 #include "Formula.h"
 #include "ValidationSettings.h"
+#include "ThreadPool.h"
 #include "config.h"
 
 
@@ -56,6 +58,7 @@ namespace smtrat
 
     typedef std::vector<std::set<const Formula*> >           vec_set_const_pFormula;
     typedef std::map<const Formula*, vec_set_const_pFormula> FormulaOrigins;
+    typedef std::vector< std::atomic_bool* >                 Conditionals;
 
     struct dereference_compare {
         template <class I>
@@ -89,6 +92,8 @@ namespace smtrat
         protected:
             /// A unique ID to identify this module instance. (Could be useful but currently nowhere used)
             unsigned mId;
+            ///
+            thread_priority mThreadPriority;
             /// Stores the infeasible subsets.
             vec_set_const_pFormula mInfeasibleSubsets;
             /// A reference to the manager.
@@ -106,9 +111,9 @@ namespace smtrat
             /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
             Answer mSolverState;
             ///
-            Answer mBackendsAnswer;
+            std::atomic_bool* mBackendsFoundAnswer;
             ///
-            Answer& mAnswer;
+            Conditionals mFoundAnswer;
             /// The backends of this module which are currently used (conditions to use this module are fulfilled for the passed formula).
             std::vector<Module*> mUsedBackends;
             /// The backends of this module which have been used.
@@ -141,7 +146,7 @@ namespace smtrat
             //DEPRECATED
             std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForAdding;
 
-            Module( ModuleType type, const Formula* const, Answer&, Manager* const = NULL );
+            Module( ModuleType type, const Formula* const, Conditionals&, Manager* const = NULL );
             virtual ~Module();
 
             static std::vector<std::string> mAssumptionToCheck;
@@ -172,6 +177,16 @@ namespace smtrat
             {
                 assert( mId == 0 && _id != 0 );
                 mId = _id;
+            }
+
+            inline thread_priority threadPriority() const
+            {
+                return mThreadPriority;
+            }
+
+            void setThreadPriority( thread_priority _threadPriority )
+            {
+                mThreadPriority = _threadPriority;
             }
 
             inline const Formula* const pReceivedFormula() const
@@ -214,7 +229,7 @@ namespace smtrat
                 return mUsedBackends;
             }
 
-            const std::list<const Constraint* >& constraintsToInform() const
+            const std::list< const Constraint* >& constraintsToInform() const
             {
                 return mConstraintsToInform;
             }
@@ -268,11 +283,20 @@ namespace smtrat
             std::vector<Formula> generateSubformulaeOfInfeasibleSubset( unsigned infeasiblesubset, unsigned size ) const;
             void updateDeductions();
 
+            const std::vector< std::atomic_bool* >& answerFound() const
+            {
+                return mFoundAnswer;
+            }
+
         protected:
 
-            inline bool answerFound() const
+            bool anAnswerFound() const
             {
-                return (mAnswer != Unknown);
+                for( auto iter = mFoundAnswer.begin(); iter != mFoundAnswer.end(); ++iter )
+                {
+                    if( (*iter)->load() ) return true;
+                }
+                return false;
             }
 
             Answer foundAnswer( Answer );
@@ -296,6 +320,7 @@ namespace smtrat
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
             const std::set<const Formula*>& getOrigins( Formula::const_iterator ) const;
+
             /*
              * Printing methods:
              */

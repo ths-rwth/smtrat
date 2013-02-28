@@ -46,8 +46,8 @@ namespace smtrat
     /**
      * Constructors:
      */
-    VSModule::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Answer& _answer, Manager* const _manager ):
-        Module( _type, _formula, _answer, _manager ),
+    VSModule::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+        Module( _type, _formula, _conditionals, _manager ),
         mConditionsChanged( false ),
         mInconsistentConstraintAdded( false ),
         mIDCounter( 0 ),
@@ -278,7 +278,7 @@ namespace smtrat
 
             while( !mRanking.empty() )
             {
-                if( answerFound() )
+                if( anAnswerFound() )
                 {
                     return foundAnswer( Unknown );
                 }

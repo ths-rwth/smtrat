@@ -482,6 +482,12 @@ namespace smtrat
                 return mConstraintPool.newAuxiliaryBooleanVariable();
             }
 
+            static Variable_Domain domain( const GiNaC::symbol& _variable )
+            {
+                return mConstraintPool.domain( _variable );
+            }
+
+
             bool isAtom() const
             {
                 return (mType == REALCONSTRAINT || mType == BOOL || mType == FFALSE || mType == TTRUE);

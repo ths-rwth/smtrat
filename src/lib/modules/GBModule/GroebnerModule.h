@@ -205,7 +205,7 @@ protected:
 
 
 public:
-    GroebnerModule( ModuleType _type, const Formula* const, RuntimeSettings*, Answer&, Manager* const = NULL );
+    GroebnerModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
     virtual ~GroebnerModule( );
 
     bool assertSubformula( Formula::const_iterator _formula );

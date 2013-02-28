@@ -49,7 +49,7 @@ namespace smtrat
             std::map<Formula::const_iterator, std::list<vrw::ConstraintNode*>::iterator, dereference_compare> mConstraintPositions;
 
         public:
-            VRWModule( ModuleType _type, const Formula* const, RuntimeSettings*, Answer&, Manager* const = NULL );
+            VRWModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             virtual ~VRWModule();
 

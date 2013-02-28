@@ -37,7 +37,6 @@
 namespace smtrat
 {
     class Manager;
-    class Module;
 
     /**
      * An abstract base class for Module factories
@@ -57,7 +56,7 @@ namespace smtrat
             {}
             ~ModuleFactory(){}
 
-            virtual Module* create( ModuleType, const Formula* const, Answer&, Manager* const ) = 0;
+            virtual Module* create( ModuleType, const Formula* const, Conditionals&, Manager* const ) = 0;
 
             const ModuleType type() const
             {

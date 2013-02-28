@@ -100,7 +100,7 @@ namespace smtrat
             icp::HistoryNode*                                                        mHistoryActual;
 
             Formula*                                                            mValidationFormula;
-            Answer                                                              mLRAAnswer;
+            bool                                                                mLRAFoundAnswer;
             LRAModule                                                           mLRA;
 
             std::set<const Constraint*>                                         mCenterConstraints;
@@ -117,7 +117,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            ICPModule( ModuleType _type, const Formula* const, RuntimeSettings*, Answer&, Manager* const = NULL );
+            ICPModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /**
             * Destructor:

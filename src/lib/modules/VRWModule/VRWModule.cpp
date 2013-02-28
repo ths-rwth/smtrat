@@ -36,8 +36,8 @@ namespace smtrat {
 
 using namespace vrw;
 
-    VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Answer& _answer, Manager* const _manager ):
-        Module( _type, _formula, _answer, _manager )
+    VRWModule::VRWModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+        Module( _type, _formula, _conditionals, _manager ),
     {
 
     }

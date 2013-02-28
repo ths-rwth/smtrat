@@ -58,7 +58,7 @@ endif()
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 # Include own macros.
 include( smtratmacros )
-# TODO: iteratively search for cmake files and include them here. 
+# TODO: iteratively search for cmake files and include them here.
 
 
 
@@ -113,7 +113,7 @@ if(USE_NSS)
 	)
 endif()
 
-set( libraries ${libraries} ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} )
+set( libraries ${libraries} ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} pthread )
 
 if(USE_GINACRA)
         set( libraries ${GINACRA_LIBRARY} ${libraries} )

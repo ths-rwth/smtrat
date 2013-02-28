@@ -594,12 +594,12 @@ public class IOTools
 
                     if( edge.isBackLink() )
                     {
-                        graphString.append( tab ).append( tab ).append( "rStrategyGraph().addCondition( " );
+                        graphString.append( tab ).append( tab ).append( "addBacklinkIntoStrategyGraph( " );
 
                     }
                     else
                     {
-                        graphString.append( tab ).append( tab ).append( "rStrategyGraph().addModuleType( " );
+                        graphString.append( tab ).append( tab ).append( "addBackendIntoStrategyGraph( " );
                     }
 
                     if( predecessorEdge==null )

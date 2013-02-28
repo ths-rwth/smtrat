@@ -89,7 +89,7 @@ namespace smtrat
         #endif
 
         public:
-            CADModule( ModuleType _type, const Formula* const, RuntimeSettings*, Answer&, Manager* const = NULL );
+            CADModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             virtual ~CADModule();
 
