@@ -54,6 +54,8 @@ namespace smtrat
         mIsNeverPositive( false ),
         mIsNeverNegative( false ),
         mIsNeverZero( false ),
+        mContainsRealValuedVariables( false ),
+        mContainsIntegerValuedVariables( false ),
         mNumMonomials( 0 ),
         mMaxMonomeDegree( 0 ),
         mMinMonomeDegree( 0 ),
@@ -76,6 +78,8 @@ namespace smtrat
         mIsNeverPositive( false ),
         mIsNeverNegative( false ),
         mIsNeverZero( false ),
+        mContainsRealValuedVariables( false ),
+        mContainsIntegerValuedVariables( false ),
         mNumMonomials( 0 ),
         mMaxMonomeDegree( 0 ),
         mMinMonomeDegree( 0 ),
@@ -94,6 +98,9 @@ namespace smtrat
             if( pLhs->has( var->second ) )
             {
                 mVariables.insert( *var );
+                Variable_Domain varDom = Formula::domain( var->second );
+                mContainsRealValuedVariables = (varDom == REAL_DOMAIN);
+                mContainsIntegerValuedVariables = (varDom == INTEGER_DOMAIN);
             }
         }
     }
@@ -104,6 +111,8 @@ namespace smtrat
         mIsNeverPositive( false ),
         mIsNeverNegative( false ),
         mIsNeverZero( false ),
+        mContainsRealValuedVariables( false ),
+        mContainsIntegerValuedVariables( false ),
         mNumMonomials( 0 ),
         mMaxMonomeDegree( 0 ),
         mMinMonomeDegree( 0 ),
@@ -122,6 +131,9 @@ namespace smtrat
             if( pLhs->has( var->second ) )
             {
                 mVariables.insert( *var );
+                Variable_Domain varDom = Formula::domain( var->second );
+                mContainsRealValuedVariables = (varDom == REAL_DOMAIN);
+                mContainsIntegerValuedVariables = (varDom == INTEGER_DOMAIN);
             }
         }
     }
@@ -133,6 +145,8 @@ namespace smtrat
         mIsNeverPositive( _constraint.mIsNeverPositive ),
         mIsNeverNegative( _constraint.mIsNeverNegative ),
         mIsNeverZero( _constraint.mIsNeverZero ),
+        mContainsRealValuedVariables( _constraint.mContainsRealValuedVariables ),
+        mContainsIntegerValuedVariables( _constraint.mContainsIntegerValuedVariables ),
         mNumMonomials( _constraint.mNumMonomials ),
         mMaxMonomeDegree( _constraint.mMaxMonomeDegree ),
         mMinMonomeDegree( _constraint.mMinMonomeDegree ),

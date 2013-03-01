@@ -187,7 +187,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
     std::cout << "GB Called" << std::endl;
 #endif
     // We can only handle conjunctions of constraints.
-    if(!mpReceivedFormula->isConstraintConjunction())
+    if(!mpReceivedFormula->isRealConstraintConjunction())
     {
         return foundAnswer( Unknown );
     }

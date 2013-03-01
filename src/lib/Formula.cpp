@@ -669,6 +669,14 @@ namespace smtrat
             {
             }
         }
+        if( _constraint.containsIntegerValuedVariable() )
+        {
+            mPropositions |= PROP_CONTAINS_INTEGER_VALUED_VARS;
+        }
+        if( _constraint.containsRealValuedVariable() )
+        {
+            mPropositions |= PROP_CONTAINS_REAL_VALUED_VARS;
+        }
     }
 
     /**
@@ -1444,12 +1452,39 @@ namespace smtrat
         }
     }
 
+    /**
+     *
+     * @param _out
+     * @param _init
+     */
+    void Formula::printProposition( ostream& _out, const string _init ) const
+    {
+        _out << _init;
+        for( unsigned i = 0; i < proposition().size(); ++i )
+        {
+            if( fmod( i, 10.0 ) == 0.0 ) _out << " ";
+            _out << proposition()[i];
+        }
+        _out << endl;
+    }
+
+    /**
+     *
+     * @param _ostream
+     * @param _formula
+     * @return
+     */
     ostream& operator <<( ostream& _ostream, const Formula& _formula )
     {
         _formula.print( _ostream, "", true );
         return _ostream;
     }
 
+    /**
+     *
+     * @param _infix
+     * @return
+     */
     string Formula::toString( bool _infix ) const
     {
         string result = "";
@@ -1526,6 +1561,11 @@ namespace smtrat
         return result;
     }
 
+    /**
+     *
+     * @param type
+     * @return
+     */
     std::string Formula::FormulaTypeToString( Type type )
     {
         string oper = "";
@@ -1579,6 +1619,11 @@ namespace smtrat
         return oper;
     }
 
+    /**
+     *
+     * @param seperator
+     * @return
+     */
     std::string Formula::variableListToString( std::string seperator ) const
     {
         GiNaC::symtab::const_iterator                   i = mRealValuedVars.begin();

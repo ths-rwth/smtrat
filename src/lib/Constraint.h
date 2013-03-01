@@ -120,6 +120,8 @@ namespace smtrat
             bool                 mIsNeverPositive;
             bool                 mIsNeverNegative;
             bool                 mIsNeverZero;
+            bool                 mContainsRealValuedVariables;
+            bool                 mContainsIntegerValuedVariables;
             unsigned             mNumMonomials;
             unsigned             mMaxMonomeDegree;
             unsigned             mMinMonomeDegree;
@@ -197,6 +199,16 @@ namespace smtrat
             const GiNaC::ex& factorization() const
             {
                 return *mpFactorization;
+            }
+
+            bool containsIntegerValuedVariable() const
+            {
+                return mContainsIntegerValuedVariables;
+            }
+
+            bool containsRealValuedVariable() const
+            {
+                return mContainsRealValuedVariables;
             }
 
             unsigned numMonomials() const

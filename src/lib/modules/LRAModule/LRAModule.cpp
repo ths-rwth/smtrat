@@ -334,7 +334,7 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "check for consistency" << endl;
         #endif
-        if( !mpReceivedFormula->isConstraintConjunction() ) return foundAnswer( Unknown );
+        if( !mpReceivedFormula->isRealConstraintConjunction() ) return foundAnswer( Unknown );
         if( !mInfeasibleSubsets.empty() )
         {
             return foundAnswer( False );
@@ -523,7 +523,7 @@ namespace smtrat
         // ...
                 return foundAnswer( True );
         // at least one assignment is non-integer-valued
-        // ...        
+        // ...
                 return foundAnswer( Unknown );
         #endif
         #endif

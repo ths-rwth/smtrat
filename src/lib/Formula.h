@@ -503,11 +503,11 @@ namespace smtrat
                 return (mType == AND || mType == OR || mType == NOT || mType == IMPLIES || mType == IFF || mType == XOR);
             }
 
-            bool isConstraintConjunction() const
+            bool isRealConstraintConjunction() const
             {
                 if( PROP_IS_PURE_CONJUNCTION <= proposition() )
                 {
-                    return !(PROP_CONTAINS_BOOLEAN <= proposition());
+                    return (!(PROP_CONTAINS_INTEGER_VALUED_VARS <= proposition()) && !(PROP_CONTAINS_BOOLEAN <= proposition()));
                 }
                 else
                 {
@@ -569,6 +569,7 @@ namespace smtrat
             void clear();
             //void notSolvableBy( ModuleType );
             void print( std::ostream& = std::cout, const std::string = "", bool = false, bool = false ) const;
+            void printProposition( std::ostream& _out = std::cout, const std::string _init = "" ) const;
             friend std::ostream& operator <<( std::ostream&, const Formula& );
             std::string toString( bool = false ) const;
             void getConstraints( std::vector<const Constraint*>& ) const;

@@ -159,7 +159,7 @@ namespace smtrat
      */
     Answer CADModule::isConsistent()
     {
-        if( !mpReceivedFormula->isConstraintConjunction() )
+        if( !mpReceivedFormula->isRealConstraintConjunction() )
             return foundAnswer( Unknown );
         if( !mInfeasibleSubsets.empty() )
             return foundAnswer( False ); // there was no constraint removed which was in a previously generated infeasible subset

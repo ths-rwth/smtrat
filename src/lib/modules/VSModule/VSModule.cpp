@@ -234,7 +234,7 @@ namespace smtrat
      */
     Answer VSModule::isConsistent()
     {
-        if( mpReceivedFormula->isConstraintConjunction() )
+        if( mpReceivedFormula->isRealConstraintConjunction() )
         {
             if( mpReceivedFormula->size() != mFormulaConditionMap.size())
             {
