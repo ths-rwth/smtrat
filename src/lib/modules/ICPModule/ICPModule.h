@@ -100,7 +100,7 @@ namespace smtrat
             icp::HistoryNode*                                                        mHistoryActual;
 
             Formula*                                                            mValidationFormula;
-            bool                                                                mLRAFoundAnswer;
+            std::vector< std::atomic_bool* >                                    mLRAFoundAnswer;
             LRAModule                                                           mLRA;
 
             std::set<const Constraint*>                                         mCenterConstraints;

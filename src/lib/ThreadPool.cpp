@@ -41,7 +41,7 @@ namespace smtrat
         mNumberOfThreads( _numberOfThreads ),
         mNumberOfRunningThreads( 1 ),
         mThreads( (_numberOfThreads-1), NULL ),
-        mJoiner( mThreads ),
+//        mJoiner( mThreads ),
         mConditionVariables( _numberOfThreads ),
         mTasks( _numberOfThreads, packaged_task() )
     {

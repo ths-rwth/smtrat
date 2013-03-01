@@ -109,7 +109,6 @@ namespace smtrat
         if( mNumberOfBranches>1 )
         {
             mNumberOfCores = std::thread::hardware_concurrency();
-            cout << "mNumberOfCores = " << mNumberOfCores << endl;
             if( mNumberOfCores>1 )
             {
                 mStrategyGraph.setThreadAndBranchIds();

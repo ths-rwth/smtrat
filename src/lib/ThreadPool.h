@@ -50,7 +50,6 @@ namespace smtrat
 
     class ThreadPool
     {
-        friend class Module;
         private:
             class JoinThreads
             {
@@ -137,7 +136,7 @@ namespace smtrat
             unsigned mNumberOfThreads;
             unsigned mNumberOfRunningThreads;
             std::vector<std::thread*> mThreads;
-            JoinThreads mJoiner;
+//            JoinThreads mJoiner;
             std::vector<std::condition_variable> mConditionVariables;
             // Used as protection against spurious wake ups of condition variables
             std::vector<bool> mOversubscriptionFlags;

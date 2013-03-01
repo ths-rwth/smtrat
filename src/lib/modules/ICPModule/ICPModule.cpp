@@ -55,7 +55,7 @@ namespace smtrat
         mHistoryRoot(new icp::HistoryNode(mIntervals)),
         mHistoryActual(mHistoryRoot),
         mValidationFormula(new Formula(AND)),
-        mLRAFoundAnswer( false ),
+        mLRAFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
         mLRA(MT_LRAModule, mValidationFormula, new RuntimeSettings, mLRAFoundAnswer),
         mCenterConstraints(),
         mInitialized(false)
