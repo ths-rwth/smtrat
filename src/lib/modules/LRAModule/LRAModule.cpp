@@ -517,6 +517,14 @@ namespace smtrat
         assert( false );
         #ifdef LRA_REFINEMENT
         learnRefinements();
+        #ifdef LRA_BRANCH_AND_BOUND
+        exmap rmodel = getRationalModel();
+        // current solution is already integer-valued
+        // ...
+                return foundAnswer( True );
+        // at least one assignment is non-integer-valued
+        // ...        
+                return foundAnswer( Unknown );
         #endif
         return foundAnswer( True );
     }
@@ -1331,24 +1339,6 @@ namespace smtrat
             #endif
         }
     }
-
-    #ifdef LRA_BRANCH_AND_BOUND
-    /**
-     * Checks Integer-Consistency via
-     * Branch and Bound.
-     */
-    Answer LRAModule::isIntegerConsistent()
-    {
-        Answer RealConsistency = isConsistent();
-        if (RealConsistency == Unknown ) return foundAnswer( Unknown );
-        else if (RealConsistency == False ) return foundAnswer( False );
-        else return foundAnswer( Unknown );
-    }
-    /* To-Do: Check, whether the solution is already integer-valued.
-     * Yes: return true.
-     * No: Fix the non-integer values recursively.
-     */
-    #endif
 
 
     /**
