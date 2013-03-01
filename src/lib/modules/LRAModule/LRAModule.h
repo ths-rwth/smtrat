@@ -31,7 +31,6 @@
 #ifndef LRAMODULE_H
 #define LRAMODULE_H
 
-#define LRA_USE_GINACRA
 
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
@@ -40,9 +39,7 @@
 #include "Bound.h"
 #include "Tableau.h"
 #include <stdio.h>
-#ifdef LRA_USE_GINACRA
 #include <ginacra/ginacra.h>
-#endif
 
 
 #define LRA_SIMPLE_CONFLICT_SEARCH
@@ -94,7 +91,7 @@ namespace smtrat
             /**
              * Constructors:
              */
-            LRAModule( ModuleType, const Formula* const _formula, RuntimeSettings*, Manager* const _tsManager = NULL );
+            LRAModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /**
              * Destructor:
@@ -112,10 +109,9 @@ namespace smtrat
             Answer isConsistent();
             void updateModel();
             GiNaC::exmap getRationalModel() const;
-            #ifdef LRA_USE_GINACRA
             GiNaCRA::evalintervalmap getVariableBounds() const;
-            #endif
             void initialize();
+            Answer isIntegerConsistent();
 
             void printLinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
             void printNonlinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;

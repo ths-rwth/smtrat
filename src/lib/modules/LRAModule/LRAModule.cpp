@@ -33,21 +33,20 @@
 //#define DEBUG_LRA_MODULE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_ONE_REASON
+//#define LRA_BRANCH_AND_BOUND
 
 using namespace std;
 using namespace lra;
 using namespace GiNaC;
-#ifdef LRA_USE_GINACRA
 using namespace GiNaCRA;
-#endif
 
 namespace smtrat
 {
     /**
      * Constructor
      */
-    LRAModule::LRAModule(ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Manager* const _tsManager ):
-        Module(_type, _formula, _tsManager ),
+    LRAModule::LRAModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+        Module( _type, _formula, _conditionals, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
         mTableau( mpPassedFormula->end() ),
@@ -61,9 +60,7 @@ namespace smtrat
         mConstraintToBound(),
         mBoundToUnequalConstraintMap(),
         mBoundCandidatesToPass()
-    {
-
-    }
+    {}
 
     /**
      * Destructor:
@@ -97,6 +94,7 @@ namespace smtrat
     /**
      * Informs this module about the existence of the given constraint, which means
      * that it could be added in future.
+     *
      * @param _constraint The constraint to inform about.
      * @return False, if the it can be determined that the constraint itself is conflicting;
      *         True,  otherwise.
@@ -119,7 +117,8 @@ namespace smtrat
     }
 
     /**
-     * Adds a constraint to the so far received constraints.
+     *
+     * Adds a sub-formula/constraint to the so far received sub-formula/constraints.
      *
      * @param _subformula The position of the constraint within the received constraints.
      * @return False, if a conflict is detected;
@@ -201,7 +200,7 @@ namespace smtrat
                 set< const Formula* > infSubSet = set< const Formula* >();
                 infSubSet.insert( *_subformula );
                 mInfeasibleSubsets.push_back( infSubSet );
-                mSolverState = False;
+                foundAnswer( False );
                 return false;
             }
             else
@@ -213,7 +212,7 @@ namespace smtrat
     }
 
     /**
-     * Removes a constraint of the so far received constraints.
+     * Removes a sub-formula/constraint of the so far received sub-formula/constraints.
      *
      * @param _subformula The position of the constraint within the received constraints.
      */
@@ -335,14 +334,19 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "check for consistency" << endl;
         #endif
-        if( !mpReceivedFormula->isConstraintConjunction() ) return Unknown;
+        if( !mpReceivedFormula->isConstraintConjunction() ) return foundAnswer( Unknown );
         if( !mInfeasibleSubsets.empty() )
         {
-            return False;
+            return foundAnswer( False );
         }
         unsigned posNewLearnedBound = 0;
         for( ; ; )
         {
+            // Check whether a module which has been called on the same instance in parallel, has found an answer.
+            if( anAnswerFound() )
+            {
+                return foundAnswer( Unknown );
+            }
             #ifdef DEBUG_LRA_MODULE
             cout << endl;
             mTableau.printVariables( cout, "    " );
@@ -351,6 +355,7 @@ namespace smtrat
             cout << endl;
             #endif
 
+            // Find a pivoting element in the tableau.
             pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
 
             #ifdef DEBUG_LRA_MODULE
@@ -360,21 +365,27 @@ namespace smtrat
             cout << " [" << pivotingElement.first << "]" << endl;
             #endif
 
+            // If there is no conflict.
             if( pivotingElement.second )
             {
+                // If no basic variable violates its bounds (and hence no variable at all).
                 if( pivotingElement.first == 0 )
                 {
                     #ifdef DEBUG_LRA_MODULE
                     cout << "True" << endl;
                     #endif
+                    // If the current assignment also fulfills the nonlinear constraints.
                     if( checkAssignmentForNonlinearConstraint() )
                     {
+                        // If there are no unresolved notequal-constraints, return True.
                         if( mActiveUnresolvedNEQConstraints.empty() )
                         {
+                            #ifdef LRA_REFINEMENT
                             learnRefinements();
-                            mSolverState = True;
-                            return True;
+                            #endif
+                            return foundAnswer( True );
                         }
+                        // Otherwise, resolve the notequal-constraints (create the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
                         else
                         {
                             for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
@@ -385,11 +396,13 @@ namespace smtrat
                                     mResolvedNEQConstraints.insert( iter->first );
                                 }
                             }
+                            #ifdef LRA_REFINEMENT
                             learnRefinements();
-                            mSolverState = Unknown;
-                            return Unknown;
+                            #endif
+                            return foundAnswer( Unknown );
                         }
                     }
+                    // Otherwise, check the consistency of the formula consisting of the nonlinear constraints and the tightest bounds with the backends.
                     else
                     {
                         for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
@@ -406,14 +419,17 @@ namespace smtrat
                         {
                             getInfeasibleSubsets();
                         }
+                        #ifdef LRA_REFINEMENT
                         learnRefinements();
-                        mSolverState = a;
-                        return a;
+                        #endif
+                        return foundAnswer( a );
                     }
                 }
                 else
                 {
+                    // Pivot at the found pivoting entry.
                     mTableau.pivot( pivotingElement.first );
+                    // Learn all bounds which has been deduced during the pivoting process.
                     while( posNewLearnedBound < mTableau.rLearnedBounds().size() )
                     {
                         set< const Formula*> originSet = set< const Formula*>();
@@ -451,16 +467,20 @@ namespace smtrat
                         #endif
                         ++posNewLearnedBound;
                     }
+                    // Maybe a easy conflict occurred with the learned bounds.
                     if( !mInfeasibleSubsets.empty() )
                     {
+                        #ifdef LRA_REFINEMENT
                         learnRefinements();
-                        mSolverState = False;
-                        return False;
+                        #endif
+                        return foundAnswer( False );
                     }
                 }
             }
+            // There is a conflict, namely a basic variable violating its bounds without any suitable non-basic variable.
             else
             {
+                // Create the infeasible subsets.
                 mInfeasibleSubsets.clear();
                 #ifdef LRA_ONE_REASON
                 vector< const Bound* > conflict = mTableau.getConflict( pivotingElement.first );
@@ -484,27 +504,38 @@ namespace smtrat
                     mInfeasibleSubsets.push_back( infSubSet );
                 }
                 #endif
+                #ifdef LRA_REFINEMENT
                 learnRefinements();
+                #endif
+                // Return False.
                 #ifdef DEBUG_LRA_MODULE
                 cout << "False" << endl;
                 #endif
-                mSolverState = False;
-                return False;
+                return foundAnswer( False );
             }
         }
         assert( false );
+        #ifdef LRA_REFINEMENT
         learnRefinements();
-        mSolverState = True;
-        return True;
+        #ifdef LRA_BRANCH_AND_BOUND
+        exmap rmodel = getRationalModel();
+        // current solution is already integer-valued
+        // ...
+                return foundAnswer( True );
+        // at least one assignment is non-integer-valued
+        // ...        
+                return foundAnswer( Unknown );
+        #endif
+        return foundAnswer( True );
     }
 
     /**
-     *
+     * Updates the current assignment into the model. Note, that this is a unique but symbolic assignment still containing delta as a variable.
      */
     void LRAModule::updateModel()
     {
         mModel.clear();
-        if( mSolverState == True )
+        if( solverState() == True )
         {
             if( mAssignmentFullfilsNonlinearConstraints )
             {
@@ -636,7 +667,6 @@ namespace smtrat
         return result;
     }
 
-    #ifdef LRA_USE_GINACRA
     /**
      * Returns the bounds of the variables as intervals.
      *
@@ -677,7 +707,6 @@ namespace smtrat
         }
         return result;
     }
-    #endif
 
     #ifdef LRA_REFINEMENT
     /**
@@ -727,7 +756,14 @@ namespace smtrat
     }
     #endif
 
-
+    /**
+     * Checks whether an iterator is in a formula. Only used in an assertion.
+     *
+     * @param _iter The iterator supposed to be in the formula.
+     * @param _formula The formula, in which the iterator is supposed to be.
+     *
+     * @return True, if the given iterator is in the given formula; False, otherwise.
+     */
     bool iterInFormula( Formula::const_iterator _iter, const Formula& _formula )
     {
         if( _formula.isBooleanCombination() )
@@ -797,10 +833,20 @@ namespace smtrat
         }
     }
 
+    /**
+     * Adds the following lemmas for the given constraint p!=0
+     *
+     *      (p!=0 <-> (p<0 or p>0))
+     * and  not(p<0 and p>0)
+     *
+     * @param _unequalConstraint A constraint having the relation symbol !=.
+     */
     void LRAModule::splitUnequalConstraint( const Constraint* _unequalConstraint )
     {
+        assert( _unequalConstraint->relation() == CR_NEQ );
         const Constraint* lessConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_LESS, _unequalConstraint->variables() );
         const Constraint* greaterConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_GREATER, _unequalConstraint->variables() );
+        // (not p!=0 or p<0 or p>0)
         Formula* deductionA = new Formula( OR );
         Formula* notConstraint = new Formula( NOT );
         notConstraint->addSubformula( _unequalConstraint );
@@ -808,18 +854,21 @@ namespace smtrat
         deductionA->addSubformula( lessConstraint );
         deductionA->addSubformula( greaterConstraint );
         addDeduction( deductionA );
+        // (not p<0 or p!=0)
         Formula* deductionB = new Formula( OR );
         Formula* notLessConstraint = new Formula( NOT );
         notLessConstraint->addSubformula( lessConstraint );
         deductionB->addSubformula( notLessConstraint );
         deductionB->addSubformula( _unequalConstraint );
         addDeduction( deductionB );
+        // (not p>0 or p!=0)
         Formula* deductionC = new Formula( OR );
         Formula* notGreaterConstraint = new Formula( NOT );
         notGreaterConstraint->addSubformula( greaterConstraint );
         deductionC->addSubformula( notGreaterConstraint );
         deductionC->addSubformula( _unequalConstraint );
         addDeduction( deductionC );
+        // (not p>0 or not p>0)
         Formula* deductionD = new Formula( OR );
         Formula* notGreaterConstraintB = new Formula( NOT );
         notGreaterConstraintB->addSubformula( greaterConstraint );
@@ -829,6 +878,8 @@ namespace smtrat
         deductionD->addSubformula( notLessConstraintB );
         addDeduction( deductionD );
     }
+
+    // (x-i<=0 or x-i-1>=0)   wobei wir das rationale assignment x -> r, i=abs(r)
 
     /**
      * Activate the given bound and update the supremum, the infimum and the assignment of
@@ -1224,7 +1275,7 @@ namespace smtrat
                 Variable* nonBasic = basicIter->second;
                 setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
             }
-
+            delete linearPart;
         }
         else
         {
@@ -1289,10 +1340,12 @@ namespace smtrat
         }
     }
 
+
     /**
+     * Prints all linear constraints.
      *
-     * @param _out
-     * @param _init
+     * @param _out The output stream to print on.
+     * @param _init The beginning of each line to print.
      */
     void LRAModule::printLinearConstraints( ostream& _out, const string _init ) const
     {
@@ -1304,9 +1357,10 @@ namespace smtrat
     }
 
     /**
+     * Prints all non-linear constraints.
      *
-     * @param _out
-     * @param _init
+     * @param _out The output stream to print on.
+     * @param _init The beginning of each line to print.
      */
     void LRAModule::printNonlinearConstraints( ostream& _out, const string _init ) const
     {
@@ -1318,9 +1372,11 @@ namespace smtrat
     }
 
     /**
+     * Prints the original variables with their bounds and the corresponding activation
+     * sets (asserted sub-formulas/constraints corresponding to the bounds).
      *
-     * @param _out
-     * @param _init
+     * @param _out The output stream to print on.
+     * @param _init The beginning of each line to print.
      */
     void LRAModule::printOriginalVars( ostream& _out, const string _init ) const
     {
@@ -1335,10 +1391,13 @@ namespace smtrat
         }
     }
 
+
     /**
+     * Prints the slack/additional variables with their bounds and the corresponding activation
+     * sets (asserted sub-formulas/constraints corresponding to the bounds).
      *
-     * @param _out
-     * @param _init
+     * @param _out The output stream to print on.
+     * @param _init The beginning of each line to print.
      */
     void LRAModule::printSlackVars( ostream& _out, const string _init ) const
     {
@@ -1354,9 +1413,10 @@ namespace smtrat
     }
 
     /**
+     * Prints the mapping of constraints to their corresponding bounds.
      *
-     * @param _out
-     * @param _init
+     * @param _out The output stream to print on.
+     * @param _init The beginning of each line to print.
      */
     void LRAModule::printConstraintToBound( ostream& _out, const string _init ) const
     {
@@ -1374,9 +1434,10 @@ namespace smtrat
     }
 
     /**
+     * Prints the strictest bounds, which have to be passed the backend in case.
      *
-     * @param _out
-     * @param _init
+     * @param _out The output stream to print on.
+     * @param _init The beginning of each line to print.
      */
     void LRAModule::printBoundCandidatesToPass( ostream& _out, const string _init ) const
     {
@@ -1389,6 +1450,12 @@ namespace smtrat
         }
     }
 
+    /**
+     * Prints the current rational assignment.
+     *
+     * @param _out The output stream to print on.
+     * @param _init The beginning of each line to print.
+     */
     void LRAModule::printRationalModel( ostream& _out, const string _init ) const
     {
         exmap rmodel = getRationalModel();

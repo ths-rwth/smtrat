@@ -128,7 +128,7 @@ int determineResult(int status, smtrat::Answer answer)
     }
 }
 
-void printTimings(smtrat::NRATSolver* solver)
+void printTimings(smtrat::Manager* solver)
 {
     std::cout << "**********************************************" << std::endl;
     std::cout << "*                  Timings                   *" << std::endl;

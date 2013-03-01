@@ -20,12 +20,12 @@
  */
 
 
-/** 
+/**
  * @file   PreprocessingModule.h
  *         Created on January 10, 2013, 9:59 PM
  * @author: Sebastian Junges
  *
- * 
+ *
  */
 
 #pragma once
@@ -38,7 +38,7 @@ namespace smtrat
 {
     /**
      * A preprocessing module which takes real constraints.
-     * More information can be found in the DESCRIPTION file. 
+     * More information can be found in the DESCRIPTION file.
      */
     class VRWModule : public Module
     {
@@ -46,19 +46,19 @@ namespace smtrat
             /// The bipartite graph matching constraints and their variables
             vrw::VariableConstraintGraph mMatchingGraph;
             /// mapping received constraint -> node in the graph
-            std::map<Formula::const_iterator, std::list<vrw::ConstraintNode*>::iterator, dereference_compare> mConstraintPositions; 
-            
+            std::map<Formula::const_iterator, std::list<vrw::ConstraintNode*>::iterator, dereference_compare> mConstraintPositions;
+
         public:
-            VRWModule( ModuleType, const Formula* const,  RuntimeSettings*, Manager* const _tsManager );
+            VRWModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             virtual ~VRWModule();
 
-            
+
             // Interfaces.
             bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
             void removeSubformula( Formula::const_iterator );
-            
+
             void printConstraintPositions();
     };
 

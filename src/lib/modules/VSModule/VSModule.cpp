@@ -46,8 +46,8 @@ namespace smtrat
     /**
      * Constructors:
      */
-    VSModule::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* _settings, Manager* const _tsManager ):
-        Module( _type, _formula, _tsManager ),
+    VSModule::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+        Module( _type, _formula, _conditionals, _manager ),
         mConditionsChanged( false ),
         mInconsistentConstraintAdded( false ),
         mIDCounter( 0 ),
@@ -103,7 +103,7 @@ namespace smtrat
                     mInfeasibleSubsets.push_back( set<const Formula*>() );
                     mInfeasibleSubsets.back().insert( *_subformula );
                     mInconsistentConstraintAdded = true;
-                    mSolverState = False;
+                    foundAnswer( False );
                     return false;
                 }
                 case 1:
@@ -160,31 +160,42 @@ namespace smtrat
             const vs::Condition* condToDelete = formulaConditionPair->second;
 
             eraseDTsOfRanking( *mpStateTree );
-            assert( mpStateTree->substitutionResults().size() == 1 );
-            assert( mpStateTree->substitutionResults().back().size() == 1 );
-            ConditionVector& subResult = mpStateTree->rSubstitutionResults().back().back().first;
-            auto cond = subResult.begin();
-            while( cond != subResult.end() )
+            auto subResult = mpStateTree->rSubstitutionResults().begin();
+            while( subResult != mpStateTree->substitutionResults().end() )
             {
-                ConditionSet::iterator oCond = (*cond)->pOriginalConditions()->begin();
-                while( oCond != (*cond)->originalConditions().end() )
+                assert( subResult->size() == 1 );
+                ConditionVector& condConj = subResult->back().first;
+                auto cond = condConj.begin();
+                while( cond != condConj.end() )
                 {
-                    if( *oCond == condToDelete )
+                    ConditionSet::iterator oCond = (*cond)->pOriginalConditions()->begin();
+                    while( oCond != (*cond)->originalConditions().end() )
                     {
-                        (*cond)->pOriginalConditions()->erase( oCond );
-                        break;
+                        if( *oCond == condToDelete )
+                        {
+                            (*cond)->pOriginalConditions()->erase( oCond );
+                            break;
+                        }
+                        ++oCond;
                     }
-                    ++oCond;
+                    if( oCond != (*cond)->originalConditions().end() )
+                    {
+                        const vs::Condition* toDelete = *cond;
+                        cond = condConj.erase( cond );
+                        delete toDelete;
+                    }
+                    else
+                    {
+                        ++cond;
+                    }
                 }
-                if( oCond != (*cond)->originalConditions().end() )
+                if( condConj.empty() )
                 {
-                    const vs::Condition* toDelete = *cond;
-                    cond = subResult.erase( cond );
-                    delete toDelete;
+                    subResult = mpStateTree->rSubstitutionResults().erase( subResult );
                 }
                 else
                 {
-                    ++cond;
+                    ++subResult;
                 }
             }
             mpStateTree->rSubResultsSimplified() = false;
@@ -225,8 +236,11 @@ namespace smtrat
     {
         if( mpReceivedFormula->isConstraintConjunction() )
         {
-            assert( !(mpReceivedFormula->size() < mFormulaConditionMap.size()) );
-            assert( !(mpReceivedFormula->size() > mFormulaConditionMap.size()) );
+            if( mpReceivedFormula->size() != mFormulaConditionMap.size())
+            {
+                printFormulaConditionMap();
+            }
+            assert( mpReceivedFormula->size() == mFormulaConditionMap.size() );
             if( !mConditionsChanged )
             {
                 if( mInfeasibleSubsets.empty() )
@@ -237,13 +251,11 @@ namespace smtrat
                     #ifdef VS_PRINT_ANSWERS
                     printAnswer();
                     #endif
-                    mSolverState = True;
-                    return True;
+                    return foundAnswer( True );
                 }
                 else
                 {
-                    mSolverState = False;
-                    return False;
+                    return foundAnswer( False );
                 }
             }
             mConditionsChanged = false;
@@ -255,19 +267,21 @@ namespace smtrat
                 #ifdef VS_PRINT_ANSWERS
                 printAnswer();
                 #endif
-                mSolverState = True;
-                return True;
+                return foundAnswer( True );
             }
             if( mInconsistentConstraintAdded )
             {
                 assert( !mInfeasibleSubsets.empty() );
                 assert( !mInfeasibleSubsets.back().empty() );
-                mSolverState = False;
-                return False;
+                return foundAnswer( False );
             }
 
             while( !mRanking.empty() )
             {
+                if( anAnswerFound() )
+                {
+                    return foundAnswer( Unknown );
+                }
                 #ifdef VS_STATISTICS
                 ++mStepCounter;
                 #endif
@@ -305,8 +319,7 @@ namespace smtrat
                         if( currentState->isRoot() )
                         {
                             updateInfeasibleSubset();
-                            mSolverState = False;
-                            return False;
+                            return foundAnswer( False );
                         }
                         else
                         {
@@ -412,8 +425,7 @@ namespace smtrat
                                                 #ifdef VS_PRINT_ANSWERS
                                                 printAnswer();
                                                 #endif
-                                                mSolverState = True;
-                                                return True;
+                                                return foundAnswer( True );
                                             }
                                             break;
                                         }
@@ -428,8 +440,7 @@ namespace smtrat
                                         default:
                                         {
                                             cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
-                                            mSolverState = Unknown;
-                                            return Unknown;
+                                            return foundAnswer( Unknown );
                                         }
                                     }
                                     #endif
@@ -509,8 +520,7 @@ namespace smtrat
                                                 #ifdef VS_PRINT_ANSWERS
                                                 printAnswer();
                                                 #endif
-                                                mSolverState = True;
-                                                return True;
+                                                return foundAnswer( True );
                                             }
                                         }
                                         /*
@@ -644,8 +654,7 @@ namespace smtrat
                                                                 #ifdef VS_PRINT_ANSWERS
                                                                 printAnswer();
                                                                 #endif
-                                                                mSolverState = True;
-                                                                return True;
+                                                                return foundAnswer( True );
                                                             }
                                                             break;
                                                         }
@@ -655,14 +664,12 @@ namespace smtrat
                                                         }
                                                         case Unknown:
                                                         {
-                                                            mSolverState = Unknown;
-                                                            return Unknown;
+                                                            return foundAnswer( Unknown );
                                                         }
                                                         default:
                                                         {
                                                             cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
-                                                            mSolverState = Unknown;
-                                                            return Unknown;
+                                                            return foundAnswer( Unknown );
                                                         }
                                                     }
                                                     #else
@@ -671,8 +678,7 @@ namespace smtrat
     //                                                cout << "###                  Unknown!" << endl;
     //                                                cout << "###" << endl;
     //                                                mDeductions.clear();
-                                                    mSolverState = Unknown;
-                                                    return Unknown;
+                                                    return foundAnswer( Unknown );
                                                     #endif
                                                 }
                                                 else
@@ -715,12 +721,11 @@ EndSwitch:;
             #ifdef VS_DEBUG
             printAll( cout );
             #endif
-            mSolverState = False;
-            return False;
+            return foundAnswer( False );
         }
         else
         {
-            return Unknown;
+            return foundAnswer( Unknown );
         }
     }
 
@@ -730,7 +735,7 @@ EndSwitch:;
     void VSModule::updateModel()
     {
         mModel.clear();
-        if( mSolverState == True )
+        if( solverState() == True )
         {
             assert( !mRanking.empty() );
             const State* state = mRanking.begin()->second;
@@ -1953,35 +1958,48 @@ EndSwitch:;
     /**
      * Prints the history to the output stream.
      *
+     * @param _init The beginning of each row.
      * @param _out The output stream where the history should be printed.
      */
-    void VSModule::printAll( ostream& _out ) const
+    void VSModule::printAll( const string& _init, ostream& _out ) const
     {
-        _out << "*** Current solver status, where the constraints" << endl;
-        for( FormulaConditionMap::const_iterator cond = mFormulaConditionMap.begin(); cond != mFormulaConditionMap.end(); ++cond )
-        {
-            _out << "***    ";
-            cond->first->print( _out );
-            _out << " <-> ";
-            cond->second->print( _out );
-            _out << endl;
-        }
-        _out << "*** have been added:" << endl;
-        _out << "*** mInconsistentConstraintAdded: " << mInconsistentConstraintAdded << endl;
-        _out << "*** mIDCounter: " << mIDCounter << endl;
-        printRanking( cout );
-        _out << "*** State tree:" << endl;
-        mpStateTree->print( "   ", _out );
+        _out << _init << " Current solver status, where the constraints" << endl;
+        printFormulaConditionMap( _init, _out );
+        _out << _init << " have been added:" << endl;
+        _out << _init << " mInconsistentConstraintAdded: " << mInconsistentConstraintAdded << endl;
+        _out << _init << " mIDCounter: " << mIDCounter << endl;
+        _out << _init << " Current ranking:" << endl;
+        printRanking( _init, cout );
+        _out << _init << " State tree:" << endl;
+        mpStateTree->print( _init + "   ", _out );
     }
 
     /**
      * Prints the history to the output stream.
      *
+     * @param _init The beginning of each row.
      * @param _out The output stream where the history should be printed.
      */
-    void VSModule::printRanking( ostream& _out ) const
+    void VSModule::printFormulaConditionMap( const string& _init, ostream& _out ) const
     {
-        _out << "*** Current ranking:" << endl;
+        for( FormulaConditionMap::const_iterator cond = mFormulaConditionMap.begin(); cond != mFormulaConditionMap.end(); ++cond )
+        {
+            _out << _init << "    ";
+            cond->first->print( _out );
+            _out << " <-> ";
+            cond->second->print( _out );
+            _out << endl;
+        }
+    }
+
+    /**
+     * Prints the history to the output stream.
+     *
+     * @param _init The beginning of each row.
+     * @param _out The output stream where the history should be printed.
+     */
+    void VSModule::printRanking( const string& _init, ostream& _out ) const
+    {
         for( ValuationMap::const_iterator valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
         {
             (*(*valDTPair).second).printAlone( "   ", _out );
@@ -1991,22 +2009,23 @@ EndSwitch:;
     /**
      * Prints the answer if existent.
      *
+     * @param _init The beginning of each row.
      * @param _out The output stream where the answer should be printed.
      */
-    void VSModule::printAnswer( ostream& _out ) const
+    void VSModule::printAnswer( const string& _init, ostream& _out ) const
     {
-        _out << "*** Answer:" << endl;
+        _out << _init << " Answer:" << endl;
         if( mRanking.empty() )
         {
-            _out << "***        False." << endl;
+            _out << _init << "        False." << endl;
         }
         else
         {
-            _out << "***        True:" << endl;
+            _out << _init << "        True:" << endl;
             const State* currentState = mRanking.begin()->second;
             while( !(*currentState).isRoot() )
             {
-                _out << "***           " << (*currentState).substitution().toString( true ) << endl;
+                _out << _init << "           " << (*currentState).substitution().toString( true ) << endl;
                 currentState = (*currentState).pFather();
             }
         }

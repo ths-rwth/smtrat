@@ -1,6 +1,6 @@
 /*
  * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
+ * Copyright (C) 2013 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
  * This file is part of SMT-RAT.
  *
@@ -24,7 +24,7 @@
  *
  * @author  Henrik Schmitz
  * @since   2012-09-10
- * @version 2013-01-11
+ * @version 2013-01-31
  */
 
 #ifndef SMTRAT_STRATEGYGRAPH_H
@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "Formula.h"
+#include "ThreadPool.h"
 #include "modules/ModuleType.h"
 
 namespace smtrat
@@ -44,15 +45,6 @@ namespace smtrat
         return PROP_TRUE <= _condition;
     }
 
-// Future use:
-//    static bool isConjunction( Condition _condition )
-//    {
-//        return PROP_IS_PURE_CONJUNCTION <= _condition;
-//    }
-    
-    /**
-     *
-     */
     class StrategyGraph
     {
         private:
@@ -60,93 +52,124 @@ namespace smtrat
             {
                 private:
                     static unsigned mPriorityAllocator;
-                    
+                    unsigned mSuccessorVertex;
+                    unsigned mThreadId;
                     unsigned mPriority;
-                    unsigned mSuccessor;
                     ConditionEvaluation mpConditionEvaluation;
-                    
+
                 public:
-                    Edge();
-                    Edge( unsigned, ConditionEvaluation );
-                    ~Edge();
-                    
-// Future use:
-//                    const unsigned priority() const
-//                    {
-//                        return mPriority;
-//                    };
-                    
-                    const unsigned successor() const
+                    Edge( unsigned _to, ConditionEvaluation _conditionEvaluation ):
+                        mSuccessorVertex( _to ),
+                        mPriority( mPriorityAllocator++ ),
+                        mpConditionEvaluation( _conditionEvaluation )
+                    {}
+
+                    ~Edge(){}
+
+                    unsigned successorVertex() const
                     {
-                        return mSuccessor;
-                    };
-                    
+                        return mSuccessorVertex;
+                    }
+
+                    unsigned threadId() const
+                    {
+                        return mThreadId;
+                    }
+
+                    void setThreadId( unsigned _threadId )
+                    {
+                        mThreadId = _threadId;
+                    }
+
+                    unsigned priority() const
+                    {
+                        return mPriority;
+                    }
+
                     const ConditionEvaluation conditionEvaluation() const
                     {
                         return *mpConditionEvaluation;
-                    }   
+                    }
             };
-            
+
             class Vertex
             {
                 private:
-                    ModuleType mModuleType;
                     std::vector<Edge>* mpEdgeList;
-                    
-                    bool successorExists( unsigned ) const;
-                
+                    ModuleType mModuleType;
+
+                    bool successorVertexExists( unsigned _to ) const
+                    {
+                        for( auto edge = mpEdgeList->begin(); edge!=mpEdgeList->end(); ++edge )
+                        {
+                            if ( edge->successorVertex() == _to )
+                            {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+
                 public:
-                    Vertex();
-                    Vertex( ModuleType );
-                    ~Vertex();
-                    
+                    Vertex():
+                        mpEdgeList( new std::vector<Edge>() ),
+                        mModuleType( MT_Module )
+                    {}
+
+                    Vertex( ModuleType _moduleType ):
+                        mpEdgeList( new std::vector<Edge>() ),
+                        mModuleType( _moduleType )
+                    {}
+
+                    ~Vertex()
+                    {
+                        delete mpEdgeList;
+                    }
+
+                    std::vector<Edge>& edgeList() const
+                    {
+                        return *mpEdgeList;
+                    }
+
                     const ModuleType& moduleType() const
                     {
                         return mModuleType;
-                    };
-                    
-                    const std::vector<Edge>& edgeList() const 
+                    }
+
+                    void addSuccessorVertex( unsigned _to, ConditionEvaluation _conditionEvaluation )
                     {
-                        return *mpEdgeList;
-                    };
-                    
-                    void addSuccessor( unsigned, ConditionEvaluation );
+                        assert( !successorVertexExists( _to ) );
+                        mpEdgeList->push_back( Edge( _to, _conditionEvaluation ) );
+                    }
             };
-            
-            // Members
 
             std::vector<Vertex*> mStrategyGraph;
-            bool mHasBranches;
+            unsigned mNumberOfBranches;
+
+            void addCondition( unsigned, unsigned, ConditionEvaluation );
+            unsigned setThreadIds( unsigned, unsigned );
 
         public:
-            // [Con|De]structors
-
-            /**
-             * Standard constructor.
-             */
             StrategyGraph();
-
-            /**
-             * Standard destructor.
-             */
             ~StrategyGraph();
-            
-            // Accessors
-            
-            // Methods
 
-            unsigned addModuleType( unsigned, ModuleType, ConditionEvaluation = isCondition );
-            
-            // Only used within StrategyGraph class itself. Leaving public for future use.
-            // Now used within Java GUI.
-            void addCondition( unsigned, unsigned, ConditionEvaluation = isCondition );
-
-            std::vector< std::pair<unsigned, ModuleType> > nextModuleTypes( unsigned, Condition );
-            
-            bool hasBranches()
+            const unsigned numberOfBranches() const
             {
-                return mHasBranches;
+                return mNumberOfBranches;
             }
+
+            void setThreadAndBranchIds()
+            {
+                setThreadIds( 0, (numberOfBranches()-1) );
+            }
+
+            // Backends and back links must be added by priority, i.e. starting with highest priority (lowest value)
+            unsigned addBackend( unsigned, ModuleType, ConditionEvaluation = isCondition );
+            void addBacklink( unsigned, unsigned, ConditionEvaluation = isCondition );
+            std::vector< std::pair< thread_priority, ModuleType > > getNextModuleTypes( unsigned, Condition );
+
+// To be deleted
+//            void tmpPrint();
     };
 }    // namespace smtrat
 

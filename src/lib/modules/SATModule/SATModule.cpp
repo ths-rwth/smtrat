@@ -57,6 +57,8 @@
 #define SAT_MODULE_THEORY_PROPAGATION
 #define SAT_MODULE_DETECT_DEDUCTIONS
 
+//#define SAT_WITH_RESTARTS
+
 const static double FACTOR_OF_SIGN_INFLUENCE_OF_ACTIVITY = 1.02;
 
 using namespace std;
@@ -87,8 +89,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    SATModule::SATModule( ModuleType type, const Formula* const _formula, RuntimeSettings* settings, Manager* const _tsManager ):
-        Module( type, _formula, _tsManager ),
+    SATModule::SATModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+        Module( _type, _formula, _conditionals, _manager ),
         // Parameters (user settable):
         //
         verbosity( 0 ),
@@ -229,8 +231,7 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                mSolverState = False;
-                return False;
+                return foundAnswer( False );
             }
 
             // TODO: Is this necessary?
@@ -239,7 +240,16 @@ namespace smtrat
             learntsize_adjust_confl = learntsize_adjust_start_confl;
             learntsize_adjust_cnt   = (int)learntsize_adjust_confl;
 
-            lbool result            = search();
+#ifdef SAT_WITH_RESTARTS
+            lbool result = l_Undef;
+            while ( result == l_Undef )
+            {
+                // Notice that we have to handle Unknown backends.
+                result = search();
+            }
+#else
+            lbool result = search();
+#endif
 
             #ifdef SATMODULE_WITH_CALL_NUMBER
             cout << endl << endl;
@@ -250,8 +260,7 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                mSolverState = True;
-                return True;
+                return foundAnswer( True );
             }
             else if( result == l_False )
             {
@@ -269,21 +278,19 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                mSolverState = False;
-                return False;
+                return foundAnswer( False );
             }
             else
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                mSolverState = Unknown;
-                return Unknown;
+                return foundAnswer( Unknown );
             }
         }
         else
         {
-            return Unknown;
+            return foundAnswer( Unknown );
         }
     }
 
@@ -293,7 +300,7 @@ namespace smtrat
     void SATModule::updateModel()
     {
         mModel.clear();
-        if( mSolverState == True )
+        if( solverState() == True )
         {
             for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
             {
@@ -1020,6 +1027,10 @@ FindSecond:
 
         for( ; ; )
         {
+            if( anAnswerFound() )
+            {
+                return l_Undef;
+            }
             bool deductionsLearned = false;
             Answer currentAssignmentConsistent = True;
             CRef confl = propagate();
@@ -1052,7 +1063,6 @@ FindSecond:
                     #endif
                     #ifdef SATMODULE_WITH_CALL_NUMBER
                     ++numberOfTheoryCalls;
-                    if( numberOfTheoryCalls > 8000 ) return l_Undef;
                     #ifdef DEBUG_SATMODULE
                     cout << "#" << numberOfTheoryCalls << "  ";
                     #endif
@@ -1223,16 +1233,18 @@ FindSecond:
             }
             else
             {
-                // TODO: Consider cleaning the learned clauses and restarts.
-
                 // NO CONFLICT
-                //                if( nof_conflicts >= 0 && (conflictC >= nof_conflicts ||!withinBudget()) )
-                //                {
-                //                    // Reached bound on number of conflicts:
-                //                    progress_estimate = progressEstimate();
-                //                    cancelUntil( 0 );
-                //                    return l_Undef;
-                //                }
+
+                // TODO: Consider cleaning the learned clauses and restarts.
+#ifdef SAT_WITH_RESTARTS
+                if( nof_conflicts >= 0 && (conflictC >= nof_conflicts ||!withinBudget()) )
+                {
+                    // Reached bound on number of conflicts:
+                    progress_estimate = progressEstimate();
+                    cancelUntil( 0 );
+                    return l_Undef;
+                }
+#endif
 
                 // Simplify the set of problem clauses:
                 if( decisionLevel() == 0 && !simplify() )
@@ -1833,6 +1845,7 @@ NextClause:
             }
             ++backend;
         }
+        cancelUntil( lowestLevel );
         assert( lowestLevel < decisionLevel()+1 );
         return conflictClause;
     }

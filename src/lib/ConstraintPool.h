@@ -63,6 +63,8 @@ namespace smtrat
         }
     };
 
+    enum Variable_Domain { REAL_DOMAIN = 0, INTEGER_DOMAIN = 1 };
+
     typedef std::unordered_set<const Constraint*, constraintHash, constraintEqual> fastConstraintSet;
     typedef fastConstraintSet::const_iterator                                      fcs_const_iterator;
 
@@ -87,11 +89,13 @@ namespace smtrat
             /// The prefix for any auxiliary Boolean defined in this formula.
             const std::string mAuxiliaryRealNamePrefix;
             /// the symbol table containing the variables of all constraints
-            GiNaC::symtab mAllRealVariables;
+            GiNaC::symtab mArithmeticVariables;
             ///
             std::set<std::string> mAllBooleanVariables;
             /// for each string representation its constraint (considering all constraints of which the manager has already been informed)
             fastConstraintSet mAllConstraints;
+            ///
+            std::map< GiNaC::symbol, Variable_Domain > mDomain;
 
             // Methods:
 
@@ -123,12 +127,19 @@ namespace smtrat
 
             const GiNaC::symtab& realVariables() const
             {
-                return mAllRealVariables;
+                return mArithmeticVariables;
             }
 
             const std::set<std::string>& booleanVariables() const
             {
                 return mAllBooleanVariables;
+            }
+
+            Variable_Domain domain( const GiNaC::symbol& _variable ) const
+            {
+                auto iter = mDomain.find( _variable );
+                assert( iter != mDomain.end() );
+                return iter->second;
             }
 
             void clear();

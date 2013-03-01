@@ -1,6 +1,6 @@
 /*
  * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
- * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
+ * Copyright (C) 2013 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
  * This file is part of SMT-RAT.
  *
@@ -24,47 +24,20 @@
  *
  * @author  Henrik Schmitz
  * @since   2012-09-10
- * @version 2013-01-11
+ * @version 2013-01-31
  */
 
 #include "StrategyGraph.h"
 
 using namespace std;
 
-namespace smtrat{
-    unsigned StrategyGraph::Edge::mPriorityAllocator = 0;
-    
-    StrategyGraph::Edge::Edge(){}
-    
-    StrategyGraph::Edge::Edge( unsigned _to, ConditionEvaluation _condition ):
-        mPriority( mPriorityAllocator++ ),
-        mSuccessor( _to ),
-        mpConditionEvaluation( _condition )
-    {}
-    
-    StrategyGraph::Edge::~Edge(){}
-
-
-    StrategyGraph::Vertex::Vertex():
-        mModuleType( MT_Module ),
-        mpEdgeList( new vector<Edge>() )
-    {}
-
-    StrategyGraph::Vertex::Vertex( ModuleType _moduleType ):
-        mModuleType( _moduleType ),
-        mpEdgeList( new vector<Edge>() )
-    {}
-    
-    StrategyGraph::Vertex::~Vertex()
-    {   
-        mpEdgeList->clear();
-        delete mpEdgeList;
-    }
-    
+namespace smtrat
+{
+    unsigned StrategyGraph::Edge::mPriorityAllocator = 1;
 
     StrategyGraph::StrategyGraph():
         mStrategyGraph(),
-        mHasBranches( false )
+        mNumberOfBranches( 1 )
     {
         mStrategyGraph.push_back( new Vertex() );
     }
@@ -79,88 +52,103 @@ namespace smtrat{
         }
     }
 
-    /**
-     * ...
-     *
-     * @param formula       The formula to be considered.
-     *
-     * @return void
-     */
-    bool StrategyGraph::Vertex::successorExists( unsigned _to ) const
+    void StrategyGraph::addCondition( unsigned _from, unsigned _to, ConditionEvaluation _conditionEvaluation )
     {
-        for( auto edge = mpEdgeList->begin(); edge!=mpEdgeList->end(); ++edge )
+        assert( _from<mStrategyGraph.size() );
+        assert( _to<mStrategyGraph.size() );
+        assert( _from!=_to );
+
+        // New branch or backlink
+        if( _from<(mStrategyGraph.size()-2) || _to<_from )
         {
-            if ( edge->successor()==_to )
-                return true;
+            mNumberOfBranches++;
         }
-        return false;
+        mStrategyGraph[ _from ]->addSuccessorVertex( _to, _conditionEvaluation );
     }
 
-    /**
-     * ...
-     *
-     * @param formula       The formula to be considered.
-     *
-     * @return void
-     */
-    void StrategyGraph::Vertex::addSuccessor( unsigned _to, ConditionEvaluation _condition )
+    unsigned StrategyGraph::setThreadIds( unsigned _from, unsigned _threadId )
     {
-        assert( !successorExists( _to ) );
-        mpEdgeList->push_back( Edge( _to, _condition ) );
+        unsigned threadId = _threadId;
+        vector<Edge>& edges = mStrategyGraph[ _from ]->edgeList();
+        if( edges.size()!=0 )
+        {
+            for( auto edge = edges.rbegin(); edge!=edges.rend(); )
+            {
+                edge->setThreadId( threadId );
+
+                // Backend
+                if( edge->successorVertex()>_from )
+                {
+                    threadId = setThreadIds( edge->successorVertex(), threadId );
+                }
+                // Backlink
+                else
+                {
+                    edge->setThreadId( --threadId );
+                }
+
+                ++edge;
+                if( edge!=edges.rend() )
+                {
+                    --threadId;
+                }
+            }
+        }
+        return threadId;
     }
 
-    /**
-     * ...
-     *
-     * @param formula       The formula to be considered.
-     *
-     * @return void
-     */
-    unsigned StrategyGraph::addModuleType( unsigned _at, ModuleType _moduleType, ConditionEvaluation _condition )
+    unsigned StrategyGraph::addBackend( unsigned _at, ModuleType _moduleType, ConditionEvaluation _conditionEvaluation )
     {
         mStrategyGraph.push_back( new Vertex( _moduleType ) );
-        
-        addCondition( _at, mStrategyGraph.size()-1, _condition );
-        
+        addCondition( _at, mStrategyGraph.size()-1, _conditionEvaluation );
         return mStrategyGraph.size()-1;
     }
 
-    /**
-     * ...
-     *
-     * @param formula       The formula to be considered.
-     *
-     * @return void
-     */
-    void StrategyGraph::addCondition( unsigned _from, unsigned _to, ConditionEvaluation _condition )
+    void StrategyGraph::addBacklink( unsigned _from, unsigned _to, ConditionEvaluation _conditionEvaluation )
     {
-        assert( _from < mStrategyGraph.size() );
-        assert( _to < mStrategyGraph.size() );
-        mStrategyGraph.at( _from )->addSuccessor( _to, _condition );
-        mHasBranches = true;
+        addCondition( _from, _to, _conditionEvaluation );
     }
 
-    /**
-     * ...
-     *
-     * @param formula       The formula to be considered.
-     *
-     * @return void
-     */
-    vector< pair<unsigned, ModuleType> > StrategyGraph::nextModuleTypes( unsigned _from, Condition _condition )
+    // Returns module types ordered by priority, highest priority (lowest value) first
+    vector< pair< thread_priority, ModuleType > > StrategyGraph::getNextModuleTypes( unsigned _from, Condition _condition )
     {
-        vector< pair<unsigned, ModuleType> > result = vector< pair<unsigned, ModuleType> >();
-        
-        const vector<Edge>& edges = mStrategyGraph.at(_from)->edgeList();
+        vector< pair< thread_priority, ModuleType > > result = vector< pair< thread_priority, ModuleType > >();
+        const vector<Edge>& edges = mStrategyGraph[ _from ]->edgeList();
         for( auto edge = edges.begin(); edge!=edges.end(); ++edge )
         {
             if ( edge->conditionEvaluation()( _condition ) )
             {
-                unsigned succ = edge->successor();
-                assert( succ < mStrategyGraph.size() );
-                result.push_back( pair<unsigned, ModuleType>( succ, mStrategyGraph.at(succ)->moduleType() ) );
+                thread_priority threadPriority( edge->threadId(), edge->priority() );
+                result.push_back( pair< thread_priority, ModuleType >( threadPriority, mStrategyGraph[ edge->successorVertex() ]->moduleType() ) );
             }
         }
         return result;
     }
+
+
+
+
+
+
+
+
+// To be deleted
+//    void StrategyGraph::tmpPrint()
+//    {
+//        std::cout << std::endl << std::endl << "GRAPH:" << std::endl << std::endl;
+//        for( unsigned i=0; i<mStrategyGraph.size(); ++i )
+//        {
+//            std::cout << "Id: " << i << std::endl;
+//            const vector<Edge>& edges = mStrategyGraph.at(i)->edgeList();
+//            for( auto edge = edges.begin(); edge!=edges.end(); ++edge )
+//            {
+//                std::cout << "  Succ: " << edge->successorVertex() << std::endl;
+//                std::cout << "  Thread: " << edge->threadId() << std::endl;
+//                std::cout << "  Priority: " << edge->priority() << std::endl;
+//                cout << std::endl;
+//            }
+//            std::cout << std::endl;
+//        }
+//    }
+
 }    // namespace smtrat

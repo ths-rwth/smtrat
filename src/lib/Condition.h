@@ -131,28 +131,6 @@ namespace smtrat
                                              | PROP_CONTAINS_LINEAR_POLYNOMIAL | PROP_CONTAINS_LINEAR_POLYNOMIAL | PROP_CONTAINS_NONLINEAR_POLYNOMIAL
                                              | PROP_CONTAINS_MULTIVARIATE_POLYNOMIAL | PROP_CONTAINS_INEQUALITY | PROP_CONTAINS_BOOLEAN;
 
-    //Propositions indicating that a solver cannot solve the formula
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_SMARTSIMPLIFIER     = Condition( 48 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE      = Condition( 49 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_VSMODULE            = Condition( 50 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE = Condition( 51 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_CADMODULE           = Condition( 52 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_SATMODULE           = Condition( 53 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_LRAMODULE           = Condition( 54 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE        = Condition( 55 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE     = Condition( 57 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE         = Condition( 56 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE      = Condition( 59 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_ICPMODULE           = Condition( 60 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_ILRAMODULE          = Condition( 61 );
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_TLRAMODULE          = Condition( 62 );
-    static const Condition SOLVABLE_CONDITIONS                          = PROP_CANNOT_BE_SOLVED_BY_SMARTSIMPLIFIER | PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_VSMODULE | PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_CADMODULE | PROP_CANNOT_BE_SOLVED_BY_SATMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_LRAMODULE | PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_PREPROCNFMODULE | PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE | PROP_CANNOT_BE_SOLVED_BY_ICPMODULE
-                                                 | PROP_CANNOT_BE_SOLVED_BY_ILRAMODULE | PROP_CANNOT_BE_SOLVED_BY_TLRAMODULE;
 }     // namespace smtrat
 
 #endif   /* CONDITION_H */

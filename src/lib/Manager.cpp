@@ -51,15 +51,17 @@ namespace smtrat
      */
 
     Manager::Manager( Formula* _inputFormula ):
+        mPrimaryBackendFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
         mpPassedFormula( _inputFormula ),
-        mGeneratedModules( vector<Module*>( 1, new Module(MT_Module, mpPassedFormula, this ) ) ),
+        mGeneratedModules( vector<Module*>( 1, new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ) ),
         mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
         mStrategyGraph(),
-        mModulePositionInStrategy()
+        mpThreadPool( NULL ),
+        mNumberOfCores( 1 ),
+        mRunsParallel( false )
     {
         mpModuleFactories = new map<const ModuleType, ModuleFactory*>();
-        mModulePositionInStrategy[mpPrimaryBackend] = 0;
 
         // inform it about all constraints
         for( fcs_const_iterator constraint = Formula::mConstraintPool.begin(); constraint != Formula::mConstraintPool.end(); ++constraint )
@@ -88,11 +90,40 @@ namespace smtrat
             delete pModuleFactory;
         }
         delete mpModuleFactories;
+        if( mpThreadPool!=NULL )
+        {
+            delete mpThreadPool;
+        }
     }
 
     /**
      * Methods:
      */
+
+    /**
+     *
+     */
+    void Manager::initialize()
+    {
+        mNumberOfBranches = mStrategyGraph.numberOfBranches();
+        if( mNumberOfBranches>1 )
+        {
+            mNumberOfCores = std::thread::hardware_concurrency();
+            if( mNumberOfCores>1 )
+            {
+                mStrategyGraph.setThreadAndBranchIds();
+//mStrategyGraph.tmpPrint();
+//std::this_thread::sleep_for(std::chrono::seconds(29));
+                mRunsParallel = true;
+                mInterruptibleBackends = true;
+                if( mInterruptibleBackends )
+                {
+                    mInterruptionFlags = vector<bool>( mNumberOfBranches, false );
+                }
+                mpThreadPool = new ThreadPool( mNumberOfBranches, mNumberOfCores );
+            }
+        }
+    }
 
     /**
      * Prints the model, if there is one.
@@ -117,30 +148,33 @@ namespace smtrat
     /**
      * Get the backends to call for the given problem instance required by the given module.
      *
-     * @param _formula      The problem instance.
-     * @param _requiredBy   The module asking for a backend.
+     * @param _formula     The problem instance.
+     * @param _requiredBy  The module asking for a backend.
+     * @param _foundAnswer A conditional
      *
      * @return  A vector of modules, which the module defined by _requiredBy calls in parallel to achieve
      *          an answer to the given instance.
      */
-    vector<Module*> Manager::getBackends( Formula* _formula, Module* _requiredBy )
+    vector<Module*> Manager::getBackends( Formula* _formula, Module* _requiredBy, atomic_bool* _foundAnswer )
     {
-        vector<Module*>        backends         = vector<Module*>();
-        vector<Module*>&       allBackends      = mBackendsOfModules[_requiredBy];
+        vector<Module*>  backends    = vector<Module*>();
+        vector<Module*>& allBackends = mBackendsOfModules[_requiredBy];
         /*
          * Get the types of the modules, which the given module needs to call to solve its passedFormula.
          */
-        vector< pair<unsigned, ModuleType> > backendModuleTypes = mStrategyGraph.nextModuleTypes( mModulePositionInStrategy[_requiredBy], _formula->getPropositions() );
-        for( auto iter = backendModuleTypes.begin(); iter != backendModuleTypes.end(); ++iter )
+        vector< pair< thread_priority, ModuleType > > backendValues = mStrategyGraph.getNextModuleTypes( _requiredBy->threadPriority().second, _formula->getPropositions() );
+        for( auto iter = backendValues.begin(); iter != backendValues.end(); ++iter )
         {
             assert( iter->second != _requiredBy->type() );
             /*
              * If for this module type an instance already exists, we just add it to the modules to return.
              */
+
+// MUTEX? NEIN ODER?
             vector<Module*>::iterator backend = allBackends.begin();
             while( backend != allBackends.end() )
             {
-                if( (*backend)->type() == iter->second )
+                if( (*backend)->threadPriority() == iter->first )
                 {
                     // the backend already exists
                     backends.push_back( *backend );
@@ -153,14 +187,18 @@ namespace smtrat
              */
             if( backend == allBackends.end() )
             {
+// MUTEX? JA ODER? module factories
                 auto backendFactory = mpModuleFactories->find( iter->second );
                 assert( backendFactory != mpModuleFactories->end() );
-                Module* pBackend = backendFactory->second->create(iter->second,  _requiredBy->pPassedFormula(), this );
+                vector< atomic_bool* > foundAnswers = vector< atomic_bool* >( _requiredBy->answerFound() );
+                foundAnswers.push_back( _foundAnswer );
+                Module* pBackend = backendFactory->second->create( iter->second, _requiredBy->pPassedFormula(), foundAnswers, this );
+// MUTEX generated Modules
                 mGeneratedModules.push_back( pBackend );
                 pBackend->setId( mGeneratedModules.size()-1 );
+                pBackend->setThreadPriority( iter->first );
                 allBackends.push_back( pBackend );
                 backends.push_back( pBackend );
-                mModulePositionInStrategy[pBackend] = iter->first;
                 // inform it about all constraints
                 for( std::list<const Constraint* >::const_iterator constraint = _requiredBy->constraintsToInform().begin();
                         constraint != _requiredBy->constraintsToInform().end(); ++constraint )
@@ -170,5 +208,55 @@ namespace smtrat
             }
         }
         return backends;
+    }
+
+    /**
+     *
+     * @param _pModule
+     * @return
+     */
+    std::future<Answer> Manager::submitBackend( Module* _pModule )
+    {
+        assert( mRunsParallel );
+        return mpThreadPool->submitBackend( _pModule );
+    }
+
+    /**
+     *
+     * @param _pModule
+     */
+    void Manager::checkBackendPriority( Module* _pModule )
+    {
+        assert( mRunsParallel );
+        mpThreadPool->checkBackendPriority( _pModule );
+    }
+
+    /**
+     *
+     * @param _branchIds
+     * @return
+     */
+    bool Manager::checkInterruptionFlags( vector<unsigned> _branchIds )
+    {
+        std::lock_guard<std::mutex> lock( mInterruptionMutex );
+        for( unsigned i=0; i<_branchIds.size(); ++i )
+        {
+            if( mInterruptionFlags[ _branchIds[ i ] ] )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     *
+     * @param _interruptionFlag
+     * @param _flag
+     */
+    void Manager::setInterruptionFlag( unsigned _interruptionFlag, bool _flag )
+    {
+        std::lock_guard<std::mutex> lock( mInterruptionMutex );
+        mInterruptionFlags[ _interruptionFlag ] = _flag;
     }
 }    // namespace smtrat
