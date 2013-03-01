@@ -178,7 +178,12 @@ namespace smtrat
     {
         if( _type.compare( "Real" ) == 0 )
         {
-            addRealVariable( _loc, _name );
+            addTheoryVariable( _loc, _type, _name );
+            mLexer->mRealVariables.insert( _name );
+        }
+        else if( _type.compare( "Integer" ) == 0 )
+        {
+            addTheoryVariable( _loc, _type, _name );
             mLexer->mRealVariables.insert( _name );
         }
         else if( _type.compare( "Bool" ) == 0 )
@@ -225,7 +230,7 @@ namespace smtrat
      * @param l
      * @param _varName
      */
-    RealVarMap::const_iterator Driver::addRealVariable( const class location& _loc, const string& _varName, bool _isBindingVariable )
+    RealVarMap::const_iterator Driver::addTheoryVariable( const class location& _loc, const string& _theory, const string& _varName, bool _isBindingVariable )
     {
         pair< string, ex > ginacConformVar;
         if( _isBindingVariable )
@@ -249,7 +254,7 @@ namespace smtrat
                     index = ginacConformName.find( iter->first, index );
                 }
             }
-            ginacConformVar = pair< string, ex >( ginacConformName, Formula::newRealVariable( ginacConformName ) );
+            ginacConformVar = pair< string, ex >( ginacConformName, Formula::newArithmeticVariable( ginacConformName, getDomain( _theory ) ) );
         }
         pair< RealVarMap::iterator, bool > res = mRealVariables.insert( pair< string, pair< string, ex > >( _varName.empty() ? ginacConformVar.first : _varName, ginacConformVar ) );
         if( !res.second )
@@ -454,7 +459,7 @@ namespace smtrat
      */
     string* Driver::mkIteInExpr( const class location& _loc, Formula* _condition, pair< ex, vector< RealVarMap::const_iterator > >& _then, pair< ex, vector< RealVarMap::const_iterator > >& _else )
     {
-        RealVarMap::const_iterator auxRealVar = addRealVariable( _loc, "", true );
+        RealVarMap::const_iterator auxRealVar = addTheoryVariable( _loc, "Real", "", true );
         string conditionBool = addBooleanVariable( _loc, "", true );
         pair< ex, vector< RealVarMap::const_iterator > >* lhs = mkPolynomial( _loc, auxRealVar );
         Formula* constraintA = mkConstraint( *lhs, _then, CR_EQ );

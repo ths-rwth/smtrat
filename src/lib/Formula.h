@@ -449,7 +449,12 @@ namespace smtrat
 
             static GiNaC::ex newRealVariable( const std::string& _name )
             {
-                return mConstraintPool.newRealVariable( _name );
+                return mConstraintPool.newArithmeticVariable( _name, REAL_DOMAIN );
+            }
+
+            static GiNaC::ex newArithmeticVariable( const std::string& _name, Variable_Domain _domain )
+            {
+                return mConstraintPool.newArithmeticVariable( _name, _domain );
             }
 
             static void newBooleanVariable( const std::string& _name )
@@ -482,7 +487,7 @@ namespace smtrat
                 return mConstraintPool.newAuxiliaryBooleanVariable();
             }
 
-            static Variable_Domain domain( const GiNaC::symbol& _variable )
+            static Variable_Domain domain( const GiNaC::ex& _variable )
             {
                 return mConstraintPool.domain( _variable );
             }

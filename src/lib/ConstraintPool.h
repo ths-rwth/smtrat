@@ -63,8 +63,6 @@ namespace smtrat
         }
     };
 
-    enum Variable_Domain { REAL_DOMAIN = 0, INTEGER_DOMAIN = 1 };
-
     typedef std::unordered_set<const Constraint*, constraintHash, constraintEqual> fastConstraintSet;
     typedef fastConstraintSet::const_iterator                                      fcs_const_iterator;
 
@@ -91,11 +89,11 @@ namespace smtrat
             /// the symbol table containing the variables of all constraints
             GiNaC::symtab mArithmeticVariables;
             ///
-            std::set<std::string> mAllBooleanVariables;
+            std::set<std::string> mBooleanVariables;
             /// for each string representation its constraint (considering all constraints of which the manager has already been informed)
-            fastConstraintSet mAllConstraints;
+            fastConstraintSet mConstraints;
             ///
-            std::map< GiNaC::symbol, Variable_Domain > mDomain;
+            std::map< GiNaC::ex, Variable_Domain, GiNaC::ex_is_less > mDomain;
 
             // Methods:
 
@@ -112,17 +110,17 @@ namespace smtrat
 
             fcs_const_iterator begin() const
             {
-                return mAllConstraints.begin();
+                return mConstraints.begin();
             }
 
             fcs_const_iterator end() const
             {
-                return mAllConstraints.end();
+                return mConstraints.end();
             }
 
             unsigned size() const
             {
-                return mAllConstraints.size();
+                return mConstraints.size();
             }
 
             const GiNaC::symtab& realVariables() const
@@ -132,10 +130,10 @@ namespace smtrat
 
             const std::set<std::string>& booleanVariables() const
             {
-                return mAllBooleanVariables;
+                return mBooleanVariables;
             }
 
-            Variable_Domain domain( const GiNaC::symbol& _variable ) const
+            Variable_Domain domain( const GiNaC::ex& _variable ) const
             {
                 auto iter = mDomain.find( _variable );
                 assert( iter != mDomain.end() );
@@ -147,7 +145,7 @@ namespace smtrat
             const Constraint* newConstraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& );
             const Constraint* newConstraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& );
             const Constraint* newConstraint( const std::string&, bool = true, bool = true );
-            GiNaC::ex newRealVariable( const std::string& );
+            GiNaC::ex newArithmeticVariable( const std::string&, Variable_Domain );
             std::pair<std::string,GiNaC::ex> newAuxiliaryRealVariable();
             void newBooleanVariable( const std::string& );
             std::string newAuxiliaryBooleanVariable();

@@ -190,6 +190,14 @@ namespace smtrat
                 }
             }
 
+            static Variable_Domain getDomain( const string& _type )
+            {
+                if( _type == "Real" ) return REAL_DOMAIN;
+                if( _type == "Integer" ) return INTEGER_DOMAIN;
+                assert( false );
+                return REAL_DOMAIN;
+            }
+
             bool parse_stream( std::istream& in, const std::string& sname = "stream input" );
             bool parse_string( const std::string& input, const std::string& sname = "string stream" );
             bool parse_file( const std::string& filename );
@@ -198,7 +206,7 @@ namespace smtrat
             void setLogic( const class location&, const std::string& );
             void addVariable( const class location&, const std::string&, const std::string& );
             const std::string addBooleanVariable( const class location&, const std::string& = "", bool = false );
-            RealVarMap::const_iterator addRealVariable( const class location&, const std::string& = "", bool = false );
+            RealVarMap::const_iterator addTheoryVariable( const class location&, const std::string&, const std::string& = "", bool = false );
             const std::string& getBooleanVariable( const class location&, const std::string& ) const;
             RealVarMap::const_iterator getRealVariable( const class location&, const std::string& );
             void freeBooleanVariableName( const std::string& );
