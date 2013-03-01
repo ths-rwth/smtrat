@@ -526,6 +526,7 @@ namespace smtrat
         // ...        
                 return foundAnswer( Unknown );
         #endif
+        #endif
         return foundAnswer( True );
     }
 

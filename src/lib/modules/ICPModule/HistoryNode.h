@@ -194,6 +194,18 @@ namespace smtrat
                 mIntervals = _map;
             }
 
+            bool hasEmptyInterval()
+            {
+                for(auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
+                {
+                    if ( (*intervalIt).second.empty() )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            
             /**
              * updates or inserts an interval into the actual map
              * @param _var
@@ -214,6 +226,11 @@ namespace smtrat
                 }
             }
 
+            GiNaCRA::DoubleInterval& getInterval ( const symbol _variable )
+            {
+                return mIntervals[_variable];
+            }
+            
             void addContraction( ContractionCandidate* _candidate )
             {
                 mAppliedContractions.insert( _candidate );
@@ -365,11 +382,20 @@ namespace smtrat
                     cout << (*intervalIt).first << "\t : ";
                     (*intervalIt).second.dbgprint();
                 }
-                _out << "Applied Contractions: " << endl;
-                for ( auto candidateIt = mAppliedContractions.begin(); candidateIt != mAppliedContractions.end(); ++candidateIt )
+                _out << "Applied Contractions: ";
+                if ( mAppliedContractions.size() > 0 )
                 {
-                    (*candidateIt)->print();
+                    cout << endl;
+                    for ( auto candidateIt = mAppliedContractions.begin(); candidateIt != mAppliedContractions.end(); ++candidateIt )
+                    {
+                        (*candidateIt)->print();
+                    }
                 }
+                else
+                {
+                    cout << "None" << endl;
+                }
+                
             }
 
             /**

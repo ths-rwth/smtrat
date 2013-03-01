@@ -204,56 +204,61 @@ namespace smtrat
              * historyTree.
              */
             std::pair<bool,symbol> checkAndPerformSplit( double _targetDiameter );
-
+            
             /**
              * Prints the mapping from variable to ContractionCandidates which contain this variable.
              */
             void printAffectedCandidates();
-
+            
             /**
              * Prints all icpVariables
              */
             void printIcpVariables();
-
+            
             /**
              * Prints all icpRelevant candidates with their weight and id
              */
             void printIcpRelevantCandidates();
-
+            
+            /**
+             * Prints all intervals from mIntervals, should be the same intervals as in mHistoryActual->intervals().
+             */
+            void printIntervals();
+            
             /**
              * Selects and sets the next possible interval box from the history nodes.
              * @return true if a new box has been selected.
              */
             icp::HistoryNode* chooseBox( icp::HistoryNode* _basis );
-
+            
             /**
              * Set all parameters of the module according to the selected HistoryNode
              * @param _selection the Node which contains the new context
              */
             void setBox( icp::HistoryNode* _selection );
-
+            
             /**
              * Fills the IcpRelevantCandidates with all nonlinear and all active linear ContractionCandidates.
              */
             void fillCandidates( double _targetDiameter = 0 );
-
+            
             /**
              * Adds the specific candidate to IcpRelevantCandidates.
              * @param _candidate
              */
             void addCandidateToRelevant(icp::ContractionCandidate* _candidate);
-
+            
             /**
              * Creates Bounds and passes them to PassedFormula for the Backends.
              */
             void pushBoundsToPassedFormula();
-
+            
             /**
              * Update all affected candidates and reinsert them into icpRelevantCandidates
              * @param _var
              */
-            void updateRelevantCandidates(symbol _var);
-
+            void updateRelevantCandidates(symbol _var, double _relativeContraction );
+            
             /**
              * Removes all centerconstraints from the validation formula - needed before adding actual centerconstraints
              * and before a new contraction sequence starts in order to check linear feasibility.
