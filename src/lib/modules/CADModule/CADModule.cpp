@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-02-09
+ * @version 2013-03-03
  */
 
 //#define MODULE_VERBOSE
@@ -58,6 +58,7 @@ using namespace std;
 //#define SMTRAT_CAD_ALTERNATIVE_SETTING
 //#define SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
 //#define SMTRAT_CAD_GENERIC_SETTING
+//#define SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
 //#define SMTRAT_CAD_DISABLE_SMT
 #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
 //#define SMTRAT_CAD_DISABLE_MIS
@@ -118,7 +119,28 @@ namespace smtrat
 
         setting.trimVariables = false; // maintains the dimension important for the constraint checking
 //        setting.autoSeparateEquations = false; // <- @TODO: find a correct implementation of the MIS for the only-strict or only-equations optimizations
+
+        #ifndef SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
+        // variable order optimization
+        std::forward_list<symbol> variables = std::forward_list<symbol>( );
+        for( GiNaC::symtab::const_iterator i = mpReceivedFormula->mConstraintPool.realVariables().begin(); i != mpReceivedFormula->mConstraintPool.realVariables().end(); ++i )
+            variables.push_front( GiNaC::ex_to<symbol>( i->second ) );
+        std::forward_list<Polynomial> polynomials = std::forward_list<Polynomial>( );
+        for( fcs_const_iterator i = mpReceivedFormula->mConstraintPool.begin(); i != mpReceivedFormula->mConstraintPool.end(); ++i )
+            polynomials.push_front( (*i)->lhs() );
+        mCAD = CAD( {}, CAD::orderVariablesGreeedily( variables.begin(), variables.end(), polynomials.begin(), polynomials.end() ), setting );
+        #ifdef MODULE_VERBOSE
+        cout << "Optimizing CAD variable order from ";
+        for( forward_list<GiNaC::symbol>::const_iterator k = variables.begin(); k != variables.end(); ++k )
+            cout << *k << " ";
+        cout << "  to   ";
+        for( vector<GiNaC::symbol>::const_iterator k = mCAD.variablesScheduled().begin(); k != mCAD.variablesScheduled().end(); ++k )
+            cout << *k << " ";
+        cout << endl;;
+        #endif
+        #else
         mCAD.alterSetting( setting );
+        #endif
     }
 
     CADModule::~CADModule(){}
