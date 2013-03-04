@@ -519,32 +519,24 @@ namespace smtrat
         learnRefinements();
         #ifdef LRA_BRANCH_AND_BOUND
         for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
-        {
-            if(Formula::domain(var->first==0))
+        {   
+            if(Formula::domain(*(var->first)) == INTEGER_DOMAIN)
             {
                 Formula* deductionA = new Formula( OR );
-                //const Constraint* lessEqualConstraint = Formula::newConstraint(?);
+                stringstream sstream;
+                sstream << var->first;
+                symtab *setOfVar = new symtab();
+                setOfVar->insert(pair< std::string, ex >(sstream.str(),*var->first));
+   
+                //const Constraint* lessEqualConstraint = Formula::newConstraint(var->first-floor(var->second.assignment()),CR_LEQ,setOfVar);
                 //const Constraint* biggerEqualConstraint= Formula::newConstraint(?);
-                //deductionA->addSubformula(lessEqualConstraint);
+                 //deductionA->addSubformula(lessEqualConstraint);
                 //deductionA->addSubformula(biggerEqualConstraint);
                 addDeduction( deductionA );
                 return foundAnswer( Unknown );
             }                                    
         }
-        for(auto var=mSlackVars.begin();var != mSlackVars.end() ;++var)
-        {
-            if(Formula::domain(var->first==0))
-            {
-                Formula* deductionA = new Formula( OR );
-                //const Constraint* lessEqualConstraint = Formula::newConstraint(?);
-                //const Constraint* biggerEqualConstraint= Formula::newConstraint(?);
-                //deductionA->addSubformula(lessEqualConstraint);
-                //deductionA->addSubformula(biggerEqualConstraint);
-                addDeduction( deductionA );
-                return foundAnswer( Unknown );
-            }                                    
-        }
-        return foundAnswer( True );
+                return foundAnswer( True );
         
         #endif
         #endif
