@@ -31,10 +31,10 @@ namespace smtrat
     StrategyTwo::StrategyTwo( Formula* _inputFormula ):
         Manager( _inputFormula )
     {
-        addBackendIntoStrategyGraph( 0, MT_Preprocessing, isCondition );
-        addBackendIntoStrategyGraph( 1, MT_SATModule, isCondition );
-        addBackendIntoStrategyGraph( 2, MT_LRAModule, isCondition );
-        addBackendIntoStrategyGraph( 2, MT_VSModule, isCondition );
+//        addBackendIntoStrategyGraph( 0, MT_Preprocessing, isCondition );
+//        addBackendIntoStrategyGraph( 1, MT_SATModule, isCondition );
+//        addBackendIntoStrategyGraph( 2, MT_LRAModule, isCondition );
+//        addBackendIntoStrategyGraph( 2, MT_VSModule, isCondition );
     }
 
     StrategyTwo::~StrategyTwo(){}

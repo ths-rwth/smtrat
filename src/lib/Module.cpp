@@ -39,7 +39,7 @@
 #include "ModuleFactory.h"
 
 // Flag activating some informative and not exaggerated output about module calls.
-//#define MODULE_VERBOSE
+#define MODULE_VERBOSE
 
 using namespace std;
 
@@ -655,6 +655,7 @@ namespace smtrat
                 }
             }
 
+            #ifdef PARALLEL_MODE
             unsigned highestIndex = numberOfUsedBackends-1;
             if( mpManager->runsParallel() )
             {
@@ -692,6 +693,7 @@ namespace smtrat
             }
             else
             {
+            #endif
                 /*
                  * Run the backend solver sequentially until the first answers true or false.
                  */
@@ -723,7 +725,9 @@ namespace smtrat
                     #endif
                     ++module;
                 }
+            #ifdef PARALLEL_MODE
             }
+            #endif
         }
         #ifdef MODULE_VERBOSE
         cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : (result == Unknown ? "Unknown" : "Undefined"))) << endl;

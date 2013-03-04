@@ -34,7 +34,6 @@
 #include "StrategyGraph.h"
 #include "modules/Modules.h"
 
-
 #include <typeinfo>
 #include <cln/cln.h>
 
@@ -56,10 +55,13 @@ namespace smtrat
         mGeneratedModules( vector<Module*>( 1, new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ) ),
         mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
-        mStrategyGraph(),
+        mStrategyGraph()
+        #ifdef PARALLEL_MODE
+        ,
         mpThreadPool( NULL ),
         mNumberOfCores( 1 ),
         mRunsParallel( false )
+        #endif
     {
         mpModuleFactories = new map<const ModuleType, ModuleFactory*>();
 
@@ -90,16 +92,19 @@ namespace smtrat
             delete pModuleFactory;
         }
         delete mpModuleFactories;
+        #ifdef PARALLEL_MODE
         if( mpThreadPool!=NULL )
         {
             delete mpThreadPool;
         }
+        #endif
     }
 
     /**
      * Methods:
      */
 
+    #ifdef PARALLEL_MODE
     /**
      *
      */
@@ -124,6 +129,7 @@ namespace smtrat
             }
         }
     }
+    #endif
 
     /**
      * Prints the model, if there is one.
@@ -169,7 +175,6 @@ namespace smtrat
             /*
              * If for this module type an instance already exists, we just add it to the modules to return.
              */
-
 // MUTEX? NEIN ODER?
             vector<Module*>::iterator backend = allBackends.begin();
             while( backend != allBackends.end() )
@@ -210,6 +215,7 @@ namespace smtrat
         return backends;
     }
 
+    #ifdef PARALLEL_MODE
     /**
      *
      * @param _pModule
@@ -259,4 +265,5 @@ namespace smtrat
         std::lock_guard<std::mutex> lock( mInterruptionMutex );
         mInterruptionFlags[ _interruptionFlag ] = _flag;
     }
+    #endif
 }    // namespace smtrat

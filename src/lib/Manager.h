@@ -33,6 +33,8 @@
 #ifndef SMTRAT_MANAGER_H
 #define SMTRAT_MANAGER_H
 
+#define PARALLEL_MODE
+
 #include <vector>
 
 #include "Answer.h"
@@ -70,6 +72,7 @@ namespace smtrat
             std::map<const ModuleType, ModuleFactory*>* mpModuleFactories;
             /// primary strategy
             StrategyGraph mStrategyGraph;
+            #ifdef PARALLEL_MODE
             ///
             ThreadPool* mpThreadPool;
             ///
@@ -88,6 +91,7 @@ namespace smtrat
             std::mutex mBackendsMutex;
 
             void initialize();
+            #endif
 
         public:
             Manager( Formula* = new Formula( AND ) );
@@ -106,7 +110,9 @@ namespace smtrat
 
             Answer isConsistent()
             {
+                #ifdef PARALLEL_MODE
                 initialize();
+                #endif
                 #ifdef SMTRAT_DEVOPTION_MeasureTime
                 mpPrimaryBackend->startCheckTimer();
                 #endif
@@ -169,6 +175,7 @@ namespace smtrat
                 mStrategyGraph.addBacklink( _from, _to, _conditionEvaluation );
             }
 
+            #ifdef PARALLEL_MODE
             const bool runsParallel() const
             {
                 return mRunsParallel;
@@ -178,13 +185,16 @@ namespace smtrat
             {
                 return mInterruptibleBackends;
             }
+            #endif
 
             void printModel( std::ostream& ) const;
             std::vector<Module*> getBackends( Formula*, Module*, std::atomic_bool* );
+            #ifdef PARALLEL_MODE
             std::future<Answer> submitBackend( Module* );
             void checkBackendPriority( Module* );
             bool checkInterruptionFlags( std::vector<unsigned> );
             void setInterruptionFlag( unsigned, bool );
+            #endif
     };
 }    // namespace smtrat
 
