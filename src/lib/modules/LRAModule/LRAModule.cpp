@@ -518,13 +518,34 @@ namespace smtrat
         #ifdef LRA_REFINEMENT
         learnRefinements();
         #ifdef LRA_BRANCH_AND_BOUND
-        exmap rmodel = getRationalModel();
-        // current solution is already integer-valued
-        // ...
-                return foundAnswer( True );
-        // at least one assignment is non-integer-valued
-        // ...
+        for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
+        {
+            if(Formula::domain(var->first==0))
+            {
+                Formula* deductionA = new Formula( OR );
+                //const Constraint* lessEqualConstraint = Formula::newConstraint(?);
+                //const Constraint* biggerEqualConstraint= Formula::newConstraint(?);
+                //deductionA->addSubformula(lessEqualConstraint);
+                //deductionA->addSubformula(biggerEqualConstraint);
+                addDeduction( deductionA );
                 return foundAnswer( Unknown );
+            }                                    
+        }
+        for(auto var=mSlackVars.begin();var != mSlackVars.end() ;++var)
+        {
+            if(Formula::domain(var->first==0))
+            {
+                Formula* deductionA = new Formula( OR );
+                //const Constraint* lessEqualConstraint = Formula::newConstraint(?);
+                //const Constraint* biggerEqualConstraint= Formula::newConstraint(?);
+                //deductionA->addSubformula(lessEqualConstraint);
+                //deductionA->addSubformula(biggerEqualConstraint);
+                addDeduction( deductionA );
+                return foundAnswer( Unknown );
+            }                                    
+        }
+        return foundAnswer( True );
+        
         #endif
         #endif
         return foundAnswer( True );
