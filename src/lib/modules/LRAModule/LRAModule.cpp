@@ -523,8 +523,8 @@ namespace smtrat
             if(Formula::domain(var->first==0))
             {
                 Formula* deductionA = new Formula( OR );
-                //const Constraint* lessEqualConstraint = Formula::newConstraint();
-                //const Constraint* biggerEqualConstraint= Formula::newConstraint(, CR_GEQ ,);
+                //const Constraint* lessEqualConstraint = Formula::newConstraint(?);
+                //const Constraint* biggerEqualConstraint= Formula::newConstraint(?);
                 //deductionA->addSubformula(lessEqualConstraint);
                 //deductionA->addSubformula(biggerEqualConstraint);
                 addDeduction( deductionA );
@@ -536,8 +536,8 @@ namespace smtrat
             if(Formula::domain(var->first==0))
             {
                 Formula* deductionA = new Formula( OR );
-                //const Constraint* lessEqualConstraint = Formula::newConstraint(, CR_LEQ ,);
-                //const Constraint* biggerEqualConstraint= Formula::newConstraint(, CR_GEQ ,);
+                //const Constraint* lessEqualConstraint = Formula::newConstraint(?);
+                //const Constraint* biggerEqualConstraint= Formula::newConstraint(?);
                 //deductionA->addSubformula(lessEqualConstraint);
                 //deductionA->addSubformula(biggerEqualConstraint);
                 addDeduction( deductionA );
