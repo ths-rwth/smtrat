@@ -33,7 +33,7 @@
 //#define DEBUG_LRA_MODULE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_ONE_REASON
-//#define LRA_BRANCH_AND_BOUND
+#define LRA_BRANCH_AND_BOUND
 
 using namespace std;
 using namespace lra;
@@ -526,12 +526,11 @@ namespace smtrat
                 stringstream sstream;
                 sstream << var->first;
                 symtab *setOfVar = new symtab();
-                setOfVar->insert(pair< std::string, ex >(sstream.str(),*var->first));
-   
-                //const Constraint* lessEqualConstraint = Formula::newConstraint(var->first-floor(var->second.assignment()),CR_LEQ,setOfVar);
-                //const Constraint* biggerEqualConstraint= Formula::newConstraint(?);
-                 //deductionA->addSubformula(lessEqualConstraint);
-                //deductionA->addSubformula(biggerEqualConstraint);
+                setOfVar->insert(pair< std::string, ex >(sstream.str(),*(var->first)));
+                const Constraint* lessEqualConstraint = Formula::newConstraint(*(var->first),CR_LEQ,*setOfVar);
+                const Constraint* biggerEqualConstraint= Formula::newConstraint(*(var->first),CR_GEQ,*setOfVar);
+                deductionA->addSubformula(lessEqualConstraint);
+                deductionA->addSubformula(biggerEqualConstraint);
                 addDeduction( deductionA );
                 return foundAnswer( Unknown );
             }                                    
