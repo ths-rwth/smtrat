@@ -536,8 +536,8 @@ namespace smtrat
                 deductionA->addSubformula(biggerEqualConstraint);
                 addDeduction(deductionA);
                 return foundAnswer(Unknown);
-                ++map_iterator;
-            }                                    
+            }
+        ++map_iterator;    
         }
         return foundAnswer(True);        
         #endif
