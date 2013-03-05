@@ -518,25 +518,28 @@ namespace smtrat
         #ifdef LRA_REFINEMENT
         learnRefinements();
         #ifdef LRA_BRANCH_AND_BOUND
+        exmap rMap = getRationalModel();
+        exmap::const_iterator map_iterator = rMap.begin();
         for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
-        {   
-            if(Formula::domain(*(var->first)) == INTEGER_DOMAIN)
+        {    
+            if(Formula::domain(*var->first) == INTEGER_DOMAIN)
             {
-                Formula* deductionA = new Formula( OR );
+                
+                Formula* deductionA = new Formula(OR);
                 stringstream sstream;
-                sstream << var->first;
+                sstream << *var->first;
                 symtab *setOfVar = new symtab();
-                setOfVar->insert(pair< std::string, ex >(sstream.str(),*(var->first)));
-                const Constraint* lessEqualConstraint = Formula::newConstraint(*(var->first),CR_LEQ,*setOfVar);
-                const Constraint* biggerEqualConstraint= Formula::newConstraint(*(var->first),CR_GEQ,*setOfVar);
+                setOfVar->insert(pair< std::string, ex >(sstream.str(),*var->first));            
+                const Constraint* lessEqualConstraint = Formula::newConstraint(*var->first-map_iterator->second,CR_LEQ,*setOfVar);
+                const Constraint* biggerEqualConstraint= Formula::newConstraint(*var->first-(map_iterator->second + 1),CR_GEQ,*setOfVar);
                 deductionA->addSubformula(lessEqualConstraint);
                 deductionA->addSubformula(biggerEqualConstraint);
-                addDeduction( deductionA );
-                return foundAnswer( Unknown );
+                addDeduction(deductionA);
+                return foundAnswer(Unknown);
+                ++map_iterator;
             }                                    
         }
-                return foundAnswer( True );
-        
+        return foundAnswer(True);        
         #endif
         #endif
         return foundAnswer( True );
@@ -827,6 +830,7 @@ namespace smtrat
         {
             mAssignmentFullfilsNonlinearConstraints = true;
             return true;
+            
         }
         else
         {
