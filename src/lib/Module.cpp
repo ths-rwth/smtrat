@@ -655,7 +655,7 @@ namespace smtrat
                 }
             }
 
-            #ifdef PARALLEL_MODE
+            #ifdef SMTRAT_STRAT_PARALLEL_MODE
             unsigned highestIndex = numberOfUsedBackends-1;
             if( mpManager->runsParallel() )
             {
@@ -664,29 +664,37 @@ namespace smtrat
                  */
                 if( anAnswerFound() )
                 {
-                    cout << "test" << endl;
                     return Unknown;
                 }
 
-                vector< std::future<Answer> > futures( highestIndex);
+                vector< std::future<Answer> > futures( highestIndex );
 
                 for( unsigned i=0; i<highestIndex; ++i )
                 {
+                    #ifdef MODULE_VERBOSE
+                    cout << endl << "Call to module " << moduleName( mUsedBackends[ i ]->type() ) << endl;
+                    mUsedBackends[ i ]->print( cout, " ");
+                    #endif
                     futures[ i ] = mpManager->submitBackend( mUsedBackends[ i ] );
                 }
 
                 mpManager->checkBackendPriority( mUsedBackends[ highestIndex ] );
+                #ifdef MODULE_VERBOSE
+                cout << endl << "Call to module " << moduleName( mUsedBackends[ highestIndex ]->type() ) << endl;
+                mUsedBackends[ highestIndex ]->print( cout, " ");
+                #endif
                 result = mUsedBackends[ highestIndex ]->isConsistent();
                 mUsedBackends[ highestIndex ]->receivedFormulaChecked();
 
                 for( unsigned i=0; i<highestIndex; ++i )
                 {
+                    // Futures must be received, otherwise inconsistent state.
                     Answer res = futures[ i ].get();
                     mUsedBackends[ i ]->receivedFormulaChecked();
                     if( res!=Unknown )
                     {
                         cout << "Resultat: " << res << " and threadid: " << mUsedBackends[i]->threadPriority().first << " and type: " << mUsedBackends[i]->type() << endl;
-                        assert( result==Unknown || result==res );
+                        assert( result == Unknown || result == res );
                         result = res;
                     }
                 }
@@ -725,7 +733,7 @@ namespace smtrat
                     #endif
                     ++module;
                 }
-            #ifdef PARALLEL_MODE
+            #ifdef SMTRAT_STRAT_PARALLEL_MODE
             }
             #endif
         }
@@ -827,7 +835,6 @@ namespace smtrat
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
         {
-            // TODO: Make this mutual exclusive.
             if( !anAnswerFound() )
             {
                 *mFoundAnswer.back() = true;
@@ -1015,14 +1022,16 @@ namespace smtrat
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // add all real-valued variables
-                for( GiNaC::symtab::const_iterator var = Formula::mConstraintPool.realVariables().begin();
-                    var != Formula::mConstraintPool.realVariables().end(); ++var )
+                GiNaC::symtab allVariables = mpReceivedFormula->mConstraintPool.realVariables();
+                for( GiNaC::symtab::const_iterator var = allVariables.begin();
+                    var != allVariables.end(); ++var )
                 {
                     smtlibFile << "(declare-fun " << var->first << " () Real)\n";
                 }
                 // add all Boolean variables
-                for( set<string>::const_iterator var = Formula::mConstraintPool.booleanVariables().begin();
-                    var != Formula::mConstraintPool.booleanVariables().end(); ++var )
+                set<string> allBooleans = Formula::mConstraintPool.booleanVariables();
+                for( set<string>::const_iterator var = allBooleans.begin();
+                    var != allBooleans.end(); ++var )
                 {
                     smtlibFile << "(declare-fun " << *var << " () Bool)\n";
                 }
@@ -1058,8 +1067,8 @@ namespace smtrat
             smtlibFile << "(set-option :interactive-mode true)\n";
             smtlibFile << "(set-info :smt-lib-version 2.0)\n";
             // add all real-valued variables
-            for( GiNaC::symtab::const_iterator var = Formula::mConstraintPool.realVariables().begin();
-                var != Formula::mConstraintPool.realVariables().end(); ++var )
+            GiNaC::symtab allVars = Formula::constraintPool().realVariables();
+            for( GiNaC::symtab::const_iterator var = allVars.begin(); var != allVars.end(); ++var )
             {
                 smtlibFile << "(declare-fun " << var->first << " () Real)\n";
             }

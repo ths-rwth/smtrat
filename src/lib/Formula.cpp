@@ -37,7 +37,7 @@ using namespace std;
 
 namespace smtrat
 {
-    ConstraintPool Formula::mConstraintPool = ConstraintPool();
+    ConstraintPool* Formula::mpConstraintPool = new ConstraintPool();
 
     Formula::Formula():
         mDeducted( false ),

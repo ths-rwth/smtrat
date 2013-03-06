@@ -150,7 +150,7 @@ namespace vs
                 else
                 {
                     ex q = simplify( substituted.constantPart(), variables );
-                    if( fmod( _constraint->lhs().degree( ex( sym ) ), 2.0 ) != 0.0 )
+                    if( fmod( _constraint->maxDegree( ex( sym ) ), 2.0 ) != 0.0 )
                     {
                         ex s = simplify( substituted.denominator(), variables );
                         /*
@@ -205,7 +205,7 @@ namespace vs
             else
             {
                 ex s = 1;
-                if( fmod( _constraint->lhs().degree( ex( sym ) ), 2.0 ) != 0.0 )
+                if( fmod( _constraint->maxDegree( ex( sym ) ), 2.0 ) != 0.0 )
                 {
                     s = substituted.denominator();
                 }
@@ -785,7 +785,7 @@ namespace vs
             derivative = constraint->lhs().diff( sym, 1 );
             simplify( derivative, ex( sym ) );
 
-            assert( derivative.degree( ex( sym ) ) < collection.back()->lhs().degree( ex( sym ) ) );
+            assert( derivative.degree( ex( sym ) ) < (signed) collection.back()->maxDegree( ex( sym ) ) );
 
             // Add the constraint f^i(x)~0.
             collection.push_back( smtrat::Formula::newConstraint( derivative, _relation, _constraint.variables() ) );

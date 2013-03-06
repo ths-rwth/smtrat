@@ -44,8 +44,8 @@ namespace smtrat
         mIdAllocator( 1 ),
         mAuxiliaryBooleanCounter( 0 ),
         mAuxiliaryRealCounter( 0 ),
-        mConsistentConstraint( new Constraint( 0, CR_EQ, symtab(), 1 ) ),
-        mInconsistentConstraint( new Constraint( 0, CR_LESS, symtab(), 2 ) ),
+        mConsistentConstraint( new std::atomic< const Constraint* >( new Constraint( 0, CR_EQ, symtab(), 1 ) ) ),
+        mInconsistentConstraint( new std::atomic< const Constraint* >( new Constraint( 0, CR_LESS, symtab(), 2 ) ) ),
         mAuxiliaryBooleanNamePrefix( "h_b_" ),
         mAuxiliaryRealNamePrefix( "h_r_" ),
         mArithmeticVariables(),
@@ -66,19 +66,27 @@ namespace smtrat
     {
         while( !mConstraints.empty() )
         {
-            const Constraint* pCons = *mConstraints.begin();
+            const Constraint* pCons = (*mConstraints.begin())->load();
             mConstraints.erase( mConstraints.begin() );
             delete pCons;
         }
     }
 
+    /**
+     *
+     */
     void ConstraintPool::clear()
     {
+        lock_guard<mutex> lock1( mMutexAllocator );
+        lock_guard<mutex> lock2( mMutexArithmeticVariables );
+        lock_guard<mutex> lock3( mMutexBooleanVariables );
+        lock_guard<mutex> lock4( mMutexDomain );
+        lock_guard<mutex> lock5( mMutexConstraints );
         mConstraints.erase( mConsistentConstraint );
         mConstraints.erase( mInconsistentConstraint );
         while( !mConstraints.empty() )
         {
-            const Constraint* pCons = *mConstraints.begin();
+            const Constraint* pCons = (*mConstraints.begin())->load();
             mConstraints.erase( mConstraints.begin() );
             delete pCons;
         }
@@ -117,7 +125,10 @@ namespace smtrat
     const Constraint* ConstraintPool::newConstraint( const ex& _lhs, const Constraint_Relation _rel, const symtab& _variables )
     {
         assert( hasNoOtherVariables( _lhs ) );
-        return addConstraintToPool( createNormalizedConstraint( _lhs, _rel, _variables ) );
+        // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
+        //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
+        lock_guard<mutex> lock( mMutexAllocator );
+        return addConstraintToPool( createNormalizedConstraint( _lhs, _rel, _variables ) )->load();
     }
 
     /**
@@ -131,7 +142,10 @@ namespace smtrat
     const Constraint* ConstraintPool::newConstraint( const ex& _lhs, const ex& _rhs, const Constraint_Relation _rel, const symtab& _variables )
     {
         assert( hasNoOtherVariables( _lhs ) && hasNoOtherVariables( _rhs ) );
-        return addConstraintToPool( createNormalizedConstraint( _lhs-_rhs, _rel, _variables ) );
+        // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
+        //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
+        lock_guard<mutex> lock( mMutexAllocator );
+        return addConstraintToPool( createNormalizedConstraint( _lhs-_rhs, _rel, _variables ) )->load();
     }
 
     /**
@@ -145,8 +159,11 @@ namespace smtrat
         symtab emptySymtab;
         parser reader( emptySymtab );
         ex var = reader( _name );
+        mMutexDomain.lock();
         auto res = mDomain.insert( pair< ex, Variable_Domain >( var, _domain ) );
         assert( res.second );
+        mMutexDomain.unlock();
+        lock_guard<mutex> lock( mMutexArithmeticVariables );
         return mArithmeticVariables.insert( pair<const string, ex>( _name, var ) ).first->second;
     }
 
@@ -162,8 +179,11 @@ namespace smtrat
         symtab emptySymtab;
         parser reader( emptySymtab );
         ex var = reader( out.str() );
+        mMutexDomain.lock();
         auto res = mDomain.insert( pair< ex, Variable_Domain >( var, REAL_DOMAIN ) );
         assert( res.second );
+        mMutexDomain.unlock();
+        lock_guard<mutex> lock( mMutexArithmeticVariables );
         return *mArithmeticVariables.insert( pair<const string, ex>( out.str(), var ) ).first;
     }
 
@@ -173,6 +193,7 @@ namespace smtrat
      */
     void ConstraintPool::newBooleanVariable( const string& _name )
     {
+        lock_guard<mutex> lock( mMutexBooleanVariables );
         assert( mBooleanVariables.find( _name ) == mBooleanVariables.end() );
         mBooleanVariables.insert( _name );
     }
@@ -183,6 +204,7 @@ namespace smtrat
      */
     string ConstraintPool::newAuxiliaryBooleanVariable()
     {
+        lock_guard<mutex> lock( mMutexBooleanVariables );
         stringstream out;
         out << mAuxiliaryBooleanNamePrefix << mAuxiliaryBooleanCounter++;
         mBooleanVariables.insert( out.str() );
@@ -190,11 +212,13 @@ namespace smtrat
     }
 
     /**
+     * Prints all constraints in the constraint pool on the given stream.
      *
-     * @param _out
+     * @param _out The stream to print on.
      */
     void ConstraintPool::print( ostream& _out ) const
     {
+        lock_guard<mutex> lock( mMutexConstraints );
         _out << "---------------------------------------------------" << endl;
         _out << "Constraint pool:" << endl;
         for( fcs_const_iterator constraint = mConstraints.begin();
@@ -203,153 +227,6 @@ namespace smtrat
             _out << "    " << **constraint << endl;
         }
         _out << "---------------------------------------------------" << endl;
-    }
-
-    /**
-     * Constructs a new constraint using its string representation.
-     *
-     * @param _stringrep    String representation of the constraint.
-     * @param _infix        true, if the given representation is in infix notation and false, if it is in prefix notation
-     * @param _polarity     The polarity of the constraint.
-     *
-     * @return A shared pointer to the constraint.
-     */
-    const Constraint* ConstraintPool::newConstraint( const string& _stringrep, bool _infix, bool _polarity )
-    {
-        /*
-         * Read the given string representing the constraint.
-         */
-        string expression;
-        if( _infix )
-        {
-            expression = _stringrep;
-        }
-        else
-        {
-            expression = prefixToInfix( _stringrep );
-        }
-        string::size_type   opPos;
-        Constraint_Relation relation;
-        unsigned            opSize = 0;
-        opPos = expression.find( "=", 0 );
-        if( opPos == string::npos )
-        {
-            opPos = expression.find( "<", 0 );
-            if( opPos == string::npos )
-            {
-                opPos = expression.find( ">", 0 );
-
-                assert( opPos != string::npos );
-
-                if( _polarity )
-                {
-                    relation = CR_GREATER;
-                }
-                else
-                {
-                    relation = CR_LEQ;
-                }
-                opSize = 1;
-            }
-            else
-            {
-                if( _polarity )
-                {
-                    relation = CR_LESS;
-                }
-                else
-                {
-                    relation = CR_GEQ;
-                }
-                opSize = 1;
-            }
-        }
-        else
-        {
-            string::size_type tempOpPos = opPos;
-            opPos = expression.find( "<", 0 );
-            if( opPos == string::npos )
-            {
-                opPos = expression.find( ">", 0 );
-                if( opPos == string::npos )
-                {
-                    opPos = expression.find( "!", 0 );
-                    if( opPos == string::npos )
-                    {
-                        opPos = tempOpPos;
-                        if( _polarity )
-                        {
-                            relation = CR_EQ;
-                        }
-                        else
-                        {
-                            relation = CR_NEQ;
-                        }
-                        opSize = 1;
-                    }
-                    else
-                    {
-                        if( _polarity )
-                        {
-                            relation = CR_NEQ;
-                        }
-                        else
-                        {
-                            relation = CR_EQ;
-                        }
-                        opSize = 2;
-                    }
-                }
-                else
-                {
-                    if( _polarity )
-                    {
-                        relation = CR_GEQ;
-                    }
-                    else
-                    {
-                        relation = CR_LESS;
-                    }
-                    opSize = 2;
-                }
-            }
-            else
-            {
-                if( _polarity )
-                {
-                    relation = CR_LEQ;
-                }
-                else
-                {
-                    relation = CR_GREATER;
-                }
-                opSize = 2;
-            }
-        }
-
-        /*
-         * Parse the lefthand and righthand side and store their difference as
-         * lefthand side of the constraint.
-         */
-        parser reader( mArithmeticVariables );
-        ex lhs, rhs;
-        string lhsString = expression.substr( 0, opPos );
-        string rhsString = expression.substr( opPos + opSize );
-        try
-        {
-            lhs = reader( lhsString );
-            rhs = reader( rhsString );
-        }
-        catch( parse_error& err )
-        {
-            cerr << err.what() << endl;
-        }
-
-        /*
-         * Collect the new variables in the constraint:
-         */
-        mArithmeticVariables.insert( reader.get_syms().begin(), reader.get_syms().end() );
-        return addConstraintToPool( createNormalizedConstraint( lhs-rhs, relation, reader.get_syms() ) );
     }
 
     /**
@@ -459,16 +336,19 @@ namespace smtrat
     }
 
     /**
+     * Determines the highest degree occurring in all constraints.
      *
-     * @return
+     * Note: This method makes the other accesses to the constraint pool waiting.
+     * @return The highest degree occurring in all constraints
      */
     int ConstraintPool::maxDegree() const
     {
         int result = 0;
+        lock_guard<mutex> lock( mMutexConstraints );
         for( fcs_const_iterator constraint = mConstraints.begin();
              constraint != mConstraints.end(); ++constraint )
         {
-            int maxdeg = (*constraint)->maxDegree();
+            int maxdeg = (*constraint)->load()->maxDegree();
             if(maxdeg > result) result = maxdeg;
         }
         return result;
@@ -476,15 +356,17 @@ namespace smtrat
 
     /**
      *
+     * Note: This method makes the other accesses to the constraint pool waiting.
      * @return
      */
     unsigned ConstraintPool::nrNonLinearConstraints() const
     {
         unsigned nonlinear = 0;
+        lock_guard<mutex> lock( mMutexConstraints );
         for( fcs_const_iterator constraint = mConstraints.begin();
              constraint != mConstraints.end(); ++constraint )
         {
-            if(!(*constraint)->isLinear()) ++nonlinear;
+            if(!(*constraint)->load()->isLinear()) ++nonlinear;
         }
         return nonlinear;
     }
@@ -497,6 +379,7 @@ namespace smtrat
     bool ConstraintPool::hasNoOtherVariables( const ex& _expression ) const
     {
         lst substitutionList = lst();
+        lock_guard<mutex> lock( mMutexArithmeticVariables );
         for( symtab::const_iterator var = mArithmeticVariables.begin(); var != mArithmeticVariables.end(); ++var )
         {
             substitutionList.append( ex_to<symbol>( var->second ) == 0 );
@@ -506,12 +389,14 @@ namespace smtrat
 
     /**
      *
+     * Note, that this method uses the allocator which is locked before calling.
+     *
      * @param _lhs
      * @param _rel
      * @param _variables
      * @return
      */
-    Constraint* ConstraintPool::createNormalizedConstraint( const ex& _lhs, const Constraint_Relation _rel, const symtab& _variables )
+    Constraint* ConstraintPool::createNormalizedConstraint( const ex& _lhs, const Constraint_Relation _rel, const symtab& _variables ) const
     {
         if( _rel == CR_GREATER )
         {
@@ -529,16 +414,19 @@ namespace smtrat
 
     /**
      *
+     * Note, that this method uses the allocator which is locked before calling.
+     *
      * @param _constraint
      * @return
      */
-    const Constraint* ConstraintPool::addConstraintToPool( Constraint* _constraint )
+    std::atomic<const Constraint*>* ConstraintPool::addConstraintToPool( Constraint* _constraint )
     {
         unsigned constraintConsistent = _constraint->isConsistent();
         if( constraintConsistent == 2 )
         {
+            std::unique_lock<std::mutex> lock( mMutexConstraints );
             // Constraint contains variables.
-            pair<fastConstraintSet::iterator, bool> iterBoolPair = mConstraints.insert( _constraint );
+            pair<fastConstraintSet::iterator, bool> iterBoolPair = mConstraints.insert( new std::atomic<const Constraint*>( _constraint ) );
             if( !iterBoolPair.second )
             {
                 // Constraint has already been generated.
@@ -551,11 +439,11 @@ namespace smtrat
                 if( constraint != NULL )
                 {
                     // Constraint could be simplified.
-                    pair<fastConstraintSet::iterator, bool> iterBoolPairB = mConstraints.insert( constraint );
+                    pair<fastConstraintSet::iterator, bool> iterBoolPairB = mConstraints.insert( new std::atomic<const Constraint*>( constraint ) );
                     if( !iterBoolPairB.second )
                     {
                         // Simplified version already exists, then set the id of the generated constraint to the id of the simplified one.
-                        _constraint->rId() = (*iterBoolPairB.first)->id();
+                        _constraint->rId() = (*iterBoolPairB.first)->load()->id();
                         delete constraint;
                     }
                     else

@@ -278,6 +278,7 @@ namespace smtrat
 
             while( !mRanking.empty() )
             {
+//                std::this_thread::sleep_for(std::chrono::milliseconds(5));
                 if( anAnswerFound() )
                 {
                     return foundAnswer( Unknown );
@@ -797,7 +798,7 @@ EndSwitch:;
          */
         symbol sym;
         constraint.variable( _eliminationVar, sym );
-        symtab vars = symtab( constraint.variables() );
+        symtab vars = constraint.variables();
         vars.erase( _eliminationVar );
 
         /*
@@ -811,16 +812,17 @@ EndSwitch:;
 
         vector<ex> coeffs = vector<ex>();
         #ifdef VS_ELIMINATE_MULTI_ROOTS
-        signed degree = constraint.multiRootLessLhs().degree( ex( sym ) );
+        ex mrl = constraint.multiRootLessLhs();
+        signed degree = mrl.degree( ex( sym ) );
         #else
-        signed degree = constraint.lhs().degree( ex( sym ) );
+        signed degree = constraint.lhs().maxDegree( ex( sym ) );
         #endif
         for( signed i = 0; i <= degree; ++i )
         {
             #ifdef VS_ELIMINATE_MULTI_ROOTS
             coeffs.push_back( ex( constraint.multiRootLessLhs().coeff( ex( sym ), i ) ) );
             #else
-            coeffs.push_back( ex( constraint.lhs().coeff( ex( sym ), i ) ) );
+            coeffs.push_back( ex( constraint.coefficient( ex( sym ), i ) ) );
             #endif
         }
 

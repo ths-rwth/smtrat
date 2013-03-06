@@ -39,7 +39,7 @@ namespace vs
      */
     Condition::Condition()
     {
-        mpConstraint          = smtrat::Formula::newConstraint( 0, smtrat::CR_EQ );
+        mpConstraint          = smtrat::Formula::newConstraint( 0, smtrat::CR_EQ, symtab() );
         mpOriginalConditions  = new ConditionSet();
         mpInfo                = new Info();
         mpInfo->flag          = false;

@@ -33,8 +33,6 @@
 #ifndef SMTRAT_MANAGER_H
 #define SMTRAT_MANAGER_H
 
-#define PARALLEL_MODE
-
 #include <vector>
 
 #include "Answer.h"
@@ -72,7 +70,7 @@ namespace smtrat
             std::map<const ModuleType, ModuleFactory*>* mpModuleFactories;
             /// primary strategy
             StrategyGraph mStrategyGraph;
-            #ifdef PARALLEL_MODE
+            #ifdef SMTRAT_STRAT_PARALLEL_MODE
             ///
             ThreadPool* mpThreadPool;
             ///
@@ -88,7 +86,7 @@ namespace smtrat
             ///
             std::vector<bool> mInterruptionFlags;
             ///
-            std::mutex mBackendsMutex;
+            mutable std::mutex mBackendsMutex;
 
             void initialize();
             #endif
@@ -110,7 +108,7 @@ namespace smtrat
 
             Answer isConsistent()
             {
-                #ifdef PARALLEL_MODE
+                #ifdef SMTRAT_STRAT_PARALLEL_MODE
                 initialize();
                 #endif
                 #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -151,9 +149,13 @@ namespace smtrat
                 return mStrategyGraph;
             }
 
-            std::vector<Module*> getAllBackends( Module* _module )
+            std::vector<Module*> getAllBackends( Module* _module ) const
             {
-                return mBackendsOfModules[_module];
+                // Mutex?
+                auto iter = mBackendsOfModules.find( _module );
+                assert( iter != mBackendsOfModules.end() );
+                std::vector<Module*> result = iter->second;
+                return result;
             }
 
             const Formula& formula() const
@@ -175,7 +177,7 @@ namespace smtrat
                 mStrategyGraph.addBacklink( _from, _to, _conditionEvaluation );
             }
 
-            #ifdef PARALLEL_MODE
+            #ifdef SMTRAT_STRAT_PARALLEL_MODE
             const bool runsParallel() const
             {
                 return mRunsParallel;
@@ -189,7 +191,7 @@ namespace smtrat
 
             void printModel( std::ostream& ) const;
             std::vector<Module*> getBackends( Formula*, Module*, std::atomic_bool* );
-            #ifdef PARALLEL_MODE
+            #ifdef SMTRAT_STRAT_PARALLEL_MODE
             std::future<Answer> submitBackend( Module* );
             void checkBackendPriority( Module* );
             bool checkInterruptionFlags( std::vector<unsigned> );

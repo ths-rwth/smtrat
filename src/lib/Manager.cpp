@@ -56,7 +56,7 @@ namespace smtrat
         mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
         mStrategyGraph()
-        #ifdef PARALLEL_MODE
+        #ifdef SMTRAT_STRAT_PARALLEL_MODE
         ,
         mpThreadPool( NULL ),
         mNumberOfCores( 1 ),
@@ -66,16 +66,15 @@ namespace smtrat
         mpModuleFactories = new map<const ModuleType, ModuleFactory*>();
 
         // inform it about all constraints
-        for( fcs_const_iterator constraint = Formula::mConstraintPool.begin(); constraint != Formula::mConstraintPool.end(); ++constraint )
+        for( fcs_const_iterator constraint = Formula::constraintPool().begin(); constraint != Formula::constraintPool().end(); ++constraint )
         {
-            mpPrimaryBackend->inform( *constraint );
+            mpPrimaryBackend->inform( (*constraint)->load() );
         }
     }
 
     /**
      * Destructor:
      */
-
     Manager::~Manager()
     {
         Module::storeAssumptionsToCheck( *this );
@@ -92,7 +91,7 @@ namespace smtrat
             delete pModuleFactory;
         }
         delete mpModuleFactories;
-        #ifdef PARALLEL_MODE
+        #ifdef SMTRAT_STRAT_PARALLEL_MODE
         if( mpThreadPool!=NULL )
         {
             delete mpThreadPool;
@@ -104,7 +103,7 @@ namespace smtrat
      * Methods:
      */
 
-    #ifdef PARALLEL_MODE
+    #ifdef SMTRAT_STRAT_PARALLEL_MODE
     /**
      *
      */
@@ -113,7 +112,7 @@ namespace smtrat
         mNumberOfBranches = mStrategyGraph.numberOfBranches();
         if( mNumberOfBranches>1 )
         {
-            mNumberOfCores = std::thread::hardware_concurrency();
+            mNumberOfCores = 4;//std::thread::hardware_concurrency();
             if( mNumberOfCores>1 )
             {
                 mStrategyGraph.setThreadAndBranchIds();
@@ -163,6 +162,7 @@ namespace smtrat
      */
     vector<Module*> Manager::getBackends( Formula* _formula, Module* _requiredBy, atomic_bool* _foundAnswer )
     {
+        std::lock_guard<std::mutex> lock( mBackendsMutex );
         vector<Module*>  backends    = vector<Module*>();
         vector<Module*>& allBackends = mBackendsOfModules[_requiredBy];
         /*
@@ -181,6 +181,7 @@ namespace smtrat
             {
                 if( (*backend)->threadPriority() == iter->first )
                 {
+                    cout << "getBackends: " << iter->second << endl;
                     // the backend already exists
                     backends.push_back( *backend );
                     break;
@@ -215,7 +216,7 @@ namespace smtrat
         return backends;
     }
 
-    #ifdef PARALLEL_MODE
+    #ifdef SMTRAT_STRAT_PARALLEL_MODE
     /**
      *
      * @param _pModule

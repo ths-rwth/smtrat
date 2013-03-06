@@ -220,7 +220,7 @@ namespace smtrat
         string booleanName = "";
         if( _isBindingVariable )
         {
-            booleanName = mFormulaRoot->mConstraintPool.newAuxiliaryBooleanVariable();
+            booleanName = mFormulaRoot->mpConstraintPool->newAuxiliaryBooleanVariable();
         }
         else
         {
@@ -248,7 +248,7 @@ namespace smtrat
         pair< string, ex > ginacConformVar;
         if( _isBindingVariable )
         {
-            ginacConformVar = mFormulaRoot->mConstraintPool.newAuxiliaryRealVariable();
+            ginacConformVar = mFormulaRoot->mpConstraintPool->newAuxiliaryRealVariable();
         }
         else
         {

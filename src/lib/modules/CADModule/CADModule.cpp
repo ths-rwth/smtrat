@@ -123,11 +123,12 @@ namespace smtrat
         #ifndef SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
         // variable order optimization
         std::forward_list<symbol> variables = std::forward_list<symbol>( );
-        for( GiNaC::symtab::const_iterator i = mpReceivedFormula->mConstraintPool.realVariables().begin(); i != mpReceivedFormula->mConstraintPool.realVariables().end(); ++i )
+        GiNaC::symtab allVariables = mpReceivedFormula->constraintPool().realVariables();
+        for( GiNaC::symtab::const_iterator i = allVariables.begin(); i != allVariables.end(); ++i )
             variables.push_front( GiNaC::ex_to<symbol>( i->second ) );
         std::forward_list<Polynomial> polynomials = std::forward_list<Polynomial>( );
-        for( fcs_const_iterator i = mpReceivedFormula->mConstraintPool.begin(); i != mpReceivedFormula->mConstraintPool.end(); ++i )
-            polynomials.push_front( (*i)->lhs() );
+        for( fcs_const_iterator i = mpReceivedFormula->constraintPool().begin(); i != mpReceivedFormula->constraintPool().end(); ++i )
+            polynomials.push_front( (*i)->load()->lhs() );
         mCAD = CAD( {}, CAD::orderVariablesGreeedily( variables.begin(), variables.end(), polynomials.begin(), polynomials.end() ), setting );
         #ifdef MODULE_VERBOSE
         cout << "Optimizing CAD variable order from ";
