@@ -131,6 +131,8 @@ namespace smtrat
     {
         const Constraint*                    constr = (*_formula)->pConstraint();
 
+        mLRA.printReceivedFormula();
+        
         // create and initialize slackvariables
         mLRA.initialize();
         const LRAModule::ExVariableMap& slackVariables = mLRA.slackVariables();
@@ -155,15 +157,18 @@ namespace smtrat
 #ifdef ICPMODULE_DEBUG
             cout << "[ICP] Assertion (nonlinear)" << *constr <<  endl;
             cout << "mNonlinearConstraints.size: " << mNonlinearConstraints.size() << endl;
+            cout << "Number Candidates: " << mNonlinearConstraints[constr].size() << endl;
 #endif
             for( auto candidateIt = mNonlinearConstraints[constr].begin(); candidateIt != mNonlinearConstraints[constr].end(); ++candidateIt )
             {
+                
                 if( mActiveNonlinearConstraints.find( *candidateIt ) != mActiveNonlinearConstraints.end() )
                 {
 #ifdef ICPMODULE_DEBUG
                     cout << "[ICP] Increased candidate count: ";
                     (*candidateIt)->print();
 #endif
+                    (*candidateIt)->addOrigin(*_formula);
                     mActiveNonlinearConstraints[*candidateIt] += 1;
                 }
                 else
@@ -178,6 +183,9 @@ namespace smtrat
                 
                 // activate for mIcpRelevantCandidates Management
                 (*candidateIt)->activate();
+                
+                cout << "mNonlinearConstraints.size(): " << mNonlinearConstraints.size() << endl;
+                cout << "mActiveNonlinearConstraints.size(): " << mActiveNonlinearConstraints.size() << endl;
                 
                 // update affectedCandidates
                 for ( auto varIt = (*candidateIt)->constraint()->variables().begin(); varIt != (*candidateIt)->constraint()->variables().end(); ++varIt )
@@ -274,6 +282,8 @@ namespace smtrat
                GiNaC::symtab variables = replacementPtr->variables();
                variables.insert(newReal);
 
+               cout << slackvariable->expression() << endl;
+               
                Constraint* tmpConstr = new Constraint(slackvariable->expression()-newReal.second, Constraint_Relation::CR_EQ, variables );
 
                // store mapping of constraint without to constraint with linear variable, needed for comparison with failed constraints during validation
@@ -282,6 +292,7 @@ namespace smtrat
                // Create candidates for every possible variable:
                for (auto variableIt = variables.begin(); variableIt != variables.end(); ++variableIt )
                {
+                   tmpConstr->print();
                    icp::ContractionCandidate* newCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), tmpConstr, ex_to<symbol>((*variableIt).second), *_formula);
 
                    // ensure that the created candidate is set as linear
@@ -700,7 +711,7 @@ namespace smtrat
         if (mNonlinearConstraints.find(constr) != mNonlinearConstraints.end())
         {
             cout << "Nonlinear." << endl;
-            list<icp::ContractionCandidate*>::iterator candidateIt;
+            set<icp::ContractionCandidate*>::iterator candidateIt;
             for( candidateIt = mNonlinearConstraints[constr].begin(); candidateIt != mNonlinearConstraints[constr].end(); ++candidateIt )
             {
                 // remove origin, no matter if constraint is active or not ?!?
@@ -718,10 +729,18 @@ namespace smtrat
                         {
                             if ( (*activeLinearIt).first->hasOrigin(*_formula) )
                             {
+                                cout << "Remove linear origin from candidate " << (*activeLinearIt).first->id() << endl;
                                 (*activeLinearIt).first->removeOrigin(*_formula);
                                 if ( (*activeLinearIt).second > 1 )
                                 {
+                                    cout << "Decrease counter." << endl;
                                     mActiveLinearConstraints[(*activeLinearIt).first]--;
+                                }
+                                else
+                                {
+                                    cout << "Erase candidate." << endl;
+                                    (*activeLinearIt).first->deactivate();
+                                    mActiveLinearConstraints.erase((*activeLinearIt).first);
                                 }
                             }
                         }
@@ -913,7 +932,7 @@ namespace smtrat
                     /**
                     * Either the constraint is already an original one - then the constraint will be in the sets of origins of
                     * one of the linear contraction candidates (Case A). Otherwise the infeasible constrain is the result of the linearization -
-                    * it is the lhs of the contraction candidate itself (Case B).
+                    * it is the lhs of the contraction candidate itself (Case B). AS A THIRS CASE: A BOUNDARY CONSTRAINT IS VIOLATED: CHECK #VARIABLES
                     */
                     
                     for ( auto ccIt = mActiveLinearConstraints.begin(); ccIt != mActiveLinearConstraints.end(); ++ccIt)
@@ -923,13 +942,9 @@ namespace smtrat
                         
                         icp::ContractionCandidate* tmp = (*ccIt).first;
                         
-                        cout << "Size origins: " << tmp->origin().size() << endl;
-                        
                         // Case A
                         for ( auto originIt = tmp->rOrigin().begin(); originIt != tmp->rOrigin().end(); ++originIt )
                         {
-                            cout << "origin Type: " << (*originIt)->getType() << ", Formula Type: " << (*formulaIt)->getType() << endl;
-                            (*originIt)->print();
                             if ( (*originIt)->pConstraint() == (*formulaIt)->pConstraint() )
                             {
                                 cout << "Found origin: " << endl;
@@ -938,7 +953,6 @@ namespace smtrat
                                 cout << endl;
 //                                break;
                             }
-                            cout << "Ping." << endl;
                         }
                         
                         // Case B
@@ -958,9 +972,17 @@ namespace smtrat
                                 }
                             }
                             break;
-                        }
+                        }   
                     }
-                    
+                    // Case C
+                    if( (*formulaIt)->constraint().variables().size() == 1 )
+                    {
+                        cout << "Found boundary constraint: " << endl;
+                        newSet.insert((*formulaIt));
+                        (*formulaIt)->print();
+                        cout << endl;
+                    }
+                        
                     cout << endl;
                     
                 }
@@ -1243,15 +1265,17 @@ namespace smtrat
                  * or we didn't add new constraints which results in a direct acceptance of
                  * the solution (Why? -> numerical errors)
                  */
-                    cout << "ping" << endl;
-                    
                     // create Bounds and set them, add to passedFormula
                     pushBoundsToPassedFormula();
+                    // remove centerConstaints as soon as they are not longer needed.
+                    clearCenterConstraintsFromValidationFormula();
                     break;
                 }
                 
                 // remove centerConstaints as soon as they are not longer needed.
                 clearCenterConstraintsFromValidationFormula();
+                cout << "Clear CenterConstraints." << endl;
+                mLRA.printReceivedFormula();
             }
             else // if emptyInterval -> ChooseNextBox
             {
@@ -1280,10 +1304,6 @@ namespace smtrat
 #endif
             }
         }while ( boxFeasible );
-        
-        cout << "Size mInfeasibleSubsets: " << mInfeasibleSubsets.size() << endl;
-        
-        printInfeasibleSubsets();
         
         assert( mInfeasibleSubsets.empty() );
         
@@ -1513,9 +1533,10 @@ namespace smtrat
              */
             for ( auto constraintIt = mNonlinearConstraints.begin(); constraintIt != mNonlinearConstraints.end(); ++constraintIt )
             {
-                list<icp::ContractionCandidate*> tmpList = (*constraintIt).second;
+                set<icp::ContractionCandidate*> tmpList = (*constraintIt).second;
                 for ( auto candidateIt = tmpList.begin(); candidateIt != tmpList.end(); ++candidateIt )
                 {
+//                    if ( (*candidateIt)->lhs() == mLinearizations[_ex] && mNonlinearConstraints[_constr].find(*candidateIt) != mNonlinearConstraints[_constr].end() )
                     if ( (*candidateIt)->lhs() == mLinearizations[_ex] )
                     {
                         mNonlinearConstraints[_constr].insert(mNonlinearConstraints[_constr].end(), (*candidateIt));
@@ -1756,7 +1777,7 @@ namespace smtrat
         // calculate Jacobian for initial box
         for( constrIt = mNonlinearConstraints.begin(); constrIt != mNonlinearConstraints.end(); constrIt++ )
         {
-            std::list<icp::ContractionCandidate*> tmp = constrIt->second;
+            std::set<icp::ContractionCandidate*> tmp = constrIt->second;
 
             minSet = false;
             maxSet = false;
@@ -1830,11 +1851,11 @@ namespace smtrat
             cout << "\t replacements: " << endl;
             for(replacementsIt = nonlinearIt->second.begin(); replacementsIt != nonlinearIt->second.end(); ++replacementsIt){
                 cout << "   ";
-                (*replacementsIt)->constraint()->lhs().dbgprint();
+                (*replacementsIt)->print();
             }
         }
         cout << "**************** active nonlinear constraints *****************" << endl;
-        std::map<icp::ContractionCandidate*, int>::iterator activeNonlinearIt;
+        std::map<icp::ContractionCandidate*, unsigned>::iterator activeNonlinearIt;
         
         for(activeNonlinearIt = mActiveNonlinearConstraints.begin(); activeNonlinearIt != mActiveNonlinearConstraints.end(); ++activeNonlinearIt){
             cout << "Count: " << (*activeNonlinearIt).second << " , ";
@@ -2480,6 +2501,9 @@ namespace smtrat
         // fill mIcpRelevantCandidates with the nonlinear contractionCandidates
         for ( auto nonlinearIt = mActiveNonlinearConstraints.begin(); nonlinearIt != mActiveNonlinearConstraints.end(); ++nonlinearIt )
         {
+            // check that assertions have been processed properly
+            assert( (*nonlinearIt).second == (*nonlinearIt).first->origin().size() );
+            
             std::pair<double, unsigned> tmp ((*nonlinearIt).first->RWA(), (*nonlinearIt).first->id() );
             if ( mIntervals[(*nonlinearIt).first->derivationVar()].diameter() > _targetDiameter || mIntervals[(*nonlinearIt).first->derivationVar()].diameter() == -1 )
             {
@@ -2513,6 +2537,9 @@ namespace smtrat
         // fill mIcpRelevantCandidates with the active linear contractionCandidates
         for ( auto linearIt = mActiveLinearConstraints.begin(); linearIt != mActiveLinearConstraints.end(); ++linearIt )
         {
+            // check that assertions have been processed properly
+            assert( (*linearIt).second == (*linearIt).first->origin().size() );
+            
             const std::pair<double, unsigned> tmp ((*linearIt).first->RWA(), (*linearIt).first->id() );
             cout << "Consider for adding: " << (*linearIt).first->id() << endl;
             if ( (*linearIt).first->isActive() && ( mIntervals[(*linearIt).first->derivationVar()].diameter() > _targetDiameter || mIntervals[(*linearIt).first->derivationVar()].diameter() == -1 ) )
