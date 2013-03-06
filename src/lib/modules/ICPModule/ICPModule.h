@@ -74,7 +74,7 @@ namespace smtrat
                 double                     weight;
             };
 
-            typedef list<icp::ContractionCandidate*>                      ContractionCandidates;
+            typedef set<icp::ContractionCandidate*>                      ContractionCandidates;
             typedef std::map<ex*, weights>                             WeightMap;
             typedef std::vector< std::set<Constraint> >              vec_set_Constraint;
 
@@ -84,8 +84,8 @@ namespace smtrat
              * Members:
              */
             icp::ContractionCandidateManager*                                        mCandidateManager;
-            std::map<icp::ContractionCandidate*, int>                                mActiveNonlinearConstraints;
-            std::map<icp::ContractionCandidate*, int>                                mActiveLinearConstraints;
+            std::map<icp::ContractionCandidate*, unsigned>                                mActiveNonlinearConstraints;
+            std::map<icp::ContractionCandidate*, unsigned>                                mActiveLinearConstraints;
             std::map<const lra::Variable*, std::set<icp::ContractionCandidate*> >          mLinearConstraints;
             std::map<const Constraint*, ContractionCandidates>                  mNonlinearConstraints;
             GiNaCRA::ICP                                                        mIcp;

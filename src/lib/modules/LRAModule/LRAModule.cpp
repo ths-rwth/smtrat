@@ -383,6 +383,32 @@ namespace smtrat
                             #ifdef LRA_REFINEMENT
                             learnRefinements();
                             #endif
+
+                            #ifdef LRA_BRANCH_AND_BOUND
+                            exmap rMap = getRationalModel();
+                            exmap::const_iterator map_iterator = rMap.begin();
+                            for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
+                            {    
+                                if(Formula::domain(*var->first) == INTEGER_DOMAIN)
+                                {                
+                                   Formula* deductionA = new Formula(OR);
+                                   stringstream sstream;
+                                   sstream << *var->first;
+                                   symtab *setOfVar = new symtab();
+                                   setOfVar->insert(pair< std::string, ex >(sstream.str(),*var->first));  
+                                   numeric ass = ex_to<numeric>(map_iterator->second);
+                                   ass = ass.to_int();
+                                   const Constraint* lessEqualConstraint = Formula::newConstraint(*var->first - ass,CR_LEQ,*setOfVar);
+                                   const Constraint* biggerEqualConstraint= Formula::newConstraint(*var->first - ass - 1,CR_GEQ,*setOfVar);
+                                   deductionA->addSubformula(lessEqualConstraint);
+                                   deductionA->addSubformula(biggerEqualConstraint);
+                                   addDeduction(deductionA);
+                                   return foundAnswer(Unknown);
+                                }
+                            ++map_iterator;    
+                            }
+                            return foundAnswer(True);        
+                            #endif
                             return foundAnswer( True );
                         }
                         // Otherwise, resolve the notequal-constraints (create the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
@@ -517,30 +543,6 @@ namespace smtrat
         assert( false );
         #ifdef LRA_REFINEMENT
         learnRefinements();
-        #ifdef LRA_BRANCH_AND_BOUND
-        exmap rMap = getRationalModel();
-        exmap::const_iterator map_iterator = rMap.begin();
-        for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
-        {    
-            if(Formula::domain(*var->first) == INTEGER_DOMAIN)
-            {
-                
-                Formula* deductionA = new Formula(OR);
-                stringstream sstream;
-                sstream << *var->first;
-                symtab *setOfVar = new symtab();
-                setOfVar->insert(pair< std::string, ex >(sstream.str(),*var->first));            
-                const Constraint* lessEqualConstraint = Formula::newConstraint(*var->first-map_iterator->second,CR_LEQ,*setOfVar);
-                const Constraint* biggerEqualConstraint= Formula::newConstraint(*var->first-(map_iterator->second + 1),CR_GEQ,*setOfVar);
-                deductionA->addSubformula(lessEqualConstraint);
-                deductionA->addSubformula(biggerEqualConstraint);
-                addDeduction(deductionA);
-                return foundAnswer(Unknown);
-            }
-        ++map_iterator;    
-        }
-        return foundAnswer(True);        
-        #endif
         #endif
         return foundAnswer( True );
     }
