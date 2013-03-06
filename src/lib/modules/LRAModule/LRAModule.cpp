@@ -33,7 +33,7 @@
 //#define DEBUG_LRA_MODULE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_ONE_REASON
-//#define LRA_BRANCH_AND_BOUND
+#define LRA_BRANCH_AND_BOUND
 
 using namespace std;
 using namespace lra;
@@ -518,34 +518,28 @@ namespace smtrat
         #ifdef LRA_REFINEMENT
         learnRefinements();
         #ifdef LRA_BRANCH_AND_BOUND
+        exmap rMap = getRationalModel();
+        exmap::const_iterator map_iterator = rMap.begin();
         for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
-        {
-            if(Formula::domain(var->first==0))
+        {    
+            if(Formula::domain(*var->first) == INTEGER_DOMAIN)
             {
-                Formula* deductionA = new Formula( OR );
-                //const Constraint* lessEqualConstraint = Formula::newConstraint(?);
-                //const Constraint* biggerEqualConstraint= Formula::newConstraint(?);
-                //deductionA->addSubformula(lessEqualConstraint);
-                //deductionA->addSubformula(biggerEqualConstraint);
-                addDeduction( deductionA );
-                return foundAnswer( Unknown );
+                
+                Formula* deductionA = new Formula(OR);
+                stringstream sstream;
+                sstream << *var->first;
+                symtab *setOfVar = new symtab();
+                setOfVar->insert(pair< std::string, ex >(sstream.str(),*var->first));            
+                const Constraint* lessEqualConstraint = Formula::newConstraint(*var->first-map_iterator->second,CR_LEQ,*setOfVar);
+                const Constraint* biggerEqualConstraint= Formula::newConstraint(*var->first-(map_iterator->second + 1),CR_GEQ,*setOfVar);
+                deductionA->addSubformula(lessEqualConstraint);
+                deductionA->addSubformula(biggerEqualConstraint);
+                addDeduction(deductionA);
+                return foundAnswer(Unknown);
             }
+        ++map_iterator;    
         }
-        for(auto var=mSlackVars.begin();var != mSlackVars.end() ;++var)
-        {
-            if(Formula::domain(var->first==0))
-            {
-                Formula* deductionA = new Formula( OR );
-                //const Constraint* lessEqualConstraint = Formula::newConstraint(?);
-                //const Constraint* biggerEqualConstraint= Formula::newConstraint(?);
-                //deductionA->addSubformula(lessEqualConstraint);
-                //deductionA->addSubformula(biggerEqualConstraint);
-                addDeduction( deductionA );
-                return foundAnswer( Unknown );
-            }
-        }
-        return foundAnswer( True );
-
+        return foundAnswer(True);        
         #endif
         #endif
         return foundAnswer( True );
@@ -836,6 +830,7 @@ namespace smtrat
         {
             mAssignmentFullfilsNonlinearConstraints = true;
             return true;
+            
         }
         else
         {

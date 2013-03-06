@@ -30,6 +30,8 @@
 #ifndef CONTRACTIONCANDIDATE_H
 #define CONTRACTIONCANDIDATE_H
 
+#define CCPRINTORIGINS
+
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
 #include "../../Formula.h"
@@ -182,6 +184,7 @@ namespace smtrat
             {
                 assert(_origin->getType() == REALCONSTRAINT);
                 mOrigin.insert(_origin);
+                cout << "Origin size after insertion: " << mOrigin.size() << endl;
             }
             
             void removeOrigin( const Formula* _origin )
@@ -297,7 +300,8 @@ namespace smtrat
 
             void print( ostream& _out = std::cout ) const
             {
-                _out << mId << ": \t" << (*mConstraint) << ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative << endl;
+                _out << mId << ": \t" << (*mConstraint) << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative << endl;
+#ifdef CCPRINTORIGINS
                 cout << "Origins(" << mOrigin.size()<< "): " << endl;
                 if ( !mOrigin.empty())
                 {
@@ -308,6 +312,7 @@ namespace smtrat
                         cout << "\t [" << (*originIt) << "]" << endl;
                     }   
                 }
+#endif
             }
 
             friend bool operator< (ContractionCandidate const& lhs, ContractionCandidate const& rhs)

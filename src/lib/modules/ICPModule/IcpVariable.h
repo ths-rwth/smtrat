@@ -133,8 +133,6 @@ namespace icp
             void addCandidate( ContractionCandidate* _candidate )
             {
                 mCandidates.insert( mCandidates.end(), _candidate );
-                cout << "Added Candidate to var " << mVar << ": ";
-                _candidate->print();
                 if( _candidate->isActive() )
                 {
                     mActive = true;

@@ -95,6 +95,7 @@ namespace smtrat
             std::map<const Constraint*, const Constraint*>                      mLinearizationReplacements;
 
             std::map<symbol, icp::IcpVariable, ex_is_less>                      mVariables;
+            std::map<const ex, symbol, ex_is_less>                                                mLinearizations;
 
             icp::HistoryNode*                                                        mHistoryRoot;
             icp::HistoryNode*                                                        mHistoryActual;
