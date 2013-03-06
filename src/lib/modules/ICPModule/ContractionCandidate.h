@@ -184,6 +184,7 @@ namespace smtrat
             {
                 assert(_origin->getType() == REALCONSTRAINT);
                 mOrigin.insert(_origin);
+                cout << "Origin size after insertion: " << mOrigin.size() << endl;
             }
             
             void removeOrigin( const Formula* _origin )
@@ -299,7 +300,7 @@ namespace smtrat
 
             void print( ostream& _out = std::cout ) const
             {
-                _out << mId << ": \t" << (*mConstraint) << ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative << endl;
+                _out << mId << ": \t" << (*mConstraint) << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative << endl;
 #ifdef CCPRINTORIGINS
                 cout << "Origins(" << mOrigin.size()<< "): " << endl;
                 if ( !mOrigin.empty())
