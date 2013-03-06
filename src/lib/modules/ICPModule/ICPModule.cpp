@@ -230,24 +230,6 @@ namespace smtrat
                }
            }
            assert(replacementPtr != NULL);
-           
-           /**
-             * add origin for nonlinear candidates
-             */
-           for (auto varIt = replacementPtr->variables().begin(); varIt != replacementPtr->variables().end(); ++varIt )
-           {
-               if (mVariables.find(ex_to<symbol>((*varIt).second)) != mVariables.end())
-               {
-                   for ( auto candidateIt = mVariables[ex_to<symbol>((*varIt).second)].candidates().begin(); candidateIt != mVariables[ex_to<symbol>((*varIt).second)].candidates().end(); ++candidateIt )
-                    {
-                        if ( (*candidateIt)->lhs() == ex_to<symbol>((*varIt).second) )
-                        {
-                            (*candidateIt)->addOrigin(*_formula);
-                        }
-                    }
-               }
-           }
-           
 
            const lra::Variable* slackvariable = mLRA.getSlackVariable(replacementPtr);
 
@@ -1513,19 +1495,6 @@ namespace smtrat
 #ifdef ICPMODULE_DEBUG
         cout << "[ICP] Adding nonlinear: " << _ex << endl;
 #endif
-
-        
-//        for( auto replacementsIt = mReplacements.begin(); replacementsIt != mReplacements.end(); ++replacementsIt )
-//        {
-//            if ( (*replacementsIt).second == _constr )
-//            {
-//#ifdef ICPMODULE_DEBUG
-//                cout << "Candidate already existing." << endl;
-//#endif
-//                found = true;
-//                break;
-//            }
-//        }
         
 //        cout << "Linearizations:" << endl;
 //        for ( auto linIt = mLinearizations.begin(); linIt != mLinearizations.end(); ++linIt )
@@ -1539,20 +1508,20 @@ namespace smtrat
 #ifdef ICPMODULE_DEBUG
             cout << "Existing replacement: " << _ex << " -> " << mLinearizations[_ex] << endl;
 #endif            
-//            /**
-//             * create entry in nonlinear constraints table with existing candidates
-//             */
-//            for ( auto constraintIt = mNonlinearConstraints.begin(); constraintIt != mNonlinearConstraints.end(); ++constraintIt )
-//            {
-//                list<icp::ContractionCandidate*> tmpList = (*constraintIt).second;
-//                for ( auto candidateIt = tmpList.begin(); candidateIt != tmpList.end(); ++candidateIt )
-//                {
-//                    if ( (*candidateIt)->lhs() == mLinearizations[_ex] )
-//                    {
-//                        mNonlinearConstraints[_constr].insert(mNonlinearConstraints[_constr].end(), (*candidateIt));
-//                    }
-//                }
-//            }
+            /**
+             * create entry in nonlinear constraints table with existing candidates
+             */
+            for ( auto constraintIt = mNonlinearConstraints.begin(); constraintIt != mNonlinearConstraints.end(); ++constraintIt )
+            {
+                list<icp::ContractionCandidate*> tmpList = (*constraintIt).second;
+                for ( auto candidateIt = tmpList.begin(); candidateIt != tmpList.end(); ++candidateIt )
+                {
+                    if ( (*candidateIt)->lhs() == mLinearizations[_ex] )
+                    {
+                        mNonlinearConstraints[_constr].insert(mNonlinearConstraints[_constr].end(), (*candidateIt));
+                    }
+                }
+            }
             
         }
         
