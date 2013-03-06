@@ -1395,7 +1395,7 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
             }
             // new constraint learning
             // If the original constraint is nonlinear
-            if( !((*(it->first))->pConstraint( ))->isLinear() )
+            /*if( !((*(it->first))->pConstraint( ))->isLinear() )
             {
                 // We only want to learn linear constraints.
                 if( reduced.isLinear() )
@@ -1415,9 +1415,9 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                     deduction->back()->addSubformula( (*it->first)->pConstraint() );
 
                     deduction->addSubformula(Formula::newConstraint( reduced.toEx( ), relation, Formula::constraintPool().realVariables() ));
-                    mModule->addDeduction(deduction);
+                    //mModule->addDeduction(deduction);
                 }
-            }
+            }*/
         }
     }
     return true;
