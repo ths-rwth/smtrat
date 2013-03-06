@@ -529,7 +529,7 @@ namespace smtrat
                 //deductionA->addSubformula(biggerEqualConstraint);
                 addDeduction( deductionA );
                 return foundAnswer( Unknown );
-            }                                    
+            }
         }
         for(auto var=mSlackVars.begin();var != mSlackVars.end() ;++var)
         {
@@ -542,10 +542,10 @@ namespace smtrat
                 //deductionA->addSubformula(biggerEqualConstraint);
                 addDeduction( deductionA );
                 return foundAnswer( Unknown );
-            }                                    
+            }
         }
         return foundAnswer( True );
-        
+
         #endif
         #endif
         return foundAnswer( True );
