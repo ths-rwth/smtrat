@@ -43,10 +43,12 @@
 #include <string>
 #include <ginac/ginac.h>
 #include <chrono>
+#include <atomic>
 
 #include "Answer.h"
 #include "Formula.h"
 #include "ValidationSettings.h"
+#include "ThreadPool.h"
 #include "config.h"
 
 
@@ -56,6 +58,7 @@ namespace smtrat
 
     typedef std::vector<std::set<const Formula*> >           vec_set_const_pFormula;
     typedef std::map<const Formula*, vec_set_const_pFormula> FormulaOrigins;
+    typedef std::vector< std::atomic_bool* >                 Conditionals;
 
     struct dereference_compare {
         template <class I>
@@ -76,51 +79,63 @@ namespace smtrat
         friend class ValidationSettings;
         #endif
         public:
-            /// data type for an assignment assigning a variable, represented as a string, a real algebraic number, represented as a string
+            /// Data type for a assignment assigning a variable, represented as a string, a real algebraic number, represented as a string.
             typedef std::map< const std::string, std::string > Model;
+            ///
             typedef std::chrono::high_resolution_clock clock;
+            ///
             typedef std::chrono::microseconds timeunit;
 
+        /*
+         * Members:
+         */
         protected:
-            ///
-            Answer mSolverState;
-            ///
+            /// A unique ID to identify this module instance. (Could be useful but currently nowhere used)
             unsigned mId;
-            /// stores the infeasible subsets
-            vec_set_const_pFormula mInfeasibleSubsets;
-            /// a reference to the manager
-            Manager* const mpManager;
             ///
+            thread_priority mThreadPriority;
+            /// Stores the infeasible subsets.
+            vec_set_const_pFormula mInfeasibleSubsets;
+            /// A reference to the manager.
+            Manager* const mpManager;
+            /// The type of this module.
             ModuleType mModuleType;
-            /// formula passed to this module
+            /// The formula passed to this module.
             const Formula* mpReceivedFormula;
-            /// formula passed to the backends
+            /// The formula passed to the backends of this module.
             Formula* mpPassedFormula;
-            /// stores the assignment of the current satisfiable result
+            /// Stores the assignment of the current satisfiable result, if existent.
             Model mModel;
 
         private:
+            /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
+            Answer mSolverState;
             ///
+            std::atomic_bool* mBackendsFoundAnswer;
+            ///
+            Conditionals mFoundAnswer;
+            /// The backends of this module which are currently used (conditions to use this module are fulfilled for the passed formula).
             std::vector<Module*> mUsedBackends;
-            ///
+            /// The backends of this module which have been used.
             std::vector<Module*> mAllBackends;
-            /// for each passed formula index its original sub formulas in mpReceivedFormula
+            /// For each passed formula index its original sub formulas in the received formula.
             FormulaOrigins mPassedformulaOrigins;
-            /// stores the deductions this module or its backends made.
+            /// Stores the deductions this module or its backends made.
             std::vector<Formula*> mDeductions;
-            ///
+            /// Stores the position of the first sub-formula in the passed formula, which has not yet been considered for a consistency check of the backends.
             Formula::iterator mFirstSubformulaToPass;
-            ///
+            /// Stores the constraints which the backends must be informed about.
             std::list<const Constraint* > mConstraintsToInform;
-            ///
+            /// Stores the position of the first constraint of which no backend has been informed about.
             std::list<const Constraint* >::iterator mFirstConstraintToInform;
-
-            ///
+            /// Stores the position of the first (by this module) unchecked sub-formula of the received formula.
             Formula::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
             mutable unsigned mSmallerMusesCheckCounter;
 
-
+        /*
+         * Methods:
+         */
 
             bool checkFirstSubformulaToPassValidity() const;
 
@@ -131,7 +146,7 @@ namespace smtrat
             //DEPRECATED
             std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForAdding;
 
-            Module( ModuleType type, const Formula* const, Manager* const = NULL );
+            Module( ModuleType type, const Formula* const, Conditionals&, Manager* const = NULL );
             virtual ~Module();
 
             static std::vector<std::string> mAssumptionToCheck;
@@ -148,7 +163,6 @@ namespace smtrat
             virtual void removeSubformula( Formula::const_iterator );
             virtual void updateModel();
 
-            // Accessors
             inline Answer solverState() const
             {
                 return mSolverState;
@@ -163,6 +177,16 @@ namespace smtrat
             {
                 assert( mId == 0 && _id != 0 );
                 mId = _id;
+            }
+
+            inline thread_priority threadPriority() const
+            {
+                return mThreadPriority;
+            }
+
+            void setThreadPriority( thread_priority _threadPriority )
+            {
+                mThreadPriority = _threadPriority;
             }
 
             inline const Formula* const pReceivedFormula() const
@@ -205,7 +229,7 @@ namespace smtrat
                 return mUsedBackends;
             }
 
-            const std::list<const Constraint* >& constraintsToInform() const
+            const std::list< const Constraint* >& constraintsToInform() const
             {
                 return mConstraintsToInform;
             }
@@ -255,11 +279,27 @@ namespace smtrat
             static void addAssumptionToCheck( const std::set<const Constraint*>&, bool, const std::string& );
             static void storeAssumptionsToCheck( const Manager& );
             static const std::string moduleName( const ModuleType );
-            //SMT
             void storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> &, const std::string& = "smaller_muses") const;
             std::vector<Formula> generateSubformulaeOfInfeasibleSubset( unsigned infeasiblesubset, unsigned size ) const;
             void updateDeductions();
+
+            const std::vector< std::atomic_bool* >& answerFound() const
+            {
+                return mFoundAnswer;
+            }
+
         protected:
+
+            bool anAnswerFound() const
+            {
+                for( auto iter = mFoundAnswer.begin(); iter != mFoundAnswer.end(); ++iter )
+                {
+                    if( (*iter)->load() ) return true;
+                }
+                return false;
+            }
+
+            Answer foundAnswer( Answer );
             void addConstraintToInform( const Constraint* const _constraint );
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );
             void addSubformulaToPassedFormula( Formula*, const vec_set_const_pFormula& );
@@ -280,18 +320,19 @@ namespace smtrat
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
             const std::set<const Formula*>& getOrigins( Formula::const_iterator ) const;
-            //
-            // Print methods
-            //
+
+            /*
+             * Printing methods:
+             */
         public:
             void print( std::ostream& = std::cout, const std::string = "***" ) const;
             void printReceivedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printPassedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printInfeasibleSubsets( std::ostream& = std::cout, const std::string = "***" ) const;
 
-            //
-            // Measuring module times
-            //
+            /*
+             * Measuring module times:
+             */
         private:
             clock::time_point mTimerCheckStarted;
             clock::time_point mTimerAddStarted;
@@ -313,7 +354,6 @@ namespace smtrat
             void stopRemoveTimer();
             int stopAllTimers();
             void startTimers(int timers);
-        public:
             double getAddTimerMS() const;
             double getCheckTimerMS() const;
             double getRemoveTimerMS() const;

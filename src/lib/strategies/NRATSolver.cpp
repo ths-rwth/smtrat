@@ -38,30 +38,30 @@ namespace smtrat
     {
         unsigned position = 0;
         #ifdef SMTRAT_ENABLE_Preprocessing
-        position = rStrategyGraph().addModuleType( position, MT_Preprocessing );
+        position = addBackendIntoStrategyGraph( position, MT_Preprocessing );
         #else
-        position = rStrategyGraph().addModuleType( position, MT_CNFerModule );
+        position = addBackendIntoStrategyGraph( position, MT_CNFerModule );
         #endif
-        position = rStrategyGraph().addModuleType( position, MT_SATModule );
+        position = addBackendIntoStrategyGraph( position, MT_SATModule );
         #ifdef SMTRAT_ENABLE_VRWModule
-        position = rStrategyGraph().addModuleType( position, MT_VRWModule );
+        position = addBackendIntoStrategyGraph( position, MT_VRWModule );
         #endif
         #ifdef SMTRAT_ENABLE_CacheModule
-        //position = rStrategyGraph().addModuleType( position, MT_CacheModule );
+        //position = addBackendIntoStrategyGraph( position, MT_CacheModule );
         #endif
         #ifdef SMTRAT_ENABLE_LRAModule
-        position = rStrategyGraph().addModuleType( position, MT_LRAModule );
+        position = addBackendIntoStrategyGraph( position, MT_LRAModule );
         #endif
         #ifdef SMTRAT_ENABLE_GroebnerModule
-        position = rStrategyGraph().addModuleType( position, MT_GroebnerModule );
+        position = addBackendIntoStrategyGraph( position, MT_GroebnerModule );
         #endif
 
         #ifdef SMTRAT_ENABLE_VSModule
-        position = rStrategyGraph().addModuleType( position, MT_VSModule );
+        position = addBackendIntoStrategyGraph( position, MT_VSModule );
         #endif
 
         #ifdef SMTRAT_ENABLE_CADModule
-        position = rStrategyGraph().addModuleType( position, MT_CADModule );
+        position = addBackendIntoStrategyGraph( position, MT_CADModule );
         #endif
 
     }

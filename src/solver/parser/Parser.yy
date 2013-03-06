@@ -236,7 +236,7 @@ bindlist :
 	|	bindlist bind { $$ = $1; $$->push_back( $2 ); }
 
 bind :
-        OB SYM poly CB { RealVarMap::const_iterator rv = dv.addRealVariable( yyloc, *$2, true );
+        OB SYM poly CB { RealVarMap::const_iterator rv = dv.addTheoryVariable( yyloc, "Real", *$2, true );
                          PolyVarsPair* pvp = dv.mkPolynomial( yyloc, rv );
                          Formula* f = dv.mkConstraint( *pvp, *$3, CR_EQ ); delete pvp;
                          dv.rFormulaRoot().addSubformula( f );

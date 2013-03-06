@@ -72,7 +72,7 @@ public:
     GroebnerModuleState( ) :
     mRewrites()
     {
-        
+
     }
 
     GroebnerModuleState( const GiNaCRA::Buchberger<typename Settings::Order>& basis, const std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> >& rewrites ) :
@@ -84,7 +84,7 @@ public:
     {
         return mBasis;
     }
-    
+
     const std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> >& getRewriteRules() const
     {
         return mRewrites;
@@ -124,8 +124,8 @@ public:
     typedef typename std::map<Formula::const_iterator, RowEntry, FormulaConstraintCompare> Rows;
     typedef typename std::pair<Formula::const_iterator, RowEntry> Row;
     typedef typename std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> > RewriteRules;
-    
-    
+
+
 protected:
     /// A map of pointers from received iterators to rows.
     Rows mReducedInequalities;
@@ -133,12 +133,12 @@ protected:
     unsigned mBtnumber;
     /// A pointer to the GroebnerModule which uses this table.
     GroebnerModule<Settings>* mModule;
-    
+
     typename Rows::iterator mNewConstraints;
-    
-    
-    unsigned mLastRestart;    
-    
+
+
+    unsigned mLastRestart;
+
 public:
     InequalitiesTable( GroebnerModule<Settings>* module );
 
@@ -151,17 +151,17 @@ public:
     Answer reduceWRTGroebnerBasis( const Ideal& gb, const RewriteRules& rules );
     bool reduceWRTGroebnerBasis( typename  Rows::iterator, const Ideal& gb, const RewriteRules& rules );
     Answer reduceWRTGroebnerBasis( const  std::list< typename Rows::iterator>& ineqToBeReduced, const Ideal& gb, const RewriteRules& rules );
-    
+
     Answer reduceWRTVariableRewriteRules( const RewriteRules& rules );
     bool reduceWRTVariableRewriteRules( typename Rows::iterator it, const RewriteRules& rules );
     Answer reduceWRTVariableRewriteRules( const  std::list< typename Rows::iterator>& ineqToBeReduced, const RewriteRules& rules );
-    
+
 
     void removeInequality( Formula::const_iterator _formula );
 
     void print( std::ostream& os = std::cout ) const;
 
-    
+
 private:
     #ifdef SMTRAT_DEVOPTION_Statistics
     GroebnerModuleStats* mStats;
@@ -176,7 +176,7 @@ private:
  */
 template<class Settings>
 class GroebnerModule : public Module
-{    
+{
     friend class InequalitiesTable<Settings>;
 public:
     typedef typename Settings::Order Order;
@@ -200,44 +200,44 @@ protected:
     GBRuntimeSettings* mRuntimeSettings;
     /// The rewrite rules for the variables
     std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> > mRewriteRules;
-    
+
     std::map<unsigned, unsigned> mAdditionalVarMap;
 
-    
+
 public:
-    GroebnerModule( ModuleType, const Formula * const, RuntimeSettings* settings  ,Manager * const );
+    GroebnerModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
     virtual ~GroebnerModule( );
 
     bool assertSubformula( Formula::const_iterator _formula );
     virtual Answer isConsistent( );
     void removeSubformula( Formula::const_iterator _formula );
-    
+
 protected:
     void pushBacktrackPoint( Formula::const_iterator btpoint );
     void popBacktrackPoint( Formula::const_iterator btpoint );
     bool saveState( );
-    
+
     std::set<const Formula*> generateReasons( const GiNaCRA::BitVector& reasons );
     void passGB( );
     void knownConstraintDeduction( const std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> >& deductions );
     void newConstraintDeduction( );
-    
+
     Polynomial transformIntoEquality( Formula::const_iterator constraint );
 
     void removeSubformulaFromPassedFormula( Formula::iterator _formula );
-    
+
     bool iterativeVariableRewriting();
-    
+
     void processNewConstraint( Formula::const_iterator _formula );
     void handleConstraintToGBQueue( Formula::const_iterator _formula );
     void handleConstraintNotToGB( Formula::const_iterator _formula );
     void removeReceivedFormulaFromNewInequalities( Formula::const_iterator _formula );
-    
+
     bool validityCheck( );
 public:
     void printStateHistory( );
     void printRewriteRules( );
-    
+
 
 private:
     #ifdef SMTRAT_DEVOPTION_Statistics

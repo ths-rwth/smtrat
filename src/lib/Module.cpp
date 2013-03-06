@@ -55,15 +55,18 @@ namespace smtrat
     ValidationSettings* Module::validationSettings = new ValidationSettings();
     #endif
 
-    Module::Module( ModuleType type, const Formula* const _formula, Manager* const _tsManager ):
-        mSolverState( Unknown ),
+    Module::Module( ModuleType type, const Formula* const _formula, Conditionals& _foundAnswer, Manager* const _tsManager ):
         mId( 0 ),
+        mThreadPriority( 0, 0 ),
         mInfeasibleSubsets(),
         mpManager( _tsManager ),
         mModuleType( type ),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),
         mModel(),
+        mSolverState( Unknown ),
+        mBackendsFoundAnswer( new std::atomic_bool( false ) ),
+        mFoundAnswer( _foundAnswer ),
         mUsedBackends(),
         mAllBackends(),
         mPassedformulaOrigins(),
@@ -75,13 +78,13 @@ namespace smtrat
         mSmallerMusesCheckCounter(0)
 #ifdef SMTRAT_DEVOPTION_MeasureTime
         ,
-            mTimerAddTotal(0),
-            mTimerCheckTotal(0),
-            mTimerRemoveTotal(0),
-            mTimerAddRunning(false),
-            mTimerCheckRunning(false),
-            mTimerRemoveRunning(false),
-            mNrConsistencyChecks(0)
+        mTimerAddTotal( 0 ),
+        mTimerCheckTotal( 0 ),
+        mTimerRemoveTotal( 0 ),
+        mTimerAddRunning( false ),
+        mTimerCheckRunning( false ),
+        mTimerRemoveRunning( false ),
+        mNrConsistencyChecks( 0 )
 #endif
     {}
 
@@ -118,7 +121,7 @@ namespace smtrat
             getInfeasibleSubsets();
         }
         mSolverState = a;
-        return a;
+        return foundAnswer( a );
     }
 
     /**
@@ -594,89 +597,133 @@ namespace smtrat
     Answer Module::runBackends()
     {
         if( mpManager == NULL ) return Unknown;
+        *mBackendsFoundAnswer = false;
+        Answer result = Unknown;
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         stopCheckTimer();
         #endif
         /*
          * Get the backends to be considered from the manager.
          */
-        mUsedBackends = mpManager->getBackends( mpPassedFormula, this );
+        mUsedBackends = mpManager->getBackends( mpPassedFormula, this, mBackendsFoundAnswer );
+        mAllBackends = mpManager->getAllBackends( this );
 
-        /*
-         * Update the backends.
-         */
-        if( mFirstSubformulaToPass != mpPassedFormula->end() )
+        unsigned numberOfUsedBackends = mUsedBackends.size();
+        if( numberOfUsedBackends>0 )
         {
-            assert( checkFirstSubformulaToPassValidity() );
-            // Update the propositions of the passed formula
-            mpPassedFormula->getPropositions();
-            bool assertionFailed = false;
-            for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+            /*
+             * Update the backends.
+             */
+            if( mFirstSubformulaToPass != mpPassedFormula->end() )
             {
-                #ifdef SMTRAT_DEVOPTION_MeasureTime
-                (*module)->startAddTimer();
-                #endif
-                if( mFirstConstraintToInform != mConstraintsToInform.end() )
+                assert( checkFirstSubformulaToPassValidity() );
+                // Update the propositions of the passed formula
+                mpPassedFormula->getPropositions();
+                bool assertionFailed = false;
+                for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                 {
-                    auto iter = mFirstConstraintToInform;
-                    for( ; iter != mConstraintsToInform.end(); ++iter )
+                    #ifdef SMTRAT_DEVOPTION_MeasureTime
+                    (*module)->startAddTimer();
+                    #endif
+                    if( mFirstConstraintToInform != mConstraintsToInform.end() )
                     {
-                        (*module)->inform( *iter );
+                        auto iter = mFirstConstraintToInform;
+                        for( ; iter != mConstraintsToInform.end(); ++iter )
+                        {
+                            (*module)->inform( *iter );
+                        }
+                    }
+                    for( Formula::const_iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
+                    {
+                        if( !(*module)->assertSubformula( subformula ) )
+                        {
+                            assertionFailed = true;
+                        }
+                    }
+                    #ifdef SMTRAT_DEVOPTION_MeasureTime
+                    (*module)->stopAddTimer();
+                    #endif
+                }
+                mFirstSubformulaToPass = mpPassedFormula->end();
+                mFirstConstraintToInform = mConstraintsToInform.end();
+                if( assertionFailed )
+                {
+                    #ifdef SMTRAT_DEVOPTION_MeasureTime
+                    startCheckTimer();
+                    #endif
+                    return False;
+                }
+            }
+
+            unsigned highestIndex = numberOfUsedBackends-1;
+            if( mpManager->runsParallel() )
+            {
+                /*
+                 * Run the backend solver parallel until the first answers true or false.
+                 */
+                if( anAnswerFound() )
+                {
+                    cout << "test" << endl;
+                    return Unknown;
+                }
+
+                vector< std::future<Answer> > futures( highestIndex);
+
+                for( unsigned i=0; i<highestIndex; ++i )
+                {
+                    futures[ i ] = mpManager->submitBackend( mUsedBackends[ i ] );
+                }
+
+                mpManager->checkBackendPriority( mUsedBackends[ highestIndex ] );
+                result = mUsedBackends[ highestIndex ]->isConsistent();
+                mUsedBackends[ highestIndex ]->receivedFormulaChecked();
+
+                for( unsigned i=0; i<highestIndex; ++i )
+                {
+                    Answer res = futures[ i ].get();
+                    mUsedBackends[ i ]->receivedFormulaChecked();
+                    if( res!=Unknown )
+                    {
+                        cout << "Resultat: " << res << " and threadid: " << mUsedBackends[i]->threadPriority().first << " and type: " << mUsedBackends[i]->type() << endl;
+                        assert( result==Unknown || result==res );
+                        result = res;
                     }
                 }
-                for( Formula::const_iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
+            }
+            else
+            {
+                /*
+                 * Run the backend solver sequentially until the first answers true or false.
+                 */
+                vector<Module*>::iterator module = mUsedBackends.begin();
+                while( module != mUsedBackends.end() && result == Unknown )
                 {
-                    if( !(*module)->assertSubformula( subformula ) )
+                    #ifdef MODULE_VERBOSE
+                    cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
+                    (*module)->print( cout, " ");
+                    #endif
+                    #ifdef SMTRAT_DEVOPTION_MeasureTime
+                    (*module)->startCheckTimer();
+                    ++((*module)->mNrConsistencyChecks);
+                    #endif
+                    result = (*module)->isConsistent();
+                    assert(result == Unknown || result == False || result == True);
+                    #ifdef SMTRAT_DEVOPTION_MeasureTime
+                    (*module)->stopCheckTimer();
+                    #endif
+                    (*module)->receivedFormulaChecked();
+                    #ifdef SMTRAT_DEVOPTION_Validation
+                    if( validationSettings->logTCalls() )
                     {
-                        assertionFailed = true;
+                        if( result != Unknown )
+                        {
+                            addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
+                        }
                     }
-                }
-                #ifdef SMTRAT_DEVOPTION_MeasureTime
-                (*module)->stopAddTimer();
-                #endif
-            }
-            mFirstSubformulaToPass = mpPassedFormula->end();
-            mFirstConstraintToInform = mConstraintsToInform.end();
-            if( assertionFailed )
-            {
-                #ifdef SMTRAT_DEVOPTION_MeasureTime
-                startCheckTimer();
-                #endif
-                return False;
-            }
-        }
-        Answer result = Unknown;
-
-        /*
-         * Run the backend solver sequentially until the first answers true or false.
-         */
-        vector<Module*>::iterator module = mUsedBackends.begin();
-        while( module != mUsedBackends.end() && result == Unknown )
-        {
-            #ifdef MODULE_VERBOSE
-            cout << endl << "Call to module " << moduleName( (*module)->type() ) << endl;
-            (*module)->print( cout, " ");
-            #endif
-            #ifdef SMTRAT_DEVOPTION_MeasureTime
-            (*module)->startCheckTimer();
-            ++((*module)->mNrConsistencyChecks);
-            #endif
-            result = (*module)->isConsistent();
-            assert(result == Unknown || result == False || result == True);
-            #ifdef SMTRAT_DEVOPTION_MeasureTime
-            (*module)->stopCheckTimer();
-            #endif
-            (*module)->receivedFormulaChecked();
-            #ifdef SMTRAT_DEVOPTION_Validation
-            if( validationSettings->logTCalls() )
-            {
-                if( result != Unknown )
-                {
-                    addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
+                    #endif
+                    ++module;
                 }
             }
-            #endif
-            ++module;
         }
         #ifdef MODULE_VERBOSE
         cout << "Result:   " << (result == True ? "True" : (result == False ? "False" : (result == Unknown ? "Unknown" : "Undefined"))) << endl;
@@ -686,14 +733,6 @@ namespace smtrat
         #endif
         return result;
     }
-
-
-
-    bool operator<(const Formula::iterator& lhs, const Formula::iterator& rhs)
-    {
-        return *lhs < *rhs;
-    }
-
 
     /**
      *
@@ -774,6 +813,30 @@ namespace smtrat
         return result;
     }
 
+    /**
+     *
+     * @param _answer
+     */
+    Answer Module::foundAnswer( Answer _answer )
+    {
+        mSolverState = _answer;
+        // If we are in the SMT environment:
+        if( mpManager != NULL && _answer != Unknown )
+        {
+            // TODO: Make this mutual exclusive.
+            if( !anAnswerFound() )
+            {
+                *mFoundAnswer.back() = true;
+            }
+        }
+        return _answer;
+    }
+
+    /**
+     *
+     * @param _answer
+     * @param _byBackend
+     */
     void Module::addConstraintToInform( const Constraint* const constraint )
     {
         mConstraintsToInform.push_back(constraint);
@@ -1112,8 +1175,6 @@ namespace smtrat
             FormulaOrigins::const_iterator formulaOrigins = mPassedformulaOrigins.find( *passedSubformula );
             assert( formulaOrigins != mPassedformulaOrigins.end() );
             _out << _initiation << "  ";
-//            if( formulaOrigins == mPassedformulaOrigins.end() ){
-//                _out << *passedSubformula << endl; _out << mpPassedFormula->size() << endl;_out << endl;  assert( false ); }
             _out << setw( 30 ) << (*passedSubformula)->toString( true );
             stringstream out;
             out << "  [" << *passedSubformula << "]" << " from " << "(";

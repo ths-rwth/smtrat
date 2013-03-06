@@ -40,7 +40,7 @@ namespace tlra
             /*
              * Members:
              */
-            GiNaC::numeric mContent;
+            GiNaC::numeric* mpContent;
 
         public:
             /*

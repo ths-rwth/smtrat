@@ -51,8 +51,18 @@ namespace smtrat
 //            }
 //        }
         
+        ContractionCandidate* tmp;
+        
         // Todo: Is it better to make the replacement here instead of outside?
-        ContractionCandidate* tmp = new ContractionCandidate(_lhs, _constraint, _derivationVar, _origin, mCurrentId);
+        if ( _origin == NULL )
+        {
+            tmp = new ContractionCandidate(_lhs, _constraint, _derivationVar, mCurrentId);
+        }
+        else
+        {
+            tmp = new ContractionCandidate(_lhs, _constraint, _derivationVar, _origin, mCurrentId);    
+        }
+        
         mCandidates[mCurrentId] = tmp;
         return mCandidates[mCurrentId++];
     }

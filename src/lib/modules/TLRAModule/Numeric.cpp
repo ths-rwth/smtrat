@@ -37,7 +37,7 @@ namespace tlra
      */
     Numeric::Numeric( const int _content )
     {
-        mContent = GiNaC::numeric( _content );
+        *mpContent = new GiNaC::numeric( _content );
     }
 
     /**
@@ -46,7 +46,7 @@ namespace tlra
      */
     Numeric::Numeric( const GiNaC::numeric& _content )
     {
-        mContent = GiNaC::numeric( _content );
+        *mpContent = new GiNaC::numeric( _content );
     }
 
     /**
@@ -55,7 +55,7 @@ namespace tlra
      */
     bool Numeric::isNegative() const
     {
-        return mContent.is_negative();
+        return mpContent->is_negative();
     }
 
     /**
@@ -64,7 +64,7 @@ namespace tlra
      */
     bool Numeric::isPositive() const
     {
-        return mContent.is_positive();
+        return mpContent->is_positive();
     }
 
     /**
@@ -73,7 +73,7 @@ namespace tlra
      */
     bool Numeric::isZero() const
     {
-        return mContent.is_zero();
+        return mpContent->is_zero();
     }
 
     /**
@@ -82,7 +82,7 @@ namespace tlra
      */
     GiNaC::numeric Numeric::ginacNumeric() const
     {
-        return mContent;
+        return *mpContent;
     }
 
     /**
@@ -92,7 +92,7 @@ namespace tlra
      */
     Numeric Numeric::operator +( const Numeric& _num ) const
     {
-        Numeric result = mContent + _num.mContent;
+        Numeric result = Numeric( (*mpContent) + (*_num.mpContent) );
         return result;
     }
 
@@ -102,7 +102,7 @@ namespace tlra
      */
     void Numeric::operator +=( const Numeric& _num )
     {
-        mContent += _num.mContent;
+        (*mpContent) += (*_num.mpContent);
     }
 
     /**
@@ -112,7 +112,7 @@ namespace tlra
      */
     Numeric operator -( const Numeric& _num )
     {
-        Numeric result = Numeric( - _num.mContent );
+        Numeric result = Numeric( - (*_num.mpContent) );
         return result;
     }
 
@@ -123,7 +123,7 @@ namespace tlra
      */
     Numeric Numeric::operator -( const Numeric& _num ) const
     {
-        Numeric result = mContent - _num.mContent;
+        Numeric result = Numeric( (*mpContent) - (*_num.mpContent) );
         return result;
     }
 
@@ -133,7 +133,7 @@ namespace tlra
      */
     void Numeric::operator -=( const Numeric& _num )
     {
-        mContent -= _num.mContent;
+        (*mpContent) -= (*_num.mpContent);
     }
 
     /**
@@ -143,7 +143,7 @@ namespace tlra
      */
     Numeric Numeric::operator *( const Numeric& _num ) const
     {
-        Numeric result = mContent * _num.mContent;
+        Numeric result = Numeric( (*mpContent) * (*_num.mpContent) );
         return result;
     }
 
@@ -153,7 +153,7 @@ namespace tlra
      */
     void Numeric::operator *=( const Numeric& _num )
     {
-        mContent *= _num.mContent;
+        (*mpContent) *= (*_num.mpContent);
     }
 
     /**
@@ -163,7 +163,7 @@ namespace tlra
      */
     Numeric Numeric::operator /( const Numeric& _num ) const
     {
-        Numeric result = mContent / _num.mContent;
+        Numeric result = Numeric( (*mpContent) / (*_num.mpContent) );
         return result;
     }
 
@@ -173,7 +173,7 @@ namespace tlra
      */
     void Numeric::operator /=( const Numeric& _num )
     {
-        mContent /= _num.mContent;
+        (*mpContent) /= (*_num.mpContent);
     }
 
     /**
@@ -183,7 +183,7 @@ namespace tlra
      */
     bool Numeric::operator <( const Numeric& _num ) const
     {
-        return mContent < _num.mContent;
+        return (*mpContent) < (*_num.mpContent);
     }
 
     /**
@@ -193,7 +193,7 @@ namespace tlra
      */
     bool Numeric::operator >( const Numeric& _num ) const
     {
-        return mContent > _num.mContent;
+        return (*mpContent) > (*_num.mpContent);
     }
 
     /**
@@ -203,7 +203,7 @@ namespace tlra
      */
     bool Numeric::operator <=( const Numeric& _num ) const
     {
-        return mContent <= _num.mContent;
+        return (*mpContent) <= (*_num.mpContent);
     }
 
     /**
@@ -213,7 +213,7 @@ namespace tlra
      */
     bool Numeric::operator >=( const Numeric& _num ) const
     {
-        return mContent >= _num.mContent;
+        return (*mpContent) >= (*_num.mpContent);
     }
 
     /**
@@ -223,7 +223,7 @@ namespace tlra
      */
     bool Numeric::operator !=( const Numeric& _num ) const
     {
-        return mContent != _num.mContent;
+        return (*mpContent) != (*_num.mpContent);
     }
 
     /**
@@ -233,7 +233,7 @@ namespace tlra
      */
     bool Numeric::operator ==( const Numeric& _num ) const
     {
-        return mContent == _num.mContent;
+        return (*mpContent) == (*_num.mpContent);
     }
 
     /**
@@ -244,7 +244,7 @@ namespace tlra
      */
     std::ostream& operator <<( std::ostream& _out, const Numeric& _num )
     {
-        _out << GiNaC::ex( _num.mContent );
+        _out << *_num.mpContent;
         return _out;
     }
 }    // end namspace tlra

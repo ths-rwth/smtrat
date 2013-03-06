@@ -365,7 +365,6 @@ namespace smtrat
                 mPropositions &= ~PROP_VARIABLE_DEGREE_LESS_THAN_THREE;
             }
             mPropositions |= (condOfSubformula & WEAK_CONDITIONS);
-            mPropositions &= ~SOLVABLE_CONDITIONS;
         }
     }
 
@@ -395,7 +394,6 @@ namespace smtrat
         {
             mPropositions &= (form->getPropositions() | ~STRONG_CONDITIONS);
             mPropositions |= (form->getPropositions() & WEAK_CONDITIONS);
-            mPropositions &= ~SOLVABLE_CONDITIONS;
         }
     }
 
@@ -592,86 +590,6 @@ namespace smtrat
 
     /**
      *
-     * @param _moduleType
-
-    void Formula::notSolvableBy( ModuleType _moduleType )
-    {
-        switch( _moduleType )
-        {
-            case MT_SmartSimplifier:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_SMARTSIMPLIFIER;
-                break;
-            }
-            case MT_GroebnerModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_GROEBNERMODULE;
-                break;
-            }
-            case MT_VSModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_VSMODULE;
-                break;
-            }
-            case MT_UnivariateCADModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_UNIVARIATECADMODULE;
-                break;
-            }
-            case MT_CADModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_CADMODULE;
-                break;
-            }
-            case MT_SATModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_SATMODULE;
-                break;
-            }
-            case MT_LRAModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_LRAMODULE;
-                break;
-            }
-            case MT_TLRAModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_TLRAMODULE;
-                break;
-            }
-            case MT_ILRAModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_ILRAMODULE;
-                break;
-            }
-            case MT_PreProModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_PREPROMODULE;
-                break;
-            }
-            case MT_CNFerModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_CNFERMODULE;
-                break;
-            }
-            case MT_SingleVSModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_SINGLEVSMODULE;
-                break;
-            }
-            case MT_ICPModule:
-            {
-                mPropositions |= PROP_CANNOT_BE_SOLVED_BY_ICPMODULE;
-                break;
-            }
-            default:
-            {
-            }
-        }
-    }
-     */
-
-    /**
-     *
      * @param _constraint
      */
     void Formula::addConstraintPropositions( const Constraint& _constraint )
@@ -750,6 +668,14 @@ namespace smtrat
             default:
             {
             }
+        }
+        if( _constraint.containsIntegerValuedVariable() )
+        {
+            mPropositions |= PROP_CONTAINS_INTEGER_VALUED_VARS;
+        }
+        if( _constraint.containsRealValuedVariable() )
+        {
+            mPropositions |= PROP_CONTAINS_REAL_VALUED_VARS;
         }
     }
 
@@ -1526,12 +1452,39 @@ namespace smtrat
         }
     }
 
+    /**
+     *
+     * @param _out
+     * @param _init
+     */
+    void Formula::printProposition( ostream& _out, const string _init ) const
+    {
+        _out << _init;
+        for( unsigned i = 0; i < proposition().size(); ++i )
+        {
+            if( fmod( i, 10.0 ) == 0.0 ) _out << " ";
+            _out << proposition()[i];
+        }
+        _out << endl;
+    }
+
+    /**
+     *
+     * @param _ostream
+     * @param _formula
+     * @return
+     */
     ostream& operator <<( ostream& _ostream, const Formula& _formula )
     {
         _formula.print( _ostream, "", true );
         return _ostream;
     }
 
+    /**
+     *
+     * @param _infix
+     * @return
+     */
     string Formula::toString( bool _infix ) const
     {
         string result = "";
@@ -1608,6 +1561,11 @@ namespace smtrat
         return result;
     }
 
+    /**
+     *
+     * @param type
+     * @return
+     */
     std::string Formula::FormulaTypeToString( Type type )
     {
         string oper = "";
@@ -1661,6 +1619,11 @@ namespace smtrat
         return oper;
     }
 
+    /**
+     *
+     * @param seperator
+     * @return
+     */
     std::string Formula::variableListToString( std::string seperator ) const
     {
         GiNaC::symtab::const_iterator                   i = mRealValuedVars.begin();

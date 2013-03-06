@@ -42,20 +42,20 @@ namespace smtrat
         protected:
             RuntimeSettings* mSettings;
         public:
-           
+
             StandardModuleFactory(RuntimeSettings* settings= NULL):
                 ModuleFactory(),
                 mSettings(settings)
             {}
-             
+
 
             ~StandardModuleFactory(){}
 
-            Module* create(ModuleType _type, const Formula* const _formula, Manager* const _tsManager )
+            Module* create( ModuleType _type, const Formula* const _formula, Conditionals& _conditionals, Manager* const _manager )
             {
                 Module* module;
-                module = new Module( _type, _formula, mSettings, _tsManager );
-                
+                module = new Module( _type, _formula, mSettings, _conditionals, _manager );
+
                 this->mModuleType = _type;
                 return module;
             }

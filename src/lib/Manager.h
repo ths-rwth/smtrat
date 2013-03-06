@@ -54,6 +54,8 @@ namespace smtrat
         friend class Module;
         private:
 
+            ///
+            std::vector< std::atomic_bool* > mPrimaryBackendFoundAnswer;
             /// the constraints so far passed to the primary backend
             Formula* mpPassedFormula;
             /// all generated instances of modules
@@ -68,9 +70,25 @@ namespace smtrat
             std::map<const ModuleType, ModuleFactory*>* mpModuleFactories;
             /// primary strategy
             StrategyGraph mStrategyGraph;
-            /// position of the module instance in the strategy
-            std::map<const Module* const, unsigned> mModulePositionInStrategy;
-            
+            ///
+            ThreadPool* mpThreadPool;
+            ///
+            unsigned mNumberOfBranches;
+            ///
+            unsigned mNumberOfCores;
+            ///
+            bool mRunsParallel;
+            ///
+            std::atomic_bool mInterruptibleBackends;
+            ///
+            std::mutex mInterruptionMutex;
+            ///
+            std::vector<bool> mInterruptionFlags;
+            ///
+            std::mutex mBackendsMutex;
+
+            void initialize();
+
         public:
             Manager( Formula* = new Formula( AND ) );
             ~Manager();
@@ -88,6 +106,7 @@ namespace smtrat
 
             Answer isConsistent()
             {
+                initialize();
                 #ifdef SMTRAT_DEVOPTION_MeasureTime
                 mpPrimaryBackend->startCheckTimer();
                 #endif
@@ -126,7 +145,7 @@ namespace smtrat
                 return mStrategyGraph;
             }
 
-            std::vector<Module*> getAllBackends( Module* _module ) 
+            std::vector<Module*> getAllBackends( Module* _module )
             {
                 return mBackendsOfModules[_module];
             }
@@ -135,14 +154,37 @@ namespace smtrat
             {
                 return *mpPassedFormula;
             }
-            
+
             const std::vector<Module*>& getAllGeneratedModules() const
             {
                 return mGeneratedModules;
             }
+            unsigned addBackendIntoStrategyGraph( unsigned _at, ModuleType _moduleType, ConditionEvaluation _conditionEvaluation = isCondition )
+            {
+                return mStrategyGraph.addBackend( _at, _moduleType, _conditionEvaluation );
+            }
+
+            void addBacklinkIntoStrategyGraph( unsigned _from, unsigned _to, ConditionEvaluation _conditionEvaluation = isCondition )
+            {
+                mStrategyGraph.addBacklink( _from, _to, _conditionEvaluation );
+            }
+
+            const bool runsParallel() const
+            {
+                return mRunsParallel;
+            }
+
+            const bool interruptibleBackends() const
+            {
+                return mInterruptibleBackends;
+            }
 
             void printModel( std::ostream& ) const;
-            std::vector<Module*> getBackends( Formula*, Module* );
+            std::vector<Module*> getBackends( Formula*, Module*, std::atomic_bool* );
+            std::future<Answer> submitBackend( Module* );
+            void checkBackendPriority( Module* );
+            bool checkInterruptionFlags( std::vector<unsigned> );
+            void setInterruptionFlag( unsigned, bool );
     };
 }    // namespace smtrat
 

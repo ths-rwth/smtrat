@@ -449,7 +449,12 @@ namespace smtrat
 
             static GiNaC::ex newRealVariable( const std::string& _name )
             {
-                return mConstraintPool.newRealVariable( _name );
+                return mConstraintPool.newArithmeticVariable( _name, REAL_DOMAIN );
+            }
+
+            static GiNaC::ex newArithmeticVariable( const std::string& _name, Variable_Domain _domain )
+            {
+                return mConstraintPool.newArithmeticVariable( _name, _domain );
             }
 
             static void newBooleanVariable( const std::string& _name )
@@ -482,6 +487,12 @@ namespace smtrat
                 return mConstraintPool.newAuxiliaryBooleanVariable();
             }
 
+            static Variable_Domain domain( const GiNaC::ex& _variable )
+            {
+                return mConstraintPool.domain( _variable );
+            }
+
+
             bool isAtom() const
             {
                 return (mType == REALCONSTRAINT || mType == BOOL || mType == FFALSE || mType == TTRUE);
@@ -492,11 +503,11 @@ namespace smtrat
                 return (mType == AND || mType == OR || mType == NOT || mType == IMPLIES || mType == IFF || mType == XOR);
             }
 
-            bool isConstraintConjunction() const
+            bool isRealConstraintConjunction() const
             {
                 if( PROP_IS_PURE_CONJUNCTION <= proposition() )
                 {
-                    return !(PROP_CONTAINS_BOOLEAN <= proposition());
+                    return (!(PROP_CONTAINS_INTEGER_VALUED_VARS <= proposition()) && !(PROP_CONTAINS_BOOLEAN <= proposition()));
                 }
                 else
                 {
@@ -558,6 +569,7 @@ namespace smtrat
             void clear();
             //void notSolvableBy( ModuleType );
             void print( std::ostream& = std::cout, const std::string = "", bool = false, bool = false ) const;
+            void printProposition( std::ostream& _out = std::cout, const std::string _init = "" ) const;
             friend std::ostream& operator <<( std::ostream&, const Formula& );
             std::string toString( bool = false ) const;
             void getConstraints( std::vector<const Constraint*>& ) const;

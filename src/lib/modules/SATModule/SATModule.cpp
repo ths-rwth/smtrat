@@ -89,8 +89,8 @@ namespace smtrat
     /**
      * Constructor
      */
-    SATModule::SATModule( ModuleType type, const Formula* const _formula, RuntimeSettings* settings, Manager* const _tsManager ):
-        Module( type, _formula, _tsManager ),
+    SATModule::SATModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+        Module( _type, _formula, _conditionals, _manager ),
         // Parameters (user settable):
         //
         verbosity( 0 ),
@@ -231,8 +231,7 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                mSolverState = False;
-                return False;
+                return foundAnswer( False );
             }
 
             // TODO: Is this necessary?
@@ -261,8 +260,7 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                mSolverState = True;
-                return True;
+                return foundAnswer( True );
             }
             else if( result == l_False )
             {
@@ -280,21 +278,19 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                mSolverState = False;
-                return False;
+                return foundAnswer( False );
             }
             else
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 collectStats();
                 #endif
-                mSolverState = Unknown;
-                return Unknown;
+                return foundAnswer( Unknown );
             }
         }
         else
         {
-            return Unknown;
+            return foundAnswer( Unknown );
         }
     }
 
@@ -304,7 +300,7 @@ namespace smtrat
     void SATModule::updateModel()
     {
         mModel.clear();
-        if( mSolverState == True )
+        if( solverState() == True )
         {
             for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
             {
@@ -1031,6 +1027,10 @@ FindSecond:
 
         for( ; ; )
         {
+            if( anAnswerFound() )
+            {
+                return l_Undef;
+            }
             bool deductionsLearned = false;
             Answer currentAssignmentConsistent = True;
             CRef confl = propagate();

@@ -30,6 +30,8 @@
 #ifndef CONTRACTIONCANDIDATE_H
 #define CONTRACTIONCANDIDATE_H
 
+#define CCPRINTORIGINS
+
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
 #include "../../Formula.h"
@@ -180,12 +182,35 @@ namespace smtrat
             
             void addOrigin( const Formula* _origin )
             {
+                assert(_origin->getType() == REALCONSTRAINT);
                 mOrigin.insert(_origin);
+                cout << "Origin size after insertion: " << mOrigin.size() << endl;
+            }
+            
+            void removeOrigin( const Formula* _origin )
+            {
+                if ( mOrigin.find(_origin) != mOrigin.end() )
+                {
+                    mOrigin.erase(_origin);
+                }
             }
             
             bool hasOrigin( const Formula* _origin ) const
             {
                 return ( mOrigin.find(_origin) != mOrigin.end() );
+            }
+            
+            bool hasOrigin( const Constraint* _origin ) const
+            {
+                std::set<const Formula*>::iterator originIt;
+                for ( originIt = mOrigin.begin(); originIt != mOrigin.end(); ++originIt )
+                {
+                    if ( (*originIt)->pConstraint() == _origin )
+                    {
+                        return true;
+                    }
+                }
+                return false;
             }
             
             void setLinear()
@@ -275,7 +300,21 @@ namespace smtrat
 
             void print( ostream& _out = std::cout ) const
             {
-                _out << mId << ": \t" << (*mConstraint) << ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative << endl;
+                _out << mId << ": \t" << (*mConstraint) << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
+#ifdef CCPRINTORIGINS
+                cout << endl << "Origins(" << mOrigin.size()<< "): " << endl;
+                if ( !mOrigin.empty())
+                {
+                    for ( auto originIt = mOrigin.begin(); originIt != mOrigin.end(); ++originIt )
+                    {
+                        cout << "\t ";
+                        (*originIt)->print();
+                        cout << "\t [" << (*originIt) << "]" << endl;
+                    }   
+                }
+#else
+                cout << ", #Origins: " << mOrigin.size() << endl;
+#endif
             }
 
             friend bool operator< (ContractionCandidate const& lhs, ContractionCandidate const& rhs)

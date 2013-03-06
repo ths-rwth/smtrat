@@ -27,6 +27,7 @@ set(lib_core_src
     Constraint.cpp
     ConstraintPool.cpp
 	RuntimeSettings.cpp
+        ThreadPool.cpp
 	ValidationSettings.cpp
 )
 
@@ -42,6 +43,7 @@ set(lib_core_headers
     Constraint.h
     ConstraintPool.h
 	RuntimeSettings.h
+        ThreadPool.h
 	VariableBounds.h
 	ValidationSettings.h
     smtrat.h

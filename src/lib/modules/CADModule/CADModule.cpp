@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-02-09
+ * @version 2013-03-03
  */
 
 //#define MODULE_VERBOSE
@@ -58,6 +58,7 @@ using namespace std;
 //#define SMTRAT_CAD_ALTERNATIVE_SETTING
 //#define SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
 //#define SMTRAT_CAD_GENERIC_SETTING
+//#define SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
 //#define SMTRAT_CAD_DISABLE_SMT
 #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
 //#define SMTRAT_CAD_DISABLE_MIS
@@ -69,8 +70,8 @@ using namespace std;
 
 namespace smtrat
 {
-    CADModule::CADModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Manager* const _tsManager ):
-        Module( _type, _formula, _tsManager ),
+    CADModule::CADModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+        Module( _type, _formula, _conditionals, _manager ),
         mCAD(),
         mConstraints(),
         mConstraintsMap(),
@@ -118,7 +119,28 @@ namespace smtrat
 
         setting.trimVariables = false; // maintains the dimension important for the constraint checking
 //        setting.autoSeparateEquations = false; // <- @TODO: find a correct implementation of the MIS for the only-strict or only-equations optimizations
+
+        #ifndef SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
+        // variable order optimization
+        std::forward_list<symbol> variables = std::forward_list<symbol>( );
+        for( GiNaC::symtab::const_iterator i = mpReceivedFormula->mConstraintPool.realVariables().begin(); i != mpReceivedFormula->mConstraintPool.realVariables().end(); ++i )
+            variables.push_front( GiNaC::ex_to<symbol>( i->second ) );
+        std::forward_list<Polynomial> polynomials = std::forward_list<Polynomial>( );
+        for( fcs_const_iterator i = mpReceivedFormula->mConstraintPool.begin(); i != mpReceivedFormula->mConstraintPool.end(); ++i )
+            polynomials.push_front( (*i)->lhs() );
+        mCAD = CAD( {}, CAD::orderVariablesGreeedily( variables.begin(), variables.end(), polynomials.begin(), polynomials.end() ), setting );
+        #ifdef MODULE_VERBOSE
+        cout << "Optimizing CAD variable order from ";
+        for( forward_list<GiNaC::symbol>::const_iterator k = variables.begin(); k != variables.end(); ++k )
+            cout << *k << " ";
+        cout << "  to   ";
+        for( vector<GiNaC::symbol>::const_iterator k = mCAD.variablesScheduled().begin(); k != mCAD.variablesScheduled().end(); ++k )
+            cout << *k << " ";
+        cout << endl;;
+        #endif
+        #else
         mCAD.alterSetting( setting );
+        #endif
     }
 
     CADModule::~CADModule(){}
@@ -139,7 +161,7 @@ namespace smtrat
         if( mVariableBounds.addBound( (*_subformula)->pConstraint(), *_subformula ) )
             return true;
         #endif
-        if( mSolverState == False )
+        if( solverState() == False )
             return false;
         // add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
         if( mConstraintsMap.find( _subformula ) != mConstraintsMap.end() )
@@ -159,10 +181,10 @@ namespace smtrat
      */
     Answer CADModule::isConsistent()
     {
-        if( !mpReceivedFormula->isConstraintConjunction() )
-            return Unknown;
+        if( !mpReceivedFormula->isRealConstraintConjunction() )
+            return foundAnswer( Unknown );
         if( !mInfeasibleSubsets.empty() )
-            return False; // there was no constraint removed which was in a previously generated infeasible subset
+            return foundAnswer( False ); // there was no constraint removed which was in a previously generated infeasible subset
         #ifdef MODULE_VERBOSE
         cout << "Checking constraint set " << endl;
         for( vector<GiNaCRA::Constraint>::const_iterator k = mConstraints.begin(); k != mConstraints.end(); ++k )
@@ -181,9 +203,8 @@ namespace smtrat
         if( variableBounds().isConflicting() )
         {
             mInfeasibleSubsets.push_back( variableBounds().getConflict() );
-            mSolverState = False;
             mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
-            return False;
+            return foundAnswer( False );
         }
         GiNaCRA::BoundMap boundMap = GiNaCRA::BoundMap();
         GiNaCRA::evalintervalmap eiMap = mVariableBounds.getEvalIntervalMap();
@@ -270,9 +291,8 @@ namespace smtrat
             cout << "Performance gain: " << (mpReceivedFormula->size() - mInfeasibleSubsets.front().size()) << endl << endl;
 //            mCAD.printSampleTree();
             #endif
-            mSolverState = False;
             mRealAlgebraicSolution = GiNaCRA::RealAlgebraicPoint();
-            return False;
+            return foundAnswer( False );
         }
         #ifdef MODULE_VERBOSE
         cout << endl << "#Samples: " << mCAD.samples().size() << endl;
@@ -294,8 +314,7 @@ namespace smtrat
         #endif
         this->addDeductions( deductions );
         #endif
-        mSolverState = True;
-        return True;
+        return foundAnswer( True );
     }
 
     void CADModule::removeSubformula( Formula::const_iterator _subformula )
@@ -369,7 +388,7 @@ namespace smtrat
     void CADModule::updateModel()
     {
         mModel.clear();
-        if( mSolverState == True )
+        if( solverState() == True )
         {
             // bound-independent part of the model
             vector<symbol> vars = mCAD.variables();

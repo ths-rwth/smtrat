@@ -49,6 +49,7 @@ namespace smtrat
         mPrintAssignment( false ),
         mTraceScanning( false ),
         mTraceParsing( false ),
+        mParsingFailed( false ),
         mStatus( -1 ),
         mLogic( QF_NRA ),
         mFormulaRoot( _formulaRoot ),
@@ -96,7 +97,8 @@ namespace smtrat
 
         Parser parser( *this );
         parser.set_debug_level( mTraceParsing );
-        return (parser.parse() == 0);
+        bool result = (parser.parse() == 0 && !mParsingFailed);
+        return result;
     }
 
     /**
@@ -131,9 +133,10 @@ namespace smtrat
      * @param l
      * @param m
      */
-    void Driver::error( const class location& _loc, const string& m ) const
+    void Driver::error( const class location& _loc, const string& m )
     {
         cerr << "Parsing error at Line " << _loc.begin.line << " and Column " <<  _loc.begin.column << ": " << m << endl;
+        mParsingFailed = true;
     }
 
     /**
@@ -141,9 +144,10 @@ namespace smtrat
      * @param l
      * @param m
      */
-    void Driver::error( const string& m ) const
+    void Driver::error( const string& m )
     {
         cerr << "Parsing error: " << m << endl;
+        mParsingFailed = true;
     }
 
     /**
@@ -154,12 +158,21 @@ namespace smtrat
      */
     void Driver::setLogic( const class location& _loc, const string& _logic )
     {
-        if( _logic.compare( "QF_NRA" ) )
+        if( _logic == "QF_NRA" )
         {
         }
-        else if( _logic.compare( "QFLNRA" ) )
+        else if( _logic == "QF_LRA" )
         {
             mLogic = QF_LRA;
+        }
+        else if( _logic == "QF_NIA" )
+        {
+            mLogic = QF_NIA;
+            error( _loc, _logic + " is not supported!" );
+        }
+        else if( _logic == "QF_LIA" )
+        {
+            mLogic = QF_LIA;
         }
         else
         {
@@ -178,7 +191,12 @@ namespace smtrat
     {
         if( _type.compare( "Real" ) == 0 )
         {
-            addRealVariable( _loc, _name );
+            addTheoryVariable( _loc, _type, _name );
+            mLexer->mRealVariables.insert( _name );
+        }
+        else if( _type.compare( "Int" ) == 0 )
+        {
+            addTheoryVariable( _loc, _type, _name );
             mLexer->mRealVariables.insert( _name );
         }
         else if( _type.compare( "Bool" ) == 0 )
@@ -225,7 +243,7 @@ namespace smtrat
      * @param l
      * @param _varName
      */
-    RealVarMap::const_iterator Driver::addRealVariable( const class location& _loc, const string& _varName, bool _isBindingVariable )
+    RealVarMap::const_iterator Driver::addTheoryVariable( const class location& _loc, const string& _theory, const string& _varName, bool _isBindingVariable )
     {
         pair< string, ex > ginacConformVar;
         if( _isBindingVariable )
@@ -249,7 +267,7 @@ namespace smtrat
                     index = ginacConformName.find( iter->first, index );
                 }
             }
-            ginacConformVar = pair< string, ex >( ginacConformName, Formula::newRealVariable( ginacConformName ) );
+            ginacConformVar = pair< string, ex >( ginacConformName, Formula::newArithmeticVariable( ginacConformName, getDomain( _theory ) ) );
         }
         pair< RealVarMap::iterator, bool > res = mRealVariables.insert( pair< string, pair< string, ex > >( _varName.empty() ? ginacConformVar.first : _varName, ginacConformVar ) );
         if( !res.second )
@@ -264,7 +282,7 @@ namespace smtrat
      * @param l
      * @param _varName
      */
-    const string& Driver::getBooleanVariable( const class location& _loc, const string& _varName ) const
+    const string& Driver::getBooleanVariable( const class location& _loc, const string& _varName )
     {
         auto bvar = mBooleanVariables.find( _varName );
         if( bvar != mBooleanVariables.end() )
@@ -454,7 +472,7 @@ namespace smtrat
      */
     string* Driver::mkIteInExpr( const class location& _loc, Formula* _condition, pair< ex, vector< RealVarMap::const_iterator > >& _then, pair< ex, vector< RealVarMap::const_iterator > >& _else )
     {
-        RealVarMap::const_iterator auxRealVar = addRealVariable( _loc, "", true );
+        RealVarMap::const_iterator auxRealVar = addTheoryVariable( _loc, "Real", "", true );
         string conditionBool = addBooleanVariable( _loc, "", true );
         pair< ex, vector< RealVarMap::const_iterator > >* lhs = mkPolynomial( _loc, auxRealVar );
         Formula* constraintA = mkConstraint( *lhs, _then, CR_EQ );

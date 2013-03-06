@@ -30,6 +30,7 @@
 #define TLRA_VARIABLE_H
 
 #include "Bound.h"
+#include <ginacra/ginacra.h>
 #include <sstream>
 
 namespace tlra
@@ -180,6 +181,7 @@ namespace tlra
             std::pair<const Bound<T>*, std::pair<const Bound<T>*, const Bound<T>*> > addLowerBound( Value<T>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
             std::pair<const Bound<T>*, std::pair<const Bound<T>*, const Bound<T>*> > addEqualBound( Value<T>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL );
             void deactivateBound( const Bound<T>*, smtrat::Formula::iterator );
+            GiNaCRA::Interval getVariableBounds() const;
 
             void print( std::ostream& = std::cout ) const;
             void printAllBounds( std::ostream& = std::cout, const std::string = "" ) const;
@@ -398,6 +400,41 @@ LowerBounds:
                 mpInfimum = *newBound;
             }
         }
+    }
+
+    /**
+     *
+     * @return
+     */
+    template<class T>
+    GiNaCRA::Interval Variable<T>::getVariableBounds() const
+    {
+        GiNaCRA::Interval::BoundType lowerBoundType;
+        GiNaC::numeric lowerBoundValue;
+        GiNaCRA::Interval::BoundType upperBoundType;
+        GiNaC::numeric upperBoundValue;
+        if( infimum().isInfinite() )
+        {
+            lowerBoundType = GiNaCRA::Interval::INFINITY_BOUND;
+            lowerBoundValue = 0;
+        }
+        else
+        {
+            lowerBoundType = infimum().isWeak() ? GiNaCRA::Interval::WEAK_BOUND : GiNaCRA::Interval::STRICT_BOUND;
+            lowerBoundValue = infimum().limit().mainPart();
+        }
+        if( supremum().isInfinite() )
+        {
+            upperBoundType = GiNaCRA::Interval::INFINITY_BOUND;
+            upperBoundValue = 0;
+        }
+        else
+        {
+            upperBoundType = supremum().isWeak() ? GiNaCRA::Interval::WEAK_BOUND : GiNaCRA::Interval::STRICT_BOUND;
+            upperBoundValue = supremum().limit().mainPart();
+        }
+        GiNaCRA::Interval result = GiNaCRA::Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+        return result;
     }
 
     /**

@@ -32,7 +32,6 @@
 #include <vector>
 #include <stack>
 #include <map>
-#include <sstream>
 #include "Variable.h"
 
 #define TLRA_USE_PIVOTING_STRATEGY
@@ -42,6 +41,7 @@
 #ifndef TLRA_USE_OCCURENCE_STRATEGY
 #define TLRA_USE_THETA_STRATEGY
 #endif
+#define TLRA_INTRODUCE_NEW_CONSTRAINTS
 
 // TODO: Make it templated, such that the coefficients, bounds and assignments can be any kind of arithmetic data type.
 //       You could also use double, once assuring they under approximate and a satisfiable result is indeed satisfiable,
@@ -1649,6 +1649,7 @@ namespace tlra
                 }
                 if( *ubound == bvar.pSupremum() )
                 {
+                    delete newlimit;
                     delete uPremise;
                     goto CheckLowerPremise;
                 }
@@ -1656,20 +1657,26 @@ namespace tlra
             }
             if( ubound != --upperBounds.end() )
             {
+                assert( (*ubound)->type() != Bound::EQUAL );
                 LearnedBound learnedBound = LearnedBound();
-                if( (*ubound)->type() != Bound<T>::EQUAL && !(*ubound)->deduced() )
+                learnedBound.nextWeakerBound = *ubound;
+                learnedBound.premise = uPremise;
+                #ifdef TLRA_INTRODUCE_NEW_CONSTRAINTS
+                if( newlimit->mainPart() < (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
                 {
-                    learnedBound.nextWeakerBound = *ubound;
+                    GiNaC::ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
+                    smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
+                    const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*ubound)->pAsConstraint()->variables() );
+                    learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                 }
                 else
                 {
-                    learnedBound.nextWeakerBound = NULL;
+                    learnedBound.newBound = NULL;
                 }
-                learnedBound.premise = uPremise;
-                GiNaC::ex lhs = (*ubound)->variable().expression() - newlimit->mainPart().ginacNumeric();
-                smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
-                const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*ubound)->pAsConstraint()->variables() );
-                learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
+                #else
+                delete newlimit;
+                learnedBound.newBound = NULL;
+                #endif
                 mLearnedBounds.push_back( learnedBound );
             }
             else
@@ -1708,6 +1715,7 @@ CheckLowerPremise:
                 }
                 if( *lbound == bvar.pInfimum()  )
                 {
+                    delete newlimit;
                     delete lPremise;
                     return;
                 }
@@ -1715,20 +1723,26 @@ CheckLowerPremise:
             }
             if( lbound != --lowerBounds.rend() )
             {
+                assert( (*lbound)->type() != Bound::EQUAL );
                 LearnedBound learnedBound = LearnedBound();
-                if( (*lbound)->type() != Bound<T>::EQUAL && !(*lbound)->deduced() )
+                learnedBound.nextWeakerBound = *lbound;
+                learnedBound.premise = lPremise;
+                #ifdef TLRA_INTRODUCE_NEW_CONSTRAINTS
+                if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
                 {
-                    learnedBound.nextWeakerBound = *lbound;
+                    GiNaC::ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
+                    smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
+                    const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*lbound)->pAsConstraint()->variables() );
+                    learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                 }
                 else
                 {
-                    learnedBound.nextWeakerBound = NULL;
+                    learnedBound.newBound = NULL;
                 }
-                learnedBound.premise = lPremise;
-                GiNaC::ex lhs = (*lbound)->variable().expression() - newlimit->mainPart().ginacNumeric();
-                smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
-                const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*lbound)->pAsConstraint()->variables() );
-                learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
+                #else
+                delete newlimit;
+                learnedBound.newBound = NULL;
+                #endif
                 mLearnedBounds.push_back( learnedBound );
             }
             else
@@ -1844,6 +1858,7 @@ CheckLowerPremise:
                 }
                 if( *ubound == bvar.pSupremum() )
                 {
+                    delete newlimit;
                     delete uPremise;
                     goto CheckLowerPremise;
                 }
@@ -1851,20 +1866,26 @@ CheckLowerPremise:
             }
             if( ubound != --upperBounds.end() )
             {
+                assert( (*ubound)->type() != Bound::EQUAL );
                 LearnedBound learnedBound = LearnedBound();
-                if( (*ubound)->type() != Bound<T>::EQUAL && !(*ubound)->deduced() )
+                learnedBound.nextWeakerBound = *ubound;
+                learnedBound.premise = uPremise;
+                #ifdef TLRA_INTRODUCE_NEW_CONSTRAINTS
+                if( newlimit->mainPart() < (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
                 {
-                    learnedBound.nextWeakerBound = *ubound;
+                    GiNaC::ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
+                    smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
+                    const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*ubound)->pAsConstraint()->variables() );
+                    learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                 }
                 else
                 {
-                    learnedBound.nextWeakerBound = NULL;
+                    learnedBound.newBound = NULL;
                 }
-                learnedBound.premise = uPremise;
-                GiNaC::ex lhs = (*ubound)->variable().expression() - newlimit->mainPart().ginacNumeric();
-                smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
-                const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*ubound)->pAsConstraint()->variables() );
-                learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
+                #else
+                delete newlimit;
+                learnedBound.newBound = NULL;
+                #endif
                 mLearnedBounds.push_back( learnedBound );
             }
             else
@@ -1903,6 +1924,7 @@ CheckLowerPremise:
                 }
                 if( *lbound == bvar.pInfimum()  )
                 {
+                    delete newlimit;
                     delete lPremise;
                     return;
                 }
@@ -1910,20 +1932,26 @@ CheckLowerPremise:
             }
             if( lbound != --lowerBounds.rend() )
             {
+                assert( (*lbound)->type() != Bound::EQUAL );
                 LearnedBound learnedBound = LearnedBound();
-                if( (*lbound)->type() != Bound<T>::EQUAL && !(*lbound)->deduced() )
+                learnedBound.nextWeakerBound = *lbound;
+                learnedBound.premise = lPremise;
+                #ifdef TLRA_INTRODUCE_NEW_CONSTRAINTS
+                if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
                 {
-                    learnedBound.nextWeakerBound = *lbound;
+                    GiNaC::ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
+                    smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
+                    const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*lbound)->pAsConstraint()->variables() );
+                    learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                 }
                 else
                 {
-                    learnedBound.nextWeakerBound = NULL;
+                    learnedBound.newBound = NULL;
                 }
-                learnedBound.premise = lPremise;
-                GiNaC::ex lhs = (*lbound)->variable().expression() - newlimit->mainPart().ginacNumeric();
-                smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
-                const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*lbound)->pAsConstraint()->variables() );
-                learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
+                #else
+                delete newlimit;
+                learnedBound.newBound = NULL;
+                #endif
                 mLearnedBounds.push_back( learnedBound );
             }
             else

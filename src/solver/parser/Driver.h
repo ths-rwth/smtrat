@@ -41,7 +41,7 @@
 
 namespace smtrat
 {
-    enum Logic { QF_NRA, QF_LRA };
+    enum Logic { QF_NRA, QF_LRA, QF_NIA, QF_LIA };
 
     class Formula;
 
@@ -59,6 +59,8 @@ namespace smtrat
             bool mTraceScanning;
             /// enable debug output in the bison parser
             bool mTraceParsing;
+            /// enable debug output in the bison parser
+            bool mParsingFailed;
             ///
             int mStatus;
             ///
@@ -190,16 +192,24 @@ namespace smtrat
                 }
             }
 
+            static Variable_Domain getDomain( const string& _type )
+            {
+                if( _type == "Real" ) return REAL_DOMAIN;
+                if( _type == "Int" ) return INTEGER_DOMAIN;
+                assert( false );
+                return REAL_DOMAIN;
+            }
+
             bool parse_stream( std::istream& in, const std::string& sname = "stream input" );
             bool parse_string( const std::string& input, const std::string& sname = "string stream" );
             bool parse_file( const std::string& filename );
-            void error( const class location&, const std::string& m ) const;
-            void error( const std::string& m ) const;
+            void error( const class location&, const std::string& m );
+            void error( const std::string& m );
             void setLogic( const class location&, const std::string& );
             void addVariable( const class location&, const std::string&, const std::string& );
             const std::string addBooleanVariable( const class location&, const std::string& = "", bool = false );
-            RealVarMap::const_iterator addRealVariable( const class location&, const std::string& = "", bool = false );
-            const std::string& getBooleanVariable( const class location&, const std::string& ) const;
+            RealVarMap::const_iterator addTheoryVariable( const class location&, const std::string&, const std::string& = "", bool = false );
+            const std::string& getBooleanVariable( const class location&, const std::string& );
             RealVarMap::const_iterator getRealVariable( const class location&, const std::string& );
             void freeBooleanVariableName( const std::string& );
             void freeRealVariableName( const std::string& );

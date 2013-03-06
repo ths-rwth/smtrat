@@ -74,7 +74,7 @@ namespace smtrat
                 double                     weight;
             };
 
-            typedef list<icp::ContractionCandidate*>                      ContractionCandidates;
+            typedef set<icp::ContractionCandidate*>                      ContractionCandidates;
             typedef std::map<ex*, weights>                             WeightMap;
             typedef std::vector< std::set<Constraint> >              vec_set_Constraint;
 
@@ -84,8 +84,8 @@ namespace smtrat
              * Members:
              */
             icp::ContractionCandidateManager*                                        mCandidateManager;
-            std::map<icp::ContractionCandidate*, int>                                mActiveNonlinearConstraints;
-            std::map<icp::ContractionCandidate*, int>                                mActiveLinearConstraints;
+            std::map<icp::ContractionCandidate*, unsigned>                                mActiveNonlinearConstraints;
+            std::map<icp::ContractionCandidate*, unsigned>                                mActiveLinearConstraints;
             std::map<const lra::Variable*, std::set<icp::ContractionCandidate*> >          mLinearConstraints;
             std::map<const Constraint*, ContractionCandidates>                  mNonlinearConstraints;
             GiNaCRA::ICP                                                        mIcp;
@@ -93,30 +93,32 @@ namespace smtrat
             std::set<std::pair<double, unsigned>, comp>                         mIcpRelevantCandidates;
             std::map<const Constraint*, const Constraint*>                      mReplacements; // replacement -> origin
             std::map<const Constraint*, const Constraint*>                      mLinearizationReplacements;
-            
+
             std::map<symbol, icp::IcpVariable, ex_is_less>                      mVariables;
-            
+            std::map<const ex, symbol, ex_is_less>                                                mLinearizations;
+
             icp::HistoryNode*                                                        mHistoryRoot;
             icp::HistoryNode*                                                        mHistoryActual;
 
             Formula*                                                            mValidationFormula;
+            std::vector< std::atomic_bool* >                                    mLRAFoundAnswer;
             LRAModule                                                           mLRA;
-            
+
             std::set<const Constraint*>                                         mCenterConstraints;
-            GiNaC::symtab                                                       mReplacementVariables;   
-            
+            GiNaC::symtab                                                       mReplacementVariables;
+
             bool                                                                mInitialized;
-            
+
 #ifdef HISTORY_DEBUG
             unsigned                                                            mCurrentId;
 #endif
-            
+
         public:
 
             /**
              * Constructors:
              */
-            ICPModule(ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Manager* const _tsManager );
+            ICPModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /**
             * Destructor:
@@ -220,6 +222,11 @@ namespace smtrat
             void printIcpRelevantCandidates();
             
             /**
+             * Prints all intervals from mIntervals, should be the same intervals as in mHistoryActual->intervals().
+             */
+            void printIntervals();
+            
+            /**
              * Selects and sets the next possible interval box from the history nodes.
              * @return true if a new box has been selected.
              */
@@ -251,7 +258,7 @@ namespace smtrat
              * Update all affected candidates and reinsert them into icpRelevantCandidates
              * @param _var
              */
-            void updateRelevantCandidates(symbol _var);
+            void updateRelevantCandidates(symbol _var, double _relativeContraction );
             
             /**
              * Removes all centerconstraints from the validation formula - needed before adding actual centerconstraints

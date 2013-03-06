@@ -3,20 +3,19 @@
  * @author Ulrich Loup
  *
  * @since January 29, 2013, 4:27 PM
- * @version 2013-03-03
+ * @version 2013-01-29
  */
 #ifndef SMTRAT_CADCONFIG_H
 #define SMTRAT_CADCONFIG_H
 
-#cmakedefine SMTRAT_CAD_VARIABLEBOUNDS
+#define SMTRAT_CAD_VARIABLEBOUNDS
 
-#cmakedefine SMTRAT_CADSETTING_1
-#cmakedefine SMTRAT_CADSETTING_2
-#cmakedefine SMTRAT_CADSETTING_3
-#cmakedefine SMTRAT_CADSETTING_4
-#cmakedefine SMTRAT_CADSETTING_5
-#cmakedefine SMTRAT_CADSETTING_6
-#cmakedefine SMTRAT_CADSETTING_7
+#define SMTRAT_CADSETTING_1
+/* #undef SMTRAT_CADSETTING_2 */
+/* #undef SMTRAT_CADSETTING_3 */
+/* #undef SMTRAT_CADSETTING_4 */
+/* #undef SMTRAT_CADSETTING_5 */
+/* #undef SMTRAT_CADSETTING_6 */
 
 #ifdef SMTRAT_CADSETTING_1
 // default
@@ -36,9 +35,6 @@
 #endif
 #ifdef SMTRAT_CADSETTING_6
 #define SMTRAT_CAD_DISABLE_MIS
-#endif
-#ifdef SMTRAT_CADSETTING_7
-#define SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
 #endif
 
 #endif // SMTRAT_CADCONFIG_H

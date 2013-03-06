@@ -113,7 +113,7 @@ if(USE_NSS)
 	)
 endif()
 
-set( libraries ${libraries} ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} )
+set( libraries ${libraries} ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} pthread )
 
 if(USE_GINACRA)
         set( libraries ${GINACRA_LIBRARY} ${libraries} )
