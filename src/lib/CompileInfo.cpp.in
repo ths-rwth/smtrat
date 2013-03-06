@@ -1,0 +1,9 @@
+#include "CompileInfo.h"
+
+namespace smtrat 
+{
+const std::string CompileInfo::SystemName = "@CMAKE_SYSTEM_NAME@";
+const std::string CompileInfo::SystemVersion = "@CMAKE_SYSTEM_VERSION@";
+const std::string CompileInfo::BuildType = "@CMAKE_BUILD_TYPE@";
+const std::string CompileInfo::CXXCompiler = "@CMAKE_CXX_COMPILER_VERSION@";
+}

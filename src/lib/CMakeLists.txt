@@ -29,6 +29,7 @@ set(lib_core_src
 	RuntimeSettings.cpp
         ThreadPool.cpp
 	ValidationSettings.cpp
+	CompileInfo.cpp
 )
 
 set(lib_core_headers
@@ -61,6 +62,8 @@ add_subdirectory(strategies)
 #######################
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/config.h )
 
+# write CompileInfo.cpp
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/CompileInfo.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/CompileInfo.cpp )
 
 
 # Nullstellensatz module variables
