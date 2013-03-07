@@ -512,6 +512,7 @@ namespace vs
         printAlone( "", cout );
         #endif
 
+        CONSTRAINT_LOCK_GUARD
         if( !subResultsSimplified() )
         {
             if( hasSubstitutionResults() )
@@ -715,6 +716,7 @@ namespace vs
      */
     bool State::simplify( ConditionVector& _conditionVectorToSimplify, ConditionVector& _redundantConditions, ConditionSetSet& _conflictSet )
     {
+        CONSTRAINT_LOCK_GUARD
         #ifdef VS_DEBUG_METHODS_X
         cout << __func__ << "2" << endl;
         #endif
@@ -733,7 +735,7 @@ namespace vs
                 {
                     const Condition* condA = _conditionVectorToSimplify[posA];
                     const Condition* condB = _conditionVectorToSimplify[posB];
-                    signed strongProp = smtrat::Constraint::compare( condA->constraint(), condB->constraint() );
+                    signed strongProp = smtrat::Constraint::compare( condA->pConstraint(), condB->pConstraint() );
                     /*
                      * If the two conditions have the same solution space.
                      */
@@ -2174,6 +2176,7 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
         #endif
+        CONSTRAINT_LOCK_GUARD
         const smtrat::Constraint* cons = smtrat::Formula::newConstraint( _lhsCondition, _relationCondition, _variables );
         unsigned isConsConsistent = (*cons).isConsistent();
         if( isConsConsistent != 0 )
@@ -2253,6 +2256,7 @@ namespace vs
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
         #endif
+        CONSTRAINT_LOCK_GUARD
         const smtrat::Constraint* cons1 = smtrat::Formula::newConstraint( _lhsCondition1, _relationCondition1, _variables );
         unsigned isCons1Consistent = (*cons1).isConsistent();
         if( isCons1Consistent != 0 )
@@ -2363,7 +2367,7 @@ namespace vs
         cout << __func__ << endl;
         #endif
         assert( isInconsistent() );
-
+        CONSTRAINT_LOCK_GUARD
         /*
          * Determine a covering set of the conflict sets.
          */
@@ -2521,6 +2525,7 @@ namespace vs
      */
     bool State::checkTestCandidatesForBounds()
     {
+        CONSTRAINT_LOCK_GUARD
         if( mTestCandidateCheckedForBounds ) return true;
         mTestCandidateCheckedForBounds = true;
         if( variableBounds().isConflicting() )

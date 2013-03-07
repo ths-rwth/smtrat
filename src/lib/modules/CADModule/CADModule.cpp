@@ -128,7 +128,7 @@ namespace smtrat
             variables.push_front( GiNaC::ex_to<symbol>( i->second ) );
         std::forward_list<Polynomial> polynomials = std::forward_list<Polynomial>( );
         for( fcs_const_iterator i = mpReceivedFormula->constraintPool().begin(); i != mpReceivedFormula->constraintPool().end(); ++i )
-            polynomials.push_front( (*i)->load()->lhs() );
+            polynomials.push_front( (*i)->lhs() );
         mCAD = CAD( {}, CAD::orderVariablesGreeedily( variables.begin(), variables.end(), polynomials.begin(), polynomials.end() ), setting );
         #ifdef MODULE_VERBOSE
         cout << "Optimizing CAD variable order from ";

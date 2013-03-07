@@ -43,6 +43,7 @@ using namespace vs;
 
 namespace smtrat
 {
+
     /**
      * Constructors:
      */
@@ -236,10 +237,6 @@ namespace smtrat
     {
         if( mpReceivedFormula->isRealConstraintConjunction() )
         {
-            if( mpReceivedFormula->size() != mFormulaConditionMap.size())
-            {
-                printFormulaConditionMap();
-            }
             assert( mpReceivedFormula->size() == mFormulaConditionMap.size() );
             if( !mConditionsChanged )
             {
@@ -278,7 +275,7 @@ namespace smtrat
 
             while( !mRanking.empty() )
             {
-//                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+//                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
                 if( anAnswerFound() )
                 {
                     return foundAnswer( Unknown );
@@ -782,47 +779,47 @@ EndSwitch:;
      */
     bool VSModule::eliminate( State* _currentState, const string& _eliminationVar, const vs::Condition* _condition )
     {
+        CONSTRAINT_LOCK_GUARD
         /*
          * Get the constraint of this condition.
          */
-        const Constraint& constraint = (*_condition).constraint();
+        const Constraint* constraint = (*_condition).pConstraint();
+        Constraint_Relation relation = (*_condition).constraint().relation();
+        symbol sym;
+        constraint->variable( _eliminationVar, sym );
+        signed degree = constraint->maxDegree( ex( sym ) );
+        symtab vars = constraint->variables();
+
         #ifdef DONT_CHECK_STRICT_INEQUALITIES
-        if( constraint.relation() == CR_LESS || constraint.relation() == CR_GREATER || constraint.relation() == CR_NEQ )
+        if( relation == CR_LESS || relation == CR_GREATER || relation == CR_NEQ )
         {
             return false;
         }
         #endif
 
-        /*
-         * Get coefficients of the variable in the constraints.
-         */
-        symbol sym;
-        constraint.variable( _eliminationVar, sym );
-        symtab vars = constraint.variables();
         vars.erase( _eliminationVar );
 
         /*
          * Determine the substitution type: normal or +epsilon
          */
         Substitution_Type subType = ST_PLUS_EPSILON;
-        if( constraint.relation() == CR_EQ || constraint.relation() == CR_LEQ || constraint.relation() == CR_GEQ )
+        if( relation == CR_EQ || relation == CR_LEQ || relation == CR_GEQ )
         {
             subType = ST_NORMAL;
         }
 
         vector<ex> coeffs = vector<ex>();
         #ifdef VS_ELIMINATE_MULTI_ROOTS
-        ex mrl = constraint.multiRootLessLhs();
+        ex mrl = constraint->multiRootLessLhs();
         signed degree = mrl.degree( ex( sym ) );
         #else
-        signed degree = constraint.lhs().maxDegree( ex( sym ) );
         #endif
         for( signed i = 0; i <= degree; ++i )
         {
             #ifdef VS_ELIMINATE_MULTI_ROOTS
-            coeffs.push_back( ex( constraint.multiRootLessLhs().coeff( ex( sym ), i ) ) );
+            coeffs.push_back( ex( constraint->multiRootLessLhs().coeff( ex( sym ), i ) ) );
             #else
-            coeffs.push_back( ex( constraint.coefficient( ex( sym ), i ) ) );
+            coeffs.push_back( ex( constraint->coefficient( ex( sym ), i ) ) );
             #endif
         }
 
@@ -852,7 +849,7 @@ EndSwitch:;
                                                oConditions );
                 if( isAdded > 0 )
                 {
-                    if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
+                    if( relation == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
                         _currentState->rChildren().back()->setOriginalCondition( _condition );
                         generatedTestCandidateBeingASolution = true;
@@ -867,7 +864,7 @@ EndSwitch:;
                     (*(*_currentState).rChildren().back()).print( "   ", cout );
                     #endif
                 }
-                else if( isAdded < 0 && constraint.relation() == CR_EQ )
+                else if( isAdded < 0 && relation == CR_EQ )
                 {
                     generatedTestCandidateBeingASolution = true;
                 }
@@ -886,7 +883,7 @@ EndSwitch:;
                                                coeffs.at( 1 ), 0, subType, vars, oConditions );
                 if( isAdded > 0 )
                 {
-                    if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
+                    if( relation == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
                         _currentState->rChildren().back()->setOriginalCondition( _condition );
                         generatedTestCandidateBeingASolution = true;
@@ -910,7 +907,7 @@ EndSwitch:;
                                                2 * coeffs.at( 2 ), radicand, subType, vars, oConditions );
                 if( isAdded > 0 )
                 {
-                    if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
+                    if( relation == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
                         _currentState->rChildren().back()->setOriginalCondition( _condition );
                         generatedTestCandidateBeingASolution = true;
@@ -934,7 +931,7 @@ EndSwitch:;
                                                2 * coeffs.at( 2 ), radicand, subType , vars, oConditions );
                 if( isAdded > 0 )
                 {
-                    if( constraint.relation() == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
+                    if( relation == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
                     {
                         _currentState->rChildren().back()->setOriginalCondition( _condition );
                         generatedTestCandidateBeingASolution = true;
@@ -951,7 +948,7 @@ EndSwitch:;
                 }
                 constraintHasZeros = isAdded >= 0;
 
-                if( !constraintHasZeros && constraint.relation() == CR_EQ )
+                if( !constraintHasZeros && relation == CR_EQ )
                 {
                     generatedTestCandidateBeingASolution = true;
                 }
@@ -1081,6 +1078,7 @@ EndSwitch:;
             symtab::const_iterator var = currentConstraint->variables().find( substitutionVariable );
             if( var == currentConstraint->variables().end() )
             {
+                CONSTRAINT_LOCK
                 if( !anySubstitutionFailed )
                 {
                     /*
@@ -1091,6 +1089,7 @@ EndSwitch:;
                     oldConditions.push_back( new vs::Condition( currentConstraint, (**cond).valuation() ) );
                     oldConditions.back()->pOriginalConditions()->insert( *cond );
                 }
+                CONSTRAINT_UNLOCK
             }
             else
             {
@@ -1100,7 +1099,9 @@ EndSwitch:;
                  */
                 DisjunctionOfConstraintConjunctions disjunctionOfConsConj;
                 disjunctionOfConsConj = DisjunctionOfConstraintConjunctions();
+                CONSTRAINT_LOCK
                 substitute( currentConstraint, currentSubstitution, disjunctionOfConsConj );
+                CONSTRAINT_UNLOCK
 
                 /*
                  * Create the the conditions according to the just created constraint prototypes.
@@ -1245,6 +1246,7 @@ EndSwitch:;
      */
     void VSModule::propagateNewConditions( State* _currentState )
     {
+        CONSTRAINT_LOCK_GUARD
         eraseDTsOfRanking( *_currentState );
         _currentState->rHasRecentlyAddedConditions() = false;
         if( _currentState->takeSubResultCombAgain() && _currentState->stateType() == COMBINE_SUBRESULTS )
@@ -1497,6 +1499,7 @@ EndSwitch:;
      */
     void VSModule::updateInfeasibleSubset( bool _includeInconsistentTestCandidates )
     {
+        CONSTRAINT_LOCK_GUARD
         #ifdef VS_INFEASIBLE_SUBSET_GENERATION
         /*
          * Determine the minimum covering sets of the conflict sets, i.e. the infeasible subsets of the root.
@@ -1727,6 +1730,7 @@ EndSwitch:;
      */
     bool VSModule::adaptPassedFormula( const State& _state, FormulaConditionMap& _formulaCondMap, bool _strictInequalitiesOnly )
     {
+        CONSTRAINT_LOCK_GUARD
         bool changedPassedFormula = false;
 
         /*
@@ -1828,6 +1832,7 @@ EndSwitch:;
      */
     Answer VSModule::runBackendSolvers( State* _state, bool _strictInequalitiesOnly )
     {
+        CONSTRAINT_LOCK_GUARD
         /*
          * Run the backends on the constraint of the state.
          */

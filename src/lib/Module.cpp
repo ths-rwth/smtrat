@@ -39,7 +39,7 @@
 #include "ModuleFactory.h"
 
 // Flag activating some informative and not exaggerated output about module calls.
-#define MODULE_VERBOSE
+//#define MODULE_VERBOSE
 
 using namespace std;
 
@@ -656,7 +656,6 @@ namespace smtrat
             }
 
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
-            unsigned highestIndex = numberOfUsedBackends-1;
             if( mpManager->runsParallel() )
             {
                 /*
@@ -667,6 +666,7 @@ namespace smtrat
                     return Unknown;
                 }
 
+                unsigned highestIndex = numberOfUsedBackends-1;
                 vector< std::future<Answer> > futures( highestIndex );
 
                 for( unsigned i=0; i<highestIndex; ++i )
@@ -693,7 +693,7 @@ namespace smtrat
                     mUsedBackends[ i ]->receivedFormulaChecked();
                     if( res!=Unknown )
                     {
-                        cout << "Resultat: " << res << " and threadid: " << mUsedBackends[i]->threadPriority().first << " and type: " << mUsedBackends[i]->type() << endl;
+//                        cout << "Resultat: " << res << " and threadid: " << mUsedBackends[i]->threadPriority().first << " and type: " << mUsedBackends[i]->type() << endl;
                         assert( result == Unknown || result == res );
                         result = res;
                     }

@@ -509,7 +509,9 @@ namespace smtrat
             }
             case REALCONSTRAINT:
             {
-                return getLiteral( _formula.pConstraint(), _origin, fabs(_formula.activity()), (_formula.activity()<0) );
+                CONSTRAINT_LOCK_GUARD
+                Lit lit = getLiteral( _formula.pConstraint(), _origin, fabs(_formula.activity()), (_formula.activity()<0) );
+                return lit;
             }
             default:
             {
@@ -607,6 +609,7 @@ namespace smtrat
      */
     void SATModule::adaptPassedFormula()
     {
+        CONSTRAINT_LOCK_GUARD
         signed posInAssigns = 0;
         while( posInAssigns < mBooleanConstraintMap.size() )
         {
@@ -1025,6 +1028,7 @@ FindSecond:
         #endif
         #endif
 
+        Answer currentAssignmentConsistent = True;
         for( ; ; )
         {
             if( anAnswerFound() )
@@ -1032,7 +1036,6 @@ FindSecond:
                 return l_Undef;
             }
             bool deductionsLearned = false;
-            Answer currentAssignmentConsistent = True;
             CRef confl = propagate();
 
             #ifdef DEBUG_SATMODULE
@@ -2045,7 +2048,7 @@ NextClause:
         {
             if( mBooleanConstraintMap[k].formula != NULL )
             {
-                _out << _init << "   " << k << "  ->  " << mBooleanConstraintMap[k].formula->constraint();
+                _out << _init << "   " << k << "  ->  " << mBooleanConstraintMap[k].formula->pConstraint();
                 _out << "  (" << setw( 7 ) << activity[k] << ") [" << mBooleanConstraintMap[k].updateInfo << "]" << endl;
             }
         }

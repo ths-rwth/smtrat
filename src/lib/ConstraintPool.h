@@ -30,7 +30,6 @@
 #include "Constraint.h"
 #include <unordered_set>
 #include <mutex>
-#include <atomic>
 
 #ifndef CONSTRAINTPOOL_H
 #define CONSTRAINTPOOL_H
@@ -39,11 +38,11 @@ namespace smtrat
 {
     struct constraintEqual
     {
-        bool operator ()( const std::atomic<const Constraint*>* const _constraintA, const std::atomic<const Constraint*>* const _constraintB ) const
+        bool operator ()( const Constraint* const _constraintA, const Constraint* const _constraintB ) const
         {
-            if( _constraintA->load()->secondHash() == _constraintB->load()->secondHash() )
+            if( _constraintA->secondHash() == _constraintB->secondHash() )
             {
-                return _constraintA->load()->lhs().is_equal( _constraintB->load()->lhs() );
+                return _constraintA->lhs().is_equal( _constraintB->lhs() );
             }
             return false;
         }
@@ -51,9 +50,9 @@ namespace smtrat
 
     struct constraintHash
     {
-        size_t operator ()( const std::atomic<const Constraint*>* const _constraint ) const
+        size_t operator ()( const Constraint* const _constraint ) const
         {
-            return _constraint->load()->firstHash() * 6 + _constraint->load()->secondHash();
+            return _constraint->firstHash() * 6 + _constraint->secondHash();
         }
     };
 
@@ -65,7 +64,7 @@ namespace smtrat
 //        }
 //    };
 
-    typedef std::unordered_set<std::atomic<const Constraint*>*, constraintHash, constraintEqual> fastConstraintSet;
+    typedef std::unordered_set<const Constraint*, constraintHash, constraintEqual> fastConstraintSet;
     typedef fastConstraintSet::const_iterator                                      fcs_const_iterator;
 
     class ConstraintPool
@@ -81,9 +80,9 @@ namespace smtrat
             /// A counter for the auxiliary Booleans defined in this formula.
             unsigned mAuxiliaryRealCounter;
             ///
-            std::atomic<const Constraint*>* mConsistentConstraint;
+            const Constraint* mConsistentConstraint;
             ///
-            std::atomic<const Constraint*>* mInconsistentConstraint;
+            const Constraint* mInconsistentConstraint;
             ///
             mutable std::mutex mMutexConstraints;
             ///
@@ -112,7 +111,7 @@ namespace smtrat
             static std::string prefixToInfix( const std::string& );
             bool hasNoOtherVariables( const GiNaC::ex& ) const;
             Constraint* createNormalizedConstraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& ) const;
-            std::atomic<const Constraint*>* addConstraintToPool( Constraint* );
+            const Constraint* addConstraintToPool( Constraint* );
 
         public:
 
@@ -124,20 +123,23 @@ namespace smtrat
             {
                 // TODO: Will begin() be valid if we insert elements?
                 std::lock_guard<std::mutex> lock( mMutexConstraints );
-                return mConstraints.begin();
+                fcs_const_iterator result = mConstraints.begin();
+                return result;
             }
 
             fcs_const_iterator end() const
             {
                 // TODO: Will end() be changed if we insert elements?
                 std::lock_guard<std::mutex> lock( mMutexConstraints );
-                return mConstraints.end();
+                fcs_const_iterator result = mConstraints.end();
+                return result;
             }
 
             unsigned size() const
             {
                 std::lock_guard<std::mutex> lock( mMutexConstraints );
-                return mConstraints.size();
+                unsigned result = mConstraints.size();
+                return result;
             }
 
             /**
@@ -149,7 +151,6 @@ namespace smtrat
              */
             GiNaC::symtab realVariables() const
             {
-                std::lock_guard<std::mutex> lock( mMutexArithmeticVariables );
                 return mArithmeticVariables;
             }
 
@@ -162,7 +163,6 @@ namespace smtrat
              */
             std::set<std::string> booleanVariables() const
             {
-                std::lock_guard<std::mutex> lock( mMutexBooleanVariables );
                 return mBooleanVariables;
             }
 
@@ -183,10 +183,9 @@ namespace smtrat
             std::pair<std::string,GiNaC::ex> newAuxiliaryRealVariable();
             void newBooleanVariable( const std::string& );
             std::string newAuxiliaryBooleanVariable();
-
-            void print( std::ostream& = std::cout ) const;
             int maxDegree() const;
             unsigned nrNonLinearConstraints() const;
+            void print( std::ostream& = std::cout ) const;
     };
 }    // namespace smtrat
 

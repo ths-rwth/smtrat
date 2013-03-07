@@ -48,6 +48,7 @@
 #include <assert.h>
 #include <mutex>
 #include <ginacra/utilities.h>
+#include "config.h"
 
 namespace smtrat
 {
@@ -137,6 +138,9 @@ namespace smtrat
             VarInfoMap           mVarInfoMap;
 
         public:
+
+            static std::recursive_mutex mMutex;
+
             /*
              * Constructors:
              */
@@ -237,6 +241,7 @@ namespace smtrat
 
             static void normalize( GiNaC::ex& _exp )
             {
+//                std::lock_guard<std::mutex> lock( mMutexNormalize );
                 GiNaC::numeric commonDenom = GiNaC::mdenom( _exp );
                 if( commonDenom != 1 ) _exp *= commonDenom;
                 _exp = _exp.expand();
@@ -288,7 +293,7 @@ namespace smtrat
                 return varInfo->second;
             }
 
-            bool constraintRelationIsStrict( Constraint_Relation rel )
+            bool constraintRelationIsStrict( Constraint_Relation rel ) const
             {
                 return (rel == CR_NEQ || rel == CR_LESS || rel == CR_GREATER);
             }
@@ -317,7 +322,7 @@ namespace smtrat
             // Operators.
             bool operator <( const Constraint& ) const;
             bool operator ==( const Constraint& ) const;
-            friend std::ostream& operator <<( std::ostream&, const Constraint& );
+            friend std::ostream& operator <<( std::ostream&, const Constraint* );
 
             // Manipulating methods.
             void collectProperties();
@@ -334,9 +339,9 @@ namespace smtrat
             std::string smtlibString() const;
 
             //
-            static signed compare( const Constraint&, const Constraint& );
+            static signed compare( const Constraint*, const Constraint* );
             static const Constraint* mergeConstraints( const Constraint*, const Constraint* );
-            static bool combineConstraints( const Constraint&, const Constraint&, const Constraint& );
+            static bool combineConstraints( const Constraint*, const Constraint*, const Constraint* );
     };
 
     typedef std::vector<const Constraint*>                                vec_const_pConstraint;
@@ -360,5 +365,15 @@ namespace smtrat
 
     typedef std::set< const Constraint*, constraintPointerComp > ConstraintSet;
 }    // namespace smtrat
+
+//#ifdef SMTRAT_STRAT_PARALLEL_MODE
+#define CONSTRAINT_LOCK_GUARD std::lock_guard<std::recursive_mutex> lock( smtrat::Constraint::mMutex );
+#define CONSTRAINT_LOCK smtrat::Constraint::mMutex.lock();
+#define CONSTRAINT_UNLOCK smtrat::Constraint::mMutex.unlock();
+//#else
+//#define CONSTRAINT_LOCK_GUARD
+//#define CONSTRAINT_LOCK
+//#define CONSTRAINT_UNLOCK
+//#endif
 
 #endif

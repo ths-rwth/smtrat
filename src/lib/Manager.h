@@ -194,8 +194,6 @@ namespace smtrat
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             std::future<Answer> submitBackend( Module* );
             void checkBackendPriority( Module* );
-            bool checkInterruptionFlags( std::vector<unsigned> );
-            void setInterruptionFlag( unsigned, bool );
             #endif
     };
 }    // namespace smtrat

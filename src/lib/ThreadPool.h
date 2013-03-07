@@ -131,7 +131,7 @@ namespace smtrat
 
             std::mutex mMutex;
             std::atomic_bool mDone;
-            std::atomic_bool mOversubscription;
+            std::atomic_bool mPossibleOversubscription;
             unsigned mNumberOfCores;
             unsigned mNumberOfThreads;
             unsigned mNumberOfRunningThreads;

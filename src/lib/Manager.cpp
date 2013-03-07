@@ -59,6 +59,7 @@ namespace smtrat
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         ,
         mpThreadPool( NULL ),
+        mNumberOfBranches( 0 ),
         mNumberOfCores( 1 ),
         mRunsParallel( false )
         #endif
@@ -68,7 +69,7 @@ namespace smtrat
         // inform it about all constraints
         for( fcs_const_iterator constraint = Formula::constraintPool().begin(); constraint != Formula::constraintPool().end(); ++constraint )
         {
-            mpPrimaryBackend->inform( (*constraint)->load() );
+            mpPrimaryBackend->inform( (*constraint) );
         }
     }
 
@@ -175,13 +176,11 @@ namespace smtrat
             /*
              * If for this module type an instance already exists, we just add it to the modules to return.
              */
-// MUTEX? NEIN ODER?
             vector<Module*>::iterator backend = allBackends.begin();
             while( backend != allBackends.end() )
             {
                 if( (*backend)->threadPriority() == iter->first )
                 {
-                    cout << "getBackends: " << iter->second << endl;
                     // the backend already exists
                     backends.push_back( *backend );
                     break;
@@ -193,13 +192,11 @@ namespace smtrat
              */
             if( backend == allBackends.end() )
             {
-// MUTEX? JA ODER? module factories
                 auto backendFactory = mpModuleFactories->find( iter->second );
                 assert( backendFactory != mpModuleFactories->end() );
                 vector< atomic_bool* > foundAnswers = vector< atomic_bool* >( _requiredBy->answerFound() );
                 foundAnswers.push_back( _foundAnswer );
                 Module* pBackend = backendFactory->second->create( iter->second, _requiredBy->pPassedFormula(), foundAnswers, this );
-// MUTEX generated Modules
                 mGeneratedModules.push_back( pBackend );
                 pBackend->setId( mGeneratedModules.size()-1 );
                 pBackend->setThreadPriority( iter->first );
@@ -236,35 +233,6 @@ namespace smtrat
     {
         assert( mRunsParallel );
         mpThreadPool->checkBackendPriority( _pModule );
-    }
-
-    /**
-     *
-     * @param _branchIds
-     * @return
-     */
-    bool Manager::checkInterruptionFlags( vector<unsigned> _branchIds )
-    {
-        std::lock_guard<std::mutex> lock( mInterruptionMutex );
-        for( unsigned i=0; i<_branchIds.size(); ++i )
-        {
-            if( mInterruptionFlags[ _branchIds[ i ] ] )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     *
-     * @param _interruptionFlag
-     * @param _flag
-     */
-    void Manager::setInterruptionFlag( unsigned _interruptionFlag, bool _flag )
-    {
-        std::lock_guard<std::mutex> lock( mInterruptionMutex );
-        mInterruptionFlags[ _interruptionFlag ] = _flag;
     }
     #endif
 }    // namespace smtrat

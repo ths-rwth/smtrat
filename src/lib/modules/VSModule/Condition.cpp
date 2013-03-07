@@ -130,6 +130,7 @@ namespace vs
      */
     double Condition::valuate( const string& _consideredVariable, unsigned _maxNumberOfVars, bool _forElimination ) const
     {
+        CONSTRAINT_LOCK_GUARD
         symtab::const_iterator var = mpConstraint->variables().find( _consideredVariable );
         if( var != mpConstraint->variables().end() )
         {
@@ -216,6 +217,7 @@ namespace vs
             // Check how in how many monomials the variable occurs.
             double numberOfVariableOccurencesWeight = varInfo.occurences;
             if( maximum <= numberOfVariableOccurencesWeight ) numberOfVariableOccurencesWeight = maximum - 1;
+//            #ifndef SMTRAT_STRAT_PARALLEL_MODE
             // If variable occurs only in one monomial, give a bonus if all other monomials are positive.
             double otherMonomialsPositiveWeight = 1;
             if( numberOfVariableOccurencesWeight == 1 && mpConstraint->numMonomials() > 1 )
@@ -308,7 +310,7 @@ namespace vs
                 }
                 if( allOtherMonomialsPos || allOtherMonomialsNeg ) otherMonomialsPositiveWeight = 2;
             }
-
+//            #endif
             double weightFactorTmp = maximum;
             double result = ( degreeWeight <= 2 ? 1 : 2);
             result += relationSymbolWeight/weightFactorTmp;
@@ -320,8 +322,10 @@ namespace vs
             result += numberOfVariableWeight/weightFactorTmp;
             weightFactorTmp *= maximum;
             result += numberOfVariableOccurencesWeight/weightFactorTmp;
+//            #ifndef SMTRAT_STRAT_PARALLEL_MODE
             weightFactorTmp *= maximum;
             result += otherMonomialsPositiveWeight/weightFactorTmp;
+//            #endif
             return result;
         }
         else
