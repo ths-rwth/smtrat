@@ -42,11 +42,22 @@ namespace smtrat
     {
         public:
              /**
-             * Typedefs:
+             * Typedefs & operators:
              */
         
+            struct comp;
+            
             typedef std::vector< std::set<Constraint> >              vec_set_Constraint;
-        
+            typedef std::set<HistoryNode*, comp>                     set_HistoryNodes;
+            
+            struct comp
+            {
+                bool operator() (const HistoryNode* lhs, const HistoryNode* rhs) const
+                {
+                    return lhs->id() < rhs->id();
+                }
+            };
+            
         private:
 
             /**
@@ -122,7 +133,6 @@ namespace smtrat
                 mRightChild = NULL;
             }
 
-            // we assume that the node to be deleted is a leaf
             ~HistoryNode()
             {
                 if ( mLeftChild != NULL )
@@ -191,7 +201,21 @@ namespace smtrat
 
             void setIntervals( GiNaCRA::evaldoubleintervalmap _map )
             {
-                mIntervals = _map;
+                GiNaCRA::evaldoubleintervalmap::iterator intervalIt;
+                for ( intervalIt = _map.begin(); intervalIt != _map.end(); ++intervalIt )
+                {
+                    if ( mIntervals.find((*intervalIt).first) != mIntervals.end() )
+                    {
+                        if ( mIntervals[(*intervalIt).first] != (*intervalIt).second )
+                        {
+                            mIntervals[(*intervalIt).first] = (*intervalIt).second;
+                        }
+                    }
+                    else
+                    {
+                        mIntervals[(*intervalIt).first] = (*intervalIt).second;
+                    }
+                }
             }
 
             bool hasEmptyInterval()
@@ -401,11 +425,11 @@ namespace smtrat
             /**
              * Search for Candidates in the tree below this node.
              * @param _candidate The candidate which is to be found
-             * @return a list of pointers to nodes which have the candidate in their contraction sequence
+             * @return a list of pointers to the first nodes which have the candidate in their contraction sequence
              */
-            std::set<HistoryNode*> findCandidates( ContractionCandidate* _candidate ) const
+            set_HistoryNodes findCandidates( ContractionCandidate* _candidate ) const
             {
-                std::set<HistoryNode*> result = std::set<HistoryNode*>();
+                set_HistoryNodes result = std::set<HistoryNode*, comp>();
 
                 if( mLeftChild != NULL )
                 {
@@ -446,11 +470,24 @@ namespace smtrat
              * @param _candidate
              * @return pointer to Node
              */
-            void findFirstOccurrence( ContractionCandidate* _candidate, std::set<HistoryNode*>& _result )
+            void findFirstOccurrence( ContractionCandidate* _candidate, set_HistoryNodes& _result )
             {
-                std::set<ContractionCandidate*>::iterator pos = this->getCandidates().find( _candidate );
-                if( pos != this->getCandidates().end() )
+#ifdef HISTORY_DEBUG
+                cout << "searching for ";
+                _candidate->print();
+                cout << "#contractions in " << mId << ": " << mAppliedContractions.size() << endl;
+                for ( auto candidateIt = mAppliedContractions.begin(); candidateIt != mAppliedContractions.end(); ++candidateIt )
                 {
+                    (*candidateIt)->print();
+                }
+#endif
+                std::set<ContractionCandidate*>::iterator pos = mAppliedContractions.find( _candidate );
+                if( pos != mAppliedContractions.end() )
+                {
+#ifdef HISTORY_DEBUG
+                    cout << "Found candidate" << (*pos)->id() << " in node " << mId << ": ";
+                    (*pos)->print();
+#endif
                     _result.insert( this );
                 }
                 else
