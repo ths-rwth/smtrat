@@ -59,6 +59,7 @@ namespace smtrat {
         void printWarranty() const;
         void printToC() const;
         void printWelcome() const;
+        void printInfo() const;
         
     };  
 }
