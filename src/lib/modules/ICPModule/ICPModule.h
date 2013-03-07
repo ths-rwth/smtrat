@@ -105,6 +105,7 @@ namespace smtrat
             LRAModule                                                           mLRA;
 
             std::set<const Constraint*>                                         mCenterConstraints;
+            std::set<const Formula*>                                         mBoundConstraints;
             GiNaC::symtab                                                       mReplacementVariables;
 
             bool                                                                mInitialized;
