@@ -11,5 +11,6 @@ namespace smtrat
 		static const std::string SystemVersion;
 		static const std::string BuildType;
 		static const std::string CXXCompiler;
+        static const std::string GitRevisionSHA1; 
 	};
 }

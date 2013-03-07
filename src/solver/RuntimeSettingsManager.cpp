@@ -252,9 +252,10 @@ under certain conditions;"<< std::endl << std::endl;
 
 void RuntimeSettingsManager::printInfo() const
 {
-    std::cout << "Build type:" << smtrat::CompileInfo::BuildType << std::endl;
-    std::cout << "Build on " << smtrat::CompileInfo::SystemName << " (" << CompileInfo::SystemVersion << ") " << std::endl;
-    std::cout << "Compiler version: " << smtrat::CompileInfo::CXXCompiler << std::endl;
+    std::cout << "Code was compiled with compiler ? , version: " << smtrat::CompileInfo::CXXCompiler << std::endl;
+    std::cout << "Build type:" << smtrat::CompileInfo::BuildType << std::endl;   
+    std::cout << "Code is based on commit " << smtrat::CompileInfo::GitRevisionSHA1 << ". " << std::endl;
+    std::cout << "Build on a " << smtrat::CompileInfo::SystemName << " (" << CompileInfo::SystemVersion << ") machine." << std::endl;
 }
 
 bool RuntimeSettingsManager::doPrintTimings() const 
