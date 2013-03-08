@@ -163,7 +163,9 @@ namespace smtrat
      */
     vector<Module*> Manager::getBackends( Formula* _formula, Module* _requiredBy, atomic_bool* _foundAnswer )
     {
+        #ifdef SMTRAT_STRAT_PARALLEL_MODE
         std::lock_guard<std::mutex> lock( mBackendsMutex );
+        #endif
         vector<Module*>  backends    = vector<Module*>();
         vector<Module*>& allBackends = mBackendsOfModules[_requiredBy];
         /*
