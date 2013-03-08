@@ -110,9 +110,8 @@ namespace smtrat
 
             bool                                                                mInitialized;
 
-#ifdef HISTORY_DEBUG
             unsigned                                                            mCurrentId;
-#endif
+
 
         public:
 
