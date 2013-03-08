@@ -36,6 +36,7 @@
 
 #include "../lib/modules/Modules.h"
 #include "../lib/config.h"
+#include "../lib/CompileInfo.h"
 
 namespace smtrat {
 
@@ -126,6 +127,11 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
             {
                 mDoPrintTimings = true;
             }
+            else if(optionName == "info")
+            {
+                printInfo();
+                exit(SMTRAT_EXIT_SUCCESS);
+            }
             #endif
             // no more global options, so we expect module options
             else 
@@ -181,6 +187,7 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << "\t --help \t\t prints this help." << std::endl;
     std::cout << "\t --warranty \t\t prints the warranty." << std::endl;
     std::cout << "\t --toc  \t\t\t prints the terms of condition" << std::endl;
+    std::cout << "\t --info \t\t\t prints information about the binary" << std::endl;
     std::cout << std::endl;
     std::cout << "Developer options:" <<std::endl;
     std::cout << "\t --list-modules \t prints all compiled modules" << std::endl;
@@ -241,6 +248,14 @@ Florian Corzilius, Ulrich Loup, Sebastian Junges, Erika Abraham \n\n\
 This program comes with ABSOLUTELY NO WARRANTY; for details run the solver with --warranty'. \n\
 This is free software, and you are welcome to redistribute it \n\
 under certain conditions;"<< std::endl << std::endl;
+}
+
+void RuntimeSettingsManager::printInfo() const
+{
+    std::cout << "Code was compiled with compiler ? , version: " << smtrat::CompileInfo::CXXCompiler << std::endl;
+    std::cout << "Build type:" << smtrat::CompileInfo::BuildType << std::endl;   
+    std::cout << "Code is based on commit " << smtrat::CompileInfo::GitRevisionSHA1 << ". " << std::endl;
+    std::cout << "Build on a " << smtrat::CompileInfo::SystemName << " (" << CompileInfo::SystemVersion << ") machine." << std::endl;
 }
 
 bool RuntimeSettingsManager::doPrintTimings() const 
