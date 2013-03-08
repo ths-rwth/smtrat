@@ -30,7 +30,7 @@
 #ifndef CONTRACTIONCANDIDATE_H
 #define CONTRACTIONCANDIDATE_H
 
-//#define CCPRINTORIGINS
+#define CCPRINTORIGINS
 
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
