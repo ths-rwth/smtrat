@@ -84,8 +84,6 @@ namespace smtrat
             ///
             const Constraint* mInconsistentConstraint;
             ///
-            mutable std::mutex mMutexConstraints;
-            ///
             mutable std::mutex mMutexArithmeticVariables;
             ///
             mutable std::mutex mMutexBooleanVariables;
@@ -122,7 +120,7 @@ namespace smtrat
             fcs_const_iterator begin() const
             {
                 // TODO: Will begin() be valid if we insert elements?
-                std::lock_guard<std::mutex> lock( mMutexConstraints );
+                CONSTRAINT_LOCK_GUARD
                 fcs_const_iterator result = mConstraints.begin();
                 return result;
             }
@@ -130,14 +128,14 @@ namespace smtrat
             fcs_const_iterator end() const
             {
                 // TODO: Will end() be changed if we insert elements?
-                std::lock_guard<std::mutex> lock( mMutexConstraints );
+                CONSTRAINT_LOCK_GUARD
                 fcs_const_iterator result = mConstraints.end();
                 return result;
             }
 
             unsigned size() const
             {
-                std::lock_guard<std::mutex> lock( mMutexConstraints );
+                CONSTRAINT_LOCK_GUARD
                 unsigned result = mConstraints.size();
                 return result;
             }

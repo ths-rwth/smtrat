@@ -33,7 +33,7 @@
 //#define DEBUG_LRA_MODULE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_ONE_REASON
-#define LRA_BRANCH_AND_BOUND
+//#define LRA_BRANCH_AND_BOUND
 //#define LRA_GOMORY_CUTS
 using namespace std;
 using namespace lra;
@@ -386,22 +386,22 @@ namespace smtrat
                             learnRefinements();
                             #endif
 
-                            #ifdef LRA_GOMORY_CUTS     
+                            #ifdef LRA_GOMORY_CUTS
                             exmap rMap_ = getRationalModel();
                             for(auto vector_iterator = mTableau.rows().begin();vector_iterator != mTableau.rows().end();++vector_iterator)
-                            {  
-                                ex referring_ex = vector_iterator->mName->expression();     
+                            {
+                                ex referring_ex = vector_iterator->mName->expression();
                                 auto pToEx = rMap_.find(referring_ex);
                                 numeric ass = ex_to<numeric>(pToEx->second);
                                 if(!ass.is_integer())
                                 {
-                                    //...                                   
+                                    //...
                                 }
                             }
                             #endif
 
                             #ifdef LRA_BRANCH_AND_BOUND
-                            exmap _rMap = getRationalModel();                            
+                            exmap _rMap = getRationalModel();
                             exmap::const_iterator map_iterator = _rMap.begin();
                             for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
                             {
@@ -411,8 +411,8 @@ namespace smtrat
                                    stringstream sstream;
                                    sstream << *var->first;
                                    symtab *setOfVar = new symtab();
-                                   setOfVar->insert(pair< std::string, ex >(sstream.str(),*var->first));  
-                                   numeric ass = ex_to<numeric>(map_iterator->second);                  
+                                   setOfVar->insert(pair< std::string, ex >(sstream.str(),*var->first));
+                                   numeric ass = ex_to<numeric>(map_iterator->second);
                                    ass = ass.to_int();
                                    const Constraint* lessEqualConstraint = Formula::newConstraint(*var->first - ass,CR_LEQ,*setOfVar);
                                    const Constraint* biggerEqualConstraint= Formula::newConstraint(*var->first - ass - 1,CR_GEQ,*setOfVar);

@@ -81,7 +81,7 @@ namespace smtrat
         lock_guard<mutex> lock2( mMutexArithmeticVariables );
         lock_guard<mutex> lock3( mMutexBooleanVariables );
         lock_guard<mutex> lock4( mMutexDomain );
-        lock_guard<mutex> lock5( mMutexConstraints );
+        CONSTRAINT_LOCK_GUARD
         mConstraints.erase( mConsistentConstraint );
         mConstraints.erase( mInconsistentConstraint );
         while( !mConstraints.empty() )
@@ -124,7 +124,7 @@ namespace smtrat
      */
     const Constraint* ConstraintPool::newConstraint( const ex& _lhs, const Constraint_Relation _rel, const symtab& _variables )
     {
-        lock_guard<mutex> lock( mMutexConstraints );
+        CONSTRAINT_LOCK_GUARD
         assert( hasNoOtherVariables( _lhs ) );
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
@@ -142,7 +142,7 @@ namespace smtrat
      */
     const Constraint* ConstraintPool::newConstraint( const ex& _lhs, const ex& _rhs, const Constraint_Relation _rel, const symtab& _variables )
     {
-        lock_guard<mutex> lock( mMutexConstraints );
+        CONSTRAINT_LOCK_GUARD
         assert( hasNoOtherVariables( _lhs ) && hasNoOtherVariables( _rhs ) );
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
@@ -224,7 +224,7 @@ namespace smtrat
     int ConstraintPool::maxDegree() const
     {
         int result = 0;
-        lock_guard<mutex> lock( mMutexConstraints );
+        CONSTRAINT_LOCK_GUARD
         for( fcs_const_iterator constraint = mConstraints.begin();
              constraint != mConstraints.end(); ++constraint )
         {
@@ -242,7 +242,7 @@ namespace smtrat
     unsigned ConstraintPool::nrNonLinearConstraints() const
     {
         unsigned nonlinear = 0;
-        lock_guard<mutex> lock( mMutexConstraints );
+        CONSTRAINT_LOCK_GUARD
         for( fcs_const_iterator constraint = mConstraints.begin();
              constraint != mConstraints.end(); ++constraint )
         {
@@ -358,7 +358,7 @@ namespace smtrat
      */
     void ConstraintPool::print( ostream& _out ) const
     {
-        lock_guard<mutex> lock( mMutexConstraints );
+        CONSTRAINT_LOCK_GUARD
         _out << "---------------------------------------------------" << endl;
         _out << "Constraint pool:" << endl;
         for( fcs_const_iterator constraint = mConstraints.begin();

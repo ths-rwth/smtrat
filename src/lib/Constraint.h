@@ -157,7 +157,7 @@ namespace smtrat
             /*
              * Methods:
              */
-            const GiNaC::ex lhs() const
+            const GiNaC::ex& lhs() const
             {
                 return mLhs;
             }
@@ -192,7 +192,7 @@ namespace smtrat
                 return mSecondHash;
             }
 
-            const GiNaC::ex multiRootLessLhs() const
+            const GiNaC::ex& multiRootLessLhs() const
             {
                 if( mMultiRootLessLhs != 0 ) return mMultiRootLessLhs;
                 else return mLhs;
@@ -203,7 +203,7 @@ namespace smtrat
                 return (mFactorization != 0);
             }
 
-            const GiNaC::ex factorization() const
+            const GiNaC::ex& factorization() const
             {
                 if( mFactorization != 0 ) return mFactorization;
                 else return mLhs;
@@ -234,7 +234,7 @@ namespace smtrat
                 return mMaxMonomeDegree;
             }
 
-            const GiNaC::numeric constantPart() const
+            const GiNaC::numeric& constantPart() const
             {
                 return mConstantPart;
             }
@@ -322,7 +322,7 @@ namespace smtrat
             // Operators.
             bool operator <( const Constraint& ) const;
             bool operator ==( const Constraint& ) const;
-            friend std::ostream& operator <<( std::ostream&, const Constraint* );
+            friend std::ostream& operator <<( std::ostream&, const Constraint& );
 
             // Manipulating methods.
             void collectProperties();
@@ -366,14 +366,14 @@ namespace smtrat
     typedef std::set< const Constraint*, constraintPointerComp > ConstraintSet;
 }    // namespace smtrat
 
-//#ifdef SMTRAT_STRAT_PARALLEL_MODE
+#ifdef SMTRAT_STRAT_PARALLEL_MODE
 #define CONSTRAINT_LOCK_GUARD std::lock_guard<std::recursive_mutex> lock( smtrat::Constraint::mMutex );
 #define CONSTRAINT_LOCK smtrat::Constraint::mMutex.lock();
 #define CONSTRAINT_UNLOCK smtrat::Constraint::mMutex.unlock();
-//#else
-//#define CONSTRAINT_LOCK_GUARD
-//#define CONSTRAINT_LOCK
-//#define CONSTRAINT_UNLOCK
-//#endif
+#else
+#define CONSTRAINT_LOCK_GUARD
+#define CONSTRAINT_LOCK
+#define CONSTRAINT_UNLOCK
+#endif
 
 #endif

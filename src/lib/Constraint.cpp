@@ -1115,9 +1115,9 @@ namespace smtrat
      * @param _constraint The constraint to print.
      * @return The given stream after printing.
      */
-    ostream& operator <<( ostream& _ostream, const Constraint* _constraint )
+    ostream& operator <<( ostream& _ostream, const Constraint& _constraint )
     {
-        _ostream << _constraint->toString();
+        _ostream << _constraint.toString();
         return _ostream;
     }
 

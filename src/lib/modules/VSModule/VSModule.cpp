@@ -779,16 +779,18 @@ EndSwitch:;
      */
     bool VSModule::eliminate( State* _currentState, const string& _eliminationVar, const vs::Condition* _condition )
     {
-        CONSTRAINT_LOCK_GUARD
         /*
          * Get the constraint of this condition.
          */
+        CONSTRAINT_LOCK
         const Constraint* constraint = (*_condition).pConstraint();
         Constraint_Relation relation = (*_condition).constraint().relation();
+        CONSTRAINT_UNLOCK
         symbol sym;
+        CONSTRAINT_LOCK
         constraint->variable( _eliminationVar, sym );
-        signed degree = constraint->maxDegree( ex( sym ) );
         symtab vars = constraint->variables();
+        CONSTRAINT_UNLOCK
 
         #ifdef DONT_CHECK_STRICT_INEQUALITIES
         if( relation == CR_LESS || relation == CR_GREATER || relation == CR_NEQ )
@@ -810,16 +812,25 @@ EndSwitch:;
 
         vector<ex> coeffs = vector<ex>();
         #ifdef VS_ELIMINATE_MULTI_ROOTS
+        CONSTRAINT_LOCK
         ex mrl = constraint->multiRootLessLhs();
+        CONSTRAINT_UNLOCK
         signed degree = mrl.degree( ex( sym ) );
         #else
+        CONSTRAINT_LOCK
+        signed degree = constraint->maxDegree( ex( sym ) );
+        CONSTRAINT_UNLOCK
         #endif
         for( signed i = 0; i <= degree; ++i )
         {
             #ifdef VS_ELIMINATE_MULTI_ROOTS
+            CONSTRAINT_LOCK
             coeffs.push_back( ex( constraint->multiRootLessLhs().coeff( ex( sym ), i ) ) );
+            CONSTRAINT_UNLOCK
             #else
+            CONSTRAINT_LOCK
             coeffs.push_back( ex( constraint->coefficient( ex( sym ), i ) ) );
+            CONSTRAINT_UNLOCK
             #endif
         }
 
@@ -829,6 +840,7 @@ EndSwitch:;
         bool     generatedTestCandidateBeingASolution = false;
         unsigned numberOfAddedChildren                = 0;
 
+        CONSTRAINT_LOCK_GUARD
         /*
          * Generate test candidates for the chosen variable considering the chosen constraint.
          */
@@ -874,7 +886,9 @@ EndSwitch:;
             case 3:
             {
                 ex radicand = ex( pow( coeffs.at( 1 ), 2 ) - 4 * coeffs.at( 2 ) * coeffs.at( 0 ) );
+                CONSTRAINT_LOCK
                 Constraint::normalize( radicand );
+                CONSTRAINT_UNLOCK
                 bool constraintHasZeros = false;
                 /*
                  * Create state ({a==0, b!=0} + oldConditions, [x -> -c/b]):
@@ -1246,7 +1260,6 @@ EndSwitch:;
      */
     void VSModule::propagateNewConditions( State* _currentState )
     {
-        CONSTRAINT_LOCK_GUARD
         eraseDTsOfRanking( *_currentState );
         _currentState->rHasRecentlyAddedConditions() = false;
         if( _currentState->takeSubResultCombAgain() && _currentState->stateType() == COMBINE_SUBRESULTS )
@@ -1275,7 +1288,10 @@ EndSwitch:;
                 recentlyAddedConditions.push_back( *cond );
                 if( _currentState->pOriginalCondition() == NULL )
                 {
-                    if( (**cond).constraint().hasFinitelyManySolutionsIn( _currentState->index() ) )
+                    CONSTRAINT_LOCK
+                    bool onlyTestCandidateToConsider = (**cond).constraint().hasFinitelyManySolutionsIn( _currentState->index() );
+                    CONSTRAINT_UNLOCK
+                    if( onlyTestCandidateToConsider )
                     {
                         deleteExistingTestCandidates = true;
                     }
@@ -1315,7 +1331,10 @@ EndSwitch:;
                      */
                     for( ConditionVector::iterator cond = recentlyAddedConditions.begin(); cond != recentlyAddedConditions.end(); ++cond )
                     {
-                        if( (**cond).constraint().hasVariable( _currentState->index() ) )
+                        CONSTRAINT_LOCK
+                        bool hasVariable = (**cond).constraint().hasVariable( _currentState->index() );
+                        CONSTRAINT_UNLOCK
+                        if( hasVariable )
                         {
                             bool                  worseConditionFound = false;
                             StateVector::iterator child               = _currentState->rChildren().begin();
@@ -1326,8 +1345,7 @@ EndSwitch:;
                                     ConditionSet::iterator oCond = (**child).rSubstitution().rOriginalConditions().begin();
                                     while( !worseConditionFound && oCond != (**child).substitution().originalConditions().end() )
                                     {
-                                        if( (**cond).valuate( _currentState->index(), mAllVariables.size(), true )
-                                                > (**oCond).valuate( _currentState->index(), mAllVariables.size(), true ) )
+                                        if( (**cond).valuate( _currentState->index(), mAllVariables.size(), true ) > (**oCond).valuate( _currentState->index(), mAllVariables.size(), true ) )
                                         {
                                             newTestCandidatesGenerated = true;
                                             #ifdef VS_DEBUG
@@ -1541,7 +1559,10 @@ EndSwitch:;
                     Formula::const_iterator receivedConstraint = mpReceivedFormula->begin();
                     while( receivedConstraint != mpReceivedFormula->end() )
                     {
-                        if( (**oCond).constraint() == (*receivedConstraint)->constraint() )
+                        CONSTRAINT_LOCK
+                        bool constraintsAreEqual = (**oCond).constraint() == (*receivedConstraint)->constraint();
+                        CONSTRAINT_UNLOCK
+                        if( constraintsAreEqual )
                         {
                             break;
                         }

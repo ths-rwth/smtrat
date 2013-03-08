@@ -480,7 +480,7 @@ namespace smtrat
         template<class T>
         const Bound<T>* Variable<T>::addBound( const Constraint* _constraint, const GiNaC::ex& _var, const T* _origin, const GiNaC::numeric& _limit )
         {
-            assert( _constraint->variables().size() == 1 && _constraint->macDegree( _var ) == 1 );
+            assert( _constraint->variables().size() == 1 && _constraint->maxDegree( _var ) == 1 );
             GiNaC::numeric coeff = GiNaC::ex_to<GiNaC::numeric>( _constraint->coefficient( _var, 1 ) );
             Constraint_Relation rel = _constraint->relation();
             GiNaC::numeric* limit = new GiNaC::numeric( -_constraint->constantPart()/coeff );
