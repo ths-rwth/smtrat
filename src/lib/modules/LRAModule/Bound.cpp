@@ -25,7 +25,7 @@ namespace lra
         mpOrigins->push_back( originSet );
     }
 
-    Bound::Bound( Value* const _limit, Variable* const _var, Type _type, const smtrat::Constraint* _constraint, Bound::Info* _boundInfo, bool _deduced ):
+    Bound::Bound( Value* const _limit, Variable* const _var, Type _type, Constraint_Atom _constraint, Bound::Info* _boundInfo, bool _deduced ):
         mDeduced( _deduced ),
         mType( _type ),
         mLimit( _limit ),
@@ -236,7 +236,7 @@ namespace lra
         {
             limit().print();
             if( _withOrigins && mpAsConstraint != NULL )
-                _out << "  from  " << mpAsConstraint;
+                _out << "  from  " << mpAsConstraint->load();
         }
         if( mDeduced ) _out << " (deduced) ";
         if( _withOrigins )

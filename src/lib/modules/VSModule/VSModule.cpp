@@ -87,14 +87,14 @@ namespace smtrat
         Module::assertSubformula( _subformula );
         if( (*_subformula)->getType() == REALCONSTRAINT )
         {
-            const Constraint* constraint = (*_subformula)->pConstraint();
+            Constraint_Atom constraint = (*_subformula)->pConstraint();
             const vs::Condition* condition  = new vs::Condition( constraint );
             mFormulaConditionMap[*_subformula] = condition;
 
             /*
             * Clear the ranking.
             */
-            switch( constraint->isConsistent() )
+            switch( constraint->load()->isConsistent() )
             {
                 case 0:
                 {
@@ -115,8 +115,9 @@ namespace smtrat
                 {
                     eraseDTsOfRanking( *mpStateTree );
                     mIDCounter = 0;
-                    symtab::const_iterator var = constraint->variables().begin();
-                    while( var != constraint->variables().end() )
+                    symtab variables = constraint->load()->variables();
+                    symtab::const_iterator var = variables.begin();
+                    while( var != variables.end() )
                     {
                         mAllVariables.insert( pair<const string, symbol>( var->first, ex_to<symbol>( var->second ) ) );
                         var++;
@@ -276,6 +277,7 @@ namespace smtrat
             while( !mRanking.empty() )
             {
 //                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                CONSTRAINT_LOCK_GUARD
                 if( anAnswerFound() )
                 {
                     return foundAnswer( Unknown );
@@ -589,8 +591,8 @@ namespace smtrat
                                         * The degree of the constraint is appropriate to applicate this version of the
                                         * virtual substitution.
                                         */
-                                        symtab::const_iterator var = currentCondition->constraint().variables().find( currentState->index() );
-                                        if( var != currentCondition->constraint().variables().end() )
+                                        symtab variables = currentCondition->pConstraint()->load()->variables();
+                                        if( variables.find( currentState->index() ) != variables.end() )
                                         {
                                             #ifdef VS_DEBUG
                                             cout << "*** Eliminate " << currentState->index() << " in ";
@@ -782,15 +784,11 @@ EndSwitch:;
         /*
          * Get the constraint of this condition.
          */
-        CONSTRAINT_LOCK
-        const Constraint* constraint = (*_condition).pConstraint();
-        Constraint_Relation relation = (*_condition).constraint().relation();
-        CONSTRAINT_UNLOCK
-        symbol sym;
-        CONSTRAINT_LOCK
-        constraint->variable( _eliminationVar, sym );
-        symtab vars = constraint->variables();
-        CONSTRAINT_UNLOCK
+        Constraint_Atom constraint = _condition->pConstraint();
+        Constraint_Relation relation = constraint->load()->relation();
+        ex sym = constraint->load()->variable( _eliminationVar );
+        assert( sym != 0 );
+        symtab vars = constraint->load()->variables();
 
         #ifdef DONT_CHECK_STRICT_INEQUALITIES
         if( relation == CR_LESS || relation == CR_GREATER || relation == CR_NEQ )
@@ -812,25 +810,17 @@ EndSwitch:;
 
         vector<ex> coeffs = vector<ex>();
         #ifdef VS_ELIMINATE_MULTI_ROOTS
-        CONSTRAINT_LOCK
-        ex mrl = constraint->multiRootLessLhs();
-        CONSTRAINT_UNLOCK
-        signed degree = mrl.degree( ex( sym ) );
+        ex mrl = constraint->load()->multiRootLessLhs();
+        signed degree = mrl.degree( sym );
         #else
-        CONSTRAINT_LOCK
-        signed degree = constraint->maxDegree( ex( sym ) );
-        CONSTRAINT_UNLOCK
+        signed degree = constraint->load()->maxDegree( sym );
         #endif
         for( signed i = 0; i <= degree; ++i )
         {
             #ifdef VS_ELIMINATE_MULTI_ROOTS
-            CONSTRAINT_LOCK
-            coeffs.push_back( ex( constraint->multiRootLessLhs().coeff( ex( sym ), i ) ) );
-            CONSTRAINT_UNLOCK
+            coeffs.push_back( ex( constraint->load()->multiRootLessLhs().coeff( sym, i ) ) );
             #else
-            CONSTRAINT_LOCK
-            coeffs.push_back( ex( constraint->coefficient( ex( sym ), i ) ) );
-            CONSTRAINT_UNLOCK
+            coeffs.push_back( ex( constraint->load()->coefficient( sym, i ) ) );
             #endif
         }
 
@@ -1084,13 +1074,13 @@ EndSwitch:;
             /*
              * The constraint to substitute in.
              */
-            const Constraint* currentConstraint = (**cond).pConstraint();
+            Constraint_Atom currentConstraint = (*cond)->pConstraint();
 
             /*
              * Does the condition contain the variable to substitute.
              */
-            symtab::const_iterator var = currentConstraint->variables().find( substitutionVariable );
-            if( var == currentConstraint->variables().end() )
+            symtab::const_iterator var = currentConstraint->load()->variables().find( substitutionVariable );
+            if( var == currentConstraint->load()->variables().end() )
             {
                 CONSTRAINT_LOCK
                 if( !anySubstitutionFailed )
@@ -1132,7 +1122,7 @@ EndSwitch:;
                      */
                     for( TS_ConstraintConjunction::iterator cons = consConj->begin(); cons != consConj->end(); ++cons )
                     {
-                        if( (**cons).isConsistent() == 0 )
+                        if( (*cons)->load()->isConsistent() == 0 )
                         {
                             conjunctionConsistent = false;
                             break;
@@ -1150,7 +1140,7 @@ EndSwitch:;
                                 /*
                                  * Add all conditions to the conjunction, which are not variable-free and consistent.
                                  */
-                                if( (**cons).isConsistent() != 1 )
+                                if( (*cons)->load()->isConsistent() != 1 )
                                 {
                                     currentConjunction.push_back( new vs::Condition( *cons, _currentState->treeDepth() ) );
                                     currentConjunction.back()->pOriginalConditions()->insert( *cond );
@@ -1203,7 +1193,9 @@ EndSwitch:;
                 const vs::Condition* pCond = _currentState->rConditions().back();
                 _currentState->rConditions().pop_back();
                 #ifdef SMTRAT_VS_VARIABLEBOUNDS
+                CONSTRAINT_LOCK
                 _currentState->rVariableBounds().removeBound( pCond->pConstraint(), pCond );
+                CONSTRAINT_UNLOCK
                 #endif
                 delete pCond;
             }
@@ -1289,7 +1281,7 @@ EndSwitch:;
                 if( _currentState->pOriginalCondition() == NULL )
                 {
                     CONSTRAINT_LOCK
-                    bool onlyTestCandidateToConsider = (**cond).constraint().hasFinitelyManySolutionsIn( _currentState->index() );
+                    bool onlyTestCandidateToConsider = (*cond)->pConstraint()->load()->hasFinitelyManySolutionsIn( _currentState->index() );
                     CONSTRAINT_UNLOCK
                     if( onlyTestCandidateToConsider )
                     {
@@ -1332,7 +1324,7 @@ EndSwitch:;
                     for( ConditionVector::iterator cond = recentlyAddedConditions.begin(); cond != recentlyAddedConditions.end(); ++cond )
                     {
                         CONSTRAINT_LOCK
-                        bool hasVariable = (**cond).constraint().hasVariable( _currentState->index() );
+                        bool hasVariable = (*cond)->pConstraint()->load()->hasVariable( _currentState->index() );
                         CONSTRAINT_UNLOCK
                         if( hasVariable )
                         {
@@ -1560,7 +1552,7 @@ EndSwitch:;
                     while( receivedConstraint != mpReceivedFormula->end() )
                     {
                         CONSTRAINT_LOCK
-                        bool constraintsAreEqual = (**oCond).constraint() == (*receivedConstraint)->constraint();
+                        bool constraintsAreEqual = (*oCond)->pConstraint()->load() == (*receivedConstraint)->pConstraint()->load();
                         CONSTRAINT_UNLOCK
                         if( constraintsAreEqual )
                         {
@@ -1757,7 +1749,7 @@ EndSwitch:;
         /*
          * Collect the constraints to check.
          */
-        map< const Constraint*, const vs::Condition* const, smtrat::constraintPointerComp > constraintsToCheck = map< const Constraint*, const vs::Condition* const, smtrat::constraintPointerComp >();
+        map< Constraint_Atom, const vs::Condition* const, smtrat::constraintPointerComp > constraintsToCheck = map< Constraint_Atom, const vs::Condition* const, smtrat::constraintPointerComp >();
         for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
         {
             #ifdef CHECK_STRICT_INEQUALITIES_WITH_BACKEND
@@ -1776,30 +1768,30 @@ EndSwitch:;
             #else
             if( (*cond)->flag() )
             {
-                const Constraint* constraint = (*cond)->pConstraint();
-                switch( constraint->relation() )
+                Constraint_Atom constraint = (*cond)->pConstraint();
+                switch( constraint->load()->relation() )
                 {
                     case CR_GEQ:
                     {
-                        const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), CR_GREATER, constraint->variables() );
-                        constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( strictVersion, *cond ) );
+                        Constraint_Atom strictVersion = Formula::newConstraint( constraint->load()->lhs(), CR_GREATER, constraint->load()->variables() );
+                        constraintsToCheck.insert( pair< Constraint_Atom, const vs::Condition* const >( strictVersion, *cond ) );
                         break;
                     }
                     case CR_LEQ:
                     {
-                        const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() );
-                        constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( strictVersion, *cond ) );
+                        Constraint_Atom strictVersion = Formula::newConstraint( constraint->load()->lhs(), CR_LESS, constraint->load()->variables() );
+                        constraintsToCheck.insert( pair< Constraint_Atom, const vs::Condition* const >( strictVersion, *cond ) );
                         break;
                     }
                     default:
                     {
-                        constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( constraint, *cond ) );
+                        constraintsToCheck.insert( pair< Constraint_Atom, const vs::Condition* const >( constraint, *cond ) );
                     }
                 }
             }
             else
             {
-                constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( (*cond)->pConstraint(), *cond ) );
+                constraintsToCheck.insert( pair< Constraint_Atom, const vs::Condition* const >( (*cond)->pConstraint(), *cond ) );
             }
             #endif
         }

@@ -113,7 +113,7 @@ namespace smtrat
         mNumberOfBranches = mStrategyGraph.numberOfBranches();
         if( mNumberOfBranches>1 )
         {
-            mNumberOfCores = std::thread::hardware_concurrency();
+            mNumberOfCores = 4;//std::thread::hardware_concurrency();
             if( mNumberOfCores>1 )
             {
                 mStrategyGraph.setThreadAndBranchIds();
@@ -205,7 +205,7 @@ namespace smtrat
                 allBackends.push_back( pBackend );
                 backends.push_back( pBackend );
                 // inform it about all constraints
-                for( std::list<const Constraint* >::const_iterator constraint = _requiredBy->constraintsToInform().begin();
+                for( std::list<Constraint_Atom>::const_iterator constraint = _requiredBy->constraintsToInform().begin();
                         constraint != _requiredBy->constraintsToInform().end(); ++constraint )
                 {
                     pBackend->inform( *constraint );

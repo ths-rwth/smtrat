@@ -170,7 +170,7 @@ namespace smtrat
                  */
                 ~Variable();
 
-                const Bound<T>* addBound( const Constraint*, const GiNaC::ex&, const T*, const GiNaC::numeric& = 0 );
+                const Bound<T>* addBound( Constraint_Atom, const GiNaC::ex&, const T*, const GiNaC::numeric& = 0 );
 
                 bool updateBounds( const Bound<T>& );
 
@@ -241,7 +241,7 @@ namespace smtrat
         template <class T> class VariableBounds
         {
 
-                typedef std::map< const Constraint*, const Bound<T>*, constraintPointerComp > ConstraintBoundMap;
+                typedef std::map< Constraint_Atom, const Bound<T>*, constraintPointerComp > ConstraintBoundMap;
                 struct exComp
                 {
                     bool operator ()( const GiNaC::ex& exA, const GiNaC::ex& exB ) const
@@ -274,8 +274,8 @@ namespace smtrat
                 /*
                  * Methods:
                  */
-                bool addBound( const Constraint*, const T* );
-                const GiNaC::ex removeBound( const Constraint*, const T* );
+                bool addBound( Constraint_Atom, const T* );
+                const GiNaC::ex removeBound( Constraint_Atom, const T* );
                 const GiNaCRA::evalintervalmap& getEvalIntervalMap();
                 const GiNaCRA::Interval& getInterval( const GiNaC::ex& );
                 const GiNaCRA::evaldoubleintervalmap& getIntervalMap();
@@ -478,12 +478,12 @@ namespace smtrat
          * @return The added bound.
          */
         template<class T>
-        const Bound<T>* Variable<T>::addBound( const Constraint* _constraint, const GiNaC::ex& _var, const T* _origin, const GiNaC::numeric& _limit )
+        const Bound<T>* Variable<T>::addBound( Constraint_Atom _constraint, const GiNaC::ex& _var, const T* _origin, const GiNaC::numeric& _limit )
         {
-            assert( _constraint->variables().size() == 1 && _constraint->maxDegree( _var ) == 1 );
-            GiNaC::numeric coeff = GiNaC::ex_to<GiNaC::numeric>( _constraint->coefficient( _var, 1 ) );
-            Constraint_Relation rel = _constraint->relation();
-            GiNaC::numeric* limit = new GiNaC::numeric( -_constraint->constantPart()/coeff );
+            assert( _constraint->load()->variables().size() == 1 && _constraint->load()->maxDegree( _var ) == 1 );
+            GiNaC::numeric coeff = GiNaC::ex_to<GiNaC::numeric>( _constraint->load()->coefficient( _var, 1 ) );
+            Constraint_Relation rel = _constraint->load()->relation();
+            GiNaC::numeric* limit = new GiNaC::numeric( -_constraint->load()->constantPart()/coeff );
             std::pair< class Variable<T>::BoundSet::iterator, bool> result;
             if( rel == CR_EQ )
             {
@@ -623,12 +623,12 @@ namespace smtrat
          *         False, otherwise.
          */
         template<class T>
-        bool VariableBounds<T>::addBound( const Constraint* _constraint, const T* _origin )
+        bool VariableBounds<T>::addBound( Constraint_Atom _constraint, const T* _origin )
         {
-            if( _constraint->relation() != CR_NEQ && _constraint->variables().size() == 1 )
+            if( _constraint->load()->relation() != CR_NEQ && _constraint->load()->variables().size() == 1 )
             {
-                const GiNaC::ex& var = _constraint->variables().begin()->second;
-                if( _constraint->maxDegree( var ) == 1 )
+                const GiNaC::ex var = _constraint->load()->variables().begin()->second;
+                if( _constraint->load()->maxDegree( var ) == 1 )
                 {
                     class VariableBounds<T>::ConstraintBoundMap::iterator cbPair = mpConstraintBoundMap->find( _constraint );
                     if( cbPair != mpConstraintBoundMap->end() )
@@ -658,7 +658,7 @@ namespace smtrat
                             (*mpExVariableMap)[var] = variable;
                             bound = variable->addBound( _constraint, var, _origin );
                         }
-                        mpConstraintBoundMap->insert( std::pair< const Constraint*, const Bound<T>* >( _constraint, bound ) );
+                        mpConstraintBoundMap->insert( std::pair< Constraint_Atom, const Bound<T>* >( _constraint, bound ) );
                         if( variable->updateBounds( *bound ) )
                         {
                             mpConflictingVariable = bound->pVariable();
@@ -673,7 +673,8 @@ namespace smtrat
             }
             else
             {
-                for( auto sym = _constraint->variables().begin(); sym !=  _constraint->variables().end(); ++sym )
+                GiNaC::symtab variables = _constraint->load()->variables();
+                for( auto sym = variables.begin(); sym !=  variables.end(); ++sym )
                 {
                     Variable<T>* variable = new Variable<T>();
                     if( !mpExVariableMap->insert( std::pair< const ex, Variable<T>* >( sym->second, variable ) ).second )
@@ -694,12 +695,12 @@ namespace smtrat
          *         0         , otherwise.
          */
         template<class T>
-        const GiNaC::ex VariableBounds<T>::removeBound( const Constraint* _constraint, const T* _origin )
+        const GiNaC::ex VariableBounds<T>::removeBound( Constraint_Atom _constraint, const T* _origin )
         {
-            if( _constraint->relation() != CR_NEQ && _constraint->variables().size() == 1 )
+            if( _constraint->load()->relation() != CR_NEQ && _constraint->load()->variables().size() == 1 )
             {
-                const GiNaC::ex var = _constraint->variables().begin()->second;
-                if( _constraint->maxDegree( var ) == 1 )
+                const GiNaC::ex var = _constraint->load()->variables().begin()->second;
+                if( _constraint->load()->maxDegree( var ) == 1 )
                 {
                     assert( mpConstraintBoundMap->find( _constraint ) != mpConstraintBoundMap->end() );
                     const Bound<T>& bound = *(*mpConstraintBoundMap)[_constraint];

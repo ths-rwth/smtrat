@@ -39,13 +39,13 @@ namespace lra
             Type                                                mType;
             Value*                                              mLimit;
             Variable* const                                     mVar;
-            const smtrat::Constraint*                           mpAsConstraint;
+            Constraint_Atom                                     mpAsConstraint;
             std::vector<std::set< const smtrat::Formula* > >*   mpOrigins;
             Info*                                               mpInfo;
 
         public:
             Bound();
-            Bound( Value* const , Variable* const, Type, const smtrat::Constraint*, Info* = NULL, bool = false );
+            Bound( Value* const , Variable* const, Type, Constraint_Atom, Info* = NULL, bool = false );
             ~Bound();
 
             bool operator >( const Value& ) const;
@@ -107,7 +107,7 @@ namespace lra
                 return mType != UPPER;
             }
 
-            const smtrat::Constraint* const pAsConstraint() const
+            Constraint_Atom const pAsConstraint() const
             {
                 return mpAsConstraint;
             }

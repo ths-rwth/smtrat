@@ -58,7 +58,7 @@ namespace vs
             {
                 bool operator ()( const Condition* const pCondA, const Condition* const pCondB ) const
                 {
-                    return (*pCondA).constraint() < (*pCondB).constraint();
+                    return (*pCondA->pConstraint()->load()) < (*pCondB->pConstraint()->load());
                 }
             };
             typedef std::set<const Condition*, condComp> ConditionSet;
@@ -68,9 +68,9 @@ namespace vs
             /**
              * Members:
              */
-            Info*                     mpInfo;
-            const smtrat::Constraint* mpConstraint;
-            ConditionSet*             mpOriginalConditions;
+            Info*           mpInfo;
+            Constraint_Atom mpConstraint;
+            ConditionSet*   mpOriginalConditions;
 
         public:
 
@@ -80,13 +80,13 @@ namespace vs
 
             Condition();
 
-            Condition( const smtrat::Constraint* );
+            Condition( Constraint_Atom );
 
-            Condition( const smtrat::Constraint*, unsigned );
+            Condition( Constraint_Atom, unsigned );
 
-            Condition( const smtrat::Constraint*, bool, const ConditionSet&, unsigned );
+            Condition( Constraint_Atom, bool, const ConditionSet&, unsigned );
 
-            Condition( const smtrat::Constraint*, bool, const ConditionSet&, unsigned, bool );
+            Condition( Constraint_Atom, bool, const ConditionSet&, unsigned, bool );
 
             Condition( const Condition& );
 
@@ -129,12 +129,7 @@ namespace vs
                 return mpInfo->valuation;
             }
 
-            const smtrat::Constraint& constraint() const
-            {
-                return *mpConstraint;
-            }
-
-            const smtrat::Constraint* pConstraint() const
+            Constraint_Atom pConstraint() const
             {
                 return mpConstraint;
             }

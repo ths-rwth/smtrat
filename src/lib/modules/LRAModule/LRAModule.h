@@ -63,9 +63,9 @@ namespace smtrat
                 smtrat::Formula::iterator position;
             };
             typedef std::map< const GiNaC::ex*, lra::Variable*, exPointerComp>                              ExVariableMap;
-            typedef std::map< const Constraint*, std::vector< const lra::Bound* >*, constraintPointerComp > ConstraintBoundsMap;
-            typedef std::map< const Constraint*, Context, constraintPointerComp >                           ConstraintContextMap;
-            typedef std::map< const lra::Bound*, const Constraint* >                                        BoundConstraintMap;
+            typedef std::map< Constraint_Atom, std::vector< const lra::Bound* >*, constraintPointerComp > ConstraintBoundsMap;
+            typedef std::map< Constraint_Atom, Context, constraintPointerComp >                           ConstraintContextMap;
+            typedef std::map< const lra::Bound*, Constraint_Atom >                                        BoundConstraintMap;
 
         private:
 
@@ -103,7 +103,7 @@ namespace smtrat
              */
 
             // Interfaces.
-            bool inform( const Constraint* const );
+            bool inform( Constraint_Atom );
             bool assertSubformula( Formula::const_iterator );
             void removeSubformula( Formula::const_iterator );
             Answer isConsistent();
@@ -132,7 +132,7 @@ namespace smtrat
                 return mSlackVars;
             }
 
-            const lra::Variable* const getSlackVariable( const Constraint* const _constraint ) const
+            const lra::Variable* const getSlackVariable( Constraint_Atom _constraint ) const
             {
                 ConstraintBoundsMap::const_iterator iter = mConstraintToBound.find( _constraint );
                 assert( iter != mConstraintToBound.end() );
@@ -148,13 +148,13 @@ namespace smtrat
             #endif
             void adaptPassedFormula();
             bool checkAssignmentForNonlinearConstraint();
-            void splitUnequalConstraint( const Constraint* );
+            void splitUnequalConstraint( Constraint_Atom );
             bool activateBound( const lra::Bound*, std::set<const Formula*>& );
-            void setBound( lra::Variable&, bool, const GiNaC::numeric&, const Constraint* );
+            void setBound( lra::Variable&, bool, const GiNaC::numeric&, Constraint_Atom );
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             void findSimpleConflicts( const lra::Bound& );
             #endif
-            void initialize( const Constraint* const );
+            void initialize( Constraint_Atom const );
     };
 
 }    // namespace smtrat

@@ -129,7 +129,7 @@ namespace smtrat
      * @param _constraint
      * @return
      */
-    bool Module::inform( const Constraint* const _constraint )
+    bool Module::inform( Constraint_Atom _constraint )
     {
         #ifdef MODULE_VERBOSE
         cout << __func__ << " in " << this << " with name " << moduleName( mModuleType ) << ": " << _constraint->smtlibString() << endl;
@@ -848,7 +848,7 @@ namespace smtrat
      * @param _answer
      * @param _byBackend
      */
-    void Module::addConstraintToInform( const Constraint* const constraint )
+    void Module::addConstraintToInform( Constraint_Atom constraint )
     {
         mConstraintsToInform.push_back(constraint);
         if(mFirstConstraintToInform == mConstraintsToInform.end())
@@ -985,15 +985,15 @@ namespace smtrat
      * @param _consistent
      * @see Module::storeAssumptionsToCheck
      */
-    void Module::addAssumptionToCheck( const set<const Constraint*>& _constraints, bool _consistent, const string& _moduleName )
+    void Module::addAssumptionToCheck( const set<Constraint_Atom>& _constraints, bool _consistent, const string& _moduleName )
     {
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and";
-        for( set<const Constraint*>::const_iterator constraint = _constraints.begin();
+        for( set<Constraint_Atom>::const_iterator constraint = _constraints.begin();
              constraint != _constraints.end(); ++constraint )
         {
-            assumption += " " + (*constraint)->smtlibString();
+            assumption += " " + (*constraint)->load()->smtlibString();
         }
         assumption += " " + _moduleName;
         assumption += "))\n";

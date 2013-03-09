@@ -138,7 +138,7 @@ namespace smtrat
                 {}
             };
 
-            typedef std::map<const Constraint* const, Minisat::Lit> ConstraintLiteralMap;
+            typedef std::map<Constraint_Atom, Minisat::Lit> ConstraintLiteralMap;
             typedef std::map<const std::string, Minisat::Var>       BooleanVarMap;
             typedef Minisat::vec< Abstraction >                     BooleanConstraintMap;
             typedef std::map<const Formula*, Minisat::CRef >        FormulaClauseMap;
@@ -451,7 +451,7 @@ namespace smtrat
             Minisat::CRef addClause( const Formula*, unsigned = 0 );
             Minisat::Lit getLiteral( const Formula&, const Formula* = NULL, bool = true );
             //Deprecated method
-            Minisat::Lit getLiteral( const Constraint*, const Formula* = NULL, double = 0, bool = false, bool = true );
+            Minisat::Lit getLiteral( Constraint_Atom, const Formula* = NULL, double = 0, bool = false, bool = true );
             void adaptPassedFormula();
     };
 

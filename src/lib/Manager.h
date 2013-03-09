@@ -96,7 +96,7 @@ namespace smtrat
             ~Manager();
 
             // Main interfaces
-            bool inform( const Constraint* const _constraint )
+            bool inform( Constraint_Atom _constraint )
             {
                 return mpPrimaryBackend->inform( _constraint );
             }

@@ -47,7 +47,7 @@ namespace vs
         mpInfo->valuation     = 0;
     }
 
-    Condition::Condition( const smtrat::Constraint* _constraint )
+    Condition::Condition( Constraint_Atom _constraint )
     {
         mpConstraint         = _constraint;
         mpOriginalConditions = new ConditionSet();
@@ -57,7 +57,7 @@ namespace vs
         mpInfo->valuation     = 0;
     }
 
-    Condition::Condition( const smtrat::Constraint* _constraint, const unsigned _valuation )
+    Condition::Condition( Constraint_Atom _constraint, const unsigned _valuation )
     {
         mpConstraint         = _constraint;
         mpOriginalConditions = new ConditionSet();
@@ -67,7 +67,7 @@ namespace vs
         mpInfo->valuation     = _valuation;
     }
 
-    Condition::Condition( const smtrat::Constraint* _constraint,
+    Condition::Condition( Constraint_Atom _constraint,
                           bool _flag,
                           const ConditionSet& _originalConditions,
                           unsigned _valuation )
@@ -80,7 +80,7 @@ namespace vs
         mpInfo->valuation     = _valuation;
     }
 
-    Condition::Condition( const smtrat::Constraint* _constraint,
+    Condition::Condition( Constraint_Atom _constraint,
                           bool _flag,
                           const ConditionSet& _originalConditions,
                           unsigned _valuation,
@@ -131,16 +131,17 @@ namespace vs
     double Condition::valuate( const string& _consideredVariable, unsigned _maxNumberOfVars, bool _forElimination ) const
     {
         CONSTRAINT_LOCK_GUARD
-        symtab::const_iterator var = mpConstraint->variables().find( _consideredVariable );
-        if( var != mpConstraint->variables().end() )
+        symtab variables = mpConstraint->load()->variables();
+        symtab::const_iterator var = variables.find( _consideredVariable );
+        if( var != variables.end() )
         {
-            smtrat::VarInfo varInfo = constraint().varInfo( var->second );
+            smtrat::VarInfo varInfo = mpConstraint->load()->varInfo( var->second );
             double maximum = 0;
             if( _maxNumberOfVars < 4 ) maximum = 16;
             else maximum = _maxNumberOfVars * _maxNumberOfVars;
             // Check the relation symbol.
             double relationSymbolWeight = 0;
-            switch( mpConstraint->relation() )
+            switch( mpConstraint->load()->relation() )
             {
                 case smtrat::CR_EQ:
                     relationSymbolWeight += 1;
@@ -170,7 +171,7 @@ namespace vs
             unsigned lCoeffWeight = 0;
             if( degreeWeight <= 1 )
             {
-                if( mpConstraint->coefficient( var->second, degreeWeight ).info( info_flags::rational ) )
+                if( mpConstraint->load()->coefficient( var->second, degreeWeight ).info( info_flags::rational ) )
                 {
                     lCoeffWeight = 1;
                 }
@@ -197,8 +198,8 @@ namespace vs
                     lCoeffWeight = 3;
                 }
                 #else
-                bool hasRationalLeadingCoefficient = mpConstraint->coefficient( var->second, degreeWeight ).info( info_flags::rational );
-                if( hasRationalLeadingCoefficient && mpConstraint->coefficient( var->second, degreeWeight - 1 ).info( info_flags::rational ) )
+                bool hasRationalLeadingCoefficient = mpConstraint->load()->coefficient( var->second, degreeWeight ).info( info_flags::rational );
+                if( hasRationalLeadingCoefficient && mpConstraint->load()->coefficient( var->second, degreeWeight - 1 ).info( info_flags::rational ) )
                 {
                     lCoeffWeight = 1;
                 }
@@ -213,16 +214,16 @@ namespace vs
                 #endif
             }
             // Check the number of variables.
-            double numberOfVariableWeight = mpConstraint->variables().size();
+            double numberOfVariableWeight = mpConstraint->load()->variables().size();
             // Check how in how many monomials the variable occurs.
             double numberOfVariableOccurencesWeight = varInfo.occurences;
             if( maximum <= numberOfVariableOccurencesWeight ) numberOfVariableOccurencesWeight = maximum - 1;
 //            #ifndef SMTRAT_STRAT_PARALLEL_MODE
             // If variable occurs only in one monomial, give a bonus if all other monomials are positive.
             double otherMonomialsPositiveWeight = 1;
-            if( numberOfVariableOccurencesWeight == 1 && mpConstraint->numMonomials() > 1 )
+            if( numberOfVariableOccurencesWeight == 1 && mpConstraint->load()->numMonomials() > 1 )
             {
-                const ex lhs = mpConstraint->lhs();
+                const ex lhs = mpConstraint->load()->lhs();
                 assert( is_exactly_a<add>( lhs ) );
                 bool allOtherMonomialsPos = true;
                 bool allOtherMonomialsNeg = true;
@@ -342,16 +343,17 @@ namespace vs
      */
     bool Condition::bestVariable( std::string& _bestVariable ) const
     {
-        symtab::const_iterator var = mpConstraint->variables().begin();
-        if( var == mpConstraint->variables().end() )
+        symtab variables = mpConstraint->load()->variables();
+        symtab::const_iterator var = variables.begin();
+        if( var == variables.end() )
         {
             return false;
         }
         symtab::const_iterator bestVar = var;
         var++;
-        while( var != mpConstraint->variables().end() )
+        while( var != variables.end() )
         {
-            if( mpConstraint->lhs().degree( ex( bestVar->second ) ) > mpConstraint->lhs().degree( ex( var->second ) ) )
+            if( mpConstraint->load()->lhs().degree( ex( bestVar->second ) ) > mpConstraint->load()->lhs().degree( ex( var->second ) ) )
             {
                 bestVar = var;
             }
@@ -373,8 +375,9 @@ namespace vs
         /*
          * If the constraint has no variables, return 0.
          */
-        symtab::const_iterator var = mpConstraint->variables().begin();
-        if( var == mpConstraint->variables().end() )
+        symtab variables = mpConstraint->load()->variables();
+        symtab::const_iterator var = variables.begin();
+        if( var == variables.end() )
         {
             return 0;
         }
@@ -385,21 +388,21 @@ namespace vs
          */
         symtab::const_iterator bestVar                                   = var;
         bool                   bestVariableLeadingCoefficientHasVariable = false;
-        for( symtab::const_iterator var2 = mpConstraint->variables().begin(); var2 != mpConstraint->variables().end(); ++var2 )
+        for( symtab::const_iterator var2 = variables.begin(); var2 != variables.end(); ++var2 )
         {
-            if( mpConstraint->lhs().lcoeff( ex( var->second ) ).has( ex( var2->second ) ) )
+            if( mpConstraint->load()->lhs().lcoeff( ex( var->second ) ).has( ex( var2->second ) ) )
             {
                 bestVariableLeadingCoefficientHasVariable = true;
                 break;
             }
         }
         var++;
-        while( var != mpConstraint->variables().end() )
+        while( var != variables.end() )
         {
             /*
              * Choose the variable with the smaller degree.
              */
-            if( mpConstraint->lhs().degree( ex( bestVar->second ) ) > mpConstraint->lhs().degree( ex( var->second ) ) )
+            if( mpConstraint->load()->maxDegree( ex( bestVar->second ) ) > mpConstraint->load()->maxDegree( ex( var->second ) ) )
             {
                 bestVar = var;
 
@@ -408,9 +411,9 @@ namespace vs
                  * constraint) is constant.
                  */
                 bestVariableLeadingCoefficientHasVariable = false;
-                for( symtab::const_iterator var2 = mpConstraint->variables().begin(); var2 != mpConstraint->variables().end(); ++var2 )
+                for( symtab::const_iterator var2 = variables.begin(); var2 != variables.end(); ++var2 )
                 {
-                    if( mpConstraint->lhs().lcoeff( ex( var->second ) ).has( ex( var2->second ) ) )
+                    if( mpConstraint->load()->lhs().lcoeff( ex( var->second ) ).has( ex( var2->second ) ) )
                     {
                         bestVariableLeadingCoefficientHasVariable = true;
                         break;
@@ -424,18 +427,18 @@ namespace vs
              * order)
              */
             else if( bestVariableLeadingCoefficientHasVariable
-                     && mpConstraint->lhs().degree( bestVar->second ) == mpConstraint->lhs().degree( ex( var->second ) ) )
+                     && mpConstraint->load()->maxDegree( bestVar->second ) == mpConstraint->load()->maxDegree( ex( var->second ) ) )
             {
-                symtab::const_iterator var2 = mpConstraint->variables().begin();
-                while( var2 != mpConstraint->variables().end() )
+                symtab::const_iterator var2 = variables.begin();
+                while( var2 != variables.end() )
                 {
-                    if( mpConstraint->lhs().lcoeff( ex( var->second ) ).has( ex( var2->second ) ) )
+                    if( mpConstraint->load()->lhs().lcoeff( ex( var->second ) ).has( ex( var2->second ) ) )
                     {
                         break;
                     }
                     var2++;
                 }
-                if( var2 == mpConstraint->variables().end() )
+                if( var2 == variables.end() )
                 {
                     bestVar                                   = var;
                     bestVariableLeadingCoefficientHasVariable = false;
@@ -449,8 +452,8 @@ namespace vs
          * than the fact, that the variable has a constant leading coefficient.
          */
         unsigned variableQuality = 0;
-        unsigned degree          = static_cast<unsigned>(mpConstraint->lhs().degree( ex( bestVar->second ) ));
-        if( mpConstraint->relation() == smtrat::CR_EQ )
+        unsigned degree          = static_cast<unsigned>(mpConstraint->load()->maxDegree( ex( bestVar->second ) ));
+        if( mpConstraint->load()->relation() == smtrat::CR_EQ )
         {
             variableQuality = 1000 * degree;
             if( !bestVariableLeadingCoefficientHasVariable )
@@ -460,7 +463,7 @@ namespace vs
         }
         else
         {
-            if( mpConstraint->relation() == smtrat::CR_GEQ || mpConstraint->relation() == smtrat::CR_LEQ )
+            if( mpConstraint->load()->relation() == smtrat::CR_GEQ || mpConstraint->load()->relation() == smtrat::CR_LEQ )
             {
                 variableQuality = 100 * degree;
                 if( !bestVariableLeadingCoefficientHasVariable )
@@ -528,7 +531,7 @@ namespace vs
      */
     void Condition::print( std::ostream& _out ) const
     {
-        constraint().print( _out );
+        mpConstraint->load()->print( _out );
         _out << " [" << this << "]";
         _out << "   ";
         if( flag() )

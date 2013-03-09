@@ -82,13 +82,13 @@ namespace smtrat
         mBooleanVars.insert( _id );
     }
 
-    Formula::Formula( const Constraint* _constraint ):
+    Formula::Formula( Constraint_Atom _constraint ):
         mDeducted( false ),
         mPropositionsUptodate( false ),
         mActivity( 0 ),
         mDifficulty( 0 ),
         mType( REALCONSTRAINT ),
-        mRealValuedVars( _constraint->variables() ),
+        mRealValuedVars( _constraint->load()->variables() ),
         mBooleanVars(),
         mpConstraint( _constraint ),
         mpFather( NULL ),
@@ -173,7 +173,7 @@ namespace smtrat
                 case REALCONSTRAINT:
                 {
                     mPropositions |= STRONG_CONDITIONS;
-                    addConstraintPropositions( *mpConstraint );
+                    addConstraintPropositions( mpConstraint );
                     break;
                 }
                 case NOT:
@@ -372,7 +372,7 @@ namespace smtrat
      *
      * @param _constraint
      */
-    void Formula::addSubformula( const Constraint* _constraint )
+    void Formula::addSubformula( Constraint_Atom _constraint )
     {
         assert( isBooleanCombination() );
         assert( mType != NOT || mpSubformulas->empty() );
@@ -380,7 +380,8 @@ namespace smtrat
         /*
          * Add the variables of the formula to add to this formula.
          */
-        mRealValuedVars.insert( _constraint->variables().begin(), _constraint->variables().end() );
+        GiNaC::symtab variables = _constraint->load()->variables();
+        mRealValuedVars.insert( variables.begin(), variables.end() );
 
         /*
          * Add the formula consisting of this constraint.
@@ -592,9 +593,9 @@ namespace smtrat
      *
      * @param _constraint
      */
-    void Formula::addConstraintPropositions( const Constraint& _constraint )
+    void Formula::addConstraintPropositions( Constraint_Atom _constraint )
     {
-        switch( _constraint.maxMonomeDegree() )
+        switch( _constraint->load()->maxMonomeDegree() )
         {
             case 0:
             {
@@ -633,7 +634,7 @@ namespace smtrat
             {
             }
         }
-        switch( _constraint.relation() )
+        switch( _constraint->load()->relation() )
         {
             case CR_EQ:
             {
@@ -669,11 +670,11 @@ namespace smtrat
             {
             }
         }
-        if( _constraint.containsIntegerValuedVariable() )
+        if( _constraint->load()->containsIntegerValuedVariable() )
         {
             mPropositions |= PROP_CONTAINS_INTEGER_VALUED_VARS;
         }
-        if( _constraint.containsRealValuedVariable() )
+        if( _constraint->load()->containsRealValuedVariable() )
         {
             mPropositions |= PROP_CONTAINS_REAL_VALUED_VARS;
         }
@@ -683,7 +684,7 @@ namespace smtrat
      *
      * @param _const
      */
-    void Formula::getConstraints( vector<const Constraint*>& _const ) const
+    void Formula::getConstraints( vector<Constraint_Atom>& _const ) const
     {
         if( mType == REALCONSTRAINT )
         {
@@ -740,7 +741,7 @@ namespace smtrat
                 case REALCONSTRAINT:
                 {
                     #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-                    const Constraint* constraint = currentFormula->pConstraint();
+                    Constraint_Atom constraint = currentFormula->pConstraint();
                     if( constraint->relation() == CR_LEQ )
                     {
                         Formula* newFormula = new Formula( OR );
@@ -845,7 +846,7 @@ namespace smtrat
                             case REALCONSTRAINT:
                             {
                                 #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
-                                const Constraint* constraint = currentSubformula->pConstraint();
+                                Constraint_Atom constraint = currentSubformula->pConstraint();
                                 if( constraint->relation() == CR_LEQ )
                                 {
                                     Formula* newFormula = new Formula( OR );
@@ -1176,9 +1177,9 @@ namespace smtrat
                 }
                 else
                 {
-                    const Constraint* constraint = subformula->pConstraint();
+                    Constraint_Atom constraint = subformula->pConstraint();
                     _formula.pop_back();
-                    switch( constraint->relation() )
+                    switch( constraint->load()->relation() )
                     {
                         case CR_EQ:
                         {
@@ -1187,13 +1188,13 @@ namespace smtrat
                             _formula.addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
                             _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
                             #else
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), CR_NEQ, constraint->variables() )));
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->load()->lhs(), CR_NEQ, constraint->load()->variables() )));
                             #endif
                             return true;
                         }
                         case CR_LEQ:
                         {
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->load()->lhs(), CR_LESS, constraint->load()->variables() )));
                             return false;
                         }
                         case CR_LESS:
@@ -1204,13 +1205,13 @@ namespace smtrat
                             _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_EQ, constraint->variables() )));
                             return true;
                             #else
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LEQ, constraint->variables() )));
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->load()->lhs(), CR_LEQ, constraint->load()->variables() )));
                             return false;
                             #endif
                         }
                         case CR_NEQ:
                         {
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->load()->lhs(), CR_EQ, constraint->load()->variables() )));
                             return false;
                         }
                         default:
@@ -1397,11 +1398,11 @@ namespace smtrat
                 _out << _init;
                 if( _smtlib )
                 {
-                    _out << mpConstraint->smtlibString();
+                    _out << mpConstraint->load()->smtlibString();
                 }
                 else
                 {
-                    mpConstraint->print( _out );
+                    mpConstraint->load()->print( _out );
                     _out << " (" << mDifficulty << ":" << mActivity << ")";
                 }
                 break;
@@ -1529,11 +1530,11 @@ namespace smtrat
             {
                 if( _infix )
                 {
-                    result += "( " + mpConstraint->toString() + " )";
+                    result += "( " + mpConstraint->load()->toString() + " )";
                 }
                 else
                 {
-                    result += mpConstraint->smtlibString();
+                    result += mpConstraint->load()->smtlibString();
                 }
                 break;
             }
@@ -1677,7 +1678,7 @@ namespace smtrat
             }
             case REALCONSTRAINT:
             {
-                result += constraint().toString();
+                result += mpConstraint->load()->toString();
                 break;
             }
             case BOOL:
