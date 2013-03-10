@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   strategies.h
  * Author: hik
  *
@@ -8,8 +8,6 @@
 #ifndef STRATEGIES_H
 #define	STRATEGIES_H
 
-#include "StrategyTwo.h"
-#include "StrategyOne.h"
 #include "NRATSolver.h"
 
 

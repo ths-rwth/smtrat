@@ -313,7 +313,7 @@ namespace vs
      * @param _expression
      * @param _var
      */
-    void simplify( ex& _expression, const ex& _var )
+    void SqrtEx::simplify( ex& _expression, const ex& _var )
     {
         if( _expression.has( _var ) )
         {
@@ -336,7 +336,7 @@ namespace vs
      *
      * @return The resulting square root expression.
      */
-    SqrtEx subBySqrtEx( const ex& _ex, const ex& _var, const SqrtEx& _subTerm, const symtab& _variables )
+    SqrtEx SqrtEx::subBySqrtEx( const ex& _ex, const ex& _var, const SqrtEx& _subTerm, const symtab& _variables )
     {
         #ifdef VS_DEBUG_METHODS
         cout << "subBySqrtEx" << endl;
@@ -354,6 +354,7 @@ namespace vs
          *      ----------------------------------------------
          *                           s^n
          */
+        
         signed n = _ex.degree( _var );
         if( n == 0 )
         {

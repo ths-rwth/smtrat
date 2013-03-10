@@ -509,7 +509,8 @@ namespace smtrat
             }
             case REALCONSTRAINT:
             {
-                return getLiteral( _formula.pConstraint(), _origin, fabs(_formula.activity()), (_formula.activity()<0) );
+                Lit lit = getLiteral( _formula.pConstraint(), _origin, fabs(_formula.activity()), (_formula.activity()<0) );
+                return lit;
             }
             default:
             {
@@ -1025,14 +1026,16 @@ FindSecond:
         #endif
         #endif
 
+        Answer currentAssignmentConsistent = True;
         for( ; ; )
         {
+            CONSTRAINT_LOCK
             if( anAnswerFound() )
             {
+                CONSTRAINT_UNLOCK
                 return l_Undef;
             }
             bool deductionsLearned = false;
-            Answer currentAssignmentConsistent = True;
             CRef confl = propagate();
 
             #ifdef DEBUG_SATMODULE
@@ -1076,7 +1079,9 @@ FindSecond:
                     cout << "}" << endl;
                     #endif
                     mChangedPassedFormula = false;
+                    CONSTRAINT_UNLOCK
                     currentAssignmentConsistent = runBackends();
+                    CONSTRAINT_LOCK
                     switch( currentAssignmentConsistent )
                     {
                         case True:
@@ -1096,8 +1101,8 @@ FindSecond:
                             cout << "### Result: False!" << endl;
                             #endif
                             confl = learnTheoryConflict();
+                            CONSTRAINT_UNLOCK
                             if( !ok ) return l_False;
-                            break;
                         }
                         case Unknown:
                         {
@@ -1111,13 +1116,18 @@ FindSecond:
                         {
                             cerr << "Backend returns undefined answer!" << endl;
                             assert( false );
+                            CONSTRAINT_UNLOCK
                             return l_Undef;
                         }
                     }
                 }
             }
             #ifdef SAT_MODULE_THEORY_PROPAGATION
-            if(deductionsLearned) continue;
+            if(deductionsLearned)
+            {
+                CONSTRAINT_UNLOCK
+                continue;
+            }
             #endif
 
             #ifdef SATMODULE_WITH_CALL_NUMBER
@@ -1130,7 +1140,6 @@ FindSecond:
             cout.flush();
             #endif
             #endif
-
             if( confl != CRef_Undef )
             {
                 //                vector<Lit> maxSatAssign = vector<Lit>();
@@ -1152,7 +1161,10 @@ FindSecond:
                 conflicts++;
                 conflictC++;
                 if( decisionLevel() == 0 )
+                {
+                    CONSTRAINT_UNLOCK
                     return l_False;
+                }
 
                 learnt_clause.clear();
                 assert( confl != CRef_Undef );
@@ -1242,13 +1254,17 @@ FindSecond:
                     // Reached bound on number of conflicts:
                     progress_estimate = progressEstimate();
                     cancelUntil( 0 );
+                    CONSTRAINT_UNLOCK
                     return l_Undef;
                 }
 #endif
 
                 // Simplify the set of problem clauses:
                 if( decisionLevel() == 0 && !simplify() )
+                {
+                    CONSTRAINT_UNLOCK
                     return l_False;
+                }
 
 //                if( learnts.size() - nAssigns() >= max_learnts )
 //                    // Reduce the set of learned clauses:
@@ -1266,6 +1282,7 @@ FindSecond:
                     }
                     else if( value( p ) == l_False )
                     {
+                        CONSTRAINT_UNLOCK
                         return l_False;
                     }
                     else
@@ -1286,11 +1303,14 @@ FindSecond:
                         if( currentAssignmentConsistent == True )
                         {
                             // Model found:
+                            CONSTRAINT_UNLOCK
                             return l_True;
                         }
                         else
                         {
+                            if( currentAssignmentConsistent != Unknown ) cout << currentAssignmentConsistent << endl;
                             assert( currentAssignmentConsistent == Unknown );
+                            CONSTRAINT_UNLOCK
                             return l_Undef;
                         }
                     }
@@ -1301,6 +1321,7 @@ FindSecond:
                 assert( value( next ) == l_Undef );
                 uncheckedEnqueue( next );
             }
+            CONSTRAINT_UNLOCK
         }
     }
 
@@ -2045,7 +2066,7 @@ NextClause:
         {
             if( mBooleanConstraintMap[k].formula != NULL )
             {
-                _out << _init << "   " << k << "  ->  " << mBooleanConstraintMap[k].formula->constraint();
+                _out << _init << "   " << k << "  ->  " << mBooleanConstraintMap[k].formula->pConstraint();
                 _out << "  (" << setw( 7 ) << activity[k] << ") [" << mBooleanConstraintMap[k].updateInfo << "]" << endl;
             }
         }

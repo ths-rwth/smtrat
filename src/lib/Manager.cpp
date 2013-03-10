@@ -34,7 +34,6 @@
 #include "StrategyGraph.h"
 #include "modules/Modules.h"
 
-
 #include <typeinfo>
 #include <cln/cln.h>
 
@@ -56,24 +55,27 @@ namespace smtrat
         mGeneratedModules( vector<Module*>( 1, new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ) ),
         mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
-        mStrategyGraph(),
+        mStrategyGraph()
+        #ifdef SMTRAT_STRAT_PARALLEL_MODE
+        ,
         mpThreadPool( NULL ),
+        mNumberOfBranches( 0 ),
         mNumberOfCores( 1 ),
         mRunsParallel( false )
+        #endif
     {
         mpModuleFactories = new map<const ModuleType, ModuleFactory*>();
 
         // inform it about all constraints
-        for( fcs_const_iterator constraint = Formula::mConstraintPool.begin(); constraint != Formula::mConstraintPool.end(); ++constraint )
+        for( fcs_const_iterator constraint = Formula::constraintPool().begin(); constraint != Formula::constraintPool().end(); ++constraint )
         {
-            mpPrimaryBackend->inform( *constraint );
+            mpPrimaryBackend->inform( (*constraint) );
         }
     }
 
     /**
      * Destructor:
      */
-
     Manager::~Manager()
     {
         Module::storeAssumptionsToCheck( *this );
@@ -90,21 +92,25 @@ namespace smtrat
             delete pModuleFactory;
         }
         delete mpModuleFactories;
+        #ifdef SMTRAT_STRAT_PARALLEL_MODE
         if( mpThreadPool!=NULL )
         {
             delete mpThreadPool;
         }
+        #endif
     }
 
     /**
      * Methods:
      */
 
+    #ifdef SMTRAT_STRAT_PARALLEL_MODE
     /**
      *
      */
     void Manager::initialize()
     {
+        cout << "bla" << endl;
         mNumberOfBranches = mStrategyGraph.numberOfBranches();
         if( mNumberOfBranches>1 )
         {
@@ -124,6 +130,7 @@ namespace smtrat
             }
         }
     }
+    #endif
 
     /**
      * Prints the model, if there is one.
@@ -157,6 +164,9 @@ namespace smtrat
      */
     vector<Module*> Manager::getBackends( Formula* _formula, Module* _requiredBy, atomic_bool* _foundAnswer )
     {
+        #ifdef SMTRAT_STRAT_PARALLEL_MODE
+        std::lock_guard<std::mutex> lock( mBackendsMutex );
+        #endif
         vector<Module*>  backends    = vector<Module*>();
         vector<Module*>& allBackends = mBackendsOfModules[_requiredBy];
         /*
@@ -169,8 +179,6 @@ namespace smtrat
             /*
              * If for this module type an instance already exists, we just add it to the modules to return.
              */
-
-// MUTEX? NEIN ODER?
             vector<Module*>::iterator backend = allBackends.begin();
             while( backend != allBackends.end() )
             {
@@ -187,13 +195,11 @@ namespace smtrat
              */
             if( backend == allBackends.end() )
             {
-// MUTEX? JA ODER? module factories
                 auto backendFactory = mpModuleFactories->find( iter->second );
                 assert( backendFactory != mpModuleFactories->end() );
                 vector< atomic_bool* > foundAnswers = vector< atomic_bool* >( _requiredBy->answerFound() );
                 foundAnswers.push_back( _foundAnswer );
                 Module* pBackend = backendFactory->second->create( iter->second, _requiredBy->pPassedFormula(), foundAnswers, this );
-// MUTEX generated Modules
                 mGeneratedModules.push_back( pBackend );
                 pBackend->setId( mGeneratedModules.size()-1 );
                 pBackend->setThreadPriority( iter->first );
@@ -210,6 +216,7 @@ namespace smtrat
         return backends;
     }
 
+    #ifdef SMTRAT_STRAT_PARALLEL_MODE
     /**
      *
      * @param _pModule
@@ -230,33 +237,5 @@ namespace smtrat
         assert( mRunsParallel );
         mpThreadPool->checkBackendPriority( _pModule );
     }
-
-    /**
-     *
-     * @param _branchIds
-     * @return
-     */
-    bool Manager::checkInterruptionFlags( vector<unsigned> _branchIds )
-    {
-        std::lock_guard<std::mutex> lock( mInterruptionMutex );
-        for( unsigned i=0; i<_branchIds.size(); ++i )
-        {
-            if( mInterruptionFlags[ _branchIds[ i ] ] )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     *
-     * @param _interruptionFlag
-     * @param _flag
-     */
-    void Manager::setInterruptionFlag( unsigned _interruptionFlag, bool _flag )
-    {
-        std::lock_guard<std::mutex> lock( mInterruptionMutex );
-        mInterruptionFlags[ _interruptionFlag ] = _flag;
-    }
+    #endif
 }    // namespace smtrat

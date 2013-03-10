@@ -36,7 +36,7 @@ namespace smtrat
 {
     ThreadPool::ThreadPool( unsigned _numberOfThreads, unsigned _numberOfCores ):
         mDone( false ),
-        mOversubscription( _numberOfCores<_numberOfThreads ),
+        mPossibleOversubscription( _numberOfCores<_numberOfThreads ),
         mNumberOfCores( _numberOfCores ),
         mNumberOfThreads( _numberOfThreads ),
         mNumberOfRunningThreads( 1 ),
@@ -46,7 +46,7 @@ namespace smtrat
         mTasks( _numberOfThreads, packaged_task() )
     {
         mOversubscriptionFlags = vector<bool>( _numberOfThreads, true );
-        if( mOversubscription )
+        if( mPossibleOversubscription )
         {
             mThreadPriorityQueue = ThreadPriorityQueue();
         }
@@ -75,7 +75,7 @@ namespace smtrat
         while( !mDone )
         {
             mConditionVariables[ _threadId ].wait( lock, [ this, _threadId ](){ return mTasks[ _threadId ]!=packaged_task() && mOversubscriptionFlags[ _threadId ]; } );
-            if( mOversubscription )
+            if( mPossibleOversubscription )
             {
                 mOversubscriptionFlags[ _threadId ] = false;
             }
@@ -83,7 +83,7 @@ namespace smtrat
             lock.unlock();
             (*task)();
             lock.lock();
-            if( mOversubscription )
+            if( mPossibleOversubscription )
             {
                 if( mThreadPriorityQueue.pop( nextThreadPriority ) )
                 {
@@ -102,7 +102,7 @@ namespace smtrat
     {
         assert( mNumberOfRunningThreads>=0 && mNumberOfRunningThreads<=mNumberOfCores );
 
-        if( mOversubscription )
+        if( mPossibleOversubscription )
         {
             thread_priority threadPriority = _pModule->threadPriority();
             assert( threadPriority.first>=0 && threadPriority.first<mNumberOfThreads );
@@ -144,7 +144,7 @@ namespace smtrat
         {
             try
             {
-                if( mOversubscription )
+                if( mPossibleOversubscription )
                 {
                     if( mNumberOfRunningThreads<mNumberOfCores )
                     {
@@ -166,7 +166,7 @@ namespace smtrat
         }
         else
         {
-            if( mOversubscription )
+            if( mPossibleOversubscription )
             {
                 if( mNumberOfRunningThreads<mNumberOfCores )
                 {

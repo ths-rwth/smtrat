@@ -33,7 +33,7 @@
 //#define DEBUG_LRA_MODULE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_ONE_REASON
-#define LRA_BRANCH_AND_BOUND
+//#define LRA_BRANCH_AND_BOUND
 using namespace std;
 using namespace lra;
 using namespace GiNaC;
@@ -341,9 +341,12 @@ namespace smtrat
         unsigned posNewLearnedBound = 0;
         for( ; ; )
         {
+            CONSTRAINT_LOCK
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
             if( anAnswerFound() )
             {
+                learnRefinements();
+                CONSTRAINT_UNLOCK
                 return foundAnswer( Unknown );
             }
             #ifdef DEBUG_LRA_MODULE
@@ -383,7 +386,7 @@ namespace smtrat
                             learnRefinements();
                             #endif
 
-                            #ifdef LRA_GOMORY_CUTS     
+                            #ifdef LRA_GOMORY_CUTS
                             exmap rMap_ = getRationalModel();
                             for(auto vector_iterator = mTableau.rows().begin();vector_iterator != mTableau.rows().end();++vector_iterator)
                             {  
@@ -396,18 +399,18 @@ namespace smtrat
                             #endif
 
                             #ifdef LRA_BRANCH_AND_BOUND
-                            exmap _rMap = getRationalModel();                            
+                            exmap _rMap = getRationalModel();
                             exmap::const_iterator map_iterator = _rMap.begin();
                             for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
-                            {    
+                            {
                                 if(Formula::domain(*var->first) == INTEGER_DOMAIN)
-                                {                
+                                {
                                    Formula* deductionA = new Formula(OR);
                                    stringstream sstream;
                                    sstream << *var->first;
                                    symtab *setOfVar = new symtab();
-                                   setOfVar->insert(pair< std::string, ex >(sstream.str(),*var->first));  
-                                   numeric ass = ex_to<numeric>(map_iterator->second);                  
+                                   setOfVar->insert(pair< std::string, ex >(sstream.str(),*var->first));
+                                   numeric ass = ex_to<numeric>(map_iterator->second);
                                    ass = ass.to_int();
                                    const Constraint* lessEqualConstraint = Formula::newConstraint(*var->first - ass,CR_LEQ,*setOfVar);
                                    const Constraint* biggerEqualConstraint= Formula::newConstraint(*var->first - ass - 1,CR_GEQ,*setOfVar);
@@ -416,10 +419,10 @@ namespace smtrat
                                    addDeduction(deductionA);
                                    return foundAnswer(Unknown);
                                 }
-                            ++map_iterator;    
+                            ++map_iterator;
                             }
-                            return foundAnswer(True);        
                             #endif
+                            CONSTRAINT_UNLOCK
                             return foundAnswer( True );
                         }
                         // Otherwise, resolve the notequal-constraints (create the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
@@ -436,6 +439,7 @@ namespace smtrat
                             #ifdef LRA_REFINEMENT
                             learnRefinements();
                             #endif
+                            CONSTRAINT_UNLOCK
                             return foundAnswer( Unknown );
                         }
                     }
@@ -451,13 +455,16 @@ namespace smtrat
                             }
                         }
                         adaptPassedFormula();
+                        CONSTRAINT_UNLOCK
                         Answer a = runBackends();
                         if( a == False )
                         {
                             getInfeasibleSubsets();
                         }
                         #ifdef LRA_REFINEMENT
+                        CONSTRAINT_LOCK
                         learnRefinements();
+                        CONSTRAINT_UNLOCK
                         #endif
                         return foundAnswer( a );
                     }
@@ -510,6 +517,7 @@ namespace smtrat
                         #ifdef LRA_REFINEMENT
                         learnRefinements();
                         #endif
+                        CONSTRAINT_UNLOCK
                         return foundAnswer( False );
                     }
                 }
@@ -548,8 +556,10 @@ namespace smtrat
                 #ifdef DEBUG_LRA_MODULE
                 cout << "False" << endl;
                 #endif
+                CONSTRAINT_UNLOCK
                 return foundAnswer( False );
             }
+            CONSTRAINT_UNLOCK
         }
         assert( false );
         #ifdef LRA_REFINEMENT
@@ -843,7 +853,7 @@ namespace smtrat
         {
             mAssignmentFullfilsNonlinearConstraints = true;
             return true;
-            
+
         }
         else
         {

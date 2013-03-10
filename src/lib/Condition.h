@@ -46,18 +46,17 @@ namespace smtrat
             Condition():
                 std::bitset<CONDITION_SIZE>()
             {}
-            ;
+
             Condition( const std::bitset<CONDITION_SIZE>& _bisset ):
                 std::bitset<CONDITION_SIZE>( _bisset )
             {}
-            ;
+
             Condition( unsigned i ):
                 std::bitset<CONDITION_SIZE>()
             {
                 assert( i < CONDITION_SIZE );
                 (*this)[i] = 1;
             }
-            ;
 
             /**
              * Check whether the bits of this condition are always set if the corresponding bit
@@ -71,33 +70,6 @@ namespace smtrat
             bool operator <=( const Condition& _condition ) const
             {
                 return (*this & (~_condition)).none();
-            }
-
-            // Equivalence
-            inline Condition
-            operator%( const Condition& _y ) const
-            {
-              Condition result(~*this);
-              result |= _y;
-              return result;
-            }
-
-            // Implication
-            inline Condition
-            operator-( const Condition& _y ) const
-            {
-              Condition result(~*this);
-              result ^= _y;
-              return result;
-            }
-
-            // Xor
-            inline Condition
-            operator+( const Condition& _y ) const
-            {
-              Condition result(*this);
-              result ^= _y;
-              return result;
             }
     };
 

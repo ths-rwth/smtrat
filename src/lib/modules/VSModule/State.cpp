@@ -733,7 +733,7 @@ namespace vs
                 {
                     const Condition* condA = _conditionVectorToSimplify[posA];
                     const Condition* condB = _conditionVectorToSimplify[posB];
-                    signed strongProp = smtrat::Constraint::compare( condA->constraint(), condB->constraint() );
+                    signed strongProp = smtrat::Constraint::compare( condA->pConstraint(), condB->pConstraint() );
                     /*
                      * If the two conditions have the same solution space.
                      */
@@ -2363,7 +2363,6 @@ namespace vs
         cout << __func__ << endl;
         #endif
         assert( isInconsistent() );
-
         /*
          * Determine a covering set of the conflict sets.
          */

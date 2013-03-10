@@ -46,7 +46,9 @@
 #include <string.h>
 #include <sstream>
 #include <assert.h>
+#include <mutex>
 #include <ginacra/utilities.h>
+#include "config.h"
 
 namespace smtrat
 {
@@ -126,15 +128,19 @@ namespace smtrat
             unsigned             mMaxMonomeDegree;
             unsigned             mMinMonomeDegree;
             Constraint_Relation  mRelation;
-            GiNaC::ex*           pLhs;
-            GiNaC::ex*           mpMultiRootLessLhs;
-            GiNaC::ex*           mpFactorization;
+            GiNaC::ex            mLhs;
+            GiNaC::ex            mMultiRootLessLhs;
+            GiNaC::ex            mFactorization;
             Coefficients*        mpCoefficients;
+            mutable std::mutex   mMutexCoefficients;
             GiNaC::numeric       mConstantPart;
             GiNaC::symtab        mVariables;
             VarInfoMap           mVarInfoMap;
 
         public:
+
+            static std::recursive_mutex mMutex;
+
             /*
              * Constructors:
              */
@@ -153,7 +159,7 @@ namespace smtrat
              */
             const GiNaC::ex& lhs() const
             {
-                return *pLhs;
+                return mLhs;
             }
 
             const GiNaC::symtab& variables() const
@@ -188,17 +194,19 @@ namespace smtrat
 
             const GiNaC::ex& multiRootLessLhs() const
             {
-                return *mpMultiRootLessLhs;
+                if( mMultiRootLessLhs != 0 ) return mMultiRootLessLhs;
+                else return mLhs;
             }
 
             bool hasFactorization() const
             {
-                return (mpFactorization != pLhs);
+                return (mFactorization != 0);
             }
 
             const GiNaC::ex& factorization() const
             {
-                return *mpFactorization;
+                if( mFactorization != 0 ) return mFactorization;
+                else return mLhs;
             }
 
             bool containsIntegerValuedVariable() const
@@ -233,19 +241,70 @@ namespace smtrat
 
             static void normalize( GiNaC::ex& _exp )
             {
-                #ifdef VS_USE_GINAC_NORMAL
-                #ifdef VS_USE_GINAC_EXPAND
-                _exp = _exp.expand().normal();
-                #else
-                _exp = _exp.normal();
-                #endif
-                #else
-                #ifdef VS_USE_GINAC_EXPAND
                 GiNaC::numeric commonDenom = GiNaC::mdenom( _exp );
                 if( commonDenom != 1 ) _exp *= commonDenom;
                 _exp = _exp.expand();
-                #endif
-                #endif
+            }
+
+            unsigned maxDegree( const ex& _variable ) const
+            {
+                VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
+                if( varInfo != mVarInfoMap.end() )
+                {
+                    return varInfo->second.maxDegree;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+
+            unsigned minDegree( const ex& _variable ) const
+            {
+                VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
+                if( varInfo != mVarInfoMap.end() )
+                {
+                    return varInfo->second.minDegree;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+
+            unsigned occurences( const ex& _variable ) const
+            {
+                VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
+                if( varInfo != mVarInfoMap.end() )
+                {
+                    return varInfo->second.occurences;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+
+            const VarInfo varInfo( const ex& _variable ) const
+            {
+                VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
+                assert( varInfo != mVarInfoMap.end() ); // variable not in constraint.
+                return varInfo->second;
+            }
+
+            bool constraintRelationIsStrict( Constraint_Relation rel ) const
+            {
+                return (rel == CR_NEQ || rel == CR_LESS || rel == CR_GREATER);
+            }
+
+            unsigned maxDegree() const
+            {
+                return mMaxMonomeDegree;
+            }
+
+            bool isLinear() const
+            {
+                return mMaxMonomeDegree < 2;
             }
 
             // Data access methods (read only).
@@ -254,14 +313,8 @@ namespace smtrat
             unsigned isConsistent() const;
             unsigned satisfiedBy( GiNaC::exmap& ) const;
             bool hasFinitelyManySolutionsIn( const std::string& ) const;
-            const GiNaC::ex& coefficient( const GiNaC::ex&, int ) const;
-            unsigned maxDegree( const GiNaC::ex& ) const;
-            unsigned minDegree( const GiNaC::ex& ) const;
-            unsigned occurences( const GiNaC::ex& ) const;
-            const VarInfo& varInfo( const GiNaC::ex& ) const;
+            GiNaC::ex coefficient( const GiNaC::ex&, int ) const;
             signed highestDegree() const;
-            bool isLinear() const;
-            unsigned maxDegree() const;
             std::map<const std::string, GiNaC::numeric, strCmp> linearAndConstantCoefficients() const;
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
 
@@ -285,11 +338,9 @@ namespace smtrat
             std::string smtlibString() const;
 
             //
-            static signed compare( const Constraint&, const Constraint& );
+            static signed compare( const Constraint*, const Constraint* );
             static const Constraint* mergeConstraints( const Constraint*, const Constraint* );
-            static bool combineConstraints( const Constraint&, const Constraint&, const Constraint& );
-        private:
-            void getVariables( const GiNaC::ex&, GiNaC::symtab& );
+            static bool combineConstraints( const Constraint*, const Constraint*, const Constraint* );
     };
 
     typedef std::vector<const Constraint*>                                vec_const_pConstraint;
@@ -313,5 +364,15 @@ namespace smtrat
 
     typedef std::set< const Constraint*, constraintPointerComp > ConstraintSet;
 }    // namespace smtrat
+
+#ifdef SMTRAT_STRAT_PARALLEL_MODE
+#define CONSTRAINT_LOCK_GUARD std::lock_guard<std::recursive_mutex> lock( smtrat::Constraint::mMutex );
+#define CONSTRAINT_LOCK smtrat::Constraint::mMutex.lock();
+#define CONSTRAINT_UNLOCK smtrat::Constraint::mMutex.unlock();
+#else
+#define CONSTRAINT_LOCK_GUARD
+#define CONSTRAINT_LOCK
+#define CONSTRAINT_UNLOCK
+#endif
 
 #endif

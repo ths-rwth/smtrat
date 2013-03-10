@@ -85,7 +85,7 @@ namespace smtrat
         public:
 
             /// A pool to manage all generated constraints.
-            static ConstraintPool mConstraintPool;
+            static ConstraintPool* mpConstraintPool;
 
 
             /**
@@ -439,32 +439,27 @@ namespace smtrat
 
             static const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
             {
-                return mConstraintPool.newConstraint( _lhs, _rel, _variables );
-            }
-
-            static const Constraint* newConstraint( const std::string& _stringrep, const bool _infix = true, const bool _polarity = true )
-            {
-                return mConstraintPool.newConstraint( _stringrep, _infix, _polarity );
+                return mpConstraintPool->newConstraint( _lhs, _rel, _variables );
             }
 
             static GiNaC::ex newRealVariable( const std::string& _name )
             {
-                return mConstraintPool.newArithmeticVariable( _name, REAL_DOMAIN );
+                return mpConstraintPool->newArithmeticVariable( _name, REAL_DOMAIN );
             }
 
             static GiNaC::ex newArithmeticVariable( const std::string& _name, Variable_Domain _domain )
             {
-                return mConstraintPool.newArithmeticVariable( _name, _domain );
+                return mpConstraintPool->newArithmeticVariable( _name, _domain );
             }
 
             static void newBooleanVariable( const std::string& _name )
             {
-                mConstraintPool.newBooleanVariable( _name );
+                mpConstraintPool->newBooleanVariable( _name );
             }
 
             static const ConstraintPool& constraintPool()
             {
-                return mConstraintPool;
+                return *mpConstraintPool;
             }
 
             /**
@@ -474,7 +469,7 @@ namespace smtrat
              */
             static std::pair<std::string,GiNaC::ex> newAuxiliaryRealVariable()
             {
-                return mConstraintPool.newAuxiliaryRealVariable();
+                return mpConstraintPool->newAuxiliaryRealVariable();
             }
 
             /**
@@ -484,12 +479,12 @@ namespace smtrat
              */
             static std::string newAuxiliaryBooleanVariable()
             {
-                return mConstraintPool.newAuxiliaryBooleanVariable();
+                return mpConstraintPool->newAuxiliaryBooleanVariable();
             }
 
             static Variable_Domain domain( const GiNaC::ex& _variable )
             {
-                return mConstraintPool.domain( _variable );
+                return mpConstraintPool->domain( _variable );
             }
 
 

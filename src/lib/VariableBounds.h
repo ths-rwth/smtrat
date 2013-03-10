@@ -480,8 +480,8 @@ namespace smtrat
         template<class T>
         const Bound<T>* Variable<T>::addBound( const Constraint* _constraint, const GiNaC::ex& _var, const T* _origin, const GiNaC::numeric& _limit )
         {
-            assert( _constraint->variables().size() == 1 && _constraint->lhs().degree( _var ) == 1 );
-            GiNaC::numeric coeff = GiNaC::ex_to<GiNaC::numeric>( _constraint->lhs().coeff( _var, 1 ) );
+            assert( _constraint->variables().size() == 1 && _constraint->maxDegree( _var ) == 1 );
+            GiNaC::numeric coeff = GiNaC::ex_to<GiNaC::numeric>( _constraint->coefficient( _var, 1 ) );
             Constraint_Relation rel = _constraint->relation();
             GiNaC::numeric* limit = new GiNaC::numeric( -_constraint->constantPart()/coeff );
             std::pair< class Variable<T>::BoundSet::iterator, bool> result;
@@ -628,7 +628,7 @@ namespace smtrat
             if( _constraint->relation() != CR_NEQ && _constraint->variables().size() == 1 )
             {
                 const GiNaC::ex& var = _constraint->variables().begin()->second;
-                if( _constraint->lhs().degree( var ) == 1 )
+                if( _constraint->maxDegree( var ) == 1 )
                 {
                     class VariableBounds<T>::ConstraintBoundMap::iterator cbPair = mpConstraintBoundMap->find( _constraint );
                     if( cbPair != mpConstraintBoundMap->end() )
@@ -699,7 +699,7 @@ namespace smtrat
             if( _constraint->relation() != CR_NEQ && _constraint->variables().size() == 1 )
             {
                 const GiNaC::ex var = _constraint->variables().begin()->second;
-                if( _constraint->lhs().degree( var ) == 1 )
+                if( _constraint->maxDegree( var ) == 1 )
                 {
                     assert( mpConstraintBoundMap->find( _constraint ) != mpConstraintBoundMap->end() );
                     const Bound<T>& bound = *(*mpConstraintBoundMap)[_constraint];

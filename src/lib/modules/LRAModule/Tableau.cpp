@@ -1310,6 +1310,7 @@ namespace lra
                 learnedBound.nextWeakerBound = *ubound;
                 learnedBound.premise = uPremise;
                 #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                lock_guard<recursive_mutex> lock( smtrat::Constraint::mMutex );
                 if( newlimit->mainPart() < (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
                 {
                     ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
@@ -1376,6 +1377,7 @@ CheckLowerPremise:
                 learnedBound.nextWeakerBound = *lbound;
                 learnedBound.premise = lPremise;
                 #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                lock_guard<recursive_mutex> lock( smtrat::Constraint::mMutex );
                 if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
                 {
                     ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
@@ -1518,6 +1520,7 @@ CheckLowerPremise:
                 learnedBound.nextWeakerBound = *ubound;
                 learnedBound.premise = uPremise;
                 #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                lock_guard<recursive_mutex> lock( smtrat::Constraint::mMutex );
                 if( newlimit->mainPart() < (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
                 {
                     ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
@@ -1584,6 +1587,7 @@ CheckLowerPremise:
                 learnedBound.nextWeakerBound = *lbound;
                 learnedBound.premise = lPremise;
                 #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                lock_guard<recursive_mutex> lock( smtrat::Constraint::mMutex );
                 if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
                 {
                     ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
