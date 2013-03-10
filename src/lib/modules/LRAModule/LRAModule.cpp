@@ -99,13 +99,13 @@ namespace smtrat
      * @return False, if the it can be determined that the constraint itself is conflicting;
      *         True,  otherwise.
      */
-    bool LRAModule::inform( Constraint_Atom _constraint )
+    bool LRAModule::inform( const Constraint* const _constraint )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "inform about " << *_constraint << endl;
         #endif
         Module::inform( _constraint );
-        if( !_constraint->load()->variables().empty() && _constraint->load()->isLinear() )
+        if( !_constraint->variables().empty() && _constraint->isLinear() )
         {
             bool elementInserted = mLinearConstraints.insert( _constraint ).second;
             if( elementInserted && mInitialized )
@@ -113,7 +113,7 @@ namespace smtrat
                 initialize( _constraint );
             }
         }
-        return _constraint->load()->isConsistent() != 0;
+        return _constraint->isConsistent() != 0;
     }
 
     /**
@@ -134,14 +134,14 @@ namespace smtrat
         {
             if( !mInitialized ) initialize();
 
-            Constraint_Atom constraint  = (*_subformula)->pConstraint();
-            int               consistency = constraint->load()->isConsistent();
+            const Constraint* constraint  = (*_subformula)->pConstraint();
+            int               consistency = constraint->isConsistent();
             if( consistency == 2 )
             {
                 mAssignmentFullfilsNonlinearConstraints = false;
-                if( constraint->load()->isLinear() )
+                if( constraint->isLinear() )
                 {
-                    if( constraint->load()->relation() != CR_NEQ )
+                    if( (*_subformula)->constraint().relation() != CR_NEQ )
                     {
                         vector< const Bound* >* bounds = mConstraintToBound[constraint];
                         assert( bounds != NULL );
@@ -176,7 +176,7 @@ namespace smtrat
                             Context context = Context();
                             context.origin = *_subformula;
                             context.position = mpPassedFormula->end();
-                            mActiveResolvedNEQConstraints.insert( pair< Constraint_Atom, Context >( constraint, context ) );
+                            mActiveResolvedNEQConstraints.insert( pair< const Constraint*, Context >( constraint, context ) );
                         }
                         else
                         {
@@ -184,7 +184,7 @@ namespace smtrat
                             Context context = Context();
                             context.origin = *_subformula;
                             context.position = mpPassedFormula->last();
-                            mActiveUnresolvedNEQConstraints.insert( pair< Constraint_Atom, Context >( constraint, context ) );
+                            mActiveUnresolvedNEQConstraints.insert( pair< const Constraint*, Context >( constraint, context ) );
                         }
                     }
                 }
@@ -224,12 +224,12 @@ namespace smtrat
         if( (*_subformula)->getType() == REALCONSTRAINT )
         {
             // Remove the mapping of the constraint to the sub-formula in the received formula
-            Constraint_Atom constraint = (*_subformula)->pConstraint();
-            if( constraint->load()->isConsistent() == 2 )
+            const Constraint* constraint = (*_subformula)->pConstraint();
+            if( constraint->isConsistent() == 2 )
             {
-                if( constraint->load()->isLinear() )
+                if( constraint->isLinear() )
                 {
-                    if( constraint->load()->relation() != CR_NEQ )
+                    if( (*_subformula)->constraint().relation() != CR_NEQ )
                     {
                         // Deactivate the bounds regarding the given constraint
                         vector< const Bound* >* bounds = mConstraintToBound[constraint];
@@ -342,7 +342,6 @@ namespace smtrat
         unsigned posNewLearnedBound = 0;
         for( ; ; )
         {
-            CONSTRAINT_LOCK_GUARD
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
             if( anAnswerFound() )
             {
@@ -415,8 +414,8 @@ namespace smtrat
                                    setOfVar->insert(pair< std::string, ex >(sstream.str(),*var->first));
                                    numeric ass = ex_to<numeric>(map_iterator->second);
                                    ass = ass.to_int();
-                                   Constraint_Atom lessEqualConstraint = Formula::newConstraint(*var->first - ass,CR_LEQ,*setOfVar);
-                                   Constraint_Atom biggerEqualConstraint= Formula::newConstraint(*var->first - ass - 1,CR_GEQ,*setOfVar);
+                                   const Constraint* lessEqualConstraint = Formula::newConstraint(*var->first - ass,CR_LEQ,*setOfVar);
+                                   const Constraint* biggerEqualConstraint= Formula::newConstraint(*var->first - ass - 1,CR_GEQ,*setOfVar);
                                    deductionA->addSubformula(lessEqualConstraint);
                                    deductionA->addSubformula(biggerEqualConstraint);
                                    addDeduction(deductionA);
@@ -485,7 +484,7 @@ namespace smtrat
                             originSet.insert( (*bound)->origins().begin()->begin(), (*bound)->origins().begin()->end() );
                             for( auto origin = (*bound)->origins().begin()->begin(); origin != (*bound)->origins().begin()->end(); ++origin )
                             {
-                                Constraint_Atom constraint = (*origin)->pConstraint();
+                                const Constraint* constraint = (*origin)->pConstraint();
                                 if( constraint != NULL )
                                 {
                                     vector< const Bound* >* constraintToBounds = mConstraintToBound[constraint];
@@ -500,7 +499,7 @@ namespace smtrat
                         #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                         if( learnedBound.newBound != NULL )
                         {
-                            Constraint_Atom newConstraint = learnedBound.newBound->pAsConstraint();
+                            const Constraint* newConstraint = learnedBound.newBound->pAsConstraint();
                             addConstraintToInform( newConstraint );
                             mLinearConstraints.insert( newConstraint );
                             vector< const Bound* >* boundVector = new vector< const Bound* >();
@@ -863,7 +862,7 @@ namespace smtrat
             CONSTRAINT_LOCK_GUARD
             for( auto constraint = mNonlinearConstraints.begin(); constraint != mNonlinearConstraints.end(); ++constraint )
             {
-                if( (*constraint)->load()->satisfiedBy( assignments ) != 1 )
+                if( (*constraint)->satisfiedBy( assignments ) != 1 )
                 {
                     return false;
                 }
@@ -881,12 +880,12 @@ namespace smtrat
      *
      * @param _unequalConstraint A constraint having the relation symbol !=.
      */
-    void LRAModule::splitUnequalConstraint( Constraint_Atom _unequalConstraint )
+    void LRAModule::splitUnequalConstraint( const Constraint* _unequalConstraint )
     {
         CONSTRAINT_LOCK_GUARD
-        assert( _unequalConstraint->load()->relation() == CR_NEQ );
-        Constraint_Atom lessConstraint = Formula::newConstraint( _unequalConstraint->load()->lhs(), CR_LESS, _unequalConstraint->load()->variables() );
-        Constraint_Atom greaterConstraint = Formula::newConstraint( _unequalConstraint->load()->lhs(), CR_GREATER, _unequalConstraint->load()->variables() );
+        assert( _unequalConstraint->relation() == CR_NEQ );
+        const Constraint* lessConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_LESS, _unequalConstraint->variables() );
+        const Constraint* greaterConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_GREATER, _unequalConstraint->variables() );
         // (not p!=0 or p<0 or p>0)
         Formula* deductionA = new Formula( OR );
         Formula* notConstraint = new Formula( NOT );
@@ -1025,10 +1024,10 @@ namespace smtrat
      * @param _boundValue The limit of the bound.
      * @param _constraint The constraint corresponding to the bound to create.
      */
-    void LRAModule::setBound( Variable& _var, bool _constraintInverted, const numeric& _boundValue, Constraint_Atom _constraint )
+    void LRAModule::setBound( Variable& _var, bool _constraintInverted, const numeric& _boundValue, const Constraint* _constraint )
     {
         CONSTRAINT_LOCK_GUARD
-        if( _constraint->load()->relation() == CR_EQ )
+        if( _constraint->relation() == CR_EQ )
         {
             // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
             Value* value  = new Value( _boundValue );
@@ -1074,7 +1073,7 @@ namespace smtrat
             }
             #endif
         }
-        else if( _constraint->load()->relation() == CR_LEQ )
+        else if( _constraint->relation() == CR_LEQ )
         {
             Value* value = new Value( _boundValue );
             pair<const Bound*,pair<const Bound*, const Bound*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), _constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), _constraint );
@@ -1103,7 +1102,7 @@ namespace smtrat
             }
             #endif
         }
-        else if( _constraint->load()->relation() == CR_GEQ )
+        else if( _constraint->relation() == CR_GEQ )
         {
             Value* value = new Value( _boundValue );
             pair<const Bound*,pair<const Bound*, const Bound*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), _constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), _constraint );
@@ -1134,16 +1133,16 @@ namespace smtrat
         }
         else
         {
-            if( _constraint->load()->relation() == CR_LESS || _constraint->load()->relation() == CR_NEQ )
+            if( _constraint->relation() == CR_LESS || _constraint->relation() == CR_NEQ )
             {
-                Constraint_Atom constraint;
-                if( _constraint->load()->relation() != CR_NEQ )
+                const Constraint* constraint;
+                if( _constraint->relation() != CR_NEQ )
                 {
                     constraint = _constraint;
                 }
                 else
                 {
-                    constraint = Formula::newConstraint( _constraint->load()->lhs(), CR_LESS, _constraint->load()->variables() );
+                    constraint = Formula::newConstraint( _constraint->lhs(), CR_LESS, _constraint->variables() );
                 }
                 Value* value = new Value( _boundValue, (_constraintInverted ? 1 : -1) );
                 pair<const Bound*,pair<const Bound*, const Bound*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
@@ -1153,7 +1152,7 @@ namespace smtrat
                 vector< const Bound* >* boundVector = new vector< const Bound* >();
                 boundVector->push_back( result.first );
                 mConstraintToBound[constraint] = boundVector;
-                if( _constraint->load()->relation() == CR_NEQ )
+                if( _constraint->relation() == CR_NEQ )
                 {
                     vector< const Bound* >* boundVectorB = new vector< const Bound* >();
                     boundVectorB->push_back( result.first );
@@ -1179,16 +1178,16 @@ namespace smtrat
                 }
                 #endif
             }
-            if( _constraint->load()->relation() == CR_GREATER || _constraint->load()->relation() == CR_NEQ )
+            if( _constraint->relation() == CR_GREATER || _constraint->relation() == CR_NEQ )
             {
-                Constraint_Atom constraint;
-                if( _constraint->load()->relation() != CR_NEQ )
+                const Constraint* constraint;
+                if( _constraint->relation() != CR_NEQ )
                 {
                     constraint = _constraint;
                 }
                 else
                 {
-                    constraint = Formula::newConstraint( _constraint->load()->lhs(), CR_GREATER, _constraint->load()->variables() );
+                    constraint = Formula::newConstraint( _constraint->lhs(), CR_GREATER, _constraint->variables() );
                 }
                 Value* value = new Value( _boundValue, (_constraintInverted ? -1 : 1) );
                 pair<const Bound*,pair<const Bound*, const Bound*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
@@ -1198,7 +1197,7 @@ namespace smtrat
                 vector< const Bound* >* boundVector = new vector< const Bound* >();
                 boundVector->push_back( result.first );
                 mConstraintToBound[constraint] = boundVector;
-                if( _constraint->load()->relation() == CR_NEQ )
+                if( _constraint->relation() == CR_NEQ )
                 {
                     mConstraintToBound[_constraint]->push_back( result.first );
                     mBoundToUnequalConstraintMap[result.first] = _constraint;
@@ -1283,13 +1282,13 @@ namespace smtrat
     /**
      * Initializes the tableau according to all linear constraints, of which this module has been informed.
      */
-    void LRAModule::initialize( Constraint_Atom const _pConstraint )
+    void LRAModule::initialize( const Constraint* const _pConstraint )
     {
         CONSTRAINT_LOCK_GUARD
-        map<const string, numeric, strCmp> coeffs = _pConstraint->load()->linearAndConstantCoefficients();
+        map<const string, numeric, strCmp> coeffs = _pConstraint->linearAndConstantCoefficients();
         assert( coeffs.size() > 1 );
         map<const string, numeric, strCmp>::iterator currentCoeff = coeffs.begin();
-        ex*                                          linearPart   = new ex( _pConstraint->load()->lhs() - currentCoeff->second );
+        ex*                                          linearPart   = new ex( _pConstraint->lhs() - currentCoeff->second );
         ++currentCoeff;
 
         // divide the linear Part and the _pConstraint by the highest coefficient
@@ -1304,7 +1303,7 @@ namespace smtrat
         if( coeffs.size() == 2 )
         {
             // constraint has one variable
-            ex* var = new ex( (*_pConstraint->load()->variables().begin()).second );
+            ex* var = new ex( (*_pConstraint->variables().begin()).second );
             ExVariableMap::iterator basicIter = mOriginalVars.find( var );
             // constraint not found, add new nonbasic variable
             if( basicIter == mOriginalVars.end() )
@@ -1328,11 +1327,10 @@ namespace smtrat
             {
                 vector< Variable* > nonbasics = vector< Variable* >();
                 vector< numeric > numCoeffs = vector< numeric >();
-                symtab variables = _pConstraint->load()->variables();
-                symtab::const_iterator varIt   = variables.begin();
+                symtab::const_iterator varIt   = _pConstraint->variables().begin();
                 map<const string, numeric, strCmp>::iterator coeffIt = coeffs.begin();
                 ++coeffIt;
-                while( varIt != variables.end() )
+                while( varIt != _pConstraint->variables().end() )
                 {
                     assert( coeffIt != coeffs.end() );
                     ex* var = new ex( varIt->second );
@@ -1397,7 +1395,7 @@ namespace smtrat
         _out << _init << "Linear constraints:" << endl;
         for( auto iter = mLinearConstraints.begin(); iter != mLinearConstraints.end(); ++iter )
         {
-            _out << _init << "   " << (*iter)->load()->smtlibString() << endl;
+            _out << _init << "   " << (*iter)->smtlibString() << endl;
         }
     }
 
@@ -1412,7 +1410,7 @@ namespace smtrat
         _out << _init << "Nonlinear constraints:" << endl;
         for( auto iter = mNonlinearConstraints.begin(); iter != mNonlinearConstraints.end(); ++iter )
         {
-            _out << _init << "   " << (*iter)->load()->smtlibString() << endl;
+            _out << _init << "   " << (*iter)->smtlibString() << endl;
         }
     }
 
@@ -1468,7 +1466,7 @@ namespace smtrat
         _out << _init << "Mapping of constraints to bounds:" << endl;
         for( auto iter = mConstraintToBound.begin(); iter != mConstraintToBound.end(); ++iter )
         {
-            _out << _init << "   " << iter->first->load()->smtlibString() << endl;
+            _out << _init << "   " << iter->first->smtlibString() << endl;
             for( auto iter2 = iter->second->begin(); iter2 != iter->second->end(); ++iter2 )
             {
                 _out << _init << "        ";

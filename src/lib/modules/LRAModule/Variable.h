@@ -189,12 +189,12 @@ namespace lra
                 return *mExpression;
             }
 
-            std::pair<const Bound*, std::pair<const Bound*, const Bound*> > addUpperBound( Value* const, smtrat::Formula::iterator, std::atomic< const smtrat::Constraint* >* = NULL, bool = false );
-            std::pair<const Bound*, std::pair<const Bound*, const Bound*> > addLowerBound( Value* const, smtrat::Formula::iterator, std::atomic< const smtrat::Constraint* >* = NULL, bool = false );
-            std::pair<const Bound*, std::pair<const Bound*, const Bound*> > addEqualBound( Value* const, smtrat::Formula::iterator, std::atomic< const smtrat::Constraint* >* = NULL );
+            std::pair<const Bound*, std::pair<const Bound*, const Bound*> > addUpperBound( Value* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
+            std::pair<const Bound*, std::pair<const Bound*, const Bound*> > addLowerBound( Value* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL, bool = false );
+            std::pair<const Bound*, std::pair<const Bound*, const Bound*> > addEqualBound( Value* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL );
             void deactivateBound( const Bound*, smtrat::Formula::iterator );
             GiNaCRA::Interval getVariableBounds() const;
-
+            
             void print( std::ostream& = std::cout ) const;
             void printAllBounds( std::ostream& = std::cout, const std::string = "" ) const;
     };

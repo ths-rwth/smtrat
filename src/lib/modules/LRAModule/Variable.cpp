@@ -70,7 +70,7 @@ namespace lra
      * @param _val
      * @return
      */
-    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addUpperBound( Value* const _val, smtrat::Formula::iterator _position, std::atomic< const smtrat::Constraint* >* _constraint, bool _deduced )
+    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addUpperBound( Value* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
     {
         Bound::Info* boundInfo = new Bound::Info();
         boundInfo->updated = 0;
@@ -113,7 +113,7 @@ namespace lra
      * @param _val
      * @return
      */
-    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addLowerBound( Value* const _val, smtrat::Formula::iterator _position, std::atomic< const smtrat::Constraint* >* _constraint, bool _deduced )
+    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addLowerBound( Value* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
     {
         Bound::Info* boundInfo = new Bound::Info();
         boundInfo->updated = 0;
@@ -153,7 +153,7 @@ namespace lra
      * @param _val
      * @return
      */
-    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addEqualBound( Value* const _val, smtrat::Formula::iterator _position, std::atomic< const smtrat::Constraint* >* _constraint )
+    pair<const Bound*,pair<const Bound*, const Bound*> > Variable::addEqualBound( Value* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint )
     {
         Bound::Info* boundInfo = new Bound::Info();
         boundInfo->updated = 0;

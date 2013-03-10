@@ -44,8 +44,8 @@ namespace smtrat
         mIdAllocator( 1 ),
         mAuxiliaryBooleanCounter( 0 ),
         mAuxiliaryRealCounter( 0 ),
-        mConsistentConstraint( new atomic<const Constraint* >( new Constraint( 0, CR_EQ, symtab(), 1 ) ) ),
-        mInconsistentConstraint( new atomic<const Constraint* >( new Constraint( 0, CR_LESS, symtab(), 2 ) ) ),
+        mConsistentConstraint( new Constraint( 0, CR_EQ, symtab(), 1 ) ),
+        mInconsistentConstraint( new Constraint( 0, CR_LESS, symtab(), 2 ) ),
         mAuxiliaryBooleanNamePrefix( "h_b_" ),
         mAuxiliaryRealNamePrefix( "h_r_" ),
         mArithmeticVariables(),
@@ -66,7 +66,7 @@ namespace smtrat
     {
         while( !mConstraints.empty() )
         {
-            const Constraint* pCons = (*mConstraints.begin())->load();
+            const Constraint* pCons = (*mConstraints.begin());
             mConstraints.erase( mConstraints.begin() );
             delete pCons;
         }
@@ -86,7 +86,7 @@ namespace smtrat
         mConstraints.erase( mInconsistentConstraint );
         while( !mConstraints.empty() )
         {
-            const Constraint* pCons = (*mConstraints.begin())->load();
+            const Constraint* pCons = (*mConstraints.begin());
             mConstraints.erase( mConstraints.begin() );
             delete pCons;
         }
@@ -122,13 +122,13 @@ namespace smtrat
      * @param _variables
      * @return
      */
-    Constraint_Atom ConstraintPool::newConstraint( const ex& _lhs, const Constraint_Relation _rel, const symtab& _variables )
+    const Constraint* ConstraintPool::newConstraint( const ex& _lhs, const Constraint_Relation _rel, const symtab& _variables )
     {
         CONSTRAINT_LOCK_GUARD
         assert( hasNoOtherVariables( _lhs ) );
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
-        Constraint_Atom result = addConstraintToPool( createNormalizedConstraint( _lhs, _rel, _variables ) );
+        const Constraint* result = addConstraintToPool( createNormalizedConstraint( _lhs, _rel, _variables ) );
         return result;
     }
 
@@ -140,13 +140,13 @@ namespace smtrat
      * @param _variables
      * @return
      */
-    Constraint_Atom ConstraintPool::newConstraint( const ex& _lhs, const ex& _rhs, const Constraint_Relation _rel, const symtab& _variables )
+    const Constraint* ConstraintPool::newConstraint( const ex& _lhs, const ex& _rhs, const Constraint_Relation _rel, const symtab& _variables )
     {
         CONSTRAINT_LOCK_GUARD
         assert( hasNoOtherVariables( _lhs ) && hasNoOtherVariables( _rhs ) );
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
-        Constraint_Atom result = addConstraintToPool( createNormalizedConstraint( _lhs-_rhs, _rel, _variables ) );
+        const Constraint* result = addConstraintToPool( createNormalizedConstraint( _lhs-_rhs, _rel, _variables ) );
         return result;
     }
 
@@ -228,7 +228,7 @@ namespace smtrat
         for( fcs_const_iterator constraint = mConstraints.begin();
              constraint != mConstraints.end(); ++constraint )
         {
-            int maxdeg = (*constraint)->load()->maxDegree();
+            int maxdeg = (*constraint)->maxDegree();
             if(maxdeg > result) result = maxdeg;
         }
         return result;
@@ -246,7 +246,7 @@ namespace smtrat
         for( fcs_const_iterator constraint = mConstraints.begin();
              constraint != mConstraints.end(); ++constraint )
         {
-            if(!(*constraint)->load()->isLinear()) ++nonlinear;
+            if(!(*constraint)->isLinear()) ++nonlinear;
         }
         return nonlinear;
     }
@@ -300,13 +300,13 @@ namespace smtrat
      * @param _constraint
      * @return
      */
-    Constraint_Atom ConstraintPool::addConstraintToPool( Constraint* _constraint )
+    const Constraint* ConstraintPool::addConstraintToPool( Constraint* _constraint )
     {
         unsigned constraintConsistent = _constraint->isConsistent();
         if( constraintConsistent == 2 )
         {
             // Constraint contains variables.
-            pair<fastConstraintSet::iterator, bool> iterBoolPair = mConstraints.insert( new atomic<const Constraint* >( _constraint ) );
+            pair<fastConstraintSet::iterator, bool> iterBoolPair = mConstraints.insert( _constraint );
             if( !iterBoolPair.second )
             {
                 // Constraint has already been generated.
@@ -319,11 +319,11 @@ namespace smtrat
                 if( constraint != NULL )
                 {
                     // Constraint could be simplified.
-                    pair<fastConstraintSet::iterator, bool> iterBoolPairB = mConstraints.insert( new atomic<const Constraint* >( constraint ) );
+                    pair<fastConstraintSet::iterator, bool> iterBoolPairB = mConstraints.insert( constraint );
                     if( !iterBoolPairB.second )
                     {
                         // Simplified version already exists, then set the id of the generated constraint to the id of the simplified one.
-                        _constraint->rId() = (*iterBoolPairB.first)->load()->id();
+                        _constraint->rId() = (*iterBoolPairB.first)->id();
                         delete constraint;
                     }
                     else

@@ -157,7 +157,7 @@ namespace smtrat
         mMultiRootLessLhs( _constraint.mMultiRootLessLhs ),
         mFactorization( _constraint.mFactorization ),
         mpCoefficients( new Coefficients( *_constraint.mpCoefficients ) ),
-        mVariables( _constraint.mVariables ),
+        mVariables( _constraint.variables() ),
         mVarInfoMap( _constraint.mVarInfoMap )
     {}
 
@@ -180,16 +180,17 @@ namespace smtrat
      * @return true,    if the variable occurs in this constraint;
      *         false,   otherwise.
      */
-    ex Constraint::variable( const string& _variableName ) const
+    bool Constraint::variable( const string& _variableName, symbol& _variable ) const
     {
-        symtab::const_iterator var = mVariables.find( _variableName );
-        if( var != mVariables.end() )
+        symtab::const_iterator var = variables().find( _variableName );
+        if( var != variables().end() )
         {
-            return var->second;
+            _variable = ex_to<symbol>( var->second );
+            return true;
         }
         else
         {
-            return ex( 0 );
+            return false;
         }
     }
 
@@ -203,7 +204,7 @@ namespace smtrat
      */
     bool Constraint::hasVariable( const std::string& _varName ) const
     {
-        for( symtab::const_iterator var = mVariables.begin(); var != mVariables.end(); ++var )
+        for( symtab::const_iterator var = variables().begin(); var != variables().end(); ++var )
         {
             if( var->first == _varName )
                 return true;
@@ -271,7 +272,7 @@ namespace smtrat
      */
     unsigned Constraint::isConsistent() const
     {
-        if( mVariables.size() == 0 )
+        if( variables().size() == 0 )
         {
             return evaluate( ex_to<numeric>( mLhs ), relation() ) ? 1 : 0;
         }
@@ -358,8 +359,8 @@ namespace smtrat
         }
         else
         {
-            symtab::const_iterator var = mVariables.find( _variableName );
-            if( var != mVariables.end() )
+            symtab::const_iterator var = variables().find( _variableName );
+            if( var != variables().end() )
             {
                 for( unsigned i = maxDegree( var->second ); i > 0; --i )
                 {
@@ -396,7 +397,6 @@ namespace smtrat
         }
         else
         {
-            cout << *this << " " << _variable << " " << _degree << endl;
             assert( _degree > (signed) maxDegree( _variable ) );
             return ex( 0 );
         }
@@ -420,7 +420,7 @@ namespace smtrat
     signed Constraint::highestDegree() const
     {
         signed result = 0;
-        for( symtab::const_iterator var = mVariables.begin(); var != mVariables.end(); ++var )
+        for( symtab::const_iterator var = variables().begin(); var != variables().end(); ++var )
         {
             signed d = mLhs.degree( ex( var->second ) );
             if( d > result )
@@ -560,7 +560,7 @@ namespace smtrat
         mMinMonomeDegree = -1;
         mNumMonomials = 0;
         mConstantPart = 0;
-        for( auto var = mVariables.begin(); var != mVariables.end(); ++var )
+        for( auto var = variables().begin(); var != variables().end(); ++var )
         {
             VarInfo varInfo = VarInfo();
             varInfo.maxDegree = 1;
@@ -1064,7 +1064,7 @@ namespace smtrat
         else if( relation() == _constraint.relation() )
         {
             assert( mVariables.empty() );
-            if( exCompare( mLhs, mVariables, _constraint.mLhs, _constraint.mVariables ) == -1 )
+            if( exCompare( mLhs, variables(), _constraint.mLhs, _constraint.variables() ) == -1 )
             {
                 return true;
             }
@@ -1403,13 +1403,13 @@ namespace smtrat
      *          -4, if it is easy to decide that this constraint is the inverse of the given constraint;
      *          0,  otherwise.
      */
-    signed Constraint::compare( std::atomic<const Constraint*>* _constraintA, std::atomic<const Constraint*>* _constraintB )
+    signed Constraint::compare( const Constraint* _constraintA, const Constraint* _constraintB )
     {
         CONSTRAINT_LOCK_GUARD
-        if( _constraintA->load()->mVariables.empty() || _constraintB->load()->mVariables.empty() ) return 0;
-        symtab::const_iterator var1 = _constraintA->load()->mVariables.begin();
-        symtab::const_iterator var2 = _constraintB->load()->mVariables.begin();
-        while( var1 != _constraintA->load()->mVariables.end() && var2 != _constraintB->load()->mVariables.end() )
+        if( _constraintA->variables().empty() || _constraintB->variables().empty() ) return 0;
+        symtab::const_iterator var1 = _constraintA->variables().begin();
+        symtab::const_iterator var2 = _constraintB->variables().begin();
+        while( var1 != _constraintA->variables().end() && var2 != _constraintB->variables().end() )
         {
             if( strcmp( (*var1).first.c_str(), (*var2).first.c_str() ) == 0 )
             {
@@ -1421,13 +1421,13 @@ namespace smtrat
                 break;
             }
         }
-        if( var1 == _constraintA->load()->mVariables.end() && var2 == _constraintB->load()->mVariables.end() )
+        if( var1 == _constraintA->variables().end() && var2 == _constraintB->variables().end() )
         {
-            ex leadingVar = ex( _constraintA->load()->mVariables.begin()->second );
-            ex lcoeffA = ex( _constraintA->load()->coefficient( leadingVar, _constraintA->load()->maxDegree( leadingVar ) ) );
-            ex lcoeffB = ex( _constraintB->load()->coefficient( leadingVar, _constraintB->load()->maxDegree( leadingVar ) ) );
-            ex lhsA    = ex( _constraintA->load()->mLhs );
-            ex lhsB    = ex( _constraintB->load()->mLhs );
+            ex leadingVar = ex( _constraintA->variables().begin()->second );
+            ex lcoeffA = ex( _constraintA->coefficient( leadingVar, _constraintA->maxDegree( leadingVar ) ) );
+            ex lcoeffB = ex( _constraintB->coefficient( leadingVar, _constraintB->maxDegree( leadingVar ) ) );
+            ex lhsA    = ex( _constraintA->mLhs );
+            ex lhsB    = ex( _constraintB->mLhs );
             if( lcoeffA.info( info_flags::rational ) && lcoeffB.info( info_flags::rational ) )
             {
                 if( lcoeffB.info( info_flags::positive ) )
@@ -1451,11 +1451,11 @@ namespace smtrat
             {
                 return 0;
             }
-            switch( _constraintB->load()->relation() )
+            switch( _constraintB->relation() )
             {
                 case CR_EQ:
                 {
-                    switch( _constraintA->load()->relation() )
+                    switch( _constraintA->relation() )
                     {
                         case CR_EQ:
                         {
@@ -1563,7 +1563,7 @@ namespace smtrat
                 }
                 case CR_NEQ:
                 {
-                    switch( _constraintA->load()->relation() )
+                    switch( _constraintA->relation() )
                     {
                         case CR_EQ:
                         {
@@ -1655,7 +1655,7 @@ namespace smtrat
                 }
                 case CR_LESS:
                 {
-                    switch( _constraintA->load()->relation() )
+                    switch( _constraintA->relation() )
                     {
                         case CR_EQ:
                         {
@@ -1755,7 +1755,7 @@ namespace smtrat
                 }
                 case CR_GREATER:
                 {
-                    switch( _constraintA->load()->relation() )
+                    switch( _constraintA->relation() )
                     {
                         case CR_EQ:
                         {
@@ -1857,7 +1857,7 @@ namespace smtrat
                 }
                 case CR_LEQ:
                 {
-                    switch( _constraintA->load()->relation() )
+                    switch( _constraintA->relation() )
                     {
                         case CR_EQ:
                         {
@@ -1967,7 +1967,7 @@ namespace smtrat
                 }
                 case CR_GEQ:
                 {
-                    switch( _constraintA->load()->relation() )
+                    switch( _constraintA->relation() )
                     {
                         case CR_EQ:
                         {
@@ -2092,12 +2092,12 @@ namespace smtrat
      *
      * @return
      */
-    atomic<const Constraint*>* Constraint::mergeConstraints( atomic<const Constraint*>* _constraintA, atomic<const Constraint*>* _constraintB )
+    const Constraint* Constraint::mergeConstraints( const Constraint* _constraintA, const Constraint* _constraintB )
     {
         CONSTRAINT_LOCK_GUARD
-        symtab::const_iterator var1 = _constraintA->load()->mVariables.begin();
-        symtab::const_iterator var2 = _constraintB->load()->mVariables.begin();
-        while( var1 != _constraintA->load()->mVariables.end() && var2 != _constraintB->load()->mVariables.end() )
+        symtab::const_iterator var1 = _constraintA->variables().begin();
+        symtab::const_iterator var2 = _constraintB->variables().begin();
+        while( var1 != _constraintA->variables().end() && var2 != _constraintB->variables().end() )
         {
             if( strcmp( var1->first.c_str(), var2->first.c_str() ) == 0 )
             {
@@ -2109,13 +2109,13 @@ namespace smtrat
                 break;
             }
         }
-        if( var1 == _constraintA->load()->mVariables.end() && var2 == _constraintB->load()->mVariables.end() )
+        if( var1 == _constraintA->variables().end() && var2 == _constraintB->variables().end() )
         {
-            switch( _constraintA->load()->relation() )
+            switch( _constraintA->relation() )
             {
                 case CR_EQ:
                 {
-                    switch( _constraintB->load()->relation() )
+                    switch( _constraintB->relation() )
                     {
                         case CR_EQ:
                         {
@@ -2123,13 +2123,13 @@ namespace smtrat
                         }
                         case CR_NEQ:
                         {
-                            ex result1 = _constraintA->load()->mLhs - _constraintB->load()->mLhs;
+                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
                             normalize( result1 );
                             if( result1 == 0 )
                             {
                                 return Formula::newConstraint( 0, CR_EQ, symtab() );
                             }
-                            ex result2 = _constraintA->load()->mLhs + _constraintB->load()->mLhs;
+                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
                             normalize( result2 );
                             if( result2 == 0 )
                             {
@@ -2139,65 +2139,65 @@ namespace smtrat
                         }
                         case CR_LESS:
                         {
-                            ex result1 = _constraintA->load()->mLhs - _constraintB->load()->mLhs;
+                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->load()->mLhs, CR_LEQ, _constraintA->load()->mVariables );
+                                return Formula::newConstraint( _constraintA->mLhs, CR_LEQ, _constraintA->variables() );
                             }
-                            ex result2 = _constraintA->load()->mLhs + _constraintB->load()->mLhs;
+                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->load()->mLhs, CR_GEQ, _constraintA->load()->mVariables );
+                                return Formula::newConstraint( _constraintA->mLhs, CR_GEQ, _constraintA->variables() );
                             }
                             return NULL;
                         }
                         case CR_GREATER:
                         {
-                            ex result1 = _constraintA->load()->mLhs - _constraintB->load()->mLhs;
+                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->load()->mLhs, CR_GEQ, _constraintA->load()->mVariables );
+                                return Formula::newConstraint( _constraintA->mLhs, CR_GEQ, _constraintA->variables() );
                             }
-                            ex result2 = _constraintA->load()->mLhs + _constraintB->load()->mLhs;
+                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->load()->mLhs, CR_LEQ, _constraintA->load()->mVariables );
+                                return Formula::newConstraint( _constraintA->mLhs, CR_LEQ, _constraintA->variables() );
                             }
                             return NULL;
                         }
                         case CR_LEQ:
                         {
-                            ex result1 = _constraintA->load()->mLhs - _constraintB->load()->mLhs;
+                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->load()->mLhs, CR_LEQ, _constraintA->load()->mVariables );
+                                return Formula::newConstraint( _constraintA->mLhs, CR_LEQ, _constraintA->variables() );
                             }
-                            ex result2 = _constraintA->load()->mLhs + _constraintB->load()->mLhs;
+                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->load()->mLhs, CR_GEQ, _constraintA->load()->mVariables );
+                                return Formula::newConstraint( _constraintA->mLhs, CR_GEQ, _constraintA->variables() );
                             }
                             return NULL;
                         }
                         case CR_GEQ:
                         {
-                            ex result1 = _constraintA->load()->mLhs - _constraintB->load()->mLhs;
+                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->load()->mLhs, CR_GEQ, _constraintA->load()->mVariables );
+                                return Formula::newConstraint( _constraintA->mLhs, CR_GEQ, _constraintA->variables() );
                             }
-                            ex result2 = _constraintA->load()->mLhs + _constraintB->load()->mLhs;
+                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintA->load()->mLhs, CR_LEQ, _constraintA->load()->mVariables );
+                                return Formula::newConstraint( _constraintA->mLhs, CR_LEQ, _constraintA->variables() );
                             }
                             return NULL;
                         }
@@ -2207,17 +2207,17 @@ namespace smtrat
                 }
                 case CR_NEQ:
                 {
-                    switch( _constraintB->load()->relation() )
+                    switch( _constraintB->relation() )
                     {
                         case CR_EQ:
                         {
-                            ex result1 = _constraintA->load()->mLhs - _constraintB->load()->mLhs;
+                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
                             normalize( result1 );
                             if( result1 == 0 )
                             {
                                 return Formula::newConstraint( 0, CR_EQ, symtab() );
                             }
-                            ex result2 = _constraintA->load()->mLhs + _constraintB->load()->mLhs;
+                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
                             normalize( result2 );
                             if( result2 == 0 )
                             {
@@ -2231,13 +2231,13 @@ namespace smtrat
                         }
                         case CR_LESS:
                         {
-                            ex result1 = _constraintA->load()->mLhs - _constraintB->load()->mLhs;
+                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
                             normalize( result1 );
                             if( result1 == 0 )
                             {
                                 return _constraintA;
                             }
-                            ex result2 = _constraintA->load()->mLhs + _constraintB->load()->mLhs;
+                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
                             normalize( result2 );
                             if( result2 == 0 )
                             {
@@ -2247,13 +2247,13 @@ namespace smtrat
                         }
                         case CR_GREATER:
                         {
-                            ex result1 = _constraintA->load()->mLhs - _constraintB->load()->mLhs;
+                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
                             normalize( result1 );
                             if( result1 == 0 )
                             {
                                 return _constraintA;
                             }
-                            ex result2 = _constraintA->load()->mLhs + _constraintB->load()->mLhs;
+                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
                             normalize( result2 );
                             if( result2 == 0 )
                             {
@@ -2275,21 +2275,21 @@ namespace smtrat
                 }
                 case CR_LESS:
                 {
-                    switch( _constraintB->load()->relation() )
+                    switch( _constraintB->relation() )
                     {
                         case CR_EQ:
                         {
-                            ex result1 = _constraintA->load()->mLhs - _constraintB->load()->mLhs;
+                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( _constraintB->load()->mLhs, CR_LEQ, _constraintB->load()->mVariables );
+                                return Formula::newConstraint( _constraintB->mLhs, CR_LEQ, _constraintB->variables() );
                             }
-                            ex result2 = _constraintA->load()->mLhs + _constraintB->load()->mLhs;
+                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintB->load()->mLhs, CR_GEQ, _constraintB->load()->mVariables );
+                                return Formula::newConstraint( _constraintB->mLhs, CR_GEQ, _constraintB->variables() );
                             }
                             return NULL;
                         }
@@ -2319,21 +2319,21 @@ namespace smtrat
                 }
                 case CR_GREATER:
                 {
-                    switch( _constraintB->load()->relation() )
+                    switch( _constraintB->relation() )
                     {
                         case CR_EQ:
                         {
-                            ex result1 = _constraintA->load()->mLhs - _constraintB->load()->mLhs;
+                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
                             normalize( result1 );
                             if( result1 == 0 )
                             {
-                                return Formula::newConstraint( _constraintB->load()->mLhs, CR_GEQ, _constraintB->load()->mVariables );
+                                return Formula::newConstraint( _constraintB->mLhs, CR_GEQ, _constraintB->variables() );
                             }
-                            ex result2 = _constraintA->load()->mLhs + _constraintB->load()->mLhs;
+                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintB->load()->mLhs, CR_LEQ, _constraintB->load()->mVariables );
+                                return Formula::newConstraint( _constraintB->mLhs, CR_LEQ, _constraintB->variables() );
                             }
                             return NULL;
                         }
@@ -2363,21 +2363,21 @@ namespace smtrat
                 }
                 case CR_LEQ:
                 {
-                    switch( _constraintB->load()->relation() )
+                    switch( _constraintB->relation() )
                     {
                         case CR_EQ:
                         {
-                            ex result1 = _constraintA->load()->mLhs - _constraintB->load()->mLhs;
+                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
                             normalize( result1 );
                             if( result1 == 0 )
                             {
                                 return _constraintA;
                             }
-                            ex result2 = _constraintA->load()->mLhs + _constraintB->load()->mLhs;
+                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintB->load()->mLhs, CR_GEQ, _constraintB->load()->mVariables );
+                                return Formula::newConstraint( _constraintB->mLhs, CR_GEQ, _constraintB->variables() );
                             }
                             return NULL;
                         }
@@ -2407,21 +2407,21 @@ namespace smtrat
                 }
                 case CR_GEQ:
                 {
-                    switch( _constraintB->load()->relation() )
+                    switch( _constraintB->relation() )
                     {
                         case CR_EQ:
                         {
-                            ex result1 = _constraintA->load()->mLhs - _constraintB->load()->mLhs;
+                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
                             normalize( result1 );
                             if( result1 == 0 )
                             {
                                 return _constraintA;
                             }
-                            ex result2 = _constraintA->load()->mLhs + _constraintB->load()->mLhs;
+                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
                             normalize( result2 );
                             if( result2 == 0 )
                             {
-                                return Formula::newConstraint( _constraintB->load()->mLhs, CR_LEQ, _constraintB->load()->mVariables );
+                                return Formula::newConstraint( _constraintB->mLhs, CR_LEQ, _constraintB->variables() );
                             }
                             return NULL;
                         }
@@ -2480,14 +2480,14 @@ namespace smtrat
      *
      *          false,  otherwise.
      */
-    bool Constraint::combineConstraints( std::atomic<const Constraint*>* _constraintA, std::atomic<const Constraint*>* _constraintB, std::atomic<const Constraint*>* _conditionconstraint )
+    bool Constraint::combineConstraints( const Constraint* _constraintA, const Constraint* _constraintB, const Constraint* _conditionconstraint )
     {
         CONSTRAINT_LOCK_GUARD
-        symtab::const_iterator var1 = _constraintA->load()->mVariables.begin();
-        symtab::const_iterator var2 = _constraintB->load()->mVariables.begin();
-        symtab::const_iterator var3 = _conditionconstraint->load()->mVariables.begin();
+        symtab::const_iterator var1 = _constraintA->variables().begin();
+        symtab::const_iterator var2 = _constraintB->variables().begin();
+        symtab::const_iterator var3 = _conditionconstraint->variables().begin();
         // Checks if the three constraints are paarwise different from each other
-        while( var1 != _constraintA->load()->mVariables.end() && var2 != _constraintB->load()->mVariables.end() )
+        while( var1 != _constraintA->variables().end() && var2 != _constraintB->variables().end() )
         {
             if( strcmp( var1->first.c_str(), var2->first.c_str() ) == 0 )
             {
@@ -2499,9 +2499,9 @@ namespace smtrat
                 return false;
             }
         }
-        var1 = _constraintA->load()->mVariables.begin();
-        var2 = _constraintB->load()->mVariables.begin();
-        while( var1 != _constraintA->load()->mVariables.end() && var3 != _conditionconstraint->load()->mVariables.end() )
+        var1 = _constraintA->variables().begin();
+        var2 = _constraintB->variables().begin();
+        while( var1 != _constraintA->variables().end() && var3 != _conditionconstraint->variables().end() )
         {
             if( strcmp( var1->first.c_str(), var3->first.c_str() ) == 0 )
             {
@@ -2513,9 +2513,9 @@ namespace smtrat
                 return false;
             }
         }
-        var1 = _constraintA->load()->mVariables.begin();
-        var3 = _conditionconstraint->load()->mVariables.begin();
-        while( var2 != _constraintB->load()->mVariables.end() && var3 != _conditionconstraint->load()->mVariables.end() )
+        var1 = _constraintA->variables().begin();
+        var3 = _conditionconstraint->variables().begin();
+        while( var2 != _constraintB->variables().end() && var3 != _conditionconstraint->variables().end() )
         {
             if( strcmp( var2->first.c_str(), var3->first.c_str() ) == 0 )
             {
@@ -2528,28 +2528,28 @@ namespace smtrat
             }
         }
         // If all constraints are different check if disjunction is redundant
-        switch( _constraintA->load()->relation() )
+        switch( _constraintA->relation() )
         {
             case CR_EQ:
             {
-                if( _constraintB->load()->relation() == CR_NEQ )
+                if( _constraintB->relation() == CR_NEQ )
                 {
-                    if( _conditionconstraint->load()->relation() == CR_EQ )
+                    if( _conditionconstraint->relation() == CR_EQ )
                     {
                         // Case: ( p = c or p != d ) and c = d
-                        ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                        ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                         normalize( result );
                         if( result == 0 )
                             return true;
-                        result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                        result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                         normalize( result );
                         if( result == 0 )
                             return true;
-                        result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                        result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                         normalize( result );
                         if( result == 0 )
                             return true;
-                        result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                        result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                         normalize( result );
                         if( result == 0 )
                             return true;
@@ -2559,26 +2559,26 @@ namespace smtrat
             }
             case CR_NEQ:
             {
-                switch( _constraintB->load()->relation() )
+                switch( _constraintB->relation() )
                 {
                     case CR_EQ:
                     {
-                        if( _conditionconstraint->load()->relation() == CR_EQ )
+                        if( _conditionconstraint->relation() == CR_EQ )
                         {
                             // Case: ( p != c or p = d ) and c = d
-                            ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                            ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                             normalize( result );
                             if( result == 0 )
                                 return true;
-                            result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                            result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                             normalize( result );
                             if( result == 0 )
                                 return true;
-                            result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                            result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                             normalize( result );
                             if( result == 0 )
                                 return true;
-                            result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                            result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                             normalize( result );
                             if( result == 0 )
                                 return true;
@@ -2589,15 +2589,15 @@ namespace smtrat
                     {
                         // Case: ( p != d or p < c ) and c > d
                         // or      ( p != d or p < c ) and c < d
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LESS:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2605,11 +2605,11 @@ namespace smtrat
                             }
                             case CR_GREATER:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2621,15 +2621,15 @@ namespace smtrat
                     }
                     case CR_GREATER:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LESS:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2637,11 +2637,11 @@ namespace smtrat
                             }
                             case CR_GREATER:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2653,15 +2653,15 @@ namespace smtrat
                     }
                     case CR_LEQ:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2669,11 +2669,11 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2685,15 +2685,15 @@ namespace smtrat
                     }
                     case CR_GEQ:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2701,11 +2701,11 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2721,19 +2721,19 @@ namespace smtrat
             }
             case CR_LESS:
             {
-                switch( _constraintB->load()->relation() )
+                switch( _constraintB->relation() )
                 {
                     case CR_NEQ:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LESS:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2741,11 +2741,11 @@ namespace smtrat
                             }
                             case CR_GREATER:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2757,11 +2757,11 @@ namespace smtrat
                     }
                     case CR_LESS:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LESS:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2769,7 +2769,7 @@ namespace smtrat
                             }
                             case CR_GREATER:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2781,11 +2781,11 @@ namespace smtrat
                     }
                     case CR_GREATER:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LESS:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2793,7 +2793,7 @@ namespace smtrat
                             }
                             case CR_GREATER:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2805,11 +2805,11 @@ namespace smtrat
                     }
                     case CR_LEQ:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2817,7 +2817,7 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2829,11 +2829,11 @@ namespace smtrat
                     }
                     case CR_GEQ:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2841,7 +2841,7 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2857,19 +2857,19 @@ namespace smtrat
             }
             case CR_GREATER:
             {
-                switch( _constraintB->load()->relation() )
+                switch( _constraintB->relation() )
                 {
                     case CR_NEQ:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LESS:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2877,11 +2877,11 @@ namespace smtrat
                             }
                             case CR_GREATER:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2893,11 +2893,11 @@ namespace smtrat
                     }
                     case CR_LESS:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LESS:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2905,7 +2905,7 @@ namespace smtrat
                             }
                             case CR_GREATER:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2917,11 +2917,11 @@ namespace smtrat
                     }
                     case CR_GREATER:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LESS:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2929,7 +2929,7 @@ namespace smtrat
                             }
                             case CR_GREATER:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2941,11 +2941,11 @@ namespace smtrat
                     }
                     case CR_LEQ:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2953,7 +2953,7 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2965,11 +2965,11 @@ namespace smtrat
                     }
                     case CR_GEQ:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2977,7 +2977,7 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -2993,19 +2993,19 @@ namespace smtrat
             }
             case CR_LEQ:
             {
-                switch( _constraintB->load()->relation() )
+                switch( _constraintB->relation() )
                 {
                     case CR_NEQ:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3013,11 +3013,11 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3029,11 +3029,11 @@ namespace smtrat
                     }
                     case CR_LESS:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3041,7 +3041,7 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3053,11 +3053,11 @@ namespace smtrat
                     }
                     case CR_GREATER:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3065,7 +3065,7 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3077,11 +3077,11 @@ namespace smtrat
                     }
                     case CR_LEQ:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3089,7 +3089,7 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3101,11 +3101,11 @@ namespace smtrat
                     }
                     case CR_GEQ:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3113,7 +3113,7 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3129,19 +3129,19 @@ namespace smtrat
             }
             case CR_GEQ:
             {
-                switch( _constraintB->load()->relation() )
+                switch( _constraintB->relation() )
                 {
                     case CR_NEQ:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3149,11 +3149,11 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
-                                result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3165,11 +3165,11 @@ namespace smtrat
                     }
                     case CR_LESS:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3177,7 +3177,7 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3189,11 +3189,11 @@ namespace smtrat
                     }
                     case CR_GREATER:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3201,7 +3201,7 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3213,11 +3213,11 @@ namespace smtrat
                     }
                     case CR_LEQ:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3225,7 +3225,7 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs - _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3237,11 +3237,11 @@ namespace smtrat
                     }
                     case CR_GEQ:
                     {
-                        switch( _conditionconstraint->load()->relation() )
+                        switch( _conditionconstraint->relation() )
                         {
                             case CR_LEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs + _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;
@@ -3249,7 +3249,7 @@ namespace smtrat
                             }
                             case CR_GEQ:
                             {
-                                ex result = _constraintA->load()->mLhs + _constraintB->load()->mLhs - _conditionconstraint->load()->mLhs;
+                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
                                 normalize( result );
                                 if( result == 0 )
                                     return true;

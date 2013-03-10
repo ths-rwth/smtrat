@@ -74,7 +74,7 @@ namespace smtrat
             union
             {
                 std::list<Formula*>* mpSubformulas;
-                Constraint_Atom    mpConstraint;
+                const Constraint*    mpConstraint;
                 const std::string*   mpIdentifier;
             };
             /// The formula which contains this formula as sub formula.
@@ -94,7 +94,7 @@ namespace smtrat
             Formula();
             Formula( const Type );
             Formula( const std::string& );
-            Formula( Constraint_Atom _constraint );
+            Formula( const Constraint* _constraint );
             Formula( const Formula& );
 
             ~Formula();
@@ -250,10 +250,22 @@ namespace smtrat
                 return *mpSubformulas;
             }
 
-            Constraint_Atom pConstraint() const
+            const Constraint* const pConstraint() const
             {
                 assert( mType == REALCONSTRAINT );
                 return mpConstraint;
+            }
+
+            const Constraint* pConstraint()
+            {
+                assert( mType == REALCONSTRAINT );
+                return mpConstraint;
+            }
+
+            const Constraint& constraint() const
+            {
+                assert( mType == REALCONSTRAINT );
+                return *mpConstraint;
             }
 
             const std::string& identifier() const
@@ -425,7 +437,7 @@ namespace smtrat
                 mpFather = NULL;
             }
 
-            static Constraint_Atom newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
+            static const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
             {
                 return mpConstraintPool->newConstraint( _lhs, _rel, _variables );
             }
@@ -537,7 +549,7 @@ namespace smtrat
             Condition getPropositions();
             void setFather( Formula* );
             void addSubformula( Formula* );
-            void addSubformula( Constraint_Atom );
+            void addSubformula( const Constraint* );
             iterator replace( iterator, Formula* );
             void pop_back();
             void pop_front();
@@ -555,7 +567,7 @@ namespace smtrat
             void printProposition( std::ostream& _out = std::cout, const std::string _init = "" ) const;
             friend std::ostream& operator <<( std::ostream&, const Formula& );
             std::string toString( bool = false ) const;
-            void getConstraints( std::vector<Constraint_Atom>& ) const;
+            void getConstraints( std::vector<const Constraint*>& ) const;
             static void toCNF( Formula&, bool = true );
             static bool resolveNegation( Formula&, bool = true );
             static std::string FormulaTypeToString( Type type);
@@ -565,14 +577,14 @@ namespace smtrat
 
         private:
 
-            void addConstraintPropositions( Constraint_Atom );
+            void addConstraintPropositions( const Constraint& );
     };
 
     struct FormulaIteratorConstraintIdCompare
     {
         bool operator() ( Formula::const_iterator i1, Formula::const_iterator i2 ) const
         {
-            return (*i1)->pConstraint()->load()->id() < (*i2)->pConstraint()->load()->id();
+            return (*i1)->pConstraint()->id() < (*i2)->pConstraint()->id();
         }
     };
 

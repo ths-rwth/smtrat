@@ -47,7 +47,6 @@
 #include <sstream>
 #include <assert.h>
 #include <mutex>
-#include <atomic>
 #include <ginacra/utilities.h>
 #include "config.h"
 
@@ -158,12 +157,12 @@ namespace smtrat
             /*
              * Methods:
              */
-            const GiNaC::ex lhs() const
+            const GiNaC::ex& lhs() const
             {
                 return mLhs;
             }
 
-            const GiNaC::symtab variables() const
+            const GiNaC::symtab& variables() const
             {
                 return mVariables;
             }
@@ -178,7 +177,7 @@ namespace smtrat
                 return mID;
             }
 
-            unsigned& rId() // TODO: Only the constraint pool should have access to this method (friend)
+            unsigned& rId()
             {
                 return mID;
             }
@@ -193,7 +192,7 @@ namespace smtrat
                 return mSecondHash;
             }
 
-            const GiNaC::ex multiRootLessLhs() const
+            const GiNaC::ex& multiRootLessLhs() const
             {
                 if( mMultiRootLessLhs != 0 ) return mMultiRootLessLhs;
                 else return mLhs;
@@ -204,7 +203,7 @@ namespace smtrat
                 return (mFactorization != 0);
             }
 
-            const GiNaC::ex factorization() const
+            const GiNaC::ex& factorization() const
             {
                 if( mFactorization != 0 ) return mFactorization;
                 else return mLhs;
@@ -235,7 +234,7 @@ namespace smtrat
                 return mMaxMonomeDegree;
             }
 
-            const GiNaC::numeric constantPart() const
+            const GiNaC::numeric& constantPart() const
             {
                 return mConstantPart;
             }
@@ -310,7 +309,7 @@ namespace smtrat
             }
 
             // Data access methods (read only).
-            GiNaC::ex variable( const std::string& ) const;
+            bool variable( const std::string&, GiNaC::symbol& ) const;
             bool hasVariable( const std::string& ) const;
             unsigned isConsistent() const;
             unsigned satisfiedBy( GiNaC::exmap& ) const;
@@ -340,43 +339,41 @@ namespace smtrat
             std::string smtlibString() const;
 
             //
-            static signed compare( std::atomic<const Constraint*>*, std::atomic<const Constraint*>* );
-            static std::atomic<const Constraint*>* mergeConstraints( std::atomic<const Constraint*>*, std::atomic<const Constraint*>* );
-            static bool combineConstraints( std::atomic<const Constraint*>*, std::atomic<const Constraint*>*, std::atomic<const Constraint*>* );
+            static signed compare( const Constraint*, const Constraint* );
+            static const Constraint* mergeConstraints( const Constraint*, const Constraint* );
+            static bool combineConstraints( const Constraint*, const Constraint*, const Constraint* );
     };
 
-    typedef std::vector<std::atomic<const Constraint*>*>                                vec_const_pConstraint;
-    typedef std::vector<std::set<std::atomic<const Constraint*>*> >                     vec_set_const_pConstraint;
-    typedef std::map<std::atomic<const Constraint*>* , vec_set_const_pConstraint> constraintOriginsMap;
+    typedef std::vector<const Constraint*>                                vec_const_pConstraint;
+    typedef std::vector<std::set<const Constraint*> >                     vec_set_const_pConstraint;
+    typedef std::map<const Constraint* const , vec_set_const_pConstraint> constraintOriginsMap;
     struct constraintPointerComp
     {
-        bool operator ()( std::atomic<const Constraint*>* pConstraintA, std::atomic<const Constraint*>* pConstraintB ) const
+        bool operator ()( const Constraint* const pConstraintA, const Constraint* const pConstraintB ) const
         {
-            return (*pConstraintA->load()) < (*pConstraintB->load());
+            return (*pConstraintA) < (*pConstraintB);
         }
     };
 
     struct constraintIdComp
     {
-        bool operator() (std::atomic<const Constraint*>* pConstraintA, std::atomic<const Constraint*>* pConstraintB ) const
+        bool operator() (const Constraint* const pConstraintA, const Constraint* const pConstraintB ) const
         {
-            return pConstraintA->load()->id() < pConstraintB->load()->id();
+            return pConstraintA->id() < pConstraintB->id();
         }
     };
 
-    typedef std::set< std::atomic<const Constraint*>*, constraintPointerComp > ConstraintSet;
+    typedef std::set< const Constraint*, constraintPointerComp > ConstraintSet;
 }    // namespace smtrat
 
 #ifdef SMTRAT_STRAT_PARALLEL_MODE
 #define CONSTRAINT_LOCK_GUARD std::lock_guard<std::recursive_mutex> lock( smtrat::Constraint::mMutex );
 #define CONSTRAINT_LOCK smtrat::Constraint::mMutex.lock();
 #define CONSTRAINT_UNLOCK smtrat::Constraint::mMutex.unlock();
-typedef std::atomic< const smtrat::Constraint* >* Constraint_Atom;
 #else
 #define CONSTRAINT_LOCK_GUARD
 #define CONSTRAINT_LOCK
 #define CONSTRAINT_UNLOCK
-typedef std::atomic< const smtrat::Constraint* >* Constraint_Atom;
 #endif
 
 #endif

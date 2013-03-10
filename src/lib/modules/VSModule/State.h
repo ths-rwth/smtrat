@@ -213,7 +213,7 @@ struct subComp
 
 typedef std::vector	< const Condition* >          ConditionVector					;
 typedef std::vector	< ConditionVector >           DisjunctionOfConditionConjunctions;
-typedef std::vector	< Constraint_Atom > TS_ConstraintConjunction			;
+typedef std::vector	< const smtrat::Constraint* > TS_ConstraintConjunction			;
 
 
 class State
@@ -336,7 +336,7 @@ public:
 	// Data access methods (read only).
 	unsigned                                treeDepth							( ) 														const	;
 	bool									substitutionApplicable  			( )				        									const	;
-	bool									substitutionApplicable  			( Constraint_Atom )                             			const	;
+	bool									substitutionApplicable  			( const smtrat::Constraint& )								const	;
 	bool									hasNoninvolvedCondition 			( )															const	;
 	bool									hasChildWithID 						( )															const	;
 	bool									occursInEquation					( const std::string& )										const   ;
@@ -351,7 +351,7 @@ public:
 	bool									unfinishedAncestor					( State*& )															;
 	bool 									bestCondition						( const Condition*&,
 																				  unsigned 		 )													;
-	ConditionVector::iterator 				constraintExists 					( Constraint_Atom )         										;
+	ConditionVector::iterator 				constraintExists 					( const smtrat::Constraint& )										;
 
 	// Manipulating methods.
 	void 									simplify							( )																	;
@@ -373,7 +373,7 @@ public:
 	bool 									refreshConditions					( )																	;
 	void									initConditionFlags					( )																	;
 	bool 									initIndex							( const GiNaC::symtab& )											;
-	void									addCondition						( Constraint_Atom	   ,
+	void									addCondition						( const smtrat::Constraint*	   ,
 																  				  const ConditionSet&   ,
 																				  const unsigned 		   ,
 																				  const bool 				)										;
@@ -432,8 +432,8 @@ public:
 	static unsigned 						coveringSet							( const ConditionSetSetSet&,
 																		 		  ConditionSet&			  ,
 																		 		  const unsigned		 	   ) 									;
-	static signed 							compareConstraints					( Constraint_Atom,
-																				  Constraint_Atom )                     							;
+	static signed 							compareConstraints					( const smtrat::Constraint&,
+																				  const smtrat::Constraint& )										;
 
 };
 

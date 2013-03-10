@@ -45,7 +45,7 @@ namespace vs
 
     #ifndef TS_CONSTRAINT_CONJUNCTION
     #define TS_CONSTRAINT_CONJUNCTION
-    typedef std::vector<Constraint_Atom> TS_ConstraintConjunction;
+    typedef std::vector<const smtrat::Constraint*> TS_ConstraintConjunction;
     #endif
     typedef std::vector<TS_ConstraintConjunction> DisjunctionOfConstraintConjunctions;
 
@@ -53,24 +53,24 @@ namespace vs
      * Methods:
      */
 
-    void substitute( Constraint_Atom, const Substitution&, DisjunctionOfConstraintConjunctions& );
-    void substituteNormal( Constraint_Atom, const Substitution&, DisjunctionOfConstraintConjunctions& );
-    void substituteNormalSqrt( Constraint_Atom, const Substitution&, const GiNaC::ex&, DisjunctionOfConstraintConjunctions& );
-    void substituteNormalSqrtEq( Constraint_Atom,
+    void substitute( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    void substituteNormal( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    void substituteNormalSqrt( const smtrat::Constraint*, const Substitution&, const GiNaC::ex&, DisjunctionOfConstraintConjunctions& );
+    void substituteNormalSqrtEq( const smtrat::Constraint*,
                                  const Substitution&,
                                  const GiNaC::ex&,
                                  const GiNaC::ex&,
                                  const GiNaC::ex&,
                                  const GiNaC::symtab&,
                                  DisjunctionOfConstraintConjunctions& );
-    void substituteNormalSqrtNeq( Constraint_Atom,
+    void substituteNormalSqrtNeq( const smtrat::Constraint*,
                                   const Substitution&,
                                   const GiNaC::ex&,
                                   const GiNaC::ex&,
                                   const GiNaC::ex&,
                                  const GiNaC::symtab&,
                                   DisjunctionOfConstraintConjunctions& );
-    void substituteNormalSqrtLess( Constraint_Atom,
+    void substituteNormalSqrtLess( const smtrat::Constraint*,
                                    const Substitution&,
                                    const GiNaC::ex&,
                                    const GiNaC::ex&,
@@ -78,7 +78,7 @@ namespace vs
                                    const GiNaC::ex&,
                                  const GiNaC::symtab&,
                                    DisjunctionOfConstraintConjunctions& );
-    void substituteNormalSqrtLeq( Constraint_Atom,
+    void substituteNormalSqrtLeq( const smtrat::Constraint*,
                                   const Substitution&,
                                   const GiNaC::ex&,
                                   const GiNaC::ex&,
@@ -86,19 +86,19 @@ namespace vs
                                   const GiNaC::ex&,
                                  const GiNaC::symtab&,
                                   DisjunctionOfConstraintConjunctions& );
-    void substitutePlusEps( Constraint_Atom, const Substitution&, DisjunctionOfConstraintConjunctions& );
-    void substituteEpsGradients( Constraint_Atom,
+    void substitutePlusEps( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    void substituteEpsGradients( const smtrat::Constraint*,
                                  const Substitution&,
                                  const smtrat::Constraint_Relation,
                                  DisjunctionOfConstraintConjunctions& );
-    void substituteMinusInf( Constraint_Atom, const Substitution&, DisjunctionOfConstraintConjunctions& );
-    void substituteInfLessGreater( Constraint_Atom, const Substitution&, DisjunctionOfConstraintConjunctions& );
-    void substituteTrivialCase( Constraint_Atom, const Substitution&, DisjunctionOfConstraintConjunctions& );
-    void substituteNotTrivialCase( Constraint_Atom, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    void substituteMinusInf( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    void substituteInfLessGreater( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    void substituteTrivialCase( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    void substituteNotTrivialCase( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void simplify( DisjunctionOfConstraintConjunctions& );
     void splitProducts( DisjunctionOfConstraintConjunctions& );
     DisjunctionOfConstraintConjunctions splitProducts( const TS_ConstraintConjunction& );
-    DisjunctionOfConstraintConjunctions getSignCombinations( Constraint_Atom );
+    DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::Constraint* );
     void getOddBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >&, unsigned = 0 );
     void getEvenBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >&, unsigned = 0 );
     GiNaC::ex simplify( const GiNaC::ex&, const GiNaC::symtab&  );

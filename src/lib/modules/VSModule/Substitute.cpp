@@ -47,7 +47,7 @@ namespace vs
      * @param _substitutionResults  The vector, in which to store the results of this substitution.
      *
      */
-    void substitute( Constraint_Atom _constraint,
+    void substitute( const smtrat::Constraint* _constraint,
                      const Substitution& _substitution,
                      DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
@@ -99,200 +99,202 @@ namespace vs
      * @param _substitution         The substitution to apply.
      * @param _substitutionResults  The vector, in which to store the results of this substitution.
      */
-    void substituteNormal( Constraint_Atom _constraint,
+    void substituteNormal( const smtrat::Constraint* _constraint,
                            const Substitution& _substitution,
                            DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
-        ex sym = _constraint->load()->variable( _substitution.variable() );
-        if( sym == 0 )
-        {
-            _substitutionResults.push_back( TS_ConstraintConjunction() );
-            _substitutionResults.back().push_back( _constraint );
-            return;
-        }
-        /*
-         * Get the variables of the constraint merged with those of the substitution.
-         */
-        symtab variables = symtab();
-        symtab variablesA = _constraint->load()->variables();
-        for( symtab::const_iterator var = variablesA.begin(); var != variablesA.end(); ++var )
-        {
-            variables.insert( *var );
-        }
-        for( symtab::const_iterator var = _substitution.termVariables().begin(); var != _substitution.termVariables().end(); ++var )
-        {
-            variables.insert( *var );
-        }
-
-        /*
-        * Collect all necessary left hand sides to create the new conditions of all cases
-        * referring to the virtual substitution.
-        */
-        SqrtEx substituted = SqrtEx::subBySqrtEx( _constraint->load()->lhs(), sym, _substitution.term(), variables );
-
-        #ifdef VS_DEBUG_SUBSTITUTION
-        cout << "Result of common substitution:" << substituted << endl;
-        #endif
-
-        /*
-        *                               q
-        * The term then looks like:    ---
-        *                               s
-        */
-        if( !substituted.hasSqrt() )
+        symbol sym;
+        if( _constraint->variable( _substitution.variable(), sym ) )
         {
             /*
-            * Create the new decision tuples.
-            */
-            if( _constraint->load()->relation() == smtrat::CR_EQ || _constraint->load()->relation() == smtrat::CR_NEQ )
+             * Get the variables of the constraint merged with those of the substitution.
+             */
+            symtab variables = symtab();
+            for( symtab::const_iterator var = _constraint->variables().begin(); var != _constraint->variables().end(); ++var )
             {
-                ex q = simplify( substituted.constantPart(), variables );
-                /*
-                * Add conjunction (q = 0) to the substitution result.
-                */
-                _substitutionResults.push_back( TS_ConstraintConjunction() );
-                _substitutionResults.back().push_back( smtrat::Formula::newConstraint( q, _constraint->load()->relation(), variables ) );
+                variables.insert( *var );
             }
-            else
+            for( symtab::const_iterator var = _substitution.termVariables().begin(); var != _substitution.termVariables().end(); ++var )
             {
-                ex q = simplify( substituted.constantPart(), variables );
-                if( fmod( _constraint->load()->maxDegree( sym ), 2.0 ) != 0.0 )
-                {
-                    ex s = simplify( substituted.denominator(), variables );
-                    /*
-                    * Add conjunction (s>0 and q </>/<=/>= 0) to the substitution result.
-                    */
-                    _substitutionResults.push_back( TS_ConstraintConjunction() );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_GREATER, variables ) );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( q, _constraint->load()->relation(), variables ) );
+                variables.insert( *var );
+            }
 
+            /*
+             * Collect all necessary left hand sides to create the new conditions of all cases
+             * referring to the virtual substitution.
+             */
+            SqrtEx substituted = SqrtEx::subBySqrtEx( _constraint->lhs(), ex( sym ), _substitution.term(), variables );
+
+            #ifdef VS_DEBUG_SUBSTITUTION
+            cout << "Result of common substitution:" << substituted << endl;
+            #endif
+
+            /*
+             *                               q
+             * The term then looks like:    ---
+             *                               s
+             */
+            if( !substituted.hasSqrt() )
+            {
+                /*
+                 * Create the new decision tuples.
+                 */
+                if( _constraint->relation() == smtrat::CR_EQ || _constraint->relation() == smtrat::CR_NEQ )
+                {
+                    ex q = simplify( substituted.constantPart(), variables );
                     /*
-                    * Add conjunction (s<0 and q >/</>=/<= 0) to the substitution result.
-                    */
-                    smtrat::Constraint_Relation inverseRelation;
-                    switch( _constraint->load()->relation() )
-                    {
-                        case smtrat::CR_LESS:
-                            inverseRelation = smtrat::CR_GREATER;
-                            break;
-                        case smtrat::CR_GREATER:
-                            inverseRelation = smtrat::CR_LESS;
-                            break;
-                        case smtrat::CR_LEQ:
-                            inverseRelation = smtrat::CR_GEQ;
-                            break;
-                        case smtrat::CR_GEQ:
-                            inverseRelation = smtrat::CR_LEQ;
-                            break;
-                        default:
-                            assert( false );
-                            inverseRelation = smtrat::CR_EQ;
-                    }
+                     * Add conjunction (q = 0) to the substitution result.
+                     */
                     _substitutionResults.push_back( TS_ConstraintConjunction() );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_LESS, variables ) );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( q, inverseRelation, variables ) );
+                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( q, _constraint->relation(), variables ) );
                 }
                 else
                 {
-                    /*
-                    * Add conjunction (f(-c/b)*b^k </>/<=/>= 0) to the substitution result.
-                    */
-                    _substitutionResults.push_back( TS_ConstraintConjunction() );
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( q, _constraint->load()->relation(), variables ) );
+                    ex q = simplify( substituted.constantPart(), variables );
+                    if( fmod( _constraint->maxDegree( ex( sym ) ), 2.0 ) != 0.0 )
+                    {
+                        ex s = simplify( substituted.denominator(), variables );
+                        /*
+                         * Add conjunction (s>0 and q </>/<=/>= 0) to the substitution result.
+                         */
+                        _substitutionResults.push_back( TS_ConstraintConjunction() );
+                        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_GREATER, variables ) );
+                        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( q, _constraint->relation(), variables ) );
+
+                        /*
+                         * Add conjunction (s<0 and q >/</>=/<= 0) to the substitution result.
+                         */
+                        smtrat::Constraint_Relation inverseRelation;
+                        switch( _constraint->relation() )
+                        {
+                            case smtrat::CR_LESS:
+                                inverseRelation = smtrat::CR_GREATER;
+                                break;
+                            case smtrat::CR_GREATER:
+                                inverseRelation = smtrat::CR_LESS;
+                                break;
+                            case smtrat::CR_LEQ:
+                                inverseRelation = smtrat::CR_GEQ;
+                                break;
+                            case smtrat::CR_GEQ:
+                                inverseRelation = smtrat::CR_LEQ;
+                                break;
+                            default:
+                                assert( false );
+                                inverseRelation = smtrat::CR_EQ;
+                        }
+                        _substitutionResults.push_back( TS_ConstraintConjunction() );
+                        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_LESS, variables ) );
+                        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( q, inverseRelation, variables ) );
+                    }
+                    else
+                    {
+                        /*
+                         * Add conjunction (f(-c/b)*b^k </>/<=/>= 0) to the substitution result.
+                         */
+                        _substitutionResults.push_back( TS_ConstraintConjunction() );
+                        _substitutionResults.back().push_back( smtrat::Formula::newConstraint( q, _constraint->relation(), variables ) );
+                    }
+                }
+            }
+
+            /*
+             *                              q+r*sqrt(b^2-4ac)
+             * The term then looks like:    -----------------
+             *                                     s
+             */
+            else
+            {
+                ex s = 1;
+                if( fmod( _constraint->maxDegree( ex( sym ) ), 2.0 ) != 0.0 )
+                {
+                    s = substituted.denominator();
+                }
+
+                switch( _constraint->relation() )
+                {
+                    case smtrat::CR_EQ:
+                    {
+                        substituteNormalSqrtEq( _constraint,
+                                                _substitution,
+                                                substituted.radicand(),
+                                                substituted.constantPart(),
+                                                substituted.factor(),
+                                                variables,
+                                                _substitutionResults );
+                        break;
+                    }
+                    case smtrat::CR_NEQ:
+                    {
+                        substituteNormalSqrtNeq( _constraint,
+                                                 _substitution,
+                                                 substituted.radicand(),
+                                                 substituted.constantPart(),
+                                                 substituted.factor(),
+                                                 variables,
+                                                 _substitutionResults );
+                        break;
+                    }
+                    case smtrat::CR_LESS:
+                    {
+                        substituteNormalSqrtLess( _constraint,
+                                                  _substitution,
+                                                  substituted.radicand(),
+                                                  substituted.constantPart(),
+                                                  substituted.factor(),
+                                                  s,
+                                                  variables,
+                                                  _substitutionResults );
+                        break;
+                    }
+                    case smtrat::CR_GREATER:
+                    {
+                        substituteNormalSqrtLess( _constraint,
+                                                  _substitution,
+                                                  substituted.radicand(),
+                                                  substituted.constantPart(),
+                                                  substituted.factor(),
+                                                  -s,
+                                                  variables,
+                                                  _substitutionResults );
+                        break;
+                    }
+                    case smtrat::CR_LEQ:
+                    {
+                        substituteNormalSqrtLeq( _constraint,
+                                                 _substitution,
+                                                 substituted.radicand(),
+                                                 substituted.constantPart(),
+                                                 substituted.factor(),
+                                                 s,
+                                                 variables,
+                                                 _substitutionResults );
+                        break;
+                    }
+                    case smtrat::CR_GEQ:
+                    {
+                        substituteNormalSqrtLeq( _constraint,
+                                                 _substitution,
+                                                 substituted.radicand(),
+                                                 substituted.constantPart(),
+                                                 substituted.factor(),
+                                                 -s,
+                                                 variables,
+                                                 _substitutionResults );
+                        break;
+                    }
+                    default:
+                        cout << "Error in substituteNormal: Unexpected relation symbol" << endl;
+                        assert( false );
                 }
             }
         }
-
-        /*
-        *                              q+r*sqrt(b^2-4ac)
-        * The term then looks like:    -----------------
-        *                                     s
-        */
         else
         {
-            ex s = 1;
-            if( fmod( _constraint->load()->maxDegree( sym ), 2.0 ) != 0.0 )
-            {
-                s = substituted.denominator();
-            }
-
-            switch( _constraint->load()->relation() )
-            {
-                case smtrat::CR_EQ:
-                {
-                    substituteNormalSqrtEq( _constraint,
-                                            _substitution,
-                                            substituted.radicand(),
-                                            substituted.constantPart(),
-                                            substituted.factor(),
-                                            variables,
-                                            _substitutionResults );
-                    break;
-                }
-                case smtrat::CR_NEQ:
-                {
-                    substituteNormalSqrtNeq( _constraint,
-                                                _substitution,
-                                                substituted.radicand(),
-                                                substituted.constantPart(),
-                                                substituted.factor(),
-                                                variables,
-                                                _substitutionResults );
-                    break;
-                }
-                case smtrat::CR_LESS:
-                {
-                    substituteNormalSqrtLess( _constraint,
-                                                _substitution,
-                                                substituted.radicand(),
-                                                substituted.constantPart(),
-                                                substituted.factor(),
-                                                s,
-                                                variables,
-                                                _substitutionResults );
-                    break;
-                }
-                case smtrat::CR_GREATER:
-                {
-                    substituteNormalSqrtLess( _constraint,
-                                                _substitution,
-                                                substituted.radicand(),
-                                                substituted.constantPart(),
-                                                substituted.factor(),
-                                                -s,
-                                                variables,
-                                                _substitutionResults );
-                    break;
-                }
-                case smtrat::CR_LEQ:
-                {
-                    substituteNormalSqrtLeq( _constraint,
-                                                _substitution,
-                                                substituted.radicand(),
-                                                substituted.constantPart(),
-                                                substituted.factor(),
-                                                s,
-                                                variables,
-                                                _substitutionResults );
-                    break;
-                }
-                case smtrat::CR_GEQ:
-                {
-                    substituteNormalSqrtLeq( _constraint,
-                                                _substitution,
-                                                substituted.radicand(),
-                                                substituted.constantPart(),
-                                                substituted.factor(),
-                                                -s,
-                                                variables,
-                                                _substitutionResults );
-                    break;
-                }
-                default:
-                    cout << "Error in substituteNormal: Unexpected relation symbol" << endl;
-                    assert( false );
-            }
+            _substitutionResults.push_back( TS_ConstraintConjunction() );
+            _substitutionResults.back().push_back( _constraint );
         }
+
         simplify( _substitutionResults );
     }
 
@@ -313,7 +315,7 @@ namespace vs
      * @param _variables            The variables, which the substitution term and the condition to
      *                              substitute in contain.
      */
-    void substituteNormalSqrtEq( Constraint_Atom _constraint,
+    void substituteNormalSqrtEq( const smtrat::Constraint* _constraint,
                                  const Substitution& _substitution,
                                  const ex& _radicand,
                                  const ex& _q,
@@ -325,7 +327,7 @@ namespace vs
         cout << "substituteNormalSqrtEq" << endl;
         #endif
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
-        _constraint->load()->normalize( lhs );
+        _constraint->normalize( lhs );
         lhs = simplify( lhs, _variables );
         ex q = simplify( _q, _variables );
         ex r = simplify( _r, _variables );
@@ -387,7 +389,7 @@ namespace vs
      * @param _variables            The variables, which the substitution term and the condition to
      *                              substitute in contain.
      */
-    void substituteNormalSqrtNeq( Constraint_Atom _constraint,
+    void substituteNormalSqrtNeq( const smtrat::Constraint* _constraint,
                                   const Substitution& _substitution,
                                   const ex& _radicand,
                                   const ex& _q,
@@ -399,7 +401,7 @@ namespace vs
         cout << "substituteNormalSqrtNeq" << endl;
         #endif
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
-        _constraint->load()->normalize( lhs );
+        _constraint->normalize( lhs );
         lhs = simplify( lhs, _variables );
         ex q = simplify( _q, _variables );
         ex r = simplify( _r, _variables );
@@ -452,7 +454,7 @@ namespace vs
      * @param _variables            The variables, which the substitution term and the condition to
      *                              substitute in contain.
      */
-    void substituteNormalSqrtLess( Constraint_Atom _constraint,
+    void substituteNormalSqrtLess( const smtrat::Constraint* _constraint,
                                    const Substitution& _substitution,
                                    const ex& _radicand,
                                    const ex& _q,
@@ -465,7 +467,7 @@ namespace vs
         cout << "substituteNormalSqrtLess" << endl;
         #endif
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
-        _constraint->load()->normalize( lhs );
+        _constraint->normalize( lhs );
         lhs = simplify( lhs, _variables );
         ex s = simplify( _s, _variables );
         ex q = simplify( _q, _variables );
@@ -559,7 +561,7 @@ namespace vs
      * @param _variables            The variables, which the substitution term and the condition to
      *                              substitute in contain.
      */
-    void substituteNormalSqrtLeq( Constraint_Atom _constraint,
+    void substituteNormalSqrtLeq( const smtrat::Constraint* _constraint,
                                   const Substitution& _substitution,
                                   const ex& _radicand,
                                   const ex& _q,
@@ -572,7 +574,7 @@ namespace vs
         cout << "substituteNormalSqrtLeq" << endl;
         #endif
         ex lhs = pow( _q, 2 ) - pow( _r, 2 ) * _radicand;
-        _constraint->load()->normalize( lhs );
+        _constraint->normalize( lhs );
         lhs = simplify( lhs, _variables );
         ex s = simplify( _s, _variables );
         ex q = simplify( _q, _variables );
@@ -651,19 +653,18 @@ namespace vs
      * @param _substitution         The substitution to apply.
      * @param _substitutionResults  The vector, in which to store the results of this substitution.
      */
-    void substitutePlusEps( Constraint_Atom _constraint,
+    void substitutePlusEps( const smtrat::Constraint* _constraint,
                             const Substitution& _substitution,
                             DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
         #ifdef VS_DEBUG_METHODS
         cout << "substitutePlusEps" << endl;
         #endif
-        symtab variables = _constraint->load()->variables();
-        if( !variables.empty() )
+        if( !_constraint->variables().empty() )
         {
-            if( variables.find( _substitution.variable() ) != variables.end() )
+            if( _constraint->variables().find( _substitution.variable() ) != _constraint->variables().end() )
             {
-                switch( _constraint->load()->relation() )
+                switch( _constraint->relation() )
                 {
                     case smtrat::CR_EQ:
                     {
@@ -729,7 +730,7 @@ namespace vs
      * @param _relation2            The relation symbol, which compares a odd derivative with zero.
      * @param _substitutionResults  The vector, in which to store the results of this substitution.
      */
-    void substituteEpsGradients( Constraint_Atom _constraint,
+    void substituteEpsGradients( const smtrat::Constraint* _constraint,
                                  const Substitution& _substitution,
                                  const smtrat::Constraint_Relation _relation,
                                  DisjunctionOfConstraintConjunctions& _substitutionResults )
@@ -738,8 +739,8 @@ namespace vs
         cout << "substituteEpsGradients" << endl;
         #endif
 
-        ex sym = _constraint->load()->variable( _substitution.variable() );
-        symtab variables = _constraint->load()->variables();
+        symbol sym;
+        _constraint->variable( _substitution.variable(), sym );
 
         // Create a substitution formed by the given one without an addition of epsilon.
         Substitution substitution = Substitution( _substitution.variable(), sym, _substitution.term(), ST_NORMAL, _substitution.originalConditions() );
@@ -755,7 +756,7 @@ namespace vs
          * Call the method substituteNormal with the constraint f(x)~0 and the substitution [x -> t],
          * where the parameter relation is ~.
          */
-        collection.push_back( smtrat::Formula::newConstraint( _constraint->load()->lhs(), _relation, variables ) );
+        collection.push_back( smtrat::Formula::newConstraint( _constraint->lhs(), _relation, _constraint->variables() ) );
 
         // Check:  (f(x)~0) [x -> t]
         substituteNormal( collection.back(), substitution, _substitutionResults );
@@ -773,22 +774,22 @@ namespace vs
          * where the relation is ~.
          */
         unsigned pos = 0;
-        ex derivative = ex( _constraint->load()->lhs() );
-        while( derivative.has( sym ) )
+        ex derivative = ex( _constraint->lhs() );
+        while( derivative.has( ex( sym ) ) )
         {
             // Change the relation symbol of the last added constraint to "=".
-            Constraint_Atom constraint = smtrat::Formula::newConstraint( derivative, smtrat::CR_EQ, variables );
+            const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( derivative, smtrat::CR_EQ, _constraint->variables() );
             collection.pop_back();
             collection.push_back( constraint );
 
             // Form the derivate of the left hand side of the last added constraint.
-            derivative = constraint->load()->lhs().diff( ex_to<symbol>( sym ), 1 );
-            SqrtEx::simplify( derivative, sym );
+            derivative = constraint->lhs().diff( sym, 1 );
+            SqrtEx::simplify( derivative, ex( sym ) );
 
-            assert( derivative.degree( sym ) < (signed) collection.back()->load()->maxDegree( sym ) );
+            assert( derivative.degree( ex( sym ) ) < (signed) collection.back()->maxDegree( ex( sym ) ) );
 
             // Add the constraint f^i(x)~0.
-            collection.push_back( smtrat::Formula::newConstraint( derivative, _relation, variables ) );
+            collection.push_back( smtrat::Formula::newConstraint( derivative, _relation, _constraint->variables() ) );
 
             // Apply the substitution (without epsilon) to each constraint in the collection.
             for( unsigned i = pos; i < collection.size(); ++i )
@@ -815,23 +816,22 @@ namespace vs
      * @param _substitution         The substitution to apply.
      * @param _substitutionResults  The vector, in which to store the results of this substitution.
      */
-    void substituteMinusInf( Constraint_Atom _constraint,
+    void substituteMinusInf( const smtrat::Constraint* _constraint,
                              const Substitution& _substitution,
                              DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
         #ifdef VS_DEBUG_METHODS
         cout << "substituteMinusInf: " << endl;
         #endif
-        symtab variables = _constraint->load()->variables();
-        if( !variables.empty() )
+        if( !_constraint->variables().empty() )
         {
-            if( variables.find( _substitution.variable() ) != variables.end() )
+            if( _constraint->variables().find( _substitution.variable() ) != _constraint->variables().end() )
             {
-                if( _constraint->load()->relation() == smtrat::CR_EQ )
+                if( _constraint->relation() == smtrat::CR_EQ )
                 {
                     substituteTrivialCase( _constraint, _substitution, _substitutionResults );
                 }
-                else if( _constraint->load()->relation() == smtrat::CR_NEQ )
+                else if( _constraint->relation() == smtrat::CR_NEQ )
                 {
                     substituteNotTrivialCase( _constraint, _substitution, _substitutionResults );
                 }
@@ -863,7 +863,7 @@ namespace vs
      * @param _substitution         The substitution to apply.
      * @param _substitutionResults  The vector, in which to store the results of this substitution.
      */
-    void substituteInfLessGreater( Constraint_Atom _constraint,
+    void substituteInfLessGreater( const smtrat::Constraint* _constraint,
                                    const Substitution& _substitution,
                                    DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
@@ -873,16 +873,16 @@ namespace vs
         /*
          * Check whether the relation is not "=" or "!=".
          */
-        assert( _constraint->load()->relation() != smtrat::CR_EQ );
-        assert( _constraint->load()->relation() != smtrat::CR_NEQ );
-        ex sym = _constraint->load()->variable( _substitution.variable() );
-        symtab variables = _constraint->load()->variables();
+        assert( _constraint->relation() != smtrat::CR_EQ );
+        assert( _constraint->relation() != smtrat::CR_NEQ );
+        symbol sym;
+        _constraint->variable( _substitution.variable(), sym );
         /*
          * Determine the relation for the coefficients of the odd and even degrees.
          */
         smtrat::Constraint_Relation oddRelationType  = smtrat::CR_GREATER;
         smtrat::Constraint_Relation evenRelationType = smtrat::CR_LESS;
-        if( _constraint->load()->relation() == smtrat::CR_GREATER || _constraint->load()->relation() == smtrat::CR_GEQ )
+        if( _constraint->relation() == smtrat::CR_GREATER || _constraint->relation() == smtrat::CR_GEQ )
         {
             oddRelationType  = smtrat::CR_LESS;
             evenRelationType = smtrat::CR_GREATER;
@@ -890,7 +890,7 @@ namespace vs
         /*
          * Check all cases according to the substitution rules.
          */
-        unsigned varDegree = _constraint->load()->maxDegree( sym );
+        unsigned varDegree = _constraint->maxDegree( sym );
         assert( varDegree > 0 );
         for( unsigned i = varDegree + 1; i > 0; --i )
         {
@@ -898,7 +898,7 @@ namespace vs
              * Check, whether the variable to substitute, does not occur in the
              * conditions we substituted in.
              */
-            assert( !_constraint->load()->coefficient( sym, i - 1 ).has( sym ) );
+            assert( !_constraint->coefficient( sym, i - 1 ).has( ex( sym ) ) );
 
             /*
              * Add conjunction (a_n=0 and ... and a_i~0) to the substitution result.
@@ -908,22 +908,22 @@ namespace vs
 
             for( unsigned j = varDegree; j > i - 1; --j )
             {
-                _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint->load()->coefficient( sym, j ), smtrat::CR_EQ, variables ) );
+                _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint->coefficient( sym, j ), smtrat::CR_EQ, _constraint->variables() ) );
             }
             if( i > 1 )
             {
                 if( fmod( i - 1, 2.0 ) != 0.0 )
                 {
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint->load()->coefficient( sym, i - 1 ), oddRelationType, variables ) );
+                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint->coefficient( sym, i - 1 ), oddRelationType, _constraint->variables() ) );
                 }
                 else
                 {
-                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint->load()->coefficient( sym, i - 1 ), evenRelationType, variables ) );
+                    _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint->coefficient( sym, i - 1 ), evenRelationType, _constraint->variables() ) );
                 }
             }
             else
             {
-                _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint->load()->coefficient( sym, i - 1 ), _constraint->load()->relation(), variables ) );
+                _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint->coefficient( sym, i - 1 ), _constraint->relation(), _constraint->variables() ) );
             }
         }
     }
@@ -938,7 +938,7 @@ namespace vs
      * @param _substitution         The substitution to apply.
      * @param _substitutionResults  The vector, in which to store the results of this substitution.
      */
-    void substituteTrivialCase( Constraint_Atom _constraint,
+    void substituteTrivialCase( const smtrat::Constraint* _constraint,
                                 const Substitution& _substitution,
                                 DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
@@ -948,10 +948,10 @@ namespace vs
         /*
          * Check whether the relation is "=", "<=" or ">=".
          */
-        assert( _constraint->load()->relation() == smtrat::CR_EQ || _constraint->load()->relation() == smtrat::CR_LEQ || _constraint->load()->relation() == smtrat::CR_GEQ );
-        ex sym = _constraint->load()->variable( _substitution.variable() );
-        symtab variables = _constraint->load()->variables();
-        unsigned varDegree = _constraint->load()->maxDegree( sym );
+        assert( _constraint->relation() == smtrat::CR_EQ || _constraint->relation() == smtrat::CR_LEQ || _constraint->relation() == smtrat::CR_GEQ );
+        symbol sym;
+        _constraint->variable( _substitution.variable(), sym );
+        unsigned varDegree = _constraint->maxDegree( sym );
         /*
          * Check the cases (a_0=0 and ... and a_n=0)
          */
@@ -962,8 +962,8 @@ namespace vs
              * Check, whether the variable to substitute, does not occur in the
              * conditions we substituted in.
              */
-            assert( !_constraint->load()->coefficient( sym, i ).has( sym ) );
-            _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint->load()->coefficient( sym, i ), smtrat::CR_EQ, variables ) );
+            assert( !_constraint->coefficient( sym, i ).has( ex( sym ) ) );
+            _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint->coefficient( sym, i ), smtrat::CR_EQ, _constraint->variables() ) );
         }
     }
 
@@ -977,7 +977,7 @@ namespace vs
      * @param _substitution         The substitution to apply.
      * @param _substitutionResults  The vector, in which to store the results of this substitution.
      */
-    void substituteNotTrivialCase( Constraint_Atom _constraint,
+    void substituteNotTrivialCase( const smtrat::Constraint* _constraint,
                                    const Substitution& _substitution,
                                    DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
@@ -987,18 +987,18 @@ namespace vs
         /*
          * Check whether the relation is "!=".
          */
-        assert( _constraint->load()->relation() == smtrat::CR_NEQ );
-        ex sym = _constraint->load()->variable( _substitution.variable() );
-        symtab variables = _constraint->load()->variables();
-        unsigned varDegree = _constraint->load()->maxDegree( sym );
+        assert( _constraint->relation() == smtrat::CR_NEQ );
+        symbol sym;
+        _constraint->variable( _substitution.variable(), sym );
+        unsigned varDegree = _constraint->maxDegree( sym );
         for( unsigned i = 0; i <= varDegree; ++i )
         {
-            assert( !_constraint->load()->coefficient( sym, i ).has( sym ) );
+            assert( !_constraint->coefficient( sym, i ).has( ex( sym ) ) );
             /*
              * Add conjunction (a_i!=0) to the substitution result.
              */
             _substitutionResults.push_back( TS_ConstraintConjunction() );
-            _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint->load()->coefficient( sym, i ), smtrat::CR_NEQ, variables ) );
+            _substitutionResults.back().push_back( smtrat::Formula::newConstraint( _constraint->coefficient( sym, i ), smtrat::CR_NEQ, _constraint->variables() ) );
         }
     }
 
@@ -1023,7 +1023,7 @@ namespace vs
             TS_ConstraintConjunction::iterator cons             = (*conj).begin();
             while( cons != (*conj).end() )
             {
-                unsigned consConsistent = (*cons)->load()->isConsistent();
+                unsigned consConsistent = (**cons).isConsistent();
                 if( consConsistent == 0 )
                 {
                     conjInconsistent = true;
@@ -1091,17 +1091,17 @@ namespace vs
         vector<DisjunctionOfConstraintConjunctions> toCombine = vector<DisjunctionOfConstraintConjunctions>();
         for( auto constraint = _constraintConjunction.begin(); constraint != _constraintConjunction.end(); ++constraint )
         {
-            if( (*constraint)->load()->hasFactorization() )
+            if( (*constraint)->hasFactorization() )
             {
-                switch( (*constraint)->load()->relation() )
+                switch( (*constraint)->relation() )
                 {
                     case smtrat::CR_EQ:
                     {
                         toCombine.push_back( DisjunctionOfConstraintConjunctions() );
-                        const ex factorization = (*constraint)->load()->factorization();
+                        const ex& factorization = (*constraint)->factorization();
                         for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
                         {
-                            Constraint_Atom cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_EQ, (*constraint)->load()->variables() );
+                            const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_EQ, (*constraint)->variables() );
                             toCombine.back().push_back( TS_ConstraintConjunction() );
                             toCombine.back().back().push_back( cons );
                         }
@@ -1111,10 +1111,10 @@ namespace vs
                     {
                         toCombine.push_back( DisjunctionOfConstraintConjunctions() );
                         toCombine.back().push_back( TS_ConstraintConjunction() );
-                        const ex factorization = (*constraint)->load()->factorization();
+                        const ex& factorization = (*constraint)->factorization();
                         for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
                         {
-                            Constraint_Atom cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_NEQ, (*constraint)->load()->variables() );
+                            const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_NEQ, (*constraint)->variables() );
                             toCombine.back().back().push_back( cons );
                         }
                         break;
@@ -1148,38 +1148,37 @@ namespace vs
      * @param _variables
      * @return
      */
-    DisjunctionOfConstraintConjunctions getSignCombinations( Constraint_Atom _constraint )
+    DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::Constraint* _constraint )
     {
         DisjunctionOfConstraintConjunctions combinations = DisjunctionOfConstraintConjunctions();
-        if( _constraint->load()->hasFactorization() && _constraint->load()->factorization().nops() <= MAX_PRODUCT_SPLIT_NUMBER )
+        if( _constraint->hasFactorization() && _constraint->factorization().nops() <= MAX_PRODUCT_SPLIT_NUMBER )
         {
-            assert( _constraint->load()->relation() == smtrat::CR_GREATER || _constraint->load()->relation() == smtrat::CR_LESS
-                    || _constraint->load()->relation() == smtrat::CR_GEQ || _constraint->load()->relation() == smtrat::CR_LEQ );
+            assert( _constraint->relation() == smtrat::CR_GREATER || _constraint->relation() == smtrat::CR_LESS
+                    || _constraint->relation() == smtrat::CR_GEQ || _constraint->relation() == smtrat::CR_LEQ );
             smtrat::Constraint_Relation relPos = smtrat::CR_GREATER;
             smtrat::Constraint_Relation relNeg = smtrat::CR_LESS;
-            if( _constraint->load()->relation() == smtrat::CR_GEQ || _constraint->load()->relation() == smtrat::CR_LEQ )
+            if( _constraint->relation() == smtrat::CR_GEQ || _constraint->relation() == smtrat::CR_LEQ )
             {
                 relPos = smtrat::CR_GEQ;
                 relNeg = smtrat::CR_LEQ;
             }
-            bool positive = (_constraint->load()->relation() == smtrat::CR_GEQ || _constraint->load()->relation() == smtrat::CR_GREATER);
+            bool positive = (_constraint->relation() == smtrat::CR_GEQ || _constraint->relation() == smtrat::CR_GREATER);
             TS_ConstraintConjunction positives = TS_ConstraintConjunction();
             TS_ConstraintConjunction alwayspositives = TS_ConstraintConjunction();
             TS_ConstraintConjunction negatives = TS_ConstraintConjunction();
             TS_ConstraintConjunction alwaysnegatives = TS_ConstraintConjunction();
             unsigned numOfAlwaysNegatives = 0;
-            const ex product = _constraint->load()->factorization();
-        symtab variables = _constraint->load()->variables();
+            const ex& product = _constraint->factorization();
             for( GiNaC::const_iterator summand = product.begin(); summand != product.end(); ++summand )
             {
-                Constraint_Atom consPos = smtrat::Formula::newConstraint( *summand, relPos, variables );
-                unsigned posConsistent = consPos->load()->isConsistent();
+                const smtrat::Constraint* consPos = smtrat::Formula::newConstraint( *summand, relPos, _constraint->variables() );
+                unsigned posConsistent = consPos->isConsistent();
                 if( posConsistent != 0 )
                 {
                     positives.push_back( consPos );
                 }
-                Constraint_Atom consNeg = smtrat::Formula::newConstraint( *summand, relNeg, variables );
-                unsigned negConsistent = consNeg->load()->isConsistent();
+                const smtrat::Constraint* consNeg = smtrat::Formula::newConstraint( *summand, relNeg, _constraint->variables() );
+                unsigned negConsistent = consNeg->isConsistent();
                 if( negConsistent == 0 )
                 {
                     if( posConsistent == 0 )
@@ -1332,7 +1331,7 @@ namespace vs
                 {
                     cout << " and ";
                 }
-                (*cons)->load()->print( cout );
+                (**cons).print( cout );
                 cons++;
             }
             cout << ")" << endl;

@@ -158,7 +158,7 @@ namespace vs
                 {
                     _out << ", ";
                 }
-                (*oCond)->pConstraint()->load()->print( _out );
+                (**oCond).constraint().print( _out );
             }
             _out << "}";
         }

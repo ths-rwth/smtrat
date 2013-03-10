@@ -1315,7 +1315,7 @@ namespace lra
                 {
                     ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
                     smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
-                    std::atomic< const smtrat::Constraint* >* constraint = smtrat::Formula::newConstraint( lhs, rel, (*ubound)->pAsConstraint()->load()->variables() );
+                    const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*ubound)->pAsConstraint()->variables() );
                     learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                 }
                 else
@@ -1382,7 +1382,7 @@ CheckLowerPremise:
                 {
                     ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
                     smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
-                    std::atomic< const smtrat::Constraint* >* constraint = smtrat::Formula::newConstraint( lhs, rel, (*lbound)->pAsConstraint()->load()->variables() );
+                    const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*lbound)->pAsConstraint()->variables() );
                     learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                 }
                 else
@@ -1525,7 +1525,7 @@ CheckLowerPremise:
                 {
                     ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
                     smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
-                    std::atomic< const smtrat::Constraint* >* constraint = smtrat::Formula::newConstraint( lhs, rel, (*ubound)->pAsConstraint()->load()->variables() );
+                    const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*ubound)->pAsConstraint()->variables() );
                     learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                 }
                 else
@@ -1592,7 +1592,7 @@ CheckLowerPremise:
                 {
                     ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
                     smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
-                    std::atomic< const smtrat::Constraint* >* constraint = smtrat::Formula::newConstraint( lhs, rel, (*lbound)->pAsConstraint()->load()->variables() );
+                    const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*lbound)->pAsConstraint()->variables() );
                     learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                 }
                 else

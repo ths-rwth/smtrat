@@ -195,7 +195,7 @@ namespace vs
         ConditionVector::const_iterator cond = conditions().begin();
         while( cond != conditions().end() )
         {
-            if( substitutionApplicable( (*cond)->pConstraint() ) )
+            if( substitutionApplicable( (**cond).constraint() ) )
             {
                 return true;
             }
@@ -214,11 +214,11 @@ namespace vs
      * @return  True,   if the substitution can be applied.
      *          False,  else.
      */
-    bool State::substitutionApplicable( Constraint_Atom _constraint ) const
+    bool State::substitutionApplicable( const smtrat::Constraint& _constraint ) const
     {
         if( !isRoot() )
         {
-            if( _constraint->load()->variables().find( substitution().variable() ) != _constraint->load()->variables().end() )
+            if( _constraint.variables().find( substitution().variable() ) != _constraint.variables().end() )
             {
                 return true;
             }
@@ -273,7 +273,7 @@ namespace vs
     {
         for( ConditionVector::const_iterator cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
-            if( (*cond)->pConstraint()->load()->relation() == smtrat::CR_EQ && (*cond)->pConstraint()->load()->hasVariable( _variableName ) )
+            if( (*cond)->constraint().relation() == smtrat::CR_EQ && (*cond)->constraint().hasVariable( _variableName ) )
             {
                 return true;
             }
@@ -313,7 +313,7 @@ namespace vs
     {
         for( ConditionVector::const_iterator cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
-            for( symtab::const_iterator var = (*cond)->pConstraint()->load()->variables().begin(); var != (*cond)->pConstraint()->load()->variables().end(); ++var )
+            for( symtab::const_iterator var = (**cond).constraint().variables().begin(); var != (**cond).constraint().variables().end(); ++var )
             {
                 _variables.insert( (*var).first );
             }
@@ -488,11 +488,11 @@ namespace vs
      * @return An iterator to the condition, which involves the constraint or an iterator
      *         to the end of the vector of conditions of this state.
      */
-    ConditionVector::iterator State::constraintExists( Constraint_Atom _constraint )
+    ConditionVector::iterator State::constraintExists( const smtrat::Constraint& _constraint )
     {
         for( ConditionVector::iterator cond = rConditions().begin(); cond != conditions().end(); ++cond )
         {
-            if( (*cond)->pConstraint()->load() == _constraint->load() )
+            if( (**cond).constraint() == _constraint )
             {
                 return cond;
             }
@@ -777,17 +777,17 @@ namespace vs
                      */
                     else if( strongProp == -3 )
                     {
-                        if( (condA->pConstraint()->load()->relation() == smtrat::CR_GEQ && condB->pConstraint()->load()->relation() == smtrat::CR_GEQ)
-                                || (condA->pConstraint()->load()->relation() == smtrat::CR_GEQ && condB->pConstraint()->load()->relation() == smtrat::CR_LEQ)
-                                || (condA->pConstraint()->load()->relation() == smtrat::CR_LEQ && condB->pConstraint()->load()->relation() == smtrat::CR_GEQ)
-                                || (condA->pConstraint()->load()->relation() == smtrat::CR_LEQ && condB->pConstraint()->load()->relation() == smtrat::CR_LEQ) )
+                        if( (condA->constraint().relation() == smtrat::CR_GEQ && condB->constraint().relation() == smtrat::CR_GEQ)
+                                || (condA->constraint().relation() == smtrat::CR_GEQ && condB->constraint().relation() == smtrat::CR_LEQ)
+                                || (condA->constraint().relation() == smtrat::CR_LEQ && condB->constraint().relation() == smtrat::CR_GEQ)
+                                || (condA->constraint().relation() == smtrat::CR_LEQ && condB->constraint().relation() == smtrat::CR_LEQ) )
                         {
-                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condB->pConstraint()->load()->lhs(), smtrat::CR_EQ, condB->pConstraint()->load()->variables() ), condB->flag(), condB->originalConditions(),  condB->valuation(), true );
+                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condB->constraint().lhs(), smtrat::CR_EQ, condB->constraint().variables() ), condB->flag(), condB->originalConditions(),  condB->valuation(), true );
                             cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                             _conditionVectorToSimplify.push_back( cond );
-                            if( cond->pConstraint()->load()->isConsistent() == 0 )
+                            if( cond->constraint().isConsistent() == 0 )
                             {
                                 ConditionSet condSet = ConditionSet();
                                 condSet.insert( condA );
@@ -795,14 +795,14 @@ namespace vs
                                 _conflictSet.insert( condSet );
                             }
                         }
-                        else if( (condA->pConstraint()->load()->relation() == smtrat::CR_NEQ && condB->pConstraint()->load()->relation() == smtrat::CR_GEQ) )
+                        else if( (condA->constraint().relation() == smtrat::CR_NEQ && condB->constraint().relation() == smtrat::CR_GEQ) )
                         {
-                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condB->pConstraint()->load()->lhs(), smtrat::CR_GREATER, condB->pConstraint()->load()->variables() ), condB->flag(), condB->originalConditions(),  condB->valuation(), true );
+                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condB->constraint().lhs(), smtrat::CR_GREATER, condB->constraint().variables() ), condB->flag(), condB->originalConditions(),  condB->valuation(), true );
                             cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                             _conditionVectorToSimplify.push_back( cond );
-                            if( cond->pConstraint()->load()->isConsistent() == 0 )
+                            if( cond->constraint().isConsistent() == 0 )
                             {
                                 ConditionSet condSet = ConditionSet();
                                 condSet.insert( condA );
@@ -810,14 +810,14 @@ namespace vs
                                 _conflictSet.insert( condSet );
                             }
                         }
-                        else if( (condA->pConstraint()->load()->relation() == smtrat::CR_GEQ && condB->pConstraint()->load()->relation() == smtrat::CR_NEQ) )
+                        else if( (condA->constraint().relation() == smtrat::CR_GEQ && condB->constraint().relation() == smtrat::CR_NEQ) )
                         {
-                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condA->pConstraint()->load()->lhs(), smtrat::CR_GREATER, condA->pConstraint()->load()->variables() ), condA->flag(), condA->originalConditions(),  condA->valuation(), true );
+                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condA->constraint().lhs(), smtrat::CR_GREATER, condA->constraint().variables() ), condA->flag(), condA->originalConditions(),  condA->valuation(), true );
                             cond->pOriginalConditions()->insert( condB->originalConditions().begin(), condB->originalConditions().end() );
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                             _conditionVectorToSimplify.push_back( cond );
-                            if( cond->pConstraint()->load()->isConsistent() == 0 )
+                            if( cond->constraint().isConsistent() == 0 )
                             {
                                 ConditionSet condSet = ConditionSet();
                                 condSet.insert( condA );
@@ -825,14 +825,14 @@ namespace vs
                                 _conflictSet.insert( condSet );
                             }
                         }
-                        else if( (condA->pConstraint()->load()->relation() == smtrat::CR_NEQ && condB->pConstraint()->load()->relation() == smtrat::CR_LEQ) )
+                        else if( (condA->constraint().relation() == smtrat::CR_NEQ && condB->constraint().relation() == smtrat::CR_LEQ) )
                         {
-                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condB->pConstraint()->load()->lhs(), smtrat::CR_LESS, condB->pConstraint()->load()->variables() ), condB->flag(), condB->originalConditions(),  condB->valuation(), true );
+                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condB->constraint().lhs(), smtrat::CR_LESS, condB->constraint().variables() ), condB->flag(), condB->originalConditions(),  condB->valuation(), true );
                             cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                             _conditionVectorToSimplify.push_back( cond );
-                            if( cond->pConstraint()->load()->isConsistent() == 0 )
+                            if( cond->constraint().isConsistent() == 0 )
                             {
                                 ConditionSet condSet = ConditionSet();
                                 condSet.insert( condA );
@@ -840,14 +840,14 @@ namespace vs
                                 _conflictSet.insert( condSet );
                             }
                         }
-                        else if( (condA->pConstraint()->load()->relation() == smtrat::CR_LEQ && condB->pConstraint()->load()->relation() == smtrat::CR_NEQ) )
+                        else if( (condA->constraint().relation() == smtrat::CR_LEQ && condB->constraint().relation() == smtrat::CR_NEQ) )
                         {
-                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condA->pConstraint()->load()->lhs(), smtrat::CR_LESS, condA->pConstraint()->load()->variables() ), condA->flag(), condA->originalConditions(),  condA->valuation(), true );
+                            const Condition* cond = new Condition( smtrat::Formula::newConstraint( condA->constraint().lhs(), smtrat::CR_LESS, condA->constraint().variables() ), condA->flag(), condA->originalConditions(),  condA->valuation(), true );
                             cond->pOriginalConditions()->insert( condB->originalConditions().begin(), condB->originalConditions().end() );
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                             _conditionVectorToSimplify.push_back( cond );
-                            if( cond->pConstraint()->load()->isConsistent() == 0 )
+                            if( cond->constraint().isConsistent() == 0 )
                             {
                                 ConditionSet condSet = ConditionSet();
                                 condSet.insert( condA );
@@ -945,7 +945,7 @@ namespace vs
                  * Does the condition contain the variable we can generate
                  * test candidates for.
                  */
-                if( (*cond)->pConstraint()->load()->variables().find( index() ) == (*cond)->pConstraint()->load()->variables().end() )
+                if( (**cond).constraint().variables().find( index() ) == (**cond).constraint().variables().end() )
                 {
                     (**cond).rFlag() = true;
                 }
@@ -1376,7 +1376,7 @@ namespace vs
                 ConditionVector::iterator newCond              = newCombination.begin();
                 while( newCond != newCombination.end() )
                 {
-                    if( (*cond)->pConstraint()->load() == (*newCond)->pConstraint()->load() )
+                    if( (**cond).constraint() == (**newCond).constraint() )
                     {
                         /*
                          * Choose original conditions.
@@ -1473,7 +1473,7 @@ namespace vs
     {
         for( ConditionVector::iterator cond = rConditions().begin(); cond != conditions().end(); ++cond )
         {
-            if( (*cond)->pConstraint()->load()->hasVariable( index() ) )
+            if( (**cond).constraint().hasVariable( index() ) )
             {
                 (**cond).rFlag() = false;
             }
@@ -1618,12 +1618,11 @@ namespace vs
      *
      * @sideeffect  The state can obtain a new condition.
      */
-    void State::addCondition( Constraint_Atom _constraint,
+    void State::addCondition( const smtrat::Constraint* _constraint,
                               const ConditionSet& _originalConditions,
                               const unsigned _valutation,
                               const bool _recentlyAdded )
     {
-        CONSTRAINT_LOCK_GUARD
         #ifdef VS_DEBUG_METHODS
         cout << __func__ << endl;
         #endif
@@ -1632,7 +1631,7 @@ namespace vs
          * Check if the constraint is variable-free and consistent.
          * If so, discard it.
          */
-        unsigned constraintConsistency = _constraint->load()->isConsistent();
+        unsigned constraintConsistency = _constraint->isConsistent();
 
         assert( constraintConsistency != 0 );
 
@@ -1667,7 +1666,7 @@ namespace vs
                 /*
                  * Does the constraint contain the variable to eliminate.
                  */
-                if( _constraint->load()->variables().find( index() ) == _constraint->load()->variables().end()
+                if( _constraint->variables().find( index() ) == _constraint->variables().end()
                         || constraintWithFinitlyManySolutionCandidatesInIndexExists )
                 {
                     rConditions().push_back( new Condition( _constraint, true, _originalConditions, _valutation, _recentlyAdded ) );
@@ -1805,7 +1804,7 @@ namespace vs
                                         {
                                             ConditionSet oConds = ConditionSet();
                                             oConds.insert( *oCond );
-                                            conditionsToAdd.push_back( new Condition( (*oCond)->pConstraint(), false, oConds, (**cond).valuation() ) );
+                                            conditionsToAdd.push_back( new Condition( (**oCond).pConstraint(), false, oConds, (**cond).valuation() ) );
                                             ++oCond;
                                         }
                                         const Condition* rpCond = *cond;
@@ -2178,8 +2177,8 @@ namespace vs
         cout << __func__ << endl;
         #endif
         CONSTRAINT_LOCK_GUARD
-        Constraint_Atom cons = smtrat::Formula::newConstraint( _lhsCondition, _relationCondition, _variables );
-        unsigned isConsConsistent = cons->load()->isConsistent();
+        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( _lhsCondition, _relationCondition, _variables );
+        unsigned isConsConsistent = (*cons).isConsistent();
         if( isConsConsistent != 0 )
         {
             SqrtEx sqEx = SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand, _variables );
@@ -2258,12 +2257,12 @@ namespace vs
         cout << __func__ << endl;
         #endif
         CONSTRAINT_LOCK_GUARD
-        Constraint_Atom cons1 = smtrat::Formula::newConstraint( _lhsCondition1, _relationCondition1, _variables );
-        unsigned isCons1Consistent = cons1->load()->isConsistent();
+        const smtrat::Constraint* cons1 = smtrat::Formula::newConstraint( _lhsCondition1, _relationCondition1, _variables );
+        unsigned isCons1Consistent = (*cons1).isConsistent();
         if( isCons1Consistent != 0 )
         {
-            Constraint_Atom cons2 = smtrat::Formula::newConstraint( _lhsCondition2, _relationCondition2, _variables );
-            unsigned isCons2Consistent = cons2->load()->isConsistent();
+            const smtrat::Constraint* cons2 = smtrat::Formula::newConstraint( _lhsCondition2, _relationCondition2, _variables );
+            unsigned isCons2Consistent = (*cons2).isConsistent();
             if( isCons2Consistent != 0 )
             {
                 SqrtEx sqEx = SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand, _variables );
@@ -2395,12 +2394,12 @@ namespace vs
         cout << "*** Infeasible subset:";
         for( ConditionSet::const_iterator cond = covSet.begin(); cond != covSet.end(); ++cond )
         {
-            cout << "  " << (*cond)->pConstraint()->load()->toString();
+            cout << "  " << (**cond).constraint().toString();
         }
         cout << endl;
         #endif
         #ifdef VS_LOG_INFSUBSETS
-        set< Constraint_Atom > constraints = set< Constraint_Atom >();
+        set< const smtrat::Constraint* > constraints = set< const smtrat::Constraint* >();
         for( ConditionSet::const_iterator cond = covSet.begin(); cond != covSet.end(); ++cond )
         {
             constraints.insert( (**cond).pConstraint() );
@@ -2424,7 +2423,7 @@ namespace vs
                 ConditionSet::iterator oCond = (**cond).originalConditions().begin();
                 while( oCond != (**cond).originalConditions().end() )
                 {
-                    if( (*oCond)->pConstraint()->load()->hasVariable( father().index() ) )
+                    if( (**oCond).constraint().hasVariable( father().index() ) )
                     {
                         coverSetOCondsContainIndexOfFather = true;
                     }
@@ -2815,7 +2814,7 @@ namespace vs
         }
         if( pOriginalCondition() != NULL )
         {
-            _out << _initiation << "                       original condition: " << originalCondition().pConstraint()->load()->toString() << " ["
+            _out << _initiation << "                       original condition: " << originalCondition().constraint().toString() << " ["
                  << pOriginalCondition() << "]" << endl;
         }
         _out << _initiation << "                                    index: " << index() << "     )" << endl;
@@ -2851,7 +2850,7 @@ namespace vs
             _out << _initiation << "   ";
             if( _onlyAsConstraints )
             {
-                (*cond)->pConstraint()->load()->print();
+                (**cond).constraint().print();
             }
             else
             {
@@ -2935,7 +2934,7 @@ namespace vs
                     {
                         if( cond != mpSubstitutionResults->at( subResComb->first ).at( subResComb->second ).first.begin() )
                             _out << " and ";
-                        (*cond)->pConstraint()->load()->print( _out );
+                        (**cond).constraint().print( _out );
                     }
                     _out << "  )" << endl;
                 }
@@ -2995,13 +2994,13 @@ namespace vs
                     if( cond != (*condSet).end() )
                     {
                         _out << " { [";
-                        (*cond)->pConstraint()->load()->print( _out );
+                        (**cond).constraint().print( _out );
                         _out << "]" << "_" << (**cond).valuation();
                         ++cond;
                         while( cond != (*condSet).end() )
                         {
                             _out << ", [";
-                            (*cond)->pConstraint()->load()->print( _out );
+                            (**cond).constraint().print( _out );
                             _out << "]" << "_" << (**cond).valuation();
                             ++cond;
                         }
@@ -3020,13 +3019,13 @@ namespace vs
                         if( cond != (*condSet).end() )
                         {
                             _out << " { [";
-                            (*cond)->pConstraint()->load()->print( _out );
+                            (**cond).constraint().print( _out );
                             _out << "]" << "_" << (**cond).valuation();
                             ++cond;
                             while( cond != (*condSet).end() )
                             {
                                 _out << ", [";
-                                (*cond)->pConstraint()->load()->print( _out );
+                                (**cond).constraint().print( _out );
                                 _out << "]" << "_" << (**cond).valuation();
                                 ++cond;
                             }

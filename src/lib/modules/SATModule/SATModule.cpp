@@ -528,7 +528,7 @@ namespace smtrat
      * @param _origin
      * @return
      */
-    Lit SATModule::getLiteral( Constraint_Atom _constraint, const Formula* _origin, double _activity, bool _preferredToTSolver, bool _polarity )
+    Lit SATModule::getLiteral( const Constraint* _constraint, const Formula* _origin, double _activity, bool _preferredToTSolver, bool _polarity )
     {
         ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _constraint );
         if( constraintLiteralPair != mConstraintLiteralMap.end() )
@@ -548,11 +548,11 @@ namespace smtrat
                 mStats->initialTrue();
             }
             #endif
-            Constraint_Atom constraint = NULL;
+            const Constraint* constraint = NULL;
             if( !_polarity )
             {
                 Constraint_Relation rel = CR_EQ;
-                switch( _constraint->load()->relation() )
+                switch( _constraint->relation() )
                 {
                     case CR_EQ:
                     {
@@ -589,7 +589,7 @@ namespace smtrat
                         assert(false);
                     }
                 }
-                constraint = Formula::newConstraint( _constraint->load()->lhs(), rel, _constraint->load()->variables() );
+                constraint = Formula::newConstraint( _constraint->lhs(), rel, _constraint->variables() );
             }
             else constraint = _constraint;
             constraintAbstraction = newVar( !_preferredToTSolver, true, _activity, new Formula( _constraint ), _origin );
@@ -2011,7 +2011,7 @@ NextClause:
         _out << _init << " ConstraintLiteralMap" << endl;
         for( ConstraintLiteralMap::const_iterator clPair = mConstraintLiteralMap.begin(); clPair != mConstraintLiteralMap.end(); ++clPair )
         {
-            _out << _init << "    " << clPair->first->load()->toString() << "  ->  ";
+            _out << _init << "    " << clPair->first->toString() << "  ->  ";
             if( sign( clPair->second ) )
             {
                 _out << "-";

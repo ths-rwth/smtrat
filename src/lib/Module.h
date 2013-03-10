@@ -125,9 +125,9 @@ namespace smtrat
             /// Stores the position of the first sub-formula in the passed formula, which has not yet been considered for a consistency check of the backends.
             Formula::iterator mFirstSubformulaToPass;
             /// Stores the constraints which the backends must be informed about.
-            std::list<Constraint_Atom > mConstraintsToInform;
+            std::list<const Constraint* > mConstraintsToInform;
             /// Stores the position of the first constraint of which no backend has been informed about.
-            std::list<Constraint_Atom >::iterator mFirstConstraintToInform;
+            std::list<const Constraint* >::iterator mFirstConstraintToInform;
             /// Stores the position of the first (by this module) unchecked sub-formula of the received formula.
             Formula::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
@@ -157,7 +157,7 @@ namespace smtrat
             #endif
 
             // Main interfaces
-            virtual bool inform( Constraint_Atom );
+            virtual bool inform( const Constraint* const );
             virtual bool assertSubformula( Formula::const_iterator );
             virtual Answer isConsistent();
             virtual void removeSubformula( Formula::const_iterator );
@@ -229,7 +229,7 @@ namespace smtrat
                 return mUsedBackends;
             }
 
-            const std::list< Constraint_Atom >& constraintsToInform() const
+            const std::list< const Constraint* >& constraintsToInform() const
             {
                 return mConstraintsToInform;
             }
@@ -276,7 +276,7 @@ namespace smtrat
 
             static void addAssumptionToCheck( const Formula&, bool, const std::string& );
             static void addAssumptionToCheck( const std::set<const Formula*>&, bool, const std::string& );
-            static void addAssumptionToCheck( const std::set<Constraint_Atom>&, bool, const std::string& );
+            static void addAssumptionToCheck( const std::set<const Constraint*>&, bool, const std::string& );
             static void storeAssumptionsToCheck( const Manager& );
             static const std::string moduleName( const ModuleType );
             void storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> &, const std::string& = "smaller_muses") const;
@@ -300,7 +300,7 @@ namespace smtrat
             }
 
             Answer foundAnswer( Answer );
-            void addConstraintToInform( Constraint_Atom _constraint );
+            void addConstraintToInform( const Constraint* const _constraint );
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );
             void addSubformulaToPassedFormula( Formula*, const vec_set_const_pFormula& );
             void addSubformulaToPassedFormula( Formula*, const Formula* );
