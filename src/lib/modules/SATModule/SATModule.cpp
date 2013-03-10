@@ -1308,6 +1308,7 @@ FindSecond:
                         }
                         else
                         {
+                            if( currentAssignmentConsistent != Unknown ) cout << currentAssignmentConsistent << endl;
                             assert( currentAssignmentConsistent == Unknown );
                             CONSTRAINT_UNLOCK
                             return l_Undef;

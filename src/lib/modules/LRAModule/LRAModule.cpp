@@ -34,7 +34,6 @@
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_ONE_REASON
 //#define LRA_BRANCH_AND_BOUND
-//#define LRA_GOMORY_CUTS
 using namespace std;
 using namespace lra;
 using namespace GiNaC;
@@ -392,12 +391,10 @@ namespace smtrat
                             for(auto vector_iterator = mTableau.rows().begin();vector_iterator != mTableau.rows().end();++vector_iterator)
                             {
                                 ex referring_ex = vector_iterator->mName->expression();
-                                auto pToEx = rMap_.find(referring_ex);
-                                numeric ass = ex_to<numeric>(pToEx->second);
-                                if(!ass.is_integer())
-                                {
-                                    //...
-                                }
+                                auto found_ex = rMap_.find(referring_ex);
+                                const numeric ass = ex_to<numeric>(found_ex->second);
+                                const Constraint* gomory_constraint = mTableau.gomoryCut(ass,vector_iterator);
+                                //...
                             }
                             #endif
 

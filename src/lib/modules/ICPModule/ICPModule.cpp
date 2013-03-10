@@ -56,18 +56,15 @@ namespace smtrat
         mLinearizationReplacements(),
         mVariables(),
         mLinearizations(),
-        mHistoryRoot(new icp::HistoryNode(mIntervals)),
+        mHistoryRoot(new icp::HistoryNode(mIntervals,1)),
         mHistoryActual(mHistoryRoot),
         mValidationFormula(new Formula(AND)),
         mLRAFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
         mLRA(MT_LRAModule, mValidationFormula, new RuntimeSettings, mLRAFoundAnswer),
         mCenterConstraints(),
-        mInitialized(false)
+        mInitialized(false),
+        mCurrentId(2)
     {
-#ifdef HISTORY_DEBUG
-        mHistoryRoot->setId(1);
-        mCurrentId = 2;
-#endif
     }
 
     /**
@@ -80,7 +77,11 @@ namespace smtrat
 
     bool ICPModule::inform( const Constraint* const _constraint )
     {
-        Module::inform(_constraint);
+        // do not inform about boundary constraints - this leads to confusion
+        if ( _constraint->variables().size() > 1 )
+        {
+            Module::inform(_constraint);
+        }
 
         const ex constr = _constraint->lhs();
         ex       replacement = ex();
@@ -143,13 +144,18 @@ namespace smtrat
         constr->print();
         cout << endl;
 #endif
-
-        // Pass constraints to backends - Sure?
-        addSubformulaToPassedFormula( new Formula( constr ), *_formula );
-
+        
+        
+        
         assert( (*_formula)->getType() == REALCONSTRAINT );
-        Module::assertSubformula( _formula );
-
+        if ( (*_formula)->constraint().variables().size() > 1 )
+        {
+            // Pass constraints to backends - Sure?
+            addSubformulaToPassedFormula( new Formula( constr ), *_formula );
+            
+            Module::assertSubformula( _formula );
+        }
+        
         /**
          * activate associated nonlinear contraction candidates.
          */
@@ -272,6 +278,9 @@ namespace smtrat
                    {
                        mActiveLinearConstraints[(*candidateIt)] += 1;
                    }
+                   
+                   // set linearizationReplacements mappings.
+                   mLinearizationReplacements[replacementPtr] = (*candidateIt)->constraint();
                }
            }
            else
@@ -288,7 +297,14 @@ namespace smtrat
                Constraint* tmpConstr = new Constraint(slackvariable->expression()-newReal.second, Constraint_Relation::CR_EQ, variables );
 
                // store mapping of constraint without to constraint with linear variable, needed for comparison with failed constraints during validation
-               mLinearizationReplacements[constr] = tmpConstr;
+               for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt)
+               {
+                   if ( *constr == *((*replacementIt).second) )
+                   {
+                       mLinearizationReplacements[(*replacementIt).first] = tmpConstr;
+                   }
+               }
+//               mLinearizationReplacements[constr] = tmpConstr;
 
                // Create candidates for every possible variable:
                for (auto variableIt = variables.begin(); variableIt != variables.end(); ++variableIt )
@@ -404,7 +420,7 @@ namespace smtrat
                                 else
                                 {
                                     // reset History to point before this candidate was used
-                                    std::set<icp::HistoryNode*, icp::HistoryNode::comp> nodes =  mHistoryRoot->findCandidates((*activeLinearIt).first);
+                                    icp::HistoryNode::set_HistoryNodes nodes =  mHistoryRoot->findCandidates((*activeLinearIt).first);
                                     // as the set is sorted ascending by id, we pick the node with the lowest id
                                     if ( !nodes.empty() )
                                     {
@@ -424,7 +440,7 @@ namespace smtrat
                     else if( mActiveNonlinearConstraints[*candidateIt] == 1 )
                     {
                         // reset History to point before this candidate was used
-                        std::set<icp::HistoryNode*, icp::HistoryNode::comp> nodes =  mHistoryRoot->findCandidates(*candidateIt);
+                        icp::HistoryNode::set_HistoryNodes nodes =  mHistoryRoot->findCandidates(*candidateIt);
                         // as the set is sorted ascending by id, we pick the node with the lowest id
                         if ( !nodes.empty() )
                         {
@@ -548,8 +564,7 @@ namespace smtrat
                             }
                         }
                     }
-
-
+                    
                     if( mActiveLinearConstraints.find( *candidateIt ) != mActiveLinearConstraints.end() )
                     {
                         if( mActiveLinearConstraints[*candidateIt] > 1 )
@@ -560,7 +575,7 @@ namespace smtrat
                         else
                         {
                             // reset History to point before this candidate was used
-                            std::set<icp::HistoryNode*, icp::HistoryNode::comp> nodes =  mHistoryRoot->findCandidates(*candidateIt);
+                            icp::HistoryNode::set_HistoryNodes nodes =  mHistoryRoot->findCandidates(*candidateIt);
                             // as the set is sorted ascending by id, we pick the node with the lowest id
                             if ( !nodes.empty() )
                             {
@@ -568,8 +583,7 @@ namespace smtrat
                                 icp::HistoryNode* firstNode = (*nodes.begin())->parent();
                                 setBox(firstNode);
                             }
-
-
+                            
                             (*candidateIt)->deactivate();
                             mActiveLinearConstraints.erase( *candidateIt );
                         }
@@ -580,8 +594,11 @@ namespace smtrat
 
         Answer a = runBackends();
         cout << "Answer: " << a << endl;
-
-        Module::removeSubformula( _formula );
+        
+        if ( (*_formula)->constraint().variables().size() > 1 )
+        {
+            Module::removeSubformula( _formula );
+        }
     }
 
 
@@ -604,7 +621,13 @@ namespace smtrat
         printAffectedCandidates();
 #endif
         printIcpVariables();
-
+        
+        // temporary solution - an added linear constraint might have changed the box.
+        setBox(mHistoryRoot);
+        mHistoryActual->removeLeftChild();
+        mHistoryActual->removeRightChild();
+        mCurrentId = mHistoryActual->id();
+        
         // call mLRA to check linear feasibility
         mValidationFormula->getPropositions();
         Answer lraAnswer = mLRA.isConsistent();
@@ -628,8 +651,8 @@ namespace smtrat
 
                     /**
                     * Either the constraint is already an original one - then the constraint will be in the sets of origins of
-                    * one of the linear contraction candidates (Case A). Otherwise the infeasible constrain is the result of the linearization -
-                    * it is the lhs of the contraction candidate itself (Case B). AS A THIRS CASE: A BOUNDARY CONSTRAINT IS VIOLATED: CHECK #VARIABLES
+                    * one of the linear contraction candidates (Case A). Otherwise the infeasible constraint is the result of the linearization -
+                    * it is the lhs of the contraction candidate itself (Case B). AS A THIRD CASE: A BOUNDARY CONSTRAINT IS VIOLATED: CHECK #VARIABLES
                     */
 
                     for ( auto ccIt = mActiveLinearConstraints.begin(); ccIt != mActiveLinearConstraints.end(); ++ccIt)
@@ -653,23 +676,25 @@ namespace smtrat
                         }
 
                         // Case B
-                        if ( (*ccIt).first->constraint() == (*formulaIt)->pConstraint() )
-                        {
-                            cout << "Is a linearized constraint." << endl;
-                            for ( auto receivedFormulaIt = mpReceivedFormula->subformulas().begin(); receivedFormulaIt != mpReceivedFormula->subformulas().end(); ++receivedFormulaIt )
-                            {
-                                (*formulaIt)->pConstraint()->print();
-                                if ( (*receivedFormulaIt)->pConstraint() == mReplacements[(*formulaIt)->pConstraint()])
-                                {
-                                    cout << "Found origin: " << endl;
-                                    newSet.insert(*receivedFormulaIt);
-                                    (*receivedFormulaIt)->print();
-                                    cout << endl;
-                                    break;
-                                }
-                            }
-                            break;
-                        }
+                        // find original constraint in received Formula -> make use of the origins?
+                        
+//                        if ( (*ccIt).first->constraint() == (*formulaIt)->pConstraint() )
+//                        {
+//                            cout << "Is a linearized constraint." << endl;
+//                            for ( auto receivedFormulaIt = mpReceivedFormula->subformulas().begin(); receivedFormulaIt != mpReceivedFormula->subformulas().end(); ++receivedFormulaIt )
+//                            {
+//                                (*formulaIt)->pConstraint()->print();
+//                                if ( (*receivedFormulaIt)->pConstraint() == mLinearizationReplacements[(*formulaIt)->pConstraint()])
+//                                {
+//                                    cout << "Found origin: " << endl;
+//                                    newSet.insert(*receivedFormulaIt);
+//                                    (*receivedFormulaIt)->print();
+//                                    cout << endl;
+//                                    break;
+//                                }
+//                            }
+//                            break;
+//                        }   
                     }
                     // Case C
                     if( (*formulaIt)->constraint().variables().size() == 1 )
@@ -747,7 +772,9 @@ namespace smtrat
                 // prepare IcpRelevantCandidates
                 fillCandidates(targetDiameter);
 //                printIcpRelevantCandidates();
-
+                
+                printIntervals();
+                
                 splitOccurred = false;
 
                 while ( !mIcpRelevantCandidates.empty() && !splitOccurred )
@@ -880,9 +907,9 @@ namespace smtrat
                             if ( mCenterConstraints.find((*infSetIt)->pConstraint()) == mCenterConstraints.end() )
                             {
                                 onlyCenterConstraints = false;
-
-                                // add candidates for all variables to icpRelevantConstraints
-                                if ( mReplacements.find((*infSetIt)->pConstraint()) != mLinearizationReplacements.end() )
+                                
+                                // add candidates for all variables to icpRelevantConstraints                               
+                                if ( mReplacements.find((*infSetIt)->pConstraint()) != mReplacements.end() )
                                 {
                                     // search for the candidates and add them as icpRelevant
                                     for ( auto actCandidateIt = mActiveLinearConstraints.begin(); actCandidateIt != mActiveLinearConstraints.end(); ++actCandidateIt )
@@ -1466,8 +1493,8 @@ namespace smtrat
                     tmpRight->insert((*intervalIt));
                 }
             }
-
-            icp::HistoryNode* newRightChild = new icp::HistoryNode(*tmpRight);
+            
+            icp::HistoryNode* newRightChild = new icp::HistoryNode(*tmpRight, mCurrentId+2);
             mHistoryActual->addRight(newRightChild);
 
 
@@ -1485,14 +1512,11 @@ namespace smtrat
                     tmpLeft->insert((*intervalIt));
                 }
             }
-
-            icp::HistoryNode* newLeftChild = new icp::HistoryNode(*tmpLeft);
-
-#ifdef HISTORY_DEBUG
-            newLeftChild->setId(mCurrentId++);
-            mHistoryActual->right()->setId(mCurrentId++);
-#endif
-
+            
+            icp::HistoryNode* newLeftChild = new icp::HistoryNode(*tmpLeft,++mCurrentId);
+            
+            ++mCurrentId;
+            
             mHistoryActual = mHistoryActual->addLeft(newLeftChild);
 
             // update mIntervals - usually this happens when changing to a different box, but in this case it has to be done manually, otherwise mIntervals is not affected.
@@ -2042,7 +2066,7 @@ namespace smtrat
                         tmpRight->insert((*intervalIt));
                     }
 
-                    icp::HistoryNode* newRightChild = new icp::HistoryNode(*tmpRight);
+                    icp::HistoryNode* newRightChild = new icp::HistoryNode(*tmpRight, mCurrentId+2);
                     mHistoryActual->addRight(newRightChild);
 
                     // left first!
@@ -2056,14 +2080,11 @@ namespace smtrat
                     {
                         tmpLeft->insert((*intervalIt));
                     }
-
-                    icp::HistoryNode* newLeftChild = new icp::HistoryNode(*tmpLeft);
-
-#ifdef HISTORY_DEBUG
-                    newLeftChild->setId(mCurrentId++);
-                    mHistoryActual->right()->setId(mCurrentId++);
-#endif
-
+                    
+                    icp::HistoryNode* newLeftChild = new icp::HistoryNode(*tmpLeft, ++mCurrentId);
+                    
+                    ++mCurrentId;
+                    
                     mHistoryActual = mHistoryActual->addLeft(newLeftChild);
 
                     cout << "New right child: " << endl;
@@ -2128,7 +2149,7 @@ namespace smtrat
                         tmpRight->insert((*intervalIt));
                     }
 
-                    icp::HistoryNode* newRightChild = new icp::HistoryNode(*tmpRight);
+                    icp::HistoryNode* newRightChild = new icp::HistoryNode(*tmpRight, mCurrentId+2);
                     mHistoryActual->addRight(newRightChild);
 
                     // left first!
@@ -2142,14 +2163,11 @@ namespace smtrat
                     {
                         tmpLeft->insert((*intervalIt));
                     }
-
-                    icp::HistoryNode* newLeftChild = new icp::HistoryNode(*tmpLeft);
-
-#ifdef HISTORY_DEBUG
-                    newLeftChild->setId(mCurrentId++);
-                    mHistoryActual->right()->setId(mCurrentId++);
-#endif
-
+                    
+                    icp::HistoryNode* newLeftChild = new icp::HistoryNode(*tmpLeft, ++mCurrentId);
+                    
+                    ++mCurrentId;
+                    
                     mHistoryActual = mHistoryActual->addLeft(newLeftChild);
 
                     cout << "New right child: " << endl;
