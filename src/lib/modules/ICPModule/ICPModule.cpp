@@ -628,6 +628,12 @@ namespace smtrat
         mHistoryActual->removeRightChild();
         mCurrentId = mHistoryActual->id();
         
+        // temporary solution - an added linear constraint might have changed the box.
+        setBox(mHistoryRoot);
+        mHistoryActual->removeLeftChild();
+        mHistoryActual->removeRightChild();
+        mCurrentId = mHistoryActual->id();
+        
         // call mLRA to check linear feasibility
         mValidationFormula->getPropositions();
         Answer lraAnswer = mLRA.isConsistent();
@@ -772,6 +778,8 @@ namespace smtrat
                 // prepare IcpRelevantCandidates
                 fillCandidates(targetDiameter);
 //                printIcpRelevantCandidates();
+                
+                printIntervals();
                 
                 printIntervals();
                 
