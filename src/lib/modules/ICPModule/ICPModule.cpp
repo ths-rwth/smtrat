@@ -624,8 +624,10 @@ namespace smtrat
         
         // temporary solution - an added linear constraint might have changed the box.
         setBox(mHistoryRoot);
+        cout << "ping" << endl;
         mHistoryActual->removeLeftChild();
         mHistoryActual->removeRightChild();
+        cout << "pong" << endl;
         mCurrentId = mHistoryActual->id();
         
         // call mLRA to check linear feasibility
