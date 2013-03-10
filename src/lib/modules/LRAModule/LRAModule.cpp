@@ -342,10 +342,12 @@ namespace smtrat
         unsigned posNewLearnedBound = 0;
         for( ; ; )
         {
+            CONSTRAINT_LOCK
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
             if( anAnswerFound() )
             {
                 learnRefinements();
+                CONSTRAINT_UNLOCK
                 return foundAnswer( Unknown );
             }
             #ifdef DEBUG_LRA_MODULE
@@ -372,7 +374,6 @@ namespace smtrat
                 // If no basic variable violates its bounds (and hence no variable at all).
                 if( pivotingElement.first == 0 )
                 {
-                    CONSTRAINT_LOCK_GUARD
                     #ifdef DEBUG_LRA_MODULE
                     cout << "True" << endl;
                     #endif
@@ -423,8 +424,8 @@ namespace smtrat
                                 }
                             ++map_iterator;
                             }
-                            return foundAnswer(True);
                             #endif
+                            CONSTRAINT_UNLOCK
                             return foundAnswer( True );
                         }
                         // Otherwise, resolve the notequal-constraints (create the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
@@ -441,6 +442,7 @@ namespace smtrat
                             #ifdef LRA_REFINEMENT
                             learnRefinements();
                             #endif
+                            CONSTRAINT_UNLOCK
                             return foundAnswer( Unknown );
                         }
                     }
@@ -456,13 +458,16 @@ namespace smtrat
                             }
                         }
                         adaptPassedFormula();
+                        CONSTRAINT_UNLOCK
                         Answer a = runBackends();
                         if( a == False )
                         {
                             getInfeasibleSubsets();
                         }
                         #ifdef LRA_REFINEMENT
+                        CONSTRAINT_LOCK
                         learnRefinements();
+                        CONSTRAINT_UNLOCK
                         #endif
                         return foundAnswer( a );
                     }
@@ -471,7 +476,6 @@ namespace smtrat
                 {
                     // Pivot at the found pivoting entry.
                     mTableau.pivot( pivotingElement.first );
-                    CONSTRAINT_LOCK_GUARD
                     // Learn all bounds which has been deduced during the pivoting process.
                     while( posNewLearnedBound < mTableau.rLearnedBounds().size() )
                     {
@@ -516,6 +520,7 @@ namespace smtrat
                         #ifdef LRA_REFINEMENT
                         learnRefinements();
                         #endif
+                        CONSTRAINT_UNLOCK
                         return foundAnswer( False );
                     }
                 }
@@ -523,7 +528,6 @@ namespace smtrat
             // There is a conflict, namely a basic variable violating its bounds without any suitable non-basic variable.
             else
             {
-                CONSTRAINT_LOCK_GUARD
                 // Create the infeasible subsets.
                 mInfeasibleSubsets.clear();
                 #ifdef LRA_ONE_REASON
@@ -555,8 +559,10 @@ namespace smtrat
                 #ifdef DEBUG_LRA_MODULE
                 cout << "False" << endl;
                 #endif
+                CONSTRAINT_UNLOCK
                 return foundAnswer( False );
             }
+            CONSTRAINT_UNLOCK
         }
         assert( false );
         #ifdef LRA_REFINEMENT
@@ -750,7 +756,6 @@ namespace smtrat
      */
     void LRAModule::learnRefinements()
     {
-        CONSTRAINT_LOCK_GUARD
         vector<Tableau::LearnedBound>& lBs = mTableau.rLearnedBounds();
         while( !lBs.empty() )
         {
@@ -859,7 +864,6 @@ namespace smtrat
             /*
              * Check whether the assignment satisfies the non linear constraints.
              */
-            CONSTRAINT_LOCK_GUARD
             for( auto constraint = mNonlinearConstraints.begin(); constraint != mNonlinearConstraints.end(); ++constraint )
             {
                 if( (*constraint)->satisfiedBy( assignments ) != 1 )
@@ -882,7 +886,6 @@ namespace smtrat
      */
     void LRAModule::splitUnequalConstraint( const Constraint* _unequalConstraint )
     {
-        CONSTRAINT_LOCK_GUARD
         assert( _unequalConstraint->relation() == CR_NEQ );
         const Constraint* lessConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_LESS, _unequalConstraint->variables() );
         const Constraint* greaterConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_GREATER, _unequalConstraint->variables() );
@@ -1026,7 +1029,6 @@ namespace smtrat
      */
     void LRAModule::setBound( Variable& _var, bool _constraintInverted, const numeric& _boundValue, const Constraint* _constraint )
     {
-        CONSTRAINT_LOCK_GUARD
         if( _constraint->relation() == CR_EQ )
         {
             // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
@@ -1233,7 +1235,6 @@ namespace smtrat
      */
     void LRAModule::findSimpleConflicts( const Bound& _bound )
     {
-        CONSTRAINT_LOCK_GUARD
         if( _bound.deduced() ) Module::storeAssumptionsToCheck( *mpManager );
         assert( !_bound.deduced() );
         if( _bound.isUpperBound() )
@@ -1284,7 +1285,6 @@ namespace smtrat
      */
     void LRAModule::initialize( const Constraint* const _pConstraint )
     {
-        CONSTRAINT_LOCK_GUARD
         map<const string, numeric, strCmp> coeffs = _pConstraint->linearAndConstantCoefficients();
         assert( coeffs.size() > 1 );
         map<const string, numeric, strCmp>::iterator currentCoeff = coeffs.begin();

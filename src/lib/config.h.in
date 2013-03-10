@@ -22,8 +22,9 @@
 #cmakedefine SMTRAT_ENABLE_CacheModule
 
 #cmakedefine SMTRAT_STRAT_Factorization
+#cmakedefine SMTRAT_STRAT_PARALLEL_MODE
 
 // Take the GBsetting from cmake
 #define GBModuleSettings @SMTRAT_GBMODULE_SETTINGS@
 
-#define CMakeStrategySolver smtrat::@SMTRAT_Strategy@ 
+#define CMakeStrategySolver smtrat::@SMTRAT_Strategy@

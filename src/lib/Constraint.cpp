@@ -1405,7 +1405,6 @@ namespace smtrat
      */
     signed Constraint::compare( const Constraint* _constraintA, const Constraint* _constraintB )
     {
-        CONSTRAINT_LOCK_GUARD
         if( _constraintA->variables().empty() || _constraintB->variables().empty() ) return 0;
         symtab::const_iterator var1 = _constraintA->variables().begin();
         symtab::const_iterator var2 = _constraintB->variables().begin();
@@ -2094,7 +2093,6 @@ namespace smtrat
      */
     const Constraint* Constraint::mergeConstraints( const Constraint* _constraintA, const Constraint* _constraintB )
     {
-        CONSTRAINT_LOCK_GUARD
         symtab::const_iterator var1 = _constraintA->variables().begin();
         symtab::const_iterator var2 = _constraintB->variables().begin();
         while( var1 != _constraintA->variables().end() && var2 != _constraintB->variables().end() )
@@ -2482,7 +2480,6 @@ namespace smtrat
      */
     bool Constraint::combineConstraints( const Constraint* _constraintA, const Constraint* _constraintB, const Constraint* _conditionconstraint )
     {
-        CONSTRAINT_LOCK_GUARD
         symtab::const_iterator var1 = _constraintA->variables().begin();
         symtab::const_iterator var2 = _constraintB->variables().begin();
         symtab::const_iterator var3 = _conditionconstraint->variables().begin();

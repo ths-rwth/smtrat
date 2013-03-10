@@ -241,7 +241,6 @@ namespace smtrat
 
             static void normalize( GiNaC::ex& _exp )
             {
-//                std::lock_guard<std::mutex> lock( mMutexNormalize );
                 GiNaC::numeric commonDenom = GiNaC::mdenom( _exp );
                 if( commonDenom != 1 ) _exp *= commonDenom;
                 _exp = _exp.expand();

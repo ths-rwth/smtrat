@@ -110,6 +110,7 @@ namespace smtrat
      */
     void Manager::initialize()
     {
+        cout << "bla" << endl;
         mNumberOfBranches = mStrategyGraph.numberOfBranches();
         if( mNumberOfBranches>1 )
         {
