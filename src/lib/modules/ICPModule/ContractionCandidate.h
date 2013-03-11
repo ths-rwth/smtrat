@@ -300,7 +300,7 @@ namespace smtrat
 
             void print( ostream& _out = std::cout ) const
             {
-                _out << mId << ": \t" << mConstraint << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
+                _out << mId << ": \t" << *mConstraint << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
 #ifdef CCPRINTORIGINS
                 cout << endl << "Origins(" << mOrigin.size()<< "): " << endl;
                 if ( !mOrigin.empty())

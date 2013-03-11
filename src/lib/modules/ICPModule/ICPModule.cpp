@@ -499,28 +499,9 @@ namespace smtrat
                                 // deactivate candidate
                                 (*activeLinearIt).first->deactivate();
 
+                                cout << "deactivate." << endl;
+                                
                                 activeLinearIt= mActiveLinearConstraints.erase(activeLinearIt);
-
-                                // remove constraint from mLRA module -> is identified by replacements-map Todo: IMPROVE, maybe we can avoid replacements mapping
-                                for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
-                                {
-                                    if ( (*_formula)->constraint().lhs() == (*replacementIt).second->lhs())
-                                    {
-                                        for ( auto validationFormulaIt = mValidationFormula->begin(); validationFormulaIt != mValidationFormula->end(); ++validationFormulaIt )
-                                        {
-                                            if ( (*validationFormulaIt)->pConstraint()->lhs() == (*_formula)->constraint().lhs() )
-                                            {
-                                                mLRA.removeSubformula(validationFormulaIt);
-                                                mValidationFormula->erase(validationFormulaIt);
-                                                mReplacements.erase(replacementIt);
-                                                break;
-                                            }
-                                        }
-                                        break;
-                                    }
-                                }
-
-
                             }
                         }
                     }
@@ -591,6 +572,30 @@ namespace smtrat
                 }
             }
         }
+        cout << "Attempt to remove from LRA ..." << endl;
+        // remove constraint from mLRA module -> is identified by replacements-map Todo: IMPROVE, maybe we can avoid replacements mapping
+        for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
+        {
+            cout << "Check equal: " << (*_formula)->constraint().lhs() << " == " << (*replacementIt).second->lhs() << endl;
+            if ( (*_formula)->constraint().lhs() == (*replacementIt).second->lhs())
+            {
+                cout << "True" << endl;
+                for ( auto validationFormulaIt = mValidationFormula->begin(); validationFormulaIt != mValidationFormula->end(); ++validationFormulaIt )
+                {
+                    cout << "EQ: " << (*validationFormulaIt)->pConstraint()->lhs() << " == " << (*_formula)->constraint().lhs() << endl;
+                    if ( (*validationFormulaIt)->pConstraint()->lhs() == (*replacementIt).first->lhs() )
+                    {
+                        cout << "[mLRA] remove " << (*validationFormulaIt)->pConstraint()->lhs() << endl;
+                        mLRA.removeSubformula(validationFormulaIt);
+                        mValidationFormula->erase(validationFormulaIt);
+                        mReplacements.erase(replacementIt);
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        
 
         Answer a = runBackends();
         cout << "Answer: " << a << endl;
@@ -623,18 +628,14 @@ namespace smtrat
         printIcpVariables();
         
         // temporary solution - an added linear constraint might have changed the box.
+        cout << "Id selected box: " << mHistoryRoot->id() << " Size subtree: " << mHistoryRoot->sizeSubtree() << endl;
         setBox(mHistoryRoot);
         cout << "ping" << endl;
         mHistoryActual->removeLeftChild();
         mHistoryActual->removeRightChild();
         cout << "pong" << endl;
         mCurrentId = mHistoryActual->id();
-        
-        // temporary solution - an added linear constraint might have changed the box.
-        setBox(mHistoryRoot);
-        mHistoryActual->removeLeftChild();
-        mHistoryActual->removeRightChild();
-        mCurrentId = mHistoryActual->id();
+        cout << "Id actual box: " << mHistoryActual->id() << " Size subtree: " << mHistoryActual->sizeSubtree() << endl;
         
         // call mLRA to check linear feasibility
         mValidationFormula->getPropositions();
@@ -663,47 +664,47 @@ namespace smtrat
                     * it is the lhs of the contraction candidate itself (Case B). AS A THIRD CASE: A BOUNDARY CONSTRAINT IS VIOLATED: CHECK #VARIABLES
                     */
 
-                    for ( auto ccIt = mActiveLinearConstraints.begin(); ccIt != mActiveLinearConstraints.end(); ++ccIt)
-                    {
-                        cout << "Compare candidate: ";
-                        (*ccIt).first->print();
-
-                        icp::ContractionCandidate* tmp = (*ccIt).first;
-
-                        // Case A
-                        for ( auto originIt = tmp->rOrigin().begin(); originIt != tmp->rOrigin().end(); ++originIt )
-                        {
-                            if ( (*originIt)->pConstraint() == (*formulaIt)->pConstraint() )
-                            {
-                                cout << "Found origin: " << endl;
-                                newSet.insert(*formulaIt);
-                                (*originIt)->print();
-                                cout << endl;
-//                                break;
-                            }
-                        }
-
-                        // Case B
-                        // find original constraint in received Formula -> make use of the origins?
-                        
-//                        if ( (*ccIt).first->constraint() == (*formulaIt)->pConstraint() )
+//                    for ( auto ccIt = mActiveLinearConstraints.begin(); ccIt != mActiveLinearConstraints.end(); ++ccIt)
+//                    {
+//                        cout << "Compare candidate: ";
+//                        (*ccIt).first->print();
+//
+//                        icp::ContractionCandidate* tmp = (*ccIt).first;
+//
+//                        // Case A
+//                        for ( auto originIt = tmp->rOrigin().begin(); originIt != tmp->rOrigin().end(); ++originIt )
 //                        {
-//                            cout << "Is a linearized constraint." << endl;
-//                            for ( auto receivedFormulaIt = mpReceivedFormula->subformulas().begin(); receivedFormulaIt != mpReceivedFormula->subformulas().end(); ++receivedFormulaIt )
+//                            if ( (*originIt)->pConstraint() == (*formulaIt)->pConstraint() )
 //                            {
-//                                (*formulaIt)->pConstraint()->print();
-//                                if ( (*receivedFormulaIt)->pConstraint() == mLinearizationReplacements[(*formulaIt)->pConstraint()])
-//                                {
-//                                    cout << "Found origin: " << endl;
-//                                    newSet.insert(*receivedFormulaIt);
-//                                    (*receivedFormulaIt)->print();
-//                                    cout << endl;
-//                                    break;
-//                                }
+//                                cout << "Found origin: " << endl;
+//                                newSet.insert(*formulaIt);
+//                                (*originIt)->print();
+//                                cout << endl;
+////                                break;
 //                            }
-//                            break;
-//                        }   
-                    }
+//                        }
+//
+//                        // Case B
+//                        // find original constraint in received Formula -> make use of the origins?
+//                        
+////                        if ( (*ccIt).first->constraint() == (*formulaIt)->pConstraint() )
+////                        {
+////                            cout << "Is a linearized constraint." << endl;
+////                            for ( auto receivedFormulaIt = mpReceivedFormula->subformulas().begin(); receivedFormulaIt != mpReceivedFormula->subformulas().end(); ++receivedFormulaIt )
+////                            {
+////                                (*formulaIt)->pConstraint()->print();
+////                                if ( (*receivedFormulaIt)->pConstraint() == mLinearizationReplacements[(*formulaIt)->pConstraint()])
+////                                {
+////                                    cout << "Found origin: " << endl;
+////                                    newSet.insert(*receivedFormulaIt);
+////                                    (*receivedFormulaIt)->print();
+////                                    cout << endl;
+////                                    break;
+////                                }
+////                            }
+////                            break;
+////                        }   
+//                    }
                     // Case C
                     if( (*formulaIt)->constraint().variables().size() == 1 )
                     {
@@ -711,6 +712,26 @@ namespace smtrat
                         newSet.insert((*formulaIt));
                         (*formulaIt)->print();
                         cout << endl;
+                    }
+                    else
+                    {
+                        for ( auto replacementsIt = mReplacements.begin(); replacementsIt != mReplacements.end(); ++replacementsIt )
+                        {
+                            for ( auto receivedIt = mpReceivedFormula->begin(); receivedIt != mpReceivedFormula->end(); ++receivedIt )
+                            {
+                                cout << "Check equal: " << (*formulaIt)->constraint() << " == " << *(*replacementsIt).first << endl;
+                                if ( (*formulaIt)->constraint() == *(*replacementsIt).first )
+                                {
+                                    cout << "True" << endl;
+                                    cout << "EQ: " << (*receivedIt)->constraint() << " == " << *(*replacementsIt).second << endl;
+                                    if ( (*receivedIt)->constraint().lhs() == (*replacementsIt).second->lhs() )
+                                    {
+                                        cout << "Found and insert: " << (*receivedIt)->constraint() << endl;
+                                        newSet.insert(*receivedIt);
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     cout << endl;
@@ -724,9 +745,6 @@ namespace smtrat
             }
 
             printInfeasibleSubsets();
-
-
-
 
             return foundAnswer(lraAnswer);
         }
