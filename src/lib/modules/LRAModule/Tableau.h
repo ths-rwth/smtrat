@@ -363,24 +363,46 @@ namespace lra
             }
 
             #ifdef LRA_GOMORY_CUTS
+            enum GOMORY_SET
+            {
+                J_PLUS,
+                J_MINUS,
+                K_PLUS,
+                K_MINUS
+            };
             const smtrat::Constraint* gomoryCut(const GiNaC::numeric ass, vector<TableauHead>::const_iterator row) const
             {
                 if(!ass.is_integer())
                 {
                     Iterator row_iterator = Iterator(row->mStartEntry,mpEntries);
+                    vector<GOMORY_SET> splitting = vector<GOMORY_SET>();
                     while(!row_iterator.rowEnd())
                     {
                         const Variable nonBasicVar = *mColumns[(*row_iterator).columnNumber()].mName;
                         if(nonBasicVar.infimum() == nonBasicVar.assignment() ||
                            nonBasicVar.supremum() == nonBasicVar.assignment())
-                            //...
-                        //else
-                            //return NULL;
+                        {
+                            if(nonBasicVar.infimum() == nonBasicVar.assignment())
+                            {
+                                if((*row_iterator).content()<0)
+                                    splitting.push_back(J_MINUS);
+                                else 
+                                    splitting.push_back(J_PLUS);         
+                            }
+                            else
+                            {
+                                if((*row_iterator).content()<0)
+                                    splitting.push_back(K_MINUS);
+                                else 
+                                    splitting.push_back(K_PLUS);
+                            }
+                        }
+                        else return NULL;
                         row_iterator.right();
                     }
-                    //...
+                    //return Constraint
                 }
-                //...
+                return NULL;
             }
             #endif
 
