@@ -389,7 +389,7 @@ namespace smtrat
                             learnRefinements();
                             #endif
 
-                            #ifdef LRA_GOMORY_CUTS
+                            #ifdef LRA_GOMORY_CUTS                            
                             exmap rMap_ = getRationalModel();
                             for(auto vector_iterator = mTableau.rows().begin();vector_iterator != mTableau.rows().end();++vector_iterator)
                             {
@@ -400,7 +400,6 @@ namespace smtrat
                                 //...
                             }
                             #endif
-
                             #ifdef LRA_BRANCH_AND_BOUND
                             exmap _rMap = getRationalModel();
                             exmap::const_iterator map_iterator = _rMap.begin();
