@@ -409,6 +409,10 @@ namespace smtrat
              */
             int sizeSubtree() const
             {
+                if (this == NULL)
+                {
+                    return 0;
+                }
                 if (this->isLeaf())
                 {
                     return 1;
@@ -417,6 +421,11 @@ namespace smtrat
                 {
                     return mLeftChild->sizeSubtree() + mRightChild->sizeSubtree() + 1;
                 }
+            }
+            
+            friend bool operator== (HistoryNode const& lhs, HistoryNode const& rhs)
+            {
+                return lhs.id() == rhs.id();
             }
 
         private:
