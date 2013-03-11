@@ -39,9 +39,9 @@
 #define LRA_USE_PIVOTING_STRATEGY
 #define LRA_REFINEMENT
 #ifdef LRA_REFINEMENT
-#define LRA_GOMORY_CUTS
 //#define LRA_INTRODUCE_NEW_CONSTRAINTS
 #endif
+//#define LRA_GOMORY_CUTS
 
 namespace lra
 {
@@ -361,28 +361,6 @@ namespace lra
             {
                 return mDefaultBoundPosition;
             }
-            
-            #ifdef LRA_GOMORY_CUTS
-            const smtrat::Constraint* gomoryCut(const GiNaC::numeric ass, vector<TableauHead>::const_iterator row) const
-            {
-                if(!ass.is_integer())
-                {
-                    Iterator row_iterator = Iterator(row->mStartEntry,mpEntries);
-                    while(!row_iterator.rowEnd())
-                    {
-                        const Variable nonBasicVar = *mColumns[(*row_iterator).columnNumber()].mName;
-                        if(nonBasicVar.infimum() == nonBasicVar.assignment() ||
-                           nonBasicVar.supremum() == nonBasicVar.assignment())
-                            //...
-                        //else
-                            //return NULL;
-                        row_iterator.right();
-                    }
-                    //...                 
-                }
-                //...
-            }
-            #endif
 
             #ifdef LRA_GOMORY_CUTS
             const smtrat::Constraint* gomoryCut(const GiNaC::numeric ass, vector<TableauHead>::const_iterator row) const

@@ -1103,6 +1103,7 @@ FindSecond:
                             confl = learnTheoryConflict();
                             CONSTRAINT_UNLOCK
                             if( !ok ) return l_False;
+                            break;
                         }
                         case Unknown:
                         {
@@ -1308,7 +1309,6 @@ FindSecond:
                         }
                         else
                         {
-                            if( currentAssignmentConsistent != Unknown ) cout << currentAssignmentConsistent << endl;
                             assert( currentAssignmentConsistent == Unknown );
                             CONSTRAINT_UNLOCK
                             return l_Undef;
