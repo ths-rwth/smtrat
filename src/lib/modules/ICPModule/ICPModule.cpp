@@ -829,7 +829,7 @@ namespace smtrat
                     splitOccurred = contraction( candidate, relativeContraction );
 
                     // catch if new interval is empty -> we can drop box and chose next box
-                    if ( mHistoryActual->hasEmptyInterval() )
+                    if ( intervalBoxContainsEmptyInterval() )
                     {
                         cout << "GENERATED EMPTY INTERVAL, Drop Box: " << endl;
                         printIcpVariables();
@@ -907,7 +907,12 @@ namespace smtrat
                     }
                 } //while ( !mIcpRelevantCandidates.empty() )
 
-                invalidBox = checkBoxAgainstLinearFeasibleRegion();
+                // do not verify if the box is already invalid
+                if (!invalidBox)
+                {
+                    invalidBox = checkBoxAgainstLinearFeasibleRegion();
+                }
+                
                 
                 didSplit.first = false;
                 // perform splitting if possible
@@ -2773,6 +2778,8 @@ namespace smtrat
         Answer boxCheck = mLRA.isConsistent();
         assert(boxCheck != Unknown);
 
+        mLRA.print();
+        
         // remove boundaries from mLRA module after boxChecking.
         for (auto formulaIt = mValidationFormula->begin(); formulaIt != mValidationFormula->end(); )
         {
@@ -2789,7 +2796,19 @@ namespace smtrat
         
         if ( boxCheck == True )
         {
-            return true;
+            return false;
+        }
+        return true;
+    }
+    
+    bool ICPModule::intervalBoxContainsEmptyInterval()
+    {
+        for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
+        {
+            if ( (*intervalIt).second.empty() )
+            {
+                return true;
+            }
         }
         return false;
     }
