@@ -195,6 +195,11 @@ namespace smtrat
             {
                 return mIntervals;
             }
+            
+            GiNaCRA::evaldoubleintervalmap& rIntervals()
+            {
+                return mIntervals;
+            }
 
             void setIntervals( GiNaCRA::evaldoubleintervalmap _map )
             {

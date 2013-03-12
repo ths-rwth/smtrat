@@ -191,7 +191,7 @@ namespace smtrat
              * by the mLRA module
              * @return a set of violated constraints
              */
-            vec_set_const_pFormula validateSolution();
+            std::pair<bool,bool> validateSolution();
 
             /**
              * Creates new ContractionCandidate and adds it to nonlinear constraints
@@ -265,6 +265,12 @@ namespace smtrat
              * and before a new contraction sequence starts in order to check linear feasibility.
              */
             void clearCenterConstraintsFromValidationFormula();
+            
+            /**
+             * Checks the actual intervalBox with the LRASolver
+             * @return 
+             */
+            bool checkBoxAgainstLinearFeasibleRegion();
     };
 }    // namespace smtrat
 
