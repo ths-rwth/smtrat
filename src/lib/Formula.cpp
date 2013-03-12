@@ -852,7 +852,7 @@ namespace smtrat
                                     newFormula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() ) ) );
                                     newFormula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
                                     delete currentSubformula;
-                                    subformulasToTransform.push_back( newFormula );
+                                    phis.push_back( newFormula );
                                 }
                                 else
                                 {
