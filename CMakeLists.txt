@@ -61,6 +61,8 @@ include( smtratmacros )
 # TODO: iteratively search for cmake files and include them here. 
 
 
+include(GetGitRevisionDescription)
+get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 
 
 # path to put in the executables
