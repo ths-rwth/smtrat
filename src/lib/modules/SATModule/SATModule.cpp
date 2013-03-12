@@ -730,7 +730,7 @@ namespace smtrat
             }
             else
             {
-                ok = value( add_tmp[0] ) == l_True;
+                ok = (value( add_tmp[0] ) == l_True);
             }
             return false;
         }
@@ -1096,7 +1096,12 @@ FindSecond:
                             cout << "### Result: False!" << endl;
                             #endif
                             confl = learnTheoryConflict();
-                            if( !ok ) return l_False;
+                            if( confl == CRef_Undef )
+                            {
+                                if( !ok ) return l_False;
+                                processLemmas();
+                                continue;
+                            }
                             break;
                         }
                         case Unknown:
@@ -1175,8 +1180,6 @@ FindSecond:
                 }
                 #endif
                 cancelUntil( backtrack_level );
-
-
 
                 if( learnt_clause.size() == 1 )
                 {
@@ -1845,7 +1848,7 @@ NextClause:
             }
             ++backend;
         }
-        cancelUntil( lowestLevel );
+//        cancelUntil( lowestLevel );
         assert( lowestLevel < decisionLevel()+1 );
         return conflictClause;
     }
