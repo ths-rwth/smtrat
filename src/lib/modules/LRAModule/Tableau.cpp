@@ -1712,6 +1712,78 @@ CheckLowerPremise:
         if( sumOfNonbasics != 0 ) return false;
         return true;
     }
+    
+    #ifdef LRA_GOMORY_CUTS
+    enum GOMORY_SET
+    {
+        J_PLUS,
+        J_MINUS,
+        K_PLUS,
+        K_MINUS
+    };
+    const smtrat::Constraint* Tableau::gomoryCut(const GiNaC::numeric ass, vector<TableauHead>::const_iterator row, vector<smtrat::Constraint*>& constr_vec) const
+    {
+        if(!ass.is_integer())
+        {
+            Iterator row_iterator = Iterator(row->mStartEntry,mpEntries);
+            vector<GOMORY_SET> splitting = vector<GOMORY_SET>();
+            while(!row_iterator.rowEnd())
+            {
+                const Variable nonBasicVar = *mColumns[(*row_iterator).columnNumber()].mName;
+                if(nonBasicVar.infimum() == nonBasicVar.assignment() ||
+                   nonBasicVar.supremum() == nonBasicVar.assignment())
+                {
+                    if(nonBasicVar.infimum() == nonBasicVar.assignment())
+                    {
+                        if((*row_iterator).content()<0)
+                            splitting.push_back(J_MINUS);
+                        else 
+                            splitting.push_back(J_PLUS);         
+                    }
+                    else
+                    {
+                        if((*row_iterator).content()<0)
+                            splitting.push_back(K_MINUS);
+                        else 
+                            splitting.push_back(K_PLUS);
+                    }
+                }
+                else return NULL;
+                row_iterator.right();
+            }
+            vector<GOMORY_SET>::const_iterator vec_iter = splitting.end();            
+            numeric f_zero = ass-ass.to_int();
+            ex summand = ex();
+            while(!row_iterator.rowBegin())
+            {
+                Variable nonBasicVar = (*mColumns[(*row_iterator).columnNumber()].mName);
+                if((*vec_iter)==J_MINUS)
+                {
+                    numeric bound = nonBasicVar.infimum().limit().mainPart();
+                    summand += (-(*row_iterator).content())/(f_zero)*(nonBasicVar.expression()-bound);                   
+                }                 
+                else if ((*vec_iter)==J_PLUS)
+                {
+                    numeric bound = nonBasicVar.supremum().limit().mainPart();
+                    summand += (*row_iterator).content()/(1-f_zero)*(nonBasicVar.expression()-bound);                   
+                }
+                else if ((*vec_iter)==K_MINUS)
+                {
+                    numeric bound = nonBasicVar.infimum().limit().mainPart();
+                    summand += (-(*row_iterator).content())/(1-f_zero)*(bound-nonBasicVar.expression());                   
+                }
+                else if ((*vec_iter)==K_PLUS) 
+                {
+                    numeric bound = nonBasicVar.supremum().limit().mainPart();
+                    summand += (*row_iterator).content()/(f_zero)*(bound-nonBasicVar.expression());
+                }  
+                row_iterator.left();
+            }
+            //build and return constraint here    
+        }
+        return NULL;
+    }
+    #endif
 
     /**
      *

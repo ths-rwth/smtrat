@@ -391,12 +391,13 @@ namespace smtrat
 
                             #ifdef LRA_GOMORY_CUTS                            
                             exmap rMap_ = getRationalModel();
+                            vector<Constraint*> constraint_vec = vector<Constraint*>();
                             for(auto vector_iterator = mTableau.rows().begin();vector_iterator != mTableau.rows().end();++vector_iterator)
                             {
                                 ex referring_ex = vector_iterator->mName->expression();
                                 auto found_ex = rMap_.find(referring_ex);
                                 const numeric ass = ex_to<numeric>(found_ex->second);
-                                const Constraint* gomory_constraint = mTableau.gomoryCut(ass,vector_iterator);
+                                const Constraint* gomory_constraint = mTableau.gomoryCut(ass,vector_iterator,constraint_vec);
                                 //...
                             }
                             #endif
