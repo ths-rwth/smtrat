@@ -428,6 +428,16 @@ namespace smtrat
         }
         return result;
     }
+    
+    /**
+     * 
+     * @param The relation
+     * @return
+     */
+    bool constraintRelationIsStrict( Constraint_Relation rel )
+    {
+        return (rel == CR_NEQ || rel == CR_LESS || rel == CR_GREATER);
+    }
 
     /**
      * Gets the linear coefficients of each variable and their common constant part.
