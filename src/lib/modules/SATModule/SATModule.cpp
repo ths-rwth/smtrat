@@ -731,7 +731,7 @@ namespace smtrat
             }
             else
             {
-                ok = value( add_tmp[0] ) == l_True;
+                ok = (value( add_tmp[0] ) == l_True);
             }
             return false;
         }
@@ -1102,7 +1102,12 @@ FindSecond:
                             #endif
                             confl = learnTheoryConflict();
                             CONSTRAINT_UNLOCK
-                            if( !ok ) return l_False;
+                            if( confl == CRef_Undef )
+                            {
+                                if( !ok ) return l_False;
+                                processLemmas();
+                                continue;
+                            }
                             break;
                         }
                         case Unknown:
@@ -1866,7 +1871,6 @@ NextClause:
             }
             ++backend;
         }
-        cancelUntil( lowestLevel );
         assert( lowestLevel < decisionLevel()+1 );
         return conflictClause;
     }
