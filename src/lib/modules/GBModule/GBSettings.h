@@ -258,6 +258,12 @@ namespace smtrat
 		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
     };
     
+    struct GBSettings41 : GBSettings4
+    {
+        static const unsigned                            identifier                              = 41;
+        static const bool                                iterativeVariableRewriting              = true;
+    };
+    
     struct GBSettings51 : GBSettings5
     {
         static const unsigned                            identifier                              = 51;
