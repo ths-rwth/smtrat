@@ -949,7 +949,12 @@ namespace vs
                 }
                 else
                 {
+                    #ifdef SMTRAT_VS_VARIABLEBOUNDS
+                    (**cond).rFlag() = !hasRootsInVariableBounds( *cond );
+                    #else
                     (**cond).rFlag() = false;
+                    #endif
+                    
                 }
             }
         }
@@ -2690,6 +2695,28 @@ namespace vs
                 }
             }
         }
+        return true;
+    }
+    
+    /**
+     * 
+     * @param _varName
+     * @param _condition
+     * @return 
+     */
+    bool State::hasRootsInVariableBounds( const Condition* _condition )
+    {
+//        symbol sym;
+//        _condition->constraint().variable( index(), sym );
+//        evaldoubleintervalmap intervals = rFather().rVariableBounds().getIntervalMap();
+//        DoubleInterval solutionSpace = DoubleInterval::evaluate( _condition->constraint().lhs(), intervals );
+//        if( !solutionSpace.contains( 0 ) )
+//        {
+//            // Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, _substitutionType, _oConditions );
+//            ConditionSet origins = ConditionSet();
+//            origins.insert( _condition );
+//            Substitution* sub = new Substitution( index(), ex( sym ), ST_TOO_HIGH_DEGREE, origins );
+//        }
         return true;
     }
     #endif
