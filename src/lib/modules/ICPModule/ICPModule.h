@@ -271,6 +271,12 @@ namespace smtrat
              * @return 
              */
             bool checkBoxAgainstLinearFeasibleRegion();
+            
+            /**
+             * Checks mIntervals if it contains an empty interval.
+             * @return 
+             */
+            bool intervalBoxContainsEmptyInterval();
     };
 }    // namespace smtrat
 
