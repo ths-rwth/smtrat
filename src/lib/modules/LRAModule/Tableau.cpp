@@ -1751,29 +1751,29 @@ CheckLowerPremise:
             }
             vector<GOMORY_SET>::const_iterator vec_iter = splitting.end();            
             numeric f_zero = ass-ass.to_int();
-            ex summand = ex();
+            ex sum = ex();
             while(!row_iterator.rowBegin())
             {
                 Variable nonBasicVar = (*mColumns[(*row_iterator).columnNumber()].mName);
                 if((*vec_iter)==J_MINUS)
                 {
                     numeric bound = nonBasicVar.infimum().limit().mainPart();
-                    summand += (-(*row_iterator).content())/(f_zero)*(nonBasicVar.expression()-bound);                   
+                    sum += (-(*row_iterator).content())/(f_zero)*(nonBasicVar.expression()-bound);                   
                 }                 
                 else if ((*vec_iter)==J_PLUS)
                 {
                     numeric bound = nonBasicVar.supremum().limit().mainPart();
-                    summand += (*row_iterator).content()/(1-f_zero)*(nonBasicVar.expression()-bound);                   
+                    sum += (*row_iterator).content()/(1-f_zero)*(nonBasicVar.expression()-bound);                   
                 }
                 else if ((*vec_iter)==K_MINUS)
                 {
                     numeric bound = nonBasicVar.infimum().limit().mainPart();
-                    summand += (-(*row_iterator).content())/(1-f_zero)*(bound-nonBasicVar.expression());                   
+                    sum += (-(*row_iterator).content())/(1-f_zero)*(bound-nonBasicVar.expression());                   
                 }
                 else if ((*vec_iter)==K_PLUS) 
                 {
                     numeric bound = nonBasicVar.supremum().limit().mainPart();
-                    summand += (*row_iterator).content()/(f_zero)*(bound-nonBasicVar.expression());
+                    sum += (*row_iterator).content()/(f_zero)*(bound-nonBasicVar.expression());
                 }  
                 row_iterator.left();
             }
