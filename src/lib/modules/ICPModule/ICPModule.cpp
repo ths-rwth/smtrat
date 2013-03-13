@@ -28,6 +28,7 @@
  */
 
 #include <map>
+#include <bits/stl_set.h>
 
 #include "ICPModule.h"
 #include "assert.h"
@@ -831,7 +832,16 @@ namespace smtrat
                 printIntervals();
                 
                 splitOccurred = false;
-
+                
+#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
+                Formula* negatedContraction = new Formula(*mpReceivedFormula);
+                std::set<Formula*> boundaryConstraints = createConstraintsFromBounds();
+                for ( auto boundaryConstraint = boundaryConstraints.begin(); boundaryConstraint != boundaryConstraints.end(); ++boundaryConstraint )
+                {
+                    negatedContraction->addSubformula(*boundaryConstraint);
+                }
+#endif
+                
                 while ( !mIcpRelevantCandidates.empty() && !splitOccurred )
                 {
                     icp::ContractionCandidate* candidate = chooseConstraint();
@@ -920,6 +930,19 @@ namespace smtrat
                     }
                 } //while ( !mIcpRelevantCandidates.empty() )
 
+#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
+                std::set<Formula*> contractedBox = createConstraintsFromBounds();
+                
+                for ( auto formulaIt = contractedBox.begin(); formulaIt != contractedBox.end(); ++formulaIt )
+                {
+                    Formula* negConstraint = new Formula(NOT);
+                    negConstraint->addSubformula(*formulaIt);
+                    negatedContraction->addSubformula(negConstraint);
+                }
+                addAssumptionToCheck(*negatedContraction,false,"ICPContractionCheck");
+                delete negatedContraction;
+#endif
+                
                 // do not verify if the box is already invalid
                 if (!invalidBox)
                 {
@@ -957,9 +980,9 @@ namespace smtrat
                 {
                     // choose & set new box
 #ifdef BOXMANAGEMENT
-#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-                    Module::addAssumptionToCheck(mLRA.rReceivedFormula(),false,"ICP_CenterpointValidation");
-#endif
+//#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
+//                    Module::addAssumptionToCheck(mLRA.rReceivedFormula(),false,"ICP_CenterpointValidation");
+//#endif
                     cout << "Box not Validated, Chose new box: " << endl;
                     icp::HistoryNode* newBox = chooseBox( mHistoryActual );
                     if ( newBox != NULL )
@@ -2715,10 +2738,87 @@ namespace smtrat
     
     bool ICPModule::checkBoxAgainstLinearFeasibleRegion()
     {
-        // add box to validation formula
-        GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
+        std::set<Formula*> addedBoundaries = createConstraintsFromBounds();
+        
+        for( auto formulaIt = addedBoundaries.begin(); formulaIt != addedBoundaries.end(); ++formulaIt )
+        {
+            mLRA.inform((*formulaIt)->pConstraint());
+            mValidationFormula->addSubformula((*formulaIt));
+            mValidationFormula->getPropositions();
+            mLRA.assertSubformula(mValidationFormula->last());
+        }
+        
+        Answer boxCheck = mLRA.isConsistent();
+        
+        assert(boxCheck != Unknown);
 
-        std::set<Formula*>* addedBoundaries = new std::set<Formula*>();
+        mLRA.print();
+        
+        // remove boundaries from mLRA module after boxChecking.
+        for (auto formulaIt = mValidationFormula->begin(); formulaIt != mValidationFormula->end(); )
+        {
+            if ( addedBoundaries.find(*formulaIt) != addedBoundaries.end()) 
+            {
+                mLRA.removeSubformula(formulaIt);
+                formulaIt = mValidationFormula->erase(formulaIt);
+            }
+            else
+            {
+                ++formulaIt;
+            }
+        }
+        
+        
+        if ( boxCheck == True )
+        {
+            return true;
+        }
+#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
+        else
+        {
+            
+            Formula* actualAssumptions = new Formula(*mpReceivedFormula);
+            for ( auto boundIt = addedBoundaries.begin(); boundIt != addedBoundaries.end(); ++boundIt )
+            {
+                actualAssumptions->addSubformula(new Formula(*(*boundIt)));
+            }
+
+            Module::addAssumptionToCheck(*actualAssumptions,false,"ICP_BoxValidation");
+
+            delete actualAssumptions;
+
+        }
+#endif
+        return false;
+    }
+    
+    bool ICPModule::intervalBoxContainsEmptyInterval()
+    {
+        for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
+        {
+            if ( (*intervalIt).second.empty() )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    void ICPModule::generateInfeasibleSubset()
+    {
+        std::set<const Formula*> temporaryIfsSet;
+        
+        for ( auto formulaIt = mpReceivedFormula->begin(); formulaIt != mpReceivedFormula->end(); ++formulaIt )
+        {
+            temporaryIfsSet.insert((*formulaIt));
+        }
+        mInfeasibleSubsets.push_back(temporaryIfsSet);
+    }
+    
+    std::set<Formula*> ICPModule::createConstraintsFromBounds()
+    {
+        std::set<Formula*> addedBoundaries;
+        GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
 
         for ( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
         {
@@ -2751,14 +2851,7 @@ namespace smtrat
                 if ( leftTmp != NULL )
                 {
                     Formula* leftBound = new Formula(leftTmp);
-                    vec_set_const_pFormula origins = vec_set_const_pFormula();
-                    std::set<const Formula*>* emptyTmpSet = new std::set<const Formula*>();
-                    origins.insert(origins.begin(), *emptyTmpSet);
-                    mLRA.inform(leftTmp);
-                    mValidationFormula->addSubformula(leftBound);
-                    mValidationFormula->getPropositions();
-                    mLRA.assertSubformula(mValidationFormula->last());
-                    addedBoundaries->insert(leftBound);
+                    addedBoundaries.insert(leftBound);
                 }
 
                 // right:
@@ -2783,76 +2876,12 @@ namespace smtrat
                 if ( rightTmp != NULL )
                 {
                     Formula* rightBound = new Formula(rightTmp);
-                    vec_set_const_pFormula origins = vec_set_const_pFormula();
-                    std::set<const Formula*>* emptyTmpSet = new std::set<const Formula*>();
-                    origins.insert(origins.begin(), *emptyTmpSet);
-                    mLRA.inform(rightTmp);
-                    mValidationFormula->addSubformula(rightBound);
-                    mValidationFormula->getPropositions();
-                    mLRA.assertSubformula(mValidationFormula->last());
-                    addedBoundaries->insert(rightBound);
+                    addedBoundaries.insert(rightBound);
                 }
             }
         }
-#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-        Formula* actualAssumptions = new Formula(*mpReceivedFormula);
-        for ( auto boundIt = addedBoundaries->begin(); boundIt != addedBoundaries->end(); ++boundIt )
-        {
-            actualAssumptions->addSubformula(new Formula(*(*boundIt)));
-        }
-        
-        Module::addAssumptionToCheck(*actualAssumptions,true,"ICP_BoxValidation");
-        
-        delete actualAssumptions;
-#endif
-        
-        Answer boxCheck = mLRA.isConsistent();
-        assert(boxCheck != Unknown);
+        return addedBoundaries;
 
-        mLRA.print();
-        
-        // remove boundaries from mLRA module after boxChecking.
-        for (auto formulaIt = mValidationFormula->begin(); formulaIt != mValidationFormula->end(); )
-        {
-            if ( addedBoundaries->find(*formulaIt) != addedBoundaries->end()) 
-            {
-                mLRA.removeSubformula(formulaIt);
-                formulaIt = mValidationFormula->erase(formulaIt);
-            }
-            else
-            {
-                ++formulaIt;
-            }
-        }
-        
-        if ( boxCheck == True )
-        {
-            return true;
-        }
-        return false;
-    }
-    
-    bool ICPModule::intervalBoxContainsEmptyInterval()
-    {
-        for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
-        {
-            if ( (*intervalIt).second.empty() )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    void ICPModule::generateInfeasibleSubset()
-    {
-        std::set<const Formula*> temporaryIfsSet;
-        
-        for ( auto formulaIt = mpReceivedFormula->begin(); formulaIt != mpReceivedFormula->end(); ++formulaIt )
-        {
-            temporaryIfsSet.insert((*formulaIt));
-        }
-        mInfeasibleSubsets.push_back(temporaryIfsSet);
     }
 
 } // namespace smtrat
