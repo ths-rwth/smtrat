@@ -250,6 +250,12 @@ namespace smtrat
             void addCandidateToRelevant(icp::ContractionCandidate* _candidate);
             
             /**
+             * Removes a candidate from the icpRelevantCandidates.
+             * @param _candidate
+             */
+            void removeCandidateFromRelevant(icp::ContractionCandidate* _candidate);
+            
+            /**
              * Creates Bounds and passes them to PassedFormula for the Backends.
              */
             void pushBoundsToPassedFormula();
@@ -277,6 +283,11 @@ namespace smtrat
              * @return 
              */
             bool intervalBoxContainsEmptyInterval();
+            
+            /**
+             * generates and sets the infeasible subset
+             */
+            void generateInfeasibleSubset();
     };
 }    // namespace smtrat
 
