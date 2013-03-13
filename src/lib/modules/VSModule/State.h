@@ -410,7 +410,7 @@ public:
 	void									passConflictToFather				( bool = false )													;
     #ifdef SMTRAT_VS_VARIABLEBOUNDS
     bool                                    checkTestCandidatesForBounds        ( )                                                                 ;
-    bool                                    hasRootsInVariableBounds            ( const Condition* )                                                ;
+    bool                                    hasNoRootsInVariableBounds          ( const Condition* )                                                ;
     #endif
 
 	// Printing methods.

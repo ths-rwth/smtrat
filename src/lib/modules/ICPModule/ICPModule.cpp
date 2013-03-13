@@ -434,6 +434,9 @@ namespace smtrat
                                     }
 
                                     cout << "Erase candidate from active." << endl;
+                                    // clean up icpRelevantCandidates
+                                    removeCandidateFromRelevant((*activeLinearIt).first);
+                                    
                                     (*activeLinearIt).first->deactivate();
                                     mActiveLinearConstraints.erase((*activeLinearIt).first);
                                 }
@@ -457,6 +460,9 @@ namespace smtrat
                             setBox(firstNode);
                         }
 
+                        // clean up icpRelevantCandidates
+                        removeCandidateFromRelevant((*candidateIt));
+                        
                         (*candidateIt)->deactivate();
                         mActiveNonlinearConstraints.erase( *candidateIt );
                     }
@@ -503,6 +509,9 @@ namespace smtrat
                                     symbol variable = ex_to<symbol>((*variablesIt).second);
                                     mVariables[variable].deleteCandidate((*activeLinearIt).first);
                                 }
+                                
+                                // clean up icpRelevantCandidates
+                                removeCandidateFromRelevant((*activeLinearIt).first);
 
                                 // deactivate candidate
                                 (*activeLinearIt).first->deactivate();
@@ -576,6 +585,9 @@ namespace smtrat
                                 }
                                 setBox(firstNode);
                             }
+                            
+                            // clean up icpRelevantCandidates
+                            removeCandidateFromRelevant((*candidateIt));
                             
                             (*candidateIt)->deactivate();
                             mActiveLinearConstraints.erase( *candidateIt );
@@ -850,6 +862,7 @@ namespace smtrat
                         {
                             candidatesIt = mIcpRelevantCandidates.erase(candidatesIt);
                             foundCandidate = true;
+                            break;
                         }
                         else
                         {
@@ -910,7 +923,7 @@ namespace smtrat
                 // do not verify if the box is already invalid
                 if (!invalidBox)
                 {
-                    invalidBox = checkBoxAgainstLinearFeasibleRegion();
+                    invalidBox = !checkBoxAgainstLinearFeasibleRegion();
                 }
                 
                 
@@ -938,19 +951,16 @@ namespace smtrat
                 //call validation
                 std::pair<bool,bool> validationResult = validateSolution();
                 bool newConstraintAdded = validationResult.first;
-                bool onlyCenterConstraints = validationResult.second;
+                bool boxValidated = validationResult.second;
 
-                // solution violates the linear feasible region
-                
-
-                if(onlyCenterConstraints)
+                if(!boxValidated)
                 {
                     // choose & set new box
 #ifdef BOXMANAGEMENT
 #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
                     Module::addAssumptionToCheck(mLRA.rReceivedFormula(),false,"ICP_CenterpointValidation");
 #endif
-                    cout << "Chose new box: " << endl;
+                    cout << "Box not Validated, Chose new box: " << endl;
                     icp::HistoryNode* newBox = chooseBox( mHistoryActual );
                     if ( newBox != NULL )
                     {
@@ -964,6 +974,8 @@ namespace smtrat
                         boxFeasible = false;
 
                         // Todo: Create infeasible subset
+                        
+                        
                         return foundAnswer(False);
                     }
 #else
@@ -1070,7 +1082,7 @@ namespace smtrat
                         {
                             // choose & set new box
 #ifdef BOXMANAGEMENT
-                            cout << "Chose new box: " << endl;
+                            cout << "InfSet of Backend contained bound, Chose new box: " << endl;
                             icp::HistoryNode* newBox = chooseBox( mHistoryActual );
                             if ( newBox != NULL )
                             {
@@ -1084,7 +1096,8 @@ namespace smtrat
                                 // no new Box to select -> finished
                                 boxFeasible = false;
 
-                                // Todo: Create infeasible subset
+                                generateInfeasibleSubset();
+                                
                                 return foundAnswer(False);
                             }
 #else
@@ -1114,7 +1127,7 @@ namespace smtrat
             {
                 // choose & set new box
 #ifdef BOXMANAGEMENT
-                cout << "Chose new box: " << endl;
+                cout << "Generated empty interval or Box linear infeasible, Chose new box: " << endl;
                 icp::HistoryNode* newBox = chooseBox( mHistoryActual );
                 if ( newBox != NULL )
                 {
@@ -1124,10 +1137,12 @@ namespace smtrat
                 }
                 else
                 {
+                    cout << "No new box found. Return false." << endl;
                     // no new Box to select -> finished
                     boxFeasible = false;
 
-                    // Todo: Create infeasible subset
+                    generateInfeasibleSubset();
+                    
                     return foundAnswer(False);
                 }
 #else
@@ -1157,12 +1172,9 @@ namespace smtrat
             getInfeasibleSubsets();
             cout << "Size infeasible subsets: " << mInfeasibleSubsets.size() << endl;
             printInfeasibleSubsets();
-            // Todo: Select new Box if possible
         }
 
         return foundAnswer(a);
-
-        // TODO: Chose next Box!
     }
 
     icp::ContractionCandidate* ICPModule::chooseConstraint()
@@ -1170,7 +1182,7 @@ namespace smtrat
         // as the map is sorted ascending, we can simply pick the last value
         for ( auto candidateIt = mIcpRelevantCandidates.rbegin(); candidateIt != mIcpRelevantCandidates.rend(); ++candidateIt )
         {
-            cout << "Diameter " << mCandidateManager->getInstance()->getCandidate((*candidateIt).second)->derivationVar() << " : " << mIntervals[mCandidateManager->getInstance()->getCandidate((*candidateIt).second)->derivationVar()].diameter() << endl;
+            cout << (*candidateIt).second << ": Diameter " << mCandidateManager->getInstance()->getCandidate((*candidateIt).second)->derivationVar() << " : " << mIntervals[mCandidateManager->getInstance()->getCandidate((*candidateIt).second)->derivationVar()].diameter() << endl;
             if ( mCandidateManager->getInstance()->getCandidate((*candidateIt).second)->isActive() && mIntervals[mCandidateManager->getInstance()->getCandidate((*candidateIt).second)->derivationVar()].diameter() != 0 )
             {
 #ifdef ICPMODULE_DEBUG
@@ -1789,6 +1801,7 @@ namespace smtrat
         vec_set_const_pFormula failedConstraints = vec_set_const_pFormula();
         std::set<const Formula*>* currentInfSet = new std::set<const Formula*>();
         bool newConstraintAdded = false;
+        bool boxCheck = false;
 #ifdef ICPMODULE_DEBUG
         cout << "[ICP] Call mLRAModule" << endl;
 #endif
@@ -2109,7 +2122,7 @@ namespace smtrat
             }
             clearCenterConstraintsFromValidationFormula();
             
-            return std::pair<bool,bool>(newConstraintAdded,false);
+            return std::pair<bool,bool>(newConstraintAdded,true);
             
         }
         else if ( centerFeasible == False || centerFeasible == Unknown )
@@ -2181,15 +2194,10 @@ namespace smtrat
             
             clearCenterConstraintsFromValidationFormula();
             
-            bool boxCheck = checkBoxAgainstLinearFeasibleRegion();
-            
-            if ( boxCheck == false )
-            {
-                return std::pair<bool,bool>(newConstraintAdded,true);
-            }
-            
+            boxCheck = checkBoxAgainstLinearFeasibleRegion();
+               
         }
-        return std::pair<bool,bool>(newConstraintAdded,false);
+        return std::pair<bool,bool>(newConstraintAdded,boxCheck);
     }
 
     std::pair<bool,symbol> ICPModule::checkAndPerformSplit( double _targetDiameter )
@@ -2428,7 +2436,7 @@ namespace smtrat
     {
         assert(_selection != NULL);
 
-        cout << "Set box, #intervals: " << mIntervals.size() << " -> " << _selection->intervals().size() << endl;
+        cout << "Set box(" << mHistoryActual->id() << " -> " << _selection->id() << "), #intervals: " << mIntervals.size() << " -> " << _selection->intervals().size() << endl;
 
         // set intervals - currently we don't change not contained intervals.
         for ( auto intervalIt = _selection->intervals().begin(); intervalIt != _selection->intervals().end(); ++intervalIt )
@@ -2537,6 +2545,18 @@ namespace smtrat
             if ( mIcpRelevantCandidates.find(target) == mIcpRelevantCandidates.end() )
             {
                 mIcpRelevantCandidates.insert(target);
+            }
+        }
+    }
+    
+    void ICPModule::removeCandidateFromRelevant(icp::ContractionCandidate* _candidate)
+    {
+        for ( auto candidateIt = mIcpRelevantCandidates.begin(); candidateIt != mIcpRelevantCandidates.end(); ++candidateIt )
+        {
+            if ( _candidate->id() == (*candidateIt).second )
+            {
+                mIcpRelevantCandidates.erase(candidateIt);
+                break;
             }
         }
     }
@@ -2698,7 +2718,7 @@ namespace smtrat
         // add box to validation formula
         GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
 
-        std::set<const Formula*>* addedBoundaries = new std::set<const Formula*>();
+        std::set<Formula*>* addedBoundaries = new std::set<Formula*>();
 
         for ( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
         {
@@ -2774,7 +2794,18 @@ namespace smtrat
                 }
             }
         }
-
+#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
+        Formula* actualAssumptions = new Formula(*mpReceivedFormula);
+        for ( auto boundIt = addedBoundaries->begin(); boundIt != addedBoundaries->end(); ++boundIt )
+        {
+            actualAssumptions->addSubformula(new Formula(*(*boundIt)));
+        }
+        
+        Module::addAssumptionToCheck(*actualAssumptions,true,"ICP_BoxValidation");
+        
+        delete actualAssumptions;
+#endif
+        
         Answer boxCheck = mLRA.isConsistent();
         assert(boxCheck != Unknown);
 
@@ -2796,9 +2827,9 @@ namespace smtrat
         
         if ( boxCheck == True )
         {
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
     
     bool ICPModule::intervalBoxContainsEmptyInterval()
@@ -2811,6 +2842,17 @@ namespace smtrat
             }
         }
         return false;
+    }
+    
+    void ICPModule::generateInfeasibleSubset()
+    {
+        std::set<const Formula*> temporaryIfsSet;
+        
+        for ( auto formulaIt = mpReceivedFormula->begin(); formulaIt != mpReceivedFormula->end(); ++formulaIt )
+        {
+            temporaryIfsSet.insert((*formulaIt));
+        }
+        mInfeasibleSubsets.push_back(temporaryIfsSet);
     }
 
 } // namespace smtrat
