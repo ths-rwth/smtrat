@@ -288,6 +288,12 @@ namespace smtrat
              * generates and sets the infeasible subset
              */
             void generateInfeasibleSubset();
+            
+            /**
+             * creates constraints for the actual bounds of the original variables.
+             * @return 
+             */
+            std::set<Formula*> createConstraintsFromBounds();
     };
 }    // namespace smtrat
 
