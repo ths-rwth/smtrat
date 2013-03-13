@@ -950,7 +950,7 @@ namespace vs
                 else
                 {
                     #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    (**cond).rFlag() = !hasRootsInVariableBounds( *cond );
+                    (**cond).rFlag() = hasNoRootsInVariableBounds( *cond );
                     #else
                     (**cond).rFlag() = false;
                     #endif
@@ -2699,12 +2699,12 @@ namespace vs
     }
     
     /**
+     * Checks whether there are no zeros for the left-hand side of the constraint of the given condition.
      * 
-     * @param _varName
-     * @param _condition
+     * @param _condition The condition to check.
      * @return 
      */
-    bool State::hasRootsInVariableBounds( const Condition* _condition )
+    bool State::hasNoRootsInVariableBounds( const Condition* _condition )
     {
 //        symbol sym;
 //        _condition->constraint().variable( index(), sym );
@@ -2712,12 +2712,18 @@ namespace vs
 //        DoubleInterval solutionSpace = DoubleInterval::evaluate( _condition->constraint().lhs(), intervals );
 //        if( !solutionSpace.contains( 0 ) )
 //        {
-//            // Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, _substitutionType, _oConditions );
 //            ConditionSet origins = ConditionSet();
 //            origins.insert( _condition );
-//            Substitution* sub = new Substitution( index(), ex( sym ), ST_TOO_HIGH_DEGREE, origins );
+//            Substitution* sub = new Substitution( index(), ex( sym ), ST_INVALID, origins );
+//            ConditionSetSet conflicts = ConditionSetSet();
+//            conflicts.insert( origins );
+//            symtab vars = _condition->constraint().variables();
+//            set< const Condition* > conflictingBounds = variableBounds().getOriginsOfBounds( vars );
+//            conflict.insert( conflictingBounds.begin(), conflictingBounds.end() );
+//            addConflictSet( sub, conflicts );
+//            return true;
 //        }
-        return true;
+        return false;
     }
     #endif
 

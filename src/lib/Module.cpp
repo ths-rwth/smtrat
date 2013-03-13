@@ -1022,14 +1022,14 @@ namespace smtrat
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // add all real-valued variables
-                GiNaC::symtab allVariables = mpReceivedFormula->mConstraintPool.realVariables();
+                GiNaC::symtab allVariables = Formula::constraintPool().realVariables();
                 for( GiNaC::symtab::const_iterator var = allVariables.begin();
                     var != allVariables.end(); ++var )
                 {
                     smtlibFile << "(declare-fun " << var->first << " () Real)\n";
                 }
                 // add all Boolean variables
-                set<string> allBooleans = Formula::mConstraintPool.booleanVariables();
+                set<string> allBooleans = Formula::constraintPool().booleanVariables();
                 for( set<string>::const_iterator var = allBooleans.begin();
                     var != allBooleans.end(); ++var )
                 {
