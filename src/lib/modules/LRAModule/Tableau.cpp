@@ -1719,6 +1719,12 @@ CheckLowerPremise:
         K_PLUS,
         K_MINUS
     };
+    /**
+     * Creates a constraint referring to Gomory Cuts, if possible. 
+     * 
+     * @return NULL,    if the cut can´t be constructed;
+     *         otherwise the valid constraint is returned.   
+     */
     const smtrat::Constraint* Tableau::gomoryCut(const GiNaC::numeric ass, vector<TableauHead>::const_iterator row, vector<const smtrat::Constraint*>& constr_vec) const
     {
         if(!ass.is_integer())
@@ -1762,27 +1768,30 @@ CheckLowerPremise:
                 if((*vec_iter)==J_MINUS)
                 {
                     numeric bound = nonBasicVar.infimum().limit().mainPart();
+                    constr_vec.push_back(nonBasicVar.infimum().pAsConstraint());
                     sum += (-(*row_iterator).content())/(f_zero)*(nonBasicVar.expression()-bound);                   
                 }                 
                 else if ((*vec_iter)==J_PLUS)
                 {
                     numeric bound = nonBasicVar.supremum().limit().mainPart();
+                    constr_vec.push_back(nonBasicVar.supremum().pAsConstraint());
                     sum += (*row_iterator).content()/(1-f_zero)*(nonBasicVar.expression()-bound);                   
                 }
                 else if ((*vec_iter)==K_MINUS)
                 {
                     numeric bound = nonBasicVar.infimum().limit().mainPart();
+                    constr_vec.push_back(nonBasicVar.infimum().pAsConstraint());
                     sum += (-(*row_iterator).content())/(1-f_zero)*(bound-nonBasicVar.expression());                   
                 }
                 else if ((*vec_iter)==K_PLUS) 
                 {
                     numeric bound = nonBasicVar.supremum().limit().mainPart();
+                    constr_vec.push_back(nonBasicVar.supremum().pAsConstraint());
                     sum += (*row_iterator).content()/(f_zero)*(bound-nonBasicVar.expression());
-                }  
+                }                
                 row_iterator.left();
             }
             const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint(sum-1,smtrat::CR_GEQ,*setOfVar);
-            constr_vec.push_back(gomory_constr);
             return gomory_constr;     
         }
         return NULL;
