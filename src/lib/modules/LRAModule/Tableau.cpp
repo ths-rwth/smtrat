@@ -1719,12 +1719,13 @@ CheckLowerPremise:
         K_PLUS,
         K_MINUS
     };
-    const smtrat::Constraint* Tableau::gomoryCut(const GiNaC::numeric ass, vector<TableauHead>::const_iterator row, vector<smtrat::Constraint*>& constr_vec) const
+    const smtrat::Constraint* Tableau::gomoryCut(const GiNaC::numeric ass, vector<TableauHead>::const_iterator row, vector<const smtrat::Constraint*> constr_vec) const
     {
         if(!ass.is_integer())
         {
             Iterator row_iterator = Iterator(row->mStartEntry,mpEntries);
             vector<GOMORY_SET> splitting = vector<GOMORY_SET>();
+            symtab *setOfVar = new symtab();
             while(!row_iterator.rowEnd())
             {
                 const Variable nonBasicVar = *mColumns[(*row_iterator).columnNumber()].mName;
@@ -1745,6 +1746,9 @@ CheckLowerPremise:
                         else 
                             splitting.push_back(K_PLUS);
                     }
+                    stringstream sstream;
+                    sstream << nonBasicVar.expression();
+                    setOfVar->insert(pair< std::string, ex >(sstream.str(),nonBasicVar.expression()));
                 }
                 else return NULL;
                 row_iterator.right();
@@ -1777,7 +1781,9 @@ CheckLowerPremise:
                 }  
                 row_iterator.left();
             }
-            //build and return constraint here    
+            const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint(sum-1,smtrat::CR_GEQ,*setOfVar);
+            constr_vec.push_back(gomory_constr);
+            return gomory_constr;     
         }
         return NULL;
     }
