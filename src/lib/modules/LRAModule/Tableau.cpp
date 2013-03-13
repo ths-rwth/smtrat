@@ -1719,10 +1719,10 @@ CheckLowerPremise:
         K_PLUS,
         K_MINUS
     };
-    const smtrat::Constraint* Tableau::gomoryCut(const GiNaC::numeric ass, vector<TableauHead>::const_iterator row, vector<const smtrat::Constraint*> constr_vec) const
+    const smtrat::Constraint* Tableau::gomoryCut(const GiNaC::numeric ass, vector<TableauHead>::const_iterator row, vector<const smtrat::Constraint*>& constr_vec) const
     {
         if(!ass.is_integer())
-        {
+        {        
             Iterator row_iterator = Iterator(row->mStartEntry,mpEntries);
             vector<GOMORY_SET> splitting = vector<GOMORY_SET>();
             symtab *setOfVar = new symtab();

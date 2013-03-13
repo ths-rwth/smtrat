@@ -33,7 +33,7 @@
 //#define DEBUG_LRA_MODULE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_ONE_REASON
-//#define LRA_BRANCH_AND_BOUND
+#define LRA_BRANCH_AND_BOUND
 using namespace std;
 using namespace lra;
 using namespace GiNaC;
@@ -391,15 +391,17 @@ namespace smtrat
 
                             #ifdef LRA_GOMORY_CUTS                            
                             exmap rMap_ = getRationalModel();
-                            vector<const Constraint*> constraint_vec = vector<const Constraint*>();
+                            vector<const Constraint*> constraint_vec = vector<const Constraint*>();                            
                             for(auto vector_iterator = mTableau.rows().begin();vector_iterator != mTableau.rows().end();++vector_iterator)
                             {
                                 ex referring_ex = vector_iterator->mName->expression();
                                 auto found_ex = rMap_.find(referring_ex);
                                 const numeric ass = ex_to<numeric>(found_ex->second);
                                 const Constraint* gomory_constr = mTableau.gomoryCut(ass,vector_iterator,constraint_vec);
-                                //...
+                                addDeduction((Formula*)gomory_constr);
+                                return foundAnswer(Unknown); 
                             }
+                            return foundAnswer(True);
                             #endif
                             #ifdef LRA_BRANCH_AND_BOUND
                             exmap _rMap = getRationalModel();
@@ -426,7 +428,7 @@ namespace smtrat
                             }
                             #endif
                             CONSTRAINT_UNLOCK
-                            return foundAnswer( True );
+                            return foundAnswer(True);
                         }
                         // Otherwise, resolve the notequal-constraints (create the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
                         else
