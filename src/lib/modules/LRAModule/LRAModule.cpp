@@ -398,18 +398,21 @@ namespace smtrat
                                 auto found_ex = rMap_.find(referring_ex);
                                 const numeric ass = ex_to<numeric>(found_ex->second);
                                 const Constraint* gomory_constr = mTableau.gomoryCut(ass,vector_iterator,constr_vec);
-                                Formula* deductionA = new Formula(OR);
-                                auto vec_iter = constr_vec.begin();
-                                while(vec_iter != constr_vec.end())
+                                if( gomory_constr != NULL )
                                 {
-                                    Formula* notItem = new Formula(NOT);
-                                    notItem->addSubformula(*vec_iter);
-                                    deductionA->addSubformula(notItem);
-                                    ++vec_iter;
+                                    Formula* deductionA = new Formula(OR);
+                                    auto vec_iter = constr_vec.begin();
+                                    while(vec_iter != constr_vec.end())
+                                    {
+                                        Formula* notItem = new Formula(NOT);
+                                        notItem->addSubformula(*vec_iter);
+                                        deductionA->addSubformula(notItem);
+                                        ++vec_iter;
+                                    }
+                                    deductionA->addSubformula(gomory_constr);
+                                    addDeduction(deductionA);
+                                    return foundAnswer(Unknown); 
                                 }
-                                deductionA->addSubformula(gomory_constr);
-                                addDeduction(deductionA);
-                                return foundAnswer(Unknown); 
                             }
                             return foundAnswer(True);
                             #endif

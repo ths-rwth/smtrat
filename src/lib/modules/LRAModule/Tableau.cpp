@@ -1725,13 +1725,12 @@ CheckLowerPremise:
      * @return NULL,    if the cut can´t be constructed;
      *         otherwise the valid constraint is returned.   
      */
-    const smtrat::Constraint* Tableau::gomoryCut(const GiNaC::numeric ass, vector<TableauHead>::const_iterator row, vector<const smtrat::Constraint*>& constr_vec) const
+    const smtrat::Constraint* Tableau::gomoryCut(const GiNaC::numeric& ass, vector<TableauHead>::const_iterator row, vector<const smtrat::Constraint*>& constr_vec) const
     {
         if(!ass.is_integer())
         {        
             Iterator row_iterator = Iterator(row->mStartEntry,mpEntries);
             vector<GOMORY_SET> splitting = vector<GOMORY_SET>();
-            symtab *setOfVar = new symtab();
             while(!row_iterator.rowEnd())
             {
                 const Variable nonBasicVar = *mColumns[(*row_iterator).columnNumber()].mName;
@@ -1754,7 +1753,6 @@ CheckLowerPremise:
                     }
                     stringstream sstream;
                     sstream << nonBasicVar.expression();
-                    setOfVar->insert(pair< std::string, ex >(sstream.str(),nonBasicVar.expression()));
                 }
                 else return NULL;
                 row_iterator.right();
@@ -1791,7 +1789,7 @@ CheckLowerPremise:
                 }                
                 row_iterator.left();
             }
-            const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint(sum-1,smtrat::CR_GEQ,*setOfVar);
+            const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint(sum-1,smtrat::CR_GEQ, smtrat::Formula::constraintPool().realVariables() );
             return gomory_constr;     
         }
         return NULL;
