@@ -36,6 +36,7 @@
 #include "config.h"
 #ifdef SMTRAT_VS_VARIABLEBOUNDS
 #include "../../VariableBounds.h"
+//#define SMTRAT_VS_VARIABLEBOUNDS_B
 #endif
 
 namespace vs

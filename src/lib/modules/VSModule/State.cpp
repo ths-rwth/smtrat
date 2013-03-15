@@ -949,7 +949,7 @@ namespace vs
                 }
                 else
                 {
-                    #ifdef SMTRAT_VS_VARIABLEBOUNDS
+                    #ifdef SMTRAT_VS_VARIABLEBOUNDS_B
                     (**cond).rFlag() = hasNoRootsInVariableBounds( *cond );
                     #else
                     (**cond).rFlag() = false;
@@ -2015,7 +2015,20 @@ namespace vs
                     {
                         rInconsistent() = false;
                     }
-                    mpConflictSets->erase( conflictSet++ );
+                    #ifdef SMTRAT_VS_VARIABLEBOUNDS_B
+                    if( conflictSet->first != NULL && conflictSet->first->type() == ST_INVALID )
+                    {
+                        const Substitution* subToDelete = conflictSet->first;
+                        mpConflictSets->erase( conflictSet++ );
+                        delete subToDelete;
+                    }
+                    else
+                    {
+                    #endif
+                        mpConflictSets->erase( conflictSet++ );
+                    #ifdef SMTRAT_VS_VARIABLEBOUNDS_B
+                    }
+                    #endif
                 }
             }
 
@@ -2706,23 +2719,25 @@ namespace vs
      */
     bool State::hasNoRootsInVariableBounds( const Condition* _condition )
     {
-//        symbol sym;
-//        _condition->constraint().variable( index(), sym );
-//        evaldoubleintervalmap intervals = rFather().rVariableBounds().getIntervalMap();
-//        DoubleInterval solutionSpace = DoubleInterval::evaluate( _condition->constraint().lhs(), intervals );
-//        if( !solutionSpace.contains( 0 ) )
-//        {
-//            ConditionSet origins = ConditionSet();
-//            origins.insert( _condition );
-//            Substitution* sub = new Substitution( index(), ex( sym ), ST_INVALID, origins );
-//            ConditionSetSet conflicts = ConditionSetSet();
-//            conflicts.insert( origins );
-//            symtab vars = _condition->constraint().variables();
-//            set< const Condition* > conflictingBounds = variableBounds().getOriginsOfBounds( vars );
-//            conflict.insert( conflictingBounds.begin(), conflictingBounds.end() );
-//            addConflictSet( sub, conflicts );
-//            return true;
-//        }
+        symbol sym;
+        _condition->constraint().variable( index(), sym );
+        evaldoubleintervalmap intervals = rVariableBounds().getIntervalMap();
+        DoubleInterval solutionSpace = DoubleInterval::evaluate( _condition->constraint().lhs(), intervals );
+        if( !solutionSpace.contains( 0 ) )
+        {
+            ConditionSet origins = ConditionSet();
+            origins.insert( _condition );
+            smtrat::ConstraintSet constraints = smtrat::ConstraintSet();
+            constraints.insert( _condition->pConstraint() );
+            Substitution* sub = new Substitution( index(), ex( sym ), ST_INVALID, origins, constraints );
+            symtab vars = _condition->constraint().variables();
+            set< const Condition* > conflictingBounds = variableBounds().getOriginsOfBounds( vars );
+            origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
+            ConditionSetSet conflicts = ConditionSetSet();
+            conflicts.insert( origins );
+            addConflictSet( sub, conflicts );
+            return true;
+        }
         return false;
     }
     #endif
