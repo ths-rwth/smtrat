@@ -40,6 +40,7 @@ using namespace std;
 #define BOXMANAGEMENT
 #define SMTRAT_DEVOPTION_VALIDATION_ICP
 
+
 namespace smtrat
 {
     /**
@@ -66,6 +67,9 @@ namespace smtrat
         mInitialized(false),
         mCurrentId(3)
     {
+#ifdef ICP_BOXLOG
+        icpLog.open ("icpLog.txt", ios::out | ios::trunc );
+#endif
     }
 
     /**
@@ -74,6 +78,12 @@ namespace smtrat
     ICPModule::~ICPModule()
     {
         //delete constraints TODO!!!
+#ifdef ICP_BOXLOG
+        if ( icpLog.is_open() )
+        {
+            icpLog.close();
+        }
+#endif
     }
 
     bool ICPModule::inform( const Constraint* const _constraint )
@@ -653,7 +663,7 @@ namespace smtrat
         std::pair<bool,symbol> didSplit;
         didSplit.first = false;
         vec_set_const_pFormula violatedConstraints = vec_set_const_pFormula();
-        double targetDiameter = 1;
+        double targetDiameter = 0.1;
         double contractionThreshold = 0.01;
 
         // Debug Outputs of linear and nonlinear Tables
@@ -692,55 +702,8 @@ namespace smtrat
                     cout << "Infeasible: ";
                     (*formulaIt)->print();
                     cout << endl;
-
-                    /**
-                    * Either the constraint is already an original one - then the constraint will be in the sets of origins of
-                    * one of the linear contraction candidates (Case A). Otherwise the infeasible constraint is the result of the linearization -
-                    * it is the lhs of the contraction candidate itself (Case B). AS A THIRD CASE: A BOUNDARY CONSTRAINT IS VIOLATED: CHECK #VARIABLES
-                    */
-
-//                    for ( auto ccIt = mActiveLinearConstraints.begin(); ccIt != mActiveLinearConstraints.end(); ++ccIt)
-//                    {
-//                        cout << "Compare candidate: ";
-//                        (*ccIt).first->print();
-//
-//                        icp::ContractionCandidate* tmp = (*ccIt).first;
-//
-//                        // Case A
-//                        for ( auto originIt = tmp->rOrigin().begin(); originIt != tmp->rOrigin().end(); ++originIt )
-//                        {
-//                            if ( (*originIt)->pConstraint() == (*formulaIt)->pConstraint() )
-//                            {
-//                                cout << "Found origin: " << endl;
-//                                newSet.insert(*formulaIt);
-//                                (*originIt)->print();
-//                                cout << endl;
-////                                break;
-//                            }
-//                        }
-//
-//                        // Case B
-//                        // find original constraint in received Formula -> make use of the origins?
-//                        
-////                        if ( (*ccIt).first->constraint() == (*formulaIt)->pConstraint() )
-////                        {
-////                            cout << "Is a linearized constraint." << endl;
-////                            for ( auto receivedFormulaIt = mpReceivedFormula->subformulas().begin(); receivedFormulaIt != mpReceivedFormula->subformulas().end(); ++receivedFormulaIt )
-////                            {
-////                                (*formulaIt)->pConstraint()->print();
-////                                if ( (*receivedFormulaIt)->pConstraint() == mLinearizationReplacements[(*formulaIt)->pConstraint()])
-////                                {
-////                                    cout << "Found origin: " << endl;
-////                                    newSet.insert(*receivedFormulaIt);
-////                                    (*receivedFormulaIt)->print();
-////                                    cout << endl;
-////                                    break;
-////                                }
-////                            }
-////                            break;
-////                        }   
-//                    }
-                    // Case C
+                    
+                    // Boundary Constraint violated
                     if( (*formulaIt)->constraint().variables().size() == 1 )
                     {
                         cout << "Found boundary constraint: " << endl;
@@ -829,6 +792,11 @@ namespace smtrat
                 cout << "********************** [ICP] Contraction **********************" << endl;
                 cout << "Subtree size: " << mHistoryRoot->sizeSubtree() << endl;
                 mHistoryActual->print();
+                
+#ifdef ICP_BOXLOG
+                icpLog << "startContraction";
+                writeBox();
+#endif
 
                 // prepare IcpRelevantCandidates
                 fillCandidates(targetDiameter);
@@ -886,6 +854,10 @@ namespace smtrat
                         addAssumptionToCheck(*checkContraction,false,"SingleContractionCheck");
                         delete checkContraction;
                     }              
+#endif
+#ifdef ICP_BOXLOG
+                    icpLog << "contraction";
+                    writeBox();
 #endif
                     // catch if new interval is empty -> we can drop box and chose next box
                     if ( intervalBoxContainsEmptyInterval() )
@@ -964,28 +936,28 @@ namespace smtrat
                         }
                     }
                     
-//                    bool originalAllFinished = true;
-//                    GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
-//                    for ( auto varIt = originalRealVariables.begin(); varIt != originalRealVariables.end(); ++varIt )
-//                    {
-//                        if ( mIntervals.find(ex_to<symbol>((*varIt).second)) != mIntervals.end() )
-//                        {
-//                            if ( mIntervals[ex_to<symbol>((*varIt).second)].diameter() > targetDiameter )
-//                            {
-//                                originalAllFinished = false;
-//                            }
-//                        }
-//                        else
-//                        {
-//                            // should not happen
-//                            assert(false);
-//                        }
-//                    }
-//                    if ( originalAllFinished )
-//                    {
-//                        mIcpRelevantCandidates.clear();
-//                        break;
-//                    }
+                    bool originalAllFinished = true;
+                    GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
+                    for ( auto varIt = originalRealVariables.begin(); varIt != originalRealVariables.end(); ++varIt )
+                    {
+                        if ( mIntervals.find(ex_to<symbol>((*varIt).second)) != mIntervals.end() )
+                        {
+                            if ( mIntervals[ex_to<symbol>((*varIt).second)].diameter() > targetDiameter )
+                            {
+                                originalAllFinished = false;
+                            }
+                        }
+                        else
+                        {
+                            // should not happen
+                            assert(false);
+                        }
+                    }
+                    if ( originalAllFinished )
+                    {
+                        mIcpRelevantCandidates.clear();
+                        break;
+                    }
                 } //while ( !mIcpRelevantCandidates.empty() )
                 
                 // do not verify if the box is already invalid
@@ -1020,6 +992,13 @@ namespace smtrat
     //                addAssumptionToCheck(*postContractionBox,true,"POST_CONTRACTION_BOX");
                     delete negatedContraction;
                 }              
+#endif
+#ifdef ICP_BOXLOG
+                if ( invalidBox )
+                {
+                    icpLog << "invalid";
+                    writeBox();
+                }
 #endif
                 
                 didSplit.first = false;
@@ -1094,6 +1073,10 @@ namespace smtrat
                     cout << "[ICP] created passed formula." << endl;
 
                     printPassedFormula();
+#endif
+#ifdef ICP_BOXLOG
+                    icpLog << "backend";
+                    writeBox();
 #endif
                     Answer a = runBackends();
 #ifdef ICPMODULE_DEBUG
@@ -2907,7 +2890,41 @@ namespace smtrat
             }
         }
         return addedBoundaries;
-
     }
-
+    
+#ifdef ICP_BOXLOG
+    void ICPModule::writeBox()
+    {
+        GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
+        
+        for ( auto varIt = originalRealVariables.begin(); varIt != originalRealVariables.end(); ++varIt )
+        {
+            icpLog << "; " << (*varIt).first;
+            if ( mIntervals.find(ex_to<symbol>((*varIt).second)) != mIntervals.end() )
+            {
+                icpLog << "[";
+                if ( mIntervals[ex_to<symbol>((*varIt).second)].leftType() == GiNaCRA::DoubleInterval::INFINITY_BOUND )
+                {
+                    icpLog << "INF";
+                }
+                else
+                {
+                    icpLog << mIntervals[ex_to<symbol>((*varIt).second)].left();
+                }
+                icpLog << ",";
+                if ( mIntervals[ex_to<symbol>((*varIt).second)].rightType() == GiNaCRA::DoubleInterval::INFINITY_BOUND )
+                {
+                    icpLog << "INF";
+                }
+                else
+                {
+                    icpLog << mIntervals[ex_to<symbol>((*varIt).second)].right();
+                }
+                icpLog << "]";
+            }
+        }
+        icpLog << "\n";
+    }
+#endif
+  
 } // namespace smtrat
