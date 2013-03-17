@@ -132,13 +132,21 @@ namespace smtrat
 
             ~HistoryNode()
             {
-                if(mParent != NULL)
+                if ( mLeftChild != NULL)
                 {
-                    if( mParent->left() == this )
+                    delete mLeftChild;
+                }
+                if ( mRightChild != NULL )
+                {
+                    delete mRightChild;
+                }
+                if ( mParent != NULL )
+                {
+                    if ( this->isLeft() )
                     {
                         mParent->removeLeftChild();
                     }
-                    else if ( mParent->right() == this )
+                    else
                     {
                         mParent->removeRightChild();
                     }

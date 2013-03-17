@@ -77,6 +77,10 @@ namespace smtrat
      */
     ICPModule::~ICPModule()
     {
+        delete mHistoryActual;
+        delete mHistoryRoot;
+        delete mValidationFormula;
+        
         //delete constraints TODO!!!
 #ifdef ICP_BOXLOG
         if ( icpLog.is_open() )
@@ -148,16 +152,11 @@ namespace smtrat
 
         // create and initialize slackvariables
         mLRA.initialize();
-        const LRAModule::ExVariableMap& slackVariables = mLRA.slackVariables();
-
 #ifdef ICPMODULE_DEBUG
         cout << "[ICP] Assertion: ";
         constr->print();
         cout << endl;
 #endif
-        
-        
-        
         assert( (*_formula)->getType() == REALCONSTRAINT );
         if ( (*_formula)->constraint().variables().size() > 1 )
         {
@@ -643,8 +642,8 @@ namespace smtrat
         }
         
 
-        Answer a = runBackends();
-        cout << "Answer: " << a << endl;
+//        Answer a = runBackends();
+//        cout << "Answer: " << a << endl;
         
         if ( (*_formula)->constraint().variables().size() > 1 )
         {
@@ -663,7 +662,7 @@ namespace smtrat
         std::pair<bool,symbol> didSplit;
         didSplit.first = false;
         vec_set_const_pFormula violatedConstraints = vec_set_const_pFormula();
-        double targetDiameter = 0.1;
+        double targetDiameter = 10;
         double contractionThreshold = 0.01;
 
         // Debug Outputs of linear and nonlinear Tables
@@ -676,8 +675,8 @@ namespace smtrat
         // temporary solution - an added linear constraint might have changed the box.
         cout << "Id selected box: " << mHistoryRoot->id() << " Size subtree: " << mHistoryRoot->sizeSubtree() << endl;
         setBox(mHistoryRoot);
-        mHistoryActual->removeLeftChild();
-        mHistoryActual->removeRightChild();
+        delete mHistoryActual->left();
+        delete mHistoryActual->right();
         mHistoryActual = mHistoryActual->addRight(new icp::HistoryNode(mHistoryRoot->intervals(),2));
         mCurrentId = mHistoryActual->id();
         cout << "Id actual box: " << mHistoryActual->id() << " Size subtree: " << mHistoryActual->sizeSubtree() << endl;
@@ -855,10 +854,7 @@ namespace smtrat
                         delete checkContraction;
                     }              
 #endif
-#ifdef ICP_BOXLOG
-                    icpLog << "contraction";
-                    writeBox();
-#endif
+
                     // catch if new interval is empty -> we can drop box and chose next box
                     if ( intervalBoxContainsEmptyInterval() )
                     {
@@ -895,7 +891,7 @@ namespace smtrat
 
                     const std::pair<double, unsigned>* newCandidate = new pair<double, unsigned>(candidate->RWA(), id);
                     mIcpRelevantCandidates.insert(*newCandidate);
-
+                    
                     // update history node
                     mHistoryActual->addContraction(candidate);
 
@@ -934,37 +930,42 @@ namespace smtrat
                             }
 
                         }
+                        
+#ifdef ICP_BOXLOG
+                        icpLog << "contraction";
+                        writeBox();
+#endif
                     }
                     
-                    bool originalAllFinished = true;
-                    GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
-                    for ( auto varIt = originalRealVariables.begin(); varIt != originalRealVariables.end(); ++varIt )
-                    {
-                        if ( mIntervals.find(ex_to<symbol>((*varIt).second)) != mIntervals.end() )
-                        {
-                            if ( mIntervals[ex_to<symbol>((*varIt).second)].diameter() > targetDiameter )
-                            {
-                                originalAllFinished = false;
-                            }
-                        }
-                        else
-                        {
-                            // should not happen
-                            assert(false);
-                        }
-                    }
-                    if ( originalAllFinished )
-                    {
-                        mIcpRelevantCandidates.clear();
-                        break;
-                    }
+//                    bool originalAllFinished = true;
+//                    GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
+//                    for ( auto varIt = originalRealVariables.begin(); varIt != originalRealVariables.end(); ++varIt )
+//                    {
+//                        if ( mIntervals.find(ex_to<symbol>((*varIt).second)) != mIntervals.end() )
+//                        {
+//                            if ( mIntervals[ex_to<symbol>((*varIt).second)].diameter() > targetDiameter )
+//                            {
+//                                originalAllFinished = false;
+//                            }
+//                        }
+//                        else
+//                        {
+//                            // should not happen
+//                            assert(false);
+//                        }
+//                    }
+//                    if ( originalAllFinished )
+//                    {
+//                        mIcpRelevantCandidates.clear();
+//                        break;
+//                    }
                 } //while ( !mIcpRelevantCandidates.empty() )
                 
                 // do not verify if the box is already invalid
-                if (!invalidBox)
-                {
-                    invalidBox = !checkBoxAgainstLinearFeasibleRegion();
-                }
+//                if (!invalidBox)
+//                {
+//                    invalidBox = !checkBoxAgainstLinearFeasibleRegion();
+//                }
                 
 #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
                 if ( !splitOccurred && !invalidBox )
@@ -1010,6 +1011,9 @@ namespace smtrat
 
                 if ( didSplit.first || splitOccurred )
                 {
+#ifdef ICP_BOXLOG
+                    icpLog << "split size subtree" << mHistoryRoot->sizeSubtree();
+#endif
                     cout << "Size subtree: " << mHistoryActual->sizeSubtree() << " \t Size total: " << mHistoryRoot->sizeSubtree() << endl;
                 }
 
@@ -1066,132 +1070,164 @@ namespace smtrat
                  * the solution (Why? -> numerical errors)
                  */
                     // create Bounds and set them, add to passedFormula
-                    pushBoundsToPassedFormula();
+                    bool boxChanged = pushBoundsToPassedFormula();
                     // remove centerConstaints as soon as they are not longer needed.
                     clearCenterConstraintsFromValidationFormula();
+                    
+                    if ( boxChanged )
+                    {
 #ifdef ICPMODULE_DEBUG
-                    cout << "[ICP] created passed formula." << endl;
+                        cout << "[ICP] created passed formula." << endl;
 
-                    printPassedFormula();
+                        printPassedFormula();
 #endif
 #ifdef ICP_BOXLOG
-                    icpLog << "backend";
-                    writeBox();
+                        icpLog << "backend";
+                        writeBox();
 #endif
-                    Answer a = runBackends();
+                        Answer a = runBackends();
 #ifdef ICPMODULE_DEBUG
-                    cout << "[ICP] Done running backends:" << a << endl;
+                        cout << "[ICP] Done running backends:" << a << endl;
 #endif
-                    if( a == False )
-                    {
-                        bool isBoundInfeasible = false;
-                        bool isBound = false;
-                        
-                        vector<Module*>::const_iterator backend = usedBackends().begin();
-                        while( backend != usedBackends().end() )
+                        if( a == False )
                         {
-                            if( !(*backend)->infeasibleSubsets().empty() )
+                            bool isBoundInfeasible = false;
+                            bool isBound = false;
+
+                            vector<Module*>::const_iterator backend = usedBackends().begin();
+                            while( backend != usedBackends().end() )
                             {
-                                for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
-                                        infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
+                                if( !(*backend)->infeasibleSubsets().empty() )
                                 {
-                                    for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
+                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
+                                            infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                                     {
-                                        (*subformula)->print();
-                                        isBound = false;
-                                        for ( auto boundIt = mBoundConstraints.begin(); boundIt != mBoundConstraints.end(); ++boundIt )
+                                        for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                                         {
-                                            if ( (*boundIt) == (*subformula) )
+                                            (*subformula)->print();
+                                            isBound = false;
+                                            for ( auto boundIt = mBoundConstraints.begin(); boundIt != mBoundConstraints.end(); ++boundIt )
                                             {
-                                                cout << "InfSet Contains bound." << endl;
-                                                isBound = true;
-                                                isBoundInfeasible = true;
-                                                break;
+                                                if ( (*boundIt) == (*subformula) )
+                                                {
+                                                    cout << "InfSet Contains bound." << endl;
+                                                    isBound = true;
+                                                    isBoundInfeasible = true;
+                                                    break;
+                                                }
                                             }
+
+                                            if(!isBound)
+                                            {
+                                                cout << "Add to infeasible subset: " << (*subformula)->constraint().lhs() << endl;
+                                                if (mInfeasibleSubsets.empty())
+                                                {
+                                                    set<const Formula*>* infeasibleSubset = new set<const Formula*>();
+                                                    infeasibleSubset->insert(*subformula);
+                                                    mInfeasibleSubsets.insert(mInfeasibleSubsets.begin(), *infeasibleSubset);
+                                                }
+                                                else
+                                                {
+                                                    (*mInfeasibleSubsets.begin()).insert(*subformula);
+                                                }
+                                            }
+
                                         }
-                                        
-                                        if(!isBound)
-                                        {
-                                            cout << "Add to infeasible subset: " << (*subformula)->constraint().lhs() << endl;
-                                            if (mInfeasibleSubsets.empty())
-                                            {
-                                                set<const Formula*>* infeasibleSubset = new set<const Formula*>();
-                                                infeasibleSubset->insert(*subformula);
-                                                mInfeasibleSubsets.insert(mInfeasibleSubsets.begin(), *infeasibleSubset);
-                                            }
-                                            else
-                                            {
-                                                (*mInfeasibleSubsets.begin()).insert(*subformula);
-                                            }
-                                        }
-                                        
                                     }
+                                    break;
                                 }
-                                break;
                             }
-                        }
-                        
-//                        getInfeasibleSubsets();
-//                        cout << "Size infeasible subsets: " << mInfeasibleSubsets.size() << endl;
-//                        printInfeasibleSubsets();
-//
-                        
-//                        for ( auto infVecIt = mInfeasibleSubsets.begin(); infVecIt != mInfeasibleSubsets.end(); ++infVecIt )
-//                        {
-//                            for ( auto infSetIt = (*infVecIt).begin(); infSetIt != (*infVecIt).end(); ++infSetIt )
-//                            {
-//                                for ( auto boundIt = mBoundConstraints.begin(); boundIt != mBoundConstraints.end(); ++boundIt )
-//                                {
-//                                    if ( (*boundIt) == (*infSetIt) )
-//                                    {
-//                                        cout << "InfSet Contains bound: ";
-//                                        (*boundIt)->print();
-//                                        isBoundInfeasible = true;
-//                                        break;
-//                                    }
-//                                }
-//                            }
-//                        }
+
+    //                        getInfeasibleSubsets();
+    //                        cout << "Size infeasible subsets: " << mInfeasibleSubsets.size() << endl;
+    //                        printInfeasibleSubsets();
+    //
+
+    //                        for ( auto infVecIt = mInfeasibleSubsets.begin(); infVecIt != mInfeasibleSubsets.end(); ++infVecIt )
+    //                        {
+    //                            for ( auto infSetIt = (*infVecIt).begin(); infSetIt != (*infVecIt).end(); ++infSetIt )
+    //                            {
+    //                                for ( auto boundIt = mBoundConstraints.begin(); boundIt != mBoundConstraints.end(); ++boundIt )
+    //                                {
+    //                                    if ( (*boundIt) == (*infSetIt) )
+    //                                    {
+    //                                        cout << "InfSet Contains bound: ";
+    //                                        (*boundIt)->print();
+    //                                        isBoundInfeasible = true;
+    //                                        break;
+    //                                    }
+    //                                }
+    //                            }
+    //                        }
 
 
-                        if ( isBoundInfeasible )
-                        {
-                            // choose & set new box
-#ifdef BOXMANAGEMENT
-                            cout << "InfSet of Backend contained bound, Chose new box: " << endl;
-                            icp::HistoryNode* newBox = chooseBox( mHistoryActual );
-                            if ( newBox != NULL )
+                            if ( isBoundInfeasible )
                             {
-                                // set Box as actual
-                                setBox(newBox);
-                                mHistoryActual->print();
+                                // choose & set new box
+    #ifdef BOXMANAGEMENT
+                                cout << "InfSet of Backend contained bound, Chose new box: " << endl;
+                                icp::HistoryNode* newBox = chooseBox( mHistoryActual );
+                                if ( newBox != NULL )
+                                {
+                                    // set Box as actual
+                                    setBox(newBox);
+                                    mHistoryActual->print();
+                                }
+                                else
+                                {
+                                    cout << "No new box found. Return false." << endl;
+                                    // no new Box to select -> finished
+                                    boxFeasible = false;
+
+                                    generateInfeasibleSubset();
+
+                                    return foundAnswer(False);
+                                }
+    #else
+                                // TODO: Create deductions
+
+                                return Unknown;
+    #endif
                             }
                             else
                             {
-                                cout << "No new box found. Return false." << endl;
-                                // no new Box to select -> finished
-                                boxFeasible = false;
-
-                                generateInfeasibleSubset();
-                                
-                                return foundAnswer(False);
+                                // pass answer to SAT solver
+                                return foundAnswer(a);
                             }
-#else
-                            // TODO: Create deductions
-
-                            return Unknown;
-#endif
                         }
-                        else
+                        else // if answer == true or answer == unknown
                         {
-                            // pass answer to SAT solver
                             return foundAnswer(a);
                         }
                     }
-                    else // if answer == true or answer == unknown
+                    else
                     {
-                        return foundAnswer(a);
+#ifdef BOXMANAGEMENT
+                        cout << "Box hasn't changed, Chose new box: " << endl;
+                        icp::HistoryNode* newBox = chooseBox( mHistoryActual );
+                        if ( newBox != NULL )
+                        {
+                            // set Box as actual
+                            setBox(newBox);
+                            mHistoryActual->print();
+                        }
+                        else
+                        {
+                            cout << "No new box found. Return false." << endl;
+                            // no new Box to select -> finished
+                            boxFeasible = false;
+
+                            generateInfeasibleSubset();
+
+                            return foundAnswer(False);
+                        }
+#else
+                        // TODO: Create deductions
+
+                        return Unknown;
+#endif
                     }
+
                 }
 
                 // remove centerConstaints as soon as they are not longer needed.
@@ -2193,8 +2229,6 @@ namespace smtrat
                 {
                     for ( auto infSetIt = (*vecIt).begin(); infSetIt != (*vecIt).end(); ++infSetIt )
                     {
-                        ex newConstraint = (*infSetIt)->constraint().lhs();
-
                         // if the failed constraint is not a centerConstraint - Ignore centerConstraints
                         if ( mCenterConstraints.find((*infSetIt)->pConstraint()) == mCenterConstraints.end() )
                         {
@@ -2208,7 +2242,6 @@ namespace smtrat
 
                                     if ( (*actCandidateIt).first->hasOrigin( mReplacements[(*infSetIt)->pConstraint()] ) )
                                     {
-
                                         cout << "isActive ";
                                         (*actCandidateIt).first->print();
                                         cout <<  " : " << (*actCandidateIt).first->isActive() << endl;
@@ -2468,6 +2501,8 @@ namespace smtrat
     {
         if ( _basis->isLeft() )
         {
+            _basis->removeLeftChild();
+            _basis->removeRightChild();
             return _basis->parent()->right();
         }
         else // isRight
@@ -2478,6 +2513,9 @@ namespace smtrat
             }
             else // select next starting from parent
             {
+                // left has already been processed
+                _basis->removeLeftChild();
+                _basis->removeRightChild();
                 return chooseBox( _basis->parent() );
             }
         }
@@ -2507,6 +2545,8 @@ namespace smtrat
         }
         // set actual node as selection
         mHistoryActual = _selection;
+        delete mHistoryActual->left();
+        delete mHistoryActual->right();
         
         printIntervals();
     }
@@ -2607,8 +2647,10 @@ namespace smtrat
         }
     }
 
-    void ICPModule::pushBoundsToPassedFormula()
+    bool ICPModule::pushBoundsToPassedFormula()
     {
+        bool newAdded = false;
+        
         printPassedFormula();
 
         mBoundConstraints.clear();
@@ -2649,6 +2691,17 @@ namespace smtrat
                     vec_set_const_pFormula origins = vec_set_const_pFormula();
                     std::set<const Formula*>* emptyTmpSet = new std::set<const Formula*>();
                     origins.insert(origins.begin(), *emptyTmpSet);
+                    
+                    // check if the bound is already contained.
+                    for ( auto boundIt = mpPassedFormula->begin(); boundIt != mpPassedFormula->end(); ++boundIt )
+                    {
+                        if ( (*boundIt)->constraint().lhs() == leftEx )
+                        {
+                            newAdded = true;
+                            break;
+                        }
+                    }
+                    
                     addSubformulaToPassedFormula( leftBound, origins );
                     mVariables[tmpSymbol].setLeftBound(mpPassedFormula->last());
                     mBoundConstraints.insert(leftBound);
@@ -2681,6 +2734,17 @@ namespace smtrat
                     vec_set_const_pFormula origins = vec_set_const_pFormula();
                     std::set<const Formula*>* emptyTmpSet = new std::set<const Formula*>();
                     origins.insert(origins.begin(), *emptyTmpSet);
+                    
+                    // check if the bound is already contained.
+                    for ( auto boundIt = mpPassedFormula->begin(); boundIt != mpPassedFormula->end(); ++boundIt )
+                    {
+                        if ( (*boundIt)->constraint().lhs() == rightEx )
+                        {
+                            newAdded = true;
+                            break;
+                        }
+                    }
+                    
                     addSubformulaToPassedFormula( rightBound , origins);
                     mVariables[tmpSymbol].setRightBound(mpPassedFormula->last());
                     mBoundConstraints.insert(rightBound);
@@ -2688,6 +2752,7 @@ namespace smtrat
                 mVariables[tmpSymbol].boundsSet();
             }
         }
+        return newAdded;
     }
 
     void ICPModule::updateRelevantCandidates(symbol _var, double _relativeContraction )
@@ -2755,7 +2820,7 @@ namespace smtrat
         std::set<Formula*> addedBoundaries = createConstraintsFromBounds();
         
         for( auto formulaIt = addedBoundaries.begin(); formulaIt != addedBoundaries.end(); ++formulaIt )
-        {
+        {            
             mLRA.inform((*formulaIt)->pConstraint());
             mValidationFormula->addSubformula((*formulaIt));
             mValidationFormula->getPropositions();

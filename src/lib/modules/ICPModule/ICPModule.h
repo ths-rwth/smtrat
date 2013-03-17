@@ -263,8 +263,9 @@ namespace smtrat
             
             /**
              * Creates Bounds and passes them to PassedFormula for the Backends.
+             * @return true if new bounds have been added
              */
-            void pushBoundsToPassedFormula();
+            bool pushBoundsToPassedFormula();
             
             /**
              * Update all affected candidates and reinsert them into icpRelevantCandidates
