@@ -144,7 +144,12 @@ namespace smtrat
             * Destructor:
             */
             ~ContractionCandidate()
-            {}
+            {
+                if ( !isLinear() )
+                {
+                    delete mConstraint;
+                }
+            }
 
             /**
              * Functions:
