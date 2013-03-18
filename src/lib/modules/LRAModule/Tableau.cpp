@@ -1800,6 +1800,8 @@ CheckLowerPremise:
             vector<numeric>::const_iterator coeffs_iter = coeffs.begin();
             Variable* var = new Variable( mHeight++, true, NULL, mDefaultBoundPosition );
             mRows.push_back(TableauHead());
+            EntryID currentStartEntryOfRow = 0;
+            EntryID leftID;
             while(coeffs_iter != coeffs.end())
             {
                 const Variable nonBasicVar = *mColumns[(*row_iterator).columnNumber()].mName;
@@ -1808,9 +1810,32 @@ CheckLowerPremise:
                 entry.setColumnNumber(nonBasicVar.position());
                 entry.setRowNumber(mHeight-1);
                 entry.rContent() = *coeffs_iter;
+                TableauHead& columnHead = mColumns[entry.columnNumber()];
+                EntryID& columnStart = columnHead.mStartEntry;
+                (*mpEntries)[columnStart].setDown(entryID);
+                entry.setUp(columnStart);                
+                columnStart = entryID;
+                ++columnHead.mSize;
+                if( currentStartEntryOfRow == 0 )
+                {
+                    currentStartEntryOfRow = entryID;
+                    entry.setLeft(0);
+                    leftID = entryID;
+                }  
+                else 
+                {
+                    (*mpEntries)[entryID].setLeft(leftID);
+                    (*mpEntries)[leftID].setRight(entryID); 
+                    leftID = entryID;
+                }
+                ++coeffs_iter;
                 row_iterator.right();
-                //...
             }
+            (*mpEntries)[leftID].setRight(0);
+            TableauHead& rowHead = mRows[mHeight-1];
+            rowHead.mStartEntry = currentStartEntryOfRow;
+            rowHead.mSize = coeffs.size();
+            rowHead.mName = var;
             const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint(sum-1,smtrat::CR_GEQ, smtrat::Formula::constraintPool().realVariables());
             return gomory_constr;     
         }
