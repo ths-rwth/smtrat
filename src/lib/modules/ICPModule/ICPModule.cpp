@@ -665,7 +665,7 @@ namespace smtrat
         std::pair<bool,symbol> didSplit;
         didSplit.first = false;
         vec_set_const_pFormula violatedConstraints = vec_set_const_pFormula();
-        double targetDiameter = 0.1;
+        double targetDiameter = 1;
         double contractionThreshold = 0.01;
 
         // Debug Outputs of linear and nonlinear Tables
@@ -685,11 +685,23 @@ namespace smtrat
         // call mLRA to check linear feasibility
         mValidationFormula->getPropositions();
         Answer lraAnswer = mLRA.isConsistent();
+        
+        // catch deductions
+        const std::vector<Formula*> deductions = mLRA.deductions();
+        for ( auto deductionIt = deductions.begin(); deductionIt != deductions.end(); ++deductionIt )
+        {
+            addDeduction(*deductionIt);
+        }
+        
         cout << lraAnswer << endl;
         mLRA.printReceivedFormula();
 
         assert(lraAnswer != Unknown);
-        if (lraAnswer == False)
+        if ( lraAnswer == Unknown )
+        {
+            return foundAnswer(lraAnswer);
+        }
+        else if (lraAnswer == False)
         {
             // remap infeasible subsets to original constraints
             vec_set_const_pFormula tmpSet = mLRA.infeasibleSubsets();
@@ -1947,6 +1959,13 @@ namespace smtrat
 
         mValidationFormula->getPropositions();
         Answer centerFeasible = mLRA.isConsistent();
+        
+        // catch deductions
+        const std::vector<Formula*> deductions = mLRA.deductions();
+        for ( auto deductionIt = deductions.begin(); deductionIt != deductions.end(); ++deductionIt )
+        {
+            addDeduction(*deductionIt);
+        }
 
         if ( centerFeasible == True )
         {
@@ -2850,6 +2869,13 @@ namespace smtrat
         }
         
         Answer boxCheck = mLRA.isConsistent();
+        
+        // catch deductions
+        const std::vector<Formula*> deductions = mLRA.deductions();
+        for ( auto deductionIt = deductions.begin(); deductionIt != deductions.end(); ++deductionIt )
+        {
+            addDeduction(*deductionIt);
+        }
         
 #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
         if ( boxCheck == False )
