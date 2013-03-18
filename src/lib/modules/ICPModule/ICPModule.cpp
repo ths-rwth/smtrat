@@ -687,10 +687,10 @@ namespace smtrat
         Answer lraAnswer = mLRA.isConsistent();
         
         // catch deductions
-        const std::vector<Formula*> deductions = mLRA.deductions();
-        for ( auto deductionIt = deductions.begin(); deductionIt != deductions.end(); ++deductionIt )
+        while ( !mLRA.rDeductions().empty() )
         {
-            addDeduction(*deductionIt);
+            addDeduction( mLRA.deductions().back() );
+            mLRA.rDeductions().pop_back();
         }
         
         cout << lraAnswer << endl;
@@ -1961,12 +1961,12 @@ namespace smtrat
         Answer centerFeasible = mLRA.isConsistent();
         
         // catch deductions
-        const std::vector<Formula*> deductions = mLRA.deductions();
-        for ( auto deductionIt = deductions.begin(); deductionIt != deductions.end(); ++deductionIt )
+        while ( !mLRA.rDeductions().empty() )
         {
-            addDeduction(*deductionIt);
+            addDeduction( mLRA.deductions().back() );
+            mLRA.rDeductions().pop_back();
         }
-
+        
         if ( centerFeasible == True )
         {
             // remove centerConstaints as soon as they are not longer needed.
@@ -2566,7 +2566,7 @@ namespace smtrat
     {
         assert(_selection != NULL);
 
-        cout << "Set box(" << mHistoryActual->id() << " -> " << _selection->id() << "), #intervals: " << mIntervals.size() << " -> " << _selection->intervals().size() << endl;
+        cout << "Set box -> " << _selection->id() << ", #intervals: " << mIntervals.size() << " -> " << _selection->intervals().size() << endl;
 
         // set intervals - currently we don't change not contained intervals.
         for ( auto intervalIt = _selection->intervals().begin(); intervalIt != _selection->intervals().end(); ++intervalIt )
@@ -2871,10 +2871,10 @@ namespace smtrat
         Answer boxCheck = mLRA.isConsistent();
         
         // catch deductions
-        const std::vector<Formula*> deductions = mLRA.deductions();
-        for ( auto deductionIt = deductions.begin(); deductionIt != deductions.end(); ++deductionIt )
+        while ( !mLRA.rDeductions().empty() )
         {
-            addDeduction(*deductionIt);
+            addDeduction( mLRA.deductions().back() );
+            mLRA.rDeductions().pop_back();
         }
         
 #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
