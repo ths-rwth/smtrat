@@ -41,6 +41,7 @@
 #ifdef LRA_REFINEMENT
 //#define LRA_INTRODUCE_NEW_CONSTRAINTS
 #endif
+//#define LRA_GOMORY_CUTS
 
 namespace lra
 {
@@ -359,7 +360,7 @@ namespace lra
             smtrat::Formula::const_iterator defaultBoundPosition() const
             {
                 return mDefaultBoundPosition;
-            }
+            }            
 
             EntryID newTableauEntry();
             void removeEntry( EntryID );
@@ -381,6 +382,7 @@ namespace lra
             #endif
             unsigned checkCorrectness() const;
             bool rowCorrect( unsigned _rowNumber ) const;
+            const smtrat::Constraint* gomoryCut(const GiNaC::numeric& ass, vector<TableauHead>::const_iterator row, vector<const smtrat::Constraint*>& constr_vec);
             void printHeap( std::ostream& = std::cout, unsigned = 30, const std::string = "" ) const;
             void printEntry( std::ostream& = std::cout, EntryID = 0, unsigned = 20 ) const;
             void printVariables( std::ostream& = std::cout, const std::string = "" ) const;

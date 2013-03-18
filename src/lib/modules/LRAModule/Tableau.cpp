@@ -31,6 +31,7 @@
 #include <sstream>
 
 #include "Tableau.h"
+#include "LRAModule.h"
 
 using namespace std;
 using namespace GiNaC;
@@ -1518,6 +1519,7 @@ CheckLowerPremise:
                 learnedBound.nextWeakerBound = *ubound;
                 learnedBound.premise = uPremise;
                 #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                lock_guard<recursive_mutex> lock( smtrat::Constraint::mMutex );
                 if( newlimit->mainPart() < (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
                 {
                     ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
@@ -1584,6 +1586,7 @@ CheckLowerPremise:
                 learnedBound.nextWeakerBound = *lbound;
                 learnedBound.premise = lPremise;
                 #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                lock_guard<recursive_mutex> lock( smtrat::Constraint::mMutex );
                 if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
                 {
                     ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
@@ -1708,6 +1711,137 @@ CheckLowerPremise:
         if( sumOfNonbasics != 0 ) return false;
         return true;
     }
+    
+    #ifdef LRA_GOMORY_CUTS
+    enum GOMORY_SET
+    {
+        J_PLUS,
+        J_MINUS,
+        K_PLUS,
+        K_MINUS
+    };
+    /**
+     * Creates a constraint referring to Gomory Cuts, if possible. 
+     * 
+     * @return NULL,    if the cut can´t be constructed;
+     *         otherwise the valid constraint is returned.   
+     */
+    const smtrat::Constraint* Tableau::gomoryCut(const GiNaC::numeric& ass, vector<TableauHead>::const_iterator row, vector<const smtrat::Constraint*>& constr_vec)
+    {
+        if(!ass.is_integer())
+        {        
+            Iterator row_iterator = Iterator(row->mStartEntry,mpEntries);
+            vector<GOMORY_SET> splitting = vector<GOMORY_SET>();
+            while(!row_iterator.rowEnd())
+            {
+                const Variable nonBasicVar = *mColumns[(*row_iterator).columnNumber()].mName;
+                if(nonBasicVar.infimum() == nonBasicVar.assignment() ||
+                   nonBasicVar.supremum() == nonBasicVar.assignment())
+                {
+                    if(nonBasicVar.infimum() == nonBasicVar.assignment())
+                    {
+                        if((*row_iterator).content()<0)
+                            splitting.push_back(J_MINUS);
+                        else 
+                            splitting.push_back(J_PLUS);         
+                    }
+                    else
+                    {
+                        if((*row_iterator).content()<0)
+                            splitting.push_back(K_MINUS);
+                        else 
+                            splitting.push_back(K_PLUS);
+                    }
+                    stringstream sstream;
+                    sstream << nonBasicVar.expression();
+                }
+                else return NULL;
+                row_iterator.right();
+            }
+            vector<GOMORY_SET>::const_iterator vec_iter = splitting.end();  
+            vector<numeric> coeffs = vector<numeric>();
+            numeric coeff;
+            numeric f_zero = ass-ass.to_int();
+            ex sum = ex();
+            while(!row_iterator.rowBegin())
+            {
+                const Variable nonBasicVar = (*mColumns[(*row_iterator).columnNumber()].mName);
+                if((*vec_iter)==J_MINUS)
+                {
+                    numeric bound = nonBasicVar.infimum().limit().mainPart();
+                    coeff = -(*row_iterator).content()/(f_zero);
+                    constr_vec.push_back(nonBasicVar.infimum().pAsConstraint());                    
+                    sum += coeff*(nonBasicVar.expression()-bound);                   
+                }                 
+                else if ((*vec_iter)==J_PLUS)
+                {
+                    numeric bound = nonBasicVar.supremum().limit().mainPart();
+                    coeff = (*row_iterator).content()/(1-f_zero);
+                    constr_vec.push_back(nonBasicVar.supremum().pAsConstraint());
+                    sum += coeff*(nonBasicVar.expression()-bound);                   
+                }
+                else if ((*vec_iter)==K_MINUS)
+                {
+                    numeric bound = nonBasicVar.infimum().limit().mainPart();
+                    coeff = -(*row_iterator).content()/(1-f_zero);
+                    constr_vec.push_back(nonBasicVar.infimum().pAsConstraint());
+                    sum += coeff*(bound-nonBasicVar.expression());                   
+                }
+                else if ((*vec_iter)==K_PLUS) 
+                {
+                    numeric bound = nonBasicVar.supremum().limit().mainPart();
+                    coeff = (*row_iterator).content()/f_zero;
+                    constr_vec.push_back(nonBasicVar.supremum().pAsConstraint());
+                    sum += coeff*(bound-nonBasicVar.expression());
+                }     
+                coeffs.push_back(coeff);
+                row_iterator.left();
+            }
+            vector<numeric>::const_iterator coeffs_iter = coeffs.begin();
+            Variable* var = new Variable( mHeight++, true, NULL, mDefaultBoundPosition );
+            mRows.push_back(TableauHead());
+            EntryID currentStartEntryOfRow = 0;
+            EntryID leftID;
+            while(coeffs_iter != coeffs.end())
+            {
+                const Variable nonBasicVar = *mColumns[(*row_iterator).columnNumber()].mName;
+                EntryID entryID = newTableauEntry();
+                TableauEntry& entry = (*mpEntries)[entryID];
+                entry.setColumnNumber(nonBasicVar.position());
+                entry.setRowNumber(mHeight-1);
+                entry.rContent() = *coeffs_iter;
+                TableauHead& columnHead = mColumns[entry.columnNumber()];
+                EntryID& columnStart = columnHead.mStartEntry;
+                (*mpEntries)[columnStart].setDown(entryID);
+                entry.setUp(columnStart);                
+                columnStart = entryID;
+                ++columnHead.mSize;
+                if( currentStartEntryOfRow == 0 )
+                {
+                    currentStartEntryOfRow = entryID;
+                    entry.setLeft(0);
+                    leftID = entryID;
+                }  
+                else 
+                {
+                    (*mpEntries)[entryID].setLeft(leftID);
+                    (*mpEntries)[leftID].setRight(entryID); 
+                    leftID = entryID;
+                }
+                ++coeffs_iter;
+                row_iterator.right();
+            }
+            (*mpEntries)[leftID].setRight(0);
+            TableauHead& rowHead = mRows[mHeight-1];
+            rowHead.mStartEntry = currentStartEntryOfRow;
+            rowHead.mSize = coeffs.size();
+            rowHead.mName = var;
+            const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint(sum-1,smtrat::CR_GEQ, smtrat::Formula::constraintPool().realVariables());
+            return gomory_constr;     
+        }
+        return NULL;
+    }
+    #endif
 
     /**
      *

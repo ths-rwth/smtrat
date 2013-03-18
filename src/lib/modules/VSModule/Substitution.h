@@ -40,7 +40,7 @@ namespace vs
      *  Type and object definitions:
      */
 
-    enum Substitution_Type { ST_NORMAL, ST_PLUS_EPSILON, ST_MINUS_INFINITY };
+    enum Substitution_Type { ST_NORMAL, ST_PLUS_EPSILON, ST_MINUS_INFINITY, ST_INVALID };
 
     class Substitution
     {

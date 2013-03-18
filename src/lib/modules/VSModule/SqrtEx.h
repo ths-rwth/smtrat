@@ -151,9 +151,10 @@ namespace vs
             friend SqrtEx operator *( const SqrtEx&, const SqrtEx& );
             friend SqrtEx operator /( const SqrtEx&, const SqrtEx& );
             friend std::ostream& operator <<( std::ostream&, const SqrtEx& );
+            
+            static void simplify( GiNaC::ex&, const GiNaC::ex& );
+            static SqrtEx subBySqrtEx( const GiNaC::ex&, const GiNaC::ex&, const SqrtEx&, const GiNaC::symtab& );
     };
-    void simplify( GiNaC::ex&, const GiNaC::ex& );
-    SqrtEx subBySqrtEx( const GiNaC::ex&, const GiNaC::ex&, const SqrtEx&, const GiNaC::symtab& );
 }    // end namspace vs
 
 #endif

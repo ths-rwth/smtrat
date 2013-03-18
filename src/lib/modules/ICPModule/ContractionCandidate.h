@@ -30,7 +30,7 @@
 #ifndef CONTRACTIONCANDIDATE_H
 #define CONTRACTIONCANDIDATE_H
 
-#define CCPRINTORIGINS
+//#define CCPRINTORIGINS
 
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
@@ -63,7 +63,7 @@ namespace smtrat
             unsigned    mId;
             bool        mIsLinear;
             bool        mActive;
-            
+
 
             // RWA
             static const uint       mK     = 10;
@@ -77,7 +77,7 @@ namespace smtrat
              * Constructors:
              */
             ContractionCandidate(){}
-            
+
             ContractionCandidate( const ContractionCandidate& _original )
             {
                 mConstraint = _original.constraint();
@@ -110,7 +110,7 @@ namespace smtrat
             mConstraint(_constraint),
             mLhs(_lhs),
             mDerivationVar(_derivationVar),
-            mDerivative(),            
+            mDerivative(),
             mOrigin(),
             mId(_id),
             mIsLinear(true),
@@ -120,7 +120,7 @@ namespace smtrat
             {
                 mOrigin.insert(_origin);
             }
-            
+
             /**
              * Constructor only for nonlinear candidates
              * @param _constraint
@@ -164,29 +164,29 @@ namespace smtrat
             {
                 return mDerivative;
             }
-            
+
             const symbol& lhs() const
             {
                 return mLhs;
             }
-            
+
             std::set<const Formula*> origin() const
             {
                 return mOrigin;
             }
-            
+
             std::set<const Formula*>& rOrigin()
             {
                 return mOrigin;
             }
-            
+
             void addOrigin( const Formula* _origin )
             {
                 assert(_origin->getType() == REALCONSTRAINT);
                 mOrigin.insert(_origin);
                 cout << "Origin size after insertion: " << mOrigin.size() << endl;
             }
-            
+
             void removeOrigin( const Formula* _origin )
             {
                 if ( mOrigin.find(_origin) != mOrigin.end() )
@@ -194,12 +194,12 @@ namespace smtrat
                     mOrigin.erase(_origin);
                 }
             }
-            
+
             bool hasOrigin( const Formula* _origin ) const
             {
                 return ( mOrigin.find(_origin) != mOrigin.end() );
             }
-            
+
             bool hasOrigin( const Constraint* _origin ) const
             {
                 std::set<const Formula*>::iterator originIt;
@@ -212,17 +212,17 @@ namespace smtrat
                 }
                 return false;
             }
-            
+
             void setLinear()
             {
                 mIsLinear = true;
             }
-            
+
             void setNonlinear()
             {
                 mIsLinear = false;
             }
-            
+
             const bool isLinear() const
             {
                 return mIsLinear;
@@ -233,7 +233,7 @@ namespace smtrat
                 mRWA = mRWA + mAlpha * (mLastPayoff - mRWA);
                 return mRWA;
             }
-            
+
             const double RWA() const
             {
                 return mRWA;
@@ -243,7 +243,7 @@ namespace smtrat
             {
                 return mLastPayoff;
             }
-            
+
             const unsigned id() const
             {
                 return mId;
@@ -258,7 +258,7 @@ namespace smtrat
             {
                 mDerivationVar = _var;
             }
-            
+
             void setLhs( symbol _lhs )
             {
                 mLhs = _lhs;
@@ -276,22 +276,22 @@ namespace smtrat
                     mDerivative = mConstraint->lhs().diff( mDerivationVar );
                 }
             }
-            
+
             void activate()
             {
                 mActive = true;
             }
-            
+
             void deactivate()
             {
                 mActive = false;
             }
-            
+
             const bool isActive() const
             {
                 return mActive;
             }
-            
+
             void resetWeights()
             {
                 mLastPayoff = 0;
@@ -300,7 +300,7 @@ namespace smtrat
 
             void print( ostream& _out = std::cout ) const
             {
-                _out << mId << ": \t" << (*mConstraint) << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
+                _out << mId << ": \t" << *mConstraint << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
 #ifdef CCPRINTORIGINS
                 cout << endl << "Origins(" << mOrigin.size()<< "): " << endl;
                 if ( !mOrigin.empty())
@@ -310,7 +310,7 @@ namespace smtrat
                         cout << "\t ";
                         (*originIt)->print();
                         cout << "\t [" << (*originIt) << "]" << endl;
-                    }   
+                    }
                 }
 #else
                 cout << ", #Origins: " << mOrigin.size() << endl;
@@ -321,7 +321,7 @@ namespace smtrat
             {
                 return lhs.RWA() < rhs.RWA() || (lhs.RWA() == rhs.RWA() && lhs.mId < rhs.mId );
             }
-            
+
             friend bool operator== (ContractionCandidate const& lhs, ContractionCandidate const& rhs)
             {
                 return lhs.mId == rhs.mId;

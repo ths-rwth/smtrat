@@ -171,7 +171,7 @@ namespace vs
                 {
                     _out << " and ";
                 }
-                _out << **sCons;
+                _out << *sCons;
             }
         }
         _out << endl;

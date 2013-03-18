@@ -38,6 +38,7 @@ option(USE_GINACRA "Compile modules using GiNaCRA" ON)
 # Strategy
 option( SMTRAT_STRAT_Factorization "Factorization" ON )
 set(SMTRAT_Strategy "NRATSolver" CACHE STRING "Used strategy in the solver")
+option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 
 # Development options
 option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file")
@@ -58,7 +59,7 @@ endif()
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 # Include own macros.
 include( smtratmacros )
-# TODO: iteratively search for cmake files and include them here. 
+# TODO: iteratively search for cmake files and include them here.
 
 
 include(GetGitRevisionDescription)

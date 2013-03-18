@@ -733,7 +733,7 @@ namespace vs
                 {
                     const Condition* condA = _conditionVectorToSimplify[posA];
                     const Condition* condB = _conditionVectorToSimplify[posB];
-                    signed strongProp = smtrat::Constraint::compare( condA->constraint(), condB->constraint() );
+                    signed strongProp = smtrat::Constraint::compare( condA->pConstraint(), condB->pConstraint() );
                     /*
                      * If the two conditions have the same solution space.
                      */
@@ -949,7 +949,12 @@ namespace vs
                 }
                 else
                 {
+                    #ifdef SMTRAT_VS_VARIABLEBOUNDS
+                    (**cond).rFlag() = hasNoRootsInVariableBounds( *cond );
+                    #else
                     (**cond).rFlag() = false;
+                    #endif
+                    
                 }
             }
         }
@@ -2363,7 +2368,6 @@ namespace vs
         cout << __func__ << endl;
         #endif
         assert( isInconsistent() );
-
         /*
          * Determine a covering set of the conflict sets.
          */
@@ -2692,6 +2696,34 @@ namespace vs
             }
         }
         return true;
+    }
+    
+    /**
+     * Checks whether there are no zeros for the left-hand side of the constraint of the given condition.
+     * 
+     * @param _condition The condition to check.
+     * @return 
+     */
+    bool State::hasNoRootsInVariableBounds( const Condition* _condition )
+    {
+//        symbol sym;
+//        _condition->constraint().variable( index(), sym );
+//        evaldoubleintervalmap intervals = rFather().rVariableBounds().getIntervalMap();
+//        DoubleInterval solutionSpace = DoubleInterval::evaluate( _condition->constraint().lhs(), intervals );
+//        if( !solutionSpace.contains( 0 ) )
+//        {
+//            ConditionSet origins = ConditionSet();
+//            origins.insert( _condition );
+//            Substitution* sub = new Substitution( index(), ex( sym ), ST_INVALID, origins );
+//            ConditionSetSet conflicts = ConditionSetSet();
+//            conflicts.insert( origins );
+//            symtab vars = _condition->constraint().variables();
+//            set< const Condition* > conflictingBounds = variableBounds().getOriginsOfBounds( vars );
+//            conflict.insert( conflictingBounds.begin(), conflictingBounds.end() );
+//            addConflictSet( sub, conflicts );
+//            return true;
+//        }
+        return false;
     }
     #endif
 

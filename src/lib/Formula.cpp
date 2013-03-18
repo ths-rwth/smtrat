@@ -37,7 +37,7 @@ using namespace std;
 
 namespace smtrat
 {
-    ConstraintPool Formula::mConstraintPool = ConstraintPool();
+    ConstraintPool* Formula::mpConstraintPool = new ConstraintPool();
 
     Formula::Formula():
         mDeducted( false ),
@@ -97,14 +97,14 @@ namespace smtrat
 
     Formula::Formula( const Formula& _formula ):
         mDeducted( false ),
-        mPropositionsUptodate( false ),
+        mPropositionsUptodate( _formula.mPropositionsUptodate ),
         mActivity( _formula.mActivity ),
         mDifficulty( _formula.mDifficulty ),
         mType( _formula.getType() ),
         mRealValuedVars( _formula.realValuedVars() ),
         mBooleanVars( _formula.booleanVars() ),
         mpFather( NULL ),
-        mPropositions()
+        mPropositions(_formula.mPropositionsUptodate ? _formula.proposition(): Condition())
     {
         assert( &_formula != this );
 

@@ -30,6 +30,8 @@
 #ifndef ICPMODULE_H
 #define ICPMODULE_H
 
+#define ICP_BOXLOG
+
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
 #include "../../Module.h"
@@ -42,6 +44,7 @@
 #include <ginacra/DoubleInterval.h>
 #include "../../VariableBounds.h"
 #include "IcpVariable.h"
+#include <fstream>
 
 namespace smtrat
 {
@@ -105,12 +108,15 @@ namespace smtrat
             LRAModule                                                           mLRA;
 
             std::set<const Constraint*>                                         mCenterConstraints;
+            std::set<const Formula*>                                         mBoundConstraints;
             GiNaC::symtab                                                       mReplacementVariables;
 
             bool                                                                mInitialized;
 
-#ifdef HISTORY_DEBUG
             unsigned                                                            mCurrentId;
+            
+#ifdef ICP_BOXLOG
+            std::fstream icpLog;
 #endif
 
         public:
@@ -191,7 +197,7 @@ namespace smtrat
              * by the mLRA module
              * @return a set of violated constraints
              */
-            vec_set_const_pFormula validateSolution();
+            std::pair<bool,bool> validateSolution();
 
             /**
              * Creates new ContractionCandidate and adds it to nonlinear constraints
@@ -250,9 +256,16 @@ namespace smtrat
             void addCandidateToRelevant(icp::ContractionCandidate* _candidate);
             
             /**
-             * Creates Bounds and passes them to PassedFormula for the Backends.
+             * Removes a candidate from the icpRelevantCandidates.
+             * @param _candidate
              */
-            void pushBoundsToPassedFormula();
+            void removeCandidateFromRelevant(icp::ContractionCandidate* _candidate);
+            
+            /**
+             * Creates Bounds and passes them to PassedFormula for the Backends.
+             * @return true if new bounds have been added
+             */
+            bool pushBoundsToPassedFormula();
             
             /**
              * Update all affected candidates and reinsert them into icpRelevantCandidates
@@ -265,6 +278,37 @@ namespace smtrat
              * and before a new contraction sequence starts in order to check linear feasibility.
              */
             void clearCenterConstraintsFromValidationFormula();
+            
+            /**
+             * Checks the actual intervalBox with the LRASolver
+             * @return 
+             */
+            bool checkBoxAgainstLinearFeasibleRegion();
+            
+            /**
+             * Checks mIntervals if it contains an empty interval.
+             * @return 
+             */
+            bool intervalBoxContainsEmptyInterval();
+            
+            /**
+             * generates and sets the infeasible subset
+             */
+            void generateInfeasibleSubset();
+            
+            /**
+             * creates constraints for the actual bounds of the original variables.
+             * @return 
+             */
+            std::set<Formula*> createConstraintsFromBounds();
+            
+#ifdef ICP_BOXLOG
+            /**
+             * Writes actual box to file. Note that the file has to be open.
+             */
+            void writeBox();
+#endif
+            
     };
 }    // namespace smtrat
 

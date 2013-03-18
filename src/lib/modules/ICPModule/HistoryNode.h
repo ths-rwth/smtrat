@@ -42,11 +42,22 @@ namespace smtrat
     {
         public:
              /**
-             * Typedefs:
+             * Typedefs & operators:
              */
         
+            struct comp;
+            
             typedef std::vector< std::set<Constraint> >              vec_set_Constraint;
-        
+            typedef std::set<const HistoryNode*, comp>                     set_HistoryNodes;
+            
+            struct comp
+            {
+                bool operator() (const HistoryNode* lhs, const HistoryNode* rhs) const
+                {
+                    return lhs->id() < rhs->id();
+                }
+            };
+            
         private:
 
             /**
@@ -60,50 +71,46 @@ namespace smtrat
             HistoryNode*         mParent;
             std::set<ContractionCandidate*> mAppliedContractions;
             vec_set_Constraint   mInfeasibleSubset;
-#ifdef HISTORY_DEBUG
-            unsigned             mId;
-#endif
+            const unsigned             mId;
 
         public:
 
             /**
              *  Methods
              */
-
-            HistoryNode(){}
             
-            HistoryNode( const HistoryNode& _original )
+            HistoryNode( const HistoryNode& _original ):
+            mParent(_original.parent()),
+            mId(_original.id())
             {
-                mParent = _original.parent();
                 mIntervals = _original.intervals();
                 mLeftChild = _original.left();
                 mRightChild = _original.right();
                 mSplittingVariable = _original.getSplit();
                 mInfeasibleSubset = _original.getInfeasibleSubset();
-#ifdef HISTORY_DEBUG
-                mId = _original.id();
-#endif
                 for ( auto intervalIt = _original.intervals().begin(); intervalIt != _original.intervals().end(); ++intervalIt )
                 {
                     mIntervals.insert((*intervalIt));
                 }
             }
 
-            HistoryNode( HistoryNode* _parent ):
+            HistoryNode( HistoryNode* _parent, unsigned _id ):
             mIntervals(),
             mSplittingVariable(NULL),
             mAppliedContractions(),
-            mInfeasibleSubset()
+            mInfeasibleSubset(),
+            mId(_id)
             {
                 mParent       = _parent;
                 mLeftChild    = NULL;
                 mRightChild   = NULL;
             }
 
-            HistoryNode( GiNaCRA::evaldoubleintervalmap _intervals ):
+            HistoryNode( GiNaCRA::evaldoubleintervalmap _intervals, unsigned _id ):
             mSplittingVariable(NULL),
             mAppliedContractions(),
-            mInfeasibleSubset()
+            mInfeasibleSubset(),
+            mId(_id)
             {
                 mParent     = NULL;
                 mIntervals  = _intervals;
@@ -111,10 +118,11 @@ namespace smtrat
                 mRightChild = NULL;
             }
             
-            HistoryNode( HistoryNode* _parent, GiNaCRA::evaldoubleintervalmap _intervals ):
+            HistoryNode( HistoryNode* _parent, GiNaCRA::evaldoubleintervalmap _intervals, unsigned _id ):
             mSplittingVariable(NULL),
             mAppliedContractions(),
-            mInfeasibleSubset()
+            mInfeasibleSubset(),
+            mId(_id)
             {
                 mParent = _parent;
                 mIntervals = _intervals;
@@ -122,20 +130,27 @@ namespace smtrat
                 mRightChild = NULL;
             }
 
-            // we assume that the node to be deleted is a leaf
             ~HistoryNode()
             {
-                if ( mLeftChild != NULL )
+                if ( mLeftChild != NULL)
                 {
                     delete mLeftChild;
                 }
-                
                 if ( mRightChild != NULL )
                 {
                     delete mRightChild;
                 }
-                
-                // TODO deleting actions.
+                if ( mParent != NULL )
+                {
+                    if ( this->isLeft() )
+                    {
+                        mParent->removeLeftChild();
+                    }
+                    else
+                    {
+                        mParent->removeRightChild();
+                    }
+                }
             }
 
             /**
@@ -188,13 +203,32 @@ namespace smtrat
             {
                 return mIntervals;
             }
+            
+            GiNaCRA::evaldoubleintervalmap& rIntervals()
+            {
+                return mIntervals;
+            }
 
             void setIntervals( GiNaCRA::evaldoubleintervalmap _map )
             {
-                mIntervals = _map;
+                GiNaCRA::evaldoubleintervalmap::iterator intervalIt;
+                for ( intervalIt = _map.begin(); intervalIt != _map.end(); ++intervalIt )
+                {
+                    if ( mIntervals.find((*intervalIt).first) != mIntervals.end() )
+                    {
+                        if ( mIntervals[(*intervalIt).first] != (*intervalIt).second )
+                        {
+                            mIntervals[(*intervalIt).first] = (*intervalIt).second;
+                        }
+                    }
+                    else
+                    {
+                        mIntervals[(*intervalIt).first] = (*intervalIt).second;
+                    }
+                }
             }
 
-            bool hasEmptyInterval()
+            bool hasEmptyInterval() const
             {
                 for(auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
                 {
@@ -236,7 +270,7 @@ namespace smtrat
                 mAppliedContractions.insert( _candidate );
             }
 
-            std::set<ContractionCandidate*> getCandidates()
+            std::set<ContractionCandidate*> getCandidates() const
             {
                 return mAppliedContractions;
             }
@@ -261,46 +295,16 @@ namespace smtrat
                 return mInfeasibleSubset;
             }
 
-            void cutLeft()
+            void removeLeftChild()
             {
-                if( mLeftChild->isLeaf() )
-                {
-                    delete mLeftChild;
-                }
-                else
-                {
-                    if( mLeftChild->left() != NULL )
-                    {
-                        mLeftChild->cutLeft();
-                    }
-                    if( mLeftChild->right() != NULL )
-                    {
-                        mLeftChild->cutRight();
-                    }
-                    delete mLeftChild;
-                }
+                mLeftChild = NULL;
             }
-
-            void cutRight()
+            
+            void removeRightChild()
             {
-                if( mRightChild->isLeaf() )
-                {
-                    delete mRightChild;
-                }
-                else
-                {
-                    if( mRightChild->left() != NULL )
-                    {
-                        mRightChild->cutLeft();
-                    }
-                    if( mRightChild->right() != NULL )
-                    {
-                        mRightChild->cutRight();
-                    }
-                    delete mRightChild;
-                }
+                mRightChild = NULL;
             }
-
+            
             /**
              * Return if node is a leaf
              * @return
@@ -336,17 +340,10 @@ namespace smtrat
                 return ( this == mParent->right() );
             }
             
-#ifdef HISTORY_DEBUG
-            void setId( unsigned _id )
-            {
-                mId = _id;
-            }
-            
             const unsigned id() const
             {
                 return mId;
             }
-#endif
             /**
              * Print current node
              * @param _out
@@ -401,11 +398,11 @@ namespace smtrat
             /**
              * Search for Candidates in the tree below this node.
              * @param _candidate The candidate which is to be found
-             * @return a list of pointers to nodes which have the candidate in their contraction sequence
+             * @return a list of pointers to the first nodes which have the candidate in their contraction sequence
              */
-            std::set<HistoryNode*> findCandidates( ContractionCandidate* _candidate ) const
+            set_HistoryNodes findCandidates( ContractionCandidate* _candidate ) const
             {
-                std::set<HistoryNode*> result = std::set<HistoryNode*>();
+                set_HistoryNodes result = set_HistoryNodes();
 
                 if( mLeftChild != NULL )
                 {
@@ -425,6 +422,10 @@ namespace smtrat
              */
             int sizeSubtree() const
             {
+                if (this == NULL)
+                {
+                    return 0;
+                }
                 if (this->isLeaf())
                 {
                     return 1;
@@ -434,23 +435,41 @@ namespace smtrat
                     return mLeftChild->sizeSubtree() + mRightChild->sizeSubtree() + 1;
                 }
             }
+            
+            friend bool operator== (HistoryNode const& lhs, HistoryNode const& rhs)
+            {
+                return lhs.id() == rhs.id();
+            }
 
         private:
 
             /**
              *  Functions
              */
-
+            
             /**
              * Find first occurrence of the contractionCandidate below this node
              * @param _candidate
              * @return pointer to Node
              */
-            void findFirstOccurrence( ContractionCandidate* _candidate, std::set<HistoryNode*>& _result )
+            void findFirstOccurrence( ContractionCandidate* _candidate, set_HistoryNodes& _result ) const
             {
-                std::set<ContractionCandidate*>::iterator pos = this->getCandidates().find( _candidate );
-                if( pos != this->getCandidates().end() )
+#ifdef HISTORY_DEBUG
+                cout << "searching for ";
+                _candidate->print();
+                cout << "#contractions in " << mId << ": " << mAppliedContractions.size() << endl;
+                for ( auto candidateIt = mAppliedContractions.begin(); candidateIt != mAppliedContractions.end(); ++candidateIt )
                 {
+                    (*candidateIt)->print();
+                }
+#endif
+                std::set<ContractionCandidate*>::iterator pos = mAppliedContractions.find( _candidate );
+                if( pos != mAppliedContractions.end() )
+                {
+#ifdef HISTORY_DEBUG
+                    cout << "Found candidate" << (*pos)->id() << " in node " << mId << ": ";
+                    (*pos)->print();
+#endif
                     _result.insert( this );
                 }
                 else
