@@ -302,6 +302,35 @@ namespace smtrat
              */
             std::set<Formula*> createConstraintsFromBounds();
             
+            void replaceConstraints( Formula*& _formula ) const
+            {
+                if( _formula->getType() == REALCONSTRAINT )
+                {
+                    auto iter = mReplacements.find( _formula->pConstraint() );
+                    assert( iter != mReplacements.end() );
+                    delete _formula;
+                    _formula = new Formula( iter->second ); 
+                }
+                else if( _formula->isBooleanCombination() )
+                {
+                    for( auto subformula = _formula->begin(); subformula != _formula->end(); ++subformula )
+                    {
+                        if( (*subformula)->getType() == REALCONSTRAINT )
+                        {
+                            auto iter = mReplacements.find( (*subformula)->pConstraint() );
+                            assert( iter != mReplacements.end() );
+                            Formula* constraintFormula = new Formula( iter->second ); 
+                            subformula = _formula->replace( subformula, constraintFormula );
+                        }
+                        else if( (*subformula)->isBooleanCombination() )
+                        {
+                            replaceConstraints( *subformula );
+                        }
+                    }
+                }
+            }
+            
+            
 #ifdef ICP_BOXLOG
             /**
              * Writes actual box to file. Note that the file has to be open.
