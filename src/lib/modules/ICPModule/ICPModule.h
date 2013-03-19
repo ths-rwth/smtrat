@@ -30,6 +30,8 @@
 #ifndef ICPMODULE_H
 #define ICPMODULE_H
 
+#define ICP_BOXLOG
+
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
 #include "../../Module.h"
@@ -42,6 +44,7 @@
 #include <ginacra/DoubleInterval.h>
 #include "../../VariableBounds.h"
 #include "IcpVariable.h"
+#include <fstream>
 
 namespace smtrat
 {
@@ -111,7 +114,10 @@ namespace smtrat
             bool                                                                mInitialized;
 
             unsigned                                                            mCurrentId;
-
+            
+#ifdef ICP_BOXLOG
+            std::fstream icpLog;
+#endif
 
         public:
 
@@ -257,8 +263,9 @@ namespace smtrat
             
             /**
              * Creates Bounds and passes them to PassedFormula for the Backends.
+             * @return true if new bounds have been added
              */
-            void pushBoundsToPassedFormula();
+            bool pushBoundsToPassedFormula();
             
             /**
              * Update all affected candidates and reinsert them into icpRelevantCandidates
@@ -294,6 +301,14 @@ namespace smtrat
              * @return 
              */
             std::set<Formula*> createConstraintsFromBounds();
+            
+#ifdef ICP_BOXLOG
+            /**
+             * Writes actual box to file. Note that the file has to be open.
+             */
+            void writeBox();
+#endif
+            
     };
 }    // namespace smtrat
 

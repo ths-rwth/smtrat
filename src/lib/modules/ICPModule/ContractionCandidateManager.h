@@ -90,6 +90,11 @@ namespace smtrat
          */
         void removeCandidate ( ContractionCandidate* _candidate );
         
+        /**
+         * deletes all candidates.
+         */
+        void clearCandidates ();
+        
     private:
         /**
          * Auxiliary Functions
