@@ -1732,6 +1732,7 @@ CheckLowerPremise:
         {        
             Iterator row_iterator = Iterator(row->mStartEntry,mpEntries);
             vector<GOMORY_SET> splitting = vector<GOMORY_SET>();
+            // Check, whether the conditions of a Gomory Cut are satisfied
             while(!row_iterator.rowEnd())
             {
                 const Variable nonBasicVar = *mColumns[(*row_iterator).columnNumber()].mName;
@@ -1758,11 +1759,13 @@ CheckLowerPremise:
                 else return NULL;
                 row_iterator.right();
             }
+            // A Gomory Cut can be constructed
             vector<GOMORY_SET>::const_iterator vec_iter = splitting.end();  
             vector<numeric> coeffs = vector<numeric>();
             numeric coeff;
             numeric f_zero = ass-ass.to_int();
             ex sum = ex();
+            // Construction of the Gomory Cut 
             while(!row_iterator.rowBegin())
             {
                 const Variable nonBasicVar = (*mColumns[(*row_iterator).columnNumber()].mName);
@@ -1775,16 +1778,16 @@ CheckLowerPremise:
                 }                 
                 else if ((*vec_iter)==J_PLUS)
                 {
-                    numeric bound = nonBasicVar.supremum().limit().mainPart();
+                    numeric bound = nonBasicVar.infimum().limit().mainPart();
                     coeff = (*row_iterator).content()/(1-f_zero);
-                    constr_vec.push_back(nonBasicVar.supremum().pAsConstraint());
+                    constr_vec.push_back(nonBasicVar.infimum().pAsConstraint());
                     sum += coeff*(nonBasicVar.expression()-bound);                   
                 }
                 else if ((*vec_iter)==K_MINUS)
                 {
-                    numeric bound = nonBasicVar.infimum().limit().mainPart();
+                    numeric bound = nonBasicVar.supremum().limit().mainPart();
                     coeff = -(*row_iterator).content()/(1-f_zero);
-                    constr_vec.push_back(nonBasicVar.infimum().pAsConstraint());
+                    constr_vec.push_back(nonBasicVar.supremum().pAsConstraint());
                     sum += coeff*(bound-nonBasicVar.expression());                   
                 }
                 else if ((*vec_iter)==K_PLUS) 
@@ -1797,8 +1800,13 @@ CheckLowerPremise:
                 coeffs.push_back(coeff);
                 row_iterator.left();
             }
+            const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint(sum-1,smtrat::CR_GEQ, smtrat::Formula::constraintPool().realVariables());
+            ex *psum;
+            *psum = sum-gomory_constr->constantPart();
+            Value* bound = new Value(gomory_constr->constantPart());
+            Variable* var = new Variable( mHeight++, true, psum, mDefaultBoundPosition );
+            (*var).addLowerBound(bound,mDefaultBoundPosition,gomory_constr);
             vector<numeric>::const_iterator coeffs_iter = coeffs.begin();
-            Variable* var = new Variable( mHeight++, true, NULL, mDefaultBoundPosition );
             mRows.push_back(TableauHead());
             EntryID currentStartEntryOfRow = 0;
             EntryID leftID;
@@ -1835,8 +1843,7 @@ CheckLowerPremise:
             TableauHead& rowHead = mRows[mHeight-1];
             rowHead.mStartEntry = currentStartEntryOfRow;
             rowHead.mSize = coeffs.size();
-            rowHead.mName = var;
-            const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint(sum-1,smtrat::CR_GEQ, smtrat::Formula::constraintPool().realVariables());
+            rowHead.mName = var;          
             return gomory_constr;     
         }
         return NULL;
