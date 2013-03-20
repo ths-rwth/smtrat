@@ -36,9 +36,9 @@
 using namespace GiNaC;
 using namespace std;
 
-#define ICPMODULE_DEBUG
+//#define ICPMODULE_DEBUG
 #define BOXMANAGEMENT
-//#define SMTRAT_DEVOPTION_VALIDATION_ICP
+#define SMTRAT_DEVOPTION_VALIDATION_ICP
 
 
 namespace smtrat
@@ -632,7 +632,7 @@ namespace smtrat
 #endif
                         mLRA.removeSubformula(validationFormulaIt);
                         mValidationFormula->erase(validationFormulaIt);
-                        mReplacements.erase(replacementIt);
+//                        mReplacements.erase(replacementIt);
                         break;
                     }
                 }
@@ -661,7 +661,7 @@ namespace smtrat
         std::pair<bool,symbol> didSplit;
         didSplit.first = false;
         vec_set_const_pFormula violatedConstraints = vec_set_const_pFormula();
-        double targetDiameter = 0.1;
+        double targetDiameter = 1;
         double contractionThreshold = 0.01;
 
         // Debug Outputs of linear and nonlinear Tables
@@ -686,7 +686,6 @@ namespace smtrat
         // catch deductions
         while ( !mLRA.rDeductions().empty() )
         {
-            cout << *mLRA.rDeductions().back() << endl;
             replaceConstraints( mLRA.rDeductions().back() );
             addDeduction( mLRA.rDeductions().back() );
             mLRA.rDeductions().pop_back();
@@ -733,8 +732,6 @@ namespace smtrat
 
                 mInfeasibleSubsets.push_back(newSet);
             }
-
-            printInfeasibleSubsets();
 
             return foundAnswer(lraAnswer);
         }
@@ -2651,15 +2648,12 @@ namespace smtrat
     bool ICPModule::pushBoundsToPassedFormula()
     {
         bool newAdded = false;
-
-        printIntervals();
-        printPassedFormula();
         
         mBoundConstraints.clear();
         GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
 
         for ( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
-        {
+        {            
             const symbol tmpSymbol = ex_to<symbol>((*variablesIt).second);
             if ( mVariables.find(tmpSymbol) != mVariables.end() )
             {
@@ -2690,7 +2684,7 @@ namespace smtrat
                     {
                         if ( (*boundIt)->constraint().lhs() == leftEx )
                         {
-                            removeSubformulaFromPassedFormula(mVariables[tmpSymbol].leftBound());
+//                            removeSubformulaFromPassedFormula(mVariables[tmpSymbol].leftBound());
                             found = true;
                             break;
                         }
@@ -2709,6 +2703,7 @@ namespace smtrat
                         }
                         addSubformulaToPassedFormula( leftBound, origins );
                         mVariables[tmpSymbol].setLeftBound(mpPassedFormula->last());
+//                        cout << "Set bounds of " << tmpSymbol << " to " << *leftBound << endl;
                         mBoundConstraints.insert(leftBound);
                         newAdded = true;
                     }
@@ -2739,7 +2734,7 @@ namespace smtrat
                     {
                         if ( (*boundIt)->constraint().lhs() == rightEx )
                         {
-                            removeSubformulaFromPassedFormula(mVariables[tmpSymbol].rightBound());
+//                            removeSubformulaFromPassedFormula(mVariables[tmpSymbol].rightBound());
                             found = true;
                             break;
                         }
@@ -2758,6 +2753,7 @@ namespace smtrat
                         }
                         addSubformulaToPassedFormula( rightBound , origins);
                         mVariables[tmpSymbol].setRightBound(mpPassedFormula->last());
+//                        cout << "Set bounds of " << tmpSymbol << " to " << *rightBound << endl;
                         mBoundConstraints.insert(rightBound);
                         newAdded = true;
                     }
