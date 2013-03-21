@@ -1727,9 +1727,7 @@ CheckLowerPremise:
      *         otherwise the valid constraint is returned.   
      */
     const smtrat::Constraint* Tableau::gomoryCut(const GiNaC::numeric& ass, vector<TableauHead>::const_iterator row, vector<const smtrat::Constraint*>& constr_vec)
-    {
-        if(!ass.is_integer())
-        {        
+    {     
             Iterator row_iterator = Iterator(row->mStartEntry,mpEntries);
             vector<GOMORY_SET> splitting = vector<GOMORY_SET>();
             // Check, whether the conditions of a Gomory Cut are satisfied
@@ -1800,9 +1798,9 @@ CheckLowerPremise:
                 coeffs.push_back(coeff);
                 row_iterator.left();
             }
+            print();
             const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint(sum-1,smtrat::CR_GEQ, smtrat::Formula::constraintPool().realVariables());
-            ex *psum;
-            *psum = sum-gomory_constr->constantPart();
+            ex *psum = new ex(sum-gomory_constr->constantPart());
             Value* bound = new Value(gomory_constr->constantPart());
             Variable* var = new Variable( mHeight++, true, psum, mDefaultBoundPosition );
             (*var).addLowerBound(bound,mDefaultBoundPosition,gomory_constr);
@@ -1843,9 +1841,10 @@ CheckLowerPremise:
             TableauHead& rowHead = mRows[mHeight-1];
             rowHead.mStartEntry = currentStartEntryOfRow;
             rowHead.mSize = coeffs.size();
-            rowHead.mName = var;          
+            rowHead.mName = var;  
+            printVariables();
+            cout << *gomory_constr << endl;
             return gomory_constr;     
-        }
         return NULL;
     }
     #endif

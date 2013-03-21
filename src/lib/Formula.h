@@ -498,6 +498,18 @@ namespace smtrat
                 return (mType == AND || mType == OR || mType == NOT || mType == IMPLIES || mType == IFF || mType == XOR);
             }
 
+            bool isConstraintConjunction() const
+            {
+                if( PROP_IS_PURE_CONJUNCTION <= proposition() )
+                {
+                    return !(PROP_CONTAINS_BOOLEAN <= proposition());
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
             bool isRealConstraintConjunction() const
             {
                 if( PROP_IS_PURE_CONJUNCTION <= proposition() )
