@@ -36,7 +36,7 @@
 using namespace GiNaC;
 using namespace std;
 
-//#define ICPMODULE_DEBUG
+#define ICPMODULE_DEBUG
 #define BOXMANAGEMENT
 #define SMTRAT_DEVOPTION_VALIDATION_ICP
 
@@ -661,7 +661,7 @@ namespace smtrat
         std::pair<bool,symbol> didSplit;
         didSplit.first = false;
         vec_set_const_pFormula violatedConstraints = vec_set_const_pFormula();
-        double targetDiameter = 1;
+        double targetDiameter = 0.1;
         double contractionThreshold = 0.01;
 
         // Debug Outputs of linear and nonlinear Tables
