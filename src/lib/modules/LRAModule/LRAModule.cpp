@@ -396,7 +396,8 @@ namespace smtrat
                             {
                                 ex referring_ex = vector_iterator->mName->expression();
                                 auto found_ex = rMap_.find(referring_ex);
-                                const numeric ass = ex_to<numeric>(found_ex->second);
+                                numeric ass = numeric(cln::floor1(cln::the<cln::cl_RA>(ass.to_cl_N())));                                
+                                ass = ex_to<numeric>(found_ex->second);
                                 const Constraint* gomory_constr = mTableau.gomoryCut(ass,vector_iterator,constr_vec);
                                 if( gomory_constr != NULL )
                                 {
