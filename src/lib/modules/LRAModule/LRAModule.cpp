@@ -372,19 +372,16 @@ namespace smtrat
 
             // If there is no conflict.
             if( pivotingElement.second )
-            {
-            cout << "pivEle1" << endl;    
+            {    
                 // If no basic variable violates its bounds (and hence no variable at all).
                 if( pivotingElement.first == 0 )
-                {
-                cout << "pivEle2" << endl;    
+                {   
                     #ifdef DEBUG_LRA_MODULE
                     cout << "True" << endl;
                     #endif
                     // If the current assignment also fulfills the nonlinear constraints.
                     if( checkAssignmentForNonlinearConstraint() )
-                    {
-                    cout << "checkass" << endl;    
+                    {    
                         // If there are no unresolved notequal-constraints, return True.
                         if( mActiveUnresolvedNEQConstraints.empty() )
                         {
@@ -396,21 +393,14 @@ namespace smtrat
                             exmap rMap_ = getRationalModel();
                             vector<const Constraint*> constr_vec = vector<const Constraint*>();
                             bool all_int=true;
-                            auto var = mOriginalVars.begin();
-                            printOriginalVars();
-                            printSlackVars();
                             for(auto vector_iterator = mTableau.rows().begin();vector_iterator != mTableau.rows().end();++vector_iterator)
-                            {
-                            printOriginalVars();
-                            printSlackVars();    
-                                if(Formula::domain(*var->first) == INTEGER_DOMAIN)
-                                {
-                                printOriginalVars();
-                                printSlackVars();    
+                            { 
                                 ex referring_ex = vector_iterator->mName->expression();
                                 ex* preferring_ex = new ex(referring_ex);
                                 auto help = mOriginalVars.find(preferring_ex);
-                                //auto found_ex = rMap_.find(referring_ex);
+                                if(help != mOriginalVars.end() && Formula::domain(*help->first == INTEGER_DOMAIN))
+                                {
+                                auto found_ex = rMap_.find(referring_ex);                                
                                 numeric ass = numeric(cln::floor1(cln::the<cln::cl_RA>(ex_to<numeric>(found_ex->second).to_cl_N())));                                
                                 if(!ass.is_cinteger())
                                 {
@@ -431,8 +421,7 @@ namespace smtrat
                                     addDeduction(deductionA);                                     
                                 }                                                                
                                 }
-                                }
-                            ++var;    
+                                }                               
                             }    
                             if(all_int) 
                                 return foundAnswer(True);
@@ -443,14 +432,16 @@ namespace smtrat
                             exmap::const_iterator map_iterator = _rMap.begin();
                             for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
                             {
-                                if(Formula::domain(*var->first) == INTEGER_DOMAIN)
-                                {
+                            numeric ass = numeric(cln::floor1(cln::the<cln::cl_RA>(ex_to<numeric>(map_iterator->second).to_cl_N())));  
+                            cout << ass << endl;
+                            cout << map_iterator->second << endl;
+                                if((Formula::domain(*var->first) == INTEGER_DOMAIN) && !ass.is_integer())
+                                {   
                                    Formula* deductionA = new Formula(OR);
                                    stringstream sstream;
                                    sstream << *var->first;
                                    symtab *setOfVar = new symtab();
                                    setOfVar->insert(pair< std::string, ex >(sstream.str(),*var->first));
-                                   numeric ass = ex_to<numeric>(map_iterator->second);
                                    ass = ass.to_int();
                                    const Constraint* lessEqualConstraint = Formula::newConstraint(*var->first - ass,CR_LEQ,*setOfVar);
                                    const Constraint* biggerEqualConstraint= Formula::newConstraint(*var->first - ass - 1,CR_GEQ,*setOfVar);
@@ -468,7 +459,6 @@ namespace smtrat
                         // Otherwise, resolve the notequal-constraints (create the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
                         else
                         {
-                        cout << "else" << endl;    
                             for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
                             {
                                 if( mResolvedNEQConstraints.find( iter->first ) == mResolvedNEQConstraints.end() )
@@ -486,8 +476,7 @@ namespace smtrat
                     }
                     // Otherwise, check the consistency of the formula consisting of the nonlinear constraints and the tightest bounds with the backends.
                     else
-                    {
-                    cout << "else" << endl;    
+                    {   
                         for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
                         {
                             if( mResolvedNEQConstraints.find( iter->first ) == mResolvedNEQConstraints.end() )
@@ -512,8 +501,7 @@ namespace smtrat
                     }
                 }
                 else
-                {
-                cout << "else" << endl;    
+                {   
                     // Pivot at the found pivoting entry.
                     mTableau.pivot( pivotingElement.first );
                     // Learn all bounds which has been deduced during the pivoting process.
@@ -567,8 +555,7 @@ namespace smtrat
             }
             // There is a conflict, namely a basic variable violating its bounds without any suitable non-basic variable.
             else
-            {
-            cout << "checkass" << endl;    
+            {   
                 // Create the infeasible subsets.
                 mInfeasibleSubsets.clear();
                 #ifdef LRA_ONE_REASON
