@@ -398,11 +398,12 @@ namespace smtrat
                                 ex referring_ex = vector_iterator->mName->expression();
                                 ex* preferring_ex = new ex(referring_ex);
                                 auto help = mOriginalVars.find(preferring_ex);
-                                if(help != mOriginalVars.end() && Formula::domain(*help->first == INTEGER_DOMAIN))
+                                if(help != mOriginalVars.end() && (Formula::domain(*(help->first)) == INTEGER_DOMAIN))
                                 {
                                 auto found_ex = rMap_.find(referring_ex);                                
-                                numeric ass = numeric(cln::floor1(cln::the<cln::cl_RA>(ex_to<numeric>(found_ex->second).to_cl_N())));                                
-                                if(!ass.is_cinteger())
+                                numeric ass = ex_to<numeric>(found_ex->second);
+                                cln::cl_N assascln = ass.to_cl_N();
+                                if(!ass.is_integer())
                                 {
                                 all_int=false;    
                                 const Constraint* gomory_constr = mTableau.gomoryCut(ass,vector_iterator,constr_vec);
@@ -421,7 +422,7 @@ namespace smtrat
                                     addDeduction(deductionA);                                     
                                 }                                                                
                                 }
-                                }                               
+                                }                                
                             }    
                             if(all_int) 
                                 return foundAnswer(True);
@@ -432,19 +433,17 @@ namespace smtrat
                             exmap::const_iterator map_iterator = _rMap.begin();
                             for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
                             {
-                            numeric ass = numeric(cln::floor1(cln::the<cln::cl_RA>(ex_to<numeric>(map_iterator->second).to_cl_N())));  
-                            cout << ass << endl;
-                            cout << map_iterator->second << endl;
-                                if((Formula::domain(*var->first) == INTEGER_DOMAIN) && !ass.is_integer())
+                            numeric ass = ex_to<numeric>(map_iterator->second);     
+                                if((Formula::domain(*(var->first)) == INTEGER_DOMAIN) && !ass.is_integer())
                                 {   
                                    Formula* deductionA = new Formula(OR);
                                    stringstream sstream;
-                                   sstream << *var->first;
+                                   sstream << *(var->first);
                                    symtab *setOfVar = new symtab();
-                                   setOfVar->insert(pair< std::string, ex >(sstream.str(),*var->first));
-                                   ass = ass.to_int();
-                                   const Constraint* lessEqualConstraint = Formula::newConstraint(*var->first - ass,CR_LEQ,*setOfVar);
-                                   const Constraint* biggerEqualConstraint= Formula::newConstraint(*var->first - ass - 1,CR_GEQ,*setOfVar);
+                                   setOfVar->insert(pair< std::string, ex >(sstream.str(),*(var->first)));
+                                   ass = numeric(cln::floor1(cln::the<cln::cl_RA>(ass.to_cl_N())));
+                                   const Constraint* lessEqualConstraint = Formula::newConstraint(*(var->first) - ass,CR_LEQ,*setOfVar);
+                                   const Constraint* biggerEqualConstraint= Formula::newConstraint(*(var->first) - ass - 1,CR_GEQ,*setOfVar);
                                    deductionA->addSubformula(lessEqualConstraint);
                                    deductionA->addSubformula(biggerEqualConstraint);
                                    addDeduction(deductionA);

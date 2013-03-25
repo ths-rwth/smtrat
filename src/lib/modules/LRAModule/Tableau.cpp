@@ -1756,12 +1756,12 @@ CheckLowerPremise:
                 }
                 else return NULL;
                 row_iterator.right();
-            }
+            }                        
             // A Gomory Cut can be constructed
             vector<GOMORY_SET>::const_iterator vec_iter = splitting.end();  
             vector<numeric> coeffs = vector<numeric>();
             numeric coeff;
-            numeric f_zero = ass-ass.to_int();
+            numeric f_zero = numeric(ass.to_cl_N())-numeric(cln::floor1(cln::the<cln::cl_RA>(ass.to_cl_N())));
             ex sum = ex();
             // Construction of the Gomory Cut 
             while(!row_iterator.rowBegin())
