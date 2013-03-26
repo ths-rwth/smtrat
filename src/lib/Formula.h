@@ -27,7 +27,7 @@
  * @author Florian Corzilius
  * @author Sebastian Junges
  * @since 2012-02-09
- * @version 2012-10-12
+ * @version 2013-03-24
  */
 
 #ifndef SMTRAT_FORMULA_H
@@ -586,6 +586,7 @@ namespace smtrat
 
             std::string variableListToString(std::string seperator) const;
             std::string toRedlogFormat(bool withVariables = true) const;
+            std::string toQepcadFormat(bool withVariables = true) const;
 
         private:
 
