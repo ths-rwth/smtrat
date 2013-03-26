@@ -393,8 +393,10 @@ namespace smtrat
                             exmap rMap_ = getRationalModel();
                             vector<const Constraint*> constr_vec = vector<const Constraint*>();
                             bool all_int=true;
-                            for(auto vector_iterator = mTableau.rows().begin();vector_iterator != mTableau.rows().end();++vector_iterator)
+                            auto save_last_row = (mTableau.rows()).end();
+                            for(auto vector_iterator = (mTableau.rows()).begin();vector_iterator != save_last_row;++vector_iterator)
                             { 
+                                //cout << "for" << endl;
                                 ex referring_ex = vector_iterator->mName->expression();
                                 ex* preferring_ex = new ex(referring_ex);
                                 auto help = mOriginalVars.find(preferring_ex);
@@ -406,7 +408,7 @@ namespace smtrat
                                 if(!ass.is_integer())
                                 {
                                 all_int=false;    
-                                const Constraint* gomory_constr = mTableau.gomoryCut(ass,vector_iterator,constr_vec);
+                                const Constraint* gomory_constr = mTableau.gomoryCut(assascln,vector_iterator,constr_vec);
                                 if( gomory_constr != NULL )
                                 {
                                     Formula* deductionA = new Formula(OR);
@@ -422,8 +424,9 @@ namespace smtrat
                                     addDeduction(deductionA);                                     
                                 }                                                                
                                 }
-                                }                                
-                            }    
+                                } 
+                            //cout << "HERE" << endl;    
+                            }                            
                             if(all_int) 
                                 return foundAnswer(True);
                             return foundAnswer(Unknown);

@@ -1726,13 +1726,15 @@ CheckLowerPremise:
      * @return NULL,    if the cut can´t be constructed;
      *         otherwise the valid constraint is returned.   
      */
-    const smtrat::Constraint* Tableau::gomoryCut(const GiNaC::numeric& ass, vector<TableauHead>::const_iterator row, vector<const smtrat::Constraint*>& constr_vec)
+    const smtrat::Constraint* Tableau::gomoryCut(const cln::cl_N& ass, vector<TableauHead>::const_iterator row, vector<const smtrat::Constraint*>& constr_vec)
     {     
             Iterator row_iterator = Iterator(row->mStartEntry,mpEntries);
             vector<GOMORY_SET> splitting = vector<GOMORY_SET>();
             // Check, whether the conditions of a Gomory Cut are satisfied
+            //cout << "GOMORY" << endl;
             while(!row_iterator.rowEnd())
             {
+            //cout << "IN" << endl;    
                 const Variable nonBasicVar = *mColumns[(*row_iterator).columnNumber()].mName;
                 if(nonBasicVar.infimum() == nonBasicVar.assignment() ||
                    nonBasicVar.supremum() == nonBasicVar.assignment())
@@ -1751,17 +1753,20 @@ CheckLowerPremise:
                         else 
                             splitting.push_back(K_PLUS);
                     }
-                    stringstream sstream;
-                    sstream << nonBasicVar.expression();
-                }
-                else return NULL;
+                }                                
+                else {
+                    //cout << "return" << endl;
+                    return NULL;
+                }                                
                 row_iterator.right();
-            }                        
+                //cout << "HI" << endl;
+            }
+            //cout << "OUT" << endl;
             // A Gomory Cut can be constructed
             vector<GOMORY_SET>::const_iterator vec_iter = splitting.end();  
             vector<numeric> coeffs = vector<numeric>();
             numeric coeff;
-            numeric f_zero = numeric(ass.to_cl_N())-numeric(cln::floor1(cln::the<cln::cl_RA>(ass.to_cl_N())));
+            numeric f_zero = numeric(ass)-numeric(cln::floor1(cln::the<cln::cl_RA>(ass)));
             ex sum = ex();
             // Construction of the Gomory Cut 
             while(!row_iterator.rowBegin())
@@ -1797,7 +1802,7 @@ CheckLowerPremise:
                 }     
                 coeffs.push_back(coeff);
                 row_iterator.left();
-            }
+            }            
             print();
             const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint(sum-1,smtrat::CR_GEQ, smtrat::Formula::constraintPool().realVariables());
             ex *psum = new ex(sum-gomory_constr->constantPart());
@@ -1807,7 +1812,7 @@ CheckLowerPremise:
             vector<numeric>::const_iterator coeffs_iter = coeffs.begin();
             mRows.push_back(TableauHead());
             EntryID currentStartEntryOfRow = 0;
-            EntryID leftID;
+            EntryID leftID;            
             while(coeffs_iter != coeffs.end())
             {
                 const Variable nonBasicVar = *mColumns[(*row_iterator).columnNumber()].mName;
@@ -1836,14 +1841,14 @@ CheckLowerPremise:
                 }
                 ++coeffs_iter;
                 row_iterator.right();
-            }
+            }            
             (*mpEntries)[leftID].setRight(0);
             TableauHead& rowHead = mRows[mHeight-1];
             rowHead.mStartEntry = currentStartEntryOfRow;
             rowHead.mSize = coeffs.size();
-            rowHead.mName = var;  
-            printVariables();
-            cout << *gomory_constr << endl;
+            rowHead.mName = var; 
+            //printVariables();
+            //cout << *gomory_constr << endl;
             return gomory_constr;     
         return NULL;
     }
