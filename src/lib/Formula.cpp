@@ -1634,7 +1634,7 @@ namespace smtrat
             result += i->first;
             for( ++i; i != mRealValuedVars.end(); ++i )
             {
-                result += "," + i->first;
+                result += seperator + i->first;
             }
         }
         else if( j != mBooleanVars.end() )
@@ -1644,7 +1644,7 @@ namespace smtrat
         }
         for( ; j != mBooleanVars.end(); ++j )
         {
-            result += "," + *j;
+            result += seperator + *j;
         }
         return result;
     }
@@ -1727,6 +1727,10 @@ namespace smtrat
     {
         string result = "";
         string oper = Formula::FormulaTypeToString( mType );
+        if( mType == AND )
+            oper = "/\\";
+        if( mType == OR )
+            oper = "\\/";
         switch( mType )
         {
             // unary cases
@@ -1742,12 +1746,20 @@ namespace smtrat
             }
             case NOT:
             {
-                result += " ~( " + (*mpSubformulas->begin())->toQepcadFormat( withVariables ) + " )";
+                result += " ~[ " + (*mpSubformulas->begin())->toQepcadFormat( withVariables ) + " ]";
                 break;
             }
             case REALCONSTRAINT:
             {
-                result += constraint().toString();
+                // replace all *
+                string constraintStr = constraint().toString();
+                size_t _pos = constraintStr.find( "*" );
+                while( _pos != constraintStr.npos )
+                {
+                    constraintStr.replace( _pos, 1, " " ); // @TODO: dangerous substitution
+                    _pos = constraintStr.find( "*" );
+                }
+                result += constraintStr;
                 break;
             }
             case BOOL:
@@ -1761,18 +1773,15 @@ namespace smtrat
                 if( withVariables )
                 { // add the variables
                     result += "(";
-                    result += variableListToString( "," );
-                    result += ")\n0\n(E " + variableListToString( ") (E " ) + ") [";
+                    result += variableListToString( "," ) + ")\n0\n(E " + variableListToString( ") (E " ) + ") [";
                     // Make pseudo Booleans.
                     for( std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin(); j != mBooleanVars.end(); ++j )
                     {
-                        result += "(" + *j + " = 0 or " + *j + " = 1) /\\ ";
+                        result += "[" + *j + " = 0 \\/ " + *j + " = 1] /\\ ";
                     }
                 }
                 else
-                {
-                    result += "( ";
-                }
+                    result += "[";
                 std::list<Formula*>::const_iterator it = mpSubformulas->begin();
                 // do not quantify variables again.
                 result += (*it)->toQepcadFormat( false );
@@ -1781,7 +1790,10 @@ namespace smtrat
                     // do not quantify variables again.
                     result += " " + oper + " " + (*it)->toQepcadFormat( false );
                 }
-                result += " ].";
+                if( withVariables )
+                    result += " ].";
+                else
+                    result += "]";
             }
         }
         return result;
