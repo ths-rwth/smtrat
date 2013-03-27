@@ -396,7 +396,7 @@ namespace smtrat
                             auto save_last_row = (mTableau.rows()).end();
                             for(auto vector_iterator = (mTableau.rows()).begin();vector_iterator != save_last_row;++vector_iterator)
                             { 
-                                //cout << "for" << endl;
+                                cout << "for" << endl;
                                 ex referring_ex = vector_iterator->mName->expression();
                                 ex* preferring_ex = new ex(referring_ex);
                                 auto help = mOriginalVars.find(preferring_ex);
@@ -404,11 +404,10 @@ namespace smtrat
                                 {
                                 auto found_ex = rMap_.find(referring_ex);                                
                                 numeric ass = ex_to<numeric>(found_ex->second);
-                                cln::cl_N assascln = ass.to_cl_N();
                                 if(!ass.is_integer())
                                 {
                                 all_int=false;    
-                                const Constraint* gomory_constr = mTableau.gomoryCut(assascln,vector_iterator,constr_vec);
+                                const Constraint* gomory_constr = mTableau.gomoryCut(ass,vector_iterator,constr_vec);
                                 if( gomory_constr != NULL )
                                 {
                                     Formula* deductionA = new Formula(OR);

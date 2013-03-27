@@ -1726,7 +1726,7 @@ CheckLowerPremise:
      * @return NULL,    if the cut can´t be constructed;
      *         otherwise the valid constraint is returned.   
      */
-    const smtrat::Constraint* Tableau::gomoryCut(const cln::cl_N& ass, vector<TableauHead>::const_iterator row, vector<const smtrat::Constraint*>& constr_vec)
+    const smtrat::Constraint* Tableau::gomoryCut(const GiNaC::numeric ass, vector<TableauHead>::const_iterator row, vector<const smtrat::Constraint*>& constr_vec)
     {     
             Iterator row_iterator = Iterator(row->mStartEntry,mpEntries);
             vector<GOMORY_SET> splitting = vector<GOMORY_SET>();
@@ -1753,23 +1753,24 @@ CheckLowerPremise:
                         else 
                             splitting.push_back(K_PLUS);
                     }
-                }                                
+                }                                 
                 else {
                     //cout << "return" << endl;
                     return NULL;
-                }                                
+                     }                               
                 row_iterator.right();
                 //cout << "HI" << endl;
             }
             //cout << "OUT" << endl;
-            // A Gomory Cut can be constructed
-            vector<GOMORY_SET>::const_iterator vec_iter = splitting.end();  
+            // A Gomory Cut can be constructed              
             vector<numeric> coeffs = vector<numeric>();
             numeric coeff;
-            numeric f_zero = numeric(ass)-numeric(cln::floor1(cln::the<cln::cl_RA>(ass)));
+            numeric f_zero = ass-numeric(cln::floor1(cln::the<cln::cl_RA>(ass.to_cl_N())));
             ex sum = ex();
             // Construction of the Gomory Cut 
-            while(!row_iterator.rowBegin())
+            vector<GOMORY_SET>::const_iterator vec_iter = splitting.begin();
+            row_iterator = Iterator(row->mStartEntry,mpEntries);
+            while(!row_iterator.rowEnd())
             {
                 const Variable nonBasicVar = (*mColumns[(*row_iterator).columnNumber()].mName);
                 if((*vec_iter)==J_MINUS)
@@ -1801,7 +1802,8 @@ CheckLowerPremise:
                     sum += coeff*(bound-nonBasicVar.expression());
                 }     
                 coeffs.push_back(coeff);
-                row_iterator.left();
+                row_iterator.right();
+                ++vec_iter;
             }            
             print();
             const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint(sum-1,smtrat::CR_GEQ, smtrat::Formula::constraintPool().realVariables());
@@ -1850,7 +1852,6 @@ CheckLowerPremise:
             //printVariables();
             //cout << *gomory_constr << endl;
             return gomory_constr;     
-        return NULL;
     }
     #endif
 
