@@ -1742,7 +1742,7 @@ namespace smtrat
             }
             case NOT:
             {
-                result += " " + oper + "( " + (*mpSubformulas->begin())->toQepcadFormat( withVariables ) + " )";
+                result += " ~( " + (*mpSubformulas->begin())->toQepcadFormat( withVariables ) + " )";
                 break;
             }
             case REALCONSTRAINT:
@@ -1766,7 +1766,7 @@ namespace smtrat
                     // Make pseudo Booleans.
                     for( std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin(); j != mBooleanVars.end(); ++j )
                     {
-                        result += "(" + *j + " = 0 or " + *j + " = 1) and ";
+                        result += "(" + *j + " = 0 or " + *j + " = 1) /\\ ";
                     }
                 }
                 else
