@@ -25,7 +25,7 @@
  *
  */
 
-#include <ginacra/MultivariatePolynomialMR.h>
+#include <ginacra/mr/MultivariatePolynomialMR.h>
 #include "../../config.h"
 
 #ifndef GBSETTINGS_H

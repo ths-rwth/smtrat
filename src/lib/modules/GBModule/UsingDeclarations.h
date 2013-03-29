@@ -5,13 +5,10 @@
  * Created on January 7, 2013, 3:28 PM
  */
 
-#ifndef USINGDECLARATIONS_H
-#define	USINGDECLARATIONS_H
+#pragma once
 
-#include <ginacra/MultivariateTermMR.h>
+#include <ginacra/mr/MultivariateTermMR.h>
 
 typedef GiNaCRA::MultivariateTermMR Term;
 typedef GiNaCRA::BitVector BitVector;
-
-#endif	/* USINGDECLARATIONS_H */
 

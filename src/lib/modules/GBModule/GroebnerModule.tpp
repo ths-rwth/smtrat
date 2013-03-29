@@ -40,7 +40,7 @@
 
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
-#undef GB_OUTPUT
+#define GB_OUTPUT
 
 using std::set;
 using GiNaC::ex_to;
@@ -1337,8 +1337,8 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
 //                    std::cout << "Id="<<(*(it->first))->pConstraint()->id()<<std::endl;
 //                    std::cout << "Gb learns: ";
 //                    deduction->print();
-//                    std::cout << std::endl;
-                    mModule->addDeduction(deduction);
+ //                   std::cout << std::endl;
+ //                   mModule->addDeduction(deduction);
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mStats->DeducedInequality();
                     #endif

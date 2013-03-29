@@ -41,7 +41,7 @@
 
 // Datastructures from GiNaCRA
 #include <ginacra/ginacra.h>
-#include <ginacra/mr/Buchberger.h>
+#include <ginacra/mr/Buchberger/Buchberger.h>
 
 // General Module interface
 #include "../../Module.h"

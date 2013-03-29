@@ -1,15 +1,7 @@
-/*
- * File:   definitions.h
- * Author: square
- *
- * Created on April 11, 2012, 3:38 PM
- */
+#pragma once
 
-#ifndef DEFINITIONS_H
-#define DEFINITIONS_H
-
-#include <ginacra/MultivariatePolynomialMR.h>
-#include <ginacra/MultivariateTermMR.h>
+#include <ginacra/mr/MultivariatePolynomialMR.h>
+#include <ginacra/mr/MultivariateTermMR.h>
 
 namespace smtrat
 {
@@ -18,4 +10,3 @@ namespace smtrat
 
     typedef GiNaCRA::RationalNumber                                        Rational;
 }
-#endif   /* DEFINITIONS_H */
