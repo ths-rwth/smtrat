@@ -98,6 +98,9 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
                 addLinearDeductions( afterProductSplitting );
             }
             #endif
+            // Add the currently considered formula of the received constraint as clauses
+            // to the passed formula.
+            Formula::toCNF( *afterProductSplitting, false );
             // Estimate the difficulty bottum up for the formula.
             setDifficulty(afterProductSplitting,false);
             // Create the origins containing only the currently considered formula of
@@ -105,9 +108,6 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             vec_set_const_pFormula origins = vec_set_const_pFormula();
             origins.push_back( std::set<const Formula*>() );
             origins.back().insert( *receivedSubformula );
-            // Add the currently considered formula of the received constraint as clauses
-            // to the passed formula.
-            Formula::toCNF( *afterProductSplitting, false );
 
             if( afterProductSplitting->getType() == TTRUE )
             {

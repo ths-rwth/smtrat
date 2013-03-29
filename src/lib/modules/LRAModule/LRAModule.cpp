@@ -34,6 +34,7 @@
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_ONE_REASON
 //#define LRA_BRANCH_AND_BOUND
+
 using namespace std;
 using namespace lra;
 using namespace GiNaC;
