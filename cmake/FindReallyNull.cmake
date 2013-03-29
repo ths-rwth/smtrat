@@ -1,5 +1,5 @@
 SET (ReallyNull_FOUND FALSE)
-FIND_PATH (ReallyNull_INCLUDE_DIR version.h
+FIND_PATH (ReallyNull_INCLUDE_DIR lib/version.h
         /usr/include/reallynull 
         /usr/local/include/reallynull 
         /opt/local/include/reallynull
