@@ -67,31 +67,6 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/lib/CompileInfo.cpp.in ${CMAKE_SOURCE_DI
 
 
 # Nullstellensatz module variables
-
-if(USE_NSS)
-set(lib_NSSModule_headers
-	modules/NSSModule/ConstraintMatrixFactory.h
-	modules/NSSModule/GroebnerToSDP.h
-	modules/NSSModule/MonomialIterator.h
-)
-set(lib_NSSModule_src
-	modules/NSSModule/ConstraintMatrixFactory.cpp
-	modules/NSSModule/MonomialIterator.cpp
-)
-set(lib_SDP_headers
-	utilities/SDP/SDPFacade.h
-	utilities/SDP/CSDPFacade.h
-	utilities/SDP/SparseMatrix.h
-)
-set(lib_SDP_src
-	utilities/SDP/CSDPFacade.cpp
-	utilities/SDP/SparseMatrix.cpp
-)
-set(lib_LinAlg
-	utilities/LinAlg/DenseMatrix.h
-	utilities/LinAlg/FindExactSolution.h
-)
-endif()
 set(lib_utilities_headers
 	utilities/debug/debug.h
 	utilities/stats/Statistics.h

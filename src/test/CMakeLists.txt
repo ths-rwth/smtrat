@@ -15,16 +15,8 @@ include_directories( ${PROJECT_SOURCE_DIR}/src )
 link_directories( ${PROJECT_BINARY_DIR}/src
                   ${PROJECT_BINARY_DIR} )
 
-if(USE_NSS)
-	set(check_NSS_SOURCES
-		CSDP_unittest.cpp CSDP_unittest.h
-		GroebnerToSDP_unittest.cpp GroebnerToSDP_unittest.h
-		ConstraintMatrixFactory_unittest.cpp ConstraintMatrixFactory_unittest.h
-		DenseMatrix_unittest.cpp DenseMatrix_unittest.h
-	)
-endif()
 
-add_executable( check_${PROJECT_NAME} test.cpp ${check_NSS_SOURCES} )
+add_executable( check_${PROJECT_NAME} test.cpp )
 
 # executable target
 add_custom_target( check

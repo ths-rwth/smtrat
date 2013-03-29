@@ -30,7 +30,6 @@
  */
 #include "../../config.h"
 
-#include "../NSSModule/definitions.h"
 #include "GroebnerModule.h"
 #include "GBModuleStatistics.h"
 #include "UsingDeclarations.h"
@@ -1296,7 +1295,7 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                 assert( reduced.nrOfTerms( ) > 0 );
                 assert( reduced.lcoeff( ) != 0 );
 
-                const Rational reducedConstant = reduced.lcoeff( );
+                const GiNaCRA::RationalNumber reducedConstant = reduced.lcoeff( );
                 assert( reducedConstant != 0 );
                 if( reducedConstant < 0 )
                 {

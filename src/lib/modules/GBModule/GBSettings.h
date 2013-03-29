@@ -83,10 +83,7 @@ namespace smtrat
 		static const bool								 applyNSS								 = false;
         static const unsigned                            maxSDPdegree                            = 4;
         static const unsigned                            SDPupperBoundNrVariables                = 6;
-		static const unsigned							 callSDPAfterNMonomials					 = 6;
-		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
-		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
-		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
+		
     };
     
 
