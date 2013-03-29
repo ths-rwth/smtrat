@@ -32,8 +32,6 @@ set( smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
 option(BUILD_SOLVER "Build the SMT-RAT Solver" ON)
 option(BUILD_GUI "Build the GUI" OFF)
-option(USE_NSS "Compile the NSS Module" OFF)
-option(USE_GINACRA "Compile modules using GiNaCRA" ON)
 
 # Strategy
 option( SMTRAT_STRAT_Factorization "Factorization" ON )
@@ -46,13 +44,7 @@ option(SMTRAT_DEVOPTION_MeasureTime "Measure times and number of calls")
 option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering")
 
 
-if(NOT USE_GINACRA)
-endif()
-if(USE_NSS)
-	project(smtrat CXX Fortran C)
-else()
-	project(smtrat CXX)
-endif()
+project(smtrat CXX)
 
 
 # path to find own modules
@@ -81,16 +73,19 @@ endif()
 # GiNaCRA libraries and tools all need GiNaC
 # TODO: add support for version number
 find_package(GiNaC REQUIRED)
-if(USE_GINACRA)
-	find_package(GiNaCRA REQUIRED)
-	#notice that GiNacra might use log4cplus, but we cannot currently support that as Ginacra does not export this knowledge.
-endif()
+find_package(GiNaCRA REQUIRED)
+#notice that GiNacra might use log4cplus, but we cannot currently support that as Ginacra does not export this knowledge.
 include( FindCLN )
 # find gmp (which is necessary for CLN, at least when linking statically)
 include( FindGMP )
 
+
 # optional libraries
 # # # # # # # # # # #
+find_package(ReallyNull)
+if(ReallyNull_FOUND) 
+	set(USE_NSS 1)
+endif()
 
 find_package(CPPUnit)
 if( BUILD_GUI )
@@ -102,33 +97,8 @@ if(BUILD_SOLVER)
     find_package(BISON REQUIRED) # for building the parser
     find_package(FLEX REQUIRED) # for building the parser
 endif()
-# LAPACK and BLAS are both needed for successfull using CSDP
-# todo: maybe CLAPACK would also do?
-if(USE_NSS)
-	enable_language(Fortran)
-	find_package(LAPACK)
-	find_package(BLAS)
 
-	add_custom_target(
-		csdp_lib
-		COMMAND make
-		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/external/csdp
-	)
-endif()
-
-set( libraries ${libraries} ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} pthread )
-
-if(USE_GINACRA)
-        set( libraries ${GINACRA_LIBRARY} ${libraries} )
-endif()
-if(USE_NSS)
-        add_library(csdp UNKNOWN IMPORTED)
-        set_target_properties(csdp PROPERTIES IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/external/csdp/lib/libsdp.a")
-
-        #Csdp should be automatically compiled whenever we compile smtrat
-        add_dependencies(csdp csdp_lib)
-        set( libraries ${libraries} csdp ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES}  )
-endif()
+set( libraries ${libraries} ${GINACRA_LIBRARY}  ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} pthread )
 
 
 # GUI settings
