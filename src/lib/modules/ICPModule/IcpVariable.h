@@ -142,8 +142,6 @@ namespace icp
             void updateInterval( GiNaCRA::DoubleInterval _interval )
             {
                 mUpdated = true;
-                cout << "set interval to: ";
-                _interval.dbgprint();
                 (*mInterval).second = _interval;
             }
 

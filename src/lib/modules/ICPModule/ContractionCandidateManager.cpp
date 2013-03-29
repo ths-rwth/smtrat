@@ -100,5 +100,15 @@ namespace smtrat
         }
     }
     
+    void ContractionCandidateManager::clearCandidates()
+    {
+        for ( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end();  )
+        {
+            ContractionCandidate* toDelete = (*candidateIt).second;
+            candidateIt = mCandidates.erase(candidateIt);
+            delete toDelete;
+        }
+    }
+    
 } // namespace icp
 } // namespace smtrat

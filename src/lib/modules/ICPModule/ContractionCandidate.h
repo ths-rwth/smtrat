@@ -144,7 +144,12 @@ namespace smtrat
             * Destructor:
             */
             ~ContractionCandidate()
-            {}
+            {
+                if ( !isLinear() )
+                {
+                    delete mConstraint;
+                }
+            }
 
             /**
              * Functions:
@@ -184,7 +189,6 @@ namespace smtrat
             {
                 assert(_origin->getType() == REALCONSTRAINT);
                 mOrigin.insert(_origin);
-                cout << "Origin size after insertion: " << mOrigin.size() << endl;
             }
 
             void removeOrigin( const Formula* _origin )

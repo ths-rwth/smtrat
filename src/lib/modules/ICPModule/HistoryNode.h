@@ -30,7 +30,7 @@
 #ifndef HISTORYNODE_H
 #define HISTORYNODE_H
 
-#define HISTORY_DEBUG
+//#define HISTORY_DEBUG
 
 #include "ContractionCandidate.h"
 
@@ -132,25 +132,8 @@ namespace smtrat
 
             ~HistoryNode()
             {
-                if ( mLeftChild != NULL)
-                {
-                    delete mLeftChild;
-                }
-                if ( mRightChild != NULL )
-                {
-                    delete mRightChild;
-                }
-                if ( mParent != NULL )
-                {
-                    if ( this->isLeft() )
-                    {
-                        mParent->removeLeftChild();
-                    }
-                    else
-                    {
-                        mParent->removeRightChild();
-                    }
-                }
+                delete mLeftChild;
+                delete mRightChild;
             }
 
             /**
