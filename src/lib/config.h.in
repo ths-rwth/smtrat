@@ -6,7 +6,6 @@
 #define SMTRAT_WEBSITE "smtrat.sourceforge.net"
 
 #cmakedefine USE_NSS
-#cmakedefine USE_GINACRA
 
 // Whether the validation in the module should be enabled
 #cmakedefine SMTRAT_DEVOPTION_Validation

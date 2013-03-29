@@ -80,13 +80,6 @@ include( FindCLN )
 include( FindGMP )
 
 
-# optional libraries
-# # # # # # # # # # #
-find_package(ReallyNull)
-if(ReallyNull_FOUND) 
-	set(USE_NSS 1)
-endif()
-
 find_package(CPPUnit)
 if( BUILD_GUI )
     find_package(Ant REQUIRED) # for building the GUI
@@ -100,6 +93,15 @@ endif()
 
 set( libraries ${libraries} ${GINACRA_LIBRARY}  ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} pthread )
 
+
+
+# optional libraries
+# # # # # # # # # # #
+find_package(ReallyNull)
+if(ReallyNull_FOUND) 
+	set(USE_NSS 1)
+	set(libraries ${ReallyNull_LIBRARY} ${libraries})
+endif()
 
 # GUI settings
 # # # # # # # #

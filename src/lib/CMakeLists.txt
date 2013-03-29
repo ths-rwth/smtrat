@@ -11,10 +11,8 @@
 # Version: 2012-10-22                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-include_directories( #${PROJECT_BUILD_DIR}/src
-                     #${PROJECT_SOURCE_DIR}/src/parser
-                     #${PROJECT_BUILD_DIR}/src/parser
-                     ${GINACRA_INCLUDE_DIR}
+include_directories( ${GINACRA_INCLUDE_DIR}
+					 ${ReallyNull_INCLUDE_DIR}
 )
 
 # Core library
@@ -66,7 +64,6 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/CompileInfo.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/CompileInfo.cpp )
 
 
-# Nullstellensatz module variables
 set(lib_utilities_headers
 	utilities/debug/debug.h
 	utilities/stats/Statistics.h
