@@ -212,10 +212,7 @@ namespace smtrat
 		static const bool								 applyNSS								 = false;
         static const unsigned                            maxSDPdegree                            = 4;
         static const unsigned                            SDPupperBoundNrVariables                = 6;
-		static const unsigned							 callSDPAfterNMonomials					 = 6;
-		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
-		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
-		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
+		
     };
     
 
@@ -271,6 +268,24 @@ namespace smtrat
     {
         static const unsigned                            identifier                              = 61;
         static const bool                                iterativeVariableRewriting              = true;
+    };
+    
+    struct GBSettings43 : GBSettings41
+    {
+        static const unsigned                            identifier                              = 43;
+        static const bool								 applyNSS								 = true;
+        static const unsigned                            maxSDPdegree                            = 4;
+        static const unsigned                            SDPupperBoundNrVariables                = 15;
+		
+    };
+    
+    struct GBSettings63 : GBSettings61
+    {
+        static const unsigned                            identifier                              = 63;
+        static const bool								 applyNSS								 = true;
+        static const unsigned                            maxSDPdegree                            = 4;
+        static const unsigned                            SDPupperBoundNrVariables                = 15;
+		
     };
     /*
     struct GBSettings7

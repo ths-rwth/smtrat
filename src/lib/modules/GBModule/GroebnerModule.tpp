@@ -34,12 +34,12 @@
 #include "GBModuleStatistics.h"
 #include "UsingDeclarations.h"
 #ifdef USE_NSS
-#include "NSSModule/GroebnerToSDP.h"
+#include <reallynull/lib/GroebnerToSDP/GroebnerToSDP.h>
 #endif
 
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
-#define GB_OUTPUT
+//#define GB_OUTPUT
 
 using std::set;
 using GiNaC::ex_to;
@@ -256,7 +256,8 @@ Answer GroebnerModule<Settings>::isConsistent( )
         // On linear systems, all solutions lie in Q. So we do not have to check for a solution.
         if( Settings::applyNSS && !mBasis.isConstant( ) && !mBasis.getGbIdeal( ).isLinear( ) )
         {
-            std::cout << "NSS?";
+            using namespace reallynull;
+            std::cout << "NSS..?" << std::flush;
             // Lets search for a witness. We only have to do this if the gb is non-constant.
 
             std::set<unsigned> variables;
@@ -270,7 +271,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
             // We currently only try with a low nr of variables.
             if( vars < Settings::SDPupperBoundNrVariables )
             {
-                std::cout << " Run SDP";
+                std::cout << " Run SDP.." << std::flush;
 
                 GroebnerToSDP<typename Settings::Order> sdp( mBasis.getGbIdeal( ), MonomialIterator( variables, Settings::maxSDPdegree ) );
                 witness = sdp.findWitness( );
