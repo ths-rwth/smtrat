@@ -600,6 +600,15 @@ namespace smtrat
             return (*i1)->pConstraint()->id() < (*i2)->pConstraint()->id();
         }
     };
+    
+    
+    struct FormulaConstraintCompare
+    {
+        bool operator( ) (const Formula::const_iterator& c1, const Formula::const_iterator & c2 ) const
+        {
+            return (( *c1 )->constraint( ) < ( *c2 )->constraint( ) );
+        }
+    };
 
 
 }    // namespace smtrat
