@@ -11,9 +11,10 @@
 # Version: 2012-10-22                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-include_directories( ${GINACRA_INCLUDE_DIR}
-					 ${ReallyNull_INCLUDE_DIR}
-)
+include_directories( ${GINACRA_INCLUDE_DIR} )
+if(ReallyNull_FOUND)
+    include_directories( ${ReallyNull_INCLUDE_DIR} )
+endif()
 
 # Core library
 # # # # # # # # # # #
