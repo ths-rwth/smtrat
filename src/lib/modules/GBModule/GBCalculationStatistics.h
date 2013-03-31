@@ -5,8 +5,7 @@
  * Created on October 1, 2012, 3:10 PM
  */
 
-#ifndef GBCALCULATIONSTATISTICS_H
-#define	GBCALCULATIONSTATISTICS_H
+#pragma once
 
 #include "../../config.h"
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -18,7 +17,7 @@
 #include "../../utilities/stats/Statistics.h"
 
 
-#include <ginacra/mr/BuchbergerStats.h>
+#include <ginacra/mr/Buchberger/BuchbergerStats.h>
 namespace smtrat {
 class GBCalculationStats : public Statistics
 {
@@ -47,7 +46,4 @@ class GBCalculationStats : public Statistics
 }
 
 #endif
-
-
-#endif	/* GBCALCULATIONSTATISTICS_H */
 

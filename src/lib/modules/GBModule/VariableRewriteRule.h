@@ -5,14 +5,17 @@
  * Created on January 7, 2013
  */
 
-#ifndef VARIABLEREWRITERULE_H
-#define	VARIABLEREWRITERULE_H
+
+#pragma once
 
 #include "UsingDeclarations.h"
+
+
 namespace smtrat{
     class VariableRewriteRule {
     public:
-        VariableRewriteRule(unsigned varNr, Term term) {
+        VariableRewriteRule(unsigned varNr, const Term& term, const GiNaCRA::BitVector& reasons ) 
+        {
             
         }
 
@@ -25,8 +28,9 @@ namespace smtrat{
         unsigned mVarNr;
         /// Rewrite with this term
         Term mTerm;
+        /// Based on this origins
+        GiNaCRA::BitVector mReasons;
     };
 }
 
-#endif	/* VARIABLEREWRITERULE_H */
 

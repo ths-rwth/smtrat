@@ -30,17 +30,16 @@
  */
 #include "../../config.h"
 
-#include "../NSSModule/definitions.h"
 #include "GroebnerModule.h"
 #include "GBModuleStatistics.h"
 #include "UsingDeclarations.h"
 #ifdef USE_NSS
-#include "NSSModule/GroebnerToSDP.h"
+#include <reallynull/lib/GroebnerToSDP/GroebnerToSDP.h>
 #endif
 
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
-#undef GB_OUTPUT
+//#define GB_OUTPUT
 
 using std::set;
 using GiNaC::ex_to;
@@ -257,7 +256,8 @@ Answer GroebnerModule<Settings>::isConsistent( )
         // On linear systems, all solutions lie in Q. So we do not have to check for a solution.
         if( Settings::applyNSS && !mBasis.isConstant( ) && !mBasis.getGbIdeal( ).isLinear( ) )
         {
-            std::cout << "NSS?";
+            using namespace reallynull;
+            std::cout << "NSS..?" << std::flush;
             // Lets search for a witness. We only have to do this if the gb is non-constant.
 
             std::set<unsigned> variables;
@@ -271,7 +271,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
             // We currently only try with a low nr of variables.
             if( vars < Settings::SDPupperBoundNrVariables )
             {
-                std::cout << " Run SDP";
+                std::cout << " Run SDP.." << std::flush;
 
                 GroebnerToSDP<typename Settings::Order> sdp( mBasis.getGbIdeal( ), MonomialIterator( variables, Settings::maxSDPdegree ) );
                 witness = sdp.findWitness( );
@@ -1296,7 +1296,7 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
                 assert( reduced.nrOfTerms( ) > 0 );
                 assert( reduced.lcoeff( ) != 0 );
 
-                const Rational reducedConstant = reduced.lcoeff( );
+                const GiNaCRA::RationalNumber reducedConstant = reduced.lcoeff( );
                 assert( reducedConstant != 0 );
                 if( reducedConstant < 0 )
                 {
@@ -1337,8 +1337,8 @@ bool InequalitiesTable<Settings>::reduceWRTGroebnerBasis( typename Rows::iterato
 //                    std::cout << "Id="<<(*(it->first))->pConstraint()->id()<<std::endl;
 //                    std::cout << "Gb learns: ";
 //                    deduction->print();
-//                    std::cout << std::endl;
-                    mModule->addDeduction(deduction);
+ //                   std::cout << std::endl;
+ //                   mModule->addDeduction(deduction);
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mStats->DeducedInequality();
                     #endif

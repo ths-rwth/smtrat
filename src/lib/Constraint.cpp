@@ -26,7 +26,7 @@
  * @author Sebastian Junges
  * @author Ulrich Loup
  * @since 2010-04-26
- * @version 2012-10-13
+ * @version 2013-03-27
  */
 
 //#define VS_DEBUG
@@ -428,9 +428,9 @@ namespace smtrat
         }
         return result;
     }
-    
+
     /**
-     * 
+     *
      * @param The relation
      * @return
      */
@@ -1136,7 +1136,7 @@ namespace smtrat
      *
      * @return The string representation of the constraint.
      */
-    string Constraint::toString( bool _unequalSwitch ) const
+    string Constraint::toString( unsigned _unequalSwitch ) const
     {
         string result = "";
         ostringstream sstream;
@@ -1148,7 +1148,12 @@ namespace smtrat
                 result += "  = ";
                 break;
             case CR_NEQ:
-                result += _unequalSwitch ? " != " : " <> ";
+                if( _unequalSwitch == 1 )
+                    result += " <> ";
+                else if( _unequalSwitch == 2 )
+                    result += " /= ";
+                else // standard case
+                    result += " != ";
                 break;
             case CR_LESS:
                 result += "  < ";

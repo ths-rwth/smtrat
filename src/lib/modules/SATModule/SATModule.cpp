@@ -1194,8 +1194,6 @@ FindSecond:
                 #endif
                 cancelUntil( backtrack_level );
 
-
-
                 if( learnt_clause.size() == 1 )
                 {
                     #ifdef SMTRAT_DEVOPTION_Validation

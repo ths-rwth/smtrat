@@ -24,8 +24,9 @@
  * Constraint.h
  * @author Florian Corzilius
  * @author Sebastian Junges
+ * @author Ulrich Loup
  * @since 2010-04-26
- * @version 2012-10-12
+ * @version 2013-03-27
  */
 
 
@@ -329,7 +330,7 @@ namespace smtrat
             void init();
 
             // Printing methods.
-            std::string toString( bool = false ) const;
+            std::string toString( unsigned = 0 ) const;
             void print( std::ostream& _out = std::cout ) const;
             void print2( std::ostream& _out = std::cout ) const;
             void printInPrefix( std::ostream& _out = std::cout ) const;

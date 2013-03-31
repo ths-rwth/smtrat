@@ -11,10 +11,8 @@
 # Version: 2012-10-22                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-include_directories( #${PROJECT_BUILD_DIR}/src
-                     #${PROJECT_SOURCE_DIR}/src/parser
-                     #${PROJECT_BUILD_DIR}/src/parser
-                     ${GINACRA_INCLUDE_DIR}
+include_directories( ${GINACRA_INCLUDE_DIR}
+					 ${ReallyNull_INCLUDE_DIR}
 )
 
 # Core library
@@ -66,32 +64,6 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/CompileInfo.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/CompileInfo.cpp )
 
 
-# Nullstellensatz module variables
-
-if(USE_NSS)
-set(lib_NSSModule_headers
-	modules/NSSModule/ConstraintMatrixFactory.h
-	modules/NSSModule/GroebnerToSDP.h
-	modules/NSSModule/MonomialIterator.h
-)
-set(lib_NSSModule_src
-	modules/NSSModule/ConstraintMatrixFactory.cpp
-	modules/NSSModule/MonomialIterator.cpp
-)
-set(lib_SDP_headers
-	utilities/SDP/SDPFacade.h
-	utilities/SDP/CSDPFacade.h
-	utilities/SDP/SparseMatrix.h
-)
-set(lib_SDP_src
-	utilities/SDP/CSDPFacade.cpp
-	utilities/SDP/SparseMatrix.cpp
-)
-set(lib_LinAlg
-	utilities/LinAlg/DenseMatrix.h
-	utilities/LinAlg/FindExactSolution.h
-)
-endif()
 set(lib_utilities_headers
 	utilities/debug/debug.h
 	utilities/stats/Statistics.h
@@ -122,7 +94,6 @@ endif()
 # # # # # # # # #
 
 add_library(lib_${PROJECT_NAME} ${STATICLIB} ${lib_${PROJECT_NAME}_SRCS} )
-target_link_libraries( lib_${PROJECT_NAME} ${libraries} ) # libraries definied in top-level CMakeLists.txt
 set_target_properties( lib_${PROJECT_NAME} PROPERTIES
 #		# create *nix style library versions + symbolic links
 		VERSION "${${PROJECT_NAME}_MAJORVERSION}.${${PROJECT_NAME}_MINORVERSION}.${${PROJECT_NAME}_MAINTENANCEVERSION}"
@@ -149,10 +120,3 @@ install( TARGETS lib_${PROJECT_NAME} DESTINATION lib PERMISSIONS
     GROUP_READ GROUP_EXECUTE
     WORLD_READ WORLD_EXECUTE
 )
-#install( FILES ${lib_modules_headers} DESTINATION include/${PROJECT_NAME}/lib/modules )
-#install( FILES ${lib_VSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/VSModule )
-#install( FILES ${lib_SATModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SATModule )
-#install( FILES ${lib_LRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/LRAModule )
-#install( FILES ${lib_SingleVSModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/SingleVSModule )
-# install( FILES ${lib_ICPModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/ICPModule )
-#install( FILES ${lib_TLRAModule_headers} DESTINATION include/${PROJECT_NAME}/lib/modules/TLRAModule )

@@ -70,8 +70,10 @@ add_library( smtlibParser
 	${CMAKE_SOURCE_DIR}/src/lib/Formula.cpp
 	${CMAKE_SOURCE_DIR}/src/lib/ConstraintPool.cpp
 	${CMAKE_SOURCE_DIR}/src/lib/Constraint.cpp
-
 )
+
+# add linking libraries. This is an over-approximation. 
+target_link_libraries( smtlibParser ${libraries})
 
 if(${STATICLIB_SWITCH} STREQUAL "ON")
   set_target_properties( smtlibParser PROPERTIES LINK_SEARCH_START_STATIC TRUE )
@@ -79,10 +81,10 @@ if(${STATICLIB_SWITCH} STREQUAL "ON")
 endif()
 
 set_target_properties( smtlibParser PROPERTIES
-#		# create *nix style library versions + symbolic links
+		# create *nix style library versions + symbolic links
 		VERSION "${${PROJECT_NAME}_MAJORVERSION}.${${PROJECT_NAME}_MINORVERSION}.${${PROJECT_NAME}_MAINTENANCEVERSION}"
 		SOVERSION "${${PROJECT_NAME}_MAJORVERSION}.${${PROJECT_NAME}_MINORVERSION}.${${PROJECT_NAME}_MAINTENANCEVERSION}"
-#		# allow creating static and shared libs without conflicts
-#		# CLEAN_DIRECT_OUTPUT 1
-#		# avoid conflicts between library and binary target names
+		# allow creating static and shared libs without conflicts
+		# CLEAN_DIRECT_OUTPUT 1
+		# avoid conflicts between library and binary target names
 )

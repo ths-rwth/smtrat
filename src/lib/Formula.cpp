@@ -25,7 +25,7 @@
  * @author Florian Corzilius
  * @author Sebastian Junges
  * @since 2012-02-09
- * @version 2013-01-17
+ * @version 2013-03-24
  */
 
 //#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
@@ -852,7 +852,7 @@ namespace smtrat
                                     newFormula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() ) ) );
                                     newFormula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
                                     delete currentSubformula;
-                                    subformulasToTransform.push_back( newFormula );
+                                    phis.push_back( newFormula );
                                 }
                                 else
                                 {
@@ -1634,7 +1634,7 @@ namespace smtrat
             result += i->first;
             for( ++i; i != mRealValuedVars.end(); ++i )
             {
-                result += "," + i->first;
+                result += seperator + i->first;
             }
         }
         else if( j != mBooleanVars.end() )
@@ -1644,7 +1644,7 @@ namespace smtrat
         }
         for( ; j != mBooleanVars.end(); ++j )
         {
-            result += "," + *j;
+            result += seperator + *j;
         }
         return result;
     }
@@ -1714,6 +1714,86 @@ namespace smtrat
                 if( withVariables )
                     result += " ) )";
                 result += " )";
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Generates a string displaying the formula as a QEPCAD formula.
+     * @return
+     */
+    std::string Formula::toQepcadFormat( bool withVariables ) const
+    {
+        string result = "";
+        string oper = Formula::FormulaTypeToString( mType );
+        if( mType == AND )
+            oper = "/\\";
+        if( mType == OR )
+            oper = "\\/";
+        switch( mType )
+        {
+            // unary cases
+            case TTRUE:
+            {
+                result += " " + oper + " ";
+                break;
+            }
+            case FFALSE:
+            {
+                result += " " + oper + " ";
+                break;
+            }
+            case NOT:
+            {
+                result += " ~[ " + (*mpSubformulas->begin())->toQepcadFormat( withVariables ) + " ]";
+                break;
+            }
+            case REALCONSTRAINT:
+            {
+                // replace all *
+                string constraintStr = constraint().toString();
+                size_t _pos = constraintStr.find( "*" );
+                while( _pos != constraintStr.npos )
+                {
+                    constraintStr.replace( _pos, 1, " " ); // @TODO: dangerous substitution
+                    _pos = constraintStr.find( "*" );
+                }
+                result += constraintStr;
+                break;
+            }
+            case BOOL:
+            {
+                result += *mpIdentifier + " = 1";
+                break;
+            }
+            default:
+            {
+                // recursive print of the subformulas
+                if( withVariables )
+                { // add the variables
+                    result += "(";
+                    result += variableListToString( "," ) + ")\n0\n(E " + variableListToString( ") (E " ) + ") [";
+                    // Make pseudo Booleans.
+                    for( std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin(); j != mBooleanVars.end(); ++j )
+                    {
+                        result += "[" + *j + " = 0 \\/ " + *j + " = 1] /\\ ";
+                    }
+                }
+                else
+                    result += "[";
+                std::list<Formula*>::const_iterator it = mpSubformulas->begin();
+                // do not quantify variables again.
+                result += (*it)->toQepcadFormat( false );
+                for( ++it; it != mpSubformulas->end(); ++it )
+                {
+                    // do not quantify variables again.
+                    result += " " + oper + " " + (*it)->toQepcadFormat( false );
+                }
+                if( withVariables )
+                    result += " ].";
+                else
+                    result += "]";
             }
         }
         return result;
