@@ -1140,8 +1140,8 @@ namespace smtrat
     {
         string result = "";
         ostringstream sstream;
-        sstream << mLhs;
-        result += sstream.str();
+//        sstream << mLhs << " [" << mMultiRootLessLhs << ", " << mFactorization << "]";
+        result += sstream.str(); 
         switch( relation() )
         {
             case CR_EQ:

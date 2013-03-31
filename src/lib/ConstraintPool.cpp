@@ -162,8 +162,7 @@ namespace smtrat
         parser reader( emptySymtab );
         ex var = reader( _name );
         mMutexDomain.lock();
-        auto res = mDomain.insert( pair< ex, Variable_Domain >( var, _domain ) );
-        assert( res.second );
+        mDomain.insert( pair< ex, Variable_Domain >( var, _domain ) );
         mMutexDomain.unlock();
         lock_guard<mutex> lock( mMutexArithmeticVariables );
         ex result = mArithmeticVariables.insert( pair<const string, ex>( _name, var ) ).first->second;
@@ -183,8 +182,7 @@ namespace smtrat
         parser reader( emptySymtab );
         ex var = reader( out.str() );
         mMutexDomain.lock();
-        auto res = mDomain.insert( pair< ex, Variable_Domain >( var, REAL_DOMAIN ) );
-        assert( res.second );
+        mDomain.insert( pair< ex, Variable_Domain >( var, REAL_DOMAIN ) );
         mMutexDomain.unlock();
         lock_guard<mutex> lock( mMutexArithmeticVariables );
         pair<string,ex> result = *mArithmeticVariables.insert( pair<const string, ex>( out.str(), var ) ).first;
