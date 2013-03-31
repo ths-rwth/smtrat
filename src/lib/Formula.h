@@ -27,7 +27,7 @@
  * @author Florian Corzilius
  * @author Sebastian Junges
  * @since 2012-02-09
- * @version 2013-03-24
+ * @version 2013-03-31
  */
 
 #ifndef SMTRAT_FORMULA_H
@@ -584,7 +584,7 @@ namespace smtrat
             static bool resolveNegation( Formula&, bool = true );
             static std::string FormulaTypeToString( Type type);
 
-            std::string variableListToString(std::string seperator) const;
+            std::string variableListToString(std::string seperator, bool rename = false) const;
             std::string toRedlogFormat(bool withVariables = true) const;
             std::string toQepcadFormat(bool withVariables = true) const;
 

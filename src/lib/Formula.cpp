@@ -25,7 +25,7 @@
  * @author Florian Corzilius
  * @author Sebastian Junges
  * @since 2012-02-09
- * @version 2013-03-24
+ * @version 2013-03-31
  */
 
 //#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
@@ -1622,29 +1622,34 @@ namespace smtrat
     /**
      *
      * @param seperator
+     * @param rename if set, all real variables are renamed to rX where X is an ascending index and all
+     * Boolean variables are renamed to bY where Y is another ascending index (default: false)
      * @return
      */
-    std::string Formula::variableListToString( std::string seperator ) const
+    std::string Formula::variableListToString( std::string seperator, bool rename ) const
     {
+        unsigned                                        x = 0; // real variable counter
+        unsigned                                        y = 0; // Boolean variable counter
         GiNaC::symtab::const_iterator                   i = mRealValuedVars.begin();
         std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin();
-        string                        result = "";
+        string                                     result = "";
         if( i != mRealValuedVars.end() )
         {
-            result += i->first;
+            result += rename ? ("r" + x++) : i->first;
             for( ++i; i != mRealValuedVars.end(); ++i )
             {
-                result += seperator + i->first;
+                result += seperator;
+                result += rename ? ("r" + x++) : i->first;
             }
         }
         else if( j != mBooleanVars.end() )
         {
-            result += *j;
-            ++j;
-        }
-        for( ; j != mBooleanVars.end(); ++j )
-        {
-            result += seperator + *j;
+            result += rename ? ("b" + y++) : *j;
+            for( ++j; j != mBooleanVars.end(); ++j )
+            {
+                result += seperator;
+                result += rename ? ("b" + y++) : *j;
+            }
         }
         return result;
     }
