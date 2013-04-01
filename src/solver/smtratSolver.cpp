@@ -74,6 +74,8 @@ void parseInput(const std::string& pathToInputFile, smtrat::Formula* formula, sm
     }
     options.statusFlag = parser.status();
     options.printAssignment = parser.printAssignment();
+//    formula->print();
+//    smtrat::Formula::constraintPool().printVariables();
 }
 
 /**

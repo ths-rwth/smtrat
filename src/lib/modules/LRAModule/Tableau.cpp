@@ -1771,7 +1771,7 @@ CheckLowerPremise:
             vector<GOMORY_SET>::const_iterator vec_iter = splitting.begin();
             row_iterator = Iterator(row->mStartEntry,mpEntries);
             while(!row_iterator.rowEnd())
-            {
+            {                 
                 const Variable nonBasicVar = (*mColumns[(*row_iterator).columnNumber()].mName);
                 if((*vec_iter)==J_MINUS)
                 {
@@ -1812,6 +1812,7 @@ CheckLowerPremise:
             Variable* var = new Variable( mHeight++, true, psum, mDefaultBoundPosition );
             (*var).addLowerBound(bound,mDefaultBoundPosition,gomory_constr);
             vector<numeric>::const_iterator coeffs_iter = coeffs.begin();
+            row_iterator = Iterator(row->mStartEntry,mpEntries);
             mRows.push_back(TableauHead());
             EntryID currentStartEntryOfRow = 0;
             EntryID leftID;            

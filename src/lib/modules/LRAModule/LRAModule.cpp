@@ -397,7 +397,7 @@ namespace smtrat
                             auto save_last_row = (mTableau.rows()).end();
                             for(auto vector_iterator = (mTableau.rows()).begin();vector_iterator != save_last_row;++vector_iterator)
                             { 
-                                cout << "for" << endl;
+                                //cout << "for" << endl;
                                 ex referring_ex = vector_iterator->mName->expression();
                                 ex* preferring_ex = new ex(referring_ex);
                                 auto help = mOriginalVars.find(preferring_ex);
