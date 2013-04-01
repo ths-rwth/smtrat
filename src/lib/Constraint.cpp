@@ -1140,7 +1140,7 @@ namespace smtrat
     {
         string result = "";
         ostringstream sstream;
-//        sstream << mLhs << " [" << mMultiRootLessLhs << ", " << mFactorization << "]";
+        sstream << mLhs;
         result += sstream.str(); 
         switch( relation() )
         {

@@ -1764,7 +1764,7 @@ namespace smtrat
      * @param variableIds maps original variable ids to unique indexed variable ids only consisting of letters and numbers
      * @return
      */
-    std::string Formula::toQepcadFormat( bool withVariables, const unordered_map<string, string>& variableIds ) const
+    string Formula::toQepcadFormat( bool withVariables, const unordered_map<string, string>& variableIds ) const
     {
         string result = "";
         string oper = Formula::FormulaTypeToString( mType );
@@ -1792,17 +1792,19 @@ namespace smtrat
             }
             case REALCONSTRAINT:
             {
-                string constraintStr = constraint().toString();
+                string constraintStr = "";
                 // replace all variable ids
+                GiNaC::exmap symbolMapping;
                 for( unordered_map<string, string>::const_iterator vId = variableIds.begin(); vId != variableIds.end(); ++vId )
                 {
-                    size_t pos = constraintStr.find( vId->first );
-                    while( pos != constraintStr.npos )
-                    {
-                        constraintStr.replace( pos, vId->first.length(), vId->second );
-                        pos = constraintStr.find( vId->first, pos );
-                    }
+                    auto realVar = mpConstraintPool->realVariables().find( vId->first );
+                    assert( realVar != mpConstraintPool->realVariables().end() );
+                    symbolMapping[ realVar->second ] = GiNaC::symbol( vId->second );
                 }
+                GiNaC::ex lhsAfterReplacing = constraint().lhs().subs( symbolMapping );
+                ostringstream sstream;
+                sstream << lhsAfterReplacing;
+                constraintStr += sstream.str(); 
                 // replace all *
                 size_t pos = constraintStr.find( "*" );
                 while( pos != constraintStr.npos )
@@ -1810,6 +1812,32 @@ namespace smtrat
                     constraintStr.replace( pos, 1, " " ); // @TODO: dangerous substitution
                     pos = constraintStr.find( "*", pos );
                 }
+                // print the relation symbol and right-hand side
+                // @TODO: adapt relation symbol
+                switch( constraint().relation() )
+                {
+                    case CR_EQ:
+                        constraintStr += "  = ";
+                        break;
+                    case CR_NEQ:
+                        constraintStr += " != ";
+                        break;
+                    case CR_LESS:
+                        constraintStr += "  < ";
+                        break;
+                    case CR_GREATER:
+                        constraintStr += "  > ";
+                        break;
+                    case CR_LEQ:
+                        constraintStr += " <= ";
+                        break;
+                    case CR_GEQ:
+                        constraintStr += " >= ";
+                        break;
+                    default:
+                        constraintStr += "  ~ ";
+                }
+                constraintStr += "0";
 
                 result += constraintStr;
                 break;
