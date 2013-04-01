@@ -8,7 +8,7 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2013-03-29                                         #
+# Version: 2013-03-31                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
@@ -99,13 +99,12 @@ include( FindGMP )
 
 set( libraries ${GINACRA_LIBRARY}  ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} pthread )
 
-
 # # # # # # # # # # # # # # # # # # # # # #
 # C.2. required libraries
 # # # # # # # # # # # # # # # # # # # # # #
 
 find_package(ReallyNull)
-if(ReallyNull_FOUND) 
+if(ReallyNull_FOUND)
 	set(USE_NSS 1)
 	set(libraries ${ReallyNull_LIBRARY} ${libraries})
 endif()
@@ -116,8 +115,8 @@ endif()
 
 if( BUILD_SOLVER )
 	# for building the parser
-    find_package(BISON REQUIRED)	
-    find_package(FLEX REQUIRED)		
+    find_package(BISON REQUIRED)
+    find_package(FLEX REQUIRED)
 endif()
 
 # # # # # # # # # # # # # # # # # # # # # #

@@ -8,7 +8,7 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2012-10-22                                         #
+# Version: 2013-03-31                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 include_directories( ${GINACRA_INCLUDE_DIR} )
