@@ -362,7 +362,29 @@ namespace smtrat
         for( fcs_const_iterator constraint = mConstraints.begin();
                 constraint != mConstraints.end(); ++constraint )
         {
-            _out << "    " << *constraint << endl;
+            _out << "    " << **constraint << endl;
+        }
+        _out << "---------------------------------------------------" << endl;
+    }
+
+    /**
+     * Prints all variables in the constraint pool on the given stream.
+     *
+     * @param _out The stream to print on.
+     */
+    void ConstraintPool::printVariables( ostream& _out ) const
+    {
+        CONSTRAINT_LOCK_GUARD
+        _out << "---------------------------------------------------" << endl;
+        _out << "Arithmetic variable pool:" << endl;
+        for( auto arithVar = mArithmeticVariables.begin(); arithVar != mArithmeticVariables.end(); ++arithVar )
+        {
+            _out << "    " << arithVar->first << "   ( " << toString( domain( arithVar->second ) ) << " )" << endl;
+        }
+        _out << "Boolean variable pool:" << endl;
+        for( auto boolVar = mBooleanVariables.begin(); boolVar != mBooleanVariables.end(); ++boolVar )
+        {
+            _out << "    " << *boolVar << endl;
         }
         _out << "---------------------------------------------------" << endl;
     }
