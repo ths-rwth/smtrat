@@ -25,7 +25,7 @@
  * @author Florian Corzilius
  * @author Sebastian Junges
  * @since 2012-02-09
- * @version 2013-03-31
+ * @version 2013-04-01
  */
 
 //#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
@@ -1619,36 +1619,70 @@ namespace smtrat
         return oper;
     }
 
+    void Formula::renameVariables()
+    {
+//        const GiNaC::symtab&               realValuedVars = input.first->realValuedVars();
+//        const std::set< std::string >&        booleanVars = input.first->booleanVars();
+        unsigned                                        x = 0; // real variable counter
+        unsigned                                        y = 0; // Boolean variable counter
+        GiNaC::symtab::iterator                   i = mRealValuedVars.begin();
+        std::set< std::string >::iterator         j = mBooleanVars.begin();
+        if( i != mRealValuedVars.end() )
+        {
+            for( ; i != mRealValuedVars.end(); ++i )
+            {
+                std::stringstream xStr;
+                xStr << "r" << x;
+                ++x;
+//                i->first = xStr.str();
+//                GiNaC::ex_to<GiNaC::symbol>( i->second ).set_name( xStr.str() );
+//                variableIds[ i->first ] = "r" + xStr.str();
+//                cout << "Mapping " << i->first << " -> " << variableIds[ i->first ] << endl;
+            }
+        }
+        else if( j != mBooleanVars.end() )
+        {
+            for( ; j != mBooleanVars.end(); ++j )
+            {
+                std::stringstream yStr;
+                yStr << "b" << y;
+                ++y;
+//                *j = yStr.str();
+//                variableIds[ *j ] = "b" + yStr.str();
+            }
+        }
+    }
+
     /**
      *
      * @param seperator
-     * @param rename if set, all real variables are renamed to rX where X is an ascending index and all
-     * Boolean variables are renamed to bY where Y is another ascending index (default: false)
      * @return
      */
-    std::string Formula::variableListToString( std::string seperator, bool rename ) const
+    std::string Formula::variableListToString( std::string seperator, const unordered_map<string, string>& variableIds ) const
     {
-        unsigned                                        x = 0; // real variable counter
-        unsigned                                        y = 0; // Boolean variable counter
         GiNaC::symtab::const_iterator                   i = mRealValuedVars.begin();
         std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin();
         string                                     result = "";
         if( i != mRealValuedVars.end() )
         {
-            result += rename ? ("r" + x++) : i->first;
+            unordered_map<string, string>::const_iterator vId = variableIds.find(i->first);
+            result += vId == variableIds.end() ? i->first : vId->second;
             for( ++i; i != mRealValuedVars.end(); ++i )
             {
                 result += seperator;
-                result += rename ? ("r" + x++) : i->first;
+                vId = variableIds.find(i->first);
+                result += vId == variableIds.end() ? i->first : vId->second;
             }
         }
         else if( j != mBooleanVars.end() )
         {
-            result += rename ? ("b" + y++) : *j;
+            unordered_map<string, string>::const_iterator vId = variableIds.find(*j);
+            result += vId == variableIds.end() ? *j : vId->second;
             for( ++j; j != mBooleanVars.end(); ++j )
             {
                 result += seperator;
-                result += rename ? ("b" + y++) : *j;
+                vId = variableIds.find(*j);
+                result += vId == variableIds.end() ? *j : vId->second;
             }
         }
         return result;
@@ -1726,9 +1760,11 @@ namespace smtrat
 
     /**
      * Generates a string displaying the formula as a QEPCAD formula.
+     * @param withVariables if true, variables are quantified, otherwise not
+     * @param variableIds maps original variable ids to unique indexed variable ids only consisting of letters and numbers
      * @return
      */
-    std::string Formula::toQepcadFormat( bool withVariables ) const
+    std::string Formula::toQepcadFormat( bool withVariables, const unordered_map<string, string>& variableIds ) const
     {
         string result = "";
         string oper = Formula::FormulaTypeToString( mType );
@@ -1751,19 +1787,30 @@ namespace smtrat
             }
             case NOT:
             {
-                result += " ~[ " + (*mpSubformulas->begin())->toQepcadFormat( withVariables ) + " ]";
+                result += " ~[ " + (*mpSubformulas->begin())->toQepcadFormat( withVariables, variableIds ) + " ]";
                 break;
             }
             case REALCONSTRAINT:
             {
-                // replace all *
                 string constraintStr = constraint().toString();
-                size_t _pos = constraintStr.find( "*" );
-                while( _pos != constraintStr.npos )
+                // replace all variable ids
+                for( unordered_map<string, string>::const_iterator vId = variableIds.begin(); vId != variableIds.end(); ++vId )
                 {
-                    constraintStr.replace( _pos, 1, " " ); // @TODO: dangerous substitution
-                    _pos = constraintStr.find( "*" );
+                    size_t pos = constraintStr.find( vId->first );
+                    while( pos != constraintStr.npos )
+                    {
+                        constraintStr.replace( pos, vId->first.length(), vId->second );
+                        pos = constraintStr.find( vId->first, pos );
+                    }
                 }
+                // replace all *
+                size_t pos = constraintStr.find( "*" );
+                while( pos != constraintStr.npos )
+                {
+                    constraintStr.replace( pos, 1, " " ); // @TODO: dangerous substitution
+                    pos = constraintStr.find( "*", pos );
+                }
+
                 result += constraintStr;
                 break;
             }
@@ -1778,7 +1825,7 @@ namespace smtrat
                 if( withVariables )
                 { // add the variables
                     result += "(";
-                    result += variableListToString( "," ) + ")\n0\n(E " + variableListToString( ") (E " ) + ") [";
+                    result += variableListToString( ",", variableIds ) + ")\n0\n(E " + variableListToString( ") (E ", variableIds ) + ") [";
                     // Make pseudo Booleans.
                     for( std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin(); j != mBooleanVars.end(); ++j )
                     {
@@ -1789,11 +1836,11 @@ namespace smtrat
                     result += "[";
                 std::list<Formula*>::const_iterator it = mpSubformulas->begin();
                 // do not quantify variables again.
-                result += (*it)->toQepcadFormat( false );
+                result += (*it)->toQepcadFormat( false, variableIds );
                 for( ++it; it != mpSubformulas->end(); ++it )
                 {
                     // do not quantify variables again.
-                    result += " " + oper + " " + (*it)->toQepcadFormat( false );
+                    result += " " + oper + " " + (*it)->toQepcadFormat( false, variableIds );
                 }
                 if( withVariables )
                     result += " ].";

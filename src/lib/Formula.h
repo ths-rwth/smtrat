@@ -27,7 +27,7 @@
  * @author Florian Corzilius
  * @author Sebastian Junges
  * @since 2012-02-09
- * @version 2013-03-31
+ * @version 2013-04-01
  */
 
 #ifndef SMTRAT_FORMULA_H
@@ -36,6 +36,7 @@
 #include <string.h>
 #include <string>
 #include <set>
+#include <unordered_map>
 #include "Condition.h"
 #include "modules/ModuleType.h"
 #include "ConstraintPool.h"
@@ -584,9 +585,10 @@ namespace smtrat
             static bool resolveNegation( Formula&, bool = true );
             static std::string FormulaTypeToString( Type type);
 
-            std::string variableListToString(std::string seperator, bool rename = false) const;
+            void renameVariables();
+            std::string variableListToString(std::string seperator = ",", const std::unordered_map<string, string>& variableIds = std::unordered_map<string, string>()) const;
             std::string toRedlogFormat(bool withVariables = true) const;
-            std::string toQepcadFormat(bool withVariables = true) const;
+            std::string toQepcadFormat(bool withVariables, const std::unordered_map<string, string>& variableIds) const;
 
         private:
 
