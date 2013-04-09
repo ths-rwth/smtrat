@@ -1619,40 +1619,6 @@ namespace smtrat
         return oper;
     }
 
-    void Formula::renameVariables()
-    {
-//        const GiNaC::symtab&               realValuedVars = input.first->realValuedVars();
-//        const std::set< std::string >&        booleanVars = input.first->booleanVars();
-        unsigned                                        x = 0; // real variable counter
-        unsigned                                        y = 0; // Boolean variable counter
-        GiNaC::symtab::iterator                   i = mRealValuedVars.begin();
-        std::set< std::string >::iterator         j = mBooleanVars.begin();
-        if( i != mRealValuedVars.end() )
-        {
-            for( ; i != mRealValuedVars.end(); ++i )
-            {
-                std::stringstream xStr;
-                xStr << "r" << x;
-                ++x;
-//                i->first = xStr.str();
-//                GiNaC::ex_to<GiNaC::symbol>( i->second ).set_name( xStr.str() );
-//                variableIds[ i->first ] = "r" + xStr.str();
-//                cout << "Mapping " << i->first << " -> " << variableIds[ i->first ] << endl;
-            }
-        }
-        else if( j != mBooleanVars.end() )
-        {
-            for( ; j != mBooleanVars.end(); ++j )
-            {
-                std::stringstream yStr;
-                yStr << "b" << y;
-                ++y;
-//                *j = yStr.str();
-//                variableIds[ *j ] = "b" + yStr.str();
-            }
-        }
-    }
-
     /**
      *
      * @param seperator
@@ -1794,17 +1760,24 @@ namespace smtrat
             {
                 string constraintStr = "";
                 // replace all variable ids
-                GiNaC::exmap symbolMapping;
+//                GiNaC::exmap symbolMapping;
+                GiNaC::ex lhsAfterReplacing = constraint().lhs();
+                GiNaC::symtab realVars = mpConstraintPool->realVariables();
                 for( unordered_map<string, string>::const_iterator vId = variableIds.begin(); vId != variableIds.end(); ++vId )
                 {
-                    auto realVar = mpConstraintPool->realVariables().find( vId->first );
-                    assert( realVar != mpConstraintPool->realVariables().end() );
-                    symbolMapping[ realVar->second ] = GiNaC::symbol( vId->second );
+                    GiNaC::symtab::const_iterator realVar = realVars.find( vId->first );
+                    if( realVar != realVars.end() )
+                    {
+//                        cout << "var: " << realVar->second << endl;
+                        lhsAfterReplacing = lhsAfterReplacing.subs( realVar->second == GiNaC::symbol( vId->second ) );
+                    }
+//                    symbolMapping[ realVar->second ] = GiNaC::symbol( vId->second );
                 }
-                GiNaC::ex lhsAfterReplacing = constraint().lhs().subs( symbolMapping );
+//                GiNaC::ex lhsAfterReplacing = constraint().lhs().subs( symbolMapping );
                 ostringstream sstream;
                 sstream << lhsAfterReplacing;
-                constraintStr += sstream.str(); 
+//                cout << constraint().lhs() << " -> " << lhsAfterReplacing << endl;
+                constraintStr += sstream.str();
                 // replace all *
                 size_t pos = constraintStr.find( "*" );
                 while( pos != constraintStr.npos )
@@ -1844,7 +1817,10 @@ namespace smtrat
             }
             case BOOL:
             {
-                result += *mpIdentifier + " = 1";
+                unordered_map<string, string>::const_iterator vId = variableIds.find( *mpIdentifier );
+                cout << "BoolId: " << *mpIdentifier << endl;
+                assert( vId != variableIds.end() );
+                result += vId->second + " = 1";
                 break;
             }
             default:
