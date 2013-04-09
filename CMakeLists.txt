@@ -68,7 +68,7 @@ include( smtratmacros )
 # general compiler and linker settings
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -std=c++0x")
 if(${STATICLIB_SWITCH} STREQUAL "ON")
-  set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static" )
+  set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive" )
 endif()
 
 # path to put in the executables
@@ -97,7 +97,7 @@ include( FindCLN )
 # find gmp (which is necessary for CLN, at least when linking statically)
 include( FindGMP )
 
-set( libraries ${GINACRA_LIBRARY}  ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} pthread )
+set( libraries ${GINACRA_LIBRARY} ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} pthread )
 
 # # # # # # # # # # # # # # # # # # # # # #
 # C.2. required libraries
