@@ -281,6 +281,13 @@ namespace smtrat
     
     struct GBSettings63 : GBSettings61
     {
+        typedef GiNaCRA::GrRevLex                         Order;
+        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
+        typedef GiNaCRA::BaseReductor<Order>             Reductor;
+        typedef smtrat::decidePassingPolynomial			 passPolynomial;
+
+		
         static const unsigned                            identifier                              = 63;
         static const bool								 applyNSS								 = true;
         static const unsigned                            maxSDPdegree                            = 4;
@@ -477,7 +484,7 @@ namespace smtrat
     
     
 	struct decidePassingPolynomial {
-		static bool evaluate (const GBSettings3::Polynomial original, const GBSettings3::Polynomial& reduced) {
+		static bool evaluate (const GiNaCRA::MultivariatePolynomialMR<GiNaCRA::GrRevLex>& original, const GiNaCRA::MultivariatePolynomialMR<GiNaCRA::GrRevLex>& reduced) {
 			return (original.lterm().tdeg() >= reduced.lterm().tdeg() && original.nrOfTerms() > reduced.nrOfTerms() );
 		}
 	};

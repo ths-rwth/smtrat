@@ -72,6 +72,7 @@ class GroebnerModule : public Module
 public:
     typedef typename Settings::Order Order;
     typedef typename Settings::Polynomial Polynomial;
+    typedef typename Settings::MultivariateIdeal Ideal;
 protected:
     /// The current Groebner basis
     GiNaCRA::Buchberger<typename Settings::Order> mBasis;
@@ -104,6 +105,8 @@ public:
     void removeSubformula( Formula::const_iterator _formula );
 
 protected:
+    bool constraintByGB( Constraint_Relation cr );
+    
     void pushBacktrackPoint( Formula::const_iterator btpoint );
     void popBacktrackPoint( Formula::const_iterator btpoint );
     bool saveState( );
@@ -117,6 +120,7 @@ protected:
     
     Polynomial transformIntoEquality( Formula::const_iterator constraint );
 
+    Polynomial callGroebnerToSDP( const Ideal& gb);
     
     bool iterativeVariableRewriting();
     bool findTrivialFactorisations();
@@ -124,6 +128,7 @@ protected:
     void processNewConstraint( Formula::const_iterator _formula );
     void handleConstraintToGBQueue( Formula::const_iterator _formula );
     void handleConstraintNotToGB( Formula::const_iterator _formula );
+    
     
     void removeReceivedFormulaFromNewInequalities( Formula::const_iterator _formula );
     void removeSubformulaFromPassedFormula( Formula::iterator _formula );
