@@ -25,7 +25,7 @@
  * @author Florian Corzilius
  * @author Sebastian Junges
  * @since 2012-02-09
- * @version 2013-03-24
+ * @version 2013-04-01
  */
 
 //#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
@@ -1624,27 +1624,32 @@ namespace smtrat
      * @param seperator
      * @return
      */
-    std::string Formula::variableListToString( std::string seperator ) const
+    std::string Formula::variableListToString( std::string seperator, const unordered_map<string, string>& variableIds ) const
     {
         GiNaC::symtab::const_iterator                   i = mRealValuedVars.begin();
         std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin();
-        string                        result = "";
+        string                                     result = "";
         if( i != mRealValuedVars.end() )
         {
-            result += i->first;
+            unordered_map<string, string>::const_iterator vId = variableIds.find(i->first);
+            result += vId == variableIds.end() ? i->first : vId->second;
             for( ++i; i != mRealValuedVars.end(); ++i )
             {
-                result += seperator + i->first;
+                result += seperator;
+                vId = variableIds.find(i->first);
+                result += vId == variableIds.end() ? i->first : vId->second;
             }
         }
         else if( j != mBooleanVars.end() )
         {
-            result += *j;
-            ++j;
-        }
-        for( ; j != mBooleanVars.end(); ++j )
-        {
-            result += seperator + *j;
+            unordered_map<string, string>::const_iterator vId = variableIds.find(*j);
+            result += vId == variableIds.end() ? *j : vId->second;
+            for( ++j; j != mBooleanVars.end(); ++j )
+            {
+                result += seperator;
+                vId = variableIds.find(*j);
+                result += vId == variableIds.end() ? *j : vId->second;
+            }
         }
         return result;
     }
@@ -1721,9 +1726,11 @@ namespace smtrat
 
     /**
      * Generates a string displaying the formula as a QEPCAD formula.
+     * @param withVariables if true, variables are quantified, otherwise not
+     * @param variableIds maps original variable ids to unique indexed variable ids only consisting of letters and numbers
      * @return
      */
-    std::string Formula::toQepcadFormat( bool withVariables ) const
+    string Formula::toQepcadFormat( bool withVariables, const unordered_map<string, string>& variableIds ) const
     {
         string result = "";
         string oper = Formula::FormulaTypeToString( mType );
@@ -1746,25 +1753,74 @@ namespace smtrat
             }
             case NOT:
             {
-                result += " ~[ " + (*mpSubformulas->begin())->toQepcadFormat( withVariables ) + " ]";
+                result += " ~[ " + (*mpSubformulas->begin())->toQepcadFormat( withVariables, variableIds ) + " ]";
                 break;
             }
             case REALCONSTRAINT:
             {
-                // replace all *
-                string constraintStr = constraint().toString();
-                size_t _pos = constraintStr.find( "*" );
-                while( _pos != constraintStr.npos )
+                string constraintStr = "";
+                // replace all variable ids
+//                GiNaC::exmap symbolMapping;
+                GiNaC::ex lhsAfterReplacing = constraint().lhs();
+                GiNaC::symtab realVars = mpConstraintPool->realVariables();
+                for( unordered_map<string, string>::const_iterator vId = variableIds.begin(); vId != variableIds.end(); ++vId )
                 {
-                    constraintStr.replace( _pos, 1, " " ); // @TODO: dangerous substitution
-                    _pos = constraintStr.find( "*" );
+                    GiNaC::symtab::const_iterator realVar = realVars.find( vId->first );
+                    if( realVar != realVars.end() )
+                    {
+//                        cout << "var: " << realVar->second << endl;
+                        lhsAfterReplacing = lhsAfterReplacing.subs( realVar->second == GiNaC::symbol( vId->second ) );
+                    }
+//                    symbolMapping[ realVar->second ] = GiNaC::symbol( vId->second );
                 }
+//                GiNaC::ex lhsAfterReplacing = constraint().lhs().subs( symbolMapping );
+                ostringstream sstream;
+                sstream << lhsAfterReplacing;
+//                cout << constraint().lhs() << " -> " << lhsAfterReplacing << endl;
+                constraintStr += sstream.str();
+                // replace all *
+                size_t pos = constraintStr.find( "*" );
+                while( pos != constraintStr.npos )
+                {
+                    constraintStr.replace( pos, 1, " " ); // @TODO: dangerous substitution
+                    pos = constraintStr.find( "*", pos );
+                }
+                // print the relation symbol and right-hand side
+                // @TODO: adapt relation symbol
+                switch( constraint().relation() )
+                {
+                    case CR_EQ:
+                        constraintStr += "  = ";
+                        break;
+                    case CR_NEQ:
+                        constraintStr += " != ";
+                        break;
+                    case CR_LESS:
+                        constraintStr += "  < ";
+                        break;
+                    case CR_GREATER:
+                        constraintStr += "  > ";
+                        break;
+                    case CR_LEQ:
+                        constraintStr += " <= ";
+                        break;
+                    case CR_GEQ:
+                        constraintStr += " >= ";
+                        break;
+                    default:
+                        constraintStr += "  ~ ";
+                }
+                constraintStr += "0";
+
                 result += constraintStr;
                 break;
             }
             case BOOL:
             {
-                result += *mpIdentifier + " = 1";
+                unordered_map<string, string>::const_iterator vId = variableIds.find( *mpIdentifier );
+                cout << "BoolId: " << *mpIdentifier << endl;
+                assert( vId != variableIds.end() );
+                result += vId->second + " = 1";
                 break;
             }
             default:
@@ -1773,7 +1829,7 @@ namespace smtrat
                 if( withVariables )
                 { // add the variables
                     result += "(";
-                    result += variableListToString( "," ) + ")\n0\n(E " + variableListToString( ") (E " ) + ") [";
+                    result += variableListToString( ",", variableIds ) + ")\n0\n(E " + variableListToString( ") (E ", variableIds ) + ") [";
                     // Make pseudo Booleans.
                     for( std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin(); j != mBooleanVars.end(); ++j )
                     {
@@ -1784,11 +1840,11 @@ namespace smtrat
                     result += "[";
                 std::list<Formula*>::const_iterator it = mpSubformulas->begin();
                 // do not quantify variables again.
-                result += (*it)->toQepcadFormat( false );
+                result += (*it)->toQepcadFormat( false, variableIds );
                 for( ++it; it != mpSubformulas->end(); ++it )
                 {
                     // do not quantify variables again.
-                    result += " " + oper + " " + (*it)->toQepcadFormat( false );
+                    result += " " + oper + " " + (*it)->toQepcadFormat( false, variableIds );
                 }
                 if( withVariables )
                     result += " ].";

@@ -8,12 +8,13 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2012-10-22                                         #
+# Version: 2013-03-31                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-include_directories( ${GINACRA_INCLUDE_DIR}
-					 ${ReallyNull_INCLUDE_DIR}
-)
+include_directories( ${GINACRA_INCLUDE_DIR} )
+if(ReallyNull_FOUND)
+    include_directories( ${ReallyNull_INCLUDE_DIR} )
+endif()
 
 # Core library
 # # # # # # # # # # #

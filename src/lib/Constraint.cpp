@@ -1141,7 +1141,7 @@ namespace smtrat
         string result = "";
         ostringstream sstream;
         sstream << mLhs;
-        result += sstream.str();
+        result += sstream.str(); 
         switch( relation() )
         {
             case CR_EQ:

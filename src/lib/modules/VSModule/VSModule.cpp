@@ -1855,7 +1855,6 @@ EndSwitch:;
         adaptPassedFormula( *_state, formulaToConditions );
         #endif
         CONSTRAINT_UNLOCK
-
         Answer result = runBackends();
         CONSTRAINT_LOCK_GUARD
         switch( result )

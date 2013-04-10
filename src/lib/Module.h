@@ -112,7 +112,7 @@ namespace smtrat
             Answer mSolverState;
             ///
             std::atomic_bool* mBackendsFoundAnswer;
-            ///
+            /// Vector of Booleans: If any of them is true, we have to terminate a running check procedure.
             Conditionals mFoundAnswer;
             /// The backends of this module which are currently used (conditions to use this module are fulfilled for the passed formula).
             std::vector<Module*> mUsedBackends;

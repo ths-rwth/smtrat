@@ -171,6 +171,25 @@ namespace smtrat
                 assert( iter != mDomain.end() );
                 return iter->second;
             }
+            
+            std::string toString( Variable_Domain _varDom ) const
+            {
+                switch( _varDom )
+                {
+                    case REAL_DOMAIN:
+                    {
+                        return "Real";
+                    }
+                    case INTEGER_DOMAIN:
+                    {
+                        return "Integer";
+                    }
+                    default:
+                    {
+                        return "Undefined";
+                    }
+                }
+            }
 
             void clear(); // Do not use it. It is only made for the Benchmax.
             unsigned maxLenghtOfVarName() const;
@@ -184,6 +203,7 @@ namespace smtrat
             int maxDegree() const;
             unsigned nrNonLinearConstraints() const;
             void print( std::ostream& = std::cout ) const;
+            void printVariables( std::ostream& = std::cout ) const;
     };
 }    // namespace smtrat
 
