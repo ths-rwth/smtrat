@@ -1731,10 +1731,8 @@ CheckLowerPremise:
         Iterator row_iterator = Iterator(mRows.at(row_position).mStartEntry, mpEntries);
         vector<GOMORY_SET> splitting = vector<GOMORY_SET>();
         // Check, whether the conditions of a Gomory Cut are satisfied
-        //cout << "GOMORY" << endl;
         while(!row_iterator.rowEnd())
-        {
-        //cout << "IN" << endl;    
+        {  
             const Variable& nonBasicVar = *mColumns[(*row_iterator).columnNumber()].mName;
             if(nonBasicVar.infimum() == nonBasicVar.assignment() ||
                nonBasicVar.supremum() == nonBasicVar.assignment())
@@ -1756,13 +1754,10 @@ CheckLowerPremise:
             }                                 
             else
             {
-                //cout << "return" << endl;
                 return NULL;
             }                               
             row_iterator.right();
-            //cout << "HI" << endl;
         }
-        //cout << "OUT" << endl;
         // A Gomory Cut can be constructed              
         vector<numeric> coeffs = vector<numeric>();
         numeric coeff;
@@ -1806,7 +1801,6 @@ CheckLowerPremise:
             row_iterator.right();
             ++vec_iter;
         }            
-//        print();
         const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint(sum-1,smtrat::CR_GEQ, smtrat::Formula::constraintPool().realVariables());
         ex *psum = new ex(sum-gomory_constr->constantPart());
         Value* bound = new Value( gomory_constr->constantPart() );
@@ -1851,8 +1845,6 @@ CheckLowerPremise:
         rowHead.mStartEntry = currentStartEntryOfRow;
         rowHead.mSize = coeffs.size();
         rowHead.mName = var; 
-        //printVariables();
-        //cout << *gomory_constr << endl;
         return gomory_constr;     
     }
     #endif

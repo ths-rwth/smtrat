@@ -397,7 +397,6 @@ namespace smtrat
                             unsigned numRows = mTableau.rows().size();
                             for( unsigned pos = 0; pos < numRows; ++pos )
                             { 
-                                //cout << "for" << endl;
                                 ex referring_ex = mTableau.rows().at( pos ).mName->expression();
                                 ex* preferring_ex = new ex(referring_ex);
                                 auto help = mOriginalVars.find(preferring_ex);
@@ -424,8 +423,7 @@ namespace smtrat
                                             addDeduction(deductionA);   
                                         }                                                                
                                     }
-                                } 
-                            //cout << "HERE" << endl;    
+                                }    
                             }                            
                             if(all_int) 
                                 return foundAnswer(True);
