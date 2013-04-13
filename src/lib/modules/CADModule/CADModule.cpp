@@ -58,7 +58,7 @@ using namespace std;
 //#define SMTRAT_CAD_ALTERNATIVE_SETTING
 //#define SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
 //#define SMTRAT_CAD_GENERIC_SETTING
-//#define SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
+#define SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
 //#define SMTRAT_CAD_DISABLE_SMT
 #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
 //#define SMTRAT_CAD_DISABLE_MIS
@@ -72,7 +72,7 @@ namespace smtrat
 {
     CADModule::CADModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
-        mCAD(),
+        mCAD( _conditionals ),
         mConstraints(),
         mConstraintsMap(),
         mRealAlgebraicSolution()
@@ -129,7 +129,7 @@ namespace smtrat
         std::forward_list<Polynomial> polynomials = std::forward_list<Polynomial>( );
         for( fcs_const_iterator i = mpReceivedFormula->constraintPool().begin(); i != mpReceivedFormula->constraintPool().end(); ++i )
             polynomials.push_front( (*i)->lhs() );
-        mCAD = CAD( {}, CAD::orderVariablesGreeedily( variables.begin(), variables.end(), polynomials.begin(), polynomials.end() ), setting );
+        mCAD = CAD( {}, CAD::orderVariablesGreeedily( variables.begin(), variables.end(), polynomials.begin(), polynomials.end() ), _conditionals, setting );
         #ifdef MODULE_VERBOSE
         cout << "Optimizing CAD variable order from ";
         for( forward_list<GiNaC::symbol>::const_iterator k = variables.begin(); k != variables.end(); ++k )
@@ -315,7 +315,7 @@ namespace smtrat
         #endif
         this->addDeductions( deductions );
         #endif
-        return foundAnswer( True );
+        return foundAnswer( anAnswerFound() ? Unknown : True );
     }
 
     void CADModule::removeSubformula( Formula::const_iterator _subformula )

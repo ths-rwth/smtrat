@@ -54,6 +54,7 @@ namespace smtrat
 
     ThreadPool::~ThreadPool()
     {
+//        cout << __func__ << " " << __LINE__ << endl;
         mDone = true;
         while( !mTasks.empty() )
         {
@@ -66,6 +67,7 @@ namespace smtrat
         {
             mThreads.pop_back();
         }
+//        cout << __func__ << " " << __LINE__ << endl;
     }
 
     void ThreadPool::consumeBackend( unsigned _threadId )
@@ -158,9 +160,10 @@ namespace smtrat
                 }
                 mThreads[ threadPriority.first ] = new std::thread( &ThreadPool::consumeBackend, this, threadPriority.first );
             }
-            catch( ... )
+            catch( std::exception &e )
             {
                 mDone = true;
+                printf("Caught %s\n", e.what());
                 throw;
             }
         }

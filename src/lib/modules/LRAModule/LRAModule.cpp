@@ -393,37 +393,37 @@ namespace smtrat
                             #ifdef LRA_GOMORY_CUTS                            
                             exmap rMap_ = getRationalModel();
                             vector<const Constraint*> constr_vec = vector<const Constraint*>();
-                            bool all_int=true;
-                            auto save_last_row = (mTableau.rows()).end();
-                            for(auto vector_iterator = (mTableau.rows()).begin();vector_iterator != save_last_row;++vector_iterator)
+                            bool all_int = true;
+                            unsigned numRows = mTableau.rows().size();
+                            for( unsigned pos = 0; pos < numRows; ++pos )
                             { 
-                                cout << "for" << endl;
-                                ex referring_ex = vector_iterator->mName->expression();
+                                //cout << "for" << endl;
+                                ex referring_ex = mTableau.rows().at( pos ).mName->expression();
                                 ex* preferring_ex = new ex(referring_ex);
                                 auto help = mOriginalVars.find(preferring_ex);
                                 if(help != mOriginalVars.end() && (Formula::domain(*(help->first)) == INTEGER_DOMAIN))
                                 {
-                                auto found_ex = rMap_.find(referring_ex);                                
-                                numeric ass = ex_to<numeric>(found_ex->second);
-                                if(!ass.is_integer())
-                                {
-                                all_int=false;    
-                                const Constraint* gomory_constr = mTableau.gomoryCut(ass,vector_iterator,constr_vec);
-                                if( gomory_constr != NULL )
-                                {
-                                    Formula* deductionA = new Formula(OR);
-                                    auto vec_iter = constr_vec.begin();
-                                    while(vec_iter != constr_vec.end())
+                                    auto found_ex = rMap_.find(referring_ex);                                
+                                    numeric ass = ex_to<numeric>(found_ex->second);
+                                    if(!ass.is_integer())
                                     {
-                                        Formula* notItem = new Formula(NOT);
-                                        notItem->addSubformula(*vec_iter);
-                                        deductionA->addSubformula(notItem);
-                                        ++vec_iter;
+                                        all_int=false;    
+                                        const Constraint* gomory_constr = mTableau.gomoryCut(ass, pos, constr_vec);
+                                        if( gomory_constr != NULL )
+                                        {
+                                            Formula* deductionA = new Formula(OR);
+                                            auto vec_iter = constr_vec.begin();
+                                            while(vec_iter != constr_vec.end())
+                                            {
+                                                Formula* notItem = new Formula(NOT);
+                                                notItem->addSubformula(*vec_iter);
+                                                deductionA->addSubformula(notItem);
+                                                ++vec_iter;
+                                            }
+                                            deductionA->addSubformula(gomory_constr);
+                                            addDeduction(deductionA);   
+                                        }                                                                
                                     }
-                                    deductionA->addSubformula(gomory_constr);
-                                    addDeduction(deductionA);                                     
-                                }                                                                
-                                }
                                 } 
                             //cout << "HERE" << endl;    
                             }                            

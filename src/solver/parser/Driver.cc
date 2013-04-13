@@ -220,7 +220,7 @@ namespace smtrat
         string booleanName = "";
         if( _isBindingVariable )
         {
-            booleanName = mFormulaRoot->mpConstraintPool->newAuxiliaryBooleanVariable();
+            booleanName = Formula::newAuxiliaryBooleanVariable();
         }
         else
         {
