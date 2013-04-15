@@ -15,7 +15,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SMT-RAT.  If not, see <http://www.gnrg/licenses/>.
  *
  */
 /*
@@ -36,9 +36,9 @@
 //#define LRA_BRANCH_AND_BOUND
 
 using namespace std;
-using namespace tlra;
+using namespace smtrat::tlra;
 using namespace GiNaC;
-using namespace GiNaCRA;ś
+using namespace GiNaCRA;
 
 namespace smtrat
 {
@@ -343,8 +343,10 @@ namespace smtrat
         for( ; ; )
         {
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
-            if( answerFound() )
+            if( anAnswerFound() )
             {
+                learnRefinements();
+                CONSTRAINT_UNLOCK
                 return foundAnswer( Unknown );
             }
             #ifdef DEBUG_TLRA_MODULE
@@ -356,7 +358,7 @@ namespace smtrat
             #endif
 
             // Find a pivoting element in the tableau.
-            pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
+            class pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
 
             #ifdef DEBUG_TLRA_MODULE
             cout << "    Next pivoting element: ";
@@ -653,7 +655,7 @@ namespace smtrat
             for( auto var = mOriginalVars.begin(); var != mOriginalVars.end(); ++var )
             {
                 const Value<Numeric>& value = var->second->assignment();
-                result.insert( pair< ex, ex >( *var->first, ex( (value.mainPart() + value.deltaPart() * curDelta).ginacNumeric() ) ) );
+                result.insert( pair< ex, ex >( *var->first, ex( (value.mainPart() + value.deltaPart() * curDelta).toGinacNumeric() ) ) );
             }
         }
         return result;
@@ -682,7 +684,7 @@ namespace smtrat
             else
             {
                 lowerBoundType = var.infimum().isWeak() ? Interval::WEAK_BOUND : Interval::STRICT_BOUND;
-                lowerBoundValue = var.infimum().limit().mainPart().ginacNumeric();
+                lowerBoundValue = var.infimum().limit().mainPart().toGinacNumeric();
             }
             if( var.supremum().isInfinite() )
             {
@@ -692,7 +694,7 @@ namespace smtrat
             else
             {
                 upperBoundType = var.supremum().isWeak() ? Interval::WEAK_BOUND : Interval::STRICT_BOUND;
-                upperBoundValue = var.supremum().limit().mainPart().ginacNumeric();
+                upperBoundValue = var.supremum().limit().mainPart().toGinacNumeric();
             }
             Interval interval = Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
             result.insert( pair< symbol, Interval >( ex_to< symbol >( *iter->first ), interval ) );
@@ -749,26 +751,6 @@ namespace smtrat
     #endif
 
     /**
-     * Checks whether an iterator is in a formula. Only used in an assertion.
-     *
-     * @param _iter The iterator supposed to be in the formula.
-     * @param _formula The formula, in which the iterator is supposed to be.
-     *
-     * @return True, if the given iterator is in the given formula; False, otherwise.
-     */
-    bool iterInFormula( Formula::const_iterator _iter, const Formula& _formula )
-    {
-        if( _formula.isBooleanCombination() )
-        {
-            for( Formula::const_iterator iter = _formula.begin(); iter != _formula.end(); ++iter )
-            {
-                if( iter == _iter ) return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * Adapt the passed formula, such that it consists of the finite infimums and supremums
      * of all variables and the non linear constraints.
      */
@@ -785,7 +767,6 @@ namespace smtrat
             }
             else if( bound.pInfo()->updated < 0 )
             {
-                assert( iterInFormula( bound.pInfo()->position, *mpPassedFormula ) );
                 removeSubformulaFromPassedFormula( bound.pInfo()->position );
                 bound.pInfo()->position = mpPassedFormula->end();
                 bound.pInfo()->updated = 0;
@@ -833,7 +814,7 @@ namespace smtrat
      *
      * @param _unequalConstraint A constraint having the relation symbol !=.
      */
-    void LRAModule::splitUnequalConstraint( const Constraint* _unequalConstraint )
+    void TLRAModule::splitUnequalConstraint( const Constraint* _unequalConstraint )
     {
         assert( _unequalConstraint->relation() == CR_NEQ );
         const Constraint* lessConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_LESS, _unequalConstraint->variables() );
@@ -879,7 +860,7 @@ namespace smtrat
     bool TLRAModule::activateBound( const Bound<Numeric>* _bound, set<const Formula*>& _formulas )
     {
         bool result = true;
-        bound->pOrigins()->push_back( _formulas );
+        _bound->pOrigins()->push_back( _formulas );
         if( _bound->pInfo()->position != mpPassedFormula->end() )
         {
             addOrigin( *_bound->pInfo()->position, _formulas );
@@ -1351,7 +1332,7 @@ namespace smtrat
      * @param _out The output stream to print on.
      * @param _init The beginning of each line to print.
      */
-    void LRAModule::printLinearConstraints( ostream& _out, const string _init ) const
+    void TLRAModule::printLinearConstraints( ostream& _out, const string _init ) const
     {
         _out << _init << "Linear constraints:" << endl;
         for( auto iter = mLinearConstraints.begin(); iter != mLinearConstraints.end(); ++iter )
@@ -1366,7 +1347,7 @@ namespace smtrat
      * @param _out The output stream to print on.
      * @param _init The beginning of each line to print.
      */
-    void LRAModule::printNonlinearConstraints( ostream& _out, const string _init ) const
+    void TLRAModule::printNonlinearConstraints( ostream& _out, const string _init ) const
     {
         _out << _init << "Nonlinear constraints:" << endl;
         for( auto iter = mNonlinearConstraints.begin(); iter != mNonlinearConstraints.end(); ++iter )
@@ -1382,7 +1363,7 @@ namespace smtrat
      * @param _out The output stream to print on.
      * @param _init The beginning of each line to print.
      */
-    void LRAModule::printOriginalVars( ostream& _out, const string _init ) const
+    void TLRAModule::printOriginalVars( ostream& _out, const string _init ) const
     {
         _out << _init << "Original variables:" << endl;
         for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
@@ -1403,7 +1384,7 @@ namespace smtrat
      * @param _out The output stream to print on.
      * @param _init The beginning of each line to print.
      */
-    void LRAModule::printSlackVars( ostream& _out, const string _init ) const
+    void TLRAModule::printSlackVars( ostream& _out, const string _init ) const
     {
         _out << _init << "Slack variables:" << endl;
         for( auto iter = mSlackVars.begin(); iter != mSlackVars.end(); ++iter )
@@ -1422,7 +1403,7 @@ namespace smtrat
      * @param _out The output stream to print on.
      * @param _init The beginning of each line to print.
      */
-    void LRAModule::printConstraintToBound( ostream& _out, const string _init ) const
+    void TLRAModule::printConstraintToBound( ostream& _out, const string _init ) const
     {
         _out << _init << "Mapping of constraints to bounds:" << endl;
         for( auto iter = mConstraintToBound.begin(); iter != mConstraintToBound.end(); ++iter )
@@ -1443,7 +1424,7 @@ namespace smtrat
      * @param _out The output stream to print on.
      * @param _init The beginning of each line to print.
      */
-    void LRAModule::printBoundCandidatesToPass( ostream& _out, const string _init ) const
+    void TLRAModule::printBoundCandidatesToPass( ostream& _out, const string _init ) const
     {
         _out << _init << "Bound candidates to pass:" << endl;
         for( auto iter = mBoundCandidatesToPass.begin(); iter != mBoundCandidatesToPass.end(); ++iter )
@@ -1460,7 +1441,7 @@ namespace smtrat
      * @param _out The output stream to print on.
      * @param _init The beginning of each line to print.
      */
-    void LRAModule::printRationalModel( ostream& _out, const string _init ) const
+    void TLRAModule::printRationalModel( ostream& _out, const string _init ) const
     {
         exmap rmodel = getRationalModel();
         _out << _init << "Rational model:" << endl;

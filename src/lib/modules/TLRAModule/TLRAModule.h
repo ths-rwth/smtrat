@@ -32,10 +32,10 @@
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
 #include "Numeric.h"
-#include "../LRAModule/Value.hpp"
-#include "../LRAModule/Variable.hpp"
-#include "../LRAModule/Bound.hpp"
-#include "../LRAModule/Tableau.hpp"
+#include "Value.hpp"
+#include "Variable.hpp"
+#include "Bound.hpp"
+#include "Tableau.hpp"
 #include <stdio.h>
 
 
@@ -59,10 +59,10 @@ namespace smtrat
                 const smtrat::Formula* origin;
                 smtrat::Formula::iterator position;
             };
-            typedef std::map<const GiNaC::ex*, tlra::Variable<tlra::Numeric>*, exPointerComp>               ExVariableMap;
-            typedef std::vector< std::vector< const tlra::Bound<tlra::Numeric>* >*, constraintPointerComp >            ConstraintBoundsMap;
+            typedef std::map< const GiNaC::ex*, tlra::Variable<tlra::Numeric>*, exPointerComp>              ExVariableMap;
+            typedef std::map< const Constraint*, std::vector< const tlra::Bound<tlra::Numeric>* >*, constraintPointerComp > ConstraintBoundsMap;
             typedef std::map< const Constraint*, Context, constraintPointerComp >                           ConstraintContextMap;
-            typedef std::map< const lra::Bound*, const Constraint* >                                        BoundConstraintMap;
+            typedef std::map< const tlra::Bound<tlra::Numeric>*, const Constraint* >                                        BoundConstraintMap;
 
         private:
 
@@ -128,7 +128,7 @@ namespace smtrat
                 return mSlackVars;
             }
 
-            const lra::Variable<tlra::Numeric>* const getSlackVariable( const Constraint* const _constraint ) const
+            const tlra::Variable<tlra::Numeric>* const getSlackVariable( const Constraint* const _constraint ) const
             {
                 ConstraintBoundsMap::const_iterator iter = mConstraintToBound.find( _constraint );
                 assert( iter != mConstraintToBound.end() );
