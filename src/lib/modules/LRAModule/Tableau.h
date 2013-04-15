@@ -41,7 +41,7 @@
 #ifdef LRA_REFINEMENT
 //#define LRA_INTRODUCE_NEW_CONSTRAINTS
 #endif
-//#define LRA_GOMORY_CUTS
+#define LRA_GOMORY_CUTS
 
 namespace lra
 {
