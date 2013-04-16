@@ -359,9 +359,13 @@ namespace smtrat
                            {
                                mIntervals[ex_to<symbol>((*varIt).second)] = tmp[ex_to<symbol>((*varIt).second)];
                            }
-                           else
+                           else if ( tmp.find(ex_to<symbol>((*varIt).second)) == tmp.end() )
                            {
                                //This should not happen
+                               cout << ex_to<symbol>((*varIt).second) << "not in Intervals: " << (mIntervals.find(ex_to<symbol>((*varIt).second)) == mIntervals.end()) << ", in tmp: " << (tmp.find(ex_to<symbol>((*varIt).second)) != tmp.end()) << endl;
+                               
+                               printIntervals();
+                               
                                assert(false);
                            }
                            mVariables[ex_to<symbol>((*varIt).second)] = icp::IcpVariable(ex_to<symbol>((*varIt).second), true, newCandidate, mIntervals.find(ex_to<symbol>((*varIt).second)));

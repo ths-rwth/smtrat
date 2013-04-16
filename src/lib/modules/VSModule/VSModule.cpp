@@ -290,6 +290,10 @@ namespace smtrat
                 CONSTRAINT_UNLOCK
                 return foundAnswer( Unknown );
             }
+//            else
+//            {
+//                cout << "VSModule iteration" << endl;
+//            }
             #ifdef VS_STATISTICS
             ++mStepCounter;
             #endif

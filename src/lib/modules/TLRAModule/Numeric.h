@@ -20,62 +20,97 @@
  */
 /**
  * @file Numeric.h
- * @author Florian Corzilius
+ * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  *
- * @version 2012-04-05
- * Created on November 14th, 2012
+ * @version 2013-04-15
+ * Created on April 15th, 2013
  */
 
 #ifndef NUMERIC_H
 #define	NUMERIC_H
 
 #include <ginac/ginac.h>
-#include <sstream>
+#include <ginac/flags.h>
+#include <iostream>
+#include <assert.h>
 
-namespace tlra
+namespace smtrat
 {
-    class Numeric
+    namespace tlra
     {
+        class Numeric
+        {
         private:
-            /*
-             * Members:
-             */
-            GiNaC::numeric* mpContent;
+            // Members:
+            GiNaC::numeric* mContent;
 
         public:
-            /*
-             * Constructors and destructor:
-             */
-            Numeric( const int );
+            // Constructors/Destructor:
+            Numeric();
             Numeric( const GiNaC::numeric& );
+            Numeric( int );
+            Numeric( unsigned int );
+            Numeric( long );
+            Numeric( unsigned long );
+            Numeric( double );
+            Numeric( const char* );
+            Numeric( const cln::cl_N& );
+            Numeric( const Numeric& );
+            ~Numeric();
 
-            bool isNegative() const;
+            // Methods:
+            const GiNaC::numeric& content() const
+            {
+                return *mContent;
+            }
+
+            GiNaC::numeric& rContent()
+            {
+                return *mContent;
+            }
+
+            Numeric& operator=( int );
+            Numeric& operator=( unsigned int );
+            Numeric& operator=( long );
+            Numeric& operator=( unsigned long );
+            Numeric& operator=( double );
+            Numeric& operator=( const char* );
+
+            bool operator==( const Numeric& ) const;
+            bool operator!=( const Numeric& ) const;
+            bool operator<( const Numeric& ) const;
+            bool operator<=( const Numeric& ) const;
+            bool operator>( const Numeric& ) const;
+            bool operator>=( const Numeric& ) const;
+
+            int toInt() const;
+            long toLong() const;
+            double toDouble() const;
+            cln::cl_N toCLN() const;
+            GiNaC::numeric toGinacNumeric() const;
+            Numeric numer() const;
+            Numeric denom() const;
+
             bool isPositive() const;
+            bool isNegative() const;
             bool isZero() const;
-            GiNaC::numeric ginacNumeric() const;
+        };
 
-            /*
-             * Operators:
-             */
-            Numeric operator +( const Numeric& ) const;
-            void operator +=( const Numeric& );
-            friend Numeric operator -( const Numeric& );
-            Numeric operator -( const Numeric& ) const;
-            void operator -=( const Numeric& );
-            Numeric operator *( const Numeric& ) const;
-            void operator *=( const Numeric& );
-            Numeric operator /( const Numeric& ) const;
-            void operator /=( const Numeric& );
-            bool operator <( const Numeric& ) const;
-            bool operator >( const Numeric& ) const;
-            bool operator <=( const Numeric& ) const;
-            bool operator >=( const Numeric& ) const;
-            bool operator !=( const Numeric& ) const;
-            bool operator ==( const Numeric& ) const;
-            friend std::ostream& operator <<( std::ostream&, const Numeric& );
-    };
-}    // end namspace tlra
-
+        Numeric abs( const Numeric& );
+        Numeric operator+( const Numeric&, const Numeric& );
+        Numeric operator-( const Numeric&, const Numeric& );
+        Numeric operator*( const Numeric&, const Numeric& );
+        Numeric operator/( const Numeric&, const Numeric& );
+        Numeric& operator+=( Numeric&, const Numeric& );
+        Numeric& operator-=( Numeric&, const Numeric& );
+        Numeric& operator*=( Numeric&, const Numeric& );
+        Numeric& operator/=( Numeric&, const Numeric& );
+        Numeric operator-( const Numeric& );
+        Numeric& operator++( Numeric& );
+        Numeric& operator--( Numeric& );
+        std::ostream& operator <<( std::ostream&, const Numeric& );
+    } // namespace tlra
+} // namespace smtrat
 
 #endif	/* NUMERIC_H */
 

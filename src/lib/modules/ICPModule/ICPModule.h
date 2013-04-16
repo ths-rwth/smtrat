@@ -317,6 +317,8 @@ namespace smtrat
                     {
                         if( (*subformula)->getType() == REALCONSTRAINT )
                         {
+                            cout << "TO FIND:";
+                            (*subformula)->print();
                             auto iter = mReplacements.find( (*subformula)->pConstraint() );
                             assert( iter != mReplacements.end() );
                             Formula* constraintFormula = new Formula( iter->second ); 

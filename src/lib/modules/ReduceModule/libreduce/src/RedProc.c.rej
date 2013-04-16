@@ -1,0 +1,7 @@
+*** src/RedProc.c	2009-11-24 21:27:23.000000000 +0100
+--- src/RedProc_patched.c	2009-11-24 21:27:34.000000000 +0100
+***************
+*** 235
+-   if (wait4(process->processId,status,WNOHANG,NULL) == process->processId) {
+--- 235 -----
++   if (wait4(process->processId,&status,WNOHANG,NULL) == process->processId) {

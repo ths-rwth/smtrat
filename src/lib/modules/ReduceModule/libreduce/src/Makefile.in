@@ -1,0 +1,99 @@
+# ----------------------------------------------------------------------
+# $Id: Makefile.in 1788 2012-10-25 13:58:08Z thomas-sturm $
+# ----------------------------------------------------------------------
+# Copyright (c) 2008-2009 Thomas Sturm
+# ----------------------------------------------------------------------
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#    * Redistributions of source code must retain the relevant
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+#    * Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials provided
+#      with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+CC = @CC@ -Wall
+
+LIBS = @LIBS@
+
+FAT = @FAT@
+
+CFLAGS = $(FAT) @DEFS@ -I. @PYTHON_CPPFLAGS@ -fPIC -g
+
+LDFLAGS = @LDFLAGS@
+
+OBJ = RedProc.o RedAns.o RedMsg.o StrBuf.o
+
+srcdir = @srcdir@
+
+REDUCE = \"$(realpath ../../../bin/redcsl)\"
+
+all: libreduce.a libreduce.so RedPy.so lrtest bench_reduce bench_redlog
+
+libreduce.a: $(OBJ)
+	rm -f libreduce.a
+	ar rcs libreduce.a $(OBJ)
+
+libreduce.so: $(OBJ)
+	rm -f libreduce.so
+	gcc $(FAT) -shared $(OBJ) -o libreduce.so
+
+RedPy.so: $(OBJ) RedPy.o
+	gcc $(FAT) -shared $(OBJ) RedPy.o @PYTHON_LDFLAGS@ -o RedPy.so
+
+RedProc.o: $(srcdir)/RedProc.c $(srcdir)/reduce.h config.h
+	$(CC) -c $(CFLAGS) -o RedProc.o $(srcdir)/RedProc.c
+RedAns.o: $(srcdir)/RedAns.c $(srcdir)/reduce.h config.h
+	$(CC) -c $(CFLAGS) -o RedAns.o $(srcdir)/RedAns.c
+RedMsg.o: $(srcdir)/RedMsg.c $(srcdir)/reduce.h config.h
+	$(CC) -c $(CFLAGS) -o RedMsg.o $(srcdir)/RedMsg.c
+StrBuf.o: $(srcdir)/StrBuf.c
+	$(CC) -c $(CFLAGS) -o StrBuf.o $(srcdir)/StrBuf.c
+RedPy.o: $(srcdir)/RedPy.c
+	$(CC) -c $(CFLAGS) -I/usr/include/Python2.5 -o RedPy.o $(srcdir)/RedPy.c
+
+lrtest: $(srcdir)/examples/lrtest.c libreduce.a $(srcdir)/reduce.h
+	mkdir -p examples
+	$(CC) $(FAT) -o examples/lrtest -I$(srcdir) -DREDUCE=$(REDUCE) $(srcdir)/examples/lrtest.c -L. -lreduce
+
+bench_reduce: $(srcdir)/examples/bench_reduce.c libreduce.a $(srcdir)/reduce.h
+	mkdir -p examples
+	$(CC) -o examples/bench_reduce -I$(srcdir) -DREDUCE=$(REDUCE) $(srcdir)/examples/bench_reduce.c -L. -lreduce
+
+bench_redlog: $(srcdir)/examples/bench_redlog.c libreduce.a $(srcdir)/reduce.h
+	mkdir -p examples
+	$(CC) -o examples/bench_redlog -I$(srcdir) -DREDUCE=$(REDUCE) $(srcdir)/examples/bench_redlog.c -L. -lreduce
+
+clean:
+	/bin/rm -f $(OBJ)
+
+logclean:
+	find .. -name "libreduce-*.rlg" -exec rm {} \; -print
+	find .. -name "libreduce.log" -exec rm {} \; -print
+
+veryclean: clean logclean
+	/bin/rm -f libreduce.a
+	cd examples; /bin/rm -f lrtest bench_reduce bench_redlog
+
+confclean: veryclean
+	/bin/rm -f config.log config.h Makefile config.status
+	/bin/rm -rf $(srcdir)/autom4te.cache
+
+distclean: confclean
+	/bin/rm -f $(srcdir)/configure $(srcdir)/config.h.in

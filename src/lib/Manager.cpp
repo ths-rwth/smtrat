@@ -78,6 +78,7 @@ namespace smtrat
      */
     Manager::~Manager()
     {
+//        cout << __func__ << " " << __LINE__ << endl;
         Module::storeAssumptionsToCheck( *this );
         while( !mGeneratedModules.empty() )
         {
@@ -98,6 +99,7 @@ namespace smtrat
             delete mpThreadPool;
         }
         #endif
+//        cout << __func__ << " " << __LINE__ << endl;
     }
 
     /**
@@ -110,7 +112,6 @@ namespace smtrat
      */
     void Manager::initialize()
     {
-        cout << "bla" << endl;
         mNumberOfBranches = mStrategyGraph.numberOfBranches();
         if( mNumberOfBranches>1 )
         {
