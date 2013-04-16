@@ -27,6 +27,7 @@
  */
 
 #include "ReduceModule.h"
+#include "config.h"
 
 namespace smtrat
 {
@@ -110,7 +111,21 @@ namespace smtrat
      */
     Answer ReduceModule::isConsistent()
     {
-        // Your code.
+        RedProc process;
+        RedAns output;
+
+        process = RedProc_new( REDUCE );
+        output = RedAns_new( process, "load_package redlog;" );
+        RedAns_delete( output );
+        output = RedAns_new( process, "rlset reals;" );
+        RedAns_delete(output);
+        output = RedAns_new( process, "off rlverbose;" );
+        RedAns_delete(output);
+        output = RedAns_new( process, std::string( "rlqe( " + mpReceivedFormula->toRedlogFormat( true ) + ");" ).c_str() );
+        if (output->error)
+          RedProc_error( process,"Formula could not be solved", output );
+//        printf("Output: %s\n",output->result);
+        RedProc_delete( process );
         return Unknown; // This should be adapted according to your implementation.
     }
 }

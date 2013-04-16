@@ -29,6 +29,7 @@
 #pragma once
 
 #include "../../Module.h"
+#include "libreduce/src/reduce.h"
 
 namespace smtrat
 {
