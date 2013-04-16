@@ -18,12 +18,12 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-/*
+/**
  * File:   ReduceModule.cpp
  * @author YOUR NAME <YOUR EMAIL ADDRESS>
  *
- * @version DATE
- * Created on DATE.
+ * @version 16.04.2013
+ * Created on 16.04.2013.
  */
 
 #include "ReduceModule.h"

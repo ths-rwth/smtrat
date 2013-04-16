@@ -22,8 +22,8 @@
  * @file ReduceModule.h
  * @author YOUR NAME <YOUR EMAIL ADDRESS>
  *
- * @version DATE
- * Created on DATE.
+ * @version 16.04.2013
+ * Created on 16.04.2013.
  */
 
 #pragma once
