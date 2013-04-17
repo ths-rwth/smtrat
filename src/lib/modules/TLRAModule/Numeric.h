@@ -42,7 +42,7 @@ namespace smtrat
         {
         private:
             // Members:
-            GiNaC::numeric* mContent;
+            std::shared_ptr<GiNaC::numeric> mContent;
 
         public:
             // Constructors/Destructor:

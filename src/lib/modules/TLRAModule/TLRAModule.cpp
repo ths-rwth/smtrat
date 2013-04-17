@@ -105,7 +105,7 @@ namespace smtrat
         cout << "inform about " << *_constraint << endl;
         #endif
         Module::inform( _constraint );
-        if( !_constraint->variables().empty() && _constraint->isLinear() && _constraint->relation() != CR_NEQ )
+        if( !_constraint->variables().empty() && _constraint->isLinear() )
         {
             bool elementInserted = mLinearConstraints.insert( _constraint ).second;
             if( elementInserted && mInitialized )
@@ -334,7 +334,10 @@ namespace smtrat
         #ifdef DEBUG_TLRA_MODULE
         cout << "check for consistency" << endl;
         #endif
-        if( !mpReceivedFormula->isConstraintConjunction() ) return foundAnswer( Unknown );
+        if( !mpReceivedFormula->isConstraintConjunction() )
+        {
+            return foundAnswer( Unknown );
+        }
         if( !mInfeasibleSubsets.empty() )
         {
             return foundAnswer( False );
@@ -342,6 +345,7 @@ namespace smtrat
         unsigned posNewLearnedBound = 0;
         for( ; ; )
         {
+            CONSTRAINT_LOCK
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
             if( anAnswerFound() )
             {
@@ -385,7 +389,72 @@ namespace smtrat
                             #ifdef TLRA_REFINEMENT
                             learnRefinements();
                             #endif
-                            return foundAnswer( True );
+
+                            #ifdef TLRA_GOMORY_CUTS                            
+                            exmap rMap_ = getRationalModel();
+                            vector<const Constraint*> constr_vec = vector<const Constraint*>();
+                            bool all_int = true;
+                            unsigned numRows = mTableau.rows().size();
+                            for( unsigned pos = 0; pos < numRows; ++pos )
+                            { 
+                                ex referring_ex = mTableau.rows().at( pos ).mName->expression();
+                                ex* preferring_ex = new ex(referring_ex);
+                                auto help = mOriginalVars.find(preferring_ex);
+                                if(help != mOriginalVars.end() && (Formula::domain(*(help->first)) == INTEGER_DOMAIN))
+                                {
+                                    auto found_ex = rMap_.find(referring_ex);                                
+                                    numeric ass = ex_to<numeric>(found_ex->second);
+                                    if(!ass.is_integer())
+                                    {
+                                        all_int=false;    
+                                        const Constraint* gomory_constr = mTableau.gomoryCut(ass, pos, constr_vec);
+                                        if( gomory_constr != NULL )
+                                        {
+                                            Formula* deductionA = new Formula(OR);
+                                            auto vec_iter = constr_vec.begin();
+                                            while(vec_iter != constr_vec.end())
+                                            {
+                                                Formula* notItem = new Formula(NOT);
+                                                notItem->addSubformula(*vec_iter);
+                                                deductionA->addSubformula(notItem);
+                                                ++vec_iter;
+                                            }
+                                            deductionA->addSubformula(gomory_constr);
+                                            addDeduction(deductionA);   
+                                        }                                                                
+                                    }
+                                }    
+                            }                            
+                            if(all_int) 
+                                return foundAnswer(True);
+                            return foundAnswer(Unknown);
+                            #endif
+                            #ifdef TLRA_BRANCH_AND_BOUND
+                            exmap _rMap = getRationalModel();
+                            exmap::const_iterator map_iterator = _rMap.begin();
+                            for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
+                            {
+                            numeric ass = ex_to<numeric>(map_iterator->second);     
+                                if((Formula::domain(*(var->first)) == INTEGER_DOMAIN) && !ass.is_integer())
+                                {   
+                                   Formula* deductionA = new Formula(OR);
+                                   stringstream sstream;
+                                   sstream << *(var->first);
+                                   symtab *setOfVar = new symtab();
+                                   setOfVar->insert(pair< std::string, ex >(sstream.str(),*(var->first)));
+                                   ass = numeric(cln::floor1(cln::the<cln::cl_RA>(ass.to_cl_N())));
+                                   const Constraint* lessEqualConstraint = Formula::newConstraint(*(var->first) - ass,CR_LEQ,*setOfVar);
+                                   const Constraint* biggerEqualConstraint= Formula::newConstraint(*(var->first) - ass - 1,CR_GEQ,*setOfVar);
+                                   deductionA->addSubformula(lessEqualConstraint);
+                                   deductionA->addSubformula(biggerEqualConstraint);
+                                   addDeduction(deductionA);
+                                   return foundAnswer(Unknown);
+                                }
+                            ++map_iterator;
+                            }
+                            #endif
+                            CONSTRAINT_UNLOCK
+                            return foundAnswer(True);
                         }
                         // Otherwise, resolve the notequal-constraints (create the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
                         else
@@ -401,6 +470,7 @@ namespace smtrat
                             #ifdef TLRA_REFINEMENT
                             learnRefinements();
                             #endif
+                            CONSTRAINT_UNLOCK
                             return foundAnswer( Unknown );
                         }
                     }
@@ -416,13 +486,16 @@ namespace smtrat
                             }
                         }
                         adaptPassedFormula();
+                        CONSTRAINT_UNLOCK
                         Answer a = runBackends();
                         if( a == False )
                         {
                             getInfeasibleSubsets();
                         }
                         #ifdef TLRA_REFINEMENT
+                        CONSTRAINT_LOCK
                         learnRefinements();
+                        CONSTRAINT_UNLOCK
                         #endif
                         return foundAnswer( a );
                     }
@@ -436,7 +509,7 @@ namespace smtrat
                     {
                         set< const Formula*> originSet = set< const Formula*>();
                         Tableau<Numeric>::LearnedBound& learnedBound = mTableau.rLearnedBounds()[posNewLearnedBound];
-                        vector<const Bound<Numeric>*>& bounds = *mTableau.rLearnedBounds()[posNewLearnedBound].premise;
+                        vector<const Bound<Numeric>*>& bounds = *learnedBound.premise;
                         for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
                         {
                             assert( !(*bound)->origins().empty() );
@@ -475,6 +548,7 @@ namespace smtrat
                         #ifdef TLRA_REFINEMENT
                         learnRefinements();
                         #endif
+                        CONSTRAINT_UNLOCK
                         return foundAnswer( False );
                     }
                 }
@@ -513,8 +587,10 @@ namespace smtrat
                 #ifdef DEBUG_TLRA_MODULE
                 cout << "False" << endl;
                 #endif
+                CONSTRAINT_UNLOCK
                 return foundAnswer( False );
             }
+            CONSTRAINT_UNLOCK
         }
         assert( false );
         #ifdef TLRA_REFINEMENT
@@ -787,6 +863,7 @@ namespace smtrat
         {
             mAssignmentFullfilsNonlinearConstraints = true;
             return true;
+            
         }
         else
         {
@@ -819,6 +896,7 @@ namespace smtrat
         assert( _unequalConstraint->relation() == CR_NEQ );
         const Constraint* lessConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_LESS, _unequalConstraint->variables() );
         const Constraint* greaterConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_GREATER, _unequalConstraint->variables() );
+        // (not p!=0 or p<0 or p>0)
         Formula* deductionA = new Formula( OR );
         Formula* notConstraint = new Formula( NOT );
         notConstraint->addSubformula( _unequalConstraint );
@@ -826,18 +904,21 @@ namespace smtrat
         deductionA->addSubformula( lessConstraint );
         deductionA->addSubformula( greaterConstraint );
         addDeduction( deductionA );
+        // (not p<0 or p!=0)
         Formula* deductionB = new Formula( OR );
         Formula* notLessConstraint = new Formula( NOT );
         notLessConstraint->addSubformula( lessConstraint );
         deductionB->addSubformula( notLessConstraint );
         deductionB->addSubformula( _unequalConstraint );
         addDeduction( deductionB );
+        // (not p>0 or p!=0)
         Formula* deductionC = new Formula( OR );
         Formula* notGreaterConstraint = new Formula( NOT );
         notGreaterConstraint->addSubformula( greaterConstraint );
         deductionC->addSubformula( notGreaterConstraint );
         deductionC->addSubformula( _unequalConstraint );
         addDeduction( deductionC );
+        // (not p>0 or not p>0)
         Formula* deductionD = new Formula( OR );
         Formula* notGreaterConstraintB = new Formula( NOT );
         notGreaterConstraintB->addSubformula( greaterConstraint );
@@ -1104,7 +1185,7 @@ namespace smtrat
                 }
                 #endif
             }
-            else if( _constraint->relation() == CR_GREATER )
+            else if( _constraint->relation() == CR_GREATER || _constraint->relation() == CR_NEQ )
             {
                 const Constraint* constraint;
                 if( _constraint->relation() != CR_NEQ )
@@ -1306,24 +1387,6 @@ namespace smtrat
             #endif
         }
     }
-
-    #ifdef LRA_BRANCH_AND_BOUND
-    /**
-     * Checks Integer-Consistency via
-     * Branch and Bound.
-     */
-    Answer LRAModule::isIntegerConsistent()
-    {
-        Answer RealConsistency = isConsistent();
-        if (RealConsistency == Unknown ) return foundAnswer( Unknown );
-        else if (RealConsistency == False ) return foundAnswer( False );
-        else return foundAnswer( Unknown );
-    }
-    /* To-Do: Check, whether the solution is already integer-valued.
-     * Yes: return true.
-     * No: Fix the non-integer values recursively.
-     */
-    #endif
 
 
     /**
