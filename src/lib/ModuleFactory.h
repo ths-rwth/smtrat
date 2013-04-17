@@ -54,7 +54,7 @@ namespace smtrat
             ModuleFactory():
                 mModuleType( MT_NoModule )
             {}
-            ~ModuleFactory(){}
+            virtual ~ModuleFactory(){}
 
             virtual Module* create( ModuleType, const Formula* const, Conditionals&, Manager* const ) = 0;
 

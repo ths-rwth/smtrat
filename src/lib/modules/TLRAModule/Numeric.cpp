@@ -26,6 +26,8 @@
  * Created on April 15th, 2013
  */
 
+#include <ginacra/settings.h>
+
 #include "Numeric.h"
 
 using namespace smtrat;
@@ -40,7 +42,7 @@ namespace smtrat
          * Default constructor.
          */
         Numeric::Numeric():
-            mContent( new numeric( 0 ) )
+            mContent( NULL )
         {}
 
         /**
@@ -48,7 +50,7 @@ namespace smtrat
          * @param The GiNaC::numeric.
          */
         Numeric::Numeric( const numeric& _value ):
-            mContent( new numeric( _value ) )
+            mContent( GiNaCRA::make_shared<numeric>( _value ) )
         {}
 
         /**
@@ -56,7 +58,7 @@ namespace smtrat
          * @param _value The integer.
          */
         Numeric::Numeric( int _value ):
-            mContent( new numeric( _value ) )
+            mContent( GiNaCRA::make_shared<numeric>( _value ) )
         {}
 
         /**
@@ -64,7 +66,7 @@ namespace smtrat
          * @param _value The unsigned integer
          */
         Numeric::Numeric( unsigned int _value ):
-            mContent( new numeric( _value ) )
+            mContent( GiNaCRA::make_shared<numeric>( _value ) )
         {}
 
         /**
@@ -72,7 +74,7 @@ namespace smtrat
          * @param _value The unsigned long integer.
          */
         Numeric::Numeric( long _value ):
-            mContent( new numeric( _value ) )
+            mContent( GiNaCRA::make_shared<numeric>( _value ) )
         {}
 
         /**
@@ -80,7 +82,7 @@ namespace smtrat
          * @param _value The unsigned long integer.
          */
         Numeric::Numeric( unsigned long _value ):
-            mContent( new numeric( _value ) )
+            mContent( GiNaCRA::make_shared<numeric>( _value ) )
         {}
 
         /**
@@ -88,7 +90,7 @@ namespace smtrat
          * @param _value The double.
          */
         Numeric::Numeric( double _value ):
-            mContent( new numeric( _value ) )
+            mContent( GiNaCRA::make_shared<numeric>( _value ) )
         {}
 
         /**
@@ -96,7 +98,7 @@ namespace smtrat
          * @param _value The char array.
          */
         Numeric::Numeric( const char* _value ):
-            mContent( new numeric( _value ) )
+            mContent( GiNaCRA::make_shared<numeric>( _value ) )
         {}
 
         /**
@@ -104,7 +106,7 @@ namespace smtrat
          * @param _value The CLN.
          */
         Numeric::Numeric( const cln::cl_N& _value ):
-            mContent( new numeric( _value ) )
+            mContent( GiNaCRA::make_shared<numeric>( _value ) )
         {}
 
         /**
@@ -112,13 +114,11 @@ namespace smtrat
          * @param _value The Numeric to copy.
          */
         Numeric::Numeric( const Numeric& _value ):
-            mContent( new numeric( _value.content() ) )
+            mContent( _value.mContent )
         {}
 
         Numeric::~Numeric()
-        {
-            delete mContent;
-        }
+        {}
 
         /**
          * Cast from an integer.
