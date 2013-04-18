@@ -9,14 +9,17 @@ if not os.path.isdir(moduleDirectory):
 cmakeContent = '\n\
 BeginDefineModule()\n\
 ModuleMainHeader({0}/{0}.h)\n\
+FILE(GLOB_RECURSE sources *.cpp)\n\
+foreach(src ${sources})\n\
+    AddModuleSource(${src})\n\
+endforeach()\n\
 ModuleName({0})\n\
 ModuleClass({0})\n\
 ModuleVersion(0 0 1)\n\
 EndDefineModule(moduleEnabled)\n\
 \n\
 if(${{moduleEnabled}})\n\
-    FILE(GLOB_RECURSE sources *.cpp)\n\
-    set(modulesSources ${{modulesSources}} ${{sources}} PARENT_SCOPE)\n\
+    # do something\n\
 endif()'.format(moduleName)
 
 headerContent = '/*\n\

@@ -52,7 +52,7 @@ add_dependencies( smtratSolver
 	${CMAKE_BINARY_DIR}/src/solver/parser/Scanner.ll
 	${CMAKE_BINARY_DIR}/src/solver/parser/Parser.yy
 )
-target_link_libraries( smtratSolver 
+target_link_libraries( smtratSolver
 						lib_${PROJECT_NAME} # smtrat library
 						${libraries} # libraries definied in top-level CMakeLists.txt
 )
@@ -62,7 +62,7 @@ if(${STATICLIB_SWITCH} STREQUAL "ON")
   set_target_properties( smtratSolver PROPERTIES LINK_SEARCH_START_STATIC TRUE )
 endif()
 
-add_library( smtlibParser 
+add_library( smtlibParser
 	${CMAKE_SOURCE_DIR}/src/solver/parser/Driver.cc
 	${CMAKE_SOURCE_DIR}/src/solver/smtratSolver.cpp
 	${CMAKE_BINARY_DIR}/src/solver/Parser.tab.cc
@@ -72,7 +72,7 @@ add_library( smtlibParser
 	${CMAKE_SOURCE_DIR}/src/lib/Constraint.cpp
 )
 
-# add linking libraries. This is an over-approximation. 
+# add linking libraries. This is an over-approximation.
 target_link_libraries( smtlibParser ${libraries})
 
 if(${STATICLIB_SWITCH} STREQUAL "ON")

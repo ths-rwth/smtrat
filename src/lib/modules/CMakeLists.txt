@@ -1,9 +1,22 @@
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#                                                             #
+# File: src/lib/modules/CMakeLists.txt                        #
+#                                                             #
+# Project name: SMT-RAT                                       #
+# Contact: Florian Corzilius <corzilius@cs.rwth-aachen.de>,   #
+#          Ulrich Loup <loup@cs.rwth-aachen.de>               #
+# Project sourceforge page: http://smtrat.sourceforge.net/    #
+# Development status: beta                                    #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# Version: 2013-04-18                                         #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 ListSubDirs(SUBDIRS ${CMAKE_SOURCE_DIR}/src/lib/modules)
 foreach(subdir ${SUBDIRS})
     add_subdirectory(${subdir})
 endforeach()
 
-# Number of modules (for iteration) 
+# Number of modules (for iteration)
 list(LENGTH moduleTypes nrModules)
 math(EXPR maxModIndex "${nrModules} - 1")
 
@@ -48,7 +61,7 @@ foreach(modIndex RANGE ${maxModIndex})
 		# multiple settings instances
 		foreach(modSettingsName ${moduleSettingsList_${modIndex}})
 			set(addModuleList "${addModuleList}
-			settingsObjects.push_back(NameAndSettings(\"${modType}_${modSettingsName}\" ,new ${modSettClass}(\"${modSettingsName}\") ) ); 
+			settingsObjects.push_back(NameAndSettings(\"${modType}_${modSettingsName}\" ,new ${modSettClass}(\"${modSettingsName}\") ) );
 			manager->addModuleType( MT_${modType}_${modSettingsName}, new StandardModuleFactory< ${modClass} >(settingsObjects.back().second) ); \n")
 			# modType changed
 			set(moduleTypesSettings ${moduleTypesSettings} ${modType}_${modSettingsName})
@@ -59,7 +72,7 @@ foreach(modIndex RANGE ${maxModIndex})
 		list(GET moduleSettingsList_${modIndex} 0 modSettingsName)
 
 		set(addModuleList "${addModuleList}
-		settingsObjects.push_back(NameAndSettings(\"${modType}\" ,new ${modSettClass}(\"${modSettingsName}\") ) ); 
+		settingsObjects.push_back(NameAndSettings(\"${modType}\" ,new ${modSettClass}(\"${modSettingsName}\") ) );
 		manager->addModuleType( MT_${modType}, new StandardModuleFactory< ${modClass} >(settingsObjects.back().second) ); \n")
 		# modType unchanged
 		set(moduleTypesSettings ${moduleTypesSettings} ${modType})
@@ -85,10 +98,12 @@ foreach(moduleType ${moduleTypesSettings})
 endforeach()
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/ModuleType.cpp )
 
-
-set(lib_modules_src 
-	${modulesSources}  
+# propagate and enhance source file definitions
+set(lib_modules_src
+	${moduleSources}
 	modules/ModuleType.cpp
 	modules/Modules.cpp
 	PARENT_SCOPE)
 
+# propagate additional library information
+set(libraries ${moduleLibraries} ${libraries} PARENT_SCOPE)
