@@ -121,6 +121,7 @@ namespace smtrat
         RedAns_delete(output);
         output = RedAns_new( process, "off rlverbose;" );
         RedAns_delete(output);
+        std::cout << "Redlog call: rlqe( " << mpReceivedFormula->toRedlogFormat( true ) << ");" << std::endl;
         output = RedAns_new( process, std::string( "rlqe( " + mpReceivedFormula->toRedlogFormat( true ) + ");" ).c_str() );
         if (output->error)
           RedProc_error( process,"Formula could not be solved", output );

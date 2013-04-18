@@ -18,6 +18,7 @@ foreach(src ${sources})
     AddModuleSource(${src})
 endforeach()
 
+if(SMTRAT_ENABLE_ReduceModule)
 include(ExternalProject)
 ExternalProject_Add( libreduce
                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libreduce
@@ -37,6 +38,7 @@ else()
     AddModuleLibrary( ${install_dir}/src/libreduce-build/libreduce.so )
 endif()
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ReduceModule/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/ReduceModule/config.h )
+endif()
 
 ModuleName(ReduceModule)
 ModuleClass(ReduceModule)
