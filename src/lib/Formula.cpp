@@ -1682,7 +1682,7 @@ namespace smtrat
             }
             case REALCONSTRAINT:
             {
-                result += constraint().toString();
+                result += constraint().toString( 1 );
                 break;
             }
             case BOOL:

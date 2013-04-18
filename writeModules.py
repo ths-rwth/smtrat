@@ -94,7 +94,7 @@ sourceContent = '/*\n\
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.\n\
  *\n\
  */\n\
-/**\n\
+/*\n\
  * File:   {0}.cpp\n\
  * @author YOUR NAME <YOUR EMAIL ADDRESS>\n\
  *\n\

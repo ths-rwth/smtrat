@@ -38,6 +38,13 @@ namespace smtrat
     ReduceModule::ReduceModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager )
     {
+        mProcess = RedProc_new( REDUCE );
+        mOutput = RedAns_new( mProcess, "load_package redlog;" );
+        RedAns_delete( mOutput );
+        mOutput = RedAns_new( mProcess, "rlset reals;" );
+        RedAns_delete(mOutput);
+        mOutput = RedAns_new( mProcess, "off rlverbose;" );
+        RedAns_delete(mOutput);
     }
 
     /**
@@ -46,6 +53,7 @@ namespace smtrat
 
     ReduceModule::~ReduceModule()
     {
+        RedProc_delete( mProcess );
     }
 
     /**
@@ -111,22 +119,38 @@ namespace smtrat
      */
     Answer ReduceModule::isConsistent()
     {
-        RedProc process;
-        RedAns output;
+//        std::cout << "Redlog call: rlqe( " << mpReceivedFormula->toRedlogFormat( true ) << ");" << std::endl;
+        mOutput = RedAns_new( mProcess, std::string( "rlqe( " + mpReceivedFormula->toRedlogFormat( true ) + ");" ).c_str() );
+        if( mOutput->error )
+        {
+//            std::cout << "  Error: " << mOutput->result << std::endl;
+            RedProc_error( mProcess,"Formula could not be solved", mOutput );
 
-        process = RedProc_new( REDUCE );
-        output = RedAns_new( process, "load_package redlog;" );
-        RedAns_delete( output );
-        output = RedAns_new( process, "rlset reals;" );
-        RedAns_delete(output);
-        output = RedAns_new( process, "off rlverbose;" );
-        RedAns_delete(output);
-        std::cout << "Redlog call: rlqe( " << mpReceivedFormula->toRedlogFormat( true ) << ");" << std::endl;
-        output = RedAns_new( process, std::string( "rlqe( " + mpReceivedFormula->toRedlogFormat( true ) + ");" ).c_str() );
-        if (output->error)
-          RedProc_error( process,"Formula could not be solved", output );
-//        printf("Output: %s\n",output->result);
-        RedProc_delete( process );
-        return Unknown; // This should be adapted according to your implementation.
+            assert( false );
+        }
+//        std::cout << "  Output: " << mOutput->result << std::endl;
+        if( *(mOutput->result) == 't' )
+        {
+            RedAns_delete(mOutput);
+//            std::cout << "  -->  True" << std::endl;
+            return foundAnswer( True );
+        }
+        if( *(mOutput->result) == 'f' )
+        {
+            RedAns_delete(mOutput);
+//            std::cout << "  -->  False" << std::endl;
+            // Set the infeasible subset to the set of all clauses.
+            std::set<const Formula*> infeasibleSubset = std::set<const Formula*>();
+            for( Formula::const_iterator subformula = mpReceivedFormula->begin(); subformula != mpReceivedFormula->end(); ++subformula )
+            {
+                infeasibleSubset.insert( *subformula );
+            }
+            mInfeasibleSubsets.push_back( infeasibleSubset );
+
+            return foundAnswer( False );
+        }
+        RedAns_delete(mOutput);
+        assert( false );
+
     }
 }
