@@ -36,7 +36,7 @@
 using namespace GiNaC;
 using namespace std;
 
-//#define ICPMODULE_DEBUG
+#define ICPMODULE_DEBUG
 #define BOXMANAGEMENT
 //#define SMTRAT_DEVOPTION_VALIDATION_ICP
 
@@ -636,17 +636,12 @@ namespace smtrat
 #endif
                         mLRA.removeSubformula(validationFormulaIt);
                         mValidationFormula->erase(validationFormulaIt);
-//                        mReplacements.erase(replacementIt);
                         break;
                     }
                 }
                 break;
             }
         }
-        
-
-//        Answer a = runBackends();
-//        cout << "Answer: " << a << endl;
         
         if ( (*_formula)->constraint().variables().size() > 1 )
         {
@@ -888,8 +883,14 @@ namespace smtrat
                     candidate->setPayoff(relativeContraction);
                     candidate->calcRWA();
 
-                    const std::pair<double, unsigned> newCandidate = pair<double, unsigned>(candidate->RWA(), id);
-                    mIcpRelevantCandidates.insert(newCandidate);
+                    // only add nonlinear CCs as linear CCs should only be used once
+                    if ( !candidate->isLinear() )
+                    {
+                        addCandidateToRelevant(candidate);
+                    }
+                    
+//                    const std::pair<double, unsigned> newCandidate = pair<double, unsigned>(candidate->RWA(), id);
+//                    mIcpRelevantCandidates.insert(newCandidate);
                     
                     // update history node
                     mHistoryActual->addContraction(candidate);
@@ -935,28 +936,24 @@ namespace smtrat
 #endif
                     }
                     
-//                    bool originalAllFinished = true;
-//                    GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
-//                    for ( auto varIt = originalRealVariables.begin(); varIt != originalRealVariables.end(); ++varIt )
-//                    {
-//                        if ( mIntervals.find(ex_to<symbol>((*varIt).second)) != mIntervals.end() )
-//                        {
-//                            if ( mIntervals[ex_to<symbol>((*varIt).second)].diameter() > targetDiameter )
-//                            {
-//                                originalAllFinished = false;
-//                            }
-//                        }
-//                        else
-//                        {
-//                            // should not happen
-//                            assert(false);
-//                        }
-//                    }
-//                    if ( originalAllFinished )
-//                    {
-//                        mIcpRelevantCandidates.clear();
-//                        break;
-//                    }
+                    bool originalAllFinished = true;
+                    GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
+                    for ( auto varIt = originalRealVariables.begin(); varIt != originalRealVariables.end(); ++varIt )
+                    {
+                        if ( mIntervals.find(ex_to<symbol>((*varIt).second)) != mIntervals.end() )
+                        {
+                            if ( mIntervals[ex_to<symbol>((*varIt).second)].diameter() > targetDiameter )
+                            {
+                                originalAllFinished = false;
+                                break;
+                            }
+                        }
+                    }
+                    if ( originalAllFinished )
+                    {
+                        mIcpRelevantCandidates.clear();
+                        break;
+                    }
                 } //while ( !mIcpRelevantCandidates.empty() )
                 
                 // do not verify if the box is already invalid
@@ -1584,9 +1581,6 @@ namespace smtrat
 //                mVariables[ex_to<symbol>(newReal.second)].addCandidate(tmpCandidate);
 //                mVariables[ex_to<symbol>(newReal.second)].activate();
 //            }
-
-            // update mReplacementVariables
-            mReplacementVariables[newReal.first] = newReal.second;
         }
         return mLinearizations[_ex];
     }
