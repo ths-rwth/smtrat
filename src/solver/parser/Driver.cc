@@ -55,9 +55,9 @@ namespace smtrat
         mFormulaRoot( _formulaRoot ),
         mStreamname( new std::string() ),
         mBooleanVariables(),
-        mRealVariables(),
-        mRealBooleanDependencies(),
-        mRealsymbolpartsToReplace()
+        mTheoryVariables(),
+        mRealsymbolpartsToReplace(),
+        mBindings()
     {
         mRealsymbolpartsToReplace.insert( pair< const string, const string >( "~", "_til_" ) );
         mRealsymbolpartsToReplace.insert( pair< const string, const string >( "!", "_exc_" ) );
@@ -192,12 +192,12 @@ namespace smtrat
         if( _type.compare( "Real" ) == 0 )
         {
             addTheoryVariable( _loc, _type, _name );
-            mLexer->mRealVariables.insert( _name );
+            mLexer->mTheoryVariables.insert( _name );
         }
         else if( _type.compare( "Int" ) == 0 )
         {
             addTheoryVariable( _loc, _type, _name );
-            mLexer->mRealVariables.insert( _name );
+            mLexer->mTheoryVariables.insert( _name );
         }
         else if( _type.compare( "Bool" ) == 0 )
         {
@@ -238,12 +238,28 @@ namespace smtrat
         return booleanName;
     }
 
+    #ifdef REPLACE_LET_EXPRESSIONS_DIRECTLY
     /**
      * Adds a new real variable name to the already found names.
      * @param l
      * @param _varName
      */
-    RealVarMap::const_iterator Driver::addTheoryVariable( const class location& _loc, const string& _theory, const string& _varName, bool _isBindingVariable )
+    void Driver::addTheoryBinding( const class location& _loc, const string& _varName, ExVarsPair* _exVarsPair )
+    {
+        assert( mBindings.find( _varName ) == mBindings.end() );
+        if( !mBindings.insert( pair< string, ExVarsPair >( _varName, *_exVarsPair ) ).second )
+        {
+            error( _loc, "Multiple definition of real variable " + _varName );
+        }
+    }
+    #endif
+
+    /**
+     * Adds a new real variable name to the already found names.
+     * @param l
+     * @param _varName
+     */
+    TheoryVarMap::const_iterator Driver::addTheoryVariable( const class location& _loc, const string& _theory, const string& _varName, bool _isBindingVariable )
     {
         pair< string, ex > ginacConformVar;
         if( _isBindingVariable )
@@ -269,7 +285,7 @@ namespace smtrat
             }
             ginacConformVar = pair< string, ex >( ginacConformName, Formula::newArithmeticVariable( ginacConformName, getDomain( _theory ) ) );
         }
-        pair< RealVarMap::iterator, bool > res = mRealVariables.insert( pair< string, pair< string, ex > >( _varName.empty() ? ginacConformVar.first : _varName, ginacConformVar ) );
+        pair< TheoryVarMap::iterator, bool > res = mTheoryVariables.insert( pair< string, pair< string, ex > >( _varName.empty() ? ginacConformVar.first : _varName, ginacConformVar ) );
         if( !res.second )
         {
             error( _loc, "Multiple definition of real variable " + _varName );
@@ -298,21 +314,6 @@ namespace smtrat
 
     /**
      *
-     * @param l
-     * @param _varName
-     */
-    RealVarMap::const_iterator Driver::getRealVariable( const class location& _loc, const string& _varName )
-    {
-        auto rvar = mRealVariables.find( _varName );
-        if( rvar == mRealVariables.end() )
-        {
-            error( _loc, "Real variable " + _varName + " has not been defined!" );
-        }
-        return rvar;
-    }
-
-    /**
-     *
      * @param _varName
      */
     void Driver::freeBooleanVariableName( const string& _varName )
@@ -326,11 +327,12 @@ namespace smtrat
      *
      * @param _varName
      */
-    void Driver::freeRealVariableName( const string& _varName )
+    void Driver::freeTheoryVariableName( const string& _varName )
     {
         assert( !_varName.empty() );
-        mRealVariables.erase( _varName );
-        mLexer->mRealVariables.erase( _varName );
+        mTheoryVariables.erase( _varName );
+        mLexer->mTheoryVariables.erase( _varName );
+        mBindings.erase( _varName );
     }
 
     /**
@@ -339,10 +341,23 @@ namespace smtrat
      * @param _varName
      * @return
      */
-    pair< ex, vector< RealVarMap::const_iterator > >* Driver::mkPolynomial( const class location& _loc, string& _varName )
+    ExVarsPair* Driver::mkPolynomial( const class location& _loc, string& _varName )
     {
-        RealVarMap::const_iterator realVar = getRealVariable( _loc, _varName );
-        return mkPolynomial( _loc, realVar );
+        auto theoryVar = mTheoryVariables.find( _varName );
+        if( theoryVar == mTheoryVariables.end() )
+        {
+            #ifdef REPLACE_LET_EXPRESSIONS_DIRECTLY
+            auto replacement = mBindings.find( _varName );
+            if( replacement == mBindings.end() )
+            {
+                error( _loc, "Theory variable " + _varName + " has not been defined!" );
+            }
+            return new ExVarsPair( replacement->second );
+            #else
+            error( _loc, "Theory variable " + _varName + " has not been defined!" );
+            #endif
+        }
+        return mkPolynomial( _loc, theoryVar );
     }
 
     /**
@@ -351,11 +366,11 @@ namespace smtrat
      * @param _varName
      * @return
      */
-    pair< ex, vector< RealVarMap::const_iterator > >* Driver::mkPolynomial( const class location& _loc, RealVarMap::const_iterator _realVar )
+    ExVarsPair* Driver::mkPolynomial( const class location& _loc, TheoryVarMap::const_iterator _realVar )
     {
-        vector< RealVarMap::const_iterator > realVars = vector< RealVarMap::const_iterator >();
+        vector< TheoryVarMap::const_iterator > realVars = vector< TheoryVarMap::const_iterator >();
         realVars.push_back( _realVar );
-        return new pair< ex, vector< RealVarMap::const_iterator > >( _realVar->second.second, realVars );
+        return new ExVarsPair( _realVar->second.second, realVars );
     }
 
     /**
@@ -367,7 +382,7 @@ namespace smtrat
      * @param _rel
      * @return
      */
-    Formula* Driver::mkConstraint( const pair< ex, vector< RealVarMap::const_iterator > >& _lhs, const pair< ex, vector< RealVarMap::const_iterator > >& _rhs, unsigned _rel )
+    Formula* Driver::mkConstraint( const ExVarsPair& _lhs, const ExVarsPair& _rhs, unsigned _rel )
     {
         symtab vars = symtab();
         for( auto iter = _lhs.second.begin(); iter != _lhs.second.end(); ++iter ) vars.insert( (*iter)->second );
@@ -470,11 +485,11 @@ namespace smtrat
      * @param _else
      * @return
      */
-    string* Driver::mkIteInExpr( const class location& _loc, Formula* _condition, pair< ex, vector< RealVarMap::const_iterator > >& _then, pair< ex, vector< RealVarMap::const_iterator > >& _else )
+    string* Driver::mkIteInExpr( const class location& _loc, Formula* _condition, ExVarsPair& _then, ExVarsPair& _else )
     {
-        RealVarMap::const_iterator auxRealVar = addTheoryVariable( _loc, "Real", "", true );
+        TheoryVarMap::const_iterator auxRealVar = addTheoryVariable( _loc, "Real", "", true );
         string conditionBool = addBooleanVariable( _loc, "", true );
-        pair< ex, vector< RealVarMap::const_iterator > >* lhs = mkPolynomial( _loc, auxRealVar );
+        ExVarsPair* lhs = mkPolynomial( _loc, auxRealVar );
         Formula* constraintA = mkConstraint( *lhs, _then, CR_EQ );
         Formula* constraintB = mkConstraint( *lhs, _else, CR_EQ );
         delete lhs;

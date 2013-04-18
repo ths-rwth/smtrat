@@ -165,7 +165,7 @@ bv[0-9]+ {
 
 [a-zA-Z0-9._+\-*=\"%/?!$_~&^<>@]+ {
     yylval->sval = new string( yytext );
-    if( mRealVariables.find( yytext ) != mRealVariables.end() )
+    if( mTheoryVariables.find( yytext ) != mTheoryVariables.end() )
     {
         return token::REAL_VAR;
     }

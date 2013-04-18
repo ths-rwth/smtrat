@@ -44,6 +44,7 @@ namespace smtrat {
     protected:
         std::map<std::string, RuntimeSettings*> mSettingObjects;
         bool mDoPrintTimings;
+        bool mPrintModel;
     public:
         RuntimeSettingsManager();
         
@@ -53,6 +54,7 @@ namespace smtrat {
         std::string parseCommandline(int argc, char** argv);
         
         bool doPrintTimings() const;
+        bool printModel() const;
         
     protected:
         void printHelp() const;

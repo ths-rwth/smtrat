@@ -756,26 +756,44 @@ EndSwitch:;
         mModel.clear();
         if( solverState() == True )
         {
+            exmap vsAssignments = exmap();
             assert( !mRanking.empty() );
             const State* state = mRanking.begin()->second;
             while( !state->isRoot() )
             {
-                stringstream outA;
                 const Substitution& sub = state->substitution();
+                ex ass = ex( 0 );
                 if( sub.type() == ST_MINUS_INFINITY )
                 {
-                    outA << "-inf_" << mId << "_" << state->treeDepth();
+                    stringstream outA;
+                    outA << "m_inf_" << mId << "_" << state->treeDepth();
+                    symbol minf( outA.str() );
+                    ass += minf;
                 }
                 else
                 {
-                    outA << sub.term().asExpression();
+                    ass += sub.term().asExpression();
                     if( sub.type() == ST_PLUS_EPSILON )
                     {
-                        outA << "+eps_" << mId << "_" << state->treeDepth();
+                        stringstream outA;
+                        outA <<  "eps_" << mId << "_" << state->treeDepth();
+                        symbol eps( outA.str() );
+                        ass += eps;
                     }
                 }
+                assert( vsAssignments.find( sub.varAsEx() ) == vsAssignments.end() );
+                ass = subs( ass, vsAssignments );
+                vsAssignments[sub.varAsEx()] = ass.expand().normal();
+                stringstream outA;
+                outA << ass;
                 mModel.insert( pair< const string, string >( state->substitution().variable(), outA.str() ) );
                 state = state->pFather();
+            }
+            symtab allVars = Formula::constraintPool().realVariables();
+            Model::iterator modelIter = mModel.begin();
+            for( symtab::const_iterator var = allVars.begin(); var != allVars.end(); ++var )
+            {
+                modelIter = mModel.insert( modelIter, pair< const string, string >( var->first, var->first ) );
             }
             if( mRanking.begin()->second->toHighDegree() )
             {

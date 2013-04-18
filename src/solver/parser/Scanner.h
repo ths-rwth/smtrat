@@ -64,8 +64,8 @@ using namespace GiNaC;
 
 namespace smtrat
 {
-    typedef vector< map< string, pair< string, ex > >::const_iterator > RealVarVec;
-    typedef pair< ex, RealVarVec > PolyVarsPair;
+    typedef vector< map< string, pair< string, ex > >::const_iterator > TheoryVarVec;
+    typedef pair< ex, TheoryVarVec > PolyVarsPair;
     typedef std::unordered_set<std::string> FastStringSet;
 
     /** Scanner is a derived class to add some extra function to the scanner
@@ -78,7 +78,7 @@ namespace smtrat
     {
         public:
             int mInPolynomial;
-            FastStringSet mRealVariables;
+            FastStringSet mTheoryVariables;
             FastStringSet mBooleanVariables;
             /** Create a new scanner object. The streams arg_yyin and arg_yyout default
              * to cin and cout, but that assignment is only made when initializing in

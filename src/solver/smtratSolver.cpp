@@ -188,7 +188,7 @@ int main( int argc, char* argv[] )
     // Determine result.
     int returnValue = determineResult(smt2options.statusFlag, answer);
     // Print assignment.
-    if(smt2options.printAssignment && answer == smtrat::True)
+    if((settingsManager.printModel() || smt2options.printAssignment) && answer == smtrat::True)
     {
         std::cout << std::endl;
         nratSolver->printModel( std::cout );

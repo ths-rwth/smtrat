@@ -236,12 +236,17 @@ bindlist :
 	|	bindlist bind { $$ = $1; $$->push_back( $2 ); }
 
 bind :
-        OB SYM poly CB { RealVarMap::const_iterator rv = dv.addTheoryVariable( yyloc, "Real", *$2, true );
+        OB SYM poly CB { 
+                         #ifdef REPLACE_LET_EXPRESSIONS_DIRECTLY
+                         dv.addTheoryBinding( yyloc, *$2, $3 );
+                         #else
+                         TheoryVarMap::const_iterator rv = dv.addTheoryVariable( yyloc, "Real", *$2, true );
                          PolyVarsPair* pvp = dv.mkPolynomial( yyloc, rv );
                          Formula* f = dv.mkConstraint( *pvp, *$3, CR_EQ ); delete pvp;
                          dv.rFormulaRoot().addSubformula( f );
+                         #endif
                          $$ = new pair< string, unsigned >( *$2, 1 ); delete $3;
-                         dv.pLexer()->mRealVariables.insert( *$2 ); delete $2; }
+                         dv.pLexer()->mTheoryVariables.insert( *$2 ); delete $2; }
 	|	OB SYM form CB { const string boolVarName = dv.addBooleanVariable( yyloc, *$2, true );
                          dv.rFormulaRoot().addSubformula( dv.mkFormula( smtrat::IFF, new Formula( boolVarName ), $3 ) );
                          $$ = new pair< string, unsigned >( *$2, 0 );
@@ -250,8 +255,8 @@ bind :
 poly :
         REAL_VAR                 { $$ = dv.mkPolynomial( yyloc, *$1 ); delete $1; }
     |   DEC                      { numeric* num = dv.getNumeric( *$1 ); delete $1;
-                                   $$ = new PolyVarsPair( ex( *num ), RealVarVec() ); delete num; }
-    | 	NUM                      { $$ = new PolyVarsPair( ex( numeric( $1->c_str() ) ), RealVarVec() ); delete $1; }
+                                   $$ = new PolyVarsPair( ex( *num ), TheoryVarVec() ); delete num; }
+    | 	NUM                      { $$ = new PolyVarsPair( ex( numeric( $1->c_str() ) ), TheoryVarVec() ); delete $1; }
     |  	polyOp                   { $$ = $1; }
     |   OB ITE form poly poly CB { $$ = dv.mkPolynomial( yyloc, *dv.mkIteInExpr( yyloc, $3, *$4, *$5 ) ); }
 

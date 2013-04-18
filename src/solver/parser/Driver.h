@@ -39,13 +39,16 @@
 #include <ginac/ginac.h>
 #include "../../lib/Constraint.h"
 
+//#define REPLACE_LET_EXPRESSIONS_DIRECTLY
+
 namespace smtrat
 {
     enum Logic { QF_NRA, QF_LRA, QF_NIA, QF_LIA };
 
     class Formula;
 
-    typedef std::map< std::string, std::pair< std::string, GiNaC::ex > > RealVarMap;
+    typedef std::map< std::string, std::pair< std::string, GiNaC::ex > > TheoryVarMap;
+    typedef std::pair< GiNaC::ex, std::vector< TheoryVarMap::const_iterator > > ExVarsPair;
 
     class Driver
     {
@@ -74,11 +77,11 @@ namespace smtrat
             ///
             std::map< std::string, std::string > mBooleanVariables;
             ///
-            RealVarMap mRealVariables;
-            ///
-            std::map< std::string, std::string > mRealBooleanDependencies;
+            TheoryVarMap mTheoryVariables;
             ///
             std::map< const std::string, const std::string > mRealsymbolpartsToReplace;
+            ///
+            std::map< const std::string, ExVarsPair > mBindings;
 
         public:
             /*
@@ -173,7 +176,7 @@ namespace smtrat
                 {
                     std::pair< std::string, unsigned >* tmp = _toFree->back();
                     if( tmp->second == 0 ) freeBooleanVariableName( tmp->first );
-                    else freeRealVariableName( tmp->first );
+                    else freeTheoryVariableName( tmp->first );
                     _toFree->pop_back(); delete tmp;
                 }
                 delete _toFree;
@@ -187,7 +190,7 @@ namespace smtrat
                 }
                 else
                 {
-                    assert( mRealVariables.find( _varName ) != mRealVariables.end() );
+                    assert( mTheoryVariables.find( _varName ) != mTheoryVariables.end() );
                     return 1;
                 }
             }
@@ -208,19 +211,21 @@ namespace smtrat
             void setLogic( const class location&, const std::string& );
             void addVariable( const class location&, const std::string&, const std::string& );
             const std::string addBooleanVariable( const class location&, const std::string& = "", bool = false );
-            RealVarMap::const_iterator addTheoryVariable( const class location&, const std::string&, const std::string& = "", bool = false );
+            #ifdef REPLACE_LET_EXPRESSIONS_DIRECTLY
+            void addTheoryBinding( const class location&, const std::string&, ExVarsPair* );
+            #endif
+            TheoryVarMap::const_iterator addTheoryVariable( const class location&, const std::string&, const std::string& = "", bool = false );
             const std::string& getBooleanVariable( const class location&, const std::string& );
-            RealVarMap::const_iterator getRealVariable( const class location&, const std::string& );
             void freeBooleanVariableName( const std::string& );
-            void freeRealVariableName( const std::string& );
-            std::pair< GiNaC::ex, std::vector< RealVarMap::const_iterator > >* mkPolynomial( const class location&, std::string& );
-            std::pair< GiNaC::ex, std::vector< RealVarMap::const_iterator > >* mkPolynomial( const class location&, RealVarMap::const_iterator );
-            smtrat::Formula* mkConstraint( const std::pair< GiNaC::ex, std::vector< RealVarMap::const_iterator > >&, const std::pair< GiNaC::ex, std::vector< RealVarMap::const_iterator > >&, unsigned );
+            void freeTheoryVariableName( const std::string& );
+            ExVarsPair* mkPolynomial( const class location&, std::string& );
+            ExVarsPair* mkPolynomial( const class location&, TheoryVarMap::const_iterator );
+            smtrat::Formula* mkConstraint( const ExVarsPair&, const ExVarsPair&, unsigned );
             smtrat::Formula* mkFormula( unsigned, smtrat::Formula* );
             smtrat::Formula* mkFormula( unsigned, smtrat::Formula*, smtrat::Formula* );
             smtrat::Formula* mkFormula( unsigned, std::vector< smtrat::Formula* >& );
             smtrat::Formula* mkIteInFormula( smtrat::Formula*, smtrat::Formula*, smtrat::Formula* );
-            std::string* mkIteInExpr( const class location&, smtrat::Formula*, std::pair< GiNaC::ex, std::vector< RealVarMap::const_iterator > >&, std::pair< GiNaC::ex, std::vector< RealVarMap::const_iterator > >& );
+            std::string* mkIteInExpr( const class location&, smtrat::Formula*, ExVarsPair&, ExVarsPair& );
             GiNaC::numeric* getNumeric( const std::string& ) const;
             void checkInfo( const class location&, const std::string&, const std::string& );
     };

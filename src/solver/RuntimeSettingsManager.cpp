@@ -41,7 +41,7 @@
 namespace smtrat {
 
 RuntimeSettingsManager::RuntimeSettingsManager() 
-: mDoPrintTimings(false)
+: mDoPrintTimings(false), mPrintModel(false)
 {
     
 }
@@ -134,6 +134,10 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
             }
             #endif
             // no more global options, so we expect module options
+            else if(optionName == "print-model")
+            {
+                mPrintModel = true;
+            }
             else 
             {
                 size_t semicolonPosition(optionName.find(':'));
@@ -188,6 +192,7 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << "\t --warranty \t\t prints the warranty." << std::endl;
     std::cout << "\t --toc  \t\t\t prints the terms of condition" << std::endl;
     std::cout << "\t --info \t\t\t prints information about the binary" << std::endl;
+    std::cout << "\t --print-model \t\t\t a model is printed if the example is found to be satisfiable" << std::endl;
     std::cout << std::endl;
     std::cout << "Developer options:" <<std::endl;
     std::cout << "\t --list-modules \t prints all compiled modules" << std::endl;
@@ -261,6 +266,11 @@ void RuntimeSettingsManager::printInfo() const
 bool RuntimeSettingsManager::doPrintTimings() const 
 {
     return mDoPrintTimings;
+}
+
+bool RuntimeSettingsManager::printModel() const 
+{
+    return mPrintModel;
 }
 
 }
