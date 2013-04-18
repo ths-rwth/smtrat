@@ -36,9 +36,9 @@
 using namespace GiNaC;
 using namespace std;
 
-#define ICPMODULE_DEBUG
+//#define ICPMODULE_DEBUG
 #define BOXMANAGEMENT
-#define SMTRAT_DEVOPTION_VALIDATION_ICP
+//#define SMTRAT_DEVOPTION_VALIDATION_ICP
 
 
 namespace smtrat
@@ -902,8 +902,7 @@ namespace smtrat
                         /**
                          * remove candidate from mIcpRelevantCandidates.
                          */
-                        std::pair<double, unsigned> target(candidate->RWA(), candidate->id());
-                        mIcpRelevantCandidates.erase(target);
+                        removeCandidateFromRelevant(candidate);
                     }
                     else if ( relativeContraction >= contractionThreshold )
                     {
@@ -1304,6 +1303,7 @@ namespace smtrat
 
     icp::ContractionCandidate* ICPModule::chooseConstraint()
     {
+        assert(!mIcpRelevantCandidates.empty());
         // as the map is sorted ascending, we can simply pick the last value
         for ( auto candidateIt = mIcpRelevantCandidates.rbegin(); candidateIt != mIcpRelevantCandidates.rend(); ++candidateIt )
         {
@@ -2563,30 +2563,29 @@ namespace smtrat
             // check that assertions have been processed properly
             assert( (*nonlinearIt).second == (*nonlinearIt).first->origin().size() );
 
-            std::pair<double, unsigned> tmp ((*nonlinearIt).first->RWA(), (*nonlinearIt).first->id() );
             if ( mIntervals[(*nonlinearIt).first->derivationVar()].diameter() > _targetDiameter || mIntervals[(*nonlinearIt).first->derivationVar()].diameter() == -1 )
             {
                 // only add if not already existing
-                if ( mIcpRelevantCandidates.find(tmp) == mIcpRelevantCandidates.end() )
+                if ( !findCandidateInRelevant((*nonlinearIt).first) )
                 {
 #ifdef ICPMODULE_DEBUG
                     cout << "add to relevant candidates: ";
                     (*nonlinearIt).first->constraint()->print();
                     cout << "   id: " << (*nonlinearIt).first->id() << endl;
 #endif
-                    mIcpRelevantCandidates.insert(tmp);
+                    addCandidateToRelevant((*nonlinearIt).first);
                 }
             }
             else // the candidate is not relevant -> delete from icpRelevantCandidates
             {
-                if ( mIcpRelevantCandidates.find(tmp) != mIcpRelevantCandidates.end() )
+                if ( findCandidateInRelevant((*nonlinearIt).first) )
                 {
 #ifdef ICPMODULE_DEBUG
                     cout << "remove from relevant candidates due to diameter: ";
                     (*nonlinearIt).first->constraint()->print();
-                    cout << "   id: " << tmp.second << " , Diameter: " << mIntervals[(*nonlinearIt).first->derivationVar()].diameter() << endl;
+                    cout << "   id: " << (*nonlinearIt).first->id() << " , Diameter: " << mIntervals[(*nonlinearIt).first->derivationVar()].diameter() << endl;
 #endif
-                    mIcpRelevantCandidates.erase(tmp);
+                    removeCandidateFromRelevant((*nonlinearIt).first);
                 }
             }
         }
@@ -2597,29 +2596,28 @@ namespace smtrat
             // check that assertions have been processed properly
             assert( (*linearIt).second == (*linearIt).first->origin().size() );
 
-            const std::pair<double, unsigned> tmp ((*linearIt).first->RWA(), (*linearIt).first->id() );
             if ( (*linearIt).first->isActive() && ( mIntervals[(*linearIt).first->derivationVar()].diameter() > _targetDiameter || mIntervals[(*linearIt).first->derivationVar()].diameter() == -1 ) )
             {
-                if( mIcpRelevantCandidates.find(tmp) == mIcpRelevantCandidates.end() )
+                if( !findCandidateInRelevant((*linearIt).first) )
                 {
 #ifdef ICPMODULE_DEBUG
                     cout << "add to relevant candidates: ";
                     (*linearIt).first->constraint()->print();
                     cout << "   id: " << (*linearIt).first->id() << endl;
 #endif
-                    mIcpRelevantCandidates.insert(tmp);
+                    addCandidateToRelevant((*linearIt).first);
                 }
             }
             else // the candidate is not relevant -> delete from icpRelevantCandidates
             {
-                if ( mIcpRelevantCandidates.find(tmp) != mIcpRelevantCandidates.end() )
+                if ( findCandidateInRelevant((*linearIt).first) )
                 {
 #ifdef ICPMODULE_DEBUG
                     cout << "remove from relevant candidates due to diameter: ";
                     (*linearIt).first->constraint()->print();
-                    cout << "   id: " << tmp.second << " , Diameter: " << mIntervals[(*linearIt).first->derivationVar()].diameter() << endl;
+                    cout << "   id: " << (*linearIt).first->id() << " , Diameter: " << mIntervals[(*linearIt).first->derivationVar()].diameter() << endl;
 #endif
-                    mIcpRelevantCandidates.erase(tmp);
+                    removeCandidateFromRelevant((*linearIt).first);
                 }
             }
         }
@@ -2647,6 +2645,12 @@ namespace smtrat
                 break;
             }
         }
+    }
+    
+    bool ICPModule::findCandidateInRelevant(icp::ContractionCandidate* _candidate)
+    {
+        std::pair<double, unsigned> target(_candidate->RWA(), _candidate->id());
+        return ( mIcpRelevantCandidates.find(target) != mIcpRelevantCandidates.end() );
     }
 
     bool ICPModule::pushBoundsToPassedFormula()
@@ -2781,10 +2785,9 @@ namespace smtrat
                 std::pair<double,unsigned> tmpCandidate((*candidatesIt)->RWA(), (*candidatesIt)->id());
 
                 // search if candidate is already contained - erase if, else do nothing
-                std::set<std::pair<double,unsigned>,comp>::iterator relevantIt = mIcpRelevantCandidates.find(tmpCandidate);
-                if ( relevantIt != mIcpRelevantCandidates.end() )
+                if ( findCandidateInRelevant(*candidatesIt) )
                 {
-                    mIcpRelevantCandidates.erase(relevantIt);
+                    removeCandidateFromRelevant(*candidatesIt);
                 }
 
                 // create new tuple for mIcpRelevantCandidates
@@ -2810,14 +2813,15 @@ namespace smtrat
         {
             if ( mCenterConstraints.find((*centerIt)->pConstraint()) != mCenterConstraints.end() )
             {
-                for ( auto formulaIt = mValidationFormula->begin(); formulaIt != mValidationFormula->end(); ++formulaIt )
-                {
-                    if ( (*formulaIt)->pConstraint() == (*centerIt)->pConstraint() )
-                    {
-                        mLRA.removeSubformula(formulaIt);
-                        break;
-                    }
-                }
+//                for ( auto formulaIt = mValidationFormula->begin(); formulaIt != mValidationFormula->end(); ++formulaIt )
+//                {
+//                    if ( (*formulaIt)->pConstraint() == (*centerIt)->pConstraint() )
+//                    {
+//                        mLRA.removeSubformula(formulaIt);
+//                        break;
+//                    }
+//                }
+                mLRA.removeSubformula(centerIt);
                 centerIt = mValidationFormula->erase(centerIt);
             }
             else

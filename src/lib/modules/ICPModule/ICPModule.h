@@ -262,6 +262,13 @@ namespace smtrat
             void removeCandidateFromRelevant(icp::ContractionCandidate* _candidate);
             
             /**
+             * Checks whether a candidate is already relevant.
+             * @param _candidate
+             * @return 
+             */
+            bool findCandidateInRelevant(icp::ContractionCandidate* _candidate);
+            
+            /**
              * Creates Bounds and passes them to PassedFormula for the Backends.
              * @return true if new bounds have been added
              */
