@@ -40,7 +40,6 @@ using namespace std;
 #define BOXMANAGEMENT
 //#define SMTRAT_DEVOPTION_VALIDATION_ICP
 
-
 namespace smtrat
 {
     /**
@@ -1234,7 +1233,7 @@ namespace smtrat
                     cout << "Id actual box: " << mHistoryActual->id() << " Size subtree: " << mHistoryActual->sizeSubtree() << endl;
 #endif
 #ifdef ICP_BOXLOG
-                    icpLog << "validation added new constraints; ";
+                    icpLog << "validation added new constraints; \n";
 #endif
                     
                 }
@@ -2589,7 +2588,7 @@ namespace smtrat
         {
             // check that assertions have been processed properly
             assert( (*linearIt).second == (*linearIt).first->origin().size() );
-
+            
             if ( (*linearIt).first->isActive() && ( mIntervals[(*linearIt).first->derivationVar()].diameter() > _targetDiameter || mIntervals[(*linearIt).first->derivationVar()].diameter() == -1 ) )
             {
                 if( !findCandidateInRelevant((*linearIt).first) )
