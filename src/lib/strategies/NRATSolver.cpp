@@ -44,9 +44,9 @@ namespace smtrat
         #endif
         position = addBackendIntoStrategyGraph( position, MT_SATModule );
 
-        #ifdef SMTRAT_ENABLE_ReduceModule
-        position = addBackendIntoStrategyGraph( position, MT_ReduceModule );
-        #else
+//        #ifdef SMTRAT_ENABLE_ReduceModule
+//        position = addBackendIntoStrategyGraph( position, MT_ReduceModule );
+//        #else
             #ifdef SMTRAT_ENABLE_VRWModule
             position = addBackendIntoStrategyGraph( position, MT_VRWModule );
             #endif
@@ -67,7 +67,7 @@ namespace smtrat
             #ifdef SMTRAT_ENABLE_CADModule
             position = addBackendIntoStrategyGraph( position, MT_CADModule );
             #endif
-        #endif
+//        #endif
     }
 
     NRATSolver::~NRATSolver(){}

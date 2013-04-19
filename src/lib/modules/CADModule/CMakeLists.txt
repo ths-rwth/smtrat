@@ -8,11 +8,15 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2013-04-16                                         #
+# Version: 2013-04-18                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 BeginDefineModule()
 ModuleMainHeader(CADModule/CADModule.h)
+FILE(GLOB_RECURSE sources *.cpp)
+foreach(src ${sources})
+    AddModuleSource(${src})
+endforeach()
 ModuleName(CADModule)
 ModuleClass(CADModule)
 ModuleVersion(0 7 0)
@@ -20,8 +24,6 @@ ModuleDefaultEnabled()
 EndDefineModule(enabled)
 
 if(${enabled})
-	FILE(GLOB_RECURSE sources *.cpp)
-	set(modulesSources ${modulesSources} ${sources} PARENT_SCOPE)
     option( SMTRAT_CAD_VARIABLEBOUNDS "CAD using variable bounds" ON )
 
     # options for the CADModule settings

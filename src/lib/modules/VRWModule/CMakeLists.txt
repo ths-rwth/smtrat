@@ -1,11 +1,14 @@
 BeginDefineModule()
 ModuleMainHeader(VRWModule/VRWModule.h)
+FILE(GLOB_RECURSE sources *.cpp)
+foreach(src ${sources})
+    AddModuleSource(${src})
+endforeach()
 ModuleName(VRWModule)
 ModuleClass(VRWModule)
 ModuleVersion(0 0 1)
 EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
-	FILE(GLOB_RECURSE sources *.cpp)
-	set(modulesSources ${modulesSources} ${sources} PARENT_SCOPE) 
+	# do something
 endif()

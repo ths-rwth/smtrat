@@ -1,6 +1,7 @@
 # File: macros.cmake
-# Author: Sebastian Junges
-# Version: 11-01-2013
+# Authors: Sebastian Junges, Ulrich Loup
+# Erstellt: 2013-04-11
+# Version: 2013-04-18
 #
 # This file contains several macros which are used in this project. Notice that several are copied straight from web ressources.
 
@@ -18,7 +19,7 @@ MACRO(ListSubDirs result curdir)
   SET(${result} ${dirlist})
 ENDMACRO()
 
-# Macro 
+# Macro
 # Find and include all cmake pathes recursively
 # Based on: http://www.vtk.org/Wiki/CMake/Examples#Recursively_add_subdirectories_to_INCLUDE_DIRECTORIES
 MACRO(CMAKE_DIRECTORIES return_list)
@@ -39,12 +40,25 @@ MACRO(BeginDefineModule)
 	set(mod_default_enable OFF)
 ENDMACRO()
 
-#
 MACRO(ModuleMainHeader header)
 	if(NOT defineModule)
 		message(FATAL_ERROR "Invalid ModuleMainHeader call, outside of ModuleDefinition")
 	endif()
 	set(mod_header ${header})
+ENDMACRO()
+
+MACRO(AddModuleSource source)
+    if(NOT defineModule)
+		message(FATAL_ERROR "Invalid AddModuleSource call, outside of ModuleDefinition")
+	endif()
+	set(moduleSources ${source} ${moduleSources})
+ENDMACRO()
+
+MACRO(AddModuleLibrary lib)
+    if(NOT defineModule)
+		message(FATAL_ERROR "Invalid AddModuleSource call, outside of ModuleDefinition")
+	endif()
+	set(moduleLibraries ${lib} ${moduleLibraries})
 ENDMACRO()
 
 MACRO(ModuleName name)
@@ -68,7 +82,6 @@ MACRO(ModuleVersion major minor buildnr)
 	endif()
 	set(mod_version "${major}.${minor}.${buildnr}")
 ENDMACRO()
-
 
 MACRO(ModuleSettingsClass classname)
 	if(NOT defineModule)
@@ -97,14 +110,16 @@ MACRO(EndDefineModule enabled)
 	if( NOT defineModule )
 		message(FATAL_ERROR "Invalid EndDefineModule call, outside of ModuleDefinition")
 	endif()
-	
+
 	option(SMTRAT_ENABLE_${mod_name} "Compile " ${mod_default_enable})
 
 	if(SMTRAT_ENABLE_${mod_name})
-		# Number of modules (for determining this modules number) 
+		# Number of modules (for determining this modules number)
 		list(LENGTH moduleTypes mod_index)
 
 		set(moduleMainHeaders ${moduleMainHeaders} ${mod_header} PARENT_SCOPE)
+		set(moduleSources ${moduleSources} PARENT_SCOPE)
+		set(moduleLibraries ${moduleLibraries} PARENT_SCOPE)
 		set(moduleTypes ${moduleTypes} ${mod_name} PARENT_SCOPE)
 		set(moduleClasses ${moduleClasses} ${mod_classname} PARENT_SCOPE)
 		set(moduleVersions ${moduleVersions} ${mod_version} PARENT_SCOPE)

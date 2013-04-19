@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------------------
-   $Id: RedAns.c 938 2010-11-24 22:11:39Z thomas-sturm $
+   $Id: RedAns.c 1938 2013-03-20 08:38:05Z thomas-sturm $
    ---------------------------------------------------------------------
    Copyright (c) 2008-2009 Thomas Sturm
    ---------------------------------------------------------------------
@@ -41,7 +41,7 @@
 #include "RedAns.h"
 
 #ifdef PSLFIX
-#define SYSMAXBUFFER 200
+#define SYSMAXBUFFER 65536
 #endif
 
 #define READBUFSIZE 1024

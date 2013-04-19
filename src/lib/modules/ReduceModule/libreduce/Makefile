@@ -21,7 +21,7 @@ all:
 	autoheader
 	mkdir -p $(BUILD); \
 	cd $(BUILD); \
-	../src/configure --disable-universal; \
+	../src/configure --disable-universal --enable-psl-fix; \
 	make
 
 clean:
