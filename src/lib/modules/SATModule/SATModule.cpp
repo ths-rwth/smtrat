@@ -299,12 +299,15 @@ namespace smtrat
      */
     void SATModule::updateModel()
     {
-        mModel.clear();
+        clearModel();
         if( solverState() == True )
         {
             for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
             {
-                mModel.insert( pair< const string, string >( bVar->first, assigns[bVar->second] == l_True ? "True" : "False" ) );
+                Module::Assignment* assignment = new Module::Assignment();
+                assignment->domain = BOOLEAN_DOMAIN;
+                assignment->booleanValue = assigns[bVar->second] == l_True;
+                extendModel( bVar->first, assignment );
             }
             Module::getBackendsModel();
         }

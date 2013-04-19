@@ -56,14 +56,6 @@ namespace smtrat
         }
     };
 
-//    struct constraintPointerCmp
-//    {
-//        bool operator ()( const Constraint* const _constraintA, const Constraint* const _constraintB ) const
-//        {
-//            return ( (*_constraintA) < (*_constraintB) );
-//        }
-//    };
-
     typedef std::unordered_set<const Constraint*, constraintHash, constraintEqual> fastConstraintSet;
     typedef fastConstraintSet::const_iterator                                      fcs_const_iterator;
 
@@ -91,10 +83,20 @@ namespace smtrat
             mutable std::mutex mMutexDomain;
             ///
             mutable std::mutex mMutexAllocator;
-            /// The prefix for any auxiliary Boolean defined in this formula.
-            const std::string mAuxiliaryBooleanNamePrefix;
-            /// The prefix for any auxiliary Boolean defined in this formula.
-            const std::string mAuxiliaryRealNamePrefix;
+            /// The internal prefix for a Boolean valued variable.
+            const std::string mInternalBoolVarNamePrefix;
+            /// The external prefix for a Boolean valued variable.
+            const std::string mExternalBoolVarNamePrefix;
+            /// The internal prefix for a real valued variable.
+            const std::string mInternalRealVarNamePrefix;
+            /// The external prefix for a real valued variable.
+            const std::string mExternalRealVarNamePrefix;
+            /// The internal prefix for a integer valued variable.
+            const std::string mInternalIntVarNamePrefix;
+            /// The external prefix for a integer valued variable.
+            const std::string mExternalIntVarNamePrefix;
+            /// The external prefix for a variable.
+            const std::string mExternalVarNamePrefix;
             /// the symbol table containing the variables of all constraints
             GiNaC::symtab mArithmeticVariables;
             /// The collection of Boolean variables in use.
@@ -196,9 +198,9 @@ namespace smtrat
             const Constraint* newConstraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& );
             const Constraint* newConstraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& );
 
-            GiNaC::ex newArithmeticVariable( const std::string&, Variable_Domain );
+            GiNaC::ex newArithmeticVariable( const std::string&, Variable_Domain, bool = false );
             std::pair<std::string,GiNaC::ex> newAuxiliaryRealVariable();
-            void newBooleanVariable( const std::string& );
+            void newBooleanVariable( const std::string&, bool = false );
             std::string newAuxiliaryBooleanVariable();
             int maxDegree() const;
             unsigned nrNonLinearConstraints() const;

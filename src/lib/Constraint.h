@@ -62,7 +62,7 @@ namespace smtrat
         CR_EQ = 0, CR_NEQ = 1, CR_LESS = 2, CR_GREATER = 3, CR_LEQ = 4, CR_GEQ = 5
     };
 
-    enum Variable_Domain { REAL_DOMAIN = 0, INTEGER_DOMAIN = 1 };
+    enum Variable_Domain { BOOLEAN_DOMAIN = 0, REAL_DOMAIN = 1, INTEGER_DOMAIN = 2 };
 
     bool constraintRelationIsStrict( Constraint_Relation rel );
     std::string relationToString( const Constraint_Relation rel );

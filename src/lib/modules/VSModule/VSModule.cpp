@@ -753,7 +753,7 @@ EndSwitch:;
      */
     void VSModule::updateModel()
     {
-        mModel.clear();
+        clearModel();
         if( solverState() == True )
         {
             exmap vsAssignments = exmap();
@@ -762,38 +762,41 @@ EndSwitch:;
             while( !state->isRoot() )
             {
                 const Substitution& sub = state->substitution();
-                ex ass = ex( 0 );
+                Assignment* ass;
+                ex* value = new ex( 0 );
                 if( sub.type() == ST_MINUS_INFINITY )
                 {
                     stringstream outA;
                     outA << "m_inf_" << mId << "_" << state->treeDepth();
                     symbol minf( outA.str() );
-                    ass += minf;
+                    *value += Formula::newArithmeticVariable( outA.str(), REAL_DOMAIN );
                 }
                 else
                 {
-                    ass += sub.term().asExpression();
+                    *value += sub.term().asExpression();
                     if( sub.type() == ST_PLUS_EPSILON )
                     {
                         stringstream outA;
                         outA <<  "eps_" << mId << "_" << state->treeDepth();
-                        symbol eps( outA.str() );
-                        ass += eps;
+                        *value += Formula::newArithmeticVariable( outA.str(), REAL_DOMAIN );
                     }
                 }
                 assert( vsAssignments.find( sub.varAsEx() ) == vsAssignments.end() );
-                ass = subs( ass, vsAssignments );
-                vsAssignments[sub.varAsEx()] = ass.expand().normal();
-                stringstream outA;
-                outA << ass;
-                mModel.insert( pair< const string, string >( state->substitution().variable(), outA.str() ) );
+                *value = subs( *value, vsAssignments );
+                value = value->expand().normal();
+                vsAssignments[sub.varAsEx()] = *value;
+                ass->domain = REAL_DOMAIN;
+                ass->theoryValue = value;
+                extendModel( state->substitution().variable(), ass );
                 state = state->pFather();
             }
             symtab allVars = Formula::constraintPool().realVariables();
-            Model::iterator modelIter = mModel.begin();
             for( symtab::const_iterator var = allVars.begin(); var != allVars.end(); ++var )
             {
-                modelIter = mModel.insert( modelIter, pair< const string, string >( var->first, var->first ) );
+                Assignment* ass = new Assignment();
+                ass->domain = REAL_DOMAIN;
+                ass->theoryValue = new ex( var->second );
+                extendModel( var->first, ass );
             }
             if( mRanking.begin()->second->toHighDegree() )
             {

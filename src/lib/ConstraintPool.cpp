@@ -46,8 +46,13 @@ namespace smtrat
         mAuxiliaryRealCounter( 0 ),
         mConsistentConstraint( new Constraint( 0, CR_EQ, symtab(), 1 ) ),
         mInconsistentConstraint( new Constraint( 0, CR_LESS, symtab(), 2 ) ),
-        mAuxiliaryBooleanNamePrefix( "h_b_" ),
-        mAuxiliaryRealNamePrefix( "h_r_" ),
+        mInternalBoolVarNamePrefix( "b_" ),
+        mExternalBoolVarNamePrefix( "h_b_" ),
+        mInternalRealVarNamePrefix( "r_" ),
+        mExternalRealVarNamePrefix( "h_r_" ),
+        mInternalIntVarNamePrefix( "i_" ),
+        mExternalIntVarNamePrefix( "h_i_" ),
+        mExternalVarNamePrefix( "_" ),
         mArithmeticVariables(),
         mBooleanVariables(),
         mConstraints(),
@@ -155,7 +160,7 @@ namespace smtrat
      * @param _name
      * @return
      */
-    ex ConstraintPool::newArithmeticVariable( const string& _name, Variable_Domain _domain )
+    ex ConstraintPool::newArithmeticVariable( const string& _name, Variable_Domain _domain, bool _parsed )
     {
         assert( mArithmeticVariables.find( _name ) == mArithmeticVariables.end() );
         symtab emptySymtab;
@@ -193,7 +198,7 @@ namespace smtrat
      *
      * @param _name
      */
-    void ConstraintPool::newBooleanVariable( const string& _name )
+    void ConstraintPool::newBooleanVariable( const string& _name, bool _parsed )
     {
         lock_guard<mutex> lock( mMutexBooleanVariables );
         assert( mBooleanVariables.find( _name ) == mBooleanVariables.end() );

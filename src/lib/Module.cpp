@@ -63,7 +63,6 @@ namespace smtrat
         mModuleType( type ),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),
-        mModel(),
         mSolverState( Unknown ),
         mBackendsFoundAnswer( new std::atomic_bool( false ) ),
         mFoundAnswer( _foundAnswer ),
@@ -75,7 +74,8 @@ namespace smtrat
         mConstraintsToInform(),
         mFirstConstraintToInform( mConstraintsToInform.end() ),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
-        mSmallerMusesCheckCounter(0)
+        mSmallerMusesCheckCounter(0),
+        mModel()
 #ifdef SMTRAT_DEVOPTION_MeasureTime
         ,
         mTimerAddTotal( 0 ),
@@ -287,7 +287,7 @@ namespace smtrat
      */
     void Module::updateModel()
     {
-        mModel.clear();
+        clearModel();
         if( mSolverState == True )
         {
             getBackendsModel();

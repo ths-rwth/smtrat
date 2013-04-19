@@ -37,6 +37,8 @@
 #include <typeinfo>
 #include <cln/cln.h>
 
+#define MODEL_IN_SMTLIB
+
 using namespace std;
 
 using GiNaC::ex;
@@ -141,6 +143,14 @@ namespace smtrat
         mpPrimaryBackend->updateModel();
         if( !mpPrimaryBackend->model().empty() )
         {
+            #ifdef MODEL_IN_SMTLIB
+            _out << "(model" << endl;
+            for( Module::Model::const_iterator assignment = mpPrimaryBackend->model().begin(); assignment != mpPrimaryBackend->model().end(); ++assignment )
+            {
+                _out << "  (define-fun " << assignment->first << "()" << ;
+                _out << "  " << assignment->second << endl;
+            }
+            #else
             _out << "Model:" << endl;
             for( Module::Model::const_iterator assignment = mpPrimaryBackend->model().begin(); assignment != mpPrimaryBackend->model().end(); ++assignment )
             {
@@ -148,6 +158,7 @@ namespace smtrat
                 _out << left << setw( Formula::constraintPool().maxLenghtOfVarName() ) << assignment->first;
                 _out << " -> " << assignment->second << endl;
             }
+            #endif
         }
     }
 

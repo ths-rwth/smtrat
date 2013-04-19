@@ -79,8 +79,18 @@ namespace smtrat
         friend class ValidationSettings;
         #endif
         public:
+            ///
+            typedef struct
+            {
+                Variable_Domain domain;
+                union
+                {
+                    ex*  theoryValue;
+                    bool booleanValue;
+                };
+            } Assignment;
             /// Data type for a assignment assigning a variable, represented as a string, a real algebraic number, represented as a string.
-            typedef std::map< const std::string, std::string > Model;
+            typedef std::map< const std::string, Assignment* > Model;
             ///
             typedef std::chrono::high_resolution_clock clock;
             ///
@@ -104,8 +114,6 @@ namespace smtrat
             const Formula* mpReceivedFormula;
             /// The formula passed to the backends of this module.
             Formula* mpPassedFormula;
-            /// Stores the assignment of the current satisfiable result, if existent.
-            Model mModel;
 
         private:
             /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
@@ -132,6 +140,8 @@ namespace smtrat
             Formula::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
             mutable unsigned mSmallerMusesCheckCounter;
+            /// Stores the assignment of the current satisfiable result, if existent.
+            Model mModel;
 
         /*
          * Methods:
@@ -213,7 +223,7 @@ namespace smtrat
             {
                 return mModel;
             }
-
+            
             inline const vec_set_const_pFormula& infeasibleSubsets() const
             {
                 return mInfeasibleSubsets;
@@ -295,6 +305,30 @@ namespace smtrat
                 for( auto iter = mFoundAnswer.begin(); iter != mFoundAnswer.end(); ++iter )
                 {
                     if( (*iter)->load() ) return true;
+                }
+                return false;
+            }
+            
+            void clearModel()
+            {
+                while( !mModel.empty() )
+                {
+                    Assignment* assToDel = mModel.begin()->second;
+                    if( assToDel->domain != BOOLEAN_DOMAIN )
+                    {
+                        ex* exToDel = assToDel->theoryValue;
+                        delete assToDel;
+                        delete exToDel;
+                    }
+                    mModel.erase( mModel.begin() );
+                }
+            }
+            
+            bool extendModel( const std::string& _varName, Assignment* _assignment )
+            {
+                if( _varName.substr( 0, 2 ) != "h_" )
+                {
+                    return mModel.insert( pair< const string, Assignment* >( _varName, _assignment ) ).second;
                 }
                 return false;
             }

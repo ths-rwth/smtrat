@@ -388,7 +388,7 @@ namespace smtrat
      */
     void CADModule::updateModel()
     {
-        mModel.clear();
+        clearModel();
         if( solverState() == True )
         {
             // bound-independent part of the model
@@ -403,9 +403,9 @@ namespace smtrat
                 else
                 {
                     GiNaCRA::RealAlgebraicNumberIRPtr irA = std::static_pointer_cast<GiNaCRA::RealAlgebraicNumberIR>( mRealAlgebraicSolution[varID] );
-                    outB << "zero( " << irA->polynomial() << ", " << irA->order() << " )";
+                    outB << "root_ " << irA->polynomial() << ", " << irA->order() << " )";
                 }
-                mModel.insert( pair< const string, string >( outA.str(), outB.str() ) );
+                extendModel( outA.str(), outB.str() );
             }
             #ifdef SMTRAT_CAD_VARIABLEBOUNDS
             // bounds for variables which were not handled in the solution point
@@ -421,7 +421,7 @@ namespace smtrat
                     outA << b->first;
                     stringstream outB;
                     outB << b->second.midpoint();
-                    mModel.insert( pair< const string, string >( outA.str(), outB.str() ) );
+                    extendModel( outA.str(), outB.str() ) );
                 }
             }
             #endif

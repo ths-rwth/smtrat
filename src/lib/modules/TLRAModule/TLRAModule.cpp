@@ -604,22 +604,26 @@ namespace smtrat
      */
     void TLRAModule::updateModel()
     {
-        mModel.clear();
+        clearModel();
         if( solverState() == True )
         {
             if( mAssignmentFullfilsNonlinearConstraints )
             {
                 for( ExVariableMap::const_iterator originalVar = mOriginalVars.begin(); originalVar != mOriginalVars.end(); ++originalVar )
                 {
-                    stringstream outA;
-                    outA << *originalVar->first;
-                    stringstream outB;
-                    outB << originalVar->second->assignment().mainPart();
+                    ex* value = new ex( originalVar->second->assignment().mainPart() ):
                     if( originalVar->second->assignment().deltaPart() != 0 )
                     {
-                        outB << "+delta_" << mId << "*" << originalVar->second->assignment().deltaPart();
+                        stringstream outB;
+                        outB << "delta_" << mId;
+                        *value += Formula::newArithmeticVariable( outB.str(), REAL_DOMAIN ) * originalVar->second->assignment().deltaPart();
                     }
-                    mModel.insert( pair< const string, string >( outA.str(), outB.str() ) );
+                    Assignment* assignment = new Assignment();
+                    assignment->domain = REAL_DOMAIN;
+                    assignment->theoryValue = value;
+                    stringstream outA;
+                    outA << *originalVar->first;
+                    extendModel( outA.str(), outB.str() );
                 }
             }
             else
