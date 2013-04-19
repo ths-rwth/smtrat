@@ -27,3 +27,7 @@
 #define GBModuleSettings @SMTRAT_GBMODULE_SETTINGS@
 
 #define CMakeStrategySolver smtrat::@SMTRAT_Strategy@
+
+//include other configs
+#include "modules/CADModule/config.h"
+#include "modules/ReduceModule/config.h"

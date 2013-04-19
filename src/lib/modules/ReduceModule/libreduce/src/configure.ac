@@ -34,7 +34,7 @@ AC_INIT(RedProc.c)
 m4_include(ac_python_devel.m4)
 
 AC_CANONICAL_HOST
-BUILD=`eval "$SHELL $srcdir/findhost.sh $host $ac_configure_args"`
+BUILD=`eval "$SHELL $srcdir/../../../scripts/findhost.sh $host $ac_configure_args"`
 AC_MSG_NOTICE([Build platform detected as $BUILD])
 AC_SUBST(BUILD)
 

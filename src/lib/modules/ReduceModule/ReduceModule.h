@@ -20,9 +20,9 @@
  */
 /**
  * @file ReduceModule.h
- * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ * @author Ulrich Loup <loup@cs.rwth-aachen.de>
  *
- * @version 16.04.2013
+ * @version 2013-04-18
  * Created on 16.04.2013.
  */
 
@@ -37,6 +37,9 @@ namespace smtrat
     {
         private:
             // Members.
+            RedProc mProcess;
+            RedAns mOutput;
+
         public:
             ReduceModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 

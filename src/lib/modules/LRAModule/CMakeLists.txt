@@ -1,5 +1,9 @@
 BeginDefineModule()
 ModuleMainHeader(LRAModule/LRAModule.h)
+FILE(GLOB_RECURSE sources *.cpp)
+foreach(src ${sources})
+    AddModuleSource(${src})
+endforeach()
 ModuleName(LRAModule)
 ModuleClass(LRAModule)
 ModuleVersion(0 0 0)
@@ -7,6 +11,5 @@ ModuleDefaultEnabled()
 EndDefineModule(enabled)
 
 if(${enabled})
-	FILE(GLOB_RECURSE sources *.cpp)
-	set(modulesSources ${modulesSources} ${sources} PARENT_SCOPE) 
+	# do something
 endif()
