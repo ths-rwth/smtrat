@@ -29,6 +29,7 @@
 #ifndef TLRAMODULE_H
 #define TLRAMODULE_H
 
+
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
 #include "Numeric.h"
@@ -37,6 +38,7 @@
 #include "Bound.hpp"
 #include "Tableau.hpp"
 #include <stdio.h>
+#include <ginacra/ginacra.h>
 
 
 #define TLRA_SIMPLE_CONFLICT_SEARCH
@@ -59,9 +61,9 @@ namespace smtrat
                 const smtrat::Formula* origin;
                 smtrat::Formula::iterator position;
             };
-            typedef std::map< const GiNaC::ex*, tlra::Variable<tlra::Numeric>*, exPointerComp>              ExVariableMap;
+            typedef std::map< const GiNaC::ex*, tlra::Variable<tlra::Numeric>*, exPointerComp>                              ExVariableMap;
             typedef std::map< const Constraint*, std::vector< const tlra::Bound<tlra::Numeric>* >*, constraintPointerComp > ConstraintBoundsMap;
-            typedef std::map< const Constraint*, Context, constraintPointerComp >                           ConstraintContextMap;
+            typedef std::map< const Constraint*, Context, constraintPointerComp >                                           ConstraintContextMap;
             typedef std::map< const tlra::Bound<tlra::Numeric>*, const Constraint* >                                        BoundConstraintMap;
 
         private:
@@ -108,6 +110,7 @@ namespace smtrat
             GiNaC::exmap getRationalModel() const;
             GiNaCRA::evalintervalmap getVariableBounds() const;
             void initialize();
+            Answer isIntegerConsistent();
 
             void printLinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
             void printNonlinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
@@ -134,7 +137,6 @@ namespace smtrat
                 assert( iter != mConstraintToBound.end() );
                 return iter->second->back()->pVariable();
             }
-
 
         private:
             /**

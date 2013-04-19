@@ -78,7 +78,6 @@ namespace smtrat
      */
     Manager::~Manager()
     {
-//        cout << __func__ << " " << __LINE__ << endl;
         Module::storeAssumptionsToCheck( *this );
         while( !mGeneratedModules.empty() )
         {
@@ -99,7 +98,6 @@ namespace smtrat
             delete mpThreadPool;
         }
         #endif
-//        cout << __func__ << " " << __LINE__ << endl;
     }
 
     /**

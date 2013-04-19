@@ -1,6 +1,10 @@
 set(SMTRAT_GROEBNER_Settings "5" CACHE STRING "Number of settings used for GroebnerModule")
 BeginDefineModule()
 ModuleMainHeader(GBModule/GroebnerModule.h)
+FILE(GLOB_RECURSE sources *.cpp)
+foreach(src ${sources})
+    AddModuleSource(${src})
+endforeach()
 ModuleName(GroebnerModule)
 ModuleClass(GroebnerModule<GBSettings${SMTRAT_GROEBNER_Settings}>)
 ModuleVersion(0 5 0)
@@ -9,6 +13,5 @@ ModuleSettingsName(output)
 EndDefineModule(gbEnabled)
 
 if(${gbEnabled})
-	FILE(GLOB_RECURSE sources *.cpp)
-	set(modulesSources ${modulesSources} ${sources} PARENT_SCOPE) 
+	# do something
 endif()

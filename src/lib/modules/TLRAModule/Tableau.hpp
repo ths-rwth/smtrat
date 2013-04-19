@@ -44,7 +44,7 @@
 #ifdef TLRA_REFINEMENT
 //#define TLRA_INTRODUCE_NEW_CONSTRAINT
 #endif
-#define TLRA_GOMORY_CUTS
+//#define TLRA_GOMORY_CUTS
 
 namespace smtrat
 {
@@ -72,7 +72,7 @@ namespace smtrat
                     mRight( 0 ),
                     mRowNumber( 0 ),
                     mColumnNumber( 0 ),
-                    mpContent( 0 )
+                    mpContent()
                 {}
                 ;
                 TableauEntry( EntryID _up,
@@ -81,7 +81,7 @@ namespace smtrat
                               EntryID _right,
                               unsigned _rowNumber,
                               unsigned _columnNumber,
-                              T _content ):
+                              const T& _content ):
                     mUp( _up ),
                     mDown( _down ),
                     mLeft( _left ),
@@ -89,6 +89,16 @@ namespace smtrat
                     mRowNumber( _rowNumber ),
                     mColumnNumber( _columnNumber ),
                     mpContent( _content )
+                {}
+                ;
+                TableauEntry( const TableauEntry& _entry ):
+                    mUp( _entry.mUp ),
+                    mDown( _entry.mDown ),
+                    mLeft( _entry.mLeft ),
+                    mRight( _entry.mRight ),
+                    mRowNumber( _entry.mRowNumber ),
+                    mColumnNumber( _entry.mColumnNumber ),
+                    mpContent( _entry.mpContent )
                 {}
                 ;
                 ~TableauEntry()
@@ -454,7 +464,7 @@ namespace smtrat
         {
             if( mUnusedIDs.empty() )
             {
-                mpEntries->push_back( TableauEntry<T>( 0, 0, 0, 0, 0, 0, T( 0 ) ) );
+                mpEntries->push_back( TableauEntry<T>( 0, 0, 0, 0, 0, 0, T() ) );
                 return (mpEntries->size() - 1);
             }
             else
@@ -1711,7 +1721,7 @@ namespace smtrat
                 auto lbound = lowerBounds.rbegin();
                 while( lbound != lowerBounds.rend() )
                 {
-                    if( **lbound < *newlimit && (*lbound)->type() != Bound<T>::EQUAL && !(*lbound)->deduced() )
+                    if( **lbound < *newlimit && (*lbound)->type() != Bound<T>::EQUAL )
                     {
                         break;
                     }
@@ -1920,7 +1930,7 @@ namespace smtrat
                 auto lbound = lowerBounds.rbegin();
                 while( lbound != lowerBounds.rend() )
                 {
-                    if( **lbound < *newlimit && (*lbound)->type() != Bound<T>::EQUAL && !(*lbound)->deduced() )
+                    if( **lbound < *newlimit && (*lbound)->type() != Bound<T>::EQUAL )
                     {
                         break;
                     }

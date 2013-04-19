@@ -42,7 +42,7 @@ OBJ = RedProc.o RedAns.o RedMsg.o StrBuf.o
 
 srcdir = @srcdir@
 
-REDUCE = \"$(realpath ../../../bin/redcsl)\"
+REDUCE = \"$(realpath ../../../bin/redpsl)\"
 
 all: libreduce.a libreduce.so RedPy.so lrtest bench_reduce bench_redlog
 

@@ -529,9 +529,9 @@ namespace smtrat
      * this module contains sub formulas of the received formula. In this method the LATTER is
      * returned.
      *
-     * @param _backend  The backend from which to obtain the infeasible subsets.
+     * @param _backend The backend from which to obtain the infeasible subsets.
      *
-     * @return  The infeasible subsets the given backend provides.
+     * @return The infeasible subsets the given backend provides.
      */
     vec_set_const_pFormula Module::getInfeasibleSubsets( const Module& _backend ) const
     {
@@ -590,9 +590,9 @@ namespace smtrat
     /**
      * Runs the backend solvers on the passed formula.
      *
-     * @return  TS_True,    if the passed formula is consistent;
-     *          TS_False,   if the passed formula is inconsistent;
-     *          TS_Unknown, otherwise.
+     * @return True,    if the passed formula is consistent;
+     *          False,   if the passed formula is inconsistent;
+     *          Unknown, otherwise.
      */
     Answer Module::runBackends()
     {

@@ -2305,7 +2305,7 @@ IFS=$ac_save_IFS
 case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
-BUILD=`eval "$SHELL $srcdir/findhost.sh $host $ac_configure_args"`
+BUILD=`eval "$SHELL $srcdir/../../../scripts/findhost.sh $host $ac_configure_args"`
 { $as_echo "$as_me:${as_lineno-$LINENO}: Build platform detected as $BUILD" >&5
 $as_echo "$as_me: Build platform detected as $BUILD" >&6;}
 
@@ -3931,8 +3931,8 @@ fi
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for a version of Python >= '2.1.0'" >&5
 $as_echo_n "checking for a version of Python >= '2.1.0'... " >&6; }
 	ac_supports_python_ver=`$PYTHON -c "import sys, string; \
-		ver = sys.version.split()[0]; \
-		print (ver >= '2.1.0')"`
+		ver = string.split(sys.version)[0]; \
+		print ver >= '2.1.0'"`
 	if test "$ac_supports_python_ver" != "True"; then
 		if test -z "$PYTHON_NOVERSIONCHECK"; then
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
