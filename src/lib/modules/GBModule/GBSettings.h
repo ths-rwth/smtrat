@@ -264,11 +264,35 @@ namespace smtrat
         static const bool                                iterativeVariableRewriting              = true;
     };
     
+    struct GBSettings51A : GBSettings51
+    {
+        typedef GiNaCRA::Lexicographic Order;
+        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
+        typedef GiNaCRA::BaseReductor<Order>             Reductor;
+        
+        static const unsigned                            identifier                              = 511;
+        static const bool                                iterativeVariableRewriting              = true;
+    };
+    
+    
     struct GBSettings61 : GBSettings6
     {
         static const unsigned                            identifier                              = 61;
         static const bool                                iterativeVariableRewriting              = true;
     };
+    
+    struct GBSettings61A : GBSettings61
+    {
+        typedef GiNaCRA::Lexicographic Order;
+        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
+        typedef GiNaCRA::BaseReductor<Order>             Reductor;
+        
+        static const unsigned                            identifier                              = 611;
+        static const bool                                iterativeVariableRewriting              = true;
+    };
+    
     
     struct GBSettings43 : GBSettings41
     {
@@ -285,7 +309,7 @@ namespace smtrat
         typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
-        typedef smtrat::decidePassingPolynomial			 passPolynomial;
+        
 
 		
         static const unsigned                            identifier                              = 63;
@@ -484,7 +508,8 @@ namespace smtrat
     
     
 	struct decidePassingPolynomial {
-		static bool evaluate (const GiNaCRA::MultivariatePolynomialMR<GiNaCRA::GrRevLex>& original, const GiNaCRA::MultivariatePolynomialMR<GiNaCRA::GrRevLex>& reduced) {
+        template<typename Comp>
+		static bool evaluate (const GiNaCRA::MultivariatePolynomialMR<Comp>& original, const GiNaCRA::MultivariatePolynomialMR<Comp>& reduced) {
 			return (original.lterm().tdeg() >= reduced.lterm().tdeg() && original.nrOfTerms() > reduced.nrOfTerms() );
 		}
 	};
