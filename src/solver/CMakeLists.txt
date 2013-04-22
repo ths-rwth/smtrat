@@ -36,6 +36,12 @@ add_custom_command( OUTPUT ${CMAKE_BINARY_DIR}/src/solver/lex.smtrat.cc
 	ARGS ${CMAKE_SOURCE_DIR}/src/solver/parser/Scanner.ll
 )
 
+
+# write config.h
+#######################
+configure_file( ${CMAKE_SOURCE_DIR}/src/solver/config.h.in ${CMAKE_SOURCE_DIR}/src/solver/config.h )
+
+
 # executable solver
 # # # # # # # # # #
 

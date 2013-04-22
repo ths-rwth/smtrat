@@ -25,13 +25,3 @@
 
 // Take the GBsetting from cmake
 #define GBModuleSettings @SMTRAT_GBMODULE_SETTINGS@
-
-#define CMakeStrategySolver smtrat::@SMTRAT_Strategy@
-
-//include other configs
-#ifdef SMTRAT_ENABLE_CADModule
-#include "modules/CADModule/config.h"
-#endif
-#ifdef SMTRAT_ENABLE_ReduceModule
-#include "modules/ReduceModule/config.h"
-#endif
