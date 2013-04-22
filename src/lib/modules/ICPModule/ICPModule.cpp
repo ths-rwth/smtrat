@@ -36,9 +36,9 @@
 using namespace GiNaC;
 using namespace std;
 
-#define ICPMODULE_DEBUG
+//#define ICPMODULE_DEBUG
 #define BOXMANAGEMENT
-//#define SMTRAT_DEVOPTION_VALIDATION_ICP
+#define SMTRAT_DEVOPTION_VALIDATION_ICP
 
 namespace smtrat
 {
@@ -277,8 +277,9 @@ namespace smtrat
                for ( auto candidateIt = mLinearConstraints[slackvariable].begin(); candidateIt != mLinearConstraints[slackvariable].end(); ++candidateIt )
                {
 #ifdef ICPMODULE_DEBUG
-                   cout << "[ICP] ContractionCandidates already exist.";
-                   cout << "Size Origins: " << (*candidateIt)->origin().size() << endl;
+                   cout << "[ICP] ContractionCandidates already exist: ";
+                   slackvariable->print();
+                   cout << ", Size Origins: " << (*candidateIt)->origin().size() << endl;
 
                    (*_formula)->print();
                    (*candidateIt)->print();
