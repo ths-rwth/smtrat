@@ -62,7 +62,7 @@ using namespace std;
 //#define SMTRAT_CAD_DISABLE_SMT
 #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
 //#define SMTRAT_CAD_DISABLE_MIS
-
+#define CHECK_SMALLER_MUSES
 #ifdef SMTRAT_CAD_DISABLE_SMT
     #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
     #define SMTRAT_CAD_DISABLE_MIS
@@ -269,6 +269,7 @@ namespace smtrat
             cout << "conflict graph: " << endl << conflictGraph << endl << endl;
             #endif
             vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( conflictGraph );
+            
             #ifdef SMTRAT_CAD_VARIABLEBOUNDS
             set<const Formula*> boundConstraints = mVariableBounds.getOriginsOfBounds();
             #endif
@@ -279,6 +280,14 @@ namespace smtrat
                 mInfeasibleSubsets.back().insert( boundConstraints.begin(), boundConstraints.end() );
                 #endif
             }
+            
+            #ifdef CHECK_SMALLER_MUSES
+            unsigned infsubsetsize = mInfeasibleSubsets.front().size();
+            if(infsubsetsize > 1) {
+                std::vector<Formula> infsubset = generateSubformulaeOfInfeasibleSubset(0, infsubsetsize-1);
+                storeSmallerInfeasibleSubsetsCheck(infsubset);
+            }
+            #endif
             #endif
             #ifdef MODULE_VERBOSE
             cout << endl << "#Samples: " << mCAD.samples().size() << endl;

@@ -18,6 +18,11 @@ foreach(src ${sources})
     AddModuleSource(${src})
 endforeach()
 
+ModuleName(ReduceModule)
+ModuleClass(ReduceModule)
+ModuleVersion(0 0 1)
+EndDefineModule(moduleEnabled)
+
 if(SMTRAT_ENABLE_ReduceModule)
 include(ExternalProject)
 ExternalProject_Add( libreduce
@@ -39,11 +44,6 @@ else()
 endif()
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/ReduceModule/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/ReduceModule/config.h )
 endif()
-
-ModuleName(ReduceModule)
-ModuleClass(ReduceModule)
-ModuleVersion(0 0 1)
-EndDefineModule(moduleEnabled)
 
 if(${moduleEnabled})
     # do something
