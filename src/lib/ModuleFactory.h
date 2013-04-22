@@ -29,15 +29,22 @@
  * @version: 2012-02-04
  */
 
-#include "Module.h"
-
 #ifndef SMTRAT_MODULEFACTORY_H
 #define SMTRAT_MODULEFACTORY_H
 
+#include "modules/ModuleType.h"
+#include <atomic>
+
 namespace smtrat
 {
+    // Forward declarations to speed up compile time.
     class Manager;
+    class Module;
+    class Formula;
 
+    typedef std::vector< std::atomic_bool* >                 Conditionals;
+
+    
     /**
      * An abstract base class for Module factories
      * @author Ulrich Loup

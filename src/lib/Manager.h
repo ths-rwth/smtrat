@@ -41,11 +41,12 @@
 #include "modules/ModuleType.h"
 #include "Module.h"
 #include "config.h"
-#include "Constraint.h"
 #include "modules/StandardModuleFactory.h"
 
 namespace smtrat
 {
+    // Forward declaration to speed up compile-time.
+    class Constraint;
     /**
      * Base class for solvers. This is the interface to the user.
      */
