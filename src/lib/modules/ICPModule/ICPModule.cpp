@@ -38,8 +38,7 @@ using namespace std;
 
 //#define ICPMODULE_DEBUG
 #define BOXMANAGEMENT
-//#define SMTRAT_DEVOPTION_VALIDATION_ICP
-
+#define SMTRAT_DEVOPTION_VALIDATION_ICP
 
 namespace smtrat
 {
@@ -278,8 +277,9 @@ namespace smtrat
                for ( auto candidateIt = mLinearConstraints[slackvariable].begin(); candidateIt != mLinearConstraints[slackvariable].end(); ++candidateIt )
                {
 #ifdef ICPMODULE_DEBUG
-                   cout << "[ICP] ContractionCandidates already exist.";
-                   cout << "Size Origins: " << (*candidateIt)->origin().size() << endl;
+                   cout << "[ICP] ContractionCandidates already exist: ";
+                   slackvariable->print();
+                   cout << ", Size Origins: " << (*candidateIt)->origin().size() << endl;
 
                    (*_formula)->print();
                    (*candidateIt)->print();
@@ -636,17 +636,12 @@ namespace smtrat
 #endif
                         mLRA.removeSubformula(validationFormulaIt);
                         mValidationFormula->erase(validationFormulaIt);
-//                        mReplacements.erase(replacementIt);
                         break;
                     }
                 }
                 break;
             }
         }
-        
-
-//        Answer a = runBackends();
-//        cout << "Answer: " << a << endl;
         
         if ( (*_formula)->constraint().variables().size() > 1 )
         {
@@ -888,8 +883,14 @@ namespace smtrat
                     candidate->setPayoff(relativeContraction);
                     candidate->calcRWA();
 
-                    const std::pair<double, unsigned> newCandidate = pair<double, unsigned>(candidate->RWA(), id);
-                    mIcpRelevantCandidates.insert(newCandidate);
+                    // only add nonlinear CCs as linear CCs should only be used once
+                    if ( !candidate->isLinear() )
+                    {
+                        addCandidateToRelevant(candidate);
+                    }
+                    
+//                    const std::pair<double, unsigned> newCandidate = pair<double, unsigned>(candidate->RWA(), id);
+//                    mIcpRelevantCandidates.insert(newCandidate);
                     
                     // update history node
                     mHistoryActual->addContraction(candidate);
@@ -935,28 +936,24 @@ namespace smtrat
 #endif
                     }
                     
-//                    bool originalAllFinished = true;
-//                    GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
-//                    for ( auto varIt = originalRealVariables.begin(); varIt != originalRealVariables.end(); ++varIt )
-//                    {
-//                        if ( mIntervals.find(ex_to<symbol>((*varIt).second)) != mIntervals.end() )
-//                        {
-//                            if ( mIntervals[ex_to<symbol>((*varIt).second)].diameter() > targetDiameter )
-//                            {
-//                                originalAllFinished = false;
-//                            }
-//                        }
-//                        else
-//                        {
-//                            // should not happen
-//                            assert(false);
-//                        }
-//                    }
-//                    if ( originalAllFinished )
-//                    {
-//                        mIcpRelevantCandidates.clear();
-//                        break;
-//                    }
+                    bool originalAllFinished = true;
+                    GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
+                    for ( auto varIt = originalRealVariables.begin(); varIt != originalRealVariables.end(); ++varIt )
+                    {
+                        if ( mIntervals.find(ex_to<symbol>((*varIt).second)) != mIntervals.end() )
+                        {
+                            if ( mIntervals[ex_to<symbol>((*varIt).second)].diameter() > targetDiameter )
+                            {
+                                originalAllFinished = false;
+                                break;
+                            }
+                        }
+                    }
+                    if ( originalAllFinished )
+                    {
+                        mIcpRelevantCandidates.clear();
+                        break;
+                    }
                 } //while ( !mIcpRelevantCandidates.empty() )
                 
                 // do not verify if the box is already invalid
@@ -1237,7 +1234,7 @@ namespace smtrat
                     cout << "Id actual box: " << mHistoryActual->id() << " Size subtree: " << mHistoryActual->sizeSubtree() << endl;
 #endif
 #ifdef ICP_BOXLOG
-                    icpLog << "validation added new constraints; ";
+                    icpLog << "validation added new constraints; \n";
 #endif
                     
                 }
@@ -1584,9 +1581,6 @@ namespace smtrat
 //                mVariables[ex_to<symbol>(newReal.second)].addCandidate(tmpCandidate);
 //                mVariables[ex_to<symbol>(newReal.second)].activate();
 //            }
-
-            // update mReplacementVariables
-            mReplacementVariables[newReal.first] = newReal.second;
         }
         return mLinearizations[_ex];
     }
@@ -2595,7 +2589,7 @@ namespace smtrat
         {
             // check that assertions have been processed properly
             assert( (*linearIt).second == (*linearIt).first->origin().size() );
-
+            
             if ( (*linearIt).first->isActive() && ( mIntervals[(*linearIt).first->derivationVar()].diameter() > _targetDiameter || mIntervals[(*linearIt).first->derivationVar()].diameter() == -1 ) )
             {
                 if( !findCandidateInRelevant((*linearIt).first) )

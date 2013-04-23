@@ -26,6 +26,7 @@
  */
 
 #include "NRATSolver.h"
+#include "config.h"
 
 #include <ginacra/settings.h>
 
@@ -47,26 +48,26 @@ namespace smtrat
 //        #ifdef SMTRAT_ENABLE_ReduceModule
 //        position = addBackendIntoStrategyGraph( position, MT_ReduceModule );
 //        #else
-            #ifdef SMTRAT_ENABLE_VRWModule
-            position = addBackendIntoStrategyGraph( position, MT_VRWModule );
-            #endif
-            #ifdef SMTRAT_ENABLE_CacheModule
-            //position = addBackendIntoStrategyGraph( position, MT_CacheModule );
-            #endif
-            #ifdef SMTRAT_ENABLE_LRAModule
-            position = addBackendIntoStrategyGraph( position, MT_LRAModule );
-            #endif
-            #ifdef SMTRAT_ENABLE_GroebnerModule
-            position = addBackendIntoStrategyGraph( position, MT_GroebnerModule );
-            #endif
+        #ifdef SMTRAT_ENABLE_VRWModule
+        position = addBackendIntoStrategyGraph( position, MT_VRWModule );
+        #endif
+        #ifdef SMTRAT_ENABLE_CacheModule
+        //position = addBackendIntoStrategyGraph( position, MT_CacheModule );
+        #endif
+        #ifdef SMTRAT_ENABLE_LRAModule
+        position = addBackendIntoStrategyGraph( position, MT_LRAModule );
+        #endif
+        #ifdef SMTRAT_ENABLE_GroebnerModule
+        position = addBackendIntoStrategyGraph( position, MT_GroebnerModule );
+        #endif
 
-            #ifdef SMTRAT_ENABLE_VSModule
-            position = addBackendIntoStrategyGraph( position, MT_VSModule );
-            #endif
+        #ifdef SMTRAT_ENABLE_VSModule
+        position = addBackendIntoStrategyGraph( position, MT_VSModule );
+        #endif
 
-            #ifdef SMTRAT_ENABLE_CADModule
-            position = addBackendIntoStrategyGraph( position, MT_CADModule );
-            #endif
+        #ifdef SMTRAT_ENABLE_CADModule
+        position = addBackendIntoStrategyGraph( position, MT_CADModule );
+        #endif
 //        #endif
     }
 

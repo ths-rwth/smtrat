@@ -109,7 +109,6 @@ namespace smtrat
 
             std::set<const Constraint*>                                         mCenterConstraints;
             std::set<const Formula*>                                         mBoundConstraints;
-            GiNaC::symtab                                                       mReplacementVariables;
 
             bool                                                                mInitialized;
 

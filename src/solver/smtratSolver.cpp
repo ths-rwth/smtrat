@@ -23,6 +23,7 @@
 /**
  * @file smtratSolver.cpp
  * @author Florian Corzilius
+ * @author Sebastian Junges
  *
  * Created on May 04, 2012, 2:40 PM
  */
@@ -30,12 +31,14 @@
 #include <iostream>
 #include <fstream>
 #include "ExitCodes.h"
+#include "../lib/config.h"
+
+#include "config.h"
 #include "parser/Driver.h"
-#include "../lib/strategies/strategies.h"
+#include CMakeStrategyHeader
 #include "parser/ParserSettings.h"
 #include "RuntimeSettingsManager.h"
 #include "../lib/modules/AddModules.h"
-#include "../lib/config.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "../lib/utilities/stats/CollectStatistics.h"

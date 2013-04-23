@@ -25,16 +25,13 @@
  *
  * @author Sebastian Junges
  *
- * Note: This file might be a little messy to the reader at first. For efficiency reasons however,
- * there is some cross-reference  between the datastructure and the module.
- *
  * The classes contained in here are
  * GroebnerModuleState
  * InequalitiesTable
  * GroebnerModule
  *
  * Since: 2012-01-18
- * Version: 2012-20-12
+ * Version: 2013-30-03
  */
 
 #pragma once
@@ -57,117 +54,11 @@
 #include "GBCalculationStatistics.h"
 #endif
 
+#include "GroebnerModuleState.h"
+#include "InequalitiesTable.h"
 
 namespace smtrat
 {
-
-/**
- * A class to save the current state of a GroebnerModule.
- * Used for backtracking-support
- */
-template<typename Settings>
-class GroebnerModuleState
-{
-public:
-    GroebnerModuleState( ) :
-    mRewrites()
-    {
-
-    }
-
-    GroebnerModuleState( const GiNaCRA::Buchberger<typename Settings::Order>& basis, const std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> >& rewrites ) :
-    mBasis( basis ), mRewrites(rewrites)
-    {
-    }
-
-    const GiNaCRA::Buchberger<typename Settings::Order>& getBasis( ) const
-    {
-        return mBasis;
-    }
-
-    const std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> >& getRewriteRules() const
-    {
-        return mRewrites;
-    }
-
-protected:
-    ///The state of the basis
-    const GiNaCRA::Buchberger<typename Settings::Order> mBasis;
-    const std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> > mRewrites;
-};
-
-template<typename Settings>
-class GroebnerModule;
-
-struct FormulaConstraintCompare
-{
-    bool operator( ) (const Formula::const_iterator& c1, const Formula::const_iterator & c2 ) const
-    {
-        return (( *c1 )->constraint( ) < ( *c2 )->constraint( ) );
-    }
-};
-
-/**
- * Datastructure for the GroebnerModule.
- * A table of all inequalities and how they are reduced.
- * @author Sebastian Junges
- */
-template<class Settings>
-class InequalitiesTable
-{
-protected:
-    typedef typename Settings::Polynomial Polynomial;
-    typedef typename Settings::MultivariateIdeal Ideal;
-public:
-    typedef typename std::pair<unsigned, Polynomial> CellEntry;
-    typedef typename std::tuple<Formula::iterator, Constraint_Relation, std::list<CellEntry> > RowEntry;
-    typedef typename std::map<Formula::const_iterator, RowEntry, FormulaConstraintCompare> Rows;
-    typedef typename std::pair<Formula::const_iterator, RowEntry> Row;
-    typedef typename std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> > RewriteRules;
-
-
-protected:
-    /// A map of pointers from received iterators to rows.
-    Rows mReducedInequalities;
-    /// The actual number of backtrackpoints
-    unsigned mBtnumber;
-    /// A pointer to the GroebnerModule which uses this table.
-    GroebnerModule<Settings>* mModule;
-
-    typename Rows::iterator mNewConstraints;
-
-
-    unsigned mLastRestart;
-
-public:
-    InequalitiesTable( GroebnerModule<Settings>* module );
-
-    typename Rows::iterator InsertReceivedFormula( Formula::const_iterator received );
-
-    void pushBacktrackPoint( );
-
-    void popBacktrackPoint( unsigned nrBacktracks );
-
-    Answer reduceWRTGroebnerBasis( const Ideal& gb, const RewriteRules& rules );
-    bool reduceWRTGroebnerBasis( typename  Rows::iterator, const Ideal& gb, const RewriteRules& rules );
-    Answer reduceWRTGroebnerBasis( const  std::list< typename Rows::iterator>& ineqToBeReduced, const Ideal& gb, const RewriteRules& rules );
-
-    Answer reduceWRTVariableRewriteRules( const RewriteRules& rules );
-    bool reduceWRTVariableRewriteRules( typename Rows::iterator it, const RewriteRules& rules );
-    Answer reduceWRTVariableRewriteRules( const  std::list< typename Rows::iterator>& ineqToBeReduced, const RewriteRules& rules );
-
-
-    void removeInequality( Formula::const_iterator _formula );
-
-    void print( std::ostream& os = std::cout ) const;
-
-
-private:
-    #ifdef SMTRAT_DEVOPTION_Statistics
-    GroebnerModuleStats* mStats;
-    #endif //SMTRAT_DEVOPTION_Statistics
-};
-
 /**
  * A solver module based on Groebner basis.
  * Details can be found in my Bachelor Thesis
@@ -181,6 +72,7 @@ class GroebnerModule : public Module
 public:
     typedef typename Settings::Order Order;
     typedef typename Settings::Polynomial Polynomial;
+    typedef typename Settings::MultivariateIdeal Ideal;
 protected:
     /// The current Groebner basis
     GiNaCRA::Buchberger<typename Settings::Order> mBasis;
@@ -213,25 +105,33 @@ public:
     void removeSubformula( Formula::const_iterator _formula );
 
 protected:
+    bool constraintByGB( Constraint_Relation cr );
+    
     void pushBacktrackPoint( Formula::const_iterator btpoint );
     void popBacktrackPoint( Formula::const_iterator btpoint );
     bool saveState( );
 
     std::set<const Formula*> generateReasons( const GiNaCRA::BitVector& reasons );
     void passGB( );
+    
     void knownConstraintDeduction( const std::list<std::pair<GiNaCRA::BitVector, GiNaCRA::BitVector> >& deductions );
     void newConstraintDeduction( );
-
+    void factorisedConstraintDeduction( const std::list<Polynomial>& factorisation, const GiNaCRA::BitVector& reasons );
+    
     Polynomial transformIntoEquality( Formula::const_iterator constraint );
 
-    void removeSubformulaFromPassedFormula( Formula::iterator _formula );
-
+    Polynomial callGroebnerToSDP( const Ideal& gb);
+    
     bool iterativeVariableRewriting();
-
+    bool findTrivialFactorisations();
+    
     void processNewConstraint( Formula::const_iterator _formula );
     void handleConstraintToGBQueue( Formula::const_iterator _formula );
     void handleConstraintNotToGB( Formula::const_iterator _formula );
+    
+    
     void removeReceivedFormulaFromNewInequalities( Formula::const_iterator _formula );
+    void removeSubformulaFromPassedFormula( Formula::iterator _formula );
 
     bool validityCheck( );
 public:
@@ -249,3 +149,4 @@ private:
 };
 } // namespace smtrat
 #include "GroebnerModule.tpp"
+#include "InequalitiesTable.tpp"
