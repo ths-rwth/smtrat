@@ -41,18 +41,18 @@ namespace smtrat
      * @param _capacity
      */
     ConstraintPool::ConstraintPool( unsigned _capacity ):
+        mExternalPrefixInitialized( true ),
         mIdAllocator( 1 ),
-        mAuxiliaryBooleanCounter( 0 ),
-        mAuxiliaryRealCounter( 0 ),
+        mAuxiliaryBoolVarCounter( 0 ),
+        mAuxiliaryRealVarCounter( 0 ),
+        mAuxiliaryIntVarCounter( 0 ),
+        mArithmeticVarCounter( 0 ),
         mConsistentConstraint( new Constraint( 0, CR_EQ, symtab(), 1 ) ),
         mInconsistentConstraint( new Constraint( 0, CR_LESS, symtab(), 2 ) ),
-        mInternalBoolVarNamePrefix( "b_" ),
-        mExternalBoolVarNamePrefix( "h_b_" ),
         mInternalRealVarNamePrefix( "r_" ),
-        mExternalRealVarNamePrefix( "h_r_" ),
         mInternalIntVarNamePrefix( "i_" ),
-        mExternalIntVarNamePrefix( "h_i_" ),
         mExternalVarNamePrefix( "_" ),
+        mInternalToExternalVarNames(),
         mArithmeticVariables(),
         mBooleanVariables(),
         mConstraints(),
@@ -96,9 +96,14 @@ namespace smtrat
             delete pCons;
         }
         mArithmeticVariables.clear();
+        mAuxiliaryRealVarCounter = 0;
+        mAuxiliaryIntVarCounter = 0;
         mBooleanVariables.clear();
+        mAuxiliaryBoolVarCounter = 0;
+        mArithmeticVarCounter = 0;
         mConstraints.insert( mConsistentConstraint );
         mConstraints.insert( mInconsistentConstraint );
+        mInternalToExternalVarNames.clear();
         mIdAllocator = 3;
     }
 
@@ -160,38 +165,49 @@ namespace smtrat
      * @param _name
      * @return
      */
-    ex ConstraintPool::newArithmeticVariable( const string& _name, Variable_Domain _domain, bool _parsed )
+    pair<string,ex> ConstraintPool::newArithmeticVariable( const string& _name, Variable_Domain _domain, bool _parsed )
     {
-        assert( mArithmeticVariables.find( _name ) == mArithmeticVariables.end() );
+        // Initialize the prefix for the external representation of internally generated (not parsed) variable names
+        if( _parsed ) mExternalPrefixInitialized = false;
+        else if( !mExternalPrefixInitialized ) initExternalPrefix();
+        lock_guard<mutex> lock( mMutexArithmeticVariables );
+        // Fix the internal name (used in GiNaC) of this variable
+        stringstream out;
+        if( _domain == REAL_DOMAIN ) out << mInternalRealVarNamePrefix;
+        else out << mInternalIntVarNamePrefix;
+        out << mArithmeticVarCounter++;
+        mInternalToExternalVarNames[out.str()] = _name;
+        // Create the GiNaC variable
         symtab emptySymtab;
         parser reader( emptySymtab );
-        ex var = reader( _name );
+        ex var = reader( out.str() );
+        // Set the variable's domain
         mMutexDomain.lock();
         mDomain.insert( pair< ex, Variable_Domain >( var, _domain ) );
         mMutexDomain.unlock();
-        lock_guard<mutex> lock( mMutexArithmeticVariables );
-        ex result = mArithmeticVariables.insert( pair<const string, ex>( _name, var ) ).first->second;
-        return result;
+        return *mArithmeticVariables.insert( pair<string, ex>( out.str(), var ) ).first;
     }
 
     /**
      *
      * @return
      */
-    pair<string,ex> ConstraintPool::newAuxiliaryRealVariable()
+    pair<string,ex> ConstraintPool::newAuxiliaryRealVariable( const std::string& _externalPrefix )
     {
         stringstream out;
-        out << mAuxiliaryRealNamePrefix << mAuxiliaryRealCounter++;
-        assert( mArithmeticVariables.find( out.str() ) == mArithmeticVariables.end() );
-        symtab emptySymtab;
-        parser reader( emptySymtab );
-        ex var = reader( out.str() );
-        mMutexDomain.lock();
-        mDomain.insert( pair< ex, Variable_Domain >( var, REAL_DOMAIN ) );
-        mMutexDomain.unlock();
-        lock_guard<mutex> lock( mMutexArithmeticVariables );
-        pair<string,ex> result = *mArithmeticVariables.insert( pair<const string, ex>( out.str(), var ) ).first;
-        return result;
+        out << mExternalVarNamePrefix << _externalPrefix << "_" << mAuxiliaryRealVarCounter++;
+        return newArithmeticVariable( out.str(), REAL_DOMAIN );
+    }
+
+    /**
+     *
+     * @return
+     */
+    pair<string,ex> ConstraintPool::newAuxiliaryIntVariable( const std::string& _externalPrefix )
+    {
+        stringstream out;
+        out << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryIntVarCounter++;
+        return newArithmeticVariable( out.str(), INTEGER_DOMAIN );
     }
 
     /**
@@ -202,6 +218,8 @@ namespace smtrat
     {
         lock_guard<mutex> lock( mMutexBooleanVariables );
         assert( mBooleanVariables.find( _name ) == mBooleanVariables.end() );
+        if( _parsed ) mExternalPrefixInitialized = false;
+        else if( !mExternalPrefixInitialized ) initExternalPrefix();
         mBooleanVariables.insert( _name );
     }
 
@@ -209,13 +227,38 @@ namespace smtrat
      *
      * @return
      */
-    string ConstraintPool::newAuxiliaryBooleanVariable()
+    string ConstraintPool::newAuxiliaryBooleanVariable( const std::string& _externalPrefix )
     {
-        lock_guard<mutex> lock( mMutexBooleanVariables );
         stringstream out;
-        out << mAuxiliaryBooleanNamePrefix << mAuxiliaryBooleanCounter++;
-        mBooleanVariables.insert( out.str() );
+        mMutexBooleanVariables.lock();
+        out << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryBoolVarCounter++;
+        mMutexBooleanVariables.unlock();
+        newBooleanVariable( out.str() );
         return out.str();
+    }
+    
+    /**
+     * 
+     */
+    void ConstraintPool::initExternalPrefix()
+    {
+        bool foundExternalPrefix = false;
+        while( !foundExternalPrefix )
+        {
+            auto varName = mParsedVarNames.begin(); 
+            while( varName != mParsedVarNames.end() )
+            {
+                unsigned pos = 0;
+                while( pos < varName->size() && pos < mExternalVarNamePrefix.size() && varName->at( pos ) == mExternalVarNamePrefix.at( pos ) ) ++pos;
+                if( pos == mExternalVarNamePrefix.size() - 1 )
+                {
+                    mExternalVarNamePrefix += "_";
+                    break;
+                }
+                ++varName;
+            }
+            if( varName == mParsedVarNames.end() ) foundExternalPrefix = true;
+        }
     }
 
     /**
@@ -352,6 +395,90 @@ namespace smtrat
             delete _constraint;
             return (constraintConsistent != 0 ? mConsistentConstraint : mInconsistentConstraint );
         }
+    }
+    
+    /**
+     * 
+     * @param _varname
+     * @return 
+     */
+    string ConstraintPool::externalName( const string& _varname ) const
+    {
+        auto iter = mInternalToExternalVarNames.find( _varname );
+        assert( iter != mInternalToExternalVarNames.end() );
+        return iter->second;
+    }
+    
+    /**
+     * Transforms the given expression to a string and replaces on the fly the internal GiNaC 
+     * variables by their external representation.
+     * 
+     * @param _toTransform The expression to transform to a string.
+     * 
+     * @return The resulting string.
+     */
+    string ConstraintPool::stringOf( const ex& _toTransform ) const
+    {
+        string result = "";
+        if( is_exactly_a<add>( _toTransform ) )
+        {
+            for( GiNaC::const_iterator subterm = _toTransform.begin(); subterm != _toTransform.end(); ++subterm )
+            {
+                if( subterm != _toTransform.begin() )
+                {
+                    result += "+";
+                }
+                result += stringOf( *subterm );
+            }
+        }
+        else if( is_exactly_a<mul>( _toTransform ) )
+        {
+            for( GiNaC::const_iterator subterm = _toTransform.begin(); subterm != _toTransform.end(); ++subterm )
+            {
+                if( subterm != _toTransform.begin() )
+                {
+                    result += "*";
+                }
+                result += stringOf( *subterm );
+            }
+        }
+        else if( is_exactly_a<power>( _toTransform ) )
+        {
+            assert( _toTransform.nops() == 2 );
+            ex exponent = *(++_toTransform.begin());
+            stringstream out;
+            out << exponent;
+            ex subterm = *_toTransform.begin();
+            result += stringOf( subterm ) + "^" + out.str();
+        }
+        else if( is_exactly_a<numeric>( _toTransform ) )
+        {
+            numeric num = ex_to<numeric>( _toTransform );
+            if( num.is_negative() )
+            {
+                result += "(-";
+            }
+            stringstream out;
+            out << abs( num );
+            result += out.str();
+            if( num.is_negative() )
+            {
+                result += ")";
+            }
+        }
+        else if( is_exactly_a<symbol>( _toTransform ) )
+        {
+            stringstream out;
+            out << _toTransform;
+            auto iter = mInternalToExternalVarNames.find( out.str() );
+            assert( iter != mInternalToExternalVarNames.end() );
+            result += iter->second;
+        }
+        else
+        {
+            assert( false );
+        }
+        return result;
     }
 
     /**

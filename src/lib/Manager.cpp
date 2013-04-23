@@ -37,7 +37,7 @@
 #include <typeinfo>
 #include <cln/cln.h>
 
-#define MODEL_IN_SMTLIB
+//#define MODEL_IN_SMTLIB
 
 using namespace std;
 
@@ -155,8 +155,18 @@ namespace smtrat
             for( Module::Model::const_iterator assignment = mpPrimaryBackend->model().begin(); assignment != mpPrimaryBackend->model().end(); ++assignment )
             {
                 _out << "  ";
-                _out << left << setw( Formula::constraintPool().maxLenghtOfVarName() ) << assignment->first;
-                _out << " -> " << assignment->second << endl;
+                string varName = assignment->first;
+                if( assignment->second->domain != BOOLEAN_DOMAIN )
+                {
+                    varName = Formula::constraintPool().externalName( varName );
+                    _out << left << setw( Formula::constraintPool().maxLenghtOfVarName() ) << varName;
+                    _out << " -> " << Formula::constraintPool().stringOf( *assignment->second->theoryValue ) << endl;
+                }
+                else
+                {
+                    _out << left << setw( Formula::constraintPool().maxLenghtOfVarName() ) << varName;
+                    _out << " -> " << (assignment->second->booleanValue ? "True" : "False" ) << endl;
+                }
             }
             #endif
         }

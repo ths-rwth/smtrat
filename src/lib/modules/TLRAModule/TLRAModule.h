@@ -84,6 +84,7 @@ namespace smtrat
             ConstraintBoundsMap          mConstraintToBound;
             BoundConstraintMap           mBoundToUnequalConstraintMap;
             std::vector<const tlra::Bound<tlra::Numeric>* >  mBoundCandidatesToPass;
+            std::pair< std::string, GiNaC::ex > mDelta;
 
         public:
 

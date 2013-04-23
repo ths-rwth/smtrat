@@ -1292,6 +1292,11 @@ namespace smtrat
         _out << smtlibString();
     }
 
+    /**
+     * 
+     * @param _term
+     * @return 
+     */
     const string Constraint::prefixStringOf( const ex& _term ) const
     {
         string result = "";
@@ -1382,7 +1387,7 @@ namespace smtrat
         }
         return result;
     }
-
+    
     /**
      * Prints the properties of this constraints on the given stream.
      *

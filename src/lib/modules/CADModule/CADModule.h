@@ -87,8 +87,11 @@ namespace smtrat
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         VariableBounds mVariableBounds;
         #endif
-
         public:
+            
+            /// Stores the internal (GiNaC) variable names representing the roots of univariate polynomials discovered by any CAD module
+            static std::map<std::string,std::pair<std::string,GiNaC::ex> > mRootVariables;
+            
             CADModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             virtual ~CADModule();

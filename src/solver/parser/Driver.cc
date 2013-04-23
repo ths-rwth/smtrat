@@ -268,22 +268,7 @@ namespace smtrat
         }
         else
         {
-            string ginacConformName = _varName;
-            if( ginacConformName.size() > 3 && ginacConformName[0] == 'h' && ginacConformName[1] == '_' && ginacConformName[2] != '_' )
-            {
-                ginacConformName.insert( 1, "_" );
-            }
-            for( auto iter = mRealsymbolpartsToReplace.begin(); iter != mRealsymbolpartsToReplace.end(); ++iter )
-            {
-                size_t index = ginacConformName.find( iter->first );
-                while( index!=string::npos )
-                {
-                    ginacConformName.erase( index, iter->first.size() );
-                    ginacConformName.insert( index, iter->second );
-                    index = ginacConformName.find( iter->first, index );
-                }
-            }
-            ginacConformVar = pair< string, ex >( ginacConformName, Formula::newArithmeticVariable( ginacConformName, getDomain( _theory ) ) );
+            ginacConformVar = Formula::newArithmeticVariable( _varName, getDomain( _theory ) );
         }
         pair< TheoryVarMap::iterator, bool > res = mTheoryVariables.insert( pair< string, pair< string, ex > >( _varName.empty() ? ginacConformVar.first : _varName, ginacConformVar ) );
         if( !res.second )

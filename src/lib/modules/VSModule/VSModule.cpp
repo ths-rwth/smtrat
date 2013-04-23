@@ -58,7 +58,8 @@ namespace smtrat
         mpStateTree( new State() ),
         mAllVariables(),
         mFormulaConditionMap(),
-        mRanking()
+        mRanking(),
+        mVariableVector()
     {}
 
     /**
@@ -756,34 +757,39 @@ EndSwitch:;
         clearModel();
         if( solverState() == True )
         {
+            for( unsigned i = mVariableVector.size(); i<=mRanking.begin()->second->treeDepth(); ++i )
+            {
+                stringstream outA;
+                outA << "m_inf_" << mId << "_" << i;
+                VarNamePair minfVar = Formula::newAuxiliaryRealVariable( outA.str() );
+                stringstream outB;
+                outB << "eps_" << mId << "_" << i;
+                VarNamePair epsVar = Formula::newAuxiliaryRealVariable( outB.str() );
+                mVariableVector.push_back( pair<VarNamePair,VarNamePair>( minfVar, epsVar ) );
+            }
             exmap vsAssignments = exmap();
             assert( !mRanking.empty() );
             const State* state = mRanking.begin()->second;
             while( !state->isRoot() )
             {
                 const Substitution& sub = state->substitution();
-                Assignment* ass;
+                Assignment* ass = new Assignment();
                 ex* value = new ex( 0 );
                 if( sub.type() == ST_MINUS_INFINITY )
                 {
-                    stringstream outA;
-                    outA << "m_inf_" << mId << "_" << state->treeDepth();
-                    symbol minf( outA.str() );
-                    *value += Formula::newArithmeticVariable( outA.str(), REAL_DOMAIN );
+                    *value += mVariableVector.at( state->treeDepth()-1 ).first.second;
                 }
                 else
                 {
                     *value += sub.term().asExpression();
                     if( sub.type() == ST_PLUS_EPSILON )
                     {
-                        stringstream outA;
-                        outA <<  "eps_" << mId << "_" << state->treeDepth();
-                        *value += Formula::newArithmeticVariable( outA.str(), REAL_DOMAIN );
+                        *value += mVariableVector.at( state->treeDepth()-1 ).second.second;
                     }
                 }
                 assert( vsAssignments.find( sub.varAsEx() ) == vsAssignments.end() );
                 *value = subs( *value, vsAssignments );
-                value = value->expand().normal();
+                *value = value->expand().normal();
                 vsAssignments[sub.varAsEx()] = *value;
                 ass->domain = REAL_DOMAIN;
                 ass->theoryValue = value;

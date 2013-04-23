@@ -326,11 +326,23 @@ namespace smtrat
             
             bool extendModel( const std::string& _varName, Assignment* _assignment )
             {
-                if( _varName.substr( 0, 2 ) != "h_" )
+                if( _assignment->domain != BOOLEAN_DOMAIN )
                 {
-                    return mModel.insert( pair< const string, Assignment* >( _varName, _assignment ) ).second;
+                    std::string extName = Formula::constraintPool().externalName( _varName );
+                    if( extName.substr( 0, Formula::constraintPool().externalVarNamePrefix().size() ) != Formula::constraintPool().externalVarNamePrefix() )
+                    {
+                        return mModel.insert( pair< const string, Assignment* >( _varName, _assignment ) ).second;
+                    }
+                    return false;
                 }
-                return false;
+                else
+                {
+                    if( _varName.substr( 0, Formula::constraintPool().externalVarNamePrefix().size() ) != Formula::constraintPool().externalVarNamePrefix() )
+                    {
+                        return mModel.insert( pair< const string, Assignment* >( _varName, _assignment ) ).second;
+                    }
+                    return false;
+                }
             }
 
             Answer foundAnswer( Answer );

@@ -60,7 +60,11 @@ namespace smtrat
         mConstraintToBound(),
         mBoundToUnequalConstraintMap(),
         mBoundCandidatesToPass()
-    {}
+    {
+        stringstream out;
+        out << "delta_" << mId;
+        mDelta = Formula::newAuxiliaryRealVariable( out.str() );
+    }
 
     /**
      * Destructor:
@@ -611,19 +615,17 @@ namespace smtrat
             {
                 for( ExVariableMap::const_iterator originalVar = mOriginalVars.begin(); originalVar != mOriginalVars.end(); ++originalVar )
                 {
-                    ex* value = new ex( originalVar->second->assignment().mainPart() ):
-                    if( originalVar->second->assignment().deltaPart() != 0 )
+                    ex* value = new ex( originalVar->second->assignment().mainPart().toGinacNumeric() );
+                    if( !originalVar->second->assignment().deltaPart().isZero() )
                     {
-                        stringstream outB;
-                        outB << "delta_" << mId;
-                        *value += Formula::newArithmeticVariable( outB.str(), REAL_DOMAIN ) * originalVar->second->assignment().deltaPart();
+                        *value += mDelta.second * originalVar->second->assignment().deltaPart().toGinacNumeric();
                     }
                     Assignment* assignment = new Assignment();
                     assignment->domain = REAL_DOMAIN;
                     assignment->theoryValue = value;
                     stringstream outA;
                     outA << *originalVar->first;
-                    extendModel( outA.str(), outB.str() );
+                    extendModel( outA.str(), assignment );
                 }
             }
             else

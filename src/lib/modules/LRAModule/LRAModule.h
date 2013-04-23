@@ -70,19 +70,20 @@ namespace smtrat
             /**
              * Members:
              */
-            bool                            mInitialized;
-            bool                            mAssignmentFullfilsNonlinearConstraints;
-            lra::Tableau                    mTableau;
-            ConstraintSet                   mLinearConstraints;
-            ConstraintSet                   mNonlinearConstraints;
-            ConstraintContextMap            mActiveResolvedNEQConstraints;
-            ConstraintContextMap            mActiveUnresolvedNEQConstraints;
-            ConstraintSet                   mResolvedNEQConstraints;
-            ExVariableMap                   mOriginalVars;
-            ExVariableMap                   mSlackVars;
-            ConstraintBoundsMap             mConstraintToBound;
-            BoundConstraintMap              mBoundToUnequalConstraintMap;
-            std::vector<const lra::Bound* > mBoundCandidatesToPass;
+            bool                                mInitialized;
+            bool                                mAssignmentFullfilsNonlinearConstraints;
+            lra::Tableau                        mTableau;
+            ConstraintSet                       mLinearConstraints;
+            ConstraintSet                       mNonlinearConstraints;
+            ConstraintContextMap                mActiveResolvedNEQConstraints;
+            ConstraintContextMap                mActiveUnresolvedNEQConstraints;
+            ConstraintSet                       mResolvedNEQConstraints;
+            ExVariableMap                       mOriginalVars;
+            ExVariableMap                       mSlackVars;
+            ConstraintBoundsMap                 mConstraintToBound;
+            BoundConstraintMap                  mBoundToUnequalConstraintMap;
+            std::vector<const lra::Bound* >     mBoundCandidatesToPass;
+            std::pair< std::string, GiNaC::ex > mDelta;
 
         public:
 

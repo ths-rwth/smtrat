@@ -443,12 +443,12 @@ namespace smtrat
                 return mpConstraintPool->newConstraint( _lhs, _rel, _variables );
             }
 
-            static GiNaC::ex newRealVariable( const std::string& _name )
+            static std::pair< std::string, GiNaC::ex > newRealVariable( const std::string& _name )
             {
                 return mpConstraintPool->newArithmeticVariable( _name, REAL_DOMAIN );
             }
 
-            static GiNaC::ex newArithmeticVariable( const std::string& _name, Variable_Domain _domain )
+            static std::pair< std::string, GiNaC::ex> newArithmeticVariable( const std::string& _name, Variable_Domain _domain )
             {
                 return mpConstraintPool->newArithmeticVariable( _name, _domain );
             }
@@ -468,11 +468,23 @@ namespace smtrat
              *
              * @return The fresh real variable.
              */
-            static std::pair<std::string,GiNaC::ex> newAuxiliaryRealVariable()
+            static std::pair< std::string, GiNaC::ex > newAuxiliaryRealVariable()
             {
                 return mpConstraintPool->newAuxiliaryRealVariable();
             }
 
+            /**
+             * Generates a fresh real variable and returns its identifier.
+             * 
+             * @param _varName
+             * 
+             * @return The fresh real variable.
+             */
+            static std::pair< std::string, GiNaC::ex > newAuxiliaryRealVariable( const std::string& _varName )
+            {
+                return mpConstraintPool->newAuxiliaryRealVariable( _varName );
+            }
+            
             /**
              * Generates a fresh Boolean variable and returns its identifier.
              *
@@ -487,7 +499,6 @@ namespace smtrat
             {
                 return mpConstraintPool->domain( _variable );
             }
-
 
             bool isAtom() const
             {

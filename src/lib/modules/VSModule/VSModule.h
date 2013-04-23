@@ -75,6 +75,8 @@ namespace smtrat
             typedef std::pair<UnsignedPair, vs::State*>                  ValStatePair;
             typedef std::map<UnsignedPair, vs::State*, unsignedPairCmp>  ValuationMap;
             typedef std::map<const Formula* const, const vs::Condition*> FormulaConditionMap;
+            typedef std::pair< std::string, GiNaC::ex >                  VarNamePair;
+            typedef std::vector<std::pair< VarNamePair, VarNamePair > >  VarNamePairVector;
 
             /*
              * Attributes:
@@ -89,6 +91,7 @@ namespace smtrat
             GiNaC::symtab       mAllVariables;
             FormulaConditionMap mFormulaConditionMap;
             ValuationMap        mRanking;
+            VarNamePairVector      mVariableVector;
 
         public:
 

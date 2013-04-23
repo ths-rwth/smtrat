@@ -70,6 +70,8 @@ using namespace std;
 
 namespace smtrat
 {
+    map<string,pair<string,ex> > CADModule::mRootVariables = map<string,pair<string,ex> >();
+    
     CADModule::CADModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mCAD( _conditionals ),
@@ -395,17 +397,25 @@ namespace smtrat
             vector<symbol> vars = mCAD.variables();
             for( unsigned varID = 0; varID < vars.size(); ++varID )
             {
+                Assignment* ass = new Assignment();
+                ass->domain = REAL_DOMAIN;
                 stringstream outA;
                 outA << vars[varID];
-                stringstream outB;
                 if( mRealAlgebraicSolution[varID]->isNumeric() )
-                    outB << mRealAlgebraicSolution[varID]->value();
+                    ass->theoryValue = new ex( mRealAlgebraicSolution[varID]->value() );
                 else
                 {
+                    stringstream outB;
                     GiNaCRA::RealAlgebraicNumberIRPtr irA = std::static_pointer_cast<GiNaCRA::RealAlgebraicNumberIR>( mRealAlgebraicSolution[varID] );
-                    outB << "root_ " << irA->polynomial() << ", " << irA->order() << " )";
+                    outB << "zero(" << irA->polynomial() << "," << irA->order() << ")";
+                    auto variable = CADModule::mRootVariables.find( outB.str() );
+                    if( variable == CADModule::mRootVariables.end() )
+                    {
+                        variable = CADModule::mRootVariables.insert( pair<string,pair<string,ex> >( outB.str(), Formula::newAuxiliaryRealVariable( outB.str() ) ) ).first;
+                    }
+                    ass->theoryValue = new ex( variable->second.second );
                 }
-                extendModel( outA.str(), outB.str() );
+                extendModel( outA.str(), ass );
             }
             #ifdef SMTRAT_CAD_VARIABLEBOUNDS
             // bounds for variables which were not handled in the solution point
@@ -417,11 +427,12 @@ namespace smtrat
                     vars.erase( v ); // shall never be found again
                 else
                 { // variable not handled by CAD, use the midpoint of the bounding interval for the assignment
+                    Assignment* ass = new Assignment();
+                    ass->domain = REAL_DOMAIN;
                     stringstream outA;
                     outA << b->first;
-                    stringstream outB;
-                    outB << b->second.midpoint();
-                    extendModel( outA.str(), outB.str() ) );
+                    ass->theoryValue = new ex( numeric( b->second.midpoint() ) );
+                    extendModel( outA.str(), ass );
                 }
             }
             #endif

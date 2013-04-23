@@ -65,12 +65,18 @@ namespace smtrat
 
             // Members:
 
+            ///
+            bool mExternalPrefixInitialized;
             /// id allocator
             unsigned mIdAllocator;
-            /// A counter for the auxiliary Booleans defined in this formula.
-            unsigned mAuxiliaryBooleanCounter;
-            /// A counter for the auxiliary Booleans defined in this formula.
-            unsigned mAuxiliaryRealCounter;
+            /// A counter for the auxiliary Boolean valued variables.
+            unsigned mAuxiliaryBoolVarCounter;
+            /// A counter for the auxiliary real valued variables.
+            unsigned mAuxiliaryRealVarCounter;
+            /// A counter for the auxiliary integer valued variables.
+            unsigned mAuxiliaryIntVarCounter;
+            /// A counter for the auxiliary integer valued variables.
+            unsigned mArithmeticVarCounter;
             ///
             const Constraint* mConsistentConstraint;
             ///
@@ -83,20 +89,14 @@ namespace smtrat
             mutable std::mutex mMutexDomain;
             ///
             mutable std::mutex mMutexAllocator;
-            /// The internal prefix for a Boolean valued variable.
-            const std::string mInternalBoolVarNamePrefix;
-            /// The external prefix for a Boolean valued variable.
-            const std::string mExternalBoolVarNamePrefix;
             /// The internal prefix for a real valued variable.
             const std::string mInternalRealVarNamePrefix;
-            /// The external prefix for a real valued variable.
-            const std::string mExternalRealVarNamePrefix;
             /// The internal prefix for a integer valued variable.
             const std::string mInternalIntVarNamePrefix;
-            /// The external prefix for a integer valued variable.
-            const std::string mExternalIntVarNamePrefix;
             /// The external prefix for a variable.
-            const std::string mExternalVarNamePrefix;
+            std::string mExternalVarNamePrefix;
+            /// 
+            std::map< std::string, std::string > mInternalToExternalVarNames;
             /// the symbol table containing the variables of all constraints
             GiNaC::symtab mArithmeticVariables;
             /// The collection of Boolean variables in use.
@@ -105,6 +105,8 @@ namespace smtrat
             fastConstraintSet mConstraints;
             /// The domain of the variables occurring in the constraints.
             std::map< GiNaC::ex, Variable_Domain, GiNaC::ex_is_less > mDomain;
+            ///
+            std::vector< std::string > mParsedVarNames;
 
             // Methods:
 
@@ -192,18 +194,28 @@ namespace smtrat
                     }
                 }
             }
+            
+            std::string externalVarNamePrefix() const
+            {
+                return mExternalVarNamePrefix;
+            }
 
             void clear(); // Do not use it. It is only made for the Benchmax.
             unsigned maxLenghtOfVarName() const;
             const Constraint* newConstraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& );
             const Constraint* newConstraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& );
 
-            GiNaC::ex newArithmeticVariable( const std::string&, Variable_Domain, bool = false );
-            std::pair<std::string,GiNaC::ex> newAuxiliaryRealVariable();
+            std::pair<std::string,GiNaC::ex> newArithmeticVariable( const std::string&, Variable_Domain, bool = false );
+            std::pair<std::string,GiNaC::ex> newAuxiliaryIntVariable(  const std::string& = "h_i" );
+            std::pair<std::string,GiNaC::ex> newAuxiliaryRealVariable(  const std::string& = "h_r" );
             void newBooleanVariable( const std::string&, bool = false );
-            std::string newAuxiliaryBooleanVariable();
+            std::string newAuxiliaryBooleanVariable( const std::string& = "h_b" );
+            void initExternalPrefix();
             int maxDegree() const;
             unsigned nrNonLinearConstraints() const;
+            std::string replaceInternalByExternalVariables( const std::string& );
+            std::string externalName( const std::string& ) const;
+            std::string stringOf( const GiNaC::ex& ) const;
             void print( std::ostream& = std::cout ) const;
             void printVariables( std::ostream& = std::cout ) const;
     };
