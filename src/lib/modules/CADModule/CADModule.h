@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-02-04
- * @version 2013-02-05
+ * @version 2013-04-25
  *
  */
 #ifndef SMTRAT_CADMODULE_H
@@ -87,11 +87,14 @@ namespace smtrat
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         VariableBounds mVariableBounds;
         #endif
+        /// counts the number of constraints added since the last call to CAD::check
+        unsigned mNewConstraintCount;
+
         public:
-            
+
             /// Stores the internal (GiNaC) variable names representing the roots of univariate polynomials discovered by any CAD module
             static std::map<std::string,std::pair<std::string,GiNaC::ex> > mRootVariables;
-            
+
             CADModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             virtual ~CADModule();

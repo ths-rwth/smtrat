@@ -71,17 +71,17 @@ using namespace std;
 namespace smtrat
 {
     map<string,pair<string,ex> > CADModule::mRootVariables = map<string,pair<string,ex> >();
-    
+
     CADModule::CADModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mCAD( _conditionals ),
         mConstraints(),
         mConstraintsMap(),
-        mRealAlgebraicSolution()
+        mRealAlgebraicSolution(),
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
-        ,
-        mVariableBounds()
+        mVariableBounds(),
         #endif
+        mNewConstraintCount(0)
     {
         mModuleType = MT_CADModule;
         mInfeasibleSubsets.clear();    // initially everything is satisfied
@@ -173,6 +173,7 @@ namespace smtrat
         mConstraints.push_back( constraint );
         mConstraintsMap[ _subformula ] = mConstraints.size() - 1;
         mCAD.addPolynomial( constraint.polynomial(), constraint.variables() );
+        ++mNewConstraintCount;
         return true;
     }
 
@@ -192,7 +193,9 @@ namespace smtrat
         cout << "Checking constraint set " << endl;
         for( vector<GiNaCRA::Constraint>::const_iterator k = mConstraints.begin(); k != mConstraints.end(); ++k )
             cout << " " << *k << endl;
+        cout << "Number of new constraints added: " << mNewConstraintCount << endl;
         #endif
+        mNewConstraintCount = 0;
         // perform the scheduled elimination and see if there were new variables added
         mCAD.prepareElimination();
         #ifdef MODULE_VERBOSE
@@ -271,7 +274,7 @@ namespace smtrat
             cout << "conflict graph: " << endl << conflictGraph << endl << endl;
             #endif
             vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( conflictGraph );
-            
+
             #ifdef SMTRAT_CAD_VARIABLEBOUNDS
             set<const Formula*> boundConstraints = mVariableBounds.getOriginsOfBounds();
             #endif
@@ -282,7 +285,7 @@ namespace smtrat
                 mInfeasibleSubsets.back().insert( boundConstraints.begin(), boundConstraints.end() );
                 #endif
             }
-            
+
             #ifdef CHECK_SMALLER_MUSES
             unsigned infsubsetsize = mInfeasibleSubsets.front().size();
             if(infsubsetsize > 1) {
