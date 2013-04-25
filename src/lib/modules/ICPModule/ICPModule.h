@@ -31,6 +31,7 @@
 #define ICPMODULE_H
 
 #define ICP_BOXLOG
+#define SMTRAT_DEVOPTION_VALIDATION_ICP
 
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
@@ -111,12 +112,15 @@ namespace smtrat
             std::set<const Formula*>                                         mBoundConstraints;
 
             bool                                                                mInitialized;
-
             unsigned                                                            mCurrentId;
             
 #ifdef ICP_BOXLOG
             std::fstream icpLog;
 #endif
+#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
+            Formula*                                                            mCheckContraction;
+#endif
+            
 
         public:
 
@@ -323,8 +327,8 @@ namespace smtrat
                     {
                         if( (*subformula)->getType() == REALCONSTRAINT )
                         {
-                            cout << "TO FIND:";
-                            (*subformula)->print();
+//                            cout << "TO FIND:";
+//                            (*subformula)->print();
                             auto iter = mReplacements.find( (*subformula)->pConstraint() );
                             assert( iter != mReplacements.end() );
                             Formula* constraintFormula = new Formula( iter->second ); 

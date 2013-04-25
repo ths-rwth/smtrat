@@ -36,9 +36,8 @@
 using namespace GiNaC;
 using namespace std;
 
-//#define ICPMODULE_DEBUG
+#define ICPMODULE_DEBUG
 #define BOXMANAGEMENT
-#define SMTRAT_DEVOPTION_VALIDATION_ICP
 
 namespace smtrat
 {
@@ -87,6 +86,9 @@ namespace smtrat
         {
             icpLog.close();
         }
+#endif
+#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
+        delete mCheckContraction;
 #endif
     }
 
@@ -660,7 +662,7 @@ namespace smtrat
         std::pair<bool,symbol> didSplit;
         didSplit.first = false;
         vec_set_const_pFormula violatedConstraints = vec_set_const_pFormula();
-        double targetDiameter = 0.1;
+        double targetDiameter = 1;
         double contractionThreshold = 0.01;
 
         // Debug Outputs of linear and nonlinear Tables
@@ -779,6 +781,11 @@ namespace smtrat
         bool boxFeasible = true;
         bool invalidBox = false;
 
+#ifdef ICP_BOXLOG
+        icpLog << "startTheoryCall";
+        writeBox();
+#endif
+        
         do //while BoxFeasible
         {
             bool icpFeasible = true;
@@ -794,12 +801,6 @@ namespace smtrat
                 icpLog << "startContraction";
                 writeBox();
 #endif
-
-                // prepare IcpRelevantCandidates
-                fillCandidates(targetDiameter);
-                
-                splitOccurred = false;
-                
 #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
                 Formula* negatedContraction = new Formula(*mpReceivedFormula);
                 std::set<Formula*> boundaryConstraints = createConstraintsFromBounds();
@@ -809,14 +810,18 @@ namespace smtrat
                 }
 #endif
                 
+                // prepare IcpRelevantCandidates
+                fillCandidates(targetDiameter);
+                splitOccurred = false;
+                
                 while ( !mIcpRelevantCandidates.empty() && !splitOccurred )
                 {
 #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-                    Formula* checkContraction = new Formula(*mpReceivedFormula);
+                    mCheckContraction = new Formula(*mpReceivedFormula);
                     std::set<Formula*> boundaryConstraints = createConstraintsFromBounds();
                     for ( auto boundaryConstraint = boundaryConstraints.begin(); boundaryConstraint != boundaryConstraints.end(); ++boundaryConstraint )
                     {
-                        checkContraction->addSubformula(*boundaryConstraint);
+                        mCheckContraction->addSubformula(*boundaryConstraint);
                     }
 #endif
                     
@@ -828,7 +833,7 @@ namespace smtrat
                     splitOccurred = contraction( candidate, relativeContraction );
 
 #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-                    if ( !splitOccurred )
+                    if ( !splitOccurred && relativeContraction != 0 )
                     {
                         std::set<Formula*> contractedBox = createConstraintsFromBounds();
 
@@ -840,11 +845,11 @@ namespace smtrat
                             boxConjunction->addSubformula(*formulaIt);
                         }
                         negBox->addSubformula(boxConjunction);
-                        checkContraction->addSubformula(negBox);
+                        mCheckContraction->addSubformula(negBox);
 
-                        addAssumptionToCheck(*checkContraction,false,"SingleContractionCheck");
-                        delete checkContraction;
-                    }              
+                        addAssumptionToCheck(*mCheckContraction,false,"SingleContractionCheck");
+                        mCheckContraction->clear();
+                    }
 #endif
 
                     // catch if new interval is empty -> we can drop box and chose next box
@@ -1639,7 +1644,7 @@ namespace smtrat
             mHistoryActual->setSplit(varptr);
 
             GiNaCRA::DoubleInterval originalInterval = mIntervals[variable];
-
+            
             // set intervals and update historytree
 //            mIntervals[variable] = mIntervals[variable].intersect(resultB);
             GiNaCRA::evaldoubleintervalmap tmpRight = GiNaCRA::evaldoubleintervalmap();
@@ -1654,10 +1659,75 @@ namespace smtrat
                     tmpRight.insert((*intervalIt));
                 }
             }
+
+#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
+            std::set<Formula*> partialBox;
             
+            for ( auto intervalIt = tmpRight.begin(); intervalIt != tmpRight.end(); ++intervalIt )
+            {
+                numeric bound = GiNaC::rationalize( (*intervalIt).second.left() );
+                GiNaC::ex leftEx = (*intervalIt).first - bound;
+                GiNaC::symtab variables;
+                variables.insert(std::pair<string, ex>((*intervalIt).first.get_name(), (*intervalIt).first));
+
+                const Constraint* leftTmp;
+                switch ((*intervalIt).second.leftType())
+                {
+                    case GiNaCRA::DoubleInterval::INFINITY_BOUND:
+                        leftTmp = NULL;
+                        break;
+                    case GiNaCRA::DoubleInterval::STRICT_BOUND:
+                        leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
+                        break;
+                    case GiNaCRA::DoubleInterval::WEAK_BOUND:
+                        leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
+                        break;
+                }
+                if ( leftTmp != NULL )
+                {
+                    Formula* leftBound = new Formula(leftTmp);
+                    partialBox.insert(leftBound);
+                }
+                
+                bound = GiNaC::rationalize( (*intervalIt).second.right() );
+                GiNaC::ex rightEx = (*intervalIt).first - bound;
+                variables.clear();
+                variables.insert(std::pair<string, ex>((*intervalIt).first.get_name(), (*intervalIt).first));
+
+                const Constraint* rightTmp;
+                switch ((*intervalIt).second.rightType())
+                {
+                    case GiNaCRA::DoubleInterval::INFINITY_BOUND:
+                        rightTmp = NULL;
+                        break;
+                    case GiNaCRA::DoubleInterval::STRICT_BOUND:
+                        rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
+                        break;
+                    case GiNaCRA::DoubleInterval::WEAK_BOUND:
+                        rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
+                        break;
+                }
+                if ( rightTmp != NULL )
+                {
+                    Formula* rightBound = new Formula(rightTmp);
+                    partialBox.insert(rightBound);
+                }
+            }
+            
+            Formula* negBox = new Formula(NOT);
+            Formula* boxConjunction = new Formula(AND);
+
+            for ( auto formulaIt = partialBox.begin(); formulaIt != partialBox.end(); ++formulaIt )
+            {
+                boxConjunction->addSubformula(*formulaIt);
+            }
+            negBox->addSubformula(boxConjunction);
+            mCheckContraction->addSubformula(negBox);
+            partialBox.clear();
+#endif
+
             icp::HistoryNode* newRightChild = new icp::HistoryNode(tmpRight, mCurrentId+2);
             mHistoryActual->addRight(newRightChild);
-
 
             // left first!
 //            mIntervals[variable] = mIntervals[variable].intersect(resultA);
@@ -1673,16 +1743,78 @@ namespace smtrat
                     tmpLeft.insert((*intervalIt));
                 }
             }
-            
+#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
+            for ( auto intervalIt = tmpLeft.begin(); intervalIt != tmpLeft.end(); ++intervalIt )
+            {
+                numeric bound = GiNaC::rationalize( (*intervalIt).second.left() );
+                GiNaC::ex leftEx = (*intervalIt).first - bound;
+                GiNaC::symtab variables;
+                variables.insert(std::pair<string, ex>((*intervalIt).first.get_name(), (*intervalIt).first));
+
+                const Constraint* leftTmp;
+                switch ((*intervalIt).second.leftType())
+                {
+                    case GiNaCRA::DoubleInterval::INFINITY_BOUND:
+                        leftTmp = NULL;
+                        break;
+                    case GiNaCRA::DoubleInterval::STRICT_BOUND:
+                        leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
+                        break;
+                    case GiNaCRA::DoubleInterval::WEAK_BOUND:
+                        leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
+                        break;
+                }
+                if ( leftTmp != NULL )
+                {
+                    Formula* leftBound = new Formula(leftTmp);
+                    partialBox.insert(leftBound);
+                }
+                
+                bound = GiNaC::rationalize( (*intervalIt).second.right() );
+                GiNaC::ex rightEx = (*intervalIt).first - bound;
+                variables.clear();
+                variables.insert(std::pair<string, ex>((*intervalIt).first.get_name(), (*intervalIt).first));
+
+                const Constraint* rightTmp;
+                switch ((*intervalIt).second.rightType())
+                {
+                    case GiNaCRA::DoubleInterval::INFINITY_BOUND:
+                        rightTmp = NULL;
+                        break;
+                    case GiNaCRA::DoubleInterval::STRICT_BOUND:
+                        rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
+                        break;
+                    case GiNaCRA::DoubleInterval::WEAK_BOUND:
+                        rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
+                        break;
+                }
+                if ( rightTmp != NULL )
+                {
+                    Formula* rightBound = new Formula(rightTmp);
+                    partialBox.insert(rightBound);
+                }
+            }
+                
+            Formula* negBox2 = new Formula(NOT);
+            Formula* boxConjunction2 = new Formula(AND);
+
+            for ( auto formulaIt = partialBox.begin(); formulaIt != partialBox.end(); ++formulaIt )
+            {
+                boxConjunction2->addSubformula(*formulaIt);
+            }
+            negBox2->addSubformula(boxConjunction2);
+            mCheckContraction->addSubformula(negBox2);
+
+            addAssumptionToCheck(*mCheckContraction,false,"SplitCheck");
+            mCheckContraction->clear();
+#endif
             icp::HistoryNode* newLeftChild = new icp::HistoryNode(tmpLeft,++mCurrentId);
             
             ++mCurrentId;
-            
             mHistoryActual = mHistoryActual->addLeft(newLeftChild);
 
             // update mIntervals - usually this happens when changing to a different box, but in this case it has to be done manually, otherwise mIntervals is not affected.
             mIntervals[variable] = originalInterval.intersect(resultB);
-
             _relativeContraction = (originalDiameter - originalInterval.intersect(resultB).diameter()) / originalInterval.diameter();
         }
         else
@@ -2936,12 +3068,17 @@ namespace smtrat
                 {
                     Formula* leftBound = new Formula(leftTmp);
                     addedBoundaries.insert(leftBound);
+#ifdef ICPMODULE_DEBUG
+                    cout << "Created lower boundary constraint: ";
+                    leftBound->print();
+                    cout << endl;
+#endif
                 }
 
                 // right:
                 bound = GiNaC::rationalize(mVariables[tmpSymbol].interval()->second.right());
                 GiNaC::ex rightEx = tmpSymbol - bound;
-
+                
                 const Constraint* rightTmp;
                 switch (mVariables[tmpSymbol].interval()->second.rightType())
                 {
@@ -2959,6 +3096,11 @@ namespace smtrat
                 {
                     Formula* rightBound = new Formula(rightTmp);
                     addedBoundaries.insert(rightBound);
+#ifdef ICPMODULE_DEBUG
+                    cout << "Created upper boundary constraint: ";
+                    rightBound->print();
+                    cout << endl;
+#endif
                 }
             }
         }
