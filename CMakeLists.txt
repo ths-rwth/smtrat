@@ -8,7 +8,7 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2013-03-31                                         #
+# Version: 2013-04-25                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
@@ -29,15 +29,15 @@ cmake_minimum_required (VERSION 2.8)
 # # # # # # # # # # # # # # # # # # # # # #
 project(smtrat CXX)
 
-set( PROJECT_FULLNAME "SMT-RAT")
-set( PROJECT_DESCRIPTION "Satisfiability-Modulo-Theories Real Algebra Toolbox")
-set( smtrat_MAJORVERSION 0)
-set( smtrat_MINORVERSION 4)
-set( smtrat_MAINTENANCEVERSION 0)
-set( smtrat_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
-set( PROJECT_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
-set( smtrat_NAME "SMT-RAT" )
-set( smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
+set(PROJECT_FULLNAME "SMT-RAT")
+set(PROJECT_DESCRIPTION "Satisfiability-Modulo-Theories Real Algebra Toolbox")
+set(smtrat_MAJORVERSION 0)
+set(smtrat_MINORVERSION 4)
+set(smtrat_MAINTENANCEVERSION 0)
+set(smtrat_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
+set(PROJECT_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
+set(smtrat_NAME "SMT-RAT" )
+set(smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 
 
 # # # # # # # # # # # # # # # # # # # # # #
@@ -45,7 +45,7 @@ set( smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 # # # # # # # # # # # # # # # # # # # # # #
 
 # options
-option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
+option(STATICLIB_SWITCH "Compile a statically linked version of the library." OFF)
 option(BUILD_SOLVER "Build the SMT-RAT Solver" ON)
 option(BUILD_GUI "Build the GUI" OFF)
 
@@ -55,9 +55,9 @@ set(SMTRAT_Strategy "NRATSolver" CACHE STRING "Used strategy in the solver")
 option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 
 # Development options
-option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file")
-option(SMTRAT_DEVOPTION_MeasureTime "Measure times and number of calls")
-option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering")
+option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file" ON)
+option(SMTRAT_DEVOPTION_MeasureTime "Measure times and number of calls" ON)
+option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering" ON)
 
 # path to find own modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
@@ -68,7 +68,8 @@ include( smtratmacros )
 # general compiler and linker settings
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -std=c++0x")
 if(${STATICLIB_SWITCH} STREQUAL "ON")
-  set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive" )
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive")
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
 endif()
 
 # path to put in the executables
