@@ -164,7 +164,7 @@ namespace icp
 
             void print( ostream& _out = std::cout ) const
             {
-                _out << mVar << ", ";
+                _out << "Original: " << mOriginal << ", " << mVar << ", ";
                 if( mLraVar != NULL )
                 {
                     mLraVar->print();

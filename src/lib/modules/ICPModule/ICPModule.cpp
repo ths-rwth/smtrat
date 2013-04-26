@@ -213,7 +213,15 @@ namespace smtrat
 
                     if ( mVariables.find(ex_to<symbol>((*varIt).second)) == mVariables.end() )
                     {
-                        mVariables[ex_to<symbol>((*varIt).second)] = icp::IcpVariable(ex_to<symbol>((*varIt).second), true , *candidateIt, mIntervals.find(ex_to<symbol>((*varIt).second)));
+                        if ( (*candidateIt)->lhs() == ex_to<symbol>((*varIt).second) )
+                        {
+                            mVariables[ex_to<symbol>((*varIt).second)] = icp::IcpVariable(ex_to<symbol>((*varIt).second), false , *candidateIt, mIntervals.find(ex_to<symbol>((*varIt).second)));
+                        }
+                        else
+                        {
+                            mVariables[ex_to<symbol>((*varIt).second)] = icp::IcpVariable(ex_to<symbol>((*varIt).second), true , *candidateIt, mIntervals.find(ex_to<symbol>((*varIt).second)));
+                        }
+                        
                     }
                     else
                     {
@@ -345,8 +353,17 @@ namespace smtrat
                    {
                        mIntervals[ex_to<symbol>(newReal.second)] = GiNaCRA::DoubleInterval::unboundedInterval();
                    }
-                   // create icpVariable
-                   mVariables[ex_to<symbol>(newReal.second)] = icp::IcpVariable(ex_to<symbol>(newReal.second), false, newCandidate, mIntervals.find(ex_to<symbol>(newReal.second)) );
+                   // create
+                   const std::string name = (*variableIt).first;
+                   if( replacementPtr->hasVariable(name) )
+                   {
+                       mVariables[ex_to<symbol>(newReal.second)] = icp::IcpVariable(ex_to<symbol>(newReal.second), true, newCandidate, mIntervals.find(ex_to<symbol>(newReal.second)) );
+                   }
+                   else
+                   {
+                       mVariables[ex_to<symbol>(newReal.second)] = icp::IcpVariable(ex_to<symbol>(newReal.second), false, newCandidate, mIntervals.find(ex_to<symbol>(newReal.second)) );
+                   }
+                   
 
                    // get intervals to set them in case they are not already set
                    GiNaCRA::evalintervalmap tmp = mLRA.getVariableBounds();
@@ -370,7 +387,14 @@ namespace smtrat
                                
                                assert(false);
                            }
-                           mVariables[ex_to<symbol>((*varIt).second)] = icp::IcpVariable(ex_to<symbol>((*varIt).second), true, newCandidate, mIntervals.find(ex_to<symbol>((*varIt).second)));
+                            if( replacementPtr->hasVariable((*variableIt).first) )
+                            {
+                                mVariables[ex_to<symbol>((*varIt).second)] = icp::IcpVariable(ex_to<symbol>((*varIt).second), true, newCandidate, mIntervals.find(ex_to<symbol>((*varIt).second)) );
+                            }
+                            else
+                            {
+                                mVariables[ex_to<symbol>((*varIt).second)] = icp::IcpVariable(ex_to<symbol>((*varIt).second), false, newCandidate, mIntervals.find(ex_to<symbol>((*varIt).second)) );
+                            }
                        }
                        else
                        {
