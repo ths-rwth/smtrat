@@ -147,7 +147,6 @@ namespace smtrat
              */
             Constraint();
             Constraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab&, unsigned = 0 );
-            Constraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation&, const GiNaC::symtab&, unsigned = 0 );
             Constraint( const Constraint&, bool = false );
 
             /*
@@ -242,9 +241,13 @@ namespace smtrat
 
             static void normalize( GiNaC::ex& _exp )
             {
-                GiNaC::numeric commonDenom = GiNaC::mdenom( _exp );
-                if( commonDenom != 1 ) _exp *= commonDenom;
                 _exp = _exp.expand();
+                GiNaC::numeric commonDenom = GiNaC::mdenom( _exp );
+                if( commonDenom != 1 )
+                {
+                    _exp *= commonDenom;
+                    _exp = _exp.expand();
+                }
             }
 
             unsigned maxDegree( const ex& _variable ) const

@@ -39,7 +39,7 @@
 #include <ginac/ginac.h>
 #include "../../lib/Constraint.h"
 
-//#define REPLACE_LET_EXPRESSIONS_DIRECTLY
+#define REPLACE_LET_EXPRESSIONS_DIRECTLY
 
 namespace smtrat
 {

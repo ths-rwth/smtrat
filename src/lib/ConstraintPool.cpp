@@ -327,15 +327,40 @@ namespace smtrat
     {
         if( _rel == CR_GREATER )
         {
-            return new Constraint( -_lhs, CR_LESS, _variables, mIdAllocator );
+            ex lhs = -_lhs;
+            Constraint::normalize( lhs );
+            return new Constraint( lhs, CR_LESS, _variables, mIdAllocator );
         }
         else if( _rel == CR_GEQ )
         {
-            return new Constraint( -_lhs, CR_LEQ, _variables, mIdAllocator );
+            ex lhs = -_lhs;
+            Constraint::normalize( lhs );
+            return new Constraint( lhs, CR_LEQ, _variables, mIdAllocator );
         }
         else
         {
-            return new Constraint( _lhs, _rel, _variables, mIdAllocator );
+            ex lhs = _lhs;
+            Constraint::normalize( lhs );
+            if( _rel == CR_EQ || _rel == CR_NEQ ) 
+            {
+                bool isNegativ = false;
+                if( is_exactly_a<add>( lhs ) )
+                {
+                    const ex summand = *--lhs.end();
+                    if( is_exactly_a<mul>( summand ) ) 
+                    {
+                        const ex factor = *--summand.begin();
+                        if( is_exactly_a<numeric>( factor ) ) isNegativ = factor.info( info_flags::negative );
+                    }
+                }
+                else if( is_exactly_a<mul>( lhs ) )
+                {
+                    const ex factor = *--lhs.end();
+                    if( is_exactly_a<numeric>( factor ) ) isNegativ = factor.info( info_flags::negative );
+                }
+                if( isNegativ ) lhs = ex( -lhs ).expand();
+            }
+            return new Constraint( lhs, _rel, _variables, mIdAllocator );
         }
     }
 
