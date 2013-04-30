@@ -87,9 +87,6 @@ namespace smtrat
             icpLog.close();
         }
 #endif
-#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-        delete mCheckContraction;
-#endif
     }
 
     bool ICPModule::inform( const Constraint* const _constraint )
@@ -478,7 +475,13 @@ namespace smtrat
                                         icp::HistoryNode* firstNode = (*nodes.begin())->parent();
                                         if ( *firstNode == *mHistoryRoot )
                                         {
-                                            firstNode = mHistoryRoot->addRight(new icp::HistoryNode(mHistoryRoot->intervals(), 2));
+                                            GiNaCRA::evaldoubleintervalmap rootmap;
+                                            for ( auto intervalIt = mHistoryRoot->intervals().begin(); intervalIt != mHistoryRoot->intervals().end(); ++intervalIt )
+                                            {
+                                                cout << ".";
+                                                rootmap[(*intervalIt).first] = GiNaCRA::DoubleInterval((*intervalIt).second);
+                                            }
+                                            firstNode = mHistoryRoot->addRight(new icp::HistoryNode(rootmap, 2));
                                         }
                                         setBox(firstNode);
                                     }
@@ -522,19 +525,22 @@ namespace smtrat
                 if (mActiveNonlinearConstraints.find(*candidateIt) == mActiveNonlinearConstraints.end())
                 {
                     // clean up affected candidates
-                    mVariables.erase((*candidateIt)->lhs());
                     for ( auto variableIt = (*candidateIt)->constraint()->variables().begin(); variableIt != (*candidateIt)->constraint()->variables().end(); ++variableIt )
                     {
                         symbol variable = ex_to<symbol>((*variableIt).second);
-                        for ( auto varCandidateIt = mVariables[variable].candidates().begin(); varCandidateIt != mVariables[variable].candidates().end(); ++varCandidateIt )
+                        for ( auto varCandidateIt = mVariables[variable].candidates().begin(); varCandidateIt != mVariables[variable].candidates().end(); )
                         {
                             if ( *candidateIt == *varCandidateIt )
                             {
-                                mVariables[variable].candidates().erase(varCandidateIt);
-                                break;
+                                varCandidateIt = mVariables[variable].candidates().erase(varCandidateIt);
+                            }
+                            else
+                            {
+                                ++varCandidateIt;
                             }
                         }
                     }
+                    mVariables.erase((*candidateIt)->lhs());
 
                     // find all linear replacements and deactivate them as well
                     for ( auto activeLinearIt = mActiveLinearConstraints.begin(); activeLinearIt != mActiveLinearConstraints.end(); )
@@ -569,6 +575,10 @@ namespace smtrat
                                 
                                 activeLinearIt= mActiveLinearConstraints.erase(activeLinearIt);
                             }
+                        }
+                        else
+                        {
+                            ++activeLinearIt;
                         }
                     }
                 }
@@ -2437,6 +2447,7 @@ namespace smtrat
     {
         std::pair<bool,symbol> result;
         result.first = false;
+        bool found = false;
 
         // first check all intevals from nonlinear contractionCandidats -> backwards to begin at the most important candidate
         for ( auto candidateIt = mActiveNonlinearConstraints.rbegin(); candidateIt != mActiveNonlinearConstraints.rend(); ++candidateIt )
@@ -2447,13 +2458,15 @@ namespace smtrat
                 // search for the biggest interval and check if it is larger than the target Diameter
                 for ( auto variableIt = (*candidateIt).first->constraint()->variables().begin(); variableIt != (*candidateIt).first->constraint()->variables().end(); ++variableIt )
                 {
-                    if ( mIntervals.find(ex_to<symbol>((*variableIt).second)) != mIntervals.end() && mIntervals[ex_to<symbol>((*variableIt).second)].diameter() > mIntervals[variable].diameter() )
+                    if ( mIntervals.find(ex_to<symbol>((*variableIt).second)) != mIntervals.end() && mIntervals[ex_to<symbol>((*variableIt).second)].diameter() > _targetDiameter && mVariables[ex_to<symbol>((*variableIt).second)].isOriginal() )
                     {
                         variable = ex_to<symbol>((*variableIt).second);
+                        found  = true;
+                        break;
                     }
                 }
 
-                if ( mIntervals[variable].diameter() > _targetDiameter )
+                if ( found )
                 {
                     //perform split and add two historyNodes
 #ifdef ICPMODULE_DEBUG
@@ -2525,13 +2538,15 @@ namespace smtrat
                 // search for the biggest interval and check if it is larger than the target Diameter
                 for ( auto variableIt = (*candidateIt).first->constraint()->variables().begin(); variableIt != (*candidateIt).first->constraint()->variables().end(); ++variableIt )
                 {
-                    if ( mIntervals.find(ex_to<symbol>((*variableIt).second)) != mIntervals.end() && mIntervals[ex_to<symbol>((*variableIt).second)].diameter() > mIntervals[variable].diameter() )
+                    if ( mIntervals.find(ex_to<symbol>((*variableIt).second)) != mIntervals.end() && mIntervals[ex_to<symbol>((*variableIt).second)].diameter() > _targetDiameter && mVariables[ex_to<symbol>((*variableIt).second)].isOriginal() )
                     {
                         variable = ex_to<symbol>((*variableIt).second);
+                        found = true;
+                        break;
                     }
                 }
 
-                if ( mIntervals[variable].diameter() > _targetDiameter )
+                if ( found )
                 {
                     //perform split and add two historyNodes
 #ifdef ICPMODULE_DEBUG
@@ -2684,8 +2699,10 @@ namespace smtrat
         cout << "Set box -> " << _selection->id() << ", #intervals: " << mIntervals.size() << " -> " << _selection->intervals().size() << endl;
 #endif
 
+        _selection->print();
+        
         // set intervals - currently we don't change not contained intervals.
-        for ( auto intervalIt = _selection->intervals().begin(); intervalIt != _selection->intervals().end(); ++intervalIt )
+        for ( auto intervalIt = _selection->rIntervals().begin(); intervalIt != _selection->rIntervals().end(); ++intervalIt )
         {
             assert(mIntervals.find((*intervalIt).first) != mIntervals.end());
 
