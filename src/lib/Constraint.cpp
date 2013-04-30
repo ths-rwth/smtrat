@@ -70,7 +70,6 @@ namespace smtrat
         mVarInfoMap()
     {
         mFirstHash = mLhs.gethash();
-        normalize( mLhs );
     }
 
     Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _variables, unsigned _id ):
@@ -93,41 +92,6 @@ namespace smtrat
         mVariables(),
         mVarInfoMap()
     {
-        normalize( mLhs );
-        mVariables = symtab();
-        for( auto var = _variables.begin(); var != _variables.end(); ++var )
-        {
-            if( mLhs.has( var->second ) )
-            {
-                mVariables.insert( *var );
-                Variable_Domain varDom = Formula::domain( var->second );
-                mContainsRealValuedVariables = (varDom == REAL_DOMAIN);
-                mContainsIntegerValuedVariables = (varDom == INTEGER_DOMAIN);
-            }
-        }
-    }
-
-    Constraint::Constraint( const GiNaC::ex& _lhs, const GiNaC::ex& _rhs, const Constraint_Relation& _cr, const symtab& _variables, unsigned _id ):
-        mID( _id ),
-        mSecondHash( _cr ),
-        mIsNeverPositive( false ),
-        mIsNeverNegative( false ),
-        mIsNeverZero( false ),
-        mContainsRealValuedVariables( false ),
-        mContainsIntegerValuedVariables( false ),
-        mNumMonomials( 0 ),
-        mMaxMonomeDegree( 0 ),
-        mMinMonomeDegree( 0 ),
-        mRelation( _cr ),
-        mLhs( _lhs - _rhs ),
-        mMultiRootLessLhs( 0 ),
-        mFactorization( 0 ),
-        mpCoefficients( new Coefficients() ),
-        mVarInfoMap()
-    {
-        mFirstHash = mLhs.gethash();
-        normalize( mLhs );
-        mVariables = symtab();
         for( auto var = _variables.begin(); var != _variables.end(); ++var )
         {
             if( mLhs.has( var->second ) )

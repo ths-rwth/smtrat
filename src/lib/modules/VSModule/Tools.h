@@ -30,6 +30,7 @@
 
 #include <vector>
 #include <set>
+#include <stdio.h>
 
 namespace vs
 {
@@ -95,84 +96,53 @@ template <class elementType> struct pointedSetOfPointedSetComp
 template <class combineType> void combine
 (
 	const std::vector< std::vector< std::vector< combineType* > > >& _toCombine  ,
-	std::vector< std::vector< combineType* > >&					   _combination
+	std::vector< std::vector< combineType* > >&					     _combination
 )
 {
-	if( !_toCombine.empty() )
-	{
-		/*
-		 * Check whether all vector, whose vectors get combined are not empty.
-		 */
-		bool existsEmptyVectorToCombine = false;
-		for( unsigned i = 0; i<_toCombine.size(); i++ )
-		{
-			if( _toCombine.at(i).empty() )
-			{
-				existsEmptyVectorToCombine = true;
-				break;
-			}
-		}
+    // Initialize the current combination. If there is nothing to combine or an empty vector to combine with, return the empty vector.
+	if( _toCombine.empty() ) return;
+    std::vector< class std::vector< std::vector< combineType* > >::const_iterator > combination 
+        = std::vector< class std::vector< std::vector< combineType* > >::const_iterator >();
+    for( auto iter = _toCombine.begin(); iter != _toCombine.end(); ++iter )
+    {;
+        if( iter->empty() ) return;
+        else combination.push_back( iter->begin() );
+    }
 
-		if( !existsEmptyVectorToCombine )
-		{
-			/*
-			 * Store the position of the vector in each vector of vectors, we currently combine.
-			 */
-			std::vector< unsigned > counters = std::vector< unsigned >( _toCombine.size(), 0 );
 
-			/*
-			 * As long as no more combination for the last vector in
-			 * first vector of vectors exists.
-			 */
-			bool lastCombinationReached = false;
-			while( !lastCombinationReached )
-			{
-				/*
-				 * Create a new combination of vectors.
-				 */
-				_combination.push_back( std::vector< combineType* >() );
+    // As long as no more combination for the last vector in first vector of vectors exists.
+    bool lastCombinationReached = false;
+    while( !lastCombinationReached )
+    {
+        // Create a new combination of vectors.
+        _combination.push_back( std::vector< combineType* >() );
 
-				bool previousCounterIncreased = false;
+        bool previousCounterIncreased = false;
 
-				/*
-				 * For each vector in the vector of vectors, choose a vector. Finally we combine
-				 * those vectors by merging them to a new vector and add this to the result.
-				 */
-				for( unsigned i = 0; i<counters.size(); i++ )
-				{
-					/*
-					 * Add the current vectors elements to the combination.
-					 */
-					for( unsigned j=0; j<_toCombine.at(i).at( counters.at(i) ).size(); j++ )
-					{
-						_combination.back().push_back( _toCombine.at(i).at( counters.at(i) ).at(j) );
-					}
-					/*
-					 * Set the counter.
-					 */
-					if( !previousCounterIncreased )
-					{
-						if( counters.at(i)<_toCombine.at(i).size()-1 )
-						{
-							counters.at(i)++;
-							previousCounterIncreased = true;
-						}
-						else
-						{
-							if( i<counters.size()-1 )
-							{
-								counters.at(i) = 0;
-							}
-							else
-							{
-								lastCombinationReached = true;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+        // For each vector in the vector of vectors, choose a vector. Finally we combine
+        // those vectors by merging them to a new vector and add this to the result.
+        auto currentVector = _toCombine.begin();
+        for( auto combineElement = combination.begin(); combineElement != combination.end(); ++combineElement )
+        {
+            // Add the current vectors elements to the combination.
+            _combination.back().insert( _combination.back().end(), (*combineElement)->begin(), (*combineElement)->end() );
+            // Set the counter.
+            if( !previousCounterIncreased )
+            {
+                ++(*combineElement);
+                if( *combineElement != currentVector->end() )
+                {
+                    previousCounterIncreased = true;
+                }
+                else
+                {
+                    if( combineElement != --combination.end() ) *combineElement = currentVector->begin();
+                    else lastCombinationReached = true;
+                }
+            }
+            ++currentVector;
+        }
+    }
 }
 
 } // end namspace vs

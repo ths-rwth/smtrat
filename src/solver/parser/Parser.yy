@@ -105,7 +105,6 @@
    unsigned                                            eval;
    std::string*                                        sval;
    std::vector< std::string* >*                        vsval;
-   GiNaC::numeric*                                     gnval;
    class Formula*                                      fval;
    std::vector< class Formula* >*                      vfval;
    std::pair< std::string, unsigned >*                 psval;
@@ -129,7 +128,6 @@
 
 %type <sval>  value
 %type <pval>  poly polylistPlus polylistMinus polylistTimes polyOp
-%type <gnval> nums numlistPlus numlistMinus numlistTimes
 %type <fval>  form equation
 %type <vfval> formlist
 %type <vsval> symlist
@@ -261,7 +259,7 @@ poly :
     |   OB ITE form poly poly CB { $$ = dv.mkPolynomial( yyloc, *dv.mkIteInExpr( yyloc, $3, *$4, *$5 ) ); }
 
 polyOp :
-		OB DIV poly nums CB       { $3->first /= (*$4); delete $4; $$ = $3; }
+		OB DIV poly poly CB       { $3->second.insert( $3->second.end(), $4->second.begin(), $4->second.end() ); $3->first /= $4->first; delete $4; $$ = $3; }
 	|	OB MINUS poly CB          { $3->first *= -1; $$ = $3; }
 	|	OB PLUS polylistPlus CB   { $$ = $3; }
 	|	OB MINUS polylistMinus CB { $$ = $3; }
@@ -284,27 +282,6 @@ polylistTimes :
                               $1->first *= $2->first; $$ = $1; delete $2; }
 	|	poly poly           { $1->second.insert( $1->second.end(), $2->second.begin(), $2->second.end() );
                               $1->first *= $2->first; $$ = $1; delete $2; }
-
-nums :
-     	DEC                      { $$ = dv.getNumeric( *$1 ); delete $1; }
-    | 	NUM                      { $$ = new numeric( $1->c_str() ); delete $1; }
-	| 	OB MINUS nums CB         { *$3 *= -1; $$ = $3; }
-	| 	OB DIV nums nums CB      { *$3 /= (*$4); $$ = $3; delete $4; }
-    |	OB PLUS numlistPlus CB   { $$ = $3; }
-	| 	OB MINUS numlistMinus CB { $$ = $3; }
-	| 	OB TIMES numlistTimes CB { $$ = $3; }
-
-numlistPlus :
-		nums numlistPlus { *$1 += *$2; $$ = $1; delete $2; }
-	|	nums nums        { *$1 += *$2; $$ = $1; delete $2; }
-
-numlistMinus :
-		nums numlistMinus { *$1 -= *$2; $$ = $1; delete $2; }
-	|	nums nums         { *$1 -= *$2; $$ = $1; delete $2; }
-
-numlistTimes :
-		nums numlistTimes { *$1 *= *$2; $$ = $1; delete $2; }
-	|	nums nums         { *$1 *= *$2; $$ = $1; delete $2; }
 
 %% /* Additional Code */
 
