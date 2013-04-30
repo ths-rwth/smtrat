@@ -1876,6 +1876,8 @@ NextClause:
             }
             ++backend;
         }
+        if( lowestLevel >= decisionLevel()+1 )
+            Module::storeAssumptionsToCheck( *mpManager );
         assert( lowestLevel < decisionLevel()+1 );
         return conflictClause;
     }
