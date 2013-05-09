@@ -106,7 +106,7 @@ namespace smtrat
         {
             ContractionCandidate* toDelete = (*candidateIt).second;
             candidateIt = mCandidates.erase(candidateIt);
-            delete toDelete;
+//            delete toDelete;
         }
     }
     

@@ -105,6 +105,9 @@ namespace icp
                 assert( (*_interval).first == mVar );
                 addCandidate( _candidate );
             }
+            
+            ~IcpVariable()
+            {}
 
             /*
              * Getter/Setter
@@ -153,19 +156,26 @@ namespace icp
             void deleteCandidate( ContractionCandidate* _candidate )
             {
                 std::vector<ContractionCandidate*>::iterator candidateIt;
-                for( candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
+                for( candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); )
                 {
                     if( *candidateIt == _candidate )
                     {
-                        mCandidates.erase( candidateIt );
+                        cout << "deleting: ";
+                        _candidate->print();
+                        candidateIt = mCandidates.erase( candidateIt );
+                    }
+                    else
+                    {
+                        ++candidateIt;
                     }
                 }
+                this->print();
             }
 
             void print( ostream& _out = std::cout ) const
             {
                 _out << "Original: " << mOriginal << ", " << mVar << ", ";
-                if( mLraVar != NULL )
+                if( mLinear && mLraVar != NULL )
                 {
                     mLraVar->print();
                 }
