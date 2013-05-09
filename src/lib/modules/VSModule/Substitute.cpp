@@ -55,7 +55,7 @@ namespace vs
         cout << "substitute" << endl;
         #endif
         #ifdef VS_DEBUG_SUBSTITUTION
-        cout << "substitute: ( " << _constraint << " )" << _substitution << endl;
+        cout << "substitute: ( " << *_constraint << " )" << _substitution << endl;
         #endif
 
         CONSTRAINT_LOCK_GUARD
@@ -746,20 +746,11 @@ namespace vs
         Substitution substitution = Substitution( _substitution.variable(), sym, _substitution.term(), ST_NORMAL, _substitution.originalConditions() );
 
         /*
-         * Create the vector of constraints which serves as a collection of the necessary constraints.
-         * It represents the current conjunction created by substituting by an epsilon term, which
-         * results in a disjunction of conjunctions.
-         */
-        TS_ConstraintConjunction collection = TS_ConstraintConjunction();
-
-        /*
          * Call the method substituteNormal with the constraint f(x)~0 and the substitution [x -> t],
          * where the parameter relation is ~.
          */
-        collection.push_back( smtrat::Formula::newConstraint( _constraint->lhs(), _relation, _constraint->variables() ) );
-
-        // Check:  (f(x)~0) [x -> t]
-        substituteNormal( collection.back(), substitution, _substitutionResults );
+        const smtrat::Constraint* firstCaseInequality = smtrat::Formula::newConstraint( _constraint->lhs(), _relation, _constraint->variables() );
+        substituteNormal( firstCaseInequality, substitution, _substitutionResults );
 
         // Create a vector to store the results of each single substitution.
         vector<DisjunctionOfConstraintConjunctions> substitutionResultsVector;
@@ -773,36 +764,31 @@ namespace vs
          *
          * where the relation is ~.
          */
-        unsigned pos = 0;
         ex derivative = ex( _constraint->lhs() );
         while( derivative.has( ex( sym ) ) )
         {
             // Change the relation symbol of the last added constraint to "=".
-            const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( derivative, smtrat::CR_EQ, _constraint->variables() );
-            collection.pop_back();
-            collection.push_back( constraint );
+            const smtrat::Constraint* equation = smtrat::Formula::newConstraint( derivative, smtrat::CR_EQ, _constraint->variables() );
 
             // Form the derivate of the left hand side of the last added constraint.
-            derivative = constraint->lhs().diff( sym, 1 );
+            derivative = derivative.diff( sym, 1 );
             SqrtEx::simplify( derivative, ex( sym ) );
 
-            assert( derivative.degree( ex( sym ) ) < (signed) collection.back()->maxDegree( ex( sym ) ) );
+            assert( derivative.degree( ex( sym ) ) < (signed) equation->maxDegree( ex( sym ) ) );
 
             // Add the constraint f^i(x)~0.
-            collection.push_back( smtrat::Formula::newConstraint( derivative, _relation, _constraint->variables() ) );
+            const smtrat::Constraint* inequality = smtrat::Formula::newConstraint( derivative, _relation, _constraint->variables() );
 
-            // Apply the substitution (without epsilon) to each constraint in the collection.
-            for( unsigned i = pos; i < collection.size(); ++i )
-            {
-                substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-                substituteNormal( collection[i], substitution, substitutionResultsVector.back() );
-            }
-
+            // Apply the substitution (without epsilon) to the new constraints.
+            substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
+            substituteNormal( equation, substitution, substitutionResultsVector.back() );
+            substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
+            substituteNormal( inequality, substitution, substitutionResultsVector.back() );
+            
             combine( substitutionResultsVector, _substitutionResults );
 
             // Remove the last substitution result.
             substitutionResultsVector.pop_back();
-            ++pos;
         }
     }
 

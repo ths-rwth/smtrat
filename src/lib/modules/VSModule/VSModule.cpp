@@ -434,7 +434,7 @@ namespace smtrat
                                                 * Solution.
                                                 */
                                             #ifdef VS_DEBUG
-                                            printAll( cout );
+                                            printAll();
                                             #endif
                                             #ifdef VS_LOG_INTERMEDIATE_STEPS
                                             checkAnswer();
@@ -531,7 +531,7 @@ namespace smtrat
                                             * Solution.
                                             */
                                             #ifdef VS_DEBUG
-                                            printAll( cout );
+                                            printAll();
                                             #endif
                                             #ifdef VS_LOG_INTERMEDIATE_STEPS
                                             checkAnswer();
@@ -669,7 +669,7 @@ namespace smtrat
                                                             * Solution.
                                                             */
                                                             #ifdef VS_DEBUG
-                                                            printAll( cout );
+                                                            printAll();
                                                             #endif
                                                             #ifdef VS_LOG_INTERMEDIATE_STEPS
                                                             checkAnswer();
@@ -743,7 +743,7 @@ EndSwitch:;
         assert( !mpStateTree->conflictSets().empty() );
         updateInfeasibleSubset();
         #ifdef VS_DEBUG
-        printAll( cout );
+        printAll();
         #endif
         CONSTRAINT_UNLOCK
         return foundAnswer( False );
