@@ -1485,7 +1485,7 @@ namespace smtrat
      * @param _infix
      * @return
      */
-    string Formula::toString( bool _infix ) const
+    string Formula::toString( bool _infix, bool _resolveUnequal ) const
     {
         string result = "";
         switch( mType )
@@ -1533,7 +1533,7 @@ namespace smtrat
                 }
                 else
                 {
-                    result += mpConstraint->smtlibString();
+                    result += mpConstraint->smtlibString( _resolveUnequal );
                 }
                 break;
             }

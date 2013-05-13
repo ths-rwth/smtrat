@@ -378,6 +378,10 @@ public:
 																  				  const ConditionSet&   ,
 																				  const unsigned 		   ,
 																				  const bool 				)										;
+	int 									deleteOrigins                       ( ConditionVector& )												;
+	void 									deleteOriginsFromChildren           ( ConditionVector& )												;
+	void									deleteOriginsFromConflictSets       ( ConditionVector&, bool )											;
+	void									deleteOriginsFromSubstitutionResults( ConditionVector& )												;
 	void									deleteConditions					( ConditionVector& )												;
 	int                                     addChild							( const std::string& 	   ,
 																				  const GiNaC::ex&         ,

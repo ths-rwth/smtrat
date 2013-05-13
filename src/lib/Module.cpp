@@ -40,6 +40,7 @@
 
 // Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
+//#define DEBUG_MODULE_CALLS_IN_SMTLIB
 
 using namespace std;
 
@@ -715,6 +716,9 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->startCheckTimer();
                     ++((*module)->mNrConsistencyChecks);
+                    #endif
+                    #ifdef DEBUG_MODULE_CALLS_IN_SMTLIB
+                    cout << "(assert " << mpPassedFormula->toString( false, true ) << ")\n";
                     #endif
                     result = (*module)->isConsistent();
                     assert(result == Unknown || result == False || result == True);

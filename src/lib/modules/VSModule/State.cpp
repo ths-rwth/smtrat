@@ -1698,6 +1698,110 @@ namespace vs
             }
         }
     }
+    
+    /**
+     * Removes everything in this state originated by the given vector of conditions.
+     * 
+     * @param _originsToDelete The conditions for which everything in this state which
+     *                          has been originated by them must be removed.
+     * 
+     * @return 0,  if this state got invalid and must be deleted afterwards;
+     *          -1, if this state got invalid and must be deleted afterwards
+     *              and made other states unnecessary to consider;
+     *          1,  otherwise.
+     */
+    int State::deleteOrigins( ConditionVector& _originsToDelete )
+    {
+        if( _originsToDelete.empty() ) return 1;
+        if( !isRoot() )
+        {
+            // Check if the substitution has a condition to delete as original condition.
+            for( auto condToDel = _originsToDelete.begin(); condToDel != _originsToDelete.end(); ++condToDel )
+            {
+                ConditionSet::iterator oCondInSub = rSubstitution().rOriginalConditions().begin();
+                while( oCondInSub != substitution().originalConditions().end() )
+                {
+                    if( *oCondInSub == *condToDel )
+                    {
+                        rSubstitution().rOriginalConditions().erase( oCondInSub++ );
+                    }
+                    else
+                    {
+                        ++oCondInSub;
+                    }
+                }
+                if( substitution().originalConditions().empty() )
+                {
+                    // If the substitutions original conditions are all deleted, then delete the corresponding child.
+                    // TODO: Maybe it is better to keep these children/test candidates.
+                    int result = 0;
+                    if( pOriginalCondition() != NULL )
+                    {
+                        result = -1;
+                    }
+                    return result;
+                }
+            }
+        }
+
+        // Remove conditions from the currently considered condition vector, which are originated by any of the given origins.
+        bool conditionDeleted = false;
+        bool recentlyAddedConditionLeft = false;
+        ConditionVector deletedConditions = ConditionVector();
+        for( auto originToDelete = _originsToDelete.begin(); originToDelete != _originsToDelete.end(); ++originToDelete )
+        {
+            auto condition = rConditions().begin();
+            while( condition != conditions().end() )
+            {
+                if( (*condition)->originalConditions().find( *originToDelete ) != (*condition)->originalConditions().end() )
+                {
+                    #ifdef SMTRAT_VS_VARIABLEBOUNDS
+                    mpVariableBounds->removeBound( (*condition)->pConstraint(), *condition );
+                    #endif
+                    deletedConditions.push_back( *condition );
+                    condition = rConditions().erase( condition );
+                    conditionDeleted = true;
+                }
+                else
+                {
+                    if( (*condition)->recentlyAdded() ) recentlyAddedConditionLeft = true;
+                    ++condition;
+                }
+            }
+        }
+        if( conditionDeleted )
+        {
+            if( !isRoot() )
+            {
+                mTakeSubResultCombAgain = true;
+                mStateType              = COMBINE_SUBRESULTS;
+            }
+            mInconsistent = false;
+            mHasRecentlyAddedConditions = recentlyAddedConditionLeft;
+        }
+        mToHighDegree      = false;
+        mMarkedAsDeleted   = false;
+        mTryToRefreshIndex = true;
+
+        // Delete everything originated by it in all children of this state.
+        deleteOriginsFromChildren( deletedConditions );
+
+        // Delete the conditions in the conflict sets which are originated by any of the given origins.
+        deleteOriginsFromConflictSets( _originsToDelete, false );
+        
+        // Delete the conditions.
+        while( !deletedConditions.empty() )
+        {
+            const Condition* pCond = deletedConditions.back();
+            deletedConditions.pop_back();
+            delete pCond;
+        }
+
+        // Delete all conditions in the substitution result which are originated by any of the 
+        // given origins and adapt the currently considered substitution result combination.
+        deleteOriginsFromSubstitutionResults( _originsToDelete );
+        return 1;
+    }
 
     /**
      * Delete everything originated by the given conditions from the entire subtree with
@@ -1707,208 +1811,257 @@ namespace vs
      */
     void State::deleteConditions( ConditionVector& _conditionsToDelete )
     {
-        #ifdef VS_DEBUG_METHODS_X
-        cout << __func__ << endl;
-        #endif
-        if( !_conditionsToDelete.empty() )
+        if( _conditionsToDelete.empty() ) return;
+        
+        // Delete everything originated by the given conditions in all children of this state.
+        deleteOriginsFromChildren( _conditionsToDelete );
+
+        // Delete the conditions from the conflict sets.
+        deleteOriginsFromConflictSets( _conditionsToDelete, true );
+
+        // Delete everything originated by the conditions to delete in the state's children.
+        deleteOriginsFromChildren( _conditionsToDelete );
+
+        bool conditionDeleted = false;
+        bool recentlyAddedConditionLeft = false;
+        for( auto cond = rConditions().begin(); cond != conditions().end(); )
         {
-            bool                  constraintWithFinitlyManySolutionCandidatesInIndexExists = false;
-            StateVector::iterator child                                                    = rChildren().begin();
-            while( child != children().end() )
+            // Delete the condition from the vector this state considers.
+            ConditionVector::iterator condToDel = _conditionsToDelete.begin();
+            while( condToDel != _conditionsToDelete.end() )
             {
-                /*
-                 * Check if the substitution has a condition to delete as original condition.
-                 */
-                for( ConditionVector::const_iterator condToDel = _conditionsToDelete.begin(); condToDel != _conditionsToDelete.end(); ++condToDel )
+                if( *cond == *condToDel ) break;
+                ++condToDel;
+            }
+            if( condToDel != _conditionsToDelete.end() )
+            {
+                #ifdef SMTRAT_VS_VARIABLEBOUNDS
+                mpVariableBounds->removeBound( (*cond)->pConstraint(), *cond );
+                #endif
+                conditionDeleted = true;
+                cond = rConditions().erase( cond );
+            }
+            else
+            {
+                if( (*cond)->recentlyAdded() ) recentlyAddedConditionLeft = true;
+                ++cond;
+            }
+        }
+        if( conditionDeleted )
+        {
+            if( !isRoot() )
+            {
+                mTakeSubResultCombAgain = true;
+                mStateType              = COMBINE_SUBRESULTS;
+            }
+            mInconsistent = false;
+            mHasRecentlyAddedConditions = recentlyAddedConditionLeft;
+        }
+
+        mToHighDegree      = false;
+        mMarkedAsDeleted   = false;
+        mTryToRefreshIndex = true;
+    }
+    
+    /**
+     * 
+     * @param _originsToDelete
+     */
+    void State::deleteOriginsFromChildren( ConditionVector& _originsToDelete )
+    {
+        auto child = rChildren().begin();
+        while( child != children().end() )
+        {
+            int result = (*child)->deleteOrigins( _originsToDelete );
+            if( result < 0 )
+            {
+                initConditionFlags();
+            }
+            if( result < 1 )
+            {
+                ConflictSets::iterator conflictSet = rConflictSets().find( (*child)->pSubstitution() );
+                if( conflictSet != conflictSets().end() )
                 {
-                    ConditionSet::iterator oCondInSub = (**child).rSubstitution().rOriginalConditions().begin();
-                    while( oCondInSub != (**child).substitution().originalConditions().end() )
-                    {
-                        if( *oCondInSub == *condToDel )
-                        {
-                            (**child).rSubstitution().rOriginalConditions().erase( oCondInSub++ );
-                        }
-                        else
-                        {
-                            ++oCondInSub;
-                        }
-                    }
-                    if( (**child).substitution().originalConditions().empty() )
-                    {
-                        break;
-                    }
+                    rConflictSets().erase( conflictSet );
                 }
-
-                /*
-                 * If the substitutions original conditions are all deleted, then delete the corresponding child.
-                 * TODO: Maybe it is better to keep these children/test candidates.
-                 */
-                if( (**child).substitution().originalConditions().empty() )
+                State* toDelete = *child;
+                child = rChildren().erase( child );
+                delete toDelete;
+            }
+            else
+            {
+                ++child;
+            }
+        }
+    }
+    
+    /**
+     * 
+     * @param _originsToDelete
+     */
+    void State::deleteOriginsFromConflictSets( ConditionVector& _originsToDelete, bool _originsAreCurrentConditions )
+    {
+        ConflictSets::iterator conflictSet = mpConflictSets->begin();
+        while( conflictSet != mpConflictSets->end() )
+        {
+            ConditionSetSetSet updatedCondSetSetSet = ConditionSetSetSet();
+            ConditionSetSetSet::iterator condSetSet         = conflictSet->second.begin();
+            bool                         emptyReasonOccured = false;
+            while( condSetSet != conflictSet->second.end() )
+            {
+                ConditionSetSet updatedCondSetSet = ConditionSetSet();
+                ConditionSetSet::iterator condSet = condSetSet->begin();
+                while( condSet != condSetSet->end() )
                 {
-                    if( (**child).pOriginalCondition() != NULL )
+                    ConditionSet updatedCondSet = ConditionSet();
+                    ConditionSet::iterator cond             = condSet->begin();
+                    bool                   condToDelOccured = false;
+                    while( cond != condSet->end() )
                     {
-                        constraintWithFinitlyManySolutionCandidatesInIndexExists = true;
-                    }
-                    ConflictSets::iterator conflictSet = rConflictSets().find( (**child).pSubstitution() );
-                    if( conflictSet != conflictSets().end() )
-                    {
-                        rConflictSets().erase( conflictSet );
-                    }
-                    State* toDelete = *child;
-                    child = rChildren().erase( child );
-                    delete toDelete;
-                }
-                else
-                {
-                    /*
-                     * Delete in the substitution results the conditions having only conditions to delete as original conditions.
-                     */
-                    if( (**child).hasSubstitutionResults() )
-                    {
-                        unsigned                      subResultIndex = 0;
-                        SubstitutionResults::iterator subResult      = (**child).rSubstitutionResults().begin();
-                        while( subResult != (**child).substitutionResults().end() )
+                        ConditionVector::const_iterator condToDel = _originsToDelete.begin();
+                        while( condToDel != _originsToDelete.end() )
                         {
-                            unsigned                     subResultConjunctionIndex = 0;
-                            SubstitutionResult::iterator condConj                  = subResult->begin();
-                            while( condConj != subResult->end() )
+                            if( _originsAreCurrentConditions )
                             {
-                                ConditionVector conditionsToAdd = ConditionVector();
-                                ConditionVector::iterator cond = condConj->first.begin();
-                                while( cond != condConj->first.end() )
+                                if( *cond == *condToDel )
                                 {
-                                    bool                   oCondsDeleted = false;
-                                    ConditionSet::iterator oCond         = (**cond).pOriginalConditions()->begin();
-                                    while( oCond != (**cond).originalConditions().end() )
-                                    {
-                                        ConditionVector::const_iterator condToDel = _conditionsToDelete.begin();
-                                        while( condToDel != _conditionsToDelete.end() )
-                                        {
-                                            if( *oCond == *condToDel )
-                                            {
-                                                break;
-                                            }
-                                            ++condToDel;
-                                        }
-                                        if( condToDel != _conditionsToDelete.end() )
-                                        {
-                                            (**cond).pOriginalConditions()->erase( oCond++ );
-                                            oCondsDeleted = true;
-                                        }
-                                        else
-                                        {
-                                            ++oCond;
-                                        }
-                                    }
-                                    if( oCondsDeleted )
-                                    {
-                                        oCond = (**cond).pOriginalConditions()->begin();
-                                        while( oCond != (**cond).originalConditions().end() )
-                                        {
-                                            ConditionSet oConds = ConditionSet();
-                                            oConds.insert( *oCond );
-                                            conditionsToAdd.push_back( new Condition( (**oCond).pConstraint(), false, oConds, (**cond).valuation() ) );
-                                            ++oCond;
-                                        }
-                                        const Condition* rpCond = *cond;
-                                        cond             = condConj->first.erase( cond );
-                                        condConj->second = false;
-                                        delete rpCond;
-                                        (**child).rSubResultsSimplified() = false;
-                                    }
-                                    else
-                                    {
-                                        ++cond;
-                                    }
+                                    break;
                                 }
-
-                                condConj->first.insert( condConj->first.end(), conditionsToAdd.begin(), conditionsToAdd.end() );
-
-                                if( condConj->first.empty() )    // && ( subResult->size() > 1 || (**child).substitutionResults().size() > 1 ) )
-                                {
-                                    if( (**child).hasSubResultsCombination() )
-                                    {
-                                        /*
-                                         * If the currently considered substitution result is part of the substitution result combination of this state.
-                                         */
-                                        SubResultCombination::iterator subResComb = (**child).rSubResultCombination().begin();
-                                        while( subResComb != (**child).rSubResultCombination().end() && subResComb->first != subResultIndex )
-                                        {
-                                            ++subResComb;
-                                        }
-                                        if( subResComb != (**child).subResultCombination().end() )
-                                        {
-                                            /*
-                                             * If the currently considered condition conjunction in the currently considered substitution result
-                                             * is part of the substitution result combination of this state.
-                                             */
-                                            if( subResComb->second == subResultConjunctionIndex )
-                                            {
-                                                /*
-                                                 * Remove this entry of the substitution result combinations.
-                                                 */
-                                                (**child).rSubResultCombination().erase( subResComb );
-                                            }
-
-                                            /*
-                                             * If the currently considered condition conjunction in the currently considered substitution result
-                                             * is NOT part of the substitution result combination of this state, but another condition conjunction in
-                                             * the currently considered substitution result with higher index, decrease this index.
-                                             */
-                                            else if( subResComb->second > subResultConjunctionIndex )
-                                            {
-                                                --(subResComb->second);
-                                            }
-                                        }
-                                        if( subResult->size() == 1 )
-                                        {
-                                            SubResultCombination::iterator subResCombB = (**child).rSubResultCombination().begin();
-                                            while( subResCombB != (**child).subResultCombination().end() )
-                                            {
-                                                if( subResCombB->first > subResultIndex )
-                                                {
-                                                    --(subResCombB->first);
-                                                }
-                                                ++subResCombB;
-                                            }
-                                        }
-                                    }
-                                    condConj = subResult->erase( condConj );
-                                }
-                                else
-                                {
-                                    ++condConj;
-                                    ++subResultConjunctionIndex;
-                                }
-                            }
-
-                            /*
-                             * Remove the substitution result if it is empty.
-                             */
-                            if( subResult->empty() )
-                            {
-                                subResult = (**child).rSubstitutionResults().erase( subResult );
                             }
                             else
                             {
-                                ++subResult;
-                                ++subResultIndex;
+                                if( (*cond)->originalConditions().find( *condToDel ) != (*cond)->originalConditions().end() )
+                                {
+                                    break;
+                                }
                             }
+                            ++condToDel;
+                        }
+                        if( condToDel == _originsToDelete.end() )
+                        {
+                            updatedCondSet.insert( *cond );
+                        }
+                        else
+                        {
+                            condToDelOccured = true;
+                            break;
+                        }
+                        ++cond;
+                    }
+                    if( !condToDelOccured )
+                    {
+                        updatedCondSetSet.insert( updatedCondSet );
+                    }
+                    ++condSet;
+                }
+                if( !updatedCondSetSet.empty() )
+                {
+                    updatedCondSetSetSet.insert( updatedCondSetSet );
+                }
+                else
+                {
+                    emptyReasonOccured = true;
+                    break;
+                }
+                ++condSetSet;
+            }
+            if( !emptyReasonOccured )
+            {
+                conflictSet->second = updatedCondSetSetSet;
+                ++conflictSet;
+            }
+            else
+            {
+                if( conflictSet->first == NULL )
+                {
+                    rInconsistent() = false;
+                }
+                #ifdef SMTRAT_VS_VARIABLEBOUNDS_B
+                if( conflictSet->first != NULL && conflictSet->first->type() == ST_INVALID )
+                {
+                    const Substitution* subToDelete = conflictSet->first;
+                    mpConflictSets->erase( conflictSet++ );
+                    delete subToDelete;
+                }
+                else
+                {
+                #endif
+                    mpConflictSets->erase( conflictSet++ );
+                #ifdef SMTRAT_VS_VARIABLEBOUNDS_B
+                }
+                #endif
+            }
+        }
+
+        auto child = rChildren().begin();
+        while( child != children().end() )
+        {
+            if( mpConflictSets->find( (*child)->pSubstitution() ) == mpConflictSets->end() )
+            {
+                /*
+                 * Delete the entry of the test candidate whose conflict set is empty
+                 * and set "inconsistent flag" of the corresponding child to false.
+                 */
+                if( (*child)->hasSubstitutionResults() )
+                {
+                    if( (*child)->hasSubResultsCombination() )
+                    {
+                        SubResultCombination::iterator subResComb = (**child).rSubResultCombination().begin();
+                        while( subResComb != (*child)->subResultCombination().end() )
+                        {
+                            subResComb->second = 0;
+                            ++subResComb;
                         }
                     }
-
-                    /*
-                     * Collect the conditions having the conditions to delete as original conditions.
-                     */
-                    ConditionVector conditionsToDeleteInChild = ConditionVector();
-                    for( ConditionVector::iterator cond = (**child).rConditions().begin(); cond != (**child).conditions().end(); ++cond )
+                    SubstitutionResults::iterator subResult = (*child)->rSubstitutionResults().begin();
+                    while( subResult != (*child)->substitutionResults().end() )
                     {
-                        bool                   originalConditionDeleted = false;
-                        ConditionSet::iterator oCond                    = (**cond).pOriginalConditions()->begin();
+                        SubstitutionResult::iterator condConj = subResult->begin();
+                        while( condConj != subResult->end() )
+                        {
+                            condConj->second = false;
+                            ++condConj;
+                        }
+                        ++subResult;
+                    }
+                }
+                if( (*child)->stateType() != SUBSTITUTION_TO_APPLY )
+                {
+                    (*child)->rStateType() = COMBINE_SUBRESULTS;
+                    (*child)->rTakeSubResultCombAgain() = true;
+                }
+                (*child)->rInconsistent() = false;
+            }
+            ++child;
+        }
+    }
+    
+    /**
+     * 
+     * @param _originsToDelete
+     */
+    void State::deleteOriginsFromSubstitutionResults( ConditionVector& _originsToDelete )
+    {
+        if( hasSubstitutionResults() )
+        {
+            unsigned                      subResultIndex = 0;
+            SubstitutionResults::iterator subResult      = rSubstitutionResults().begin();
+            while( subResult != substitutionResults().end() )
+            {
+                unsigned                     subResultConjunctionIndex = 0;
+                SubstitutionResult::iterator condConj                  = subResult->begin();
+                while( condConj != subResult->end() )
+                {
+                    ConditionVector conditionsToAdd = ConditionVector();
+                    ConditionVector::iterator cond = condConj->first.begin();
+                    while( cond != condConj->first.end() )
+                    {
+                        bool                   oCondsDeleted = false;
+                        ConditionSet::iterator oCond         = (**cond).pOriginalConditions()->begin();
                         while( oCond != (**cond).originalConditions().end() )
                         {
-                            ConditionVector::const_iterator condToDel = _conditionsToDelete.begin();
-                            while( condToDel != _conditionsToDelete.end() )
+                            ConditionVector::const_iterator condToDel = _originsToDelete.begin();
+                            while( condToDel != _originsToDelete.end() )
                             {
                                 if( *oCond == *condToDel )
                                 {
@@ -1916,216 +2069,106 @@ namespace vs
                                 }
                                 ++condToDel;
                             }
-                            if( condToDel != _conditionsToDelete.end() )
+                            if( condToDel != _originsToDelete.end() )
                             {
-                                originalConditionDeleted = true;
-                                break;
+                                (**cond).pOriginalConditions()->erase( oCond++ );
+                                oCondsDeleted = true;
                             }
                             else
                             {
                                 ++oCond;
                             }
                         }
-                        if( originalConditionDeleted )
+                        if( oCondsDeleted )
                         {
-                            conditionsToDeleteInChild.push_back( *cond );
+                            oCond = (**cond).pOriginalConditions()->begin();
+                            while( oCond != (**cond).originalConditions().end() )
+                            {
+                                ConditionSet oConds = ConditionSet();
+                                oConds.insert( *oCond );
+                                conditionsToAdd.push_back( new Condition( (**oCond).pConstraint(), false, oConds, (**cond).valuation() ) );
+                                ++oCond;
+                            }
+                            const Condition* rpCond = *cond;
+                            cond             = condConj->first.erase( cond );
+                            condConj->second = false;
+                            delete rpCond;
+                            rSubResultsSimplified() = false;
                         }
-                    }
-
-                    /*
-                     * Delete the conditions having only conditions to delete as original conditions from
-                     * the child.
-                     */
-                    (**child).deleteConditions( conditionsToDeleteInChild );
-                    while( !conditionsToDeleteInChild.empty() )
-                    {
-                        const vs::Condition* toDelete = conditionsToDeleteInChild.back();
-                        conditionsToDeleteInChild.pop_back();
-                        delete toDelete;
-                    }
-                    ++child;
-                }
-            }
-
-            /*
-             * Delete the conditions from the conflict sets.
-             */
-            ConflictSets::iterator conflictSet = mpConflictSets->begin();
-            while( conflictSet != mpConflictSets->end() )
-            {
-                ConditionSetSetSet updatedCondSetSetSet = ConditionSetSetSet();
-                ConditionSetSetSet::iterator condSetSet         = conflictSet->second.begin();
-                bool                         emptyReasonOccured = false;
-                while( condSetSet != conflictSet->second.end() )
-                {
-                    ConditionSetSet updatedCondSetSet = ConditionSetSet();
-                    ConditionSetSet::iterator condSet = condSetSet->begin();
-                    while( condSet != condSetSet->end() )
-                    {
-                        ConditionSet updatedCondSet = ConditionSet();
-                        ConditionSet::iterator cond             = condSet->begin();
-                        bool                   condToDelOccured = false;
-                        while( cond != condSet->end() )
+                        else
                         {
-                            ConditionVector::const_iterator condToDel = _conditionsToDelete.begin();
-                            while( condToDel != _conditionsToDelete.end() )
-                            {
-                                if( *cond == *condToDel )
-                                {
-                                    break;
-                                }
-                                ++condToDel;
-                            }
-                            if( condToDel == _conditionsToDelete.end() )
-                            {
-                                updatedCondSet.insert( *cond );
-                            }
-                            else
-                            {
-                                condToDelOccured = true;
-                                break;
-                            }
                             ++cond;
                         }
-                        if( !condToDelOccured )
-                        {
-                            updatedCondSetSet.insert( updatedCondSet );
-                        }
-                        ++condSet;
                     }
-                    if( !updatedCondSetSet.empty() )
-                    {
-                        updatedCondSetSetSet.insert( updatedCondSetSet );
-                    }
-                    else
-                    {
-                        emptyReasonOccured = true;
-                        break;
-                    }
-                    ++condSetSet;
-                }
-                if( !emptyReasonOccured )
-                {
-                    conflictSet->second = updatedCondSetSetSet;
-                    ++conflictSet;
-                }
-                else
-                {
-                    if( conflictSet->first == NULL )
-                    {
-                        rInconsistent() = false;
-                    }
-                    #ifdef SMTRAT_VS_VARIABLEBOUNDS_B
-                    if( conflictSet->first != NULL && conflictSet->first->type() == ST_INVALID )
-                    {
-                        const Substitution* subToDelete = conflictSet->first;
-                        mpConflictSets->erase( conflictSet++ );
-                        delete subToDelete;
-                    }
-                    else
-                    {
-                    #endif
-                        mpConflictSets->erase( conflictSet++ );
-                    #ifdef SMTRAT_VS_VARIABLEBOUNDS_B
-                    }
-                    #endif
-                }
-            }
 
-            child = rChildren().begin();
-            while( child != children().end() )
-            {
-                if( mpConflictSets->find( (*child)->pSubstitution() ) == mpConflictSets->end() )
-                {
-                    /*
-                     * Delete the entry of the test candidate whose conflict set is empty
-                     * and set "inconsistent flag" of the corresponding child to false.
-                     */
-                    if( (*child)->hasSubstitutionResults() )
+                    condConj->first.insert( condConj->first.end(), conditionsToAdd.begin(), conditionsToAdd.end() );
+
+                    if( condConj->first.empty() )
                     {
-                        if( (*child)->hasSubResultsCombination() )
+                        if( hasSubResultsCombination() )
                         {
-                            SubResultCombination::iterator subResComb = (**child).rSubResultCombination().begin();
-                            while( subResComb != (*child)->subResultCombination().end() )
+                            // If the currently considered substitution result is part of the substitution result combination of this state.
+                            SubResultCombination::iterator subResComb = rSubResultCombination().begin();
+                            while( subResComb != rSubResultCombination().end() && subResComb->first != subResultIndex )
                             {
-                                subResComb->second = 0;
                                 ++subResComb;
                             }
-                        }
-                        SubstitutionResults::iterator subResult = (*child)->rSubstitutionResults().begin();
-                        while( subResult != (*child)->substitutionResults().end() )
-                        {
-                            SubstitutionResult::iterator condConj = subResult->begin();
-                            while( condConj != subResult->end() )
+                            if( subResComb != subResultCombination().end() )
                             {
-                                condConj->second = false;
-                                ++condConj;
+                                /*
+                                 * If the currently considered condition conjunction in the currently considered substitution result
+                                 * is part of the substitution result combination of this state.
+                                 */
+                                if( subResComb->second == subResultConjunctionIndex )
+                                {
+                                    // Remove this entry of the substitution result combinations.
+                                    rSubResultCombination().erase( subResComb );
+                                }
+
+                                /*
+                                 * If the currently considered condition conjunction in the currently considered substitution result
+                                 * is NOT part of the substitution result combination of this state, but another condition conjunction in
+                                 * the currently considered substitution result with higher index, decrease this index.
+                                 */
+                                else if( subResComb->second > subResultConjunctionIndex )
+                                {
+                                    --(subResComb->second);
+                                }
                             }
-                            ++subResult;
+                            if( subResult->size() == 1 )
+                            {
+                                SubResultCombination::iterator subResCombB = rSubResultCombination().begin();
+                                while( subResCombB != subResultCombination().end() )
+                                {
+                                    if( subResCombB->first > subResultIndex )
+                                    {
+                                        --(subResCombB->first);
+                                    }
+                                    ++subResCombB;
+                                }
+                            }
                         }
+                        condConj = subResult->erase( condConj );
                     }
-                    if( (*child)->stateType() != SUBSTITUTION_TO_APPLY )
+                    else
                     {
-                        (*child)->rStateType() = COMBINE_SUBRESULTS;
-                        (*child)->rTakeSubResultCombAgain() = true;
+                        ++condConj;
+                        ++subResultConjunctionIndex;
                     }
-                    (*child)->rInconsistent() = false;
                 }
-                ++child;
-            }
 
-            if( constraintWithFinitlyManySolutionCandidatesInIndexExists )
-            {
-                initConditionFlags();
-            }
-
-            bool conditionDeleted = false;
-            bool recentlyAddedConditionLeft = false;
-            ConditionVector::iterator cond = rConditions().begin();
-            while( cond != conditions().end() )
-            {
-                /*
-                 * Delete the condition from the vector this state considers.
-                 */
-                ConditionVector::iterator condToDel = _conditionsToDelete.begin();
-                while( condToDel != _conditionsToDelete.end() )
+                // Remove the substitution result if it is empty.
+                if( subResult->empty() )
                 {
-                    if( *cond == *condToDel ) break;
-                    ++condToDel;
-                }
-                if( condToDel != _conditionsToDelete.end() )
-                {
-                    #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    mpVariableBounds->removeBound( (*cond)->pConstraint(), *cond );
-                    #endif
-                    conditionDeleted = true;
-                    cond = rConditions().erase( cond );
-//                    _conditionsToDelete.erase( condToDel );
+                    subResult = rSubstitutionResults().erase( subResult );
                 }
                 else
                 {
-                    if( (*cond)->recentlyAdded() ) recentlyAddedConditionLeft = true;
-                    ++cond;
+                    ++subResult;
+                    ++subResultIndex;
                 }
-            }
-            if( conditionDeleted )
-            {
-                if( !isRoot() )
-                {
-                    mTakeSubResultCombAgain = true;
-                    mStateType              = COMBINE_SUBRESULTS;
-                }
-                mInconsistent = false;
-                mHasRecentlyAddedConditions = recentlyAddedConditionLeft;
             }
         }
-
-        mToHighDegree      = false;
-        mMarkedAsDeleted   = false;
-        mTryToRefreshIndex = true;
-        #ifdef VS_DEBUG_METHODS_X
-        cout << "end " << __func__ << endl;
-        #endif
     }
 
     /**
@@ -2874,7 +2917,7 @@ namespace vs
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         _out << _initiation << endl;
         mpVariableBounds->print( _out, _initiation );
-        _out << endl;
+        _out << _initiation << endl;
         #endif
     }
 

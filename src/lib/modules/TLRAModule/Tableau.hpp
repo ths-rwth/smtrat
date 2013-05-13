@@ -2068,10 +2068,10 @@ namespace smtrat
             Iterator rowEntry = Iterator( mRows[_rowNumber].mStartEntry, mpEntries );
             while( !rowEntry.rowEnd() )
             {
-                sumOfNonbasics -= (*mColumns[(*rowEntry).columnNumber()].mName->pExpression()) * (*rowEntry).content();
+                sumOfNonbasics -= (*mColumns[(*rowEntry).columnNumber()].mName->pExpression()) * (*rowEntry).content().toGinacNumeric();
                 rowEntry.right();
             }
-            sumOfNonbasics -= (*mColumns[(*rowEntry).columnNumber()].mName->pExpression()) * (*rowEntry).content();
+            sumOfNonbasics -= (*mColumns[(*rowEntry).columnNumber()].mName->pExpression()) * (*rowEntry).content().toGinacNumeric();
             sumOfNonbasics = sumOfNonbasics.expand();
             if( sumOfNonbasics != 0 ) return false;
             return true;

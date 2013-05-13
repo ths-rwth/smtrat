@@ -508,6 +508,7 @@ namespace smtrat
                 {
                     // Pivot at the found pivoting entry.
                     mTableau.pivot( pivotingElement.first );
+                    assert( mTableau.checkCorrectness() );
                     // Learn all bounds which has been deduced during the pivoting process.
                     while( posNewLearnedBound < mTableau.rLearnedBounds().size() )
                     {
@@ -1191,7 +1192,7 @@ namespace smtrat
                 }
                 #endif
             }
-            else if( _constraint->relation() == CR_GREATER || _constraint->relation() == CR_NEQ )
+            if( _constraint->relation() == CR_GREATER || _constraint->relation() == CR_NEQ )
             {
                 const Constraint* constraint;
                 if( _constraint->relation() != CR_NEQ )

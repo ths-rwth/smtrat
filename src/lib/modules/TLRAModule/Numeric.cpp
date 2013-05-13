@@ -314,7 +314,7 @@ namespace smtrat
          */
         bool Numeric::isPositive() const
         {
-            return this->content().info( info_flags::positive );
+            return this->content().is_positive();
         }
 
         /**
@@ -324,7 +324,7 @@ namespace smtrat
          */
         bool Numeric::isNegative() const
         {
-            return this->content().info( info_flags::negative );
+            return this->content().is_negative();
         }
 
         /**

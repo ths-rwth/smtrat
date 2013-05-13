@@ -1211,7 +1211,7 @@ namespace smtrat
      *
      * @return The string representation of the constraint.
      */
-    string Constraint::smtlibString() const
+    string Constraint::smtlibString( bool _resolveUnequal ) const
     {
         switch( relation() )
         {
@@ -1221,7 +1221,10 @@ namespace smtrat
             }
             case CR_NEQ:
             {
-                return "(or (< " + prefixStringOf( mLhs ) + " 0) (> " + prefixStringOf( mLhs ) + " 0))";
+                if( _resolveUnequal )
+                    return "(or (< " + prefixStringOf( mLhs ) + " 0) (> " + prefixStringOf( mLhs ) + " 0))";
+                else
+                    "(!= " + prefixStringOf( mLhs ) + " 0)";
             }
             case CR_LESS:
             {

@@ -162,61 +162,10 @@ namespace smtrat
             const vs::Condition* condToDelete = formulaConditionPair->second;
 
             eraseDTsOfRanking( *mpStateTree );
-            auto subResult = mpStateTree->rSubstitutionResults().begin();
-            while( subResult != mpStateTree->substitutionResults().end() )
-            {
-                assert( subResult->size() == 1 );
-                ConditionVector& condConj = subResult->back().first;
-                auto cond = condConj.begin();
-                while( cond != condConj.end() )
-                {
-                    ConditionSet::iterator oCond = (*cond)->pOriginalConditions()->begin();
-                    while( oCond != (*cond)->originalConditions().end() )
-                    {
-                        if( *oCond == condToDelete )
-                        {
-                            (*cond)->pOriginalConditions()->erase( oCond );
-                            break;
-                        }
-                        ++oCond;
-                    }
-                    if( oCond != (*cond)->originalConditions().end() )
-                    {
-                        const vs::Condition* toDelete = *cond;
-                        cond = condConj.erase( cond );
-                        delete toDelete;
-                    }
-                    else
-                    {
-                        ++cond;
-                    }
-                }
-                if( condConj.empty() )
-                {
-                    subResult = mpStateTree->rSubstitutionResults().erase( subResult );
-                }
-                else
-                {
-                    ++subResult;
-                }
-            }
             mpStateTree->rSubResultsSimplified() = false;
             ConditionVector condsToDelete = ConditionVector();
-            for( auto condition = mpStateTree->rConditions().begin(); condition != mpStateTree->conditions().end(); ++condition )
-            {
-                if( (*condition)->originalConditions().find( condToDelete ) != (*condition)->originalConditions().end() )
-                {
-                    condsToDelete.push_back( *condition );
-                    break;
-                }
-            }
-            mpStateTree->deleteConditions( condsToDelete );
-            while( !condsToDelete.empty() )
-            {
-                const vs::Condition* toDelete = condsToDelete.back();
-                condsToDelete.pop_back();
-                delete toDelete;
-            }
+            condsToDelete.push_back( condToDelete );
+            mpStateTree->deleteOrigins( condsToDelete );
             mpStateTree->rStateType() = COMBINE_SUBRESULTS;
             mpStateTree->rTakeSubResultCombAgain() = true;
             insertDTinRanking( mpStateTree );
@@ -1561,10 +1510,6 @@ EndSwitch:;
             }
         }
         allMinimumCoveringSets( confSets, minCoverSets );
-        if( minCoverSets.empty() )
-        {
-            printAll();
-        }
         assert( !minCoverSets.empty() );
 
         /*
@@ -1588,7 +1533,13 @@ EndSwitch:;
                         {
                             break;
                         }
-                        receivedConstraint++;
+                        ++receivedConstraint;
+                    }
+                    if( receivedConstraint == mpReceivedFormula->end() )
+                    {
+                        cout << *mpReceivedFormula << endl;
+                        cout << (**oCond).constraint() << endl;
+                        printAll();
                     }
                     assert( receivedConstraint != mpReceivedFormula->end() );
                     mInfeasibleSubsets.back().insert( *receivedConstraint );
