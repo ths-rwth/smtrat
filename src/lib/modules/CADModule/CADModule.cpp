@@ -25,10 +25,10 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-03-03
+ * @version 2013-05-12
  */
 
-//#define MODULE_VERBOSE
+#define MODULE_VERBOSE
 
 #include "../../Manager.h"
 #include "CADModule.h"
@@ -78,10 +78,11 @@ namespace smtrat
         mConstraints(),
         mConstraintsMap(),
         mRealAlgebraicSolution(),
+        mConflictGraph()
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
-        mVariableBounds(),
+        ,
+        mVariableBounds()
         #endif
-        mNewConstraintCount(0)
     {
         mModuleType = MT_CADModule;
         mInfeasibleSubsets.clear();    // initially everything is satisfied
@@ -173,7 +174,7 @@ namespace smtrat
         mConstraints.push_back( constraint );
         mConstraintsMap[ _subformula ] = mConstraints.size() - 1;
         mCAD.addPolynomial( constraint.polynomial(), constraint.variables() );
-        ++mNewConstraintCount;
+        mConflictGraph.addConstraintVertex(); // increases constraint index internally what corresponds to adding a new constraint node with index mConstraints.size()-1
         return true;
     }
 
@@ -193,11 +194,10 @@ namespace smtrat
         cout << "Checking constraint set " << endl;
         for( vector<GiNaCRA::Constraint>::const_iterator k = mConstraints.begin(); k != mConstraints.end(); ++k )
             cout << " " << *k << endl;
-        cout << "Number of new constraints added: " << mNewConstraintCount << endl;
         #endif
-        mNewConstraintCount = 0;
         // perform the scheduled elimination and see if there were new variables added
-        mCAD.prepareElimination();
+        if( mCAD.prepareElimination() )
+            mConflictGraph.clearSampleVertices(); // all sample vertices are now invalid, thus remove them
         #ifdef MODULE_VERBOSE
         cout << "over the variables " << endl;
         vector<symbol> vars = mCAD.variables();
@@ -236,12 +236,11 @@ namespace smtrat
         }
         #endif
         #endif
-        ConflictGraph conflictGraph;
         list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > > deductions;
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
-        if( !mCAD.check( mConstraints, mRealAlgebraicSolution, conflictGraph, boundMap, deductions, false, false ) )
+        if( !mCAD.check( mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, deductions, false, false ) )
         #else
-        if( !mCAD.check( mConstraints, mRealAlgebraicSolution, conflictGraph, deductions, false, false ) )
+        if( !mCAD.check( mConstraints, mRealAlgebraicSolution, mConflictGraph, deductions, false, false ) )
         #endif
         {
             #ifdef SMTRAT_CAD_DISABLE_SMT
@@ -271,9 +270,9 @@ namespace smtrat
             assert( mCAD.setting().computeConflictGraph );
             #ifdef MODULE_VERBOSE
             cout << "Constructing a minimal infeasible set from the ";
-            cout << "conflict graph: " << endl << conflictGraph << endl << endl;
+            cout << "conflict graph: " << endl << mConflictGraph << endl << endl;
             #endif
-            vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( conflictGraph );
+            vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( mConflictGraph );
 
             #ifdef SMTRAT_CAD_VARIABLEBOUNDS
             set<const Formula*> boundConstraints = mVariableBounds.getOriginsOfBounds();
@@ -369,8 +368,9 @@ namespace smtrat
         mConstraints.erase( mConstraints.begin() + constraintIndex );    // erase the (constraintIt->second)-th element
         // update the constraint / index map, i.e., decrement all indices above the removed one
         updateConstraintMap( constraintIndex, true );
-
-        // remove the corresponding polynomial if it is not occurring in another constraint
+        // remove the corresponding constraint node with index constraintIndex
+        mConflictGraph.removeConstraintVertex(constraintIndex);
+        // remove the corresponding polynomial from the CAD if it is not occurring in another constraint
         bool doDelete = true;
         for( vector<GiNaCRA::Constraint>::const_reverse_iterator c = mConstraints.rbegin(); c != mConstraints.rend(); ++c )
         {
@@ -577,7 +577,7 @@ namespace smtrat
         mis.front().insert( getConstraintAt( mConstraints.size() - 1 ) );    // the last constraint is assumed to be always in the MIS
         if( mConstraints.size() > 1 )
         { // construct set cover by greedy heuristic
-            list<ConflictGraph::Vertex> setCover = list<ConflictGraph::Vertex>();
+            list<ConflictGraph::ConstraintVertex> setCover = list<ConflictGraph::ConstraintVertex>();
             long unsigned vertex = conflictGraph.maxDegreeVertex();
             while( conflictGraph.degree( vertex ) > 0 )
             {
@@ -592,7 +592,7 @@ namespace smtrat
                 vertex = conflictGraph.maxDegreeVertex();
             }
             // collect constraints according to the vertex cover
-            for( list<ConflictGraph::Vertex>::const_iterator v = setCover.begin(); v != setCover.end(); ++v )
+            for( list<ConflictGraph::ConstraintVertex>::const_iterator v = setCover.begin(); v != setCover.end(); ++v )
                 mis.front().insert( getConstraintAt( *v ) );
         }
         return mis;
