@@ -26,7 +26,7 @@
  * @author Florian Corzilius
  * @author Ulrich Loup
  * @since 2012-03-19
- * @version 2012-03-19
+ * @version 2013-05-05
  */
 
 /* TODOS: some setter and getter of the smtlib language miss.
@@ -79,13 +79,13 @@
 {
     // initialize the initial location object
     @$.begin.filename = @$.end.filename = dv.pStreamname();
-    typedef struct YYLTYPE
+    struct YYLTYPE
     {
         int first_line;
         int first_column;
         int last_line;
         int last_column;
-    } YYLTYPE;
+    };
 };
 
 /*
@@ -234,7 +234,7 @@ bindlist :
 	|	bindlist bind { $$ = $1; $$->push_back( $2 ); }
 
 bind :
-        OB SYM poly CB { 
+        OB SYM poly CB {
                          #ifdef REPLACE_LET_EXPRESSIONS_DIRECTLY
                          dv.addTheoryBinding( yyloc, *$2, $3 );
                          #else

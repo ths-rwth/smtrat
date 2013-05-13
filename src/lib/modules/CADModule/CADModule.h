@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-02-04
- * @version 2013-04-25
+ * @version 2013-05-11
  *
  */
 #ifndef SMTRAT_CADMODULE_H
@@ -84,11 +84,11 @@ namespace smtrat
         ConstraintIndexMap mConstraintsMap;
         /// a satisfying assignment of the received constraints if existent; otherwise it is empty
         GiNaCRA::RealAlgebraicPoint mRealAlgebraicSolution;
+        /// the conflict graph storing for each last component of all sample points which constraints were satisfied by the point
+        GiNaCRA::ConflictGraph mConflictGraph;
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         VariableBounds mVariableBounds;
         #endif
-        /// counts the number of constraints added since the last call to CAD::check
-        unsigned mNewConstraintCount;
 
         public:
 
