@@ -12,4 +12,5 @@ nbproject/configurations.xml
 /src/lib/modules/AddModules.h
 /src/lib/modules/Modules.cpp
 /src/lib/modules/Modules.h
-
+/src/lib/strategies/config.h
+/src/solver/config.h
