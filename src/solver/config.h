@@ -1,4 +1,4 @@
 #pragma once
 
-#define CMakeStrategySolver smtrat::NRATSolverCAD
-#define CMakeStrategyHeader "../lib/strategies/NRATSolverCAD.h"
+#define CMakeStrategySolver smtrat::NRATSolver
+#define CMakeStrategyHeader "../lib/strategies/NRATSolver.h"

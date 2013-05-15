@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-02-04
- * @version 2013-05-11
+ * @version 2013-05-15
  *
  */
 #ifndef SMTRAT_CADMODULE_H
@@ -33,6 +33,7 @@
 
 
 
+#include "config.h"
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
 
