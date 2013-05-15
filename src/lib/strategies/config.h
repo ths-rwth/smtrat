@@ -7,4 +7,4 @@
 /* #undef SMTRAT_ENABLE_VRWModule */
 #define SMTRAT_ENABLE_LRAModule
 /* #undef SMTRAT_ENABLE_CacheModule */
-/* #undef SMTRAT_ENABLE_ICPModule */
+#define SMTRAT_ENABLE_ICPModule

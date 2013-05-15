@@ -28,7 +28,7 @@
  * @version 2013-05-12
  */
 
-#define MODULE_VERBOSE
+//#define MODULE_VERBOSE
 
 #include "../../Manager.h"
 #include "CADModule.h"
