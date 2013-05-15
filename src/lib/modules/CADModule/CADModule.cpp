@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-05-12
+ * @version 2013-05-15
  */
 
 //#define MODULE_VERBOSE
@@ -261,10 +261,10 @@ namespace smtrat
             for( ConstraintIndexMap::const_iterator i = mConstraintsMap.begin(); i != mConstraintsMap.end(); ++i )
             {
                 mInfeasibleSubsets.back().insert( *i->first );
-                #ifdef SMTRAT_CAD_VARIABLEBOUNDS
-                mInfeasibleSubsets.back().insert( boundConstraints.begin(), boundConstraints.end() );
-                #endif
             }
+            #ifdef SMTRAT_CAD_VARIABLEBOUNDS
+            mInfeasibleSubsets.back().insert( boundConstraints.begin(), boundConstraints.end() );
+            #endif
             #else
             // construct an infeasible subset
             assert( mCAD.setting().computeConflictGraph );
