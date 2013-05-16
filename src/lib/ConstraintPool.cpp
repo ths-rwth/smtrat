@@ -375,8 +375,9 @@ namespace smtrat
     {
         if( _constraint->variables().empty() )
         {
+            bool constraintConsistent = Constraint::evaluate( ex_to<numeric>( _constraint->lhs() ), _constraint->relation() );
             delete _constraint;
-            return ( Constraint::evaluate( ex_to<numeric>( _constraint->lhs() ), _constraint->relation() ) ? mConsistentConstraint : mInconsistentConstraint );
+            return ( constraintConsistent ? mConsistentConstraint : mInconsistentConstraint );
         }
         _constraint->collectProperties();
         unsigned constraintConsistent = _constraint->isConsistent();
