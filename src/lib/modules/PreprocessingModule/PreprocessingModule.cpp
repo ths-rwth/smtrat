@@ -171,7 +171,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             iffFormula->addSubformula( new Formula( *_formula ) );
             #endif
             Formula* result;
-            vs::DisjunctionOfConstraintConjunctions splittedForm = vs::getSignCombinations( _formula->pConstraint() );
+            vs::DisjunctionOfConstraintConjunctions splittedForm = vs::splitProducts( _formula->pConstraint() );
             if( splittedForm.empty() )
             {
                 result = new Formula( smtrat::FFALSE );

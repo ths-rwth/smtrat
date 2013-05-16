@@ -1107,9 +1107,7 @@ namespace vs
                     }
                     default:
                     {
-//                        cout << "getSignCombinations: " << **constraint << endl;
                         toCombine.push_back( getSignCombinations( *constraint ) );
-//                        print( toCombine.back() );
                     }
                     simplify( toCombine.back() );
                 }
@@ -1128,6 +1126,55 @@ namespace vs
 
     /**
      *
+     * @param _constraintConjunction
+     * @return
+     */
+    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* _constraint )
+    {
+        DisjunctionOfConstraintConjunctions result = DisjunctionOfConstraintConjunctions();
+        if( _constraint->hasFactorization() )
+        {
+            switch( _constraint->relation() )
+            {
+                case smtrat::CR_EQ:
+                {
+                    const ex& factorization = _constraint->factorization();
+                    for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
+                    {
+                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_EQ, _constraint->variables() );
+                        result.push_back( TS_ConstraintConjunction() );
+                        result.back().push_back( cons );
+                    }
+                    break;
+                }
+                case smtrat::CR_NEQ:
+                {
+                    result.push_back( TS_ConstraintConjunction() );
+                    const ex& factorization = _constraint->factorization();
+                    for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
+                    {
+                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_NEQ, _constraint->variables() );
+                        result.back().push_back( cons );
+                    }
+                    break;
+                }
+                default:
+                {
+                    result = getSignCombinations( _constraint );
+                }
+                simplify( result );
+            }
+        }
+        else
+        {
+            result.push_back( TS_ConstraintConjunction() );
+            result.back().push_back( _constraint );
+        }
+        return result;
+    }
+
+    /**
+     *
      * @param _product
      * @param _positive
      * @param _zero
@@ -1139,6 +1186,11 @@ namespace vs
         DisjunctionOfConstraintConjunctions combinations = DisjunctionOfConstraintConjunctions();
         if( _constraint->hasFactorization() && _constraint->factorization().nops() <= MAX_PRODUCT_SPLIT_NUMBER )
         {
+            if( !(_constraint->relation() == smtrat::CR_GREATER || _constraint->relation() == smtrat::CR_LESS
+                    || _constraint->relation() == smtrat::CR_GEQ || _constraint->relation() == smtrat::CR_LEQ ))
+            {
+                cout << *_constraint << endl;
+            }
             assert( _constraint->relation() == smtrat::CR_GREATER || _constraint->relation() == smtrat::CR_LESS
                     || _constraint->relation() == smtrat::CR_GEQ || _constraint->relation() == smtrat::CR_LEQ );
             smtrat::Constraint_Relation relPos = smtrat::CR_GREATER;
