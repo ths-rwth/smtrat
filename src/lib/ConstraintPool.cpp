@@ -373,6 +373,12 @@ namespace smtrat
      */
     const Constraint* ConstraintPool::addConstraintToPool( Constraint* _constraint )
     {
+        if( _constraint->variables().empty() )
+        {
+            delete _constraint;
+            return ( Constraint::evaluate( ex_to<numeric>( _constraint->lhs() ), _constraint->relation() ) ? mConsistentConstraint : mInconsistentConstraint );
+        }
+        _constraint->collectProperties();
         unsigned constraintConsistent = _constraint->isConsistent();
         if( constraintConsistent == 2 )
         {
@@ -385,7 +391,6 @@ namespace smtrat
             }
             else
             {
-                _constraint->collectProperties();
                 Constraint* constraint = _constraint->simplify();
                 if( constraint != NULL )
                 {
@@ -418,7 +423,7 @@ namespace smtrat
         {
             // Constraint contains no variables.
             delete _constraint;
-            return (constraintConsistent != 0 ? mConsistentConstraint : mInconsistentConstraint );
+            return (constraintConsistent ? mConsistentConstraint : mInconsistentConstraint );
         }
     }
     

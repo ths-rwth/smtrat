@@ -184,7 +184,7 @@ namespace smtrat
      * @return True,  if the given value satisfies the given relation to zero;
      *         False, otherwise.
      */
-    bool evaluate( const numeric& _value, Constraint_Relation _relation )
+    bool Constraint::evaluate( const numeric& _value, Constraint_Relation _relation )
     {
         switch( _relation )
         {
@@ -236,7 +236,7 @@ namespace smtrat
      */
     unsigned Constraint::isConsistent() const
     {
-        if( variables().size() == 0 )
+        if( variables().empty() )
         {
             return evaluate( ex_to<numeric>( mLhs ), relation() ) ? 1 : 0;
         }
@@ -352,13 +352,6 @@ namespace smtrat
      */
     ex Constraint::coefficient( const ex& _variable, int _degree ) const
     {
-        cout << "mLhs.coeff( _variable, 0 ) = " << mLhs.coeff( _variable, 0 ) << endl;
-        cout << "mLhs.coeff( _variable, 1 ) = " << mLhs.coeff( _variable, 1 ) << endl;
-        cout << "mLhs.coeff( _variable, 2 ) = " << mLhs.coeff( _variable, 2 ) << endl;
-        cout << "mLhs.coeff( _variable, 3 ) = " << mLhs.coeff( _variable, 3 ) << endl;
-        cout << "mLhs.coeff( _variable, 4 ) = " << mLhs.coeff( _variable, 4 ) << endl;
-        cout << "mLhs.coeff( _variable, _degree = " << _degree << " ) = " << mLhs.coeff( _variable, _degree ) << endl;
-        cout << __func__ << " of " << _variable << " in " << mLhs << " with degree " << degree << " is ";
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         VarDegree vd = VarDegree( _variable, _degree );
         Coefficients::const_iterator coeffIter = mpCoefficients->find( vd );
@@ -376,13 +369,11 @@ namespace smtrat
         Coefficients::const_iterator coeffIter = mpCoefficients->find( vd );
         if( coeffIter != mpCoefficients->end() )
         {
-            cout << coeffIter->second << " (by 1)" << endl;
             return coeffIter->second;
         }
         else
         {
             ex coeff = mpCoefficients->insert( pair< VarDegree, ex >( vd, mLhs.coeff( _variable, _degree ) ) ).first->second;
-            cout << coeff << " (by 2)" << endl;
             return coeff;
         }
         #endif
@@ -778,6 +769,11 @@ namespace smtrat
                     mIsNeverPositive = false;
                     mIsNeverNegative = false;
                     mLhs = mVariables.begin()->second;
+                    anythingChanged = true;
+                    mMaxMonomeDegree = 1;
+                    mMinMonomeDegree = 1;
+                    mVarInfoMap.begin()->second.maxDegree = 1;
+                    mVarInfoMap.begin()->second.minDegree = 1;
                     break;
                 }
                 case CR_NEQ:
@@ -785,6 +781,11 @@ namespace smtrat
                     mIsNeverPositive = false;
                     mIsNeverNegative = false;
                     mLhs = mVariables.begin()->second;
+                    anythingChanged = true;
+                    mMaxMonomeDegree = 1;
+                    mMinMonomeDegree = 1;
+                    mVarInfoMap.begin()->second.maxDegree = 1;
+                    mVarInfoMap.begin()->second.minDegree = 1;
                     break;
                 }
                 case CR_LEQ:
@@ -792,10 +793,20 @@ namespace smtrat
                     if( mIsNeverPositive )
                     {
                         mLhs = (-1) * mVariables.begin()->second * mVariables.begin()->second;
+                        anythingChanged = true;
+                        mMaxMonomeDegree = 2;
+                        mMinMonomeDegree = 2;
+                        mVarInfoMap.begin()->second.maxDegree = 2;
+                        mVarInfoMap.begin()->second.minDegree = 2;
                     }
                     else
                     {
                         mLhs = (mLhs.coeff( mVariables.begin()->second, mMaxMonomeDegree ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                        anythingChanged = true;
+                        mMaxMonomeDegree = 1;
+                        mMinMonomeDegree = 1;
+                        mVarInfoMap.begin()->second.maxDegree = 1;
+                        mVarInfoMap.begin()->second.minDegree = 1;
                     }
                     break;
                 }
@@ -804,10 +815,20 @@ namespace smtrat
                     if( mIsNeverNegative )
                     {
                         mLhs = mVariables.begin()->second * mVariables.begin()->second;
+                        anythingChanged = true;
+                        mMaxMonomeDegree = 2;
+                        mMinMonomeDegree = 2;
+                        mVarInfoMap.begin()->second.maxDegree = 2;
+                        mVarInfoMap.begin()->second.minDegree = 2;
                     }
                     else
                     {
                         mLhs = (mLhs.coeff( mVariables.begin()->second, mMaxMonomeDegree ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                        anythingChanged = true;
+                        mMaxMonomeDegree = 1;
+                        mMinMonomeDegree = 1;
+                        mVarInfoMap.begin()->second.maxDegree = 1;
+                        mVarInfoMap.begin()->second.minDegree = 1;
                     }
                     break;
                 }
@@ -818,16 +839,31 @@ namespace smtrat
                         mRelation = CR_NEQ;
                         mLhs = mVariables.begin()->second;
                         mIsNeverPositive = false;
+                        anythingChanged = true;
+                        mMaxMonomeDegree = 1;
+                        mMinMonomeDegree = 1;
+                        mVarInfoMap.begin()->second.maxDegree = 1;
+                        mVarInfoMap.begin()->second.minDegree = 1;
                     }
                     else
                     {
                         if( mIsNeverNegative )
                         {
                             mLhs = mVariables.begin()->second * mVariables.begin()->second;
+                            anythingChanged = true;
+                            mMaxMonomeDegree = 2;
+                            mMinMonomeDegree = 2;
+                            mVarInfoMap.begin()->second.maxDegree = 2;
+                            mVarInfoMap.begin()->second.minDegree = 2;
                         }
                         else
                         {
                             mLhs = (mLhs.coeff( mVariables.begin()->second, mMaxMonomeDegree ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                            anythingChanged = true;
+                            mMaxMonomeDegree = 1;
+                            mMinMonomeDegree = 1;
+                            mVarInfoMap.begin()->second.maxDegree = 1;
+                            mVarInfoMap.begin()->second.minDegree = 1;
                         }
                     }
                     break;
@@ -839,16 +875,31 @@ namespace smtrat
                         mRelation = CR_NEQ;
                         mLhs = mVariables.begin()->second;
                         mIsNeverNegative = false;
+                        anythingChanged = true;
+                        mMaxMonomeDegree = 1;
+                        mMinMonomeDegree = 1;
+                        mVarInfoMap.begin()->second.maxDegree = 1;
+                        mVarInfoMap.begin()->second.minDegree = 1;
                     }
                     else
                     {
                         if( mIsNeverPositive )
                         {
                             mLhs = (-1) * mVariables.begin()->second * mVariables.begin()->second;
+                            anythingChanged = true;
+                            mMaxMonomeDegree = 2;
+                            mMinMonomeDegree = 2;
+                            mVarInfoMap.begin()->second.maxDegree = 2;
+                            mVarInfoMap.begin()->second.minDegree = 2;
                         }
                         else
                         {
                             mLhs = (mLhs.coeff( mVariables.begin()->second, mMaxMonomeDegree ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                            anythingChanged = true;
+                            mMaxMonomeDegree = 1;
+                            mMinMonomeDegree = 1;
+                            mVarInfoMap.begin()->second.maxDegree = 1;
+                            mVarInfoMap.begin()->second.minDegree = 1;
                         }
                     }
                     break;
@@ -858,11 +909,6 @@ namespace smtrat
                     assert( false );
                 }
             }
-            anythingChanged = true;
-            mMaxMonomeDegree = 1;
-            mMinMonomeDegree = 1;
-            mVarInfoMap.begin()->second.maxDegree = 1;
-            mVarInfoMap.begin()->second.minDegree = 1;
         }
         if( anythingChanged )
         {

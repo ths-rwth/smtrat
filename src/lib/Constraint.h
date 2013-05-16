@@ -314,6 +314,7 @@ namespace smtrat
             // Data access methods (read only).
             bool variable( const std::string&, GiNaC::symbol& ) const;
             bool hasVariable( const std::string& ) const;
+            static bool evaluate( const numeric&, Constraint_Relation );
             unsigned isConsistent() const;
             unsigned satisfiedBy( GiNaC::exmap& ) const;
             bool hasFinitelyManySolutionsIn( const std::string& ) const;
