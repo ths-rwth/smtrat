@@ -30,7 +30,7 @@
 #ifndef ICPMODULE_H
 #define ICPMODULE_H
 
-#define ICP_BOXLOG
+//#define ICP_BOXLOG
 #define SMTRAT_DEVOPTION_VALIDATION_ICP
 
 #include <ginac/ginac.h>
@@ -59,7 +59,7 @@ namespace smtrat
              */
             struct comp
             {
-                // ATTENTION: When weights are equal the _LOWER_ id is prefered
+                // ATTENTION: When weights are equal the _LOWER_ id is preferred
                 bool operator ()( std::pair<double, unsigned> lhs, std::pair<double, unsigned> rhs ) const
                 {
                     return lhs.first < rhs.first || ((lhs.first == rhs.first) && lhs.second > rhs.second);
@@ -101,6 +101,8 @@ namespace smtrat
             std::map<symbol, icp::IcpVariable, ex_is_less>                      mVariables;
             std::map<const ex, symbol, ex_is_less>                                                mLinearizations;
 
+            GiNaC::exmap                                                        mSubstitutions; // variable -> substitution
+            
             icp::HistoryNode*                                                        mHistoryRoot;
             icp::HistoryNode*                                                        mHistoryActual;
 
@@ -110,6 +112,7 @@ namespace smtrat
 
             std::set<const Constraint*>                                         mCenterConstraints;
             std::set<const Formula*>                                         mBoundConstraints;
+            std::set<Formula*>                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
 
             bool                                                                mInitialized;
             unsigned                                                            mCurrentId;
@@ -327,8 +330,8 @@ namespace smtrat
                     {
                         if( (*subformula)->getType() == REALCONSTRAINT )
                         {
-//                            cout << "TO FIND:";
-//                            (*subformula)->print();
+                            cout << "TO FIND:";
+                            (*subformula)->print();
                             auto iter = mReplacements.find( (*subformula)->pConstraint() );
                             assert( iter != mReplacements.end() );
                             Formula* constraintFormula = new Formula( iter->second ); 
@@ -341,6 +344,11 @@ namespace smtrat
                     }
                 }
             }
+            
+            /**
+             * Parses obtained deductions from the LRA module and maps them to original constraints or introduces new ones.
+             */
+            Formula* transformDeductions( Formula* _deduction );
             
             
 #ifdef ICP_BOXLOG

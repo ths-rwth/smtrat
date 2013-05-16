@@ -103,7 +103,13 @@ namespace smtrat
 #ifdef ICPMODULE_DEBUG
         cout << "[ICP] inform: " << (*_constraint) << endl;
 #endif
-
+        
+        // add original variables to substitution mapping
+        for( auto variablesIt = _constraint->variables().begin(); variablesIt != _constraint->variables().end(); ++variablesIt )
+        {
+            mSubstitutions[(*variablesIt).second] = (*variablesIt).second;
+        }
+        
         // actual preprocessing
         linear = isLinear( _constraint, constr, replacement );
 
@@ -318,7 +324,7 @@ namespace smtrat
                GiNaC::symtab variables = replacementPtr->variables();
                variables.insert(newReal);
 
-               Constraint* tmpConstr = new Constraint(slackvariable->expression()-newReal.second, Constraint_Relation::CR_EQ, variables );
+               const Constraint* tmpConstr = Formula::newConstraint(slackvariable->expression()-newReal.second, Constraint_Relation::CR_EQ, variables );
 
                // store mapping of constraint without to constraint with linear variable, needed for comparison with failed constraints during validation
                for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt)
@@ -719,19 +725,37 @@ namespace smtrat
         Answer lraAnswer = mLRA.isConsistent();
         
         // catch deductions
-        while ( !mLRA.rDeductions().empty() )
-        {
-            replaceConstraints( mLRA.rDeductions().back() );
-            addDeduction( mLRA.rDeductions().back() );
-            mLRA.rDeductions().pop_back();
-        }
+//        while ( !mLRA.rDeductions().empty() && lraAnswer != Unknown )
+//        {
+//            replaceConstraints( mLRA.rDeductions().back() );
+//            addDeduction( mLRA.rDeductions().back() );
+//            mLRA.rDeductions().pop_back();
+//        }
 
-        assert(lraAnswer != Unknown);
-        if ( lraAnswer == Unknown )
-        {
-            return foundAnswer(lraAnswer);
-        }
-        else if (lraAnswer == False)
+//        if ( lraAnswer == Unknown )
+//        {
+            mLRA.updateDeductions();
+            while( !mLRA.deductions().empty() )
+            {
+#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
+                cout << "Create deduction for: " << endl;
+                mLRA.deductions().back()->print();
+                cout << endl;
+#endif
+                Formula* deduction = transformDeductions(mLRA.deductions().back());
+                
+                mLRA.rDeductions().pop_back();
+                
+                addDeduction(deduction);
+#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
+                cout << "Passed deduction: " << endl;
+                deduction->print();
+                cout << endl;
+#endif
+            }
+//            return foundAnswer(lraAnswer);
+//        }
+        if (lraAnswer == False)
         {
             // remap infeasible subsets to original constraints
             vec_set_const_pFormula tmpSet = mLRA.infeasibleSubsets();
@@ -1576,6 +1600,7 @@ namespace smtrat
             pair<const ex, symbol> tmpPair = pair<const ex, symbol>(_ex, ex_to<symbol>(newReal.second));
             mLinearizations.insert(tmpPair);
 
+            mSubstitutions[newReal.second]=_ex;
 
             for( uint varIndex = 0; varIndex < variables.size(); varIndex++ )
             {
@@ -2022,6 +2047,13 @@ namespace smtrat
         cout << "*********************** ValidationFormula *********************" << endl;
         mValidationFormula->print();
         cout << endl;
+        cout << "***************************************************************" << endl;
+        
+        cout << "************************* Substitution ************************" << endl;
+        for( auto subsIt = mSubstitutions.begin(); subsIt != mSubstitutions.end(); ++subsIt )
+        {
+            cout << (*subsIt).first << " -> " << (*subsIt).second << endl;
+        }
         cout << "***************************************************************" << endl;
     }
 
@@ -3149,6 +3181,72 @@ namespace smtrat
             }
         }
         return addedBoundaries;
+    }
+    
+    Formula* ICPModule::transformDeductions( Formula* _deduction )
+    {
+        
+        if( _deduction->getType() == REALCONSTRAINT )
+        {
+            ex lhs = _deduction->constraint().lhs();
+            GiNaC::symtab variables = _deduction->constraint().variables();
+            GiNaC::symtab newVariables;
+
+            // create symtab for variables for the new constraint
+            for ( auto symbolIt = variables.begin(); symbolIt != variables.end(); ++symbolIt )
+            {
+                assert(mSubstitutions.find((*symbolIt).second) != mSubstitutions.end());
+                if ( mSubstitutions[(*symbolIt).second] != (*symbolIt).second )
+                {
+                    std::vector<symbol>* tmpVariables = new std::vector<symbol>;
+                    mIcp.searchVariables(mSubstitutions[(*symbolIt).second], tmpVariables);
+
+                    while (!tmpVariables->empty())
+                    {
+                        newVariables[tmpVariables->back().get_name()] = tmpVariables->back();
+                        tmpVariables->pop_back();
+                    }
+
+                    delete tmpVariables;
+                }
+                else
+                {
+                    newVariables[(*symbolIt).first] = (*symbolIt).second;
+                }
+            }
+
+            lhs.subs(mSubstitutions);
+            const Constraint* constraint = Formula::newConstraint(lhs, _deduction->constraint().relation(), newVariables);
+            // TODO
+            Formula* newRealDeduction = new Formula(constraint);
+            mCreatedDeductions.insert(newRealDeduction);
+            
+//            cout << "Created new real deduction: ";
+//            newRealDeduction->print();
+//            cout << endl;
+            
+            return newRealDeduction;
+        }
+        else if( _deduction->isBooleanCombination() )
+        {
+            Formula* newDeduction = new Formula(_deduction->getType());
+            for ( auto formulaIt = _deduction->begin(); formulaIt != _deduction->end(); ++formulaIt )
+            {
+                newDeduction->addSubformula(transformDeductions(*formulaIt));
+            }
+            mCreatedDeductions.insert(newDeduction);
+            
+//            cout << "Created new deduction: ";
+//            newDeduction->print();
+//            
+            return newDeduction;
+        }
+        else
+        {
+            //should not happen
+            assert(false);
+            return NULL;
+        }
     }
     
 #ifdef ICP_BOXLOG
