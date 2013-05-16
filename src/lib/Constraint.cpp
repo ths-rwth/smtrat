@@ -184,7 +184,7 @@ namespace smtrat
      * @return True,  if the given value satisfies the given relation to zero;
      *         False, otherwise.
      */
-    bool evaluate( const numeric& _value, Constraint_Relation _relation )
+    bool Constraint::evaluate( const numeric& _value, Constraint_Relation _relation )
     {
         switch( _relation )
         {
@@ -236,7 +236,7 @@ namespace smtrat
      */
     unsigned Constraint::isConsistent() const
     {
-        if( variables().size() == 0 )
+        if( variables().empty() )
         {
             return evaluate( ex_to<numeric>( mLhs ), relation() ) ? 1 : 0;
         }
@@ -373,7 +373,8 @@ namespace smtrat
         }
         else
         {
-            return mpCoefficients->insert( pair< VarDegree, ex >( vd, mLhs.coeff( _variable, _degree ) ) ).first->second;
+            ex coeff = mpCoefficients->insert( pair< VarDegree, ex >( vd, mLhs.coeff( _variable, _degree ) ) ).first->second;
+            return coeff;
         }
         #endif
     }
@@ -761,7 +762,6 @@ namespace smtrat
         }
         if( mVarInfoMap.size() == 1 && mNumMonomials == 1 && mMaxMonomeDegree > 1 )
         {
-
             switch( mRelation )
             {
                 case CR_EQ:
@@ -769,6 +769,11 @@ namespace smtrat
                     mIsNeverPositive = false;
                     mIsNeverNegative = false;
                     mLhs = mVariables.begin()->second;
+                    anythingChanged = true;
+                    mMaxMonomeDegree = 1;
+                    mMinMonomeDegree = 1;
+                    mVarInfoMap.begin()->second.maxDegree = 1;
+                    mVarInfoMap.begin()->second.minDegree = 1;
                     break;
                 }
                 case CR_NEQ:
@@ -776,6 +781,11 @@ namespace smtrat
                     mIsNeverPositive = false;
                     mIsNeverNegative = false;
                     mLhs = mVariables.begin()->second;
+                    anythingChanged = true;
+                    mMaxMonomeDegree = 1;
+                    mMinMonomeDegree = 1;
+                    mVarInfoMap.begin()->second.maxDegree = 1;
+                    mVarInfoMap.begin()->second.minDegree = 1;
                     break;
                 }
                 case CR_LEQ:
@@ -783,10 +793,20 @@ namespace smtrat
                     if( mIsNeverPositive )
                     {
                         mLhs = (-1) * mVariables.begin()->second * mVariables.begin()->second;
+                        anythingChanged = true;
+                        mMaxMonomeDegree = 2;
+                        mMinMonomeDegree = 2;
+                        mVarInfoMap.begin()->second.maxDegree = 2;
+                        mVarInfoMap.begin()->second.minDegree = 2;
                     }
                     else
                     {
                         mLhs = (mLhs.coeff( mVariables.begin()->second, mMaxMonomeDegree ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                        anythingChanged = true;
+                        mMaxMonomeDegree = 1;
+                        mMinMonomeDegree = 1;
+                        mVarInfoMap.begin()->second.maxDegree = 1;
+                        mVarInfoMap.begin()->second.minDegree = 1;
                     }
                     break;
                 }
@@ -795,10 +815,20 @@ namespace smtrat
                     if( mIsNeverNegative )
                     {
                         mLhs = mVariables.begin()->second * mVariables.begin()->second;
+                        anythingChanged = true;
+                        mMaxMonomeDegree = 2;
+                        mMinMonomeDegree = 2;
+                        mVarInfoMap.begin()->second.maxDegree = 2;
+                        mVarInfoMap.begin()->second.minDegree = 2;
                     }
                     else
                     {
                         mLhs = (mLhs.coeff( mVariables.begin()->second, mMaxMonomeDegree ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                        anythingChanged = true;
+                        mMaxMonomeDegree = 1;
+                        mMinMonomeDegree = 1;
+                        mVarInfoMap.begin()->second.maxDegree = 1;
+                        mVarInfoMap.begin()->second.minDegree = 1;
                     }
                     break;
                 }
@@ -809,16 +839,31 @@ namespace smtrat
                         mRelation = CR_NEQ;
                         mLhs = mVariables.begin()->second;
                         mIsNeverPositive = false;
+                        anythingChanged = true;
+                        mMaxMonomeDegree = 1;
+                        mMinMonomeDegree = 1;
+                        mVarInfoMap.begin()->second.maxDegree = 1;
+                        mVarInfoMap.begin()->second.minDegree = 1;
                     }
                     else
                     {
                         if( mIsNeverNegative )
                         {
                             mLhs = mVariables.begin()->second * mVariables.begin()->second;
+                            anythingChanged = true;
+                            mMaxMonomeDegree = 2;
+                            mMinMonomeDegree = 2;
+                            mVarInfoMap.begin()->second.maxDegree = 2;
+                            mVarInfoMap.begin()->second.minDegree = 2;
                         }
                         else
                         {
                             mLhs = (mLhs.coeff( mVariables.begin()->second, mMaxMonomeDegree ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                            anythingChanged = true;
+                            mMaxMonomeDegree = 1;
+                            mMinMonomeDegree = 1;
+                            mVarInfoMap.begin()->second.maxDegree = 1;
+                            mVarInfoMap.begin()->second.minDegree = 1;
                         }
                     }
                     break;
@@ -830,16 +875,31 @@ namespace smtrat
                         mRelation = CR_NEQ;
                         mLhs = mVariables.begin()->second;
                         mIsNeverNegative = false;
+                        anythingChanged = true;
+                        mMaxMonomeDegree = 1;
+                        mMinMonomeDegree = 1;
+                        mVarInfoMap.begin()->second.maxDegree = 1;
+                        mVarInfoMap.begin()->second.minDegree = 1;
                     }
                     else
                     {
                         if( mIsNeverPositive )
                         {
                             mLhs = (-1) * mVariables.begin()->second * mVariables.begin()->second;
+                            anythingChanged = true;
+                            mMaxMonomeDegree = 2;
+                            mMinMonomeDegree = 2;
+                            mVarInfoMap.begin()->second.maxDegree = 2;
+                            mVarInfoMap.begin()->second.minDegree = 2;
                         }
                         else
                         {
                             mLhs = (mLhs.coeff( mVariables.begin()->second, mMaxMonomeDegree ).info( info_flags::positive ) ? ex( 1 ) : ex( -1 ) ) * mVariables.begin()->second;
+                            anythingChanged = true;
+                            mMaxMonomeDegree = 1;
+                            mMinMonomeDegree = 1;
+                            mVarInfoMap.begin()->second.maxDegree = 1;
+                            mVarInfoMap.begin()->second.minDegree = 1;
                         }
                     }
                     break;
@@ -847,13 +907,7 @@ namespace smtrat
                 default:
                 {
                     assert( false );
-                    anythingChanged = false;
                 }
-                anythingChanged = true;
-                mMaxMonomeDegree = 1;
-                mMinMonomeDegree = 1;
-                mVarInfoMap.begin()->second.maxDegree = 1;
-                mVarInfoMap.begin()->second.minDegree = 1;
             }
         }
         if( anythingChanged )

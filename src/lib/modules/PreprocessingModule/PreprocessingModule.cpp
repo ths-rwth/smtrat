@@ -34,7 +34,7 @@
 #include <bits/stl_map.h>
 
 //#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION (Not working)
-#define ADDLINEARDEDUCTIONS
+//#define ADDLINEARDEDUCTIONS
 //#define PREPROCESSING_DEVELOP_MODE
 #ifdef SMTRAT_DEVOPTION_Statistics
 #define PREPROCESSING_FACTORIZATION
@@ -171,7 +171,7 @@ PreprocessingModule::PreprocessingModule( ModuleType _type, const Formula* const
             iffFormula->addSubformula( new Formula( *_formula ) );
             #endif
             Formula* result;
-            vs::DisjunctionOfConstraintConjunctions splittedForm = vs::getSignCombinations( _formula->pConstraint() );
+            vs::DisjunctionOfConstraintConjunctions splittedForm = vs::splitProducts( _formula->pConstraint() );
             if( splittedForm.empty() )
             {
                 result = new Formula( smtrat::FFALSE );

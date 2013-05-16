@@ -98,9 +98,10 @@ namespace vs
     void simplify( DisjunctionOfConstraintConjunctions& );
     void splitProducts( DisjunctionOfConstraintConjunctions& );
     DisjunctionOfConstraintConjunctions splitProducts( const TS_ConstraintConjunction& );
+    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* );
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::Constraint* );
-    void getOddBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >&, unsigned = 0 );
-    void getEvenBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >&, unsigned = 0 );
+    void getOddBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& );
+    void getEvenBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& );
     GiNaC::ex simplify( const GiNaC::ex&, const GiNaC::symtab&  );
     void print( DisjunctionOfConstraintConjunctions& );
 }    // end namspace vs

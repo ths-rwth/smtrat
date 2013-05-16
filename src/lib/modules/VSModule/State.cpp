@@ -2647,10 +2647,20 @@ namespace vs
                     const DoubleInterval& subVarInterval = intervals[subVar];
                     if( substitution().type() == ST_PLUS_EPSILON && divisionResultA.leftType() != DoubleInterval::INFINITY_BOUND )
                     {
-                        divisionResultA = DoubleInterval( divisionResultA.left(),
-                                                          DoubleInterval::STRICT_BOUND,
-                                                          std::nextafter( divisionResultA.right(), DBL_MAX ),
-                                                          DoubleInterval::WEAK_BOUND );
+                        if( divisionResultA.rightType() == DoubleInterval::INFINITY_BOUND || divisionResultA.right() == DBL_MAX )
+                        {
+                            divisionResultA = DoubleInterval( divisionResultA.left(),
+                                                              DoubleInterval::STRICT_BOUND,
+                                                              0,
+                                                              DoubleInterval::INFINITY_BOUND );
+                        }
+                        else
+                        {
+                            divisionResultA = DoubleInterval( divisionResultA.left(),
+                                                              DoubleInterval::STRICT_BOUND,
+                                                              std::nextafter( divisionResultA.right(), INFINITY ),
+                                                              DoubleInterval::WEAK_BOUND );
+                        }
                     }
                     #ifdef VS_VB_DEBUG
                     cout << " results in   ";
@@ -2673,10 +2683,20 @@ namespace vs
                     {
                         if( substitution().type() == ST_PLUS_EPSILON && divisionResultA.leftType() != DoubleInterval::INFINITY_BOUND )
                         {
-                            divisionResultA = DoubleInterval( divisionResultA.left(),
-                                                              DoubleInterval::STRICT_BOUND,
-                                                              std::nextafter( divisionResultA.right(), DBL_MAX ),
-                                                              DoubleInterval::WEAK_BOUND );
+                            if( divisionResultA.rightType() == DoubleInterval::INFINITY_BOUND || divisionResultA.right() == DBL_MAX )
+                            {
+                                divisionResultA = DoubleInterval( divisionResultA.left(),
+                                                                  DoubleInterval::STRICT_BOUND,
+                                                                  0,
+                                                                  DoubleInterval::INFINITY_BOUND );
+                            }
+                            else
+                            {
+                                divisionResultA = DoubleInterval( divisionResultA.left(),
+                                                                  DoubleInterval::STRICT_BOUND,
+                                                                  std::nextafter( divisionResultA.right(), INFINITY ),
+                                                                  DoubleInterval::WEAK_BOUND );
+                            }
                         }
                         #ifdef VS_VB_DEBUG
                         cout << endl << "intersect first interval with  ";
@@ -2712,10 +2732,20 @@ namespace vs
                 {
                     if( substitution().type() == ST_PLUS_EPSILON && divisionResultA.leftType() != DoubleInterval::INFINITY_BOUND )
                     {
-                        divisionResultA = DoubleInterval( divisionResultA.left(),
-                                                          DoubleInterval::STRICT_BOUND,
-                                                          std::nextafter( divisionResultA.right(), DBL_MAX ),
-                                                          DoubleInterval::WEAK_BOUND );
+                        if( divisionResultA.rightType() == DoubleInterval::INFINITY_BOUND || divisionResultA.right() == DBL_MAX )
+                        {
+                            divisionResultA = DoubleInterval( divisionResultA.left(),
+                                                              DoubleInterval::STRICT_BOUND,
+                                                              0,
+                                                              DoubleInterval::INFINITY_BOUND );
+                        }
+                        else
+                        {
+                            divisionResultA = DoubleInterval( divisionResultA.left(),
+                                                              DoubleInterval::STRICT_BOUND,
+                                                              std::nextafter( divisionResultA.right(), INFINITY ),
+                                                              DoubleInterval::WEAK_BOUND );
+                        }
                     }
                     #ifdef VS_VB_DEBUG
                     cout << " results in   ";

@@ -590,7 +590,7 @@ namespace smtrat
             void print( std::ostream& = std::cout, const std::string = "", bool = false, bool = false ) const;
             void printProposition( std::ostream& _out = std::cout, const std::string _init = "" ) const;
             friend std::ostream& operator <<( std::ostream&, const Formula& );
-            std::string toString( bool = false, bool = false ) const;
+            std::string toString( bool = false, bool = true ) const;
             void getConstraints( std::vector<const Constraint*>& ) const;
             static void toCNF( Formula&, bool = true );
             static bool resolveNegation( Formula&, bool = true );

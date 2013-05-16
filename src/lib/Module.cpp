@@ -950,7 +950,7 @@ namespace smtrat
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and ";
-        assumption += _formula.toString();
+        assumption += _formula.toString( false, true );
         assumption += " " + _moduleName;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
@@ -973,7 +973,7 @@ namespace smtrat
         for( set<const Formula*>::const_iterator formula = _formulas.begin();
              formula != _formulas.end(); ++formula )
         {
-            assumption += " " + (*formula)->toString();
+            assumption += " " + (*formula)->toString( false, true );
         }
         assumption += " " + _moduleName;
         assumption += "))\n";

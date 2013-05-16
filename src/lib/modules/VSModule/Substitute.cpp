@@ -1107,9 +1107,7 @@ namespace vs
                     }
                     default:
                     {
-//                        cout << "getSignCombinations: " << **constraint << endl;
                         toCombine.push_back( getSignCombinations( *constraint ) );
-//                        print( toCombine.back() );
                     }
                     simplify( toCombine.back() );
                 }
@@ -1128,6 +1126,55 @@ namespace vs
 
     /**
      *
+     * @param _constraintConjunction
+     * @return
+     */
+    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* _constraint )
+    {
+        DisjunctionOfConstraintConjunctions result = DisjunctionOfConstraintConjunctions();
+        if( _constraint->hasFactorization() )
+        {
+            switch( _constraint->relation() )
+            {
+                case smtrat::CR_EQ:
+                {
+                    const ex& factorization = _constraint->factorization();
+                    for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
+                    {
+                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_EQ, _constraint->variables() );
+                        result.push_back( TS_ConstraintConjunction() );
+                        result.back().push_back( cons );
+                    }
+                    break;
+                }
+                case smtrat::CR_NEQ:
+                {
+                    result.push_back( TS_ConstraintConjunction() );
+                    const ex& factorization = _constraint->factorization();
+                    for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
+                    {
+                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_NEQ, _constraint->variables() );
+                        result.back().push_back( cons );
+                    }
+                    break;
+                }
+                default:
+                {
+                    result = getSignCombinations( _constraint );
+                }
+                simplify( result );
+            }
+        }
+        else
+        {
+            result.push_back( TS_ConstraintConjunction() );
+            result.back().push_back( _constraint );
+        }
+        return result;
+    }
+
+    /**
+     *
      * @param _product
      * @param _positive
      * @param _zero
@@ -1139,6 +1186,11 @@ namespace vs
         DisjunctionOfConstraintConjunctions combinations = DisjunctionOfConstraintConjunctions();
         if( _constraint->hasFactorization() && _constraint->factorization().nops() <= MAX_PRODUCT_SPLIT_NUMBER )
         {
+            if( !(_constraint->relation() == smtrat::CR_GREATER || _constraint->relation() == smtrat::CR_LESS
+                    || _constraint->relation() == smtrat::CR_GEQ || _constraint->relation() == smtrat::CR_LEQ ))
+            {
+                cout << *_constraint << endl;
+            }
             assert( _constraint->relation() == smtrat::CR_GREATER || _constraint->relation() == smtrat::CR_LESS
                     || _constraint->relation() == smtrat::CR_GEQ || _constraint->relation() == smtrat::CR_LEQ );
             smtrat::Constraint_Relation relPos = smtrat::CR_GREATER;
@@ -1230,20 +1282,21 @@ namespace vs
      * @param _length
      * @param _strings
      */
-    void getOddBitStrings( unsigned _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings, unsigned _pos  )
+    void getOddBitStrings( unsigned _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings )
     {
         assert( _length > 0 );
         if( _length == 1 )  _strings.push_back( bitset<MAX_PRODUCT_SPLIT_NUMBER>( 1 ) );
         else
         {
-            getEvenBitStrings( _length - 1, _strings, _pos );
-            for( ; _pos < _strings.size(); ++_pos )
+            unsigned pos = _strings.size();
+            getEvenBitStrings( _length - 1, _strings );
+            for( ; pos < _strings.size(); ++pos )
             {
-                _strings[_pos] <<= 1;
-                _strings[_pos].flip(0);
+                _strings[pos] <<= 1;
+                _strings[pos].flip(0);
             }
-            getOddBitStrings( _length - 1, _strings, _pos );
-            for( ; _pos < _strings.size(); ++_pos ) _strings[_pos] <<= 1;
+            getOddBitStrings( _length - 1, _strings );
+            for( ; pos < _strings.size(); ++pos ) _strings[pos] <<= 1;
         }
     }
 
@@ -1252,19 +1305,20 @@ namespace vs
      * @param _length
      * @param _strings
      */
-    void getEvenBitStrings( unsigned _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings, unsigned _pos )
+    void getEvenBitStrings( unsigned _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings )
     {
         assert( _length > 0 );
         if( _length == 1 ) _strings.push_back( bitset<MAX_PRODUCT_SPLIT_NUMBER>( 0 ) );
         else
         {
+            unsigned pos = _strings.size();
             getEvenBitStrings( _length - 1, _strings );
-            for( ; _pos < _strings.size(); ++_pos ) _strings[_pos] <<= 1;
+            for( ; pos < _strings.size(); ++pos ) _strings[pos] <<= 1;
             getOddBitStrings( _length - 1, _strings );
-            for( ; _pos < _strings.size(); ++_pos )
+            for( ; pos < _strings.size(); ++pos )
             {
-                _strings[_pos] <<= 1;
-                _strings[_pos].flip(0);
+                _strings[pos] <<= 1;
+                _strings[pos].flip(0);
             }
         }
     }
