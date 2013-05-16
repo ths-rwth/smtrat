@@ -352,6 +352,13 @@ namespace smtrat
      */
     ex Constraint::coefficient( const ex& _variable, int _degree ) const
     {
+        cout << "mLhs.coeff( _variable, 0 ) = " << mLhs.coeff( _variable, 0 ) << endl;
+        cout << "mLhs.coeff( _variable, 1 ) = " << mLhs.coeff( _variable, 1 ) << endl;
+        cout << "mLhs.coeff( _variable, 2 ) = " << mLhs.coeff( _variable, 2 ) << endl;
+        cout << "mLhs.coeff( _variable, 3 ) = " << mLhs.coeff( _variable, 3 ) << endl;
+        cout << "mLhs.coeff( _variable, 4 ) = " << mLhs.coeff( _variable, 4 ) << endl;
+        cout << "mLhs.coeff( _variable, _degree = " << _degree << " ) = " << mLhs.coeff( _variable, _degree ) << endl;
+        cout << __func__ << " of " << _variable << " in " << mLhs << " with degree " << degree << " is ";
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         VarDegree vd = VarDegree( _variable, _degree );
         Coefficients::const_iterator coeffIter = mpCoefficients->find( vd );
@@ -369,11 +376,14 @@ namespace smtrat
         Coefficients::const_iterator coeffIter = mpCoefficients->find( vd );
         if( coeffIter != mpCoefficients->end() )
         {
+            cout << coeffIter->second << " (by 1)" << endl;
             return coeffIter->second;
         }
         else
         {
-            return mpCoefficients->insert( pair< VarDegree, ex >( vd, mLhs.coeff( _variable, _degree ) ) ).first->second;
+            ex coeff = mpCoefficients->insert( pair< VarDegree, ex >( vd, mLhs.coeff( _variable, _degree ) ) ).first->second;
+            cout << coeff << " (by 2)" << endl;
+            return coeff;
         }
         #endif
     }
@@ -761,7 +771,6 @@ namespace smtrat
         }
         if( mVarInfoMap.size() == 1 && mNumMonomials == 1 && mMaxMonomeDegree > 1 )
         {
-
             switch( mRelation )
             {
                 case CR_EQ:
@@ -847,14 +856,13 @@ namespace smtrat
                 default:
                 {
                     assert( false );
-                    anythingChanged = false;
                 }
-                anythingChanged = true;
-                mMaxMonomeDegree = 1;
-                mMinMonomeDegree = 1;
-                mVarInfoMap.begin()->second.maxDegree = 1;
-                mVarInfoMap.begin()->second.minDegree = 1;
             }
+            anythingChanged = true;
+            mMaxMonomeDegree = 1;
+            mMinMonomeDegree = 1;
+            mVarInfoMap.begin()->second.maxDegree = 1;
+            mVarInfoMap.begin()->second.minDegree = 1;
         }
         if( anythingChanged )
         {

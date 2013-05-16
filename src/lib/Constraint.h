@@ -339,7 +339,7 @@ namespace smtrat
             void printInPrefix( std::ostream& _out = std::cout ) const;
             const std::string prefixStringOf( const GiNaC::ex& ) const;
             void printProperties( std::ostream& = std::cout ) const;
-            std::string smtlibString( bool = false ) const;
+            std::string smtlibString( bool = true ) const;
 
             //
             static signed compare( const Constraint*, const Constraint* );
