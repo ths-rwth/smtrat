@@ -380,6 +380,8 @@ namespace smtrat
             return ( constraintConsistent ? mConsistentConstraint : mInconsistentConstraint );
         }
         _constraint->collectProperties();
+//        cout << "create constraint: " << *_constraint << endl;
+//        _constraint->printProperties();
         unsigned constraintConsistent = _constraint->isConsistent();
         if( constraintConsistent == 2 )
         {

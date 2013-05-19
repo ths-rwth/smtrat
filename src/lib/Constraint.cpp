@@ -29,8 +29,6 @@
  * @version 2013-03-27
  */
 
-//#define VS_DEBUG
-
 #include "Constraint.h"
 #include "ConstraintPool.h"
 #include "Formula.h"

@@ -42,17 +42,13 @@
 namespace vs
 {
 
-/*
- * Type and object definitions:
- */
+// Type and object definitions:
 enum StateType{ TEST_CANDIDATE_TO_GENERATE,
 				SUBSTITUTION_TO_APPLY	  ,
 				COMBINE_SUBRESULTS		   };
 
-/*
- * A unsigned integer is between 0 and 4.294.967.295, so there are 4.294 different valuations.
- * The remaining 6 digits are to make a valuation unique, so there are 967.295 different IDs.
- */
+// A unsigned integer is between 0 and 4.294.967.295, so there are 4.294 different valuations.
+// The remaining 6 digits are to make a valuation unique, so there are 967.295 different IDs.
 const unsigned VALUATION_FACTOR				= 1000000	;
 const unsigned MAX_CONSTRAINT_VALUATION 	= 10		;
 const unsigned MIN_VALUATION				= 0			;
@@ -266,21 +262,14 @@ private:
     #endif
 public:
 
-	/**
-	 * Constructors:
-	 */
+	// Constructors:
 	State();
 	State( State* const, const Substitution& );
 
-	/**
-	 * Destructor:
-	 */
+	// Destructor:
 	~State();
 
-	/**
-	 * Methods:
-	 */
-
+	// Methods:
 	bool					isRoot		        		( ) const 	{ return mpFather == NULL			 									; }
 	bool					toHighDegree        		( ) const 	{ return mToHighDegree				 									; }
 	bool&                   rToHighDegree        		( ) 		{ return mToHighDegree				 									; }
@@ -320,7 +309,7 @@ public:
 	bool					takeSubResultCombAgain		( ) const	{ return mTakeSubResultCombAgain	 									; }
 	bool&					rTakeSubResultCombAgain		( ) 		{ return mTakeSubResultCombAgain	 									; }
 	bool					tryToRefreshIndex			( ) const	{ return mTryToRefreshIndex			 									; }
-	bool					hasSubResultsCombination	( ) const	{ return mpSubResultCombination!=NULL									; }
+	bool					hasSubResultsCombination	( ) const	{ return (mpSubResultCombination!=NULL && !mpSubResultCombination->empty()); }
 	bool					hasSubstitutionResults		( ) const	{ return mpSubstitutionResults!=NULL 									; }
 	bool					unfinished					( ) const	{ return (mpSubstitutionResults->size()>mpSubResultCombination->size())	; }
 	const StateType			stateType					( ) const	{ return mStateType														; }
@@ -334,7 +323,7 @@ public:
 
 	void					setOriginalCondition		( const Condition* const _pOCondition ) 	{ mpOriginalCondition=_pOCondition; }
 
-	// Data access methods (read only).
+	// Data read only methods.
 	unsigned                                treeDepth							( ) 														const	;
 	bool									substitutionApplicable  			( )				        									const	;
 	bool									substitutionApplicable  			( const smtrat::Constraint& )								const	;
@@ -347,13 +336,12 @@ public:
 	const std::pair< unsigned, unsigned > 	valuationPlusID						( ) 														const 	;
 	bool 									checkSubResultsCombs				( ) 														const	;
 
-	// Data access methods (read and write).
+	// Data read and write methods.
 	State&									root								( )																	;
 	bool									unfinishedAncestor					( State*& )															;
 	bool 									bestCondition						( const Condition*&,
 																				  unsigned 		 )													;
 	ConditionVector::iterator 				constraintExists 					( const smtrat::Constraint& )										;
-
 	// Manipulating methods.
 	void 									simplify							( )																	;
 	bool 									simplify							( ConditionVector&,
