@@ -56,25 +56,8 @@ namespace smtrat
         mStreamname( new std::string() ),
         mBooleanVariables(),
         mTheoryVariables(),
-        mRealsymbolpartsToReplace(),
         mBindings()
-    {
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "~", "_til_" ) );
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "!", "_exc_" ) );
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "@", "_at_" ) );
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "$", "_dol_" ) );
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "!", "_per_" ) );
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "^", "_car_" ) );
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "&", "_amp_" ) );
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "-", "_min_" ) );
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "+", "_plu_" ) );
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "<", "_les_" ) );
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( ">", "_gre_" ) );
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( ".", "_dot_" ) );
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "?", "_que_" ) );
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "\"", "_quo_" ) );
-        mRealsymbolpartsToReplace.insert( pair< const string, const string >( "/", "_sla_" ) );
-    }
+    {}
 
     Driver::~Driver()
     {
@@ -83,6 +66,7 @@ namespace smtrat
 
     /**
      * Invoke the scanner and parser for a stream.
+     * 
      * @param in input stream
      * @param sname stream name for error messages
      * @return true if successfully parsed
@@ -90,11 +74,9 @@ namespace smtrat
     bool Driver::parse_stream( istream& in, const string& sname )
     {
         *mStreamname = sname;
-
         Scanner scanner( &in );
         scanner.set_debug( mTraceScanning );
         this->mLexer = &scanner;
-
         Parser parser( *this );
         parser.set_debug_level( mTraceParsing );
         bool result = (parser.parse() == 0 && !mParsingFailed);
@@ -104,19 +86,20 @@ namespace smtrat
     /**
      * Invoke the scanner and parser on a file. Use parse_stream with a
      * input file stream if detection of file reading errors is required.
+     * 
      * @param filename input file name
      * @return true if successfully parsed
      */
     bool Driver::parse_file( const string& filename )
     {
         ifstream in( filename.c_str() );
-        if( !in.good() )
-            return false;
+        if( !in.good() ) return false;
         return parse_stream( in, filename );
     }
 
     /**
      * Invoke the scanner and parser on an input string.
+     * 
      * @param input input string
      * @param sname stream name for error messages
      * @return true, if successfully parsed
@@ -130,6 +113,7 @@ namespace smtrat
     /**
      * Error handling with associated line number. This can be modified to
      * output the error e.g. to a dialog box.
+     * 
      * @param l
      * @param m
      */
@@ -141,6 +125,7 @@ namespace smtrat
 
     /**
      * General error handling. This can be modified to output the error e.g. to a dialog box.
+     * 
      * @param l
      * @param m
      */
@@ -158,26 +143,15 @@ namespace smtrat
      */
     void Driver::setLogic( const class location& _loc, const string& _logic )
     {
-        if( _logic == "QF_NRA" )
-        {
-        }
-        else if( _logic == "QF_LRA" )
-        {
-            mLogic = QF_LRA;
-        }
+        if( _logic == "QF_NRA" ) {}
+        else if( _logic == "QF_LRA" ) mLogic = QF_LRA;
         else if( _logic == "QF_NIA" )
         {
             mLogic = QF_NIA;
             error( _loc, _logic + " is not supported!" );
         }
-        else if( _logic == "QF_LIA" )
-        {
-            mLogic = QF_LIA;
-        }
-        else
-        {
-            error( _loc, _logic + " is not supported!" );
-        }
+        else if( _logic == "QF_LIA" ) mLogic = QF_LIA;
+        else error( _loc, _logic + " is not supported!" );
     }
 
     /**
@@ -204,10 +178,7 @@ namespace smtrat
             addBooleanVariable( _loc, _name );
             mLexer->mBooleanVariables.insert( _name );
         }
-        else
-        {
-            error( _loc, "Only declarations of real-valued and Boolean variables are allowed!");
-        }
+        else error( _loc, "Only declarations of real-valued and Boolean variables are allowed!");
     }
 
     /**
@@ -219,22 +190,16 @@ namespace smtrat
     {
         string booleanName = "";
         if( _isBindingVariable )
-        {
             booleanName = Formula::newAuxiliaryBooleanVariable();
-        }
         else
         {
             booleanName = _varName;
             if( booleanName.size() > 3 && booleanName[0] == 'h' && booleanName[1] == '_' && booleanName[2] != '_' )
-            {
                 booleanName.insert( 1, "_" );
-            }
             Formula::newBooleanVariable( booleanName );
         }
         if( !mBooleanVariables.insert( pair< string, string >( _varName.empty() ? booleanName : _varName, booleanName ) ).second )
-        {
             error( _loc, "Multiple definition of Boolean variable " + _varName );
-        }
         return booleanName;
     }
 
@@ -248,9 +213,7 @@ namespace smtrat
     {
         assert( mBindings.find( _varName ) == mBindings.end() );
         if( !mBindings.insert( pair< string, ExVarsPair >( _varName, *_exVarsPair ) ).second )
-        {
             error( _loc, "Multiple definition of real variable " + _varName );
-        }
     }
     #endif
 
@@ -262,19 +225,10 @@ namespace smtrat
     TheoryVarMap::const_iterator Driver::addTheoryVariable( const class location& _loc, const string& _theory, const string& _varName, bool _isBindingVariable )
     {
         pair< string, ex > ginacConformVar;
-        if( _isBindingVariable )
-        {
-            ginacConformVar = mFormulaRoot->mpConstraintPool->newAuxiliaryRealVariable();
-        }
-        else
-        {
-            ginacConformVar = Formula::newArithmeticVariable( _varName, getDomain( _theory ) );
-        }
+        if( _isBindingVariable ) ginacConformVar = mFormulaRoot->mpConstraintPool->newAuxiliaryRealVariable();
+        else ginacConformVar = Formula::newArithmeticVariable( _varName, getDomain( _theory ) );
         pair< TheoryVarMap::iterator, bool > res = mTheoryVariables.insert( pair< string, pair< string, ex > >( _varName.empty() ? ginacConformVar.first : _varName, ginacConformVar ) );
-        if( !res.second )
-        {
-            error( _loc, "Multiple definition of real variable " + _varName );
-        }
+        if( !res.second )  error( _loc, "Multiple definition of real variable " + _varName );
         return res.first;
     }
 
@@ -286,10 +240,7 @@ namespace smtrat
     const string& Driver::getBooleanVariable( const class location& _loc, const string& _varName )
     {
         auto bvar = mBooleanVariables.find( _varName );
-        if( bvar != mBooleanVariables.end() )
-        {
-            return bvar->second;
-        }
+        if( bvar != mBooleanVariables.end() ) return bvar->second;
         else
         {
             error( _loc, "Boolean variable " + _varName + " has not been defined!" );
@@ -334,9 +285,7 @@ namespace smtrat
             #ifdef REPLACE_LET_EXPRESSIONS_DIRECTLY
             auto replacement = mBindings.find( _varName );
             if( replacement == mBindings.end() )
-            {
                 error( _loc, "Theory variable " + _varName + " has not been defined!" );
-            }
             return new ExVarsPair( replacement->second );
             #else
             error( _loc, "Theory variable " + _varName + " has not been defined!" );
@@ -432,15 +381,12 @@ namespace smtrat
     {
         string auxBoolA = Formula::newAuxiliaryBooleanVariable();
         string auxBoolB = Formula::newAuxiliaryBooleanVariable();
-        /*
-         * Add to root:  (iff auxBoolB $3)
-         */
+        // Add to root:  (iff auxBoolB _condition)
         Formula* formulaIffA = new Formula( IFF );
         formulaIffA->addSubformula( new Formula( auxBoolB ) );
         formulaIffA->addSubformula( _condition );
-        /*
-         * Add to root:  (or (not auxBoolB) (iff auxBoolA $4))
-         */
+        mFormulaRoot->addSubformula( formulaIffA );
+        // Add to root:  (or (not auxBoolB) (iff auxBoolA _then))
         Formula* formulaNotB = new Formula( NOT );
         formulaNotB->addSubformula( new Formula( auxBoolB ) );
         Formula* formulaOrB = new Formula( OR );
@@ -449,16 +395,15 @@ namespace smtrat
         formulaIffB->addSubformula( new Formula( auxBoolA ) );
         formulaIffB->addSubformula( _then );
         formulaOrB->addSubformula( formulaIffB );
-        /*
-         * Add to root:  (or auxBoolB (iff auxBoolA $5))
-         */
+        mFormulaRoot->addSubformula( formulaOrB );
+        // Add to root:  (or auxBoolB (iff auxBoolA _else))
         Formula* formulaOrC = new Formula( OR );
         formulaOrC->addSubformula( new Formula( auxBoolB ) );
         Formula* formulaIffC = new Formula( IFF );
         formulaIffC->addSubformula( new Formula( auxBoolA ) );
         formulaIffC->addSubformula( _else );
         formulaOrC->addSubformula( formulaIffC );
-
+        mFormulaRoot->addSubformula( formulaOrC );
         return new Formula( auxBoolA );
     }
 
@@ -478,25 +423,19 @@ namespace smtrat
         Formula* constraintA = mkConstraint( *lhs, _then, CR_EQ );
         Formula* constraintB = mkConstraint( *lhs, _else, CR_EQ );
         delete lhs;
-        /*
-         * Add to root:  (or (not conditionBool) (= auxRealVar $4))
-         */
+        // Add to root:  (or (not conditionBool) (= auxRealVar $4))
         Formula* formulaNot = new Formula( NOT );
         formulaNot->addSubformula( new Formula( conditionBool ) );
         Formula* formulaOrA = new Formula( OR );
         formulaOrA->addSubformula( formulaNot );
         formulaOrA->addSubformula( constraintA );
         mFormulaRoot->addSubformula( formulaOrA );
-        /*
-         * Add to root:  (or conditionBool (= auxRealVar $5))
-         */
+        // Add to root:  (or conditionBool (= auxRealVar $5))
         Formula* formulaOrB = new Formula( OR );
         formulaOrB->addSubformula( new Formula( conditionBool ) );
         formulaOrB->addSubformula( constraintB );
         mFormulaRoot->addSubformula( formulaOrB );
-        /*
-         * Add to root:  (iff conditionBool $3)
-         */
+        // Add to root:  (iff conditionBool $3)
         Formula* formulaIff = new Formula( IFF );
         formulaIff->addSubformula( new Formula( conditionBool ) );
         formulaIff->addSubformula( _condition );
@@ -519,10 +458,7 @@ namespace smtrat
             *rational /= GiNaC::numeric( string( "1" + string( numDecDigits, '0' ) ).c_str() );
             return rational;
         }
-        else
-        {
-            return new GiNaC::numeric( _numString.c_str() );
-        }
+        else return new GiNaC::numeric( _numString.c_str() );
     }
 
     /**
@@ -541,6 +477,4 @@ namespace smtrat
             else error( _loc, "Unknown status flag. Choose either sat, unsat or unknown!" );
         }
     }
-
 }    // namespace smtrat
-

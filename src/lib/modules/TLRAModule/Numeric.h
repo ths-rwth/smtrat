@@ -42,7 +42,7 @@ namespace smtrat
         {
         private:
             // Members:
-            std::shared_ptr<GiNaC::numeric> mContent;
+            GiNaC::numeric* mContent;
 
         public:
             // Constructors/Destructor:
@@ -75,6 +75,7 @@ namespace smtrat
             Numeric& operator=( unsigned long );
             Numeric& operator=( double );
             Numeric& operator=( const char* );
+            Numeric& operator=( const Numeric& );
 
             bool operator==( const Numeric& ) const;
             bool operator!=( const Numeric& ) const;

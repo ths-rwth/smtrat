@@ -508,7 +508,6 @@ namespace smtrat
                 {
                     // Pivot at the found pivoting entry.
                     mTableau.pivot( pivotingElement.first );
-                    assert( mTableau.checkCorrectness() );
                     // Learn all bounds which has been deduced during the pivoting process.
                     while( posNewLearnedBound < mTableau.rLearnedBounds().size() )
                     {

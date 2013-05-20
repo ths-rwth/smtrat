@@ -373,7 +373,7 @@ namespace smtrat
                     return mDefaultBoundPosition;
                 }
 
-                EntryID newTableauEntry();
+                EntryID newTableauEntry( const T& );
                 void removeEntry( EntryID );
                 Variable<T>* newNonbasicVariable( const GiNaC::ex* );
                 Variable<T>* newBasicVariable( const GiNaC::ex*, const std::vector<Variable<T>*>&, std::vector<T>& );
@@ -396,7 +396,7 @@ namespace smtrat
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
                 void printHeap( std::ostream& = std::cout, unsigned = 30, const std::string = "" ) const;
                 void printEntry( std::ostream& = std::cout, EntryID = 0, unsigned = 20 ) const;
-                void printVariables( std::ostream& = std::cout, const std::string = "" ) const;
+                void printVariables( bool = true, std::ostream& = std::cout, const std::string = "" ) const;
                 void printLearnedBounds( const std::string = "", std::ostream& = std::cout ) const;
                 void print( std::ostream& = std::cout, unsigned = 28, const std::string = "" ) const;
 
@@ -460,17 +460,18 @@ namespace smtrat
          * @return
          */
         template<class T>
-        EntryID Tableau<T>::newTableauEntry()
+        EntryID Tableau<T>::newTableauEntry( const T& _content )
         {
             if( mUnusedIDs.empty() )
             {
-                mpEntries->push_back( TableauEntry<T>( 0, 0, 0, 0, 0, 0, T() ) );
+                mpEntries->push_back( TableauEntry<T>( 0, 0, 0, 0, 0, 0, _content ) );
                 return (mpEntries->size() - 1);
             }
             else
             {
                 EntryID id = mUnusedIDs.top();
                 mUnusedIDs.pop();
+                (*mpEntries)[id].rContent() = _content;
                 return id;
             }
         }
@@ -552,13 +553,11 @@ namespace smtrat
             class std::vector< T >::iterator coeff = _coefficients.begin();
             while( basicVar != _nonbasicVariables.end() )
             {
-                EntryID entryID = newTableauEntry();
+                EntryID entryID = newTableauEntry( *coeff );
                 TableauEntry<T>& entry = (*mpEntries)[entryID];
                 // Fix the position.
                 entry.setColumnNumber( (*basicVar)->position() );
                 entry.setRowNumber( mHeight-1 );
-                // Set the content.
-                entry.rContent() = *coeff;
                 TableauHead& columnHead = mColumns[entry.columnNumber()];
                 EntryID& columnStart = columnHead.mStartEntry;
                 // Set it as column end.
@@ -1227,7 +1226,7 @@ namespace smtrat
                     }
                     else
                     {
-                        EntryID entryID = newTableauEntry();
+                        EntryID entryID = newTableauEntry( (*pivotingColumnIter).content() * (**pivotingRowIter).content() );
                         TableauEntry<T>& entry = (*mpEntries)[entryID];
                         // Set the position.
                         entry.setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
@@ -1275,7 +1274,6 @@ namespace smtrat
                         // Set the content of the entry.
                         ++mRows[entry.rowNumber()].mSize;
                         ++mColumns[entry.columnNumber()].mSize;
-                        entry.rContent() = (*pivotingColumnIter).content() * (**pivotingRowIter).content();
                     }
                     ++pivotingRowIter;
                 }
@@ -1308,7 +1306,7 @@ namespace smtrat
                     }
                     else
                     {
-                        EntryID entryID = newTableauEntry();
+                        EntryID entryID = newTableauEntry( (*pivotingColumnIter).content() * (**pivotingRowIter).content() );
                         TableauEntry<T>& entry = (*mpEntries)[entryID];
                         // Set the position.
                         entry.setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
@@ -1355,7 +1353,6 @@ namespace smtrat
                         // Set the content of the entry.
                         ++mRows[entry.rowNumber()].mSize;
                         ++mColumns[entry.columnNumber()].mSize;
-                        entry.rContent() = (*pivotingColumnIter).content() * (**pivotingRowIter).content();
                     }
                     ++pivotingRowIter;
                 }
@@ -1420,7 +1417,7 @@ namespace smtrat
                     }
                     else
                     {
-                        EntryID entryID = newTableauEntry();
+                        EntryID entryID = newTableauEntry( (*pivotingColumnIter).content() * (**pivotingRowIter).content() );
                         TableauEntry<T>& entry = (*mpEntries)[entryID];
                         // Set the position.
                         entry.setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
@@ -1465,7 +1462,6 @@ namespace smtrat
                         // Set the content of the entry.
                         ++mRows[entry.rowNumber()].mSize;
                         ++mColumns[entry.columnNumber()].mSize;
-                        entry.rContent() = (*pivotingColumnIter).content() * (**pivotingRowIter).content();
                     }
                     ++pivotingRowIter;
                 }
@@ -1498,7 +1494,7 @@ namespace smtrat
                     }
                     else
                     {
-                        EntryID entryID = newTableauEntry();
+                        EntryID entryID = newTableauEntry( (*pivotingColumnIter).content()*(**pivotingRowIter).content() );
                         TableauEntry<T>& entry = (*mpEntries)[entryID];
                         // Set the position.
                         entry.setRowNumber( (*mpEntries)[currentRowIter.entryID()].rowNumber() );
@@ -1544,7 +1540,6 @@ namespace smtrat
                         // Set the content of the entry.
                         ++mRows[entry.rowNumber()].mSize;
                         ++mColumns[entry.columnNumber()].mSize;
-                        entry.rContent() = (*pivotingColumnIter).content()*(**pivotingRowIter).content();
                     }
                     ++pivotingRowIter;
                 }
@@ -2182,11 +2177,10 @@ namespace smtrat
             while( coeffs_iter != coeffs.end() )
             {
                 const Variable<T>& nonBasicVar = *mColumns[row_iterator->columnNumber()].mName;
-                EntryID entryID = newTableauEntry();
+                EntryID entryID = newTableauEntry( *coeffs_iter );
                 TableauEntry<T>& entry = (*mpEntries)[entryID];
                 entry.setColumnNumber( nonBasicVar.position() );
                 entry.setRowNumber( mHeight - 1 );
-                entry.rContent() = *coeffs_iter;
                 TableauHead& columnHead = mColumns[entry.columnNumber()];
                 EntryID& columnStart = columnHead.mStartEntry;
                 (*mpEntries)[columnStart].setDown( entryID );
@@ -2277,7 +2271,7 @@ namespace smtrat
          * @param _init
          */
         template<class T>
-        void Tableau<T>::printVariables( std::ostream& _out, const std::string _init ) const
+        void Tableau<T>::printVariables( bool _allBounds, std::ostream& _out, const std::string _init ) const
         {
             _out << _init << "Basic variables:" << std::endl;
             for( class std::vector<TableauHead>::const_iterator row = mRows.begin(); row != mRows.end(); ++row )
@@ -2285,7 +2279,7 @@ namespace smtrat
                 _out << _init << "  ";
                 row->mName->print( _out );
                 _out << "(" << row->mActivity << ")" << std::endl;
-                row->mName->printAllBounds( _out, _init + "                    " );
+                if( _allBounds ) row->mName->printAllBounds( _out, _init + "                    " );
             }
             _out << _init << "Nonbasic variables:" << std::endl;
             for( class std::vector<TableauHead>::const_iterator column = mColumns.begin(); column != mColumns.end(); ++column )
@@ -2293,7 +2287,7 @@ namespace smtrat
                 _out << _init << "  ";
                 column->mName->print( _out );
                 _out << "(" << column->mActivity << ")" << std::endl;
-                column->mName->printAllBounds( _out, _init + "                    " );
+                if( _allBounds ) column->mName->printAllBounds( _out, _init + "                    " );
             }
         }
 

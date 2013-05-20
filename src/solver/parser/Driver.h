@@ -79,8 +79,6 @@ namespace smtrat
             ///
             TheoryVarMap mTheoryVariables;
             ///
-            std::map< const std::string, const std::string > mRealsymbolpartsToReplace;
-            ///
             std::map< const std::string, ExVarsPair > mBindings;
 
         public:

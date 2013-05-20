@@ -50,8 +50,8 @@ namespace smtrat
 
             public:
                 Value();
-                Value( T );
-                Value( T, T );
+                Value( const T& );
+                Value( const T&, const T& );
                 Value( const Value<T>& orig );
                 virtual ~Value();
 
@@ -90,13 +90,13 @@ namespace smtrat
         {}
 
         template<class T>
-        Value<T>::Value( T _num ):
+        Value<T>::Value( const T& _num ):
             mMainPart( _num ),
             mDeltaPart( 0 )
         {}
 
         template<class T>
-        Value<T>::Value( T _num1, T _num2 ):
+        Value<T>::Value( const T& _num1, const T& _num2 ):
             mMainPart( _num1 ),
             mDeltaPart( _num2 )
         {}

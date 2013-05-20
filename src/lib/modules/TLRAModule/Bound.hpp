@@ -73,7 +73,7 @@ namespace smtrat
                  */
                 bool                                                mDeduced;
                 Type                                                mType;
-                Value<T>*                                              mLimit;
+                const Value<T>*                                     mLimit;
                 Variable<T>* const                                  mVar;
                 const smtrat::Constraint*                           mpAsConstraint;
                 std::vector<std::set< const smtrat::Formula* > >*   mpOrigins;
@@ -81,7 +81,7 @@ namespace smtrat
 
             public:
                 Bound();
-                Bound( Value<T>* const , Variable<T>* const, Type, const smtrat::Constraint*, Info* = NULL, bool = false );
+                Bound( const Value<T>* const, Variable<T>* const, Type, const smtrat::Constraint*, Info* = NULL, bool = false );
                 ~Bound();
 
                 bool operator >( const Value<T>& ) const;
@@ -98,7 +98,7 @@ namespace smtrat
                     return mDeduced;
                 }
 
-                Value<T>& limit() const
+                const Value<T>& limit() const
                 {
                     return *mLimit;
                 }
@@ -185,7 +185,7 @@ namespace smtrat
         }
 
         template<class T>
-        Bound<T>::Bound( Value<T>* const _limit, Variable<T>* const _var, Type _type, const smtrat::Constraint* _constraint, Bound<T>::Info* _boundInfo, bool _deduced ):
+        Bound<T>::Bound( const Value<T>* const _limit, Variable<T>* const _var, Type _type, const smtrat::Constraint* _constraint, Bound<T>::Info* _boundInfo, bool _deduced ):
             mDeduced( _deduced ),
             mType( _type ),
             mLimit( _limit ),
