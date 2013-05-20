@@ -90,7 +90,7 @@ namespace smtrat
             icp::ContractionCandidateManager*                                        mCandidateManager;
             std::map<icp::ContractionCandidate*, unsigned>                                mActiveNonlinearConstraints;
             std::map<icp::ContractionCandidate*, unsigned>                                mActiveLinearConstraints;
-            std::map<const lra::Variable*, std::set<icp::ContractionCandidate*> >          mLinearConstraints;
+            std::map<const lra::Variable<lra::Numeric>*, std::set<icp::ContractionCandidate*> >          mLinearConstraints;
             std::map<const Constraint*, ContractionCandidates>                  mNonlinearConstraints;
             GiNaCRA::ICP                                                        mIcp;
             GiNaCRA::evaldoubleintervalmap                                       mIntervals;

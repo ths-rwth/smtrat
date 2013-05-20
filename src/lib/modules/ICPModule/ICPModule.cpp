@@ -277,7 +277,7 @@ namespace smtrat
            }
            assert(replacementPtr != NULL);
 
-           const lra::Variable* slackvariable = mLRA.getSlackVariable(replacementPtr);
+           const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(replacementPtr);
 
            assert(slackvariable != NULL);
 

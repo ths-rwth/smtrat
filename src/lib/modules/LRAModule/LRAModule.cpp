@@ -15,14 +15,14 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
+ * along with SMT-RAT.  If not, see <http://www.gnrg/licenses/>.
  *
  */
 /*
  * File:   LRAModule.cpp
- * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
+ * @author name surname <emailadress>
  *
- * @version 2013-02-07
+ * @version 2012-04-05
  * Created on April 5th, 2012, 3:22 PM
  */
 
@@ -36,7 +36,7 @@
 //#define LRA_BRANCH_AND_BOUND
 
 using namespace std;
-using namespace lra;
+using namespace smtrat::lra;
 using namespace GiNaC;
 using namespace GiNaCRA;
 
@@ -73,7 +73,7 @@ namespace smtrat
     {
         while( !mConstraintToBound.empty() )
         {
-            vector< const Bound* >* toDelete = mConstraintToBound.begin()->second;
+            vector< const Bound<Numeric>* >* toDelete = mConstraintToBound.begin()->second;
             mConstraintToBound.erase( mConstraintToBound.begin() );
             if( toDelete != NULL ) delete toDelete;
         }
@@ -147,7 +147,7 @@ namespace smtrat
                 {
                     if( (*_subformula)->constraint().relation() != CR_NEQ )
                     {
-                        vector< const Bound* >* bounds = mConstraintToBound[constraint];
+                        vector< const Bound<Numeric>* >* bounds = mConstraintToBound[constraint];
                         assert( bounds != NULL );
 
                         set<const Formula*> originSet = set<const Formula*>();
@@ -172,7 +172,7 @@ namespace smtrat
                     }
                     else
                     {
-                        vector< const Bound* >* bounds = mConstraintToBound[constraint];
+                        vector< const Bound<Numeric>* >* bounds = mConstraintToBound[constraint];
                         assert( bounds != NULL );
                         assert( bounds->size() == 2 );
                         if( (*bounds)[0]->isActive() || (*bounds)[1]->isActive() )
@@ -236,7 +236,7 @@ namespace smtrat
                     if( (*_subformula)->constraint().relation() != CR_NEQ )
                     {
                         // Deactivate the bounds regarding the given constraint
-                        vector< const Bound* >* bounds = mConstraintToBound[constraint];
+                        vector< const Bound<Numeric>* >* bounds = mConstraintToBound[constraint];
                         assert( bounds != NULL );
                         auto bound = bounds->begin();
                         while( bound != bounds->end() )
@@ -254,7 +254,7 @@ namespace smtrat
                                     auto unequalCons = mBoundToUnequalConstraintMap.find( *bound );
                                     if( unequalCons != mBoundToUnequalConstraintMap.end() )
                                     {
-                                        vector< const Bound* >* uebounds = mConstraintToBound[unequalCons->second];
+                                        vector< const Bound<Numeric>* >* uebounds = mConstraintToBound[unequalCons->second];
                                         assert( uebounds != NULL );
                                         assert( uebounds->size() == 2 );
                                         if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() )
@@ -366,7 +366,7 @@ namespace smtrat
             #endif
 
             // Find a pivoting element in the tableau.
-            pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
+            class pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
 
             #ifdef DEBUG_LRA_MODULE
             cout << "    Next pivoting element: ";
@@ -377,16 +377,16 @@ namespace smtrat
 
             // If there is no conflict.
             if( pivotingElement.second )
-            {    
+            {
                 // If no basic variable violates its bounds (and hence no variable at all).
                 if( pivotingElement.first == 0 )
-                {   
+                {
                     #ifdef DEBUG_LRA_MODULE
                     cout << "True" << endl;
                     #endif
                     // If the current assignment also fulfills the nonlinear constraints.
                     if( checkAssignmentForNonlinearConstraint() )
-                    {    
+                    {
                         // If there are no unresolved notequal-constraints, return True.
                         if( mActiveUnresolvedNEQConstraints.empty() )
                         {
@@ -480,7 +480,7 @@ namespace smtrat
                     }
                     // Otherwise, check the consistency of the formula consisting of the nonlinear constraints and the tightest bounds with the backends.
                     else
-                    {   
+                    {
                         for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
                         {
                             if( mResolvedNEQConstraints.find( iter->first ) == mResolvedNEQConstraints.end() )
@@ -505,15 +505,15 @@ namespace smtrat
                     }
                 }
                 else
-                {   
+                {
                     // Pivot at the found pivoting entry.
                     mTableau.pivot( pivotingElement.first );
                     // Learn all bounds which has been deduced during the pivoting process.
                     while( posNewLearnedBound < mTableau.rLearnedBounds().size() )
                     {
                         set< const Formula*> originSet = set< const Formula*>();
-                        Tableau::LearnedBound& learnedBound = mTableau.rLearnedBounds()[posNewLearnedBound];
-                        vector<const Bound*>& bounds = *learnedBound.premise;
+                        Tableau<Numeric>::LearnedBound& learnedBound = mTableau.rLearnedBounds()[posNewLearnedBound];
+                        vector<const Bound<Numeric>*>& bounds = *learnedBound.premise;
                         for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
                         {
                             assert( !(*bound)->origins().empty() );
@@ -523,7 +523,7 @@ namespace smtrat
                                 const Constraint* constraint = (*origin)->pConstraint();
                                 if( constraint != NULL )
                                 {
-                                    vector< const Bound* >* constraintToBounds = mConstraintToBound[constraint];
+                                    vector< const Bound<Numeric>* >* constraintToBounds = mConstraintToBound[constraint];
                                     constraintToBounds->push_back( learnedBound.nextWeakerBound );
                                     #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                                     if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
@@ -538,7 +538,7 @@ namespace smtrat
                             const Constraint* newConstraint = learnedBound.newBound->pAsConstraint();
                             addConstraintToInform( newConstraint );
                             mLinearConstraints.insert( newConstraint );
-                            vector< const Bound* >* boundVector = new vector< const Bound* >();
+                            vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
                             boundVector->push_back( learnedBound.newBound );
                             mConstraintToBound[newConstraint] = boundVector;
                             activateBound( learnedBound.newBound, originSet );
@@ -559,11 +559,11 @@ namespace smtrat
             }
             // There is a conflict, namely a basic variable violating its bounds without any suitable non-basic variable.
             else
-            {   
+            {
                 // Create the infeasible subsets.
                 mInfeasibleSubsets.clear();
                 #ifdef LRA_ONE_REASON
-                vector< const Bound* > conflict = mTableau.getConflict( pivotingElement.first );
+                vector< const Bound<Numeric>* > conflict = mTableau.getConflict( pivotingElement.first );
                 set< const Formula* > infSubSet = set< const Formula* >();
                 for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
                 {
@@ -572,7 +572,7 @@ namespace smtrat
                 }
                 mInfeasibleSubsets.push_back( infSubSet );
                 #else
-                vector< set< const Bound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
+                vector< set< const Bound<Numeric>* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
                 for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
                 {
                     set< const Formula* > infSubSet = set< const Formula* >();
@@ -615,10 +615,10 @@ namespace smtrat
             {
                 for( ExVariableMap::const_iterator originalVar = mOriginalVars.begin(); originalVar != mOriginalVars.end(); ++originalVar )
                 {
-                    ex* value = new ex( originalVar->second->assignment().mainPart() );
-                    if( originalVar->second->assignment().deltaPart() != 0 )
+                    ex* value = new ex( originalVar->second->assignment().mainPart().toGinacNumeric() );
+                    if( !originalVar->second->assignment().deltaPart().isZero() )
                     {
-                        *value += mDelta.second * originalVar->second->assignment().deltaPart();
+                        *value += mDelta.second * originalVar->second->assignment().deltaPart().toGinacNumeric();
                     }
                     Assignment* assignment = new Assignment();
                     assignment->domain = REAL_DOMAIN;
@@ -650,17 +650,17 @@ namespace smtrat
             * Check whether the found satisfying assignment is by coincidence a
             * satisfying assignment of the non linear constraints
             */
-            numeric minDelta = -1;
-            numeric curDelta = 0;
-            Variable* variable = NULL;
+            Numeric minDelta = -1;
+            Numeric curDelta = 0;
+            Variable<Numeric>* variable = NULL;
             /*
             * For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
             */
             for( auto originalVar = mOriginalVars.begin(); originalVar != mOriginalVars.end(); ++originalVar )
             {
                 variable = originalVar->second;
-                const Value& assValue = variable->assignment();
-                const Bound& inf = variable->infimum();
+                const Value<Numeric>& assValue = variable->assignment();
+                const Bound<Numeric>& inf = variable->infimum();
                 if( !inf.isInfinite() )
                 {
                     /*
@@ -675,7 +675,7 @@ namespace smtrat
                         }
                     }
                 }
-                const Bound& sup = variable->supremum();
+                const Bound<Numeric>& sup = variable->supremum();
                 if( !sup.isInfinite() )
                 {
                     /*
@@ -697,8 +697,8 @@ namespace smtrat
             for( auto slackVar = mSlackVars.begin(); slackVar != mSlackVars.end(); ++slackVar )
             {
                 variable = slackVar->second;
-                const Value& assValue = variable->assignment();
-                const Bound& inf = variable->infimum();
+                const Value<Numeric>& assValue = variable->assignment();
+                const Bound<Numeric>& inf = variable->infimum();
                 if( !inf.isInfinite() )
                 {
                     /*
@@ -713,7 +713,7 @@ namespace smtrat
                         }
                     }
                 }
-                const Bound& sup = variable->supremum();
+                const Bound<Numeric>& sup = variable->supremum();
                 if( !sup.isInfinite() )
                 {
                     /*
@@ -736,8 +736,8 @@ namespace smtrat
             */
             for( auto var = mOriginalVars.begin(); var != mOriginalVars.end(); ++var )
             {
-                const Value& value = var->second->assignment();
-                result.insert( pair< ex, ex >( *var->first, ex( value.mainPart() + value.deltaPart() * curDelta ) ) );
+                const Value<Numeric>& value = var->second->assignment();
+                result.insert( pair< ex, ex >( *var->first, ex( (value.mainPart() + value.deltaPart() * curDelta).toGinacNumeric() ) ) );
             }
         }
         return result;
@@ -753,7 +753,7 @@ namespace smtrat
         evalintervalmap result = evalintervalmap();
         for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
         {
-            const Variable& var = *iter->second;
+            const Variable<Numeric>& var = *iter->second;
             Interval::BoundType lowerBoundType;
             numeric lowerBoundValue;
             Interval::BoundType upperBoundType;
@@ -766,7 +766,7 @@ namespace smtrat
             else
             {
                 lowerBoundType = var.infimum().isWeak() ? Interval::WEAK_BOUND : Interval::STRICT_BOUND;
-                lowerBoundValue = var.infimum().limit().mainPart();
+                lowerBoundValue = var.infimum().limit().mainPart().toGinacNumeric();
             }
             if( var.supremum().isInfinite() )
             {
@@ -776,7 +776,7 @@ namespace smtrat
             else
             {
                 upperBoundType = var.supremum().isWeak() ? Interval::WEAK_BOUND : Interval::STRICT_BOUND;
-                upperBoundValue = var.supremum().limit().mainPart();
+                upperBoundValue = var.supremum().limit().mainPart().toGinacNumeric();
             }
             Interval interval = Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
             result.insert( pair< symbol, Interval >( ex_to< symbol >( *iter->first ), interval ) );
@@ -790,7 +790,7 @@ namespace smtrat
      */
     void LRAModule::learnRefinements()
     {
-        vector<Tableau::LearnedBound>& lBs = mTableau.rLearnedBounds();
+        vector<class Tableau<Numeric>::LearnedBound>& lBs = mTableau.rLearnedBounds();
         while( !lBs.empty() )
         {
             auto originsIterA = lBs.back().nextWeakerBound->origins().begin();
@@ -825,32 +825,12 @@ namespace smtrat
                 }
                 ++originsIterA;
             }
-            vector<const Bound* >* toDelete = lBs.back().premise;
+            vector<const Bound<Numeric>* >* toDelete = lBs.back().premise;
             lBs.pop_back();
             delete toDelete;
         }
     }
     #endif
-
-    /**
-     * Checks whether an iterator is in a formula. Only used in an assertion.
-     *
-     * @param _iter The iterator supposed to be in the formula.
-     * @param _formula The formula, in which the iterator is supposed to be.
-     *
-     * @return True, if the given iterator is in the given formula; False, otherwise.
-     */
-    bool iterInFormula( Formula::const_iterator _iter, const Formula& _formula )
-    {
-        if( _formula.isBooleanCombination() )
-        {
-            for( Formula::const_iterator iter = _formula.begin(); iter != _formula.end(); ++iter )
-            {
-                if( iter == _iter ) return true;
-            }
-        }
-        return false;
-    }
 
     /**
      * Adapt the passed formula, such that it consists of the finite infimums and supremums
@@ -860,7 +840,7 @@ namespace smtrat
     {
         while( !mBoundCandidatesToPass.empty() )
         {
-            const Bound& bound = *mBoundCandidatesToPass.back();
+            const Bound<Numeric>& bound = *mBoundCandidatesToPass.back();
             if( bound.pInfo()->updated > 0 )
             {
                 addSubformulaToPassedFormula( new Formula( bound.pAsConstraint() ), bound.origins() );
@@ -869,7 +849,6 @@ namespace smtrat
             }
             else if( bound.pInfo()->updated < 0 )
             {
-                assert( iterInFormula( bound.pInfo()->position, *mpPassedFormula ) );
                 removeSubformulaFromPassedFormula( bound.pInfo()->position );
                 bound.pInfo()->position = mpPassedFormula->end();
                 bound.pInfo()->updated = 0;
@@ -890,7 +869,7 @@ namespace smtrat
         {
             mAssignmentFullfilsNonlinearConstraints = true;
             return true;
-
+            
         }
         else
         {
@@ -956,8 +935,6 @@ namespace smtrat
         addDeduction( deductionD );
     }
 
-    // (x-i<=0 or x-i-1>=0)   wobei wir das rationale assignment x -> r, i=abs(r)
-
     /**
      * Activate the given bound and update the supremum, the infimum and the assignment of
      * variable to which the bound belongs.
@@ -967,7 +944,7 @@ namespace smtrat
      * @return False, if a conflict occurs;
      *         True, otherwise.
      */
-    bool LRAModule::activateBound( const Bound* _bound, set<const Formula*>& _formulas )
+    bool LRAModule::activateBound( const Bound<Numeric>* _bound, set<const Formula*>& _formulas )
     {
         bool result = true;
         _bound->pOrigins()->push_back( _formulas );
@@ -975,7 +952,7 @@ namespace smtrat
         {
             addOrigin( *_bound->pInfo()->position, _formulas );
         }
-        const Variable& var = _bound->variable();
+        const Variable<Numeric>& var = _bound->variable();
         if( (_bound->isUpperBound() && var.pSupremum()->isInfinite()) )
         {
             if( var.isBasic() )
@@ -1019,7 +996,7 @@ namespace smtrat
 
                 if( result && !var.isBasic() && (*var.pSupremum() < var.assignment()) )
                 {
-                    mTableau.updateBasicAssignments( var.position(), Value( (*var.pSupremum()).limit() - var.assignment() ) );
+                    mTableau.updateBasicAssignments( var.position(), Value<Numeric>( (*var.pSupremum()).limit() - var.assignment() ) );
                     _bound->pVariable()->rAssignment() = (*var.pSupremum()).limit();
                 }
             }
@@ -1045,7 +1022,7 @@ namespace smtrat
 
                 if( result && !var.isBasic() && (*var.pInfimum() > var.assignment()) )
                 {
-                    mTableau.updateBasicAssignments( var.position(), Value( (*var.pInfimum()).limit() - var.assignment() ) );
+                    mTableau.updateBasicAssignments( var.position(), Value<Numeric>( (*var.pInfimum()).limit() - var.assignment() ) );
                     _bound->pVariable()->rAssignment() = (*var.pInfimum()).limit();
                 }
             }
@@ -1061,17 +1038,17 @@ namespace smtrat
      * @param _boundValue The limit of the bound.
      * @param _constraint The constraint corresponding to the bound to create.
      */
-    void LRAModule::setBound( Variable& _var, bool _constraintInverted, const numeric& _boundValue, const Constraint* _constraint )
+    void LRAModule::setBound( Variable<Numeric>& _var, bool _constraintInverted, const Numeric& _boundValue, const Constraint* _constraint )
     {
         if( _constraint->relation() == CR_EQ )
         {
             // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
-            Value* value  = new Value( _boundValue );
-            pair<const Bound* ,pair<const Bound*, const Bound*> > result = _var.addEqualBound( value, mpPassedFormula->end(), _constraint );
+            Value<Numeric>* value  = new Value<Numeric>( _boundValue );
+            pair<const Bound<Numeric>*, pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _var.addEqualBound( value, mpPassedFormula->end(), _constraint );
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
             #endif
-            vector< const Bound* >* boundVector = new vector< const Bound* >();
+            vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
@@ -1111,12 +1088,12 @@ namespace smtrat
         }
         else if( _constraint->relation() == CR_LEQ )
         {
-            Value* value = new Value( _boundValue );
-            pair<const Bound*,pair<const Bound*, const Bound*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), _constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), _constraint );
+            Value<Numeric>* value = new Value<Numeric>( _boundValue );
+            pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), _constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), _constraint );
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
             #endif
-            vector< const Bound* >* boundVector = new vector< const Bound* >();
+            vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
@@ -1140,12 +1117,12 @@ namespace smtrat
         }
         else if( _constraint->relation() == CR_GEQ )
         {
-            Value* value = new Value( _boundValue );
-            pair<const Bound*,pair<const Bound*, const Bound*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), _constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), _constraint );
+            Value<Numeric>* value = new Value<Numeric>( _boundValue );
+            pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), _constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), _constraint );
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
             #endif
-            vector< const Bound* >* boundVector = new vector< const Bound* >();
+            vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
             #ifdef LRA_SIMPLE_THEORY_PROPAGATION
@@ -1180,17 +1157,17 @@ namespace smtrat
                 {
                     constraint = Formula::newConstraint( _constraint->lhs(), CR_LESS, _constraint->variables() );
                 }
-                Value* value = new Value( _boundValue, (_constraintInverted ? 1 : -1) );
-                pair<const Bound*,pair<const Bound*, const Bound*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
+                Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? 1 : -1) );
+                pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
                 #ifdef LRA_SIMPLE_CONFLICT_SEARCH
                 findSimpleConflicts( *result.first );
                 #endif
-                vector< const Bound* >* boundVector = new vector< const Bound* >();
+                vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
                 boundVector->push_back( result.first );
                 mConstraintToBound[constraint] = boundVector;
                 if( _constraint->relation() == CR_NEQ )
                 {
-                    vector< const Bound* >* boundVectorB = new vector< const Bound* >();
+                    vector< const Bound<Numeric>* >* boundVectorB = new vector< const Bound<Numeric>* >();
                     boundVectorB->push_back( result.first );
                     mConstraintToBound[_constraint] = boundVectorB;
                     mBoundToUnequalConstraintMap[result.first] = _constraint;
@@ -1225,12 +1202,12 @@ namespace smtrat
                 {
                     constraint = Formula::newConstraint( _constraint->lhs(), CR_GREATER, _constraint->variables() );
                 }
-                Value* value = new Value( _boundValue, (_constraintInverted ? -1 : 1) );
-                pair<const Bound*,pair<const Bound*, const Bound*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
+                Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? -1 : 1) );
+                pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
                 #ifdef LRA_SIMPLE_CONFLICT_SEARCH
                 findSimpleConflicts( *result.first );
                 #endif
-                vector< const Bound* >* boundVector = new vector< const Bound* >();
+                vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
                 boundVector->push_back( result.first );
                 mConstraintToBound[constraint] = boundVector;
                 if( _constraint->relation() == CR_NEQ )
@@ -1267,13 +1244,13 @@ namespace smtrat
      *
      * @param _bound The bound to find conflicts for.
      */
-    void LRAModule::findSimpleConflicts( const Bound& _bound )
+    void LRAModule::findSimpleConflicts( const Bound<Numeric>& _bound )
     {
         if( _bound.deduced() ) Module::storeAssumptionsToCheck( *mpManager );
         assert( !_bound.deduced() );
         if( _bound.isUpperBound() )
         {
-            const BoundSet& lbounds = _bound.variable().lowerbounds();
+            const Bound<Numeric>::BoundSet& lbounds = _bound.variable().lowerbounds();
             for( auto lbound = lbounds.rbegin(); lbound != --lbounds.rend(); ++lbound )
             {
                 if( **lbound > _bound.limit() && (*lbound)->pAsConstraint() != NULL )
@@ -1293,7 +1270,7 @@ namespace smtrat
         }
         if( _bound.isLowerBound() )
         {
-            const BoundSet& ubounds = _bound.variable().upperbounds();
+            const Bound<Numeric>::BoundSet& ubounds = _bound.variable().upperbounds();
             for( auto ubound = ubounds.begin(); ubound != --ubounds.end(); ++ubound )
             {
                 if( **ubound < _bound.limit() && (*ubound)->pAsConstraint() != NULL )
@@ -1325,7 +1302,7 @@ namespace smtrat
         ex*                                          linearPart   = new ex( _pConstraint->lhs() - currentCoeff->second );
         ++currentCoeff;
 
-        // divide the linear Part and the _pConstraint by the highest coefficient
+        // divide the linear Part and the constraint by the highest coefficient
         numeric highestCoeff = currentCoeff->second;
         --currentCoeff;
         while( currentCoeff != coeffs.end() )
@@ -1342,14 +1319,14 @@ namespace smtrat
             // constraint not found, add new nonbasic variable
             if( basicIter == mOriginalVars.end() )
             {
-                Variable* nonBasic = mTableau.newNonbasicVariable( var );
-                mOriginalVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
+                Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( var );
+                mOriginalVars.insert( pair<const ex*, Variable<Numeric>*>( var, nonBasic ) );
                 setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
             }
             else
             {
                 delete var;
-                Variable* nonBasic = basicIter->second;
+                Variable<Numeric>* nonBasic = basicIter->second;
                 setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
             }
             delete linearPart;
@@ -1359,8 +1336,8 @@ namespace smtrat
             ExVariableMap::iterator slackIter = mSlackVars.find( linearPart );
             if( slackIter == mSlackVars.end() )
             {
-                vector< Variable* > nonbasics = vector< Variable* >();
-                vector< numeric > numCoeffs = vector< numeric >();
+                vector< Variable<Numeric>* > nonbasics = vector< Variable<Numeric>* >();
+                vector< Numeric > numCoeffs = vector< Numeric >();
                 symtab::const_iterator varIt   = _pConstraint->variables().begin();
                 map<const string, numeric, strCmp>::iterator coeffIt = coeffs.begin();
                 ++coeffIt;
@@ -1371,8 +1348,8 @@ namespace smtrat
                     ExVariableMap::iterator nonBasicIter = mOriginalVars.find( var );
                     if( mOriginalVars.end() == nonBasicIter )
                     {
-                        Variable* nonBasic = mTableau.newNonbasicVariable( var );
-                        mOriginalVars.insert( pair<const ex*, Variable*>( var, nonBasic ) );
+                        Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( var );
+                        mOriginalVars.insert( pair<const ex*, Variable<Numeric>*>( var, nonBasic ) );
                         nonbasics.push_back( nonBasic );
                     }
                     else
@@ -1380,20 +1357,20 @@ namespace smtrat
                         delete var;
                         nonbasics.push_back( nonBasicIter->second );
                     }
-                    numCoeffs.push_back( coeffIt->second );
+                    numCoeffs.push_back( Numeric( coeffIt->second ) );
                     ++varIt;
                     ++coeffIt;
                 }
 
-                Variable* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );
+                Variable<Numeric>* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );
 
-                mSlackVars.insert( pair<const ex*, Variable*>( linearPart, slackVar ) );
+                mSlackVars.insert( pair<const ex*, Variable<Numeric>*>( linearPart, slackVar ) );
                 setBound( *slackVar, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
             }
             else
             {
                 delete linearPart;
-                Variable* slackVar = slackIter->second;
+                Variable<Numeric>* slackVar = slackIter->second;
                 setBound( *slackVar, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
             }
         }

@@ -26,7 +26,7 @@ set(lib_core_src
     Constraint.cpp
     ConstraintPool.cpp
 	RuntimeSettings.cpp
-        ThreadPool.cpp
+    ThreadPool.cpp
 	ValidationSettings.cpp
 	CompileInfo.cpp
 )
@@ -43,7 +43,7 @@ set(lib_core_headers
     Constraint.h
     ConstraintPool.h
 	RuntimeSettings.h
-        ThreadPool.h
+    ThreadPool.h
 	VariableBounds.h
 	ValidationSettings.h
     smtrat.h
@@ -53,7 +53,7 @@ set(lib_core_headers
 #######################
 add_subdirectory(modules)
 
-# Include solvers/strategies
+# Include strategies
 #######################
 add_subdirectory(strategies)
 
@@ -64,6 +64,24 @@ configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/
 # write CompileInfo.cpp
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/CompileInfo.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/CompileInfo.cpp )
 
+
+set(lib_datastructures_headers
+	datastructures/lra/Bound.hpp
+	datastructures/lra/Tableau.hpp
+	datastructures/lra/Value.hpp
+	datastructures/lra/Variable.hpp
+	datastructures/lra/Numeric.h
+)
+set(lib_datastructures_src
+	datastructures/lra/Numeric.cpp
+)
+
+#set(lib_misc_headers
+#	
+#)
+#set(lib_misc_src
+#	
+#)
 
 set(lib_utilities_headers
 	utilities/debug/debug.h
@@ -78,6 +96,8 @@ set(lib_utilities_src
 
 set(lib_${PROJECT_NAME}_SRCS
     ${lib_core_src}
+    ${lib_datastructures_src}
+    ${lib_misc_src}
     ${lib_modules_src}
     ${lib_strategies_src}
 	${lib_utilities_src}

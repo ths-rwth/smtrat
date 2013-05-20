@@ -26,8 +26,8 @@
  * Created on November 14th, 2012
  */
 
-#ifndef TLRA_BOUND_H
-#define TLRA_BOUND_H
+#ifndef LRA_BOUND_H
+#define LRA_BOUND_H
 
 #include "Value.hpp"
 #include "../../Formula.h"
@@ -36,7 +36,7 @@
 
 namespace smtrat
 {
-    namespace tlra
+    namespace lra
     {
         template<class T>
         class Variable;
@@ -431,7 +431,7 @@ namespace smtrat
             }
         }
 
-    }    // end namspace tlra
+    }    // end namspace lra
 }    // end namspace smtrat
 
-#endif   /* TLRA_BOUND_H */
+#endif   /* LRA_BOUND_H */

@@ -26,8 +26,8 @@
  * Created on November 14th, 2012
  */
 
-#ifndef TLRA_VARIABLE_H
-#define TLRA_VARIABLE_H
+#ifndef LRA_VARIABLE_H
+#define LRA_VARIABLE_H
 
 #include "Bound.hpp"
 #include <ginacra/ginacra.h>
@@ -35,7 +35,7 @@
 
 namespace smtrat
 {
-    namespace tlra
+    namespace lra
     {
         template<class T>
         class Variable
@@ -423,7 +423,7 @@ namespace smtrat
             else
             {
                 lowerBoundType = infimum().isWeak() ? GiNaCRA::Interval::WEAK_BOUND : GiNaCRA::Interval::STRICT_BOUND;
-                lowerBoundValue = infimum().limit().mainPart();
+                lowerBoundValue = infimum().limit().mainPart().toGinacNumeric();
             }
             if( supremum().isInfinite() )
             {
@@ -433,7 +433,7 @@ namespace smtrat
             else
             {
                 upperBoundType = supremum().isWeak() ? GiNaCRA::Interval::WEAK_BOUND : GiNaCRA::Interval::STRICT_BOUND;
-                upperBoundValue = supremum().limit().mainPart();
+                upperBoundValue = supremum().limit().mainPart().toGinacNumeric();
             }
             GiNaCRA::Interval result = GiNaCRA::Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
             return result;
@@ -476,6 +476,6 @@ namespace smtrat
                 _out << " [" << (*bIter)->pInfo()->updated << "]" << std::endl;
             }
         }
-    }    // end namspace tlra
+    }    // end namspace lra
 } // end namespace smtrat
-#endif   /* TLRA_VARIABLE_H */
+#endif   /* LRA_VARIABLE_H */

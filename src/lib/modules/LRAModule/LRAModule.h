@@ -1,5 +1,5 @@
 /*
- * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
+ *  SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
  * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges
  *
  * This file is part of SMT-RAT.
@@ -22,7 +22,7 @@
  * @file LRAModule.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  *
- * @version 2013-02-07
+ * @version 2012-04-05
  * Created on April 5th, 2012, 3:22 PM
  */
 
@@ -32,10 +32,11 @@
 
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
-#include "Value.h"
-#include "Variable.h"
-#include "Bound.h"
-#include "Tableau.h"
+#include "../../datastructures/lra/Numeric.h"
+#include "../../datastructures/lra/Value.hpp"
+#include "../../datastructures/lra/Variable.hpp"
+#include "../../datastructures/lra/Bound.hpp"
+#include "../../datastructures/lra/Tableau.hpp"
 #include <stdio.h>
 #include <ginacra/ginacra.h>
 
@@ -60,29 +61,29 @@ namespace smtrat
                 const smtrat::Formula* origin;
                 smtrat::Formula::iterator position;
             };
-            typedef std::map< const GiNaC::ex*, lra::Variable*, exPointerComp>                              ExVariableMap;
-            typedef std::map< const Constraint*, std::vector< const lra::Bound* >*, constraintPointerComp > ConstraintBoundsMap;
-            typedef std::map< const Constraint*, Context, constraintPointerComp >                           ConstraintContextMap;
-            typedef std::map< const lra::Bound*, const Constraint* >                                        BoundConstraintMap;
+            typedef std::map< const GiNaC::ex*, lra::Variable<lra::Numeric>*, exPointerComp>                              ExVariableMap;
+            typedef std::map< const Constraint*, std::vector< const lra::Bound<lra::Numeric>* >*, constraintPointerComp > ConstraintBoundsMap;
+            typedef std::map< const Constraint*, Context, constraintPointerComp >                                           ConstraintContextMap;
+            typedef std::map< const lra::Bound<lra::Numeric>*, const Constraint* >                                        BoundConstraintMap;
 
         private:
 
             /**
              * Members:
              */
-            bool                                mInitialized;
-            bool                                mAssignmentFullfilsNonlinearConstraints;
-            lra::Tableau                        mTableau;
-            ConstraintSet                       mLinearConstraints;
-            ConstraintSet                       mNonlinearConstraints;
-            ConstraintContextMap                mActiveResolvedNEQConstraints;
-            ConstraintContextMap                mActiveUnresolvedNEQConstraints;
-            ConstraintSet                       mResolvedNEQConstraints;
-            ExVariableMap                       mOriginalVars;
-            ExVariableMap                       mSlackVars;
-            ConstraintBoundsMap                 mConstraintToBound;
-            BoundConstraintMap                  mBoundToUnequalConstraintMap;
-            std::vector<const lra::Bound* >     mBoundCandidatesToPass;
+            bool                         mInitialized;
+            bool                         mAssignmentFullfilsNonlinearConstraints;
+            lra::Tableau<lra::Numeric>   mTableau;
+            ConstraintSet                mLinearConstraints;
+            ConstraintSet                mNonlinearConstraints;
+            ConstraintContextMap         mActiveResolvedNEQConstraints;
+            ConstraintContextMap         mActiveUnresolvedNEQConstraints;
+            ConstraintSet                mResolvedNEQConstraints;
+            ExVariableMap                mOriginalVars;
+            ExVariableMap                mSlackVars;
+            ConstraintBoundsMap          mConstraintToBound;
+            BoundConstraintMap           mBoundToUnequalConstraintMap;
+            std::vector<const lra::Bound<lra::Numeric>* >  mBoundCandidatesToPass;
             std::pair< std::string, GiNaC::ex > mDelta;
 
         public:
@@ -131,7 +132,7 @@ namespace smtrat
                 return mSlackVars;
             }
 
-            const lra::Variable* const getSlackVariable( const Constraint* const _constraint ) const
+            const lra::Variable<lra::Numeric>* const getSlackVariable( const Constraint* const _constraint ) const
             {
                 ConstraintBoundsMap::const_iterator iter = mConstraintToBound.find( _constraint );
                 assert( iter != mConstraintToBound.end() );
@@ -148,10 +149,10 @@ namespace smtrat
             void adaptPassedFormula();
             bool checkAssignmentForNonlinearConstraint();
             void splitUnequalConstraint( const Constraint* );
-            bool activateBound( const lra::Bound*, std::set<const Formula*>& );
-            void setBound( lra::Variable&, bool, const GiNaC::numeric&, const Constraint* );
+            bool activateBound( const lra::Bound<lra::Numeric>*, std::set<const Formula*>& );
+            void setBound( lra::Variable<lra::Numeric>&, bool, const lra::Numeric&, const Constraint* );
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
-            void findSimpleConflicts( const lra::Bound& );
+            void findSimpleConflicts( const lra::Bound<lra::Numeric>& );
             #endif
             void initialize( const Constraint* const );
     };

@@ -36,7 +36,7 @@ using namespace GiNaC;
 
 namespace smtrat
 {
-    namespace tlra
+    namespace lra
     {
         /**
          * Default constructor.
@@ -495,5 +495,5 @@ namespace smtrat
             _out << ex( _value.content() );
             return _out;
         }
-    } // end namespace tlra
+    } // end namespace lra
 } // end namespace smtrat

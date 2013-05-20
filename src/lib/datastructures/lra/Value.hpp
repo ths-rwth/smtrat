@@ -26,8 +26,8 @@
  * Created on November 14th, 2012
  */
 
-#ifndef TLRA_VALUE_H
-#define TLRA_VALUE_H
+#ifndef LRA_VALUE_H
+#define LRA_VALUE_H
 
 #include <string.h>
 #include <assert.h>
@@ -35,7 +35,7 @@
 
 namespace smtrat
 {
-    namespace tlra
+    namespace lra
     {
         template<class T>
         class Value
@@ -300,6 +300,6 @@ namespace smtrat
             _out << "( " << mMainPart;
             _out << " + d * " << mDeltaPart << " )";
         }
-    }    // end namspace tlra
+    }    // end namspace lra
 }    // end namspace smtrat
-#endif   /* TLRA_VALUE_H */
+#endif   /* LRA_VALUE_H */

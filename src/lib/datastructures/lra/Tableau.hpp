@@ -26,29 +26,29 @@
  * Created on November 14th, 2012
  */
 
-#ifndef TLRA_TABLEAU_H
-#define TLRA_TABLEAU_H
+#ifndef LRA_TABLEAU_H
+#define LRA_TABLEAU_H
 
 #include <vector>
 #include <stack>
 #include <map>
 #include "Variable.hpp"
 
-#define TLRA_USE_PIVOTING_STRATEGY
-#define TLRA_REFINEMENT
-//#define TLRA_PRINT_STATS
-//#define TLRA_USE_OCCURENCE_STRATEGY
-#ifndef TLRA_USE_OCCURENCE_STRATEGY
-#define TLRA_USE_THETA_STRATEGY
+#define LRA_USE_PIVOTING_STRATEGY
+#define LRA_REFINEMENT
+//#define LRA_PRINT_STATS
+//#define LRA_USE_OCCURENCE_STRATEGY
+#ifndef LRA_USE_OCCURENCE_STRATEGY
+#define LRA_USE_THETA_STRATEGY
 #endif
-#ifdef TLRA_REFINEMENT
-//#define TLRA_INTRODUCE_NEW_CONSTRAINT
+#ifdef LRA_REFINEMENT
+//#define LRA_INTRODUCE_NEW_CONSTRAINT
 #endif
-//#define TLRA_GOMORY_CUTS
+//#define LRA_GOMORY_CUTS
 
 namespace smtrat
 {
-    namespace tlra
+    namespace lra
     {
         typedef unsigned EntryID;
 
@@ -196,7 +196,7 @@ namespace smtrat
                 unsigned                   mHeight;
                 unsigned                   mWidth;
                 unsigned                   mPivotingSteps;
-                #ifdef TLRA_USE_PIVOTING_STRATEGY
+                #ifdef LRA_USE_PIVOTING_STRATEGY
                 unsigned                   mRestarts;
                 unsigned                   mNextRestartBegin;
                 unsigned                   mNextRestartEnd;
@@ -208,7 +208,7 @@ namespace smtrat
                 std::set< unsigned >       mActiveRows;
                 std::vector<TableauEntry<T> >* mpEntries;
                 Value<T>*                     mpTheta;
-                #ifdef TLRA_REFINEMENT
+                #ifdef LRA_REFINEMENT
                 std::vector<LearnedBound>  mLearnedBounds;
                 #endif
 
@@ -311,7 +311,7 @@ namespace smtrat
                     mpEntries->reserve( _expectedHeight*_expectedWidth+1 );
                 }
 
-                #ifdef TLRA_USE_PIVOTING_STRATEGY
+                #ifdef LRA_USE_PIVOTING_STRATEGY
                 void setBlandsRuleStart( unsigned _start )
                 {
                     mNextRestartEnd = _start;
@@ -361,7 +361,7 @@ namespace smtrat
                     return mPivotingSteps;
                 }
 
-                #ifdef TLRA_REFINEMENT
+                #ifdef LRA_REFINEMENT
                 std::vector<LearnedBound>& rLearnedBounds()
                 {
                     return mLearnedBounds;
@@ -386,7 +386,7 @@ namespace smtrat
                 void pivot( EntryID );
                 void updateDownwards( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
                 void updateUpwards( EntryID, std::vector<Iterator>&, std::vector<Iterator>& );
-                #ifdef TLRA_REFINEMENT
+                #ifdef LRA_REFINEMENT
                 void rowRefinement( const TableauHead& );
                 void columnRefinement( const TableauHead& );
                 void exhaustiveRefinement();
@@ -407,7 +407,7 @@ namespace smtrat
             mHeight( 0 ),
             mWidth( 0 ),
             mPivotingSteps( 0 ),
-            #ifdef TLRA_USE_PIVOTING_STRATEGY
+            #ifdef LRA_USE_PIVOTING_STRATEGY
             mRestarts( 0 ),
             mNextRestartBegin( 0 ),
             mNextRestartEnd( 0 ),
@@ -417,7 +417,7 @@ namespace smtrat
             mRows(),
             mColumns(),
             mActiveRows()
-            #ifdef TLRA_REFINEMENT
+            #ifdef LRA_REFINEMENT
             ,
             mLearnedBounds()
             #endif
@@ -430,7 +430,7 @@ namespace smtrat
         template<class T>
         Tableau<T>::~Tableau()
         {
-            #ifdef TLRA_PRINT_STATS
+            #ifdef LRA_PRINT_STATS
             std::cout << "#Pivoting steps:  " << mPivotingSteps << std::endl;
             std::cout << "#Tableus entries: " << mpEntries->size()-1 << std::endl;
             std::cout << "Tableau coverage: " << (double)(mpEntries->size()-1)/(double)(mRows.size()*mColumns.size())*100 << "%" << std::endl;
@@ -616,7 +616,7 @@ namespace smtrat
             return var;
         }
 
-        #ifdef TLRA_USE_PIVOTING_STRATEGY
+        #ifdef LRA_USE_PIVOTING_STRATEGY
     //    /**
     //     *
     //     * @param y
@@ -655,12 +655,12 @@ namespace smtrat
         template<class T>
         std::pair<EntryID,bool> Tableau<T>::nextPivotingElement()
         {
-            #ifdef TLRA_USE_PIVOTING_STRATEGY
+            #ifdef LRA_USE_PIVOTING_STRATEGY
             //  Dynamic strategy for a fixed number of steps
     //        if( mPivotingSteps >= mNextRestartBegin && mPivotingSteps < mNextRestartEnd )
             if( mPivotingSteps < mNextRestartEnd )
             {
-                #ifdef TLRA_USE_OCCURENCE_STRATEGY
+                #ifdef LRA_USE_OCCURENCE_STRATEGY
                 unsigned smallestRowSize = mWidth;
                 unsigned smallestColumnSize = mHeight;
                 #endif
@@ -682,14 +682,14 @@ namespace smtrat
                     }
                     else if( result.first != 0 )
                     {
-                        #ifdef TLRA_USE_THETA_STRATEGY
+                        #ifdef LRA_USE_THETA_STRATEGY
                         if( beginOfBestRow == 0 || abs( theta.mainPart() ) > abs( mpTheta->mainPart() ) )
                         {
                             beginOfBestRow = result.first;
                             *mpTheta = theta;
                         }
                         #endif
-                        #ifdef TLRA_USE_OCCURENCE_STRATEGY
+                        #ifdef LRA_USE_OCCURENCE_STRATEGY
                         if( mRows[(*mpEntries)[result.first].rowNumber()].mSize < smallestRowSize )
                         {
                             // Found a better pivoting element.
@@ -751,7 +751,7 @@ namespace smtrat
                 }
                 // Found no pivoting element, that is no variable violates its bounds.
                 return std::pair<EntryID,bool>( 0, true );
-            #ifdef TLRA_USE_PIVOTING_STRATEGY
+            #ifdef LRA_USE_PIVOTING_STRATEGY
             }
             #endif
         }
@@ -1149,7 +1149,7 @@ namespace smtrat
             nonbasicVar.setBasic( false );
             // Update the content of the pivoting entry
             pivotContent = T(1)/pivotContent; // Division
-            #ifdef TLRA_REFINEMENT
+            #ifdef LRA_REFINEMENT
             rowRefinement( rowHead );
             #endif
             // Let (p_r,p_c,p_e) be the pivoting entry, where p_r is the row number, p_c the column number and p_e the content.
@@ -1357,7 +1357,7 @@ namespace smtrat
                     ++pivotingRowIter;
                 }
                 (*pivotingColumnIter).rContent() *= (*mpEntries)[_pivotingElement].content();
-                #ifdef TLRA_REFINEMENT
+                #ifdef LRA_REFINEMENT
                 rowRefinement( mRows[(*pivotingColumnIter).rowNumber()] );
                 #endif
             }
@@ -1544,13 +1544,13 @@ namespace smtrat
                     ++pivotingRowIter;
                 }
                 (*pivotingColumnIter).rContent() *= (*mpEntries)[_pivotingElement].content();
-                #ifdef TLRA_REFINEMENT
+                #ifdef LRA_REFINEMENT
                 rowRefinement( mRows[(*pivotingColumnIter).rowNumber()] );
                 #endif
             }
         }
 
-        #ifdef TLRA_REFINEMENT
+        #ifdef LRA_REFINEMENT
         template<class T>
         void Tableau<T>::rowRefinement( const TableauHead& _row )
         {
@@ -1668,7 +1668,7 @@ namespace smtrat
                     LearnedBound learnedBound = LearnedBound();
                     learnedBound.nextWeakerBound = *ubound;
                     learnedBound.premise = uPremise;
-                    #ifdef TLRA_INTRODUCE_NEW_CONSTRAINTS
+                    #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                     if( newlimit->mainPart() < (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
                     {
                         GiNaC::ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
@@ -1734,7 +1734,7 @@ namespace smtrat
                     LearnedBound learnedBound = LearnedBound();
                     learnedBound.nextWeakerBound = *lbound;
                     learnedBound.premise = lPremise;
-                    #ifdef TLRA_INTRODUCE_NEW_CONSTRAINTS
+                    #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                     if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
                     {
                         GiNaC::ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
@@ -1877,7 +1877,7 @@ namespace smtrat
                     LearnedBound learnedBound = LearnedBound();
                     learnedBound.nextWeakerBound = *ubound;
                     learnedBound.premise = uPremise;
-                    #ifdef TLRA_INTRODUCE_NEW_CONSTRAINTS
+                    #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                     if( newlimit->mainPart() < (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
                     {
                         GiNaC::ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
@@ -1943,7 +1943,7 @@ namespace smtrat
                     LearnedBound learnedBound = LearnedBound();
                     learnedBound.nextWeakerBound = *lbound;
                     learnedBound.premise = lPremise;
-                    #ifdef TLRA_INTRODUCE_NEW_CONSTRAINTS
+                    #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                     if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
                     {
                         GiNaC::ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
@@ -2072,7 +2072,7 @@ namespace smtrat
             return true;
         }
 
-        #ifdef TLRA_GOMORY_CUTS
+        #ifdef LRA_GOMORY_CUTS
         enum GOMORY_SET
         {
             J_PLUS,
@@ -2373,7 +2373,7 @@ namespace smtrat
             _out << _init << std::setw( _maxEntryLength * (mWidth + 1) ) << std::setfill( frameSign ) << "" << std::endl;
             _out << std::setfill( ' ' );
         }
-    }    // end namspace tlra
+    }    // end namspace lra
 }    // end namspace smtrat
 
-#endif   /* TLRA_TABLEAU_H */
+#endif   /* LRA_TABLEAU_H */

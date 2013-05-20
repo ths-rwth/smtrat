@@ -36,7 +36,7 @@
 
 namespace smtrat
 {
-    namespace tlra
+    namespace lra
     {
         class Numeric
         {
@@ -110,7 +110,7 @@ namespace smtrat
         Numeric& operator++( Numeric& );
         Numeric& operator--( Numeric& );
         std::ostream& operator <<( std::ostream&, const Numeric& );
-    } // namespace tlra
+    } // namespace lra
 } // namespace smtrat
 
 #endif	/* NUMERIC_H */

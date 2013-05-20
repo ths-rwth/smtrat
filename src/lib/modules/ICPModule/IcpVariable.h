@@ -48,7 +48,7 @@ namespace icp
             GiNaC::symbol                              mVar;
             bool                                       mOriginal;
             std::vector<ContractionCandidate*> mCandidates;
-            lra::Variable*                             mLraVar;
+            lra::Variable<lra::Numeric>*                             mLraVar;
             GiNaCRA::evaldoubleintervalmap::iterator    mInterval;
             bool                                       mActive;
             bool                                       mLinear;
@@ -69,7 +69,7 @@ namespace icp
             mOriginal(false)
             {}
 
-            IcpVariable( symbol _var, bool _original, GiNaCRA::evaldoubleintervalmap::iterator _interval, lra::Variable* _lraVar = NULL ):
+            IcpVariable( symbol _var, bool _original, GiNaCRA::evaldoubleintervalmap::iterator _interval, lra::Variable<lra::Numeric>* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal( _original ),
                 mCandidates(),
@@ -89,7 +89,7 @@ namespace icp
                          bool _original,
                          ContractionCandidate* _candidate,
                          GiNaCRA::evaldoubleintervalmap::iterator _interval,
-                         lra::Variable* _lraVar = NULL ):
+                         lra::Variable<lra::Numeric>* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal ( _original ),
                 mCandidates(),
@@ -123,7 +123,7 @@ namespace icp
                 return mCandidates;
             }
 
-            const lra::Variable* lraVar() const
+            const lra::Variable<lra::Numeric>* lraVar() const
             {
                 return mLraVar;
             }
@@ -148,7 +148,7 @@ namespace icp
                 (*mInterval).second = _interval;
             }
 
-            void setLraVar( lra::Variable* _lraVar )
+            void setLraVar( lra::Variable<lra::Numeric>* _lraVar )
             {
                 mLraVar = _lraVar;
             }
