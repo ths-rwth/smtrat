@@ -32,7 +32,7 @@
 #include <limits.h>
 #include <ginacra/ginacra.h>
 #include "Substitution.h"
-#include "Tools.h"
+#include "../../misc/VS_Tools.hpp"
 #include "config.h"
 #ifdef SMTRAT_VS_VARIABLEBOUNDS
 #include "../../VariableBounds.h"

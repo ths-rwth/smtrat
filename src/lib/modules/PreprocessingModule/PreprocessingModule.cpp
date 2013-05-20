@@ -29,7 +29,7 @@
 
 #include "PreprocessingModule.h"
 #include "../../../solver/ExitCodes.h"
-#include "../VSModule/Substitute.h"
+#include "../../misc/VS_Tools.hpp"
 #include <limits.h>
 #include <bits/stl_map.h>
 

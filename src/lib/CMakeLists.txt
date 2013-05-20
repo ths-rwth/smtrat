@@ -76,12 +76,12 @@ set(lib_datastructures_src
 	datastructures/lra/Numeric.cpp
 )
 
-#set(lib_misc_headers
-#	
-#)
-#set(lib_misc_src
-#	
-#)
+set(lib_misc_headers
+	misc/VS_Tools.hpp
+)
+set(lib_misc_src
+	misc/VS_Tools.cpp
+)
 
 set(lib_utilities_headers
 	utilities/debug/debug.h
