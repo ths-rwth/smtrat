@@ -259,13 +259,13 @@ namespace smtrat
              * Adds the specific candidate to IcpRelevantCandidates.
              * @param _candidate
              */
-            void addCandidateToRelevant(icp::ContractionCandidate* _candidate);
+            bool addCandidateToRelevant(icp::ContractionCandidate* _candidate);
             
             /**
              * Removes a candidate from the icpRelevantCandidates.
              * @param _candidate
              */
-            void removeCandidateFromRelevant(icp::ContractionCandidate* _candidate);
+            bool removeCandidateFromRelevant(icp::ContractionCandidate* _candidate);
             
             /**
              * Checks whether a candidate is already relevant.
