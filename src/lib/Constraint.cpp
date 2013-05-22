@@ -105,8 +105,8 @@ namespace smtrat
 
     Constraint::Constraint( const Constraint& _constraint, bool _rehash ):
         mID( _constraint.id() ),
-        mFirstHash( _rehash ? _constraint.relation() : _constraint.firstHash() ),
-        mSecondHash( _rehash ? _constraint.mLhs.gethash() : _constraint.secondHash() ),
+        mFirstHash( _rehash ? _constraint.mLhs.gethash() : _constraint.firstHash() ),
+        mSecondHash( _rehash ? _constraint.relation() : _constraint.secondHash() ),
         mIsNeverPositive( _constraint.mIsNeverPositive ),
         mIsNeverNegative( _constraint.mIsNeverNegative ),
         mIsNeverZero( _constraint.mIsNeverZero ),
