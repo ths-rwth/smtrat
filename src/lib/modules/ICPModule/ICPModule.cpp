@@ -147,7 +147,7 @@ namespace smtrat
         // Debug
         assert( linearFormula.constraint().isLinear() );
 
-        return true;
+        return (_constraint->isConsistent() != 0);
     }
 
 
@@ -795,7 +795,11 @@ namespace smtrat
 
             return foundAnswer(lraAnswer);
         }
-        else if ( lraAnswer != False && !mActiveNonlinearConstraints.empty() )
+        else if ( lraAnswer == Unknown)
+        {
+            return foundAnswer(lraAnswer);
+        }
+        else if ( !mActiveNonlinearConstraints.empty() ) // lraAnswer == True
         {
             // get intervals for initial variables
             GiNaCRA::evalintervalmap tmp = mLRA.getVariableBounds();
@@ -841,7 +845,7 @@ namespace smtrat
                 }
             }
         }
-        else if ( mActiveNonlinearConstraints.empty() )
+        else if ( mActiveNonlinearConstraints.empty() ) // lraAnswer == True, but no nonlinear constraints -> nothing to do
         {
             // we only had linear constraints
             return foundAnswer(lraAnswer);
@@ -1055,6 +1059,9 @@ namespace smtrat
                 if (!invalidBox)
                 {
                     invalidBox = !checkBoxAgainstLinearFeasibleRegion();
+#ifdef ICPMODULE_DEBUG
+                    cout << "Invalid against linear region: " << invalidBox << endl;
+#endif
 #ifdef ICP_BOXLOG
                     if ( invalidBox )
                     {
@@ -1809,6 +1816,11 @@ namespace smtrat
             icp::HistoryNode* newRightChild = new icp::HistoryNode(tmpRight, mCurrentId+2);
             mHistoryActual->addRight(newRightChild);
 
+#ifdef ICPMODULE_DEBUG
+            cout << "Created node:" << endl;
+            newRightChild->print();
+#endif
+            
             // left first!
 //            mIntervals[variable] = mIntervals[variable].intersect(resultA);
             GiNaCRA::evaldoubleintervalmap tmpLeft = GiNaCRA::evaldoubleintervalmap();
@@ -1895,6 +1907,11 @@ namespace smtrat
             ++mCurrentId;
             mHistoryActual = mHistoryActual->addLeft(newLeftChild);
 
+#ifdef ICPMODULE_DEBUG
+            cout << "Created node:" << endl;
+            newLeftChild->print();
+#endif
+            
             // update mIntervals - usually this happens when changing to a different box, but in this case it has to be done manually, otherwise mIntervals is not affected.
             mIntervals[variable] = originalInterval.intersect(resultB);
             _relativeContraction = (originalDiameter - originalInterval.intersect(resultB).diameter()) / originalInterval.diameter();
@@ -3089,6 +3106,10 @@ namespace smtrat
         
         mLRA.clearDeductions();
         
+#ifdef ICPMODULE_DEBUG
+        cout << "Boxcheck: " << boxCheck << endl;
+#endif
+        
         
 #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
         if ( boxCheck == False )
@@ -3243,6 +3264,7 @@ namespace smtrat
 
                     while (!tmpVariables->empty())
                     {
+                        cout << "Add: " << tmpVariables->back().get_name() << endl;
                         newVariables[tmpVariables->back().get_name()] = tmpVariables->back();
                         tmpVariables->pop_back();
                     }
@@ -3255,8 +3277,19 @@ namespace smtrat
                 }
             }
 
-            lhs.subs(mSubstitutions);
+            cout << "From: " << lhs;
+            lhs = lhs.subs(mSubstitutions);
+            cout << " To " << lhs << endl;
+            
+            cout << "Variables: " << endl;
+            for ( auto varIt = newVariables.begin(); varIt != newVariables.end(); ++varIt )
+            {
+                cout << (*varIt).first << endl;
+            }
+            
             const Constraint* constraint = Formula::newConstraint(lhs, _deduction->constraint().relation(), newVariables);
+            constraint->print();
+            cout << endl;
             // TODO
             Formula* newRealDeduction = new Formula(constraint);
             mCreatedDeductions.insert(newRealDeduction);

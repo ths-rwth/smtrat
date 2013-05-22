@@ -167,6 +167,16 @@ namespace smtrat
             {
                 return mBooleanVariables;
             }
+            
+            const Constraint* consistentConstraint() const
+            {
+                return mConsistentConstraint;
+            }
+            
+            const Constraint* inconsistentConstraint() const
+            {
+                return mInconsistentConstraint;
+            }
 
             Variable_Domain domain( const GiNaC::ex& _variable ) const
             {

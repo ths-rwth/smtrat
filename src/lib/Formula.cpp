@@ -47,7 +47,7 @@ namespace smtrat
         mType( TTRUE ),
         mRealValuedVars(),
         mBooleanVars(),
-        mpSubformulas( NULL ),
+        mpConstraint( mpConstraintPool->consistentConstraint() ),
         mpFather( NULL ),
         mPropositions()
     {}
@@ -60,11 +60,21 @@ namespace smtrat
         mType( _type ),
         mRealValuedVars(),
         mBooleanVars(),
-        mpSubformulas( (_type != TTRUE && _type != FFALSE) ? new list<Formula*>() : NULL ),
         mpFather( NULL ),
         mPropositions()
     {
         assert( _type != REALCONSTRAINT && _type != BOOL );
+        switch( _type )
+        {
+            case TTRUE:
+                mpConstraint = mpConstraintPool->consistentConstraint();
+                break;
+            case FFALSE:
+                mpConstraint = mpConstraintPool->inconsistentConstraint();
+                break;
+            default:
+                mpSubformulas = new list<Formula*>();
+        }
     }
 
     Formula::Formula( const string& _id ):
@@ -87,13 +97,29 @@ namespace smtrat
         mPropositionsUptodate( false ),
         mActivity( 0 ),
         mDifficulty( 0 ),
-        mType( REALCONSTRAINT ),
-        mRealValuedVars( _constraint->variables() ),
         mBooleanVars(),
-        mpConstraint( _constraint ),
         mpFather( NULL ),
         mPropositions()
-    {}
+    {
+        switch(_constraint->isConsistent())
+        {
+            case 0: 
+                mType = FFALSE;
+                mpConstraint = mpConstraintPool->inconsistentConstraint();
+                break;
+            case 1: 
+                mType = TTRUE;
+                mpConstraint = mpConstraintPool->consistentConstraint();
+                break;
+            case 2: 
+                mType = REALCONSTRAINT;
+                mRealValuedVars = _constraint->variables();
+                mpConstraint = _constraint;
+                break;
+            default:
+                assert(false);
+        }
+    }
 
     Formula::Formula( const Formula& _formula ):
         mDeducted( false ),

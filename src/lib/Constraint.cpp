@@ -100,6 +100,7 @@ namespace smtrat
                 mContainsIntegerValuedVariables = (varDom == INTEGER_DOMAIN);
             }
         }
+        assert( !mVariables.empty() || _lhs.info( info_flags::rational ) );
     }
 
     Constraint::Constraint( const Constraint& _constraint, bool _rehash ):
