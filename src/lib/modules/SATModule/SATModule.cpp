@@ -1795,7 +1795,6 @@ NextClause:
                     Formula notLemma = Formula( NOT );
                     notLemma.addSubformula( new Formula( **deduction ) );
                     addAssumptionToCheck( notLemma, false, moduleName( (*backend)->type() ) + "_lemma" );
-                    notLemma.pruneBack();
                 }
                 #endif
                 #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION

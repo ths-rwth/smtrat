@@ -118,7 +118,7 @@ namespace smtrat
         {
             if ( edge->conditionEvaluation()( _condition ) )
             {
-                thread_priority threadPriority( edge->threadId(), edge->priority() );
+                thread_priority threadPriority = thread_priority( edge->threadId(), edge->priority() );
                 result.push_back( pair< thread_priority, ModuleType >( threadPriority, mStrategyGraph[ edge->successorVertex() ]->moduleType() ) );
             }
         }

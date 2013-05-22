@@ -77,8 +77,6 @@ void parseInput(const std::string& pathToInputFile, smtrat::Formula* formula, sm
     }
     options.statusFlag = parser.status();
     options.printAssignment = parser.printAssignment();
-//    formula->print();
-//    smtrat::Formula::constraintPool().printVariables();
 }
 
 /**
@@ -204,6 +202,7 @@ int main( int argc, char* argv[] )
     // Delete the solver and the formula.
     delete nratSolver;
     delete form;
+    delete parserSettings;
     // Export statistics
     #ifdef SMTRAT_DEVOPTION_Statistics
     smtrat::CollectStatistics::produceOutput();

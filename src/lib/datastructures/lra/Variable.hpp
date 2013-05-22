@@ -209,7 +209,7 @@ namespace smtrat
             {
                 const Bound<T>* b = *mLowerbounds.begin();
                 mLowerbounds.erase( mLowerbounds.begin() );
-                if( !b->type() == Bound<T>::EQUAL ) delete b;
+                if( b->type() != Bound<T>::EQUAL ) delete b;
             }
             while( !mUpperbounds.empty() )
             {

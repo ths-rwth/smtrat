@@ -94,6 +94,12 @@ namespace smtrat
             delete pModuleFactory;
         }
         delete mpModuleFactories;
+        while( !mPrimaryBackendFoundAnswer.empty() )
+        {
+            std::atomic_bool* toDelete = mPrimaryBackendFoundAnswer.back();
+            mPrimaryBackendFoundAnswer.pop_back();
+            delete toDelete;
+        }
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         if( mpThreadPool!=NULL )
         {

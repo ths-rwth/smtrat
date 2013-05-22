@@ -58,7 +58,7 @@ namespace smtrat
 
     Module::Module( ModuleType type, const Formula* const _formula, Conditionals& _foundAnswer, Manager* const _tsManager ):
         mId( 0 ),
-        mThreadPriority( 0, 0 ),
+        mThreadPriority( thread_priority( 0 , 0 ) ),
         mInfeasibleSubsets(),
         mpManager( _tsManager ),
         mModuleType( type ),
@@ -92,6 +92,8 @@ namespace smtrat
     Module::~Module()
     {
         delete mpPassedFormula;
+        mFoundAnswer.clear();
+        delete mBackendsFoundAnswer;
     }
 
     /**

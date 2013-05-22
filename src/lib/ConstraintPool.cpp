@@ -69,6 +69,10 @@ namespace smtrat
      */
     ConstraintPool::~ConstraintPool()
     {
+        mConstraints.erase( mConsistentConstraint );
+        delete mConsistentConstraint;
+        mConstraints.erase( mInconsistentConstraint );
+        delete mInconsistentConstraint;
         while( !mConstraints.empty() )
         {
             const Constraint* pCons = (*mConstraints.begin());

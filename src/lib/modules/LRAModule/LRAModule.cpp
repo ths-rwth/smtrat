@@ -359,7 +359,7 @@ namespace smtrat
             }
             #ifdef DEBUG_LRA_MODULE
             cout << endl;
-            mTableau.printVariables( cout, "    " );
+            mTableau.printVariables( true, cout, "    " );
             cout << endl;
             mTableau.print( cout, 15, "    " );
             cout << endl;
