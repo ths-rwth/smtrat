@@ -346,7 +346,6 @@ namespace smtrat
         {
             return foundAnswer( False );
         }
-        unsigned posNewLearnedBound = 0;
         for( ; ; )
         {
             CONSTRAINT_LOCK
@@ -508,11 +507,12 @@ namespace smtrat
                 {
                     // Pivot at the found pivoting entry.
                     mTableau.pivot( pivotingElement.first );
-                    // Learn all bounds which has been deduced during the pivoting process.
-                    while( posNewLearnedBound < mTableau.rLearnedBounds().size() )
+                    // Learn all bounds which have been deduced during the pivoting process.
+                    while( !mTableau.rNewLearnedBounds().empty() )
                     {
                         set< const Formula*> originSet = set< const Formula*>();
-                        Tableau<Numeric>::LearnedBound& learnedBound = mTableau.rLearnedBounds()[posNewLearnedBound];
+                        Tableau<Numeric>::LearnedBound& learnedBound = mTableau.rNewLearnedBounds().back()->second;
+                        mTableau.rNewLearnedBounds().pop_back();
                         vector<const Bound<Numeric>*>& bounds = *learnedBound.premise;
                         for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
                         {
@@ -544,7 +544,6 @@ namespace smtrat
                             activateBound( learnedBound.newBound, originSet );
                         }
                         #endif
-                        ++posNewLearnedBound;
                     }
                     // Maybe a easy conflict occurred with the learned bounds.
                     if( !mInfeasibleSubsets.empty() )
@@ -790,24 +789,24 @@ namespace smtrat
      */
     void LRAModule::learnRefinements()
     {
-        vector<class Tableau<Numeric>::LearnedBound>& lBs = mTableau.rLearnedBounds();
-        while( !lBs.empty() )
+        map<Variable<Numeric>*, class Tableau<Numeric>::LearnedBound>& llBs = mTableau.rLearnedLowerBounds();
+        while( !llBs.empty() )
         {
-            auto originsIterA = lBs.back().nextWeakerBound->origins().begin();
-            while( originsIterA != lBs.back().nextWeakerBound->origins().end() )
+            auto originsIterA = llBs.begin()->second.nextWeakerBound->origins().begin();
+            while( originsIterA != llBs.begin()->second.nextWeakerBound->origins().end() )
             {
                 // TODO: Learn also those deductions with a conclusion containing more than one constraint.
                 //       This must be hand over via a non clause formula and could introduce new
                 //       Boolean variables.
                 if( originsIterA->size() == 1 )
                 {
-                    if( originsIterA != lBs.back().nextWeakerBound->origins().end() )
+                    if( originsIterA != llBs.begin()->second.nextWeakerBound->origins().end() )
                     {
                         auto originIterA = originsIterA->begin();
                         while( originIterA != originsIterA->end() )
                         {
                             Formula* deduction = new Formula( OR );
-                            for( auto bound = lBs.back().premise->begin(); bound != lBs.back().premise->end(); ++bound )
+                            for( auto bound = llBs.begin()->second.premise->begin(); bound != llBs.begin()->second.premise->end(); ++bound )
                             {
                                 auto originIterB = (*bound)->origins().begin()->begin();
                                 while( originIterB != (*bound)->origins().begin()->end() )
@@ -825,8 +824,47 @@ namespace smtrat
                 }
                 ++originsIterA;
             }
-            vector<const Bound<Numeric>* >* toDelete = lBs.back().premise;
-            lBs.pop_back();
+            vector<const Bound<Numeric>* >* toDelete = llBs.begin()->second.premise;
+            llBs.erase( llBs.begin() );
+            delete toDelete;
+        }
+        map<Variable<Numeric>*, class Tableau<Numeric>::LearnedBound>& luBs = mTableau.rLearnedUpperBounds();
+        while( !luBs.empty() )
+        {
+            auto originsIterA = luBs.begin()->second.nextWeakerBound->origins().begin();
+            while( originsIterA != luBs.begin()->second.nextWeakerBound->origins().end() )
+            {
+                // TODO: Learn also those deductions with a conclusion containing more than one constraint.
+                //       This must be hand over via a non clause formula and could introduce new
+                //       Boolean variables.
+                if( originsIterA->size() == 1 )
+                {
+                    if( originsIterA != luBs.begin()->second.nextWeakerBound->origins().end() )
+                    {
+                        auto originIterA = originsIterA->begin();
+                        while( originIterA != originsIterA->end() )
+                        {
+                            Formula* deduction = new Formula( OR );
+                            for( auto bound = luBs.begin()->second.premise->begin(); bound != luBs.begin()->second.premise->end(); ++bound )
+                            {
+                                auto originIterB = (*bound)->origins().begin()->begin();
+                                while( originIterB != (*bound)->origins().begin()->end() )
+                                {
+                                    deduction->addSubformula( new Formula( NOT ) );
+                                    deduction->back()->addSubformula( (*originIterB)->pConstraint() );
+                                    ++originIterB;
+                                }
+                            }
+                            deduction->addSubformula( (*originIterA)->pConstraint() );
+                            addDeduction( deduction );
+                            ++originIterA;
+                        }
+                    }
+                }
+                ++originsIterA;
+            }
+            vector<const Bound<Numeric>* >* toDelete = luBs.begin()->second.premise;
+            luBs.erase( luBs.begin() );
             delete toDelete;
         }
     }

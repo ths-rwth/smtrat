@@ -1353,7 +1353,7 @@ FindSecond:
         //        }
 
         // Activity based decision:
-        while( next == var_Undef || value( next ) != l_Undef ||!decision[next] )
+        while( next == var_Undef || value( next ) != l_Undef || !decision[next] )
         {
             if( order_heap.empty() )
             {

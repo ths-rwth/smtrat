@@ -209,7 +209,9 @@ namespace smtrat
                 std::vector<TableauEntry<T> >* mpEntries;
                 Value<T>*                     mpTheta;
                 #ifdef LRA_REFINEMENT
-                std::vector<LearnedBound>  mLearnedBounds;
+                std::map<Variable<T>*, LearnedBound> mLearnedLowerBounds;
+                std::map<Variable<T>*, LearnedBound> mLearnedUpperBounds;
+                std::vector<class std::map<Variable<T>*, LearnedBound>::iterator> mNewLearnedBounds;
                 #endif
 
                 class Iterator
@@ -310,6 +312,11 @@ namespace smtrat
                     mColumns.reserve( _expectedWidth );
                     mpEntries->reserve( _expectedHeight*_expectedWidth+1 );
                 }
+                
+                unsigned size() const
+                {
+                    return mpEntries->capacity();
+                }
 
                 #ifdef LRA_USE_PIVOTING_STRATEGY
                 void setBlandsRuleStart( unsigned _start )
@@ -362,9 +369,19 @@ namespace smtrat
                 }
 
                 #ifdef LRA_REFINEMENT
-                std::vector<LearnedBound>& rLearnedBounds()
+                std::map<Variable<T>*, LearnedBound>& rLearnedLowerBounds()
                 {
-                    return mLearnedBounds;
+                    return mLearnedLowerBounds;
+                }
+
+                std::map<Variable<T>*, LearnedBound>& rLearnedUpperBounds()
+                {
+                    return mLearnedUpperBounds;
+                }
+                
+                std::vector<class std::map<Variable<T>*, LearnedBound>::iterator>& rNewLearnedBounds()
+                {
+                    return mNewLearnedBounds;
                 }
                 #endif
 
@@ -389,7 +406,6 @@ namespace smtrat
                 #ifdef LRA_REFINEMENT
                 void rowRefinement( const TableauHead& );
                 void columnRefinement( const TableauHead& );
-                void exhaustiveRefinement();
                 #endif
                 unsigned checkCorrectness() const;
                 bool rowCorrect( unsigned _rowNumber ) const;
@@ -419,7 +435,9 @@ namespace smtrat
             mActiveRows()
             #ifdef LRA_REFINEMENT
             ,
-            mLearnedBounds()
+            mLearnedLowerBounds(),
+            mLearnedUpperBounds(),
+            mNewLearnedBounds()
             #endif
         {
             mpEntries = new std::vector< TableauEntry<T> >();
@@ -1684,7 +1702,21 @@ namespace smtrat
                     delete newlimit;
                     learnedBound.newBound = NULL;
                     #endif
-                    mLearnedBounds.push_back( learnedBound );
+                    std::pair<class std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedUpperBounds.insert( std::pair<Variable<T>*, LearnedBound>( _row.mName, learnedBound ) );
+                    if( !insertionResult.second )
+                    {
+                        if( *learnedBound.nextWeakerBound < *insertionResult.first->second.nextWeakerBound )
+                        {
+                            insertionResult.first->second.nextWeakerBound = learnedBound.nextWeakerBound;
+                            delete insertionResult.first->second.premise;
+                            insertionResult.first->second.premise = learnedBound.premise;
+                            mNewLearnedBounds.push_back( insertionResult.first );
+                        }
+                    }
+                    else
+                    {
+                        mNewLearnedBounds.push_back( insertionResult.first );
+                    }
                 }
                 else
                 {
@@ -1750,7 +1782,21 @@ namespace smtrat
                     delete newlimit;
                     learnedBound.newBound = NULL;
                     #endif
-                    mLearnedBounds.push_back( learnedBound );
+                    std::pair<class std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedLowerBounds.insert( std::pair<Variable<T>*, LearnedBound>( _row.mName, learnedBound ) );
+                    if( !insertionResult.second )
+                    {
+                        if( *learnedBound.nextWeakerBound > *insertionResult.first->second.nextWeakerBound )
+                        {
+                            insertionResult.first->second.nextWeakerBound = learnedBound.nextWeakerBound;
+                            delete insertionResult.first->second.premise;
+                            insertionResult.first->second.premise = learnedBound.premise;
+                            mNewLearnedBounds.push_back( insertionResult.first );
+                        }
+                    }
+                    else
+                    {
+                        mNewLearnedBounds.push_back( insertionResult.first );
+                    }
                 }
                 else
                 {
@@ -1893,7 +1939,21 @@ namespace smtrat
                     delete newlimit;
                     learnedBound.newBound = NULL;
                     #endif
-                    mLearnedBounds.push_back( learnedBound );
+                    std::pair<class std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedUpperBounds.insert( std::pair<Variable<T>*, LearnedBound>( _column.mName, learnedBound ) );
+                    if( !insertionResult.second )
+                    {
+                        if( *learnedBound.nextWeakerBound < *insertionResult.first->second.nextWeakerBound )
+                        {
+                            insertionResult.first->second.nextWeakerBound = learnedBound.nextWeakerBound;
+                            delete insertionResult.first->second.premise;
+                            insertionResult.first->second.premise = learnedBound.premise;
+                            mNewLearnedBounds.push_back( insertionResult.first );
+                        }
+                    }
+                    else
+                    {
+                        mNewLearnedBounds.push_back( insertionResult.first );
+                    }
                 }
                 else
                 {
@@ -1959,80 +2019,27 @@ namespace smtrat
                     delete newlimit;
                     learnedBound.newBound = NULL;
                     #endif
-                    mLearnedBounds.push_back( learnedBound );
+                    std::pair<class std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedLowerBounds.insert( std::pair<Variable<T>*, LearnedBound>( _column.mName, learnedBound ) );
+                    if( !insertionResult.second )
+                    {
+                        if( *learnedBound.nextWeakerBound > *insertionResult.first->second.nextWeakerBound )
+                        {
+                            insertionResult.first->second.nextWeakerBound = learnedBound.nextWeakerBound;
+                            delete insertionResult.first->second.premise;
+                            insertionResult.first->second.premise = learnedBound.premise;
+                            mNewLearnedBounds.push_back( insertionResult.first );
+                        }
+                    }
+                    else
+                    {
+                        mNewLearnedBounds.push_back( insertionResult.first );
+                    }
                 }
                 else
                 {
                     delete newlimit;
                     delete lPremise;
                 }
-            }
-        }
-
-        /**
-         *
-         */
-        template<class T>
-        void Tableau<T>::exhaustiveRefinement()
-        {
-            // TODO: Make this always terminating.
-            std::set< unsigned > rowsToRefine = std::set< unsigned >();
-            for( unsigned pos = 0; pos < mRows.size(); ++pos )
-            {
-                rowsToRefine.insert( pos );
-            }
-            std::set< unsigned > columnsToRefine = std::set< unsigned >();
-            for( unsigned pos = 0; pos < mColumns.size(); ++pos )
-            {
-                columnsToRefine.insert( pos );
-            }
-            unsigned learnedBoundsSizeBefore = mLearnedBounds.size();
-            while( !rowsToRefine.empty() || !columnsToRefine.empty() )
-            {
-                /*
-                 * Refine all remaining rows.
-                 */
-                for( auto rowPosition = rowsToRefine.begin(); rowPosition != rowsToRefine.end(); ++rowPosition )
-                {
-                    rowRefinement( mRows[*rowPosition] );
-                    if( learnedBoundsSizeBefore < mLearnedBounds.size() )
-                    {
-                        /*
-                         * If refinement took place, refine all columns where this row has a non zero entry.
-                         */
-                        Iterator rowEntry = Iterator( mRows[*rowPosition].mStartEntry, mpEntries );
-                        while( true )
-                        {
-                            columnsToRefine.insert( (*rowEntry).columnNumber() );
-                            if( !rowEntry.rowEnd() ) rowEntry.right();
-                            else break;
-                        }
-                        learnedBoundsSizeBefore = mLearnedBounds.size();
-                    }
-                }
-                rowsToRefine.clear();
-                /*
-                 * Refine all remaining columns.
-                 */
-                for( auto columnPosition = columnsToRefine.begin(); columnPosition != columnsToRefine.end(); ++columnPosition )
-                {
-                    if( learnedBoundsSizeBefore < mLearnedBounds.size() )
-                    {
-                        /*
-                         * If refinement took place, refine all rows where this column has a non zero entry.
-                         */
-                        Iterator columnEntry = Iterator( mColumns[*columnPosition].mStartEntry, mpEntries );
-                        while( true )
-                        {
-                            rowsToRefine.insert( (*columnEntry).rowNumber() );
-                            if( !columnEntry.columnBegin() ) columnEntry.up();
-                            else break;
-                        }
-                        learnedBoundsSizeBefore = mLearnedBounds.size();
-                    }
-                    columnRefinement( mColumns[*columnPosition] );
-                }
-                columnsToRefine.clear();
             }
         }
         #endif
@@ -2299,9 +2306,9 @@ namespace smtrat
         template<class T>
         void Tableau<T>::printLearnedBounds( const std::string _init, std::ostream& _out  ) const
         {
-            for( auto learnedBound = mLearnedBounds.begin(); learnedBound != mLearnedBounds.end(); ++learnedBound )
+            for( auto learnedBound = mLearnedLowerBounds.begin(); learnedBound != mLearnedLowerBounds.end(); ++learnedBound )
             {
-                for( auto premiseBound = learnedBound->premise->begin(); premiseBound != learnedBound->premise->end(); ++premiseBound )
+                for( auto premiseBound = learnedBound->second->premise->begin(); premiseBound != learnedBound->second->premise->end(); ++premiseBound )
                 {
                     _out << _init;
                     _out << *(*premiseBound)->variable().pExpression();
@@ -2310,11 +2317,29 @@ namespace smtrat
                 }
                 _out << _init << "               | " << std::endl;
                 _out << _init << "               V " << std::endl;
-                _out << _init << *learnedBound->nextWeakerBound->variable().pExpression();
-                learnedBound->nextWeakerBound->print( true, _out, true );
+                _out << _init << *learnedBound->first->pExpression();
+                learnedBound->second->nextWeakerBound->print( true, _out, true );
                 _out << std::endl;
-                _out << _init << *learnedBound->nextWeakerBound->variable().pExpression();
-                learnedBound->newBound->print( true, _out, true );
+                _out << _init << *learnedBound->first->pExpression();
+                learnedBound->second->newBound->print( true, _out, true );
+                _out << std::endl << std::endl;
+            }
+            for( auto learnedBound = mLearnedUpperBounds.begin(); learnedBound != mLearnedUpperBounds.end(); ++learnedBound )
+            {
+                for( auto premiseBound = learnedBound->second->premise->begin(); premiseBound != learnedBound->second->premise->end(); ++premiseBound )
+                {
+                    _out << _init;
+                    _out << *(*premiseBound)->variable().pExpression();
+                    (*premiseBound)->print( true, _out, true );
+                    _out << std::endl;
+                }
+                _out << _init << "               | " << std::endl;
+                _out << _init << "               V " << std::endl;
+                _out << _init << *learnedBound->first->pExpression();
+                learnedBound->second->nextWeakerBound->print( true, _out, true );
+                _out << std::endl;
+                _out << _init << *learnedBound->first->pExpression();
+                learnedBound->second->newBound->print( true, _out, true );
                 _out << std::endl << std::endl;
             }
         }

@@ -647,6 +647,7 @@ namespace smtrat
         {
             unsigned monomDegree = 0;
             mNumMonomials = 1;
+            bool hasCoefficient = false;
             for( GiNaC::const_iterator factor = mLhs.begin(); factor != mLhs.end(); ++factor )
             {
                 const ex factorEx = *factor;
@@ -669,6 +670,7 @@ namespace smtrat
                     {
                         mIsNeverPositive = false;
                     }
+                    hasCoefficient = true;
                 }
                 else if( is_exactly_a<power>( factorEx ) )
                 {
@@ -691,6 +693,7 @@ namespace smtrat
                 }
                 else assert( false );
             }
+            if( !hasCoefficient ) mIsNeverPositive = false;
             if( monomDegree > mMaxMonomeDegree ) mMaxMonomeDegree = monomDegree;
             if( monomDegree < mMinMonomeDegree && monomDegree != 0 ) mMinMonomeDegree = monomDegree;
         }

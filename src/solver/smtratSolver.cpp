@@ -80,10 +80,10 @@ void parseInput(const std::string& pathToInputFile, smtrat::Formula* formula, sm
 }
 
 /**
- * Determine the returnvalue of the process and its output.
- * @param status the parsed statusflag of the smt2 file.
+ * Determine the return value of the process and its output.
+ * @param status the parsed status flag of the smt2 file.
  * @param answer the answer from the solver
- * @return the corresponding returnvalue.
+ * @return the corresponding return value.
  */
 int determineResult(int status, smtrat::Answer answer)
 {
