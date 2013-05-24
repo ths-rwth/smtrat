@@ -384,7 +384,7 @@ namespace smtrat
             return ( constraintConsistent ? mConsistentConstraint : mInconsistentConstraint );
         }
         _constraint->collectProperties();
-//        cout << "create constraint: " << *_constraint << endl;
+        
 //        _constraint->printProperties();
         unsigned constraintConsistent = _constraint->isConsistent();
         if( constraintConsistent == 2 )
@@ -398,9 +398,12 @@ namespace smtrat
             }
             else
             {
+//                cout << "Original constraint: " << *_constraint << " ID: "<< _constraint->id() << "  hash = ( " << _constraint->firstHash() << ", " << _constraint->secondHash() << ") " << endl;
                 Constraint* constraint = _constraint->simplify();
                 if( constraint != NULL )
                 {
+                    
+
                     // Constraint could be simplified.
                     pair<fastConstraintSet::iterator, bool> iterBoolPairB = mConstraints.insert( constraint );
                     if( !iterBoolPairB.second )
@@ -415,6 +418,7 @@ namespace smtrat
                         constraint->init();
                         ++mIdAllocator;
                     }
+//                    cout << "create simplified constraint: " << **iterBoolPairB.first << " ID: " << (*iterBoolPairB.first)->id() << "  hash = ( " << (*iterBoolPairB.first)->firstHash() << ", " << (*iterBoolPairB.first)->secondHash() << ") " << endl;
                     return *iterBoolPairB.first;
                 }
                 else
@@ -424,6 +428,7 @@ namespace smtrat
                     ++mIdAllocator;
                 }
             }
+//            cout << "create constraint: " << **iterBoolPair.first << " ID: "<< (*iterBoolPair.first)->id() << "  hash = ( " << (*iterBoolPair.first)->firstHash() << ", " << (*iterBoolPair.first)->secondHash() << ") "  << endl;
             return *iterBoolPair.first;
         }
         else
