@@ -64,7 +64,6 @@ namespace smtrat
             typedef std::map< const GiNaC::ex*, lra::Variable<lra::Numeric>*, exPointerComp>                              ExVariableMap;
             typedef std::map< const Constraint*, std::vector< const lra::Bound<lra::Numeric>* >*, constraintPointerComp > ConstraintBoundsMap;
             typedef std::map< const Constraint*, Context, constraintPointerComp >                                           ConstraintContextMap;
-            typedef std::map< const lra::Bound<lra::Numeric>*, const Constraint* >                                        BoundConstraintMap;
 
         private:
 
@@ -82,7 +81,6 @@ namespace smtrat
             ExVariableMap                mOriginalVars;
             ExVariableMap                mSlackVars;
             ConstraintBoundsMap          mConstraintToBound;
-            BoundConstraintMap           mBoundToUnequalConstraintMap;
             std::vector<const lra::Bound<lra::Numeric>* >  mBoundCandidatesToPass;
             std::pair< std::string, GiNaC::ex > mDelta;
 

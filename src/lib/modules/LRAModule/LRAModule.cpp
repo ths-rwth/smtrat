@@ -58,7 +58,6 @@ namespace smtrat
         mOriginalVars(),
         mSlackVars(),
         mConstraintToBound(),
-        mBoundToUnequalConstraintMap(),
         mBoundCandidatesToPass()
     {
         stringstream out;
@@ -154,10 +153,9 @@ namespace smtrat
                         originSet.insert( *_subformula );
                         activateBound( *bounds->begin(), originSet );
 
-                        auto unequalCons = mBoundToUnequalConstraintMap.find( *bounds->begin() );
-                        if( unequalCons != mBoundToUnequalConstraintMap.end() )
+                        if( (*bounds->begin())->neqRepresentation() != NULL )
                         {
-                            auto pos = mActiveUnresolvedNEQConstraints.find( unequalCons->second );
+                            auto pos = mActiveUnresolvedNEQConstraints.find( (*bounds->begin())->neqRepresentation() );
                             if( pos != mActiveUnresolvedNEQConstraints.end() )
                             {
                                 auto entry = mActiveResolvedNEQConstraints.insert( *pos );
@@ -251,15 +249,14 @@ namespace smtrat
                                 }
                                 if( (*bound)->origins().empty() )
                                 {
-                                    auto unequalCons = mBoundToUnequalConstraintMap.find( *bound );
-                                    if( unequalCons != mBoundToUnequalConstraintMap.end() )
+                                    if( (*bound)->neqRepresentation() != NULL )
                                     {
-                                        vector< const Bound<Numeric>* >* uebounds = mConstraintToBound[unequalCons->second];
+                                        vector< const Bound<Numeric>* >* uebounds = mConstraintToBound[(*bound)->neqRepresentation()];
                                         assert( uebounds != NULL );
                                         assert( uebounds->size() == 2 );
                                         if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() )
                                         {
-                                            auto pos = mActiveResolvedNEQConstraints.find( unequalCons->second );
+                                            auto pos = mActiveResolvedNEQConstraints.find( (*bound)->neqRepresentation() );
                                             if( pos != mActiveResolvedNEQConstraints.end() )
                                             {
                                                 auto entry = mActiveUnresolvedNEQConstraints.insert( *pos );
@@ -1208,7 +1205,7 @@ namespace smtrat
                     vector< const Bound<Numeric>* >* boundVectorB = new vector< const Bound<Numeric>* >();
                     boundVectorB->push_back( result.first );
                     mConstraintToBound[_constraint] = boundVectorB;
-                    mBoundToUnequalConstraintMap[result.first] = _constraint;
+                    result.first->setNeqRepresentation( _constraint );
                 }
                 #ifdef LRA_SIMPLE_THEORY_PROPAGATION
                 if( result.second.first != NULL && !result.second.first->isInfinite() )
@@ -1251,7 +1248,7 @@ namespace smtrat
                 if( _constraint->relation() == CR_NEQ )
                 {
                     mConstraintToBound[_constraint]->push_back( result.first );
-                    mBoundToUnequalConstraintMap[result.first] = _constraint;
+                    result.first->setNeqRepresentation( _constraint );
                 }
                 #ifdef LRA_SIMPLE_THEORY_PROPAGATION
                 if( result.second.first != NULL && !result.second.first->isInfinite() )
@@ -1299,6 +1296,30 @@ namespace smtrat
                     deduction->addSubformula( new Formula( NOT ) );
                     deduction->back()->addSubformula( (*lbound)->pAsConstraint() );
                     addDeduction( deduction );
+                    if( (*lbound)->neqRepresentation() != NULL && _bound.type() == Bound<Numeric>::EQUAL )
+                    {
+                        if( (*lbound)->limit().mainPart() == _bound.limit().mainPart() )
+                        {
+                            Formula* deductionB = new Formula( OR );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( _bound.pAsConstraint() );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( (*lbound)->neqRepresentation() );
+                            addDeduction( deductionB );
+                        }
+                    }
+                    else if( _bound.neqRepresentation() != NULL && (*lbound)->type() == Bound<Numeric>::EQUAL )
+                    {
+                        if( (*lbound)->limit().mainPart() == _bound.limit().mainPart() )
+                        {
+                            Formula* deductionB = new Formula( OR );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( _bound.neqRepresentation() );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( (*lbound)->pAsConstraint() );
+                            addDeduction( deductionB );
+                        }
+                    }
                 }
                 else
                 {
@@ -1319,6 +1340,30 @@ namespace smtrat
                     deduction->addSubformula( new Formula( NOT ) );
                     deduction->back()->addSubformula( (*ubound)->pAsConstraint() );
                     addDeduction( deduction );
+                    if( (*ubound)->neqRepresentation() != NULL && _bound.type() == Bound<Numeric>::EQUAL )
+                    {
+                        if( (*ubound)->limit().mainPart() == _bound.limit().mainPart() )
+                        {
+                            Formula* deductionB = new Formula( OR );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( _bound.pAsConstraint() );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( (*ubound)->neqRepresentation() );
+                            addDeduction( deductionB );
+                        }
+                    }
+                    else if( _bound.neqRepresentation() != NULL && (*ubound)->type() == Bound<Numeric>::EQUAL )
+                    {
+                        if( (*ubound)->limit().mainPart() == _bound.limit().mainPart() )
+                        {
+                            Formula* deductionB = new Formula( OR );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( _bound.neqRepresentation() );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( (*ubound)->pAsConstraint() );
+                            addDeduction( deductionB );
+                        }
+                    }
                 }
                 else
                 {
