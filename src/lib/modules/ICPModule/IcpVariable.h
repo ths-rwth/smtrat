@@ -54,10 +54,12 @@ namespace icp
             bool                                       mLinear;
             
             // interval Bound generation
-            bool                                       mBoundsSet; // indicates if bounds have already been set -> only update them, else create new formula in passed Formula
-            bool                                       mUpdated;
-            smtrat::Formula::iterator                  mLeftBound;
-            smtrat::Formula::iterator                  mRightBound;
+            std::pair<bool,bool>                       mBoundsSet; // indicates if bounds have already been set -> only update them, else create new formula in passed Formula
+            std::pair<bool,bool>                       mUpdated;
+            smtrat::Formula*                           mInternalLeftBound;
+            smtrat::Formula*                           mInternalRightBound;
+            smtrat::Formula::iterator                  mExternalLeftBound;
+            smtrat::Formula::iterator                  mExternalRightBound;
 
         public:
 
@@ -77,10 +79,12 @@ namespace icp
                 mInterval( _interval ),
                 mActive( false ),
                 mLinear( true ),
-                mBoundsSet( false ),
-                mUpdated( false ),
-                mLeftBound ( ),
-                mRightBound ( )
+                mBoundsSet( std::make_pair(false,false) ),
+                mUpdated( std::make_pair(false,false) ),
+                mInternalLeftBound ( ),
+                mInternalRightBound ( ),
+                mExternalLeftBound ( ),
+                mExternalRightBound ( )
             {
                 assert( (*_interval).first == mVar );
             }
@@ -97,10 +101,12 @@ namespace icp
                 mInterval( _interval ),
                 mActive( _candidate->isActive() ),
                 mLinear( _candidate->isLinear() ),
-                mBoundsSet (false),
-                mUpdated( false ),
-                mLeftBound ( ),
-                mRightBound ( )
+                mBoundsSet (std::make_pair(false,false)),
+                mUpdated( std::make_pair(false,false) ),
+                mInternalLeftBound ( ),
+                mInternalRightBound ( ),
+                mExternalLeftBound ( ),
+                mExternalRightBound ( )
             {
                 assert( (*_interval).first == mVar );
                 addCandidate( _candidate );
@@ -144,7 +150,7 @@ namespace icp
 
             void updateInterval( GiNaCRA::DoubleInterval _interval )
             {
-                mUpdated = true;
+                mUpdated = std::make_pair(true,true);
                 (*mInterval).second = _interval;
             }
 
@@ -222,46 +228,88 @@ namespace icp
                 return mLinear;
             }
             
-            void setUpdated(bool _updated=true)
+            void setUpdated(bool _internal=true, bool _external=true)
             {
-                mUpdated = _updated;
+                mUpdated = std::make_pair(_internal,_external);
             }
             
-            bool isUpdated() const
+            bool isInternalUpdated() const
             {
-                return mUpdated;
+                return mUpdated.first;
             }
             
-            smtrat::Formula::iterator leftBound() const
+            bool isExternalUpdated() const
             {
-                assert(mBoundsSet);
-                return mLeftBound;
+                return mUpdated.second;
             }
             
-            smtrat::Formula::iterator rightBound() const
+            smtrat::Formula* internalLeftBound() const
             {
-                assert(mBoundsSet);
-                return mRightBound;
+                assert(mBoundsSet.first);
+                return mInternalLeftBound;
             }
             
-            void setLeftBound( smtrat::Formula::iterator _left )
+            smtrat::Formula* internalRightBound() const
             {
-                mLeftBound = _left;
+                assert(mBoundsSet.first);
+                return mInternalRightBound;
             }
             
-            void setRightBound( smtrat::Formula::iterator _right )
+            smtrat::Formula::iterator externalLeftBound() const
             {
-                mRightBound = _right;
+                assert(mBoundsSet.second);
+                return mExternalLeftBound;
             }
             
-            void boundsSet()
+            smtrat::Formula::iterator externalRightBound() const
             {
-                mBoundsSet = true;
+                assert(mBoundsSet.second);
+                return mExternalRightBound;
             }
             
-            bool isBoundsSet()
+            void setInternalLeftBound( smtrat::Formula* _left )
             {
-                return mBoundsSet;
+                mInternalLeftBound = _left;
+            }
+            
+            void setInternalRightBound( smtrat::Formula* _right )
+            {
+                mInternalRightBound = _right;
+            }
+            
+            void setExternalLeftBound( smtrat::Formula::iterator _left )
+            {
+                mExternalLeftBound = _left;
+            }
+            
+            void setExternalRightBound( smtrat::Formula::iterator _right )
+            {
+                mExternalRightBound = _right;
+            }
+            
+            void boundsSet(bool _internal=true, bool _external=true)
+            {
+                mBoundsSet = std::make_pair(_internal,_external);
+            }
+            
+            void internalBoundsSet(bool _internal=true)
+            {
+                mBoundsSet = std::make_pair(_internal,mBoundsSet.second);
+            }
+            
+            void externalBoundsSet(bool _external=true)
+            {
+                mBoundsSet = std::make_pair(mBoundsSet.first,_external);
+            }
+            
+            bool isInternalBoundsSet()
+            {
+                return mBoundsSet.first;
+            }
+            
+            bool isExternalBoundsSet()
+            {
+                return mBoundsSet.second;
             }
             
             const bool isOriginal() const
