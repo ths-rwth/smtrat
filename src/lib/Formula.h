@@ -86,7 +86,7 @@ namespace smtrat
         public:
 
             /// A pool to manage all generated constraints.
-            static ConstraintPool* mpConstraintPool;
+            static std::unique_ptr<ConstraintPool> mpConstraintPool;
 
 
             /**

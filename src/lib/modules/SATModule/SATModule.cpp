@@ -1353,7 +1353,7 @@ FindSecond:
         //        }
 
         // Activity based decision:
-        while( next == var_Undef || value( next ) != l_Undef ||!decision[next] )
+        while( next == var_Undef || value( next ) != l_Undef || !decision[next] )
         {
             if( order_heap.empty() )
             {
@@ -1795,7 +1795,6 @@ NextClause:
                     Formula notLemma = Formula( NOT );
                     notLemma.addSubformula( new Formula( **deduction ) );
                     addAssumptionToCheck( notLemma, false, moduleName( (*backend)->type() ) + "_lemma" );
-                    notLemma.pruneBack();
                 }
                 #endif
                 #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION

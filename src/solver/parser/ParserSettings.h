@@ -45,6 +45,8 @@ namespace smtrat {
         {
 
         }
+        
+        virtual ~ParserSettings() {}
 
         void parseCmdOption(const std::string& keyValueString)
         {

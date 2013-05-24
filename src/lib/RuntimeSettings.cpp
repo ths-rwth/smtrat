@@ -41,6 +41,10 @@ namespace smtrat{
     {
         
     }
+    
+    RuntimeSettings::~RuntimeSettings()
+    {}
+
 
     void RuntimeSettings::parseCmdOption(const std::string& keyValueString) {
         
