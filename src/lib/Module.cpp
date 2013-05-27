@@ -731,10 +731,10 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_Validation
                     if( validationSettings->logTCalls() )
                     {
-                        if( result != Unknown )
-                        {
+//                        if( result != Unknown )
+//                        {
                             addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
-                        }
+//                        }
                     }
                     #endif
                     ++module;
