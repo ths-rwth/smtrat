@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-05-15
+ * @version 2013-05-27
  */
 
 //#define MODULE_VERBOSE
@@ -268,11 +268,15 @@ namespace smtrat
             #else
             // construct an infeasible subset
             assert( mCAD.setting().computeConflictGraph );
+            ConflictGraph g = ConflictGraph( mConflictGraph );
+//            cout << "g: " << endl << g << endl;
+            g.removeConstraintVertex(mConstraints.size()-1); // remove last vertex
+//            cout << "g (after removal): " << endl << g << endl;
+            g.invert();
             #ifdef MODULE_VERBOSE
-            cout << "Constructing a minimal infeasible set from the ";
-            cout << "conflict graph: " << endl << mConflictGraph << endl << endl;
+            cout << "Constructing a minimal infeasible set from the conflict graph: " << endl << g << endl << endl;
             #endif
-            vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( mConflictGraph );
+            vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( g );
 
             #ifdef SMTRAT_CAD_VARIABLEBOUNDS
             set<const Formula*> boundConstraints = mVariableBounds.getOriginsOfBounds();
@@ -563,14 +567,16 @@ namespace smtrat
 
     /**
      * Computes an infeasible subset of the current set of constraints by approximating a vertex cover of the given conflict graph.
+     * 
+     * Caution! The method is destructive with regard to the conflict graph.
      *
      * Heuristics:
      * Select the highest-degree vertex for the vertex cover and remove it as long as we have edges in the graph.
      *
-     * @param conflictGraph
+     * @param conflictGraph the conflict graph is destroyed during the computation
      * @return an infeasible subset of the current set of constraints
      */
-    inline vec_set_const_pFormula CADModule::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph conflictGraph )
+    inline vec_set_const_pFormula CADModule::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph& conflictGraph )
     {
         // initialize MIS with the last constraint
         vec_set_const_pFormula mis = vec_set_const_pFormula( 1, std::set<const Formula*>() );
