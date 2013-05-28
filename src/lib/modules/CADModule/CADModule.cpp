@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-05-27
+ * @version 2013-05-28
  */
 
 //#define MODULE_VERBOSE
@@ -583,7 +583,7 @@ namespace smtrat
         mis.front().insert( getConstraintAt( mConstraints.size() - 1 ) );    // the last constraint is assumed to be always in the MIS
         if( mConstraints.size() > 1 )
         { // construct set cover by greedy heuristic
-            list<ConflictGraph::ConstraintVertex> setCover = list<ConflictGraph::ConstraintVertex>();
+            list<ConflictGraph::Vertex> setCover = list<ConflictGraph::Vertex>();
             long unsigned vertex = conflictGraph.maxDegreeVertex();
             while( conflictGraph.degree( vertex ) > 0 )
             {
@@ -598,7 +598,7 @@ namespace smtrat
                 vertex = conflictGraph.maxDegreeVertex();
             }
             // collect constraints according to the vertex cover
-            for( list<ConflictGraph::ConstraintVertex>::const_iterator v = setCover.begin(); v != setCover.end(); ++v )
+            for( list<ConflictGraph::Vertex>::const_iterator v = setCover.begin(); v != setCover.end(); ++v )
                 mis.front().insert( getConstraintAt( *v ) );
         }
         return mis;
