@@ -1272,8 +1272,6 @@ namespace smtrat
                                     cout << "No new box found. Return false." << endl;
 #endif
                                     // no new Box to select -> finished
-                                    boxFeasible = false;
-
                                     generateInfeasibleSubset();
 
                                     return foundAnswer(False);
@@ -1313,8 +1311,6 @@ namespace smtrat
                             cout << "No new box found. Return false." << endl;
 #endif
                             // no new Box to select -> finished
-                            boxFeasible = false;
-
                             generateInfeasibleSubset();
 
                             return foundAnswer(False);
@@ -1369,8 +1365,6 @@ namespace smtrat
                     cout << "No new box found. Return false." << endl;
 #endif
                     // no new Box to select -> finished
-                    boxFeasible = false;
-
                     generateInfeasibleSubset();
                     
                     return foundAnswer(False);
@@ -2139,9 +2133,6 @@ namespace smtrat
         cout << "[ICP] Call mLRAModule" << endl;
 #endif
 
-        // clear center constraints
-        clearCenterConstraintsFromValidationFormula();
-
         // create new center constraints and add to validationFormula
         for ( auto variableIt = mVariables.begin(); variableIt != mVariables.end(); ++variableIt)
         {
@@ -2179,7 +2170,7 @@ namespace smtrat
         mValidationFormula->getPropositions();
         Answer centerFeasible = mLRA.isConsistent();
         
-        mLRA.clearDeductions();
+//        mLRA.clearDeductions();
         
         if ( centerFeasible == True )
         {
@@ -2438,10 +2429,7 @@ namespace smtrat
                     }
                 }
             }
-            clearCenterConstraintsFromValidationFormula();
-            
             return std::pair<bool,bool>(newConstraintAdded,true);
-            
         }
         else if ( centerFeasible == False || centerFeasible == Unknown )
         {
@@ -2500,7 +2488,6 @@ namespace smtrat
             clearCenterConstraintsFromValidationFormula();
             
             boxCheck = checkBoxAgainstLinearFeasibleRegion();
-               
         }
         return std::pair<bool,bool>(newConstraintAdded,boxCheck);
     }
@@ -3103,7 +3090,7 @@ namespace smtrat
         
         Answer boxCheck = mLRA.isConsistent();
         
-        mLRA.clearDeductions();
+//        mLRA.clearDeductions();
         
 #ifdef ICPMODULE_DEBUG
         cout << "Boxcheck: " << boxCheck << endl;

@@ -104,9 +104,25 @@ namespace smtrat
     {
         for ( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end();  )
         {
-            ContractionCandidate* toDelete = (*candidateIt).second;
             candidateIt = mCandidates.erase(candidateIt);
-//            delete toDelete;
+        }
+    }
+    
+    void ContractionCandidateManager::closure (ContractionCandidate* _candidate, std::set<ContractionCandidate*>& _candidates) const
+    {
+        std::pair<std::set<ContractionCandidate*>::iterator, bool> res = _candidates.insert(_candidate);
+        if ( res.second )
+        {
+            for ( auto symbolIt = _candidate->constraint()->variables().begin(); symbolIt != _candidate->constraint()->variables().end(); ++symbolIt )
+            {
+                for ( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
+                {
+                    if ( (*candidateIt).second->lhs() == ex_to<symbol>((*symbolIt).second) )
+                    {
+                        mInstance->closure((*candidateIt).second, _candidates);
+                    }
+                }
+            }
         }
     }
     

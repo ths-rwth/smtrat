@@ -400,6 +400,22 @@ namespace smtrat
             }
             
             /**
+             * Creates a set of contraction candidate pointers from the candidates which have been used so far since the last reset of the tree.
+             * @param _candidates Reference to the resulting set of contraction candidate pointers.
+             */
+            void overallContractions(std::set<ContractionCandidate*>& _candidates) const
+            {
+                if ( mParent != NULL)
+                {
+                    mParent->overallContractions(_candidates);
+                }
+                for ( std::set<ContractionCandidate*>::iterator ccIt = mAppliedContractions.begin(); ccIt != mAppliedContractions.end(); ++ccIt )
+                {
+                    _candidates.insert(*ccIt);
+                }
+            }
+            
+            /**
              * Returns the number of nodes in the subtree including the actual node.
              * @return 
              */

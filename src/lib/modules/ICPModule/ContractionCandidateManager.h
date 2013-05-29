@@ -95,6 +95,13 @@ namespace smtrat
          */
         void clearCandidates ();
         
+        /**
+         * Calculates the closure of a certain candidate according to the variables contained.
+         * @param _candidate
+         * @return the set of candidates in the closure of _candidate
+         */
+        void closure (ContractionCandidate* _candidate, std::set<ContractionCandidate*>& _candidates) const;
+        
     private:
         /**
          * Auxiliary Functions
