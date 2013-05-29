@@ -8,7 +8,7 @@
 # Project sourceforge page: http://smtrat.sourceforge.net/    #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2013-04-18                                         #
+# Version: 2013-05-29                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 BeginDefineModule()
@@ -34,7 +34,9 @@ if(${enabled})
     set( SMTRAT_CADSETTING "5" CACHE STRING "Setting 1 w/o theory propagation" )
     set( SMTRAT_CADSETTING "6" CACHE STRING "Setting 1 w/o minimal infeasible subset generation" )
     set( SMTRAT_CADSETTING "7" CACHE STRING "Setting 1 w/o projection order optimization" )
-    set( SMTRAT_CADSETTING_VALUES "1" "2" "3" "4" "5" "6" "7" )
+    set( SMTRAT_CADSETTING "8" CACHE STRING "Setting 1 with 1-most-degree-vertex MIS heuristic" )
+    set( SMTRAT_CADSETTING "9" CACHE STRING "Setting 1 with 2-most-degree-vertices MIS heuristic" )
+    set( SMTRAT_CADSETTING_VALUES "1" "2" "3" "4" "5" "6" "7" "8" "9" )
     set_property( CACHE SMTRAT_CADSETTING PROPERTY STRINGS ${SMTRAT_CADSETTING_VALUES} )
     list( FIND SMTRAT_CADSETTING_VALUES ${SMTRAT_CADSETTING} SMTRAT_CADSETTING_INDEX )
     if( ${SMTRAT_CADSETTING_INDEX} EQUAL -1 )
@@ -54,6 +56,10 @@ if(${enabled})
         set( SMTRAT_CADSETTING_6 TRUE )
     elseif( ${SMTRAT_CADSETTING_INDEX} EQUAL 6 )
         set( SMTRAT_CADSETTING_7 TRUE )
+    elseif( ${SMTRAT_CADSETTING_INDEX} EQUAL 7 )
+        set( SMTRAT_CADSETTING_8 TRUE )
+    elseif( ${SMTRAT_CADSETTING_INDEX} EQUAL 8 )
+        set( SMTRAT_CADSETTING_9 TRUE )
     endif()
 
     configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/CADModule/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/CADModule/config.h )

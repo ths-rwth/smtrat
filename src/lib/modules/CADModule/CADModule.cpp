@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-05-28
+ * @version 2013-05-29
  */
 
 //#define MODULE_VERBOSE
@@ -63,6 +63,8 @@ using namespace std;
 #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
 //#define SMTRAT_CAD_DISABLE_MIS
 //#define CHECK_SMALLER_MUSES
+//#define SMTRAT_CAD_ONEMOSTDEGREEVERTEX_MISHEURISTIC
+//#define SMTRAT_CAD_TWOMOSTDEGREEVERTICES_MISHEURISTIC
 #ifdef SMTRAT_CAD_DISABLE_SMT
     #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
     #define SMTRAT_CAD_DISABLE_MIS
@@ -268,11 +270,21 @@ namespace smtrat
             #else
             // construct an infeasible subset
             assert( mCAD.setting().computeConflictGraph );
+            // copy conflict graph for destructive heuristics and invert it
             ConflictGraph g = ConflictGraph( mConflictGraph );
-//            cout << "g: " << endl << g << endl;
-            g.removeConstraintVertex(mConstraints.size()-1); // remove last vertex
-//            cout << "g (after removal): " << endl << g << endl;
             g.invert();
+            #if defined SMTRAT_CAD_ONEMOSTDEGREEVERTEX_MISHEURISTIC
+                // remove the lowest-degree vertex (highest degree in inverted graph)
+                g.removeConstraintVertex(g.maxDegreeVertex());
+            #elif defined SMTRAT_CAD_TWOMOSTDEGREEVERTICES_MISHEURISTIC
+                // remove the two lowest-degree vertices (highest degree in inverted graph)
+                g.removeConstraintVertex(g.maxDegreeVertex());
+                g.removeConstraintVertex(g.maxDegreeVertex());
+            #else
+                // remove last vertex, assuming it is part of the MIS
+                g.removeConstraintVertex(mConstraints.size()-1);
+            #endif
+            
             #ifdef MODULE_VERBOSE
             cout << "Constructing a minimal infeasible set from the conflict graph: " << endl << g << endl << endl;
             #endif
