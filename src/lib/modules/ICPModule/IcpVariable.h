@@ -150,7 +150,7 @@ namespace icp
 
             void updateInterval( GiNaCRA::DoubleInterval _interval )
             {
-                mUpdated = std::make_pair(true,true);
+                mUpdated = std::pair<bool,bool>(true,true);
                 (*mInterval).second = _interval;
             }
 
@@ -295,11 +295,13 @@ namespace icp
             void internalBoundsSet(bool _internal=true)
             {
                 mBoundsSet = std::make_pair(_internal,mBoundsSet.second);
+                mUpdated = std::pair<bool,bool>(false, mUpdated.second);
             }
             
             void externalBoundsSet(bool _external=true)
             {
                 mBoundsSet = std::make_pair(mBoundsSet.first,_external);
+                mUpdated = std::pair<bool,bool>(mUpdated.first, false);
             }
             
             bool isInternalBoundsSet()

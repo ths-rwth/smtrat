@@ -408,6 +408,7 @@ namespace smtrat
                            {
                                mIntervals[ex_to<symbol>((*varIt).second)] = tmp[ex_to<symbol>((*varIt).second)];
                                mVariables[ex_to<symbol>((*varIt).second)].setUpdated();
+//                               cout << "Assert set for Updated " << ex_to<symbol>((*varIt).second) << endl;
                            }
                            else if ( tmp.find(ex_to<symbol>((*varIt).second)) == tmp.end() )
                            {
@@ -832,6 +833,7 @@ namespace smtrat
                     mHistoryRoot->addInterval((*intervalIt).first, GiNaCRA::DoubleInterval((*intervalIt).second));
                     mHistoryActual->addInterval((*intervalIt).first, GiNaCRA::DoubleInterval((*intervalIt).second));
                 }
+
             }
 
             // get intervals for slackvariables
@@ -966,29 +968,14 @@ namespace smtrat
                         invalidBox = true;
                         break;
                     }
+                    
+                    if ( relativeContraction > 0 )
+                    {
+                        mVariables[candidate->lhs()].setUpdated();
+//                        cout << "Contraction set for Updated " << candidate->lhs() << endl;
+                    }
 
                     // update weight of the candidate
-//                    unsigned id = mCandidateManager->getInstance()->getId(candidate);
-
-//                    cout << "ID: " << id << " Weight: " << candidate->RWA() << endl;
-//                    printIcpRelevantCandidates();
-
-//                    bool foundCandidate = false;
-//                    for( auto candidatesIt = mIcpRelevantCandidates.begin(); candidatesIt != mIcpRelevantCandidates.end(); )
-//                    {
-//                        if ( (*candidatesIt).second == id )
-//                        {
-////                            candidatesIt = mIcpRelevantCandidates.erase(candidatesIt);
-//                            foundCandidate = true;
-//                            break;
-//                        }
-//                        else
-//                        {
-//                            ++candidatesIt;
-//                        }
-//                    }
-//                    assert(foundCandidate);
-
                     removeCandidateFromRelevant(candidate);
                     
                     candidate->setPayoff(relativeContraction);
@@ -1000,14 +987,8 @@ namespace smtrat
                         addCandidateToRelevant(candidate);
                     }
                     
-//                    const std::pair<double, unsigned> newCandidate = pair<double, unsigned>(candidate->RWA(), id);
-//                    mIcpRelevantCandidates.insert(newCandidate);
-                    
                     // update history node
                     mHistoryActual->addContraction(candidate);
-
-                    // set variable as updated
-                    mVariables[candidate->derivationVar()].setUpdated();
 
                     if ( (relativeContraction < contractionThreshold && !splitOccurred)  || mIntervals[candidate->derivationVar()].diameter() <= targetDiameter )
                     {
@@ -1922,14 +1903,12 @@ namespace smtrat
             
             // update mIntervals - usually this happens when changing to a different box, but in this case it has to be done manually, otherwise mIntervals is not affected.
             mIntervals[variable] = originalInterval.intersect(resultB);
-            mVariables[variable].setUpdated();
             _relativeContraction = (originalDiameter - originalInterval.intersect(resultB).diameter()) / originalInterval.diameter();
         }
         else
         {
             // set intervals
             mIntervals[variable] = mIntervals[variable].intersect(resultA);
-            mVariables[variable].setUpdated();
 #ifdef ICPMODULE_DEBUG
             cout << "      New interval: " << variable << " = ";
             mIntervals[variable].dbgprint();
@@ -2566,7 +2545,6 @@ namespace smtrat
                     tmpRightInt.cutUntil(tmp.midpoint());
                     tmpRightInt.setLeftType(GiNaCRA::DoubleInterval::WEAK_BOUND);
                     mIntervals[variable] = tmpRightInt;
-                    mVariables[variable].setUpdated();
                     GiNaCRA::evaldoubleintervalmap tmpRight = GiNaCRA::evaldoubleintervalmap();
 
                     for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
@@ -2582,7 +2560,6 @@ namespace smtrat
                     tmpLeftInt.cutFrom(tmp.midpoint());
                     tmpLeftInt.setRightType(GiNaCRA::DoubleInterval::STRICT_BOUND);
                     mIntervals[variable] = tmpLeftInt;
-                    mVariables[variable].setUpdated();
                     GiNaCRA::evaldoubleintervalmap tmpLeft = GiNaCRA::evaldoubleintervalmap();
 
                     for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
@@ -2609,6 +2586,9 @@ namespace smtrat
                     // only perform one split at a time and then contract
                     result.first = true;
                     result.second = variable;
+                    
+                    mVariables[variable].setUpdated();
+//                    cout << "Split set for Updated " << variable << endl;
 
                     return result;
                 }
@@ -2648,7 +2628,6 @@ namespace smtrat
                     tmpRightInt.cutUntil(tmp.midpoint());
                     tmpRightInt.setLeftType(GiNaCRA::DoubleInterval::WEAK_BOUND);
                     mIntervals[variable] = tmpRightInt;
-                    mVariables[variable].setUpdated();
                     GiNaCRA::evaldoubleintervalmap tmpRight = GiNaCRA::evaldoubleintervalmap();
 
                     for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
@@ -2664,7 +2643,6 @@ namespace smtrat
                     tmpLeftInt.cutFrom(tmp.midpoint());
                     tmpLeftInt.setRightType(GiNaCRA::DoubleInterval::STRICT_BOUND);
                     mIntervals[variable] = tmpLeftInt;
-                    mVariables[variable].setUpdated();
                     GiNaCRA::evaldoubleintervalmap tmpLeft = GiNaCRA::evaldoubleintervalmap();
 
                     for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
@@ -2691,6 +2669,9 @@ namespace smtrat
                     // only perform one split at a time and then contract
                     result.first = true;
                     result.second = variable;
+                    
+                    mVariables[variable].setUpdated();
+//                    cout << "Split set for Updated " << variable << endl;
 
                     return result;
                 }
@@ -2793,13 +2774,19 @@ namespace smtrat
             assert(mIntervals.find((*intervalIt).first) != mIntervals.end());
 
             // only update intervals which changed
-            if ( mIntervals[(*intervalIt).first] != (*intervalIt).second )
+            if ( !mIntervals[(*intervalIt).first].isEqual((*intervalIt).second) )
             {
+//                mIntervals[(*intervalIt).first].dbgprint();
+//                cout << " == ";
+//                (*intervalIt).second.dbgprint();
+//                cout << "       = " << mIntervals[(*intervalIt).first].isEqual((*intervalIt).second) << endl;
+                
                 mIntervals[(*intervalIt).first] = (*intervalIt).second;
 
                 // update iterators to intervals as well in icpVariables
                 assert( mVariables.find((*intervalIt).first) != mVariables.end() );
                 mVariables[(*intervalIt).first].updateInterval((*intervalIt).second);
+//                cout << "SetBox set for Updated " << (*intervalIt).first << endl;
             }
         }
         // set actual node as selection
@@ -2929,7 +2916,7 @@ namespace smtrat
             const symbol tmpSymbol = ex_to<symbol>((*variablesIt).second);
             if ( mVariables.find(tmpSymbol) != mVariables.end() )
             {
-                if( mVariables[tmpSymbol].isExternalUpdated() || !mVariables[tmpSymbol].isExternalBoundsSet() )
+                if( !mVariables[tmpSymbol].isExternalBoundsSet() || mVariables[tmpSymbol].isExternalUpdated())
                 {
                     // generate both bounds, left first
                     numeric bound = GiNaC::rationalize( mVariables[tmpSymbol].interval()->second.left() );
@@ -2948,9 +2935,6 @@ namespace smtrat
                             break;
                         case GiNaCRA::DoubleInterval::WEAK_BOUND:
                             leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
-                            break;
-                        default:
-                            leftTmp = NULL;
                             break;
                     }
                     if ( leftTmp != NULL )
@@ -3002,9 +2986,6 @@ namespace smtrat
                         case GiNaCRA::DoubleInterval::WEAK_BOUND:
                             rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
                             break;
-                        default:
-                            rightTmp = NULL;
-                            break;
                     }
                     if ( rightTmp != NULL )
                     {
@@ -3041,6 +3022,12 @@ namespace smtrat
                     mVariables[tmpSymbol].externalBoundsSet();
                     mVariables[tmpSymbol].setUpdated(mVariables[tmpSymbol].isInternalUpdated(),false);
                 }
+                else
+                {
+//                    cout << "No update!" << endl;
+                    // do nothing as the bounds have been set and are not to be updated.
+                }
+                
             }
         }
         return newAdded;
@@ -3068,9 +3055,7 @@ namespace smtrat
                 // create new tuple for mIcpRelevantCandidates
                 mCandidateManager->getInstance()->getCandidate(tmpCandidate.second)->setPayoff(_relativeContraction );
                 mCandidateManager->getInstance()->getCandidate(tmpCandidate.second)->calcRWA();
-
-                const std::pair<double, unsigned> tmpUpdated = pair<double, unsigned>(mCandidateManager->getInstance()->getCandidate(tmpCandidate.second)->RWA(), tmpCandidate.second );
-
+                
                 updatedCandidates.insert(*candidatesIt);
             }
         }
@@ -3101,111 +3086,21 @@ namespace smtrat
     
     bool ICPModule::checkBoxAgainstLinearFeasibleRegion()
     {
-//        GiNaCRA::evaldoubleintervalmap tmp = GiNaCRA::evaldoubleintervalmap();
-//        for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
-//        {
-//            tmp.insert((*intervalIt));
-//        }
-//        std::set<Formula*> addedBoundaries = createConstraintsFromBounds(tmp);
-        
-        std::set<Formula*> addedBoundaries;
-        
-        for( auto variablesIt = mVariables.begin(); variablesIt != mVariables.end(); ++variablesIt )
+        GiNaCRA::evaldoubleintervalmap tmp = GiNaCRA::evaldoubleintervalmap();
+        for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
         {
-            if( (*variablesIt).second.isOriginal() )
-            {
-                cout << "Try: " << (*variablesIt).second.var() << ", Updated: "<< (*variablesIt).second.isInternalUpdated() << ", BoundsSet: "<< (*variablesIt).second.isInternalBoundsSet() << endl;
-                if( !(*variablesIt).second.isInternalUpdated() && (*variablesIt).second.isInternalBoundsSet() )
-                {
-                    addedBoundaries.insert((*variablesIt).second.internalLeftBound());
-                    addedBoundaries.insert((*variablesIt).second.internalRightBound());
-                }
-                else
-                {
-                    // generate both bounds, left first
-                    numeric bound = GiNaC::rationalize( (*variablesIt).second.interval()->second.left() );
-                    GiNaC::ex leftEx = (*variablesIt).second.var() - bound;
-                    GiNaC::symtab variables;
-                    variables.insert(std::pair<string, ex>((*variablesIt).first.get_name(), (*variablesIt).second.var()));
-
-                    const Constraint* leftTmp;
-                    switch ((*variablesIt).second.interval()->second.leftType())
-                    {
-                        case GiNaCRA::DoubleInterval::INFINITY_BOUND:
-                            leftTmp = NULL;
-                            break;
-                        case GiNaCRA::DoubleInterval::STRICT_BOUND:
-                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
-                            break;
-                        case GiNaCRA::DoubleInterval::WEAK_BOUND:
-                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
-                            break;
-                        default:
-                            leftTmp = NULL;
-                    }
-                    if ( leftTmp != NULL )
-                    {
-                        Formula* leftBound = new Formula(leftTmp);
-                        (*variablesIt).second.setInternalLeftBound(leftBound);
-                        addedBoundaries.insert(leftBound);
-    #ifdef ICPMODULE_DEBUG
-                        cout << "Created lower boundary constraint: ";
-                        leftBound->print();
-                        cout << endl;
-    #endif
-                    }
-
-                    // right:
-                    bound = GiNaC::rationalize((*variablesIt).second.interval()->second.right());
-                    GiNaC::ex rightEx = (*variablesIt).second.var() - bound;
-
-                    const Constraint* rightTmp;
-                    switch ((*variablesIt).second.interval()->second.rightType())
-                    {
-                        case GiNaCRA::DoubleInterval::INFINITY_BOUND:
-                            rightTmp = NULL;
-                            break;
-                        case GiNaCRA::DoubleInterval::STRICT_BOUND:
-                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
-                            break;
-                        case GiNaCRA::DoubleInterval::WEAK_BOUND:
-                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
-                            break;
-                        default:
-                            rightTmp = NULL;
-                    }
-                    if ( rightTmp != NULL )
-                    {
-                        Formula* rightBound = new Formula(rightTmp);
-                        (*variablesIt).second.setInternalRightBound(rightBound);
-                        addedBoundaries.insert(rightBound);
-    #ifdef ICPMODULE_DEBUG
-                        cout << "Created upper boundary constraint: ";
-                        rightBound->print();
-                        cout << endl;
-    #endif
-                    }
-                    if( rightTmp != NULL && leftTmp != NULL )
-                    {
-                        (*variablesIt).second.internalBoundsSet();
-                    }
-                    (*variablesIt).second.setUpdated(false,(*variablesIt).second.isExternalUpdated());
-                }
-            }
+            tmp.insert((*intervalIt));
         }
+        std::set<Formula*> addedBoundaries = createConstraintsFromBounds(tmp);
         
         for( auto formulaIt = addedBoundaries.begin(); formulaIt != addedBoundaries.end(); ++formulaIt )
         {            
-            cout << "Inform." << endl;
-            Formula* tmp = new Formula(**formulaIt);
-            mLRA.inform(tmp->pConstraint());
-            mValidationFormula->addSubformula(tmp);
+            mLRA.inform((*formulaIt)->pConstraint());
+            mValidationFormula->addSubformula((*formulaIt));
             mValidationFormula->getPropositions();
-            cout << "Assert" << endl;
             mLRA.assertSubformula(mValidationFormula->last());
-            
         }
-        mLRA.printReceivedFormula();
+        
         Answer boxCheck = mLRA.isConsistent();
         
         mLRA.clearDeductions();
@@ -3234,19 +3129,12 @@ namespace smtrat
         // remove boundaries from mLRA module after boxChecking.
         for (auto formulaIt = mValidationFormula->begin(); formulaIt != mValidationFormula->end(); )
         {
-            bool deleted = false;
-            for( auto boundaryIt = addedBoundaries.begin(); boundaryIt != addedBoundaries.end(); ++boundaryIt )
+            if ( addedBoundaries.find(*formulaIt) != addedBoundaries.end()) 
             {
-                if( (*boundaryIt)->pConstraint() == (*formulaIt)->pConstraint() )
-                {
-                    cout << "Remove: " << (*formulaIt)->constraint() << endl;
-                    mLRA.removeSubformula(formulaIt);
-                    formulaIt = mValidationFormula->erase(formulaIt);
-                    deleted = true;
-                    break;
-                }
+                mLRA.removeSubformula(formulaIt);
+                formulaIt = mValidationFormula->erase(formulaIt);
             }
-            if ( !deleted ) 
+            else
             {
                 ++formulaIt;
             }
@@ -3293,67 +3181,87 @@ namespace smtrat
             const symbol tmpSymbol = ex_to<symbol>((*variablesIt).second);
             if ( _map.find(tmpSymbol) != _map.end() )
             {
-                // generate both bounds, left first
-                numeric bound = GiNaC::rationalize( _map[tmpSymbol].left() );
-                GiNaC::ex leftEx = tmpSymbol - bound;
-                GiNaC::symtab variables;
-                variables.insert(std::pair<string, ex>((*variablesIt).first, (*variablesIt).second));
-
-                const Constraint* leftTmp;
-                switch (_map[tmpSymbol].leftType())
+//                cout << "Set: " << mVariables[tmpSymbol].isInternalBoundsSet() << " , Updated: " << mVariables[tmpSymbol].isInternalUpdated() << endl;
+                if ( !mVariables[tmpSymbol].isInternalBoundsSet() || mVariables[tmpSymbol].isInternalUpdated() )
                 {
-                    case GiNaCRA::DoubleInterval::INFINITY_BOUND:
-                        leftTmp = NULL;
-                        break;
-                    case GiNaCRA::DoubleInterval::STRICT_BOUND:
-                        leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
-                        break;
-                    case GiNaCRA::DoubleInterval::WEAK_BOUND:
-                        leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
-                        break;
-                    default:
-                        leftTmp = NULL;
-                }
-                if ( leftTmp != NULL )
-                {
-                    Formula* leftBound = new Formula(leftTmp);
-                    addedBoundaries.insert(leftBound);
-#ifdef ICPMODULE_DEBUG
-                    cout << "Created lower boundary constraint: ";
-                    leftBound->print();
-                    cout << endl;
-#endif
-                }
+                    // generate both bounds, left first
+                    numeric bound = GiNaC::rationalize( _map[tmpSymbol].left() );
+                    GiNaC::ex leftEx = tmpSymbol - bound;
+                    GiNaC::symtab variables;
+                    variables.insert(std::pair<string, ex>((*variablesIt).first, (*variablesIt).second));
 
-                // right:
-                bound = GiNaC::rationalize(_map[tmpSymbol].right());
-                GiNaC::ex rightEx = tmpSymbol - bound;
+                    const Constraint* leftTmp;
+                    switch (_map[tmpSymbol].leftType())
+                    {
+                        case GiNaCRA::DoubleInterval::INFINITY_BOUND:
+                            leftTmp = NULL;
+                            break;
+                        case GiNaCRA::DoubleInterval::STRICT_BOUND:
+                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
+                            break;
+                        case GiNaCRA::DoubleInterval::WEAK_BOUND:
+                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
+                            break;
+                    }
+                    if ( leftTmp != NULL )
+                    {
+                        Formula* leftBound = new Formula(leftTmp);
+                        mVariables[tmpSymbol].setInternalLeftBound(new Formula(leftTmp));
+                        addedBoundaries.insert(leftBound);
+    #ifdef ICPMODULE_DEBUG
+                        cout << "Created lower boundary constraint: ";
+                        leftBound->print();
+                        cout << endl;
+    #endif
+                    }
+
+                    // right:
+                    bound = GiNaC::rationalize(_map[tmpSymbol].right());
+                    GiNaC::ex rightEx = tmpSymbol - bound;
+
+                    const Constraint* rightTmp;
+                    switch (_map[tmpSymbol].rightType())
+                    {
+                        case GiNaCRA::DoubleInterval::INFINITY_BOUND:
+                            rightTmp = NULL;
+                            break;
+                        case GiNaCRA::DoubleInterval::STRICT_BOUND:
+                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
+                            break;
+                        case GiNaCRA::DoubleInterval::WEAK_BOUND:
+                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
+                            break;
+                    }
+                    if ( rightTmp != NULL )
+                    {
+                        Formula* rightBound = new Formula(rightTmp);
+                        mVariables[tmpSymbol].setInternalRightBound(new Formula(rightTmp));
+                        addedBoundaries.insert(rightBound);
+    #ifdef ICPMODULE_DEBUG
+                        cout << "Created upper boundary constraint: ";
+                        rightBound->print();
+                        cout << endl;
+    #endif
+                    }
+                    
+                    if (rightTmp != NULL && leftTmp != NULL)
+                    {
+                        mVariables[tmpSymbol].internalBoundsSet();
+                    }
+                    
+//                    cout << "Created New Bounds for: " << tmpSymbol << " ";
+//                    _map[tmpSymbol].dbgprint();
+//                    cout << endl;
+                }
+                else
+                {
+//                    cout << "Used old Bounds for " << tmpSymbol << " ";
+//                    _map[tmpSymbol].dbgprint();
+//                    cout << endl;
+                    addedBoundaries.insert(new Formula(mVariables[tmpSymbol].internalLeftBound()->pConstraint()));
+                    addedBoundaries.insert(new Formula(mVariables[tmpSymbol].internalRightBound()->pConstraint()));
+                }
                 
-                const Constraint* rightTmp;
-                switch (_map[tmpSymbol].rightType())
-                {
-                    case GiNaCRA::DoubleInterval::INFINITY_BOUND:
-                        rightTmp = NULL;
-                        break;
-                    case GiNaCRA::DoubleInterval::STRICT_BOUND:
-                        rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
-                        break;
-                    case GiNaCRA::DoubleInterval::WEAK_BOUND:
-                        rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
-                        break;
-                    default:
-                        rightTmp = NULL;
-                }
-                if ( rightTmp != NULL )
-                {
-                    Formula* rightBound = new Formula(rightTmp);
-                    addedBoundaries.insert(rightBound);
-#ifdef ICPMODULE_DEBUG
-                    cout << "Created upper boundary constraint: ";
-                    rightBound->print();
-                    cout << endl;
-#endif
-                }
             }
         }
         return addedBoundaries;

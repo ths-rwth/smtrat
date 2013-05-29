@@ -30,7 +30,7 @@
 #ifndef ICPMODULE_H
 #define ICPMODULE_H
 
-//#define ICP_BOXLOG
+#define ICP_BOXLOG
 //#define SMTRAT_DEVOPTION_VALIDATION_ICP
 
 #include <ginac/ginac.h>
