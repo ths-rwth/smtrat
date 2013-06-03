@@ -133,6 +133,11 @@ namespace smtrat
                 {
                     return mPosition;
                 }
+                
+                void setPosition( unsigned _position )
+                {
+                    mPosition = _position;
+                }
 
                 unsigned rLowerBoundsSize()
                 {

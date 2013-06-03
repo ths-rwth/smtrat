@@ -42,9 +42,6 @@ using namespace GiNaCRA;
 
 namespace smtrat
 {
-    /**
-     * Constructor
-     */
     LRAModule::LRAModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mInitialized( false ),
@@ -65,9 +62,6 @@ namespace smtrat
         mDelta = Formula::newAuxiliaryRealVariable( out.str() );
     }
 
-    /**
-     * Destructor:
-     */
     LRAModule::~LRAModule()
     {
         while( !mConstraintToBound.empty() )
@@ -89,10 +83,6 @@ namespace smtrat
             delete exToDelete;
         }
     }
-
-    /**
-     * Methods:
-     */
 
     /**
      * Informs this module about the existence of the given constraint, which means
@@ -1080,9 +1070,7 @@ namespace smtrat
             // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
             Value<Numeric>* value  = new Value<Numeric>( _boundValue );
             pair<const Bound<Numeric>*, pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _var.addEqualBound( value, mpPassedFormula->end(), _constraint );
-            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
-            #endif
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
@@ -1125,9 +1113,7 @@ namespace smtrat
         {
             Value<Numeric>* value = new Value<Numeric>( _boundValue );
             pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), _constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), _constraint );
-            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
-            #endif
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
@@ -1154,9 +1140,7 @@ namespace smtrat
         {
             Value<Numeric>* value = new Value<Numeric>( _boundValue );
             pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), _constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), _constraint );
-            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
-            #endif
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
@@ -1194,9 +1178,7 @@ namespace smtrat
                 }
                 Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? 1 : -1) );
                 pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
-                #ifdef LRA_SIMPLE_CONFLICT_SEARCH
                 findSimpleConflicts( *result.first );
-                #endif
                 vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
                 boundVector->push_back( result.first );
                 mConstraintToBound[constraint] = boundVector;
@@ -1239,9 +1221,7 @@ namespace smtrat
                 }
                 Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? -1 : 1) );
                 pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
-                #ifdef LRA_SIMPLE_CONFLICT_SEARCH
                 findSimpleConflicts( *result.first );
-                #endif
                 vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
                 boundVector->push_back( result.first );
                 mConstraintToBound[constraint] = boundVector;
@@ -1272,7 +1252,6 @@ namespace smtrat
         }
     }
 
-    #ifdef LRA_SIMPLE_CONFLICT_SEARCH
     /**
      * Finds all conflicts between lower resp. upper bounds and the given upper
      * resp. lower bound and adds them to the deductions.
@@ -1372,7 +1351,6 @@ namespace smtrat
             }
         }
     }
-    #endif
 
     /**
      * Initializes the tableau according to all linear constraints, of which this module has been informed.
@@ -1477,7 +1455,6 @@ namespace smtrat
         }
     }
 
-
     /**
      * Prints all linear constraints.
      *
@@ -1527,7 +1504,6 @@ namespace smtrat
             iter->second->printAllBounds( _out, _init + "          " );
         }
     }
-
 
     /**
      * Prints the slack/additional variables with their bounds and the corresponding activation
@@ -1604,6 +1580,5 @@ namespace smtrat
             _out << " -> " << assign->second << endl;
         }
     }
-
 }    // namespace smtrat
 

@@ -40,9 +40,6 @@
 #include <stdio.h>
 #include <ginacra/ginacra.h>
 
-
-#define LRA_SIMPLE_CONFLICT_SEARCH
-
 namespace smtrat
 {
     class LRAModule:
@@ -149,9 +146,7 @@ namespace smtrat
             void splitUnequalConstraint( const Constraint* );
             bool activateBound( const lra::Bound<lra::Numeric>*, std::set<const Formula*>& );
             void setBound( lra::Variable<lra::Numeric>&, bool, const lra::Numeric&, const Constraint* );
-            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             void findSimpleConflicts( const lra::Bound<lra::Numeric>& );
-            #endif
             void initialize( const Constraint* const );
     };
 

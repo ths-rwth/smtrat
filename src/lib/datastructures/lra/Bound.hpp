@@ -156,8 +156,11 @@ namespace smtrat
                 
                 void setNeqRepresentation( const smtrat::Constraint* _constraint ) const
                 {
-                    assert( mpInfo->neqRepresentation == NULL && _constraint->relation() == smtrat::CR_NEQ );
-                    mpInfo->neqRepresentation = _constraint;
+                    assert( _constraint->relation() == smtrat::CR_NEQ );
+                    if( mpInfo->neqRepresentation == NULL )
+                    {
+                        mpInfo->neqRepresentation = _constraint;
+                    }
                 }
 
                 std::vector<std::set< const smtrat::Formula* > >* const pOrigins() const

@@ -51,6 +51,7 @@ namespace smtrat
     namespace lra
     {
         typedef unsigned EntryID;
+        static EntryID LAST_ENTRY_ID = 0;
 
         template<class T>
         class TableauEntry

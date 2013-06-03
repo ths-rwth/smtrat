@@ -30,7 +30,6 @@
 
 #include <fstream>
 #include <sstream>
-#include <map>
 
 #include "location.hh"
 
@@ -56,7 +55,8 @@ namespace smtrat
         mStreamname( new std::string() ),
         mBooleanVariables(),
         mTheoryVariables(),
-        mBindings()
+        mTheoryBindings(),
+        mNotInvolvedBooleanBindings()
     {}
 
     Driver::~Driver()
@@ -211,12 +211,23 @@ namespace smtrat
      */
     void Driver::addTheoryBinding( const class location& _loc, const string& _varName, ExVarsPair* _exVarsPair )
     {
-        assert( mBindings.find( _varName ) == mBindings.end() );
-        if( !mBindings.insert( pair< string, ExVarsPair >( _varName, *_exVarsPair ) ).second )
+        assert( mTheoryBindings.find( _varName ) == mTheoryBindings.end() );
+        if( !mTheoryBindings.insert( pair< string, ExVarsPair >( _varName, *_exVarsPair ) ).second )
             error( _loc, "Multiple definition of real variable " + _varName );
     }
     #endif
-
+    
+    /**
+     * Adds a new real variable name to the already found names.
+     * @param l
+     * @param _varName
+     */
+    void Driver::addBooleanBinding( const class location& _loc, const string& _varName, Formula* _formula )
+    {
+        assert( mNotInvolvedBooleanBindings.find( _varName ) == mNotInvolvedBooleanBindings.end() );
+        mNotInvolvedBooleanBindings.insert( pair< string, Formula* >( _varName, _formula ) );
+    }
+    
     /**
      * Adds a new real variable name to the already found names.
      * @param l
@@ -240,7 +251,16 @@ namespace smtrat
     const string& Driver::getBooleanVariable( const class location& _loc, const string& _varName )
     {
         auto bvar = mBooleanVariables.find( _varName );
-        if( bvar != mBooleanVariables.end() ) return bvar->second;
+        if( bvar != mBooleanVariables.end() )
+        {
+            auto binding = mNotInvolvedBooleanBindings.find( _varName );
+            if( binding != mNotInvolvedBooleanBindings.end() )
+            {
+                mFormulaRoot->addSubformula( mkFormula( smtrat::IFF, new Formula( bvar->second ), binding->second ) );
+                mNotInvolvedBooleanBindings.erase( binding );
+            }
+            return bvar->second;
+        }
         else
         {
             error( _loc, "Boolean variable " + _varName + " has not been defined!" );
@@ -255,6 +275,7 @@ namespace smtrat
     void Driver::freeBooleanVariableName( const string& _varName )
     {
         assert( !_varName.empty() );
+        mNotInvolvedBooleanBindings.erase( _varName );
         mBooleanVariables.erase( _varName );
         mLexer->mBooleanVariables.erase( _varName );
     }
@@ -268,7 +289,7 @@ namespace smtrat
         assert( !_varName.empty() );
         mTheoryVariables.erase( _varName );
         mLexer->mTheoryVariables.erase( _varName );
-        mBindings.erase( _varName );
+        mTheoryBindings.erase( _varName );
     }
 
     /**
@@ -283,8 +304,8 @@ namespace smtrat
         if( theoryVar == mTheoryVariables.end() )
         {
             #ifdef REPLACE_LET_EXPRESSIONS_DIRECTLY
-            auto replacement = mBindings.find( _varName );
-            if( replacement == mBindings.end() )
+            auto replacement = mTheoryBindings.find( _varName );
+            if( replacement == mTheoryBindings.end() )
                 error( _loc, "Theory variable " + _varName + " has not been defined!" );
             return new ExVarsPair( replacement->second );
             #else

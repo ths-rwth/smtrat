@@ -53,7 +53,7 @@
 #endif
 
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <ginac/ginac.h>
 #include <string>
 #include <unordered_set>
@@ -64,7 +64,7 @@ using namespace GiNaC;
 
 namespace smtrat
 {
-    typedef vector< map< string, pair< string, ex > >::const_iterator > TheoryVarVec;
+    typedef vector< unordered_map< string, pair< string, ex > >::const_iterator > TheoryVarVec;
     typedef pair< ex, TheoryVarVec > PolyVarsPair;
     typedef std::unordered_set<std::string> FastStringSet;
 
