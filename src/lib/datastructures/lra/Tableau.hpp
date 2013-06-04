@@ -67,10 +67,10 @@ namespace smtrat
 
             public:
                 TableauEntry():
-                    mUp( 0 ),
-                    mDown( 0 ),
-                    mLeft( 0 ),
-                    mRight( 0 ),
+                    mUp( LAST_ENTRY_ID ),
+                    mDown( LAST_ENTRY_ID ),
+                    mLeft( LAST_ENTRY_ID ),
+                    mRight( LAST_ENTRY_ID ),
                     mRowNumber( 0 ),
                     mColumnNumber( 0 ),
                     mpContent()
@@ -245,22 +245,22 @@ namespace smtrat
 
                         bool rowBegin() const
                         {
-                            return (*mpEntries)[mEntryID].left() == 0;
+                            return (*mpEntries)[mEntryID].left() == LAST_ENTRY_ID;
                         }
 
                         bool rowEnd() const
                         {
-                            return (*mpEntries)[mEntryID].right() == 0;
+                            return (*mpEntries)[mEntryID].right() == LAST_ENTRY_ID;
                         }
 
                         bool columnBegin() const
                         {
-                            return (*mpEntries)[mEntryID].up() == 0;
+                            return (*mpEntries)[mEntryID].up() == LAST_ENTRY_ID;
                         }
 
                         bool columnEnd() const
                         {
-                            return (*mpEntries)[mEntryID].down() == 0;
+                            return (*mpEntries)[mEntryID].down() == LAST_ENTRY_ID;
                         }
 
                         void up()
@@ -412,7 +412,7 @@ namespace smtrat
                 bool rowCorrect( unsigned _rowNumber ) const;
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
                 void printHeap( std::ostream& = std::cout, unsigned = 30, const std::string = "" ) const;
-                void printEntry( std::ostream& = std::cout, EntryID = 0, unsigned = 20 ) const;
+                void printEntry( EntryID, std::ostream& = std::cout, unsigned = 20 ) const;
                 void printVariables( bool = true, std::ostream& = std::cout, const std::string = "" ) const;
                 void printLearnedBounds( const std::string = "", std::ostream& = std::cout ) const;
                 void print( std::ostream& = std::cout, unsigned = 28, const std::string = "" ) const;
@@ -483,7 +483,7 @@ namespace smtrat
         {
             if( mUnusedIDs.empty() )
             {
-                mpEntries->push_back( TableauEntry<T>( 0, 0, 0, 0, 0, 0, _content ) );
+                mpEntries->push_back( TableauEntry<T>( LAST_ENTRY_ID, LAST_ENTRY_ID, LAST_ENTRY_ID, LAST_ENTRY_ID, 0, 0, _content ) );
                 return (mpEntries->size() - 1);
             }
             else
@@ -507,11 +507,11 @@ namespace smtrat
             TableauHead& columnHead = mColumns[entry.columnNumber()];
             const EntryID& up = entry.up();
             const EntryID& down = entry.down();
-            if( up != 0 )
+            if( up != LAST_ENTRY_ID )
             {
                 (*mpEntries)[up].setDown( down );
             }
-            if( down != 0 )
+            if( down != LAST_ENTRY_ID )
             {
                 (*mpEntries)[down].setUp( up );
             }
@@ -521,7 +521,7 @@ namespace smtrat
             }
             const EntryID& left = entry.left();
             const EntryID& right = entry.right();
-            if( left != 0 )
+            if( left != LAST_ENTRY_ID )
             {
                 (*mpEntries)[left].setRight( right );
             }
@@ -529,7 +529,7 @@ namespace smtrat
             {
                 rowHead.mStartEntry = right;
             }
-            if( right != 0 )
+            if( right != LAST_ENTRY_ID )
             {
                 (*mpEntries)[right].setLeft( left );
             }
@@ -548,7 +548,7 @@ namespace smtrat
         {
             Variable<T>* var = new Variable<T>( mWidth++, false, _ex, mDefaultBoundPosition );
             mColumns.push_back( TableauHead() );
-            mColumns[mWidth-1].mStartEntry = 0;
+            mColumns[mWidth-1].mStartEntry = LAST_ENTRY_ID;
             mColumns[mWidth-1].mSize = 0;
             mColumns[mWidth-1].mName = var;
             return var;
@@ -567,7 +567,7 @@ namespace smtrat
             assert( _coefficients.size() == _coefficients.size() );
             Variable<T>* var = new Variable<T>( mHeight++, true, _ex, mDefaultBoundPosition );
             mRows.push_back( TableauHead() );
-            EntryID currentStartEntryOfRow = 0;
+            EntryID currentStartEntryOfRow = LAST_ENTRY_ID;
             class std::vector< Variable<T>* >::const_iterator basicVar = _nonbasicVariables.begin();
             class std::vector< T >::iterator coeff = _coefficients.begin();
             while( basicVar != _nonbasicVariables.end() )
@@ -580,16 +580,16 @@ namespace smtrat
                 TableauHead& columnHead = mColumns[entry.columnNumber()];
                 EntryID& columnStart = columnHead.mStartEntry;
                 // Set it as column end.
-                if( columnStart != 0 )
+                if( columnStart != LAST_ENTRY_ID )
                 {
                     (*mpEntries)[columnStart].setDown( entryID );
                 }
                 entry.setUp( columnStart );
                 columnStart = entryID;
                 ++columnHead.mSize;
-                entry.setDown( 0 );
+                entry.setDown( LAST_ENTRY_ID );
                 // Put it in the row.
-                if( currentStartEntryOfRow == 0 )
+                if( currentStartEntryOfRow == LAST_ENTRY_ID )
                 {
                     currentStartEntryOfRow = entryID;
                 }
@@ -605,14 +605,14 @@ namespace smtrat
                     {
                         // Entry horizontally between two entries.
                         EntryID leftEntryID = (*rowIter).left();
-                        if( leftEntryID != 0 )
+                        if( leftEntryID != LAST_ENTRY_ID )
                         {
                             (*mpEntries)[leftEntryID].setRight( entryID );
                         }
                         (*rowIter).setLeft( entryID );
                         entry.setLeft( leftEntryID );
                         entry.setRight( rowIter.entryID() );
-                        if( leftEntryID == 0 )
+                        if( leftEntryID == LAST_ENTRY_ID )
                         {
                             currentStartEntryOfRow = entryID;
                         }
@@ -622,7 +622,7 @@ namespace smtrat
                         // Entry will be the rightmost in this row.
                         (*rowIter).setRight( entryID );
                         entry.setLeft( rowIter.entryID() );
-                        entry.setRight( 0 );
+                        entry.setRight( LAST_ENTRY_ID );
                     }
                 }
                 ++basicVar;
@@ -683,8 +683,8 @@ namespace smtrat
                 unsigned smallestRowSize = mWidth;
                 unsigned smallestColumnSize = mHeight;
                 #endif
-                EntryID beginOfBestRow = 0;
-                EntryID beginOfFirstConflictRow = 0;
+                EntryID beginOfBestRow = LAST_ENTRY_ID;
+                EntryID beginOfFirstConflictRow = LAST_ENTRY_ID;
                 *mpTheta = Value<T>( 0 );
                 for( auto rowNumber = mActiveRows.begin(); rowNumber != mActiveRows.end(); ++rowNumber )
                 {
@@ -693,16 +693,16 @@ namespace smtrat
                     if( !result.second )
                     {
                         // Found a conflicting row.
-                        if( beginOfFirstConflictRow == 0 || theta.mainPart() > mpTheta->mainPart() )
+                        if( beginOfFirstConflictRow == LAST_ENTRY_ID || theta.mainPart() > mpTheta->mainPart() )
                         {
                             *mpTheta = theta;
                             beginOfFirstConflictRow = result.first;
                         }
                     }
-                    else if( result.first != 0 )
+                    else if( result.first != LAST_ENTRY_ID )
                     {
                         #ifdef LRA_USE_THETA_STRATEGY
-                        if( beginOfBestRow == 0 || abs( theta.mainPart() ) > abs( mpTheta->mainPart() ) )
+                        if( beginOfBestRow == LAST_ENTRY_ID || abs( theta.mainPart() ) > abs( mpTheta->mainPart() ) )
                         {
                             beginOfBestRow = result.first;
                             *mpTheta = theta;
@@ -728,12 +728,12 @@ namespace smtrat
                         #endif
                     }
                 }
-                if( beginOfBestRow == 0 && beginOfFirstConflictRow != 0 )
+                if( beginOfBestRow == LAST_ENTRY_ID && beginOfFirstConflictRow != LAST_ENTRY_ID )
                 {
                     // The best pivoting element found
                     return std::pair<EntryID,bool>( beginOfFirstConflictRow, false );
                 }
-                else if( beginOfBestRow != 0 )
+                else if( beginOfBestRow != LAST_ENTRY_ID )
                 {
                     // The best pivoting element found
                     return std::pair<EntryID,bool>( beginOfBestRow, true );
@@ -741,7 +741,7 @@ namespace smtrat
                 else
                 {
                     // Found no pivoting element, that is no variable violates its bounds.
-                    return std::pair<EntryID,bool>( 0, true );
+                    return std::pair<EntryID,bool>( LAST_ENTRY_ID, true );
                 }
             }
             // Bland's rule
@@ -762,14 +762,14 @@ namespace smtrat
                         // Found a conflicting row.
                         return std::pair<EntryID,bool>( result.first, false );
                     }
-                    else if( result.first != 0 )
+                    else if( result.first != LAST_ENTRY_ID )
                     {
                         // Found a pivoting element
                         return std::pair<EntryID,bool>( result.first, true );
                     }
                 }
                 // Found no pivoting element, that is no variable violates its bounds.
-                return std::pair<EntryID,bool>( 0, true );
+                return std::pair<EntryID,bool>( LAST_ENTRY_ID, true );
             #ifdef LRA_USE_PIVOTING_STRATEGY
             }
             #endif
@@ -783,7 +783,7 @@ namespace smtrat
         template<class T>
         std::pair<EntryID,bool> Tableau<T>::isSuitable( unsigned _rowNumber, Value<T>& _theta ) const
         {
-            EntryID bestEntry = 0;
+            EntryID bestEntry = LAST_ENTRY_ID;
             const TableauHead& _rowHead = mRows[_rowNumber];
             const Variable<T>& basicVar = *_rowHead.mName;
             const Bound<T>& basicVarSupremum = basicVar.supremum();
@@ -826,7 +826,7 @@ namespace smtrat
                     }
                     if( rowIter.rowEnd() )
                     {
-                        if( bestEntry == 0 )
+                        if( bestEntry == LAST_ENTRY_ID )
                         {
                             _theta = basicVarAssignment - basicVarSupremum.limit();
                             return std::pair<EntryID,bool>( rowStartEntry, false );
@@ -875,7 +875,7 @@ namespace smtrat
                     }
                     if( rowIter.rowEnd() )
                     {
-                        if( bestEntry == 0 )
+                        if( bestEntry == LAST_ENTRY_ID )
                         {
                             _theta = basicVarInfimum.limit() - basicVarAssignment;
                             return std::pair<EntryID,bool>( rowStartEntry, false );
@@ -894,8 +894,8 @@ namespace smtrat
         template<class T>
         bool Tableau<T>::betterEntry( EntryID _isBetter, EntryID _than ) const
         {
-            assert( _isBetter != 0 );
-            if( _than == 0 ) return true;
+            assert( _isBetter != LAST_ENTRY_ID );
+            if( _than == LAST_ENTRY_ID ) return true;
             const TableauHead& isBetterColumn = mColumns[(*mpEntries)[_isBetter].columnNumber()];
             const TableauHead& thanColumn = mColumns[(*mpEntries)[_than].columnNumber()];
             if( isBetterColumn.mActivity < thanColumn.mActivity ) return true;
@@ -914,7 +914,7 @@ namespace smtrat
         template<class T>
         std::vector< const Bound<T>* > Tableau<T>::getConflict( EntryID _rowEntry ) const
         {
-            assert( _rowEntry != 0 );
+            assert( _rowEntry != LAST_ENTRY_ID );
             const TableauHead& row = mRows[(*mpEntries)[_rowEntry].rowNumber()];
             // Upper bound is violated
             std::vector< const Bound<T>* > conflict = std::vector< const Bound<T>* >();
@@ -1175,11 +1175,11 @@ namespace smtrat
             // For all rows R having a nonzero entry in the pivoting column:
             //    For all columns C having a nonzero entry (r_r,r_c,r_e) in the pivoting row:
             //        Update the entry (t_r,t_c,t_e) of the intersection of R and C to (t_r,t_c,t_e+r_e).
-            if( pivotEntry.up() == 0 )
+            if( pivotEntry.up() == LAST_ENTRY_ID )
             {
                 updateDownwards( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
             }
-            else if( pivotEntry.down() == 0 )
+            else if( pivotEntry.down() == LAST_ENTRY_ID )
             {
                 updateUpwards( _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide );
             }
@@ -1254,7 +1254,7 @@ namespace smtrat
                         {
                             // Entry vertically between two entries.
                             EntryID upperEntryID = (**currentColumnIter).up();
-                            if( upperEntryID != 0 )
+                            if( upperEntryID != LAST_ENTRY_ID )
                             {
                                 (*mpEntries)[upperEntryID].setDown( entryID );
                             }
@@ -1267,14 +1267,14 @@ namespace smtrat
                             // Entry will be the lowest in this column.
                             (**currentColumnIter).setDown( entryID );
                             entry.setUp( (*currentColumnIter).entryID() );
-                            entry.setDown( 0 );
+                            entry.setDown( LAST_ENTRY_ID );
                             mColumns[entry.columnNumber()].mStartEntry = entryID;
                         }
                         if( (*currentRowIter).columnNumber() < (**currentColumnIter).columnNumber() )
                         {
                             // Entry horizontally between two entries.
                             EntryID rightEntryID = (*currentRowIter).right();
-                            if( rightEntryID != 0 )
+                            if( rightEntryID != LAST_ENTRY_ID )
                             {
                                 (*mpEntries)[rightEntryID].setLeft( entryID );
                             }
@@ -1287,7 +1287,7 @@ namespace smtrat
                             // Entry will be the leftmost in this row.
                             (*currentRowIter).setLeft( entryID );
                             entry.setRight( currentRowIter.entryID() );
-                            entry.setLeft( 0 );
+                            entry.setLeft( LAST_ENTRY_ID );
                             mRows[entry.rowNumber()].mStartEntry = entryID;
                         }
                         // Set the content of the entry.
@@ -1334,7 +1334,7 @@ namespace smtrat
                         {
                             // Entry vertically between two entries.
                             EntryID upperEntryID = (**currentColumnIter).up();
-                            if( upperEntryID != 0 )
+                            if( upperEntryID != LAST_ENTRY_ID )
                             {
                                 (*mpEntries)[upperEntryID].setDown( entryID );
                             }
@@ -1347,14 +1347,14 @@ namespace smtrat
                             // Entry will be the lowest in this column.
                             (**currentColumnIter).setDown( entryID );
                             entry.setUp( (*currentColumnIter).entryID() );
-                            entry.setDown( 0 );
+                            entry.setDown( LAST_ENTRY_ID );
                             mColumns[entry.columnNumber()].mStartEntry = entryID;
                         }
                         if( (*currentRowIter).columnNumber() > (**currentColumnIter).columnNumber() )
                         {
                             // Entry horizontally between two entries.
                             EntryID leftEntryID = (*currentRowIter).left();
-                            if( leftEntryID != 0 )
+                            if( leftEntryID != LAST_ENTRY_ID )
                             {
                                 (*mpEntries)[leftEntryID].setRight( entryID );
                             }
@@ -1367,7 +1367,7 @@ namespace smtrat
                             // Entry will be the rightmost in this row.
                             (*currentRowIter).setRight( entryID );
                             entry.setLeft( currentRowIter.entryID() );
-                            entry.setRight( 0 );
+                            entry.setRight( LAST_ENTRY_ID );
                         }
                         // Set the content of the entry.
                         ++mRows[entry.rowNumber()].mSize;
@@ -1445,7 +1445,7 @@ namespace smtrat
                         {
                             // Entry vertically between two entries.
                             EntryID lowerEntryID = (**currentColumnIter).down();
-                            if( lowerEntryID != 0 )
+                            if( lowerEntryID != LAST_ENTRY_ID )
                             {
                                 (*mpEntries)[lowerEntryID].setUp( entryID );
                             }
@@ -1457,13 +1457,13 @@ namespace smtrat
                         {
                             (**currentColumnIter).setUp( entryID );
                             entry.setDown( (*currentColumnIter).entryID() );
-                            entry.setUp( 0 );
+                            entry.setUp( LAST_ENTRY_ID );
                         }
                         if( (*currentRowIter).columnNumber() < (**currentColumnIter).columnNumber() )
                         {
                             // Entry horizontally between two entries.
                             EntryID rightEntryID = (*currentRowIter).right();
-                            if( rightEntryID != 0 )
+                            if( rightEntryID != LAST_ENTRY_ID )
                             {
                                 (*mpEntries)[rightEntryID].setLeft( entryID );
                             }
@@ -1475,7 +1475,7 @@ namespace smtrat
                         {
                             (*currentRowIter).setLeft( entryID );
                             entry.setRight( currentRowIter.entryID() );
-                            entry.setLeft( 0 );
+                            entry.setLeft( LAST_ENTRY_ID );
                             mRows[entry.rowNumber()].mStartEntry = entryID;
                         }
                         // Set the content of the entry.
@@ -1522,7 +1522,7 @@ namespace smtrat
                         {
                             // Entry vertically between two entries.
                             EntryID lowerEntryID = (**currentColumnIter).down();
-                            if( lowerEntryID != 0 )
+                            if( lowerEntryID != LAST_ENTRY_ID )
                             {
                                 (*mpEntries)[lowerEntryID].setUp( entryID );
                             }
@@ -1535,13 +1535,13 @@ namespace smtrat
                             // Entry will be the uppermost in this column.
                             (**currentColumnIter).setUp( entryID );
                             entry.setDown( (*currentColumnIter).entryID() );
-                            entry.setUp( 0 );
+                            entry.setUp( LAST_ENTRY_ID );
                         }
                         if( (*currentRowIter).columnNumber() > (**currentColumnIter).columnNumber() )
                         {
                             // Entry horizontally between two entries.
                             EntryID leftEntryID = (*currentRowIter).left();
-                            if( leftEntryID != 0 )
+                            if( leftEntryID != LAST_ENTRY_ID )
                             {
                                 (*mpEntries)[leftEntryID].setRight( entryID );
                             }
@@ -1554,7 +1554,7 @@ namespace smtrat
                             // Entry will be the rightmost in this row.
                             (*currentRowIter).setRight( entryID );
                             entry.setLeft( currentRowIter.entryID() );
-                            entry.setRight( 0 );
+                            entry.setRight( LAST_ENTRY_ID );
                         }
                         // Set the content of the entry.
                         ++mRows[entry.rowNumber()].mSize;
@@ -2180,7 +2180,7 @@ namespace smtrat
             class std::vector<T>::const_iterator coeffs_iter = coeffs.begin();
             row_iterator = Iterator( mRows.at(_rowPosition).mStartEntry, mpEntries );
             mRows.push_back( TableauHead() );
-            EntryID currentStartEntryOfRow = 0;
+            EntryID currentStartEntryOfRow = LAST_ENTRY_ID;
             EntryID leftID;            
             while( coeffs_iter != coeffs.end() )
             {
@@ -2195,10 +2195,10 @@ namespace smtrat
                 entry.setUp( columnStart );                
                 columnStart = entryID;
                 ++columnHead.mSize;
-                if( currentStartEntryOfRow == 0 )
+                if( currentStartEntryOfRow == LAST_ENTRY_ID )
                 {
                     currentStartEntryOfRow = entryID;
-                    entry.setLeft(0);
+                    entry.setLeft( LAST_ENTRY_ID );
                     leftID = entryID;
                 }  
                 else 
@@ -2210,7 +2210,7 @@ namespace smtrat
                 ++coeffs_iter;
                 row_iterator.right();
             }            
-            (*mpEntries)[leftID].setRight(0);
+            (*mpEntries)[leftID].setRight( LAST_ENTRY_ID );
             TableauHead& rowHead = mRows[mHeight-1];
             rowHead.mStartEntry = currentStartEntryOfRow;
             rowHead.mSize = coeffs.size();
@@ -2230,10 +2230,10 @@ namespace smtrat
         template<class T>
         void Tableau<T>::printHeap( std::ostream& _out, unsigned _maxEntryLength, const std::string _init ) const
         {
-            for( EntryID pos = 0; pos < mpEntries->size(); ++pos )
+            for( EntryID pos = 1; pos < mpEntries->size(); ++pos )
             {
                 std::cout << _init;
-                printEntry( _out, pos, _maxEntryLength );
+                printEntry( pos, _out, _maxEntryLength );
                 _out << std::endl;
             }
         }
@@ -2245,11 +2245,11 @@ namespace smtrat
          * @param _maxEntryLength
          */
         template<class T>
-        void Tableau<T>::printEntry( std::ostream& _out, EntryID _entry, unsigned _maxEntryLength ) const
+        void Tableau<T>::printEntry( EntryID _entry, std::ostream& _out, unsigned _maxEntryLength ) const
         {
             _out << std::setw( 4 ) << _entry << ": ";
             std::stringstream out;
-            if( _entry > 0 )
+            if( _entry != LAST_ENTRY_ID )
             {
                 out << (*mpEntries)[_entry].content();
                 _out << std::setw( _maxEntryLength ) << out.str();
