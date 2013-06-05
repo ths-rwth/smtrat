@@ -45,11 +45,10 @@ namespace icp
             /*
              * Members
              */
-            GiNaC::symbol                              mVar;
+            const GiNaC::symbol                              mVar;
             bool                                       mOriginal;
             std::vector<ContractionCandidate*> mCandidates;
             lra::Variable<lra::Numeric>*                             mLraVar;
-            GiNaCRA::evaldoubleintervalmap::iterator    mInterval;
             bool                                       mActive;
             bool                                       mLinear;
             
@@ -66,17 +65,17 @@ namespace icp
             /*
              * Constructors
              */
+            
+            IcpVariable()
+            {
+                assert(false);
+            }
 
-            IcpVariable():
-            mOriginal(false)
-            {}
-
-            IcpVariable( symbol _var, bool _original, GiNaCRA::evaldoubleintervalmap::iterator _interval, lra::Variable<lra::Numeric>* _lraVar = NULL ):
+            IcpVariable( symbol _var, bool _original, lra::Variable<lra::Numeric>* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal( _original ),
                 mCandidates(),
                 mLraVar( _lraVar ),
-                mInterval( _interval ),
                 mActive( false ),
                 mLinear( true ),
                 mBoundsSet( std::make_pair(false,false) ),
@@ -86,19 +85,16 @@ namespace icp
                 mExternalLeftBound ( ),
                 mExternalRightBound ( )
             {
-                assert( (*_interval).first == mVar );
             }
 
             IcpVariable( symbol _var,
                          bool _original,
                          ContractionCandidate* _candidate,
-                         GiNaCRA::evaldoubleintervalmap::iterator _interval,
                          lra::Variable<lra::Numeric>* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal ( _original ),
                 mCandidates(),
                 mLraVar( _lraVar ),
-                mInterval( _interval ),
                 mActive( _candidate->isActive() ),
                 mLinear( _candidate->isLinear() ),
                 mBoundsSet (std::make_pair(false,false)),
@@ -108,8 +104,7 @@ namespace icp
                 mExternalLeftBound ( ),
                 mExternalRightBound ( )
             {
-                assert( (*_interval).first == mVar );
-                addCandidate( _candidate );
+                mCandidates.insert( mCandidates.end(), _candidate );
             }
             
             ~IcpVariable()
@@ -134,11 +129,6 @@ namespace icp
                 return mLraVar;
             }
 
-            const GiNaCRA::evaldoubleintervalmap::iterator interval() const
-            {
-                return mInterval;
-            }
-
             void addCandidate( ContractionCandidate* _candidate )
             {
                 mCandidates.insert( mCandidates.end(), _candidate );
@@ -146,12 +136,6 @@ namespace icp
                 {
                     mActive = true;
                 }
-            }
-
-            void updateInterval( GiNaCRA::DoubleInterval _interval )
-            {
-                mUpdated = std::pair<bool,bool>(true,true);
-                (*mInterval).second = _interval;
             }
 
             void setLraVar( lra::Variable<lra::Numeric>* _lraVar )
@@ -181,16 +165,11 @@ namespace icp
             void print( ostream& _out = std::cout ) const
             {
                 _out << "Original: " << mOriginal << ", " << mVar << ", ";
-                if( mLinear && mLraVar != NULL )
+                if( mLinear && (mLraVar != NULL) )
                 {
                     mLraVar->print();
                 }
-                _out << "\t ";
-                (*mInterval).second.dbgprint();
-                if ( (*mInterval).second.unbounded() )
-                {
-                    _out << endl;
-                }
+                _out << endl;
             }
 
             bool isActive() const
@@ -269,12 +248,16 @@ namespace icp
             
             void setInternalLeftBound( smtrat::Formula* _left )
             {
+                smtrat::Formula* toDelete = mInternalLeftBound;
                 mInternalLeftBound = _left;
+                delete toDelete;
             }
             
             void setInternalRightBound( smtrat::Formula* _right )
             {
+                smtrat::Formula* toDelete = mInternalRightBound;
                 mInternalRightBound = _right;
+                delete toDelete;
             }
             
             void setExternalLeftBound( smtrat::Formula::iterator _left )
@@ -304,12 +287,12 @@ namespace icp
                 mUpdated = std::pair<bool,bool>(mUpdated.first, false);
             }
             
-            bool isInternalBoundsSet()
+            bool isInternalBoundsSet() const
             {
                 return mBoundsSet.first;
             }
             
-            bool isExternalBoundsSet()
+            bool isExternalBoundsSet() const
             {
                 return mBoundsSet.second;
             }
