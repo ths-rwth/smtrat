@@ -417,15 +417,17 @@ namespace smtrat
            Formula* tmpFormula = new Formula(replacementPtr);
            mValidationFormula->addSubformula(tmpFormula);
            mValidationFormula->getPropositions();
+           
+           // update ReceivedFormulaMapping
+           mReceivedFormulaMapping.insert(std::make_pair(tmpFormula, *_formula));
+           
            if( !mLRA.assertSubformula(mValidationFormula->last()) )
            {
                remapAndSetLraInfeasibleSubsets();
                return false;
            }
            
-           // update ReceivedFormulaMapping
-//           mReceivedFormulaMapping[tmpFormula] = *_formula;
-           mReceivedFormulaMapping.insert(std::make_pair(tmpFormula, *_formula));
+           
            
 #ifdef ICPMODULE_DEBUG
            cout << "[mLRA] Assert ";
@@ -613,7 +615,6 @@ namespace smtrat
         for( auto linVar = mLinearConstraints.begin(); linVar != mLinearConstraints.end(); linVar++ )
         {
             std::set<icp::ContractionCandidate*> candidates = (*linVar).second;
-
             for ( auto candidateIt = candidates.begin(); candidateIt != candidates.end(); ++candidateIt )
             {
                 if ( (*candidateIt)->hasOrigin(*_formula) )
@@ -623,9 +624,7 @@ namespace smtrat
                     (*candidateIt)->print();
                     cout << endl;
 #endif
-                    
                     (*candidateIt)->removeOrigin(*_formula);
-
                     if (!mLraCleared)
                     {
                         for ( auto formulaIt = mValidationFormula->begin(); formulaIt != mValidationFormula->end(); )
@@ -639,9 +638,10 @@ namespace smtrat
                                 cout << endl;
 #endif
                                 mLRA.removeSubformula(formulaIt);
-                                
                                 mReceivedFormulaMapping.erase(*formulaIt);
+                                Formula* toDelete = *formulaIt;
                                 formulaIt = mValidationFormula->erase(formulaIt);
+                                delete toDelete;
                                 break;
                             }
                             else
@@ -1358,7 +1358,7 @@ namespace smtrat
         // as the map is sorted ascending, we can simply pick the last value
         for ( auto candidateIt = mIcpRelevantCandidates.rbegin(); candidateIt != mIcpRelevantCandidates.rend(); ++candidateIt )
         {
-            if ( mCandidateManager->getInstance()->getCandidate((*candidateIt).second)->isActive() && mIntervals[mCandidateManager->getInstance()->getCandidate((*candidateIt).second)->derivationVar()].diameter() != 0 )
+            if ( mCandidateManager->getInstance()->getCandidate((*candidateIt).second)->isActive() )//&& mIntervals[mCandidateManager->getInstance()->getCandidate((*candidateIt).second)->derivationVar()].diameter() != 0 )
             {
 #ifdef ICPMODULE_DEBUG
                 cout << "Chose Candidate: ";
@@ -3167,23 +3167,23 @@ namespace smtrat
     void ICPModule::remapAndSetLraInfeasibleSubsets()
     {
         vec_set_const_pFormula tmpSet = mLRA.infeasibleSubsets();
-
-        for ( auto mapIt = mReceivedFormulaMapping.begin(); mapIt != mReceivedFormulaMapping.end(); ++mapIt )
-        {
-            cout << *(*mapIt).first << " ---> " << *(*mapIt).second << endl;
-            cout << "Equal with: " << **tmpSet.begin()->begin() << ( (*mapIt).first == *tmpSet.begin()->begin() ) << endl;
-        }
+        
+//        for ( auto mapIt = mReceivedFormulaMapping.begin(); mapIt != mReceivedFormulaMapping.end(); ++mapIt )
+//        {
+//            cout << *(*mapIt).first << " (@ " <<(*mapIt).first << ") ---> " << *(*mapIt).second << " (@" << (*mapIt).second << ")" << endl;
+//            cout << "Equal with: (@ " << *tmpSet.begin()->begin() << ")" << ( (*mapIt).first == *tmpSet.begin()->begin() ) << endl;
+//        }
         
         for ( auto infSetIt = tmpSet.begin(); infSetIt != tmpSet.end(); ++infSetIt )
         {
             std::set<const Formula*> newSet = std::set<const Formula*>();
             for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
             {
-                cout << "Consider: " << **formulaIt << endl;
+//                cout << "Consider: " << **formulaIt << endl;
                 assert(mReceivedFormulaMapping.find(*formulaIt) != mReceivedFormulaMapping.end());
                 newSet.insert(mReceivedFormulaMapping[*formulaIt]);
                 assert(mpReceivedFormula->contains(mReceivedFormulaMapping[*formulaIt]));
-                cout << "inserted." << endl;
+//                cout << "inserted." << endl;
             }
             assert(newSet.size() == (*infSetIt).size());
 
