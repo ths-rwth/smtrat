@@ -394,7 +394,7 @@ namespace smtrat
                             learnRefinements();
                             #endif
 
-                            #ifdef LRA_GOMORY_CUTS                            
+                            #ifdef LRA_GOMORY_CUTS 
                             exmap rMap_ = getRationalModel();
                             vector<const Constraint*> constr_vec = vector<const Constraint*>();
                             bool all_int = true;
@@ -432,7 +432,7 @@ namespace smtrat
                             if(all_int) 
                                 return foundAnswer(True);
                             return foundAnswer(Unknown);
-                            #endif
+                            #endif                            
                             #ifdef LRA_BRANCH_AND_BOUND
                             exmap _rMap = getRationalModel();
                             exmap::const_iterator map_iterator = _rMap.begin();

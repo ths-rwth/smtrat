@@ -45,6 +45,7 @@
 //#define LRA_INTRODUCE_NEW_CONSTRAINT
 #endif
 //#define LRA_GOMORY_CUTS
+//#define LRA_CUTS_FROM_PROOFS
 
 namespace smtrat
 {
@@ -393,7 +394,13 @@ namespace smtrat
                 #endif
                 unsigned checkCorrectness() const;
                 bool rowCorrect( unsigned _rowNumber ) const;
+                #ifdef LRA_CUTS_FROM_PROOFS
+                bool isDefining(unsigned);
+                void Create_DC_Tableau();
+                #endif
+                #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
+                #endif
                 void printHeap( std::ostream& = std::cout, unsigned = 30, const std::string = "" ) const;
                 void printEntry( std::ostream& = std::cout, EntryID = 0, unsigned = 20 ) const;
                 void printVariables( bool = true, std::ostream& = std::cout, const std::string = "" ) const;
@@ -2071,7 +2078,37 @@ namespace smtrat
             if( sumOfNonbasics != 0 ) return false;
             return true;
         }
-
+        
+        #ifdef LRA_CUTS_FROM_PROOFS
+        template<class T>
+        bool Tableau<T>::isDefining(unsigned row_index) // TODO: Exclude Slacks
+        {
+           Iterator row_iterator = Iterator(mRows.at(row_index).mStartEntry, mpEntries);
+           Variable<T>* basic_var=mRows.at(row_index).mName;
+           Value<T> row_sum;
+           while(!row_iterator.rowEnd())
+           {               
+               const Variable<T>& nonbasic_var = *mColumns[row_iterator->columnNumber()].mName;
+               Value<T>& ass = nonbasic_var.assignment();
+               TableauEntry<T>& entry = (*mpEntries)[row_iterator.entryID()];
+               row_sum += entry.content()*ass;
+               row_iterator.right();
+           }
+        if(row_sum == (*basic_var).infimum() || row_sum == (*basic_var).supremum()) return true;
+        else return false;   
+        }
+        
+        template<class T>
+        void Tableau<T>::Create_DC_Tableau()
+        {
+           unsigned numRows = mRows.size();
+           for( unsigned pos = 0; pos < numRows; ++pos )
+           {
+               
+           }
+        }
+        #endif 
+        
         #ifdef LRA_GOMORY_CUTS
         enum GOMORY_SET
         {
@@ -2086,7 +2123,7 @@ namespace smtrat
          * 
          * @return NULL,    if the cut can´t be constructed;
          *         otherwise the valid constraint is returned.   
-         */
+         */ 
         template<class T>
         const smtrat::Constraint* Tableau<T>::gomoryCut( const T& _ass, unsigned _rowPosition, vector<const smtrat::Constraint*>& _constrVec )
         {     
