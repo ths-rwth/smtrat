@@ -80,7 +80,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 #
 # 1. Required libraries for core.
 # 2. Optional libraries for core.
-# 3. Required libaries for solver.
+# 3. Required libraries for solver.
 # 4. Required libraries for GUI.
 # 5. Development and debug libraries.
 # # # # # # # # # # # # # # # # # # # # # #
@@ -89,16 +89,29 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 # C.1. Required libraries for core.
 # # # # # # # # # # # # # # # # # # # # # #
 
+set( libraries pthread )
+
 # GiNaC and GiNaCRA are necessary
 # TODO: add support for version number
-find_package(GiNaC REQUIRED)
-find_package(GiNaCRA REQUIRED)
-#notice that GiNacra might use log4cplus, but we cannot currently support that as Ginacra does not export this knowledge.
-include( FindCLN )
-# find gmp (which is necessary for CLN, at least when linking statically)
-include( FindGMP )
+find_package( GiNaC REQUIRED )
+find_package( GiNaCRA REQUIRED )
+include_directories ( ~/Master/ginacra/build/include/ginacra )
+set( libraries ${libraries} ${GINACRA_LIBRARY} ${GINAC_LIBRARY} )
 
-set( libraries ${GINACRA_LIBRARY} ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY} pthread )
+#notice that GiNacra might use log4cplus, but we cannot currently support that as Ginacra does not export this knowledge.
+include( FindCLN REQUIRED )
+set( libraries ${libraries} ${CLN_LIBRARY} )
+
+# find gmp (which is necessary for CLN, at least when linking statically)
+include( FindGMP REQUIRED )
+set( libraries ${libraries} ${GMP_LIBRARY} )
+
+# find itpp (numeric library, used for eigenvalues in rootfinding within ginacra)
+include( FindITPP REQUIRED )
+if( ${ITPP_FOUND} )
+	find_package( LAPACK REQUIRED )
+	set( libraries ${libraries} ${ITPP_LIBRARY} ${LAPACK_LIBRARIES} /usr/lib64/gcc/x86_64-pc-linux-gnu/4.7.3/libgfortran.a )
+endif()
 
 # # # # # # # # # # # # # # # # # # # # # #
 # C.2. required libraries
@@ -107,7 +120,7 @@ set( libraries ${GINACRA_LIBRARY} ${GINAC_LIBRARY} ${CLN_LIBRARY} ${GMP_LIBRARY}
 find_package(ReallyNull)
 if(ReallyNull_FOUND)
 	set(USE_NSS 1)
-	set(libraries ${ReallyNull_LIBRARY} ${libraries})
+	set(libraries ${libraries} ${ReallyNull_LIBRARY})
 endif()
 
 # # # # # # # # # # # # # # # # # # # # # #

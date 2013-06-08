@@ -77,15 +77,13 @@ void parseInput(const std::string& pathToInputFile, smtrat::Formula* formula, sm
     }
     options.statusFlag = parser.status();
     options.printAssignment = parser.printAssignment();
-//    formula->print();
-//    smtrat::Formula::constraintPool().printVariables();
 }
 
 /**
- * Determine the returnvalue of the process and its output.
- * @param status the parsed statusflag of the smt2 file.
+ * Determine the return value of the process and its output.
+ * @param status the parsed status flag of the smt2 file.
  * @param answer the answer from the solver
- * @return the corresponding returnvalue.
+ * @return the corresponding return value.
  */
 int determineResult(int status, smtrat::Answer answer)
 {
@@ -204,6 +202,7 @@ int main( int argc, char* argv[] )
     // Delete the solver and the formula.
     delete nratSolver;
     delete form;
+    delete parserSettings;
     // Export statistics
     #ifdef SMTRAT_DEVOPTION_Statistics
     smtrat::CollectStatistics::produceOutput();

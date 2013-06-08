@@ -42,6 +42,7 @@ class RuntimeSettings
     public:
         RuntimeSettings();
         RuntimeSettings(const std::string& name);
+        virtual ~RuntimeSettings();
         virtual void parseCmdOption(const std::string& keyValueString);
         virtual void printHelp(const std::string& prefix) const;
     protected:

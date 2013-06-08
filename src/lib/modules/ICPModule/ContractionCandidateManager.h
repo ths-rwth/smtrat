@@ -50,6 +50,11 @@ namespace smtrat
         
         ContractionCandidateManager();
         
+        ~ContractionCandidateManager()
+        {
+            clearCandidates();
+        }
+        
     public:
         /**
          * Constructor & Functions
@@ -75,14 +80,14 @@ namespace smtrat
          * @param _candidate 
          * @return id of the candidate
          */
-        unsigned getId ( const ContractionCandidate* _candidate ) const;
+        const unsigned getId ( const ContractionCandidate* const _candidate ) const;
         
         /**
          * Returns the contraction candidate for the given id
          * @param _id
          * @return the pointer to the contraction candidate
          */
-        ContractionCandidate* getCandidate ( unsigned _id );
+        ContractionCandidate* getCandidate ( const unsigned _id );
         
         /**
          * Removes a candidate from the list
@@ -94,6 +99,13 @@ namespace smtrat
          * deletes all candidates.
          */
         void clearCandidates ();
+        
+        /**
+         * Calculates the closure of a certain candidate according to the variables contained.
+         * @param _candidate
+         * @return the set of candidates in the closure of _candidate
+         */
+        void closure (const ContractionCandidate* const _candidate, std::set<const ContractionCandidate*>& _candidates) const;
         
     private:
         /**

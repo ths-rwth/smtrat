@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-02-04
- * @version 2013-05-15
+ * @version 2013-05-27
  *
  */
 #ifndef SMTRAT_CADMODULE_H
@@ -114,7 +114,7 @@ namespace smtrat
         private:
             const GiNaCRA::Constraint convertConstraint( const Constraint& );
             const Constraint* convertConstraint( const GiNaCRA::Constraint& );
-            vec_set_const_pFormula extractMinimalInfeasibleSubsets_GreedyHeuristics( GiNaCRA::ConflictGraph conflictGraph );
+            vec_set_const_pFormula extractMinimalInfeasibleSubsets_GreedyHeuristics( GiNaCRA::ConflictGraph& conflictGraph );
             void addDeductions( const list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > >& deductions );
             const Formula* getConstraintAt( unsigned index );
             void updateConstraintMap( unsigned index, bool decrement = true );

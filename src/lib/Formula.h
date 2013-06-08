@@ -86,7 +86,7 @@ namespace smtrat
         public:
 
             /// A pool to manage all generated constraints.
-            static ConstraintPool* mpConstraintPool;
+            static std::unique_ptr<ConstraintPool> mpConstraintPool;
 
 
             /**
@@ -253,19 +253,19 @@ namespace smtrat
 
             const Constraint* const pConstraint() const
             {
-                assert( mType == REALCONSTRAINT );
+                assert( mType == REALCONSTRAINT || mType == TTRUE || mType == FFALSE );
                 return mpConstraint;
             }
 
             const Constraint* pConstraint()
             {
-                assert( mType == REALCONSTRAINT );
+                assert( mType == REALCONSTRAINT || mType == TTRUE || mType == FFALSE );
                 return mpConstraint;
             }
 
             const Constraint& constraint() const
             {
-                assert( mType == REALCONSTRAINT );
+                assert( mType == REALCONSTRAINT || mType == TTRUE || mType == FFALSE );
                 return *mpConstraint;
             }
 

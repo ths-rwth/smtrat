@@ -133,6 +133,11 @@ namespace smtrat
                 {
                     return mPosition;
                 }
+                
+                void setPosition( unsigned _position )
+                {
+                    mPosition = _position;
+                }
 
                 unsigned rLowerBoundsSize()
                 {
@@ -209,7 +214,7 @@ namespace smtrat
             {
                 const Bound<T>* b = *mLowerbounds.begin();
                 mLowerbounds.erase( mLowerbounds.begin() );
-                if( !b->type() == Bound<T>::EQUAL ) delete b;
+                if( b->type() != Bound<T>::EQUAL ) delete b;
             }
             while( !mUpperbounds.empty() )
             {
@@ -230,6 +235,7 @@ namespace smtrat
             class Bound<T>::Info* boundInfo = new class Bound<T>::Info();
             boundInfo->updated = 0;
             boundInfo->position = _position;
+            boundInfo->neqRepresentation = NULL;
             const Bound<T>* newBound = new Bound<T>( _val, this, Bound<T>::UPPER, _constraint, boundInfo, _deduced );
             std::pair<class Bound<T>::BoundSet::iterator, bool> result = mUpperbounds.insert( newBound );
             if( !result.second )
@@ -274,6 +280,7 @@ namespace smtrat
             class Bound<T>::Info* boundInfo = new class Bound<T>::Info();
             boundInfo->updated = 0;
             boundInfo->position = _position;
+            boundInfo->neqRepresentation = NULL;
             const Bound<T>* newBound = new Bound<T>( _val, this, Bound<T>::LOWER, _constraint, boundInfo, _deduced );
             std::pair<class Bound<T>::BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
             if( !result.second )
@@ -315,6 +322,7 @@ namespace smtrat
             class Bound<T>::Info* boundInfo = new class Bound<T>::Info();
             boundInfo->updated = 0;
             boundInfo->position = _position;
+            boundInfo->neqRepresentation = NULL;
             const Bound<T>* newBound = new Bound<T>( _val, this, Bound<T>::EQUAL, _constraint, boundInfo );
             std::pair<class Bound<T>::BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
             if( !result.second )

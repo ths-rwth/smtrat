@@ -67,7 +67,7 @@ namespace smtrat
         return mCandidates[mCurrentId++];
     }
     
-    unsigned ContractionCandidateManager::getId ( const ContractionCandidate* _candidate ) const
+    const unsigned ContractionCandidateManager::getId ( const ContractionCandidate* const _candidate ) const
     {
         for ( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
         {
@@ -79,7 +79,7 @@ namespace smtrat
         return 0;
     }
     
-    ContractionCandidate* ContractionCandidateManager::getCandidate ( unsigned _id )
+    ContractionCandidate* ContractionCandidateManager::getCandidate ( const unsigned _id )
     {
         if ( mCandidates.find(_id) != mCandidates.end() )
         {
@@ -106,7 +106,25 @@ namespace smtrat
         {
             ContractionCandidate* toDelete = (*candidateIt).second;
             candidateIt = mCandidates.erase(candidateIt);
-//            delete toDelete;
+            delete toDelete;
+        }
+    }
+    
+    void ContractionCandidateManager::closure (const ContractionCandidate* const _candidate, std::set<const ContractionCandidate*>& _candidates) const
+    {
+        std::pair<std::set<const ContractionCandidate*>::iterator, bool> res = _candidates.insert(_candidate);
+        if ( res.second )
+        {
+            for ( auto symbolIt = _candidate->constraint()->variables().begin(); symbolIt != _candidate->constraint()->variables().end(); ++symbolIt )
+            {
+                for ( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
+                {
+                    if ( (*candidateIt).second->lhs() == ex_to<symbol>((*symbolIt).second) )
+                    {
+                        mInstance->closure((*candidateIt).second, _candidates);
+                    }
+                }
+            }
         }
     }
     

@@ -100,12 +100,13 @@ namespace smtrat
                 mContainsIntegerValuedVariables = (varDom == INTEGER_DOMAIN);
             }
         }
+        assert( !mVariables.empty() || _lhs.info( info_flags::rational ) );
     }
 
     Constraint::Constraint( const Constraint& _constraint, bool _rehash ):
         mID( _constraint.id() ),
-        mFirstHash( _rehash ? _constraint.relation() : _constraint.firstHash() ),
-        mSecondHash( _rehash ? _constraint.mLhs.gethash() : _constraint.secondHash() ),
+        mFirstHash( _rehash ? _constraint.mLhs.gethash() : _constraint.firstHash() ),
+        mSecondHash( _rehash ? _constraint.relation() : _constraint.secondHash() ),
         mIsNeverPositive( _constraint.mIsNeverPositive ),
         mIsNeverNegative( _constraint.mIsNeverNegative ),
         mIsNeverZero( _constraint.mIsNeverZero ),
@@ -647,6 +648,7 @@ namespace smtrat
         {
             unsigned monomDegree = 0;
             mNumMonomials = 1;
+            bool hasCoefficient = false;
             for( GiNaC::const_iterator factor = mLhs.begin(); factor != mLhs.end(); ++factor )
             {
                 const ex factorEx = *factor;
@@ -669,6 +671,7 @@ namespace smtrat
                     {
                         mIsNeverPositive = false;
                     }
+                    hasCoefficient = true;
                 }
                 else if( is_exactly_a<power>( factorEx ) )
                 {
@@ -691,6 +694,7 @@ namespace smtrat
                 }
                 else assert( false );
             }
+            if( !hasCoefficient ) mIsNeverPositive = false;
             if( monomDegree > mMaxMonomeDegree ) mMaxMonomeDegree = monomDegree;
             if( monomDegree < mMinMonomeDegree && monomDegree != 0 ) mMinMonomeDegree = monomDegree;
         }

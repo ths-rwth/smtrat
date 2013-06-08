@@ -42,7 +42,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <ginac/ginac.h>
 #include <lib/Formula.h>
 
@@ -109,7 +109,7 @@
    std::vector< class Formula* >*                      vfval;
    std::pair< std::string, unsigned >*                 psval;
    std::vector< std::pair< std::string, unsigned >* >* msval;
-   std::pair< GiNaC::ex, std::vector< std::map< std::string, std::pair< std::string, GiNaC::ex > >::const_iterator > >* pval;
+   std::pair< GiNaC::ex, std::vector< std::unordered_map< std::string, std::pair< std::string, GiNaC::ex > >::const_iterator > >* pval;
 }
 
 %token END	0	"end of file"
@@ -246,7 +246,7 @@ bind :
                          $$ = new pair< string, unsigned >( *$2, 1 ); delete $3;
                          dv.pLexer()->mTheoryVariables.insert( *$2 ); delete $2; }
 	|	OB SYM form CB { const string boolVarName = dv.addBooleanVariable( yyloc, *$2, true );
-                         dv.rFormulaRoot().addSubformula( dv.mkFormula( smtrat::IFF, new Formula( boolVarName ), $3 ) );
+                         dv.addBooleanBinding( yyloc, *$2, $3 );
                          $$ = new pair< string, unsigned >( *$2, 0 );
                          dv.pLexer()->mBooleanVariables.insert( *$2 ); delete $2; }
 

@@ -42,9 +42,6 @@ using namespace GiNaCRA;
 
 namespace smtrat
 {
-    /**
-     * Constructor
-     */
     LRAModule::LRAModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mInitialized( false ),
@@ -58,7 +55,6 @@ namespace smtrat
         mOriginalVars(),
         mSlackVars(),
         mConstraintToBound(),
-        mBoundToUnequalConstraintMap(),
         mBoundCandidatesToPass()
     {
         stringstream out;
@@ -66,9 +62,6 @@ namespace smtrat
         mDelta = Formula::newAuxiliaryRealVariable( out.str() );
     }
 
-    /**
-     * Destructor:
-     */
     LRAModule::~LRAModule()
     {
         while( !mConstraintToBound.empty() )
@@ -90,10 +83,6 @@ namespace smtrat
             delete exToDelete;
         }
     }
-
-    /**
-     * Methods:
-     */
 
     /**
      * Informs this module about the existence of the given constraint, which means
@@ -154,10 +143,9 @@ namespace smtrat
                         originSet.insert( *_subformula );
                         activateBound( *bounds->begin(), originSet );
 
-                        auto unequalCons = mBoundToUnequalConstraintMap.find( *bounds->begin() );
-                        if( unequalCons != mBoundToUnequalConstraintMap.end() )
+                        if( (*bounds->begin())->neqRepresentation() != NULL )
                         {
-                            auto pos = mActiveUnresolvedNEQConstraints.find( unequalCons->second );
+                            auto pos = mActiveUnresolvedNEQConstraints.find( (*bounds->begin())->neqRepresentation() );
                             if( pos != mActiveUnresolvedNEQConstraints.end() )
                             {
                                 auto entry = mActiveResolvedNEQConstraints.insert( *pos );
@@ -251,15 +239,14 @@ namespace smtrat
                                 }
                                 if( (*bound)->origins().empty() )
                                 {
-                                    auto unequalCons = mBoundToUnequalConstraintMap.find( *bound );
-                                    if( unequalCons != mBoundToUnequalConstraintMap.end() )
+                                    if( (*bound)->neqRepresentation() != NULL )
                                     {
-                                        vector< const Bound<Numeric>* >* uebounds = mConstraintToBound[unequalCons->second];
+                                        vector< const Bound<Numeric>* >* uebounds = mConstraintToBound[(*bound)->neqRepresentation()];
                                         assert( uebounds != NULL );
                                         assert( uebounds->size() == 2 );
                                         if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() )
                                         {
-                                            auto pos = mActiveResolvedNEQConstraints.find( unequalCons->second );
+                                            auto pos = mActiveResolvedNEQConstraints.find( (*bound)->neqRepresentation() );
                                             if( pos != mActiveResolvedNEQConstraints.end() )
                                             {
                                                 auto entry = mActiveUnresolvedNEQConstraints.insert( *pos );
@@ -346,7 +333,6 @@ namespace smtrat
         {
             return foundAnswer( False );
         }
-        unsigned posNewLearnedBound = 0;
         for( ; ; )
         {
             CONSTRAINT_LOCK
@@ -359,7 +345,7 @@ namespace smtrat
             }
             #ifdef DEBUG_LRA_MODULE
             cout << endl;
-            mTableau.printVariables( cout, "    " );
+            mTableau.printVariables( true, cout, "    " );
             cout << endl;
             mTableau.print( cout, 15, "    " );
             cout << endl;
@@ -508,11 +494,12 @@ namespace smtrat
                 {
                     // Pivot at the found pivoting entry.
                     mTableau.pivot( pivotingElement.first );
-                    // Learn all bounds which has been deduced during the pivoting process.
-                    while( posNewLearnedBound < mTableau.rLearnedBounds().size() )
+                    // Learn all bounds which have been deduced during the pivoting process.
+                    while( !mTableau.rNewLearnedBounds().empty() )
                     {
                         set< const Formula*> originSet = set< const Formula*>();
-                        Tableau<Numeric>::LearnedBound& learnedBound = mTableau.rLearnedBounds()[posNewLearnedBound];
+                        Tableau<Numeric>::LearnedBound& learnedBound = mTableau.rNewLearnedBounds().back()->second;
+                        mTableau.rNewLearnedBounds().pop_back();
                         vector<const Bound<Numeric>*>& bounds = *learnedBound.premise;
                         for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
                         {
@@ -544,7 +531,6 @@ namespace smtrat
                             activateBound( learnedBound.newBound, originSet );
                         }
                         #endif
-                        ++posNewLearnedBound;
                     }
                     // Maybe a easy conflict occurred with the learned bounds.
                     if( !mInfeasibleSubsets.empty() )
@@ -790,24 +776,24 @@ namespace smtrat
      */
     void LRAModule::learnRefinements()
     {
-        vector<class Tableau<Numeric>::LearnedBound>& lBs = mTableau.rLearnedBounds();
-        while( !lBs.empty() )
+        map<Variable<Numeric>*, class Tableau<Numeric>::LearnedBound>& llBs = mTableau.rLearnedLowerBounds();
+        while( !llBs.empty() )
         {
-            auto originsIterA = lBs.back().nextWeakerBound->origins().begin();
-            while( originsIterA != lBs.back().nextWeakerBound->origins().end() )
+            auto originsIterA = llBs.begin()->second.nextWeakerBound->origins().begin();
+            while( originsIterA != llBs.begin()->second.nextWeakerBound->origins().end() )
             {
                 // TODO: Learn also those deductions with a conclusion containing more than one constraint.
                 //       This must be hand over via a non clause formula and could introduce new
                 //       Boolean variables.
                 if( originsIterA->size() == 1 )
                 {
-                    if( originsIterA != lBs.back().nextWeakerBound->origins().end() )
+                    if( originsIterA != llBs.begin()->second.nextWeakerBound->origins().end() )
                     {
                         auto originIterA = originsIterA->begin();
                         while( originIterA != originsIterA->end() )
                         {
                             Formula* deduction = new Formula( OR );
-                            for( auto bound = lBs.back().premise->begin(); bound != lBs.back().premise->end(); ++bound )
+                            for( auto bound = llBs.begin()->second.premise->begin(); bound != llBs.begin()->second.premise->end(); ++bound )
                             {
                                 auto originIterB = (*bound)->origins().begin()->begin();
                                 while( originIterB != (*bound)->origins().begin()->end() )
@@ -825,8 +811,47 @@ namespace smtrat
                 }
                 ++originsIterA;
             }
-            vector<const Bound<Numeric>* >* toDelete = lBs.back().premise;
-            lBs.pop_back();
+            vector<const Bound<Numeric>* >* toDelete = llBs.begin()->second.premise;
+            llBs.erase( llBs.begin() );
+            delete toDelete;
+        }
+        map<Variable<Numeric>*, class Tableau<Numeric>::LearnedBound>& luBs = mTableau.rLearnedUpperBounds();
+        while( !luBs.empty() )
+        {
+            auto originsIterA = luBs.begin()->second.nextWeakerBound->origins().begin();
+            while( originsIterA != luBs.begin()->second.nextWeakerBound->origins().end() )
+            {
+                // TODO: Learn also those deductions with a conclusion containing more than one constraint.
+                //       This must be hand over via a non clause formula and could introduce new
+                //       Boolean variables.
+                if( originsIterA->size() == 1 )
+                {
+                    if( originsIterA != luBs.begin()->second.nextWeakerBound->origins().end() )
+                    {
+                        auto originIterA = originsIterA->begin();
+                        while( originIterA != originsIterA->end() )
+                        {
+                            Formula* deduction = new Formula( OR );
+                            for( auto bound = luBs.begin()->second.premise->begin(); bound != luBs.begin()->second.premise->end(); ++bound )
+                            {
+                                auto originIterB = (*bound)->origins().begin()->begin();
+                                while( originIterB != (*bound)->origins().begin()->end() )
+                                {
+                                    deduction->addSubformula( new Formula( NOT ) );
+                                    deduction->back()->addSubformula( (*originIterB)->pConstraint() );
+                                    ++originIterB;
+                                }
+                            }
+                            deduction->addSubformula( (*originIterA)->pConstraint() );
+                            addDeduction( deduction );
+                            ++originIterA;
+                        }
+                    }
+                }
+                ++originsIterA;
+            }
+            vector<const Bound<Numeric>* >* toDelete = luBs.begin()->second.premise;
+            luBs.erase( luBs.begin() );
             delete toDelete;
         }
     }
@@ -1045,9 +1070,7 @@ namespace smtrat
             // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
             Value<Numeric>* value  = new Value<Numeric>( _boundValue );
             pair<const Bound<Numeric>*, pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _var.addEqualBound( value, mpPassedFormula->end(), _constraint );
-            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
-            #endif
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
@@ -1090,9 +1113,7 @@ namespace smtrat
         {
             Value<Numeric>* value = new Value<Numeric>( _boundValue );
             pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), _constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), _constraint );
-            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
-            #endif
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
@@ -1119,9 +1140,7 @@ namespace smtrat
         {
             Value<Numeric>* value = new Value<Numeric>( _boundValue );
             pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), _constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), _constraint );
-            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
-            #endif
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
@@ -1159,9 +1178,7 @@ namespace smtrat
                 }
                 Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? 1 : -1) );
                 pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
-                #ifdef LRA_SIMPLE_CONFLICT_SEARCH
                 findSimpleConflicts( *result.first );
-                #endif
                 vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
                 boundVector->push_back( result.first );
                 mConstraintToBound[constraint] = boundVector;
@@ -1170,7 +1187,7 @@ namespace smtrat
                     vector< const Bound<Numeric>* >* boundVectorB = new vector< const Bound<Numeric>* >();
                     boundVectorB->push_back( result.first );
                     mConstraintToBound[_constraint] = boundVectorB;
-                    mBoundToUnequalConstraintMap[result.first] = _constraint;
+                    result.first->setNeqRepresentation( _constraint );
                 }
                 #ifdef LRA_SIMPLE_THEORY_PROPAGATION
                 if( result.second.first != NULL && !result.second.first->isInfinite() )
@@ -1204,16 +1221,14 @@ namespace smtrat
                 }
                 Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? -1 : 1) );
                 pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
-                #ifdef LRA_SIMPLE_CONFLICT_SEARCH
                 findSimpleConflicts( *result.first );
-                #endif
                 vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
                 boundVector->push_back( result.first );
                 mConstraintToBound[constraint] = boundVector;
                 if( _constraint->relation() == CR_NEQ )
                 {
                     mConstraintToBound[_constraint]->push_back( result.first );
-                    mBoundToUnequalConstraintMap[result.first] = _constraint;
+                    result.first->setNeqRepresentation( _constraint );
                 }
                 #ifdef LRA_SIMPLE_THEORY_PROPAGATION
                 if( result.second.first != NULL && !result.second.first->isInfinite() )
@@ -1237,7 +1252,6 @@ namespace smtrat
         }
     }
 
-    #ifdef LRA_SIMPLE_CONFLICT_SEARCH
     /**
      * Finds all conflicts between lower resp. upper bounds and the given upper
      * resp. lower bound and adds them to the deductions.
@@ -1261,6 +1275,30 @@ namespace smtrat
                     deduction->addSubformula( new Formula( NOT ) );
                     deduction->back()->addSubformula( (*lbound)->pAsConstraint() );
                     addDeduction( deduction );
+                    if( (*lbound)->neqRepresentation() != NULL && _bound.type() == Bound<Numeric>::EQUAL )
+                    {
+                        if( (*lbound)->limit().mainPart() == _bound.limit().mainPart() )
+                        {
+                            Formula* deductionB = new Formula( OR );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( _bound.pAsConstraint() );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( (*lbound)->neqRepresentation() );
+                            addDeduction( deductionB );
+                        }
+                    }
+                    else if( _bound.neqRepresentation() != NULL && (*lbound)->type() == Bound<Numeric>::EQUAL )
+                    {
+                        if( (*lbound)->limit().mainPart() == _bound.limit().mainPart() )
+                        {
+                            Formula* deductionB = new Formula( OR );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( _bound.neqRepresentation() );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( (*lbound)->pAsConstraint() );
+                            addDeduction( deductionB );
+                        }
+                    }
                 }
                 else
                 {
@@ -1281,6 +1319,30 @@ namespace smtrat
                     deduction->addSubformula( new Formula( NOT ) );
                     deduction->back()->addSubformula( (*ubound)->pAsConstraint() );
                     addDeduction( deduction );
+                    if( (*ubound)->neqRepresentation() != NULL && _bound.type() == Bound<Numeric>::EQUAL )
+                    {
+                        if( (*ubound)->limit().mainPart() == _bound.limit().mainPart() )
+                        {
+                            Formula* deductionB = new Formula( OR );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( _bound.pAsConstraint() );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( (*ubound)->neqRepresentation() );
+                            addDeduction( deductionB );
+                        }
+                    }
+                    else if( _bound.neqRepresentation() != NULL && (*ubound)->type() == Bound<Numeric>::EQUAL )
+                    {
+                        if( (*ubound)->limit().mainPart() == _bound.limit().mainPart() )
+                        {
+                            Formula* deductionB = new Formula( OR );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( _bound.neqRepresentation() );
+                            deductionB->addSubformula( new Formula( NOT ) );
+                            deductionB->back()->addSubformula( (*ubound)->pAsConstraint() );
+                            addDeduction( deductionB );
+                        }
+                    }
                 }
                 else
                 {
@@ -1289,7 +1351,6 @@ namespace smtrat
             }
         }
     }
-    #endif
 
     /**
      * Initializes the tableau according to all linear constraints, of which this module has been informed.
@@ -1394,7 +1455,6 @@ namespace smtrat
         }
     }
 
-
     /**
      * Prints all linear constraints.
      *
@@ -1444,7 +1504,6 @@ namespace smtrat
             iter->second->printAllBounds( _out, _init + "          " );
         }
     }
-
 
     /**
      * Prints the slack/additional variables with their bounds and the corresponding activation
@@ -1521,6 +1580,5 @@ namespace smtrat
             _out << " -> " << assign->second << endl;
         }
     }
-
 }    // namespace smtrat
 

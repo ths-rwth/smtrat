@@ -3,7 +3,7 @@
  * @author Ulrich Loup
  *
  * @since January 29, 2013, 4:27 PM
- * @version 2013-03-03
+ * @version 2013-05-29
  */
 #ifndef SMTRAT_CADCONFIG_H
 #define SMTRAT_CADCONFIG_H
@@ -17,6 +17,8 @@
 #cmakedefine SMTRAT_CADSETTING_5
 #cmakedefine SMTRAT_CADSETTING_6
 #cmakedefine SMTRAT_CADSETTING_7
+#cmakedefine SMTRAT_CADSETTING_8
+#cmakedefine SMTRAT_CADSETTING_9
 
 #ifdef SMTRAT_CADSETTING_1
 // default
@@ -39,6 +41,12 @@
 #endif
 #ifdef SMTRAT_CADSETTING_7
 #define SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
+#endif
+#ifdef SMTRAT_CADSETTING_8
+#define SMTRAT_CAD_ONEMOSTDEGREEVERTEX_MISHEURISTIC
+#endif
+#ifdef SMTRAT_CADSETTING_9
+#define SMTRAT_CAD_TWOMOSTDEGREEVERTICES_MISHEURISTIC
 #endif
 
 #endif // SMTRAT_CADCONFIG_H

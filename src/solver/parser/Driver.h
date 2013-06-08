@@ -33,8 +33,7 @@
 
 #include <string>
 #include <vector>
-#include <set>
-#include <map>
+#include <unordered_map>
 #include <assert.h>
 #include <ginac/ginac.h>
 #include "../../lib/Constraint.h"
@@ -47,7 +46,7 @@ namespace smtrat
 
     class Formula;
 
-    typedef std::map< std::string, std::pair< std::string, GiNaC::ex > > TheoryVarMap;
+    typedef std::unordered_map< std::string, std::pair< std::string, GiNaC::ex > > TheoryVarMap;
     typedef std::pair< GiNaC::ex, std::vector< TheoryVarMap::const_iterator > > ExVarsPair;
 
     class Driver
@@ -75,11 +74,13 @@ namespace smtrat
             /// stream name (file or input stream) used for error messages.
             std::string* mStreamname;
             ///
-            std::map< std::string, std::string > mBooleanVariables;
+            std::unordered_map< std::string, std::string > mBooleanVariables;
             ///
             TheoryVarMap mTheoryVariables;
             ///
-            std::map< const std::string, ExVarsPair > mBindings;
+            std::unordered_map< std::string, ExVarsPair > mTheoryBindings;
+            ///
+            std::unordered_map< std::string, Formula* > mNotInvolvedBooleanBindings;
 
         public:
             /*
@@ -212,6 +213,7 @@ namespace smtrat
             #ifdef REPLACE_LET_EXPRESSIONS_DIRECTLY
             void addTheoryBinding( const class location&, const std::string&, ExVarsPair* );
             #endif
+            void addBooleanBinding( const class location&, const std::string&, Formula* );
             TheoryVarMap::const_iterator addTheoryVariable( const class location&, const std::string&, const std::string& = "", bool = false );
             const std::string& getBooleanVariable( const class location&, const std::string& );
             void freeBooleanVariableName( const std::string& );

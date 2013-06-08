@@ -64,6 +64,7 @@ namespace smtrat
             {
                 int                       updated;
                 smtrat::Formula::iterator position;
+                const smtrat::Constraint* neqRepresentation;
             };
 
             private:
@@ -146,6 +147,20 @@ namespace smtrat
                 const smtrat::Constraint* const pAsConstraint() const
                 {
                     return mpAsConstraint;
+                }
+                
+                const smtrat::Constraint* const neqRepresentation() const
+                {
+                    return mpInfo->neqRepresentation;
+                }
+                
+                void setNeqRepresentation( const smtrat::Constraint* _constraint ) const
+                {
+                    assert( _constraint->relation() == smtrat::CR_NEQ );
+                    if( mpInfo->neqRepresentation == NULL )
+                    {
+                        mpInfo->neqRepresentation = _constraint;
+                    }
                 }
 
                 std::vector<std::set< const smtrat::Formula* > >* const pOrigins() const

@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-05-15
+ * @version 2013-05-29
  */
 
 //#define MODULE_VERBOSE
@@ -62,7 +62,9 @@ using namespace std;
 //#define SMTRAT_CAD_DISABLE_SMT
 #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
 //#define SMTRAT_CAD_DISABLE_MIS
-#define CHECK_SMALLER_MUSES
+//#define CHECK_SMALLER_MUSES
+//#define SMTRAT_CAD_ONEMOSTDEGREEVERTEX_MISHEURISTIC
+//#define SMTRAT_CAD_TWOMOSTDEGREEVERTICES_MISHEURISTIC
 #ifdef SMTRAT_CAD_DISABLE_SMT
     #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
     #define SMTRAT_CAD_DISABLE_MIS
@@ -268,11 +270,25 @@ namespace smtrat
             #else
             // construct an infeasible subset
             assert( mCAD.setting().computeConflictGraph );
-            #ifdef MODULE_VERBOSE
-            cout << "Constructing a minimal infeasible set from the ";
-            cout << "conflict graph: " << endl << mConflictGraph << endl << endl;
+            // copy conflict graph for destructive heuristics and invert it
+            ConflictGraph g = ConflictGraph( mConflictGraph );
+            g.invert();
+            #if defined SMTRAT_CAD_ONEMOSTDEGREEVERTEX_MISHEURISTIC
+                // remove the lowest-degree vertex (highest degree in inverted graph)
+                g.removeConstraintVertex(g.maxDegreeVertex());
+            #elif defined SMTRAT_CAD_TWOMOSTDEGREEVERTICES_MISHEURISTIC
+                // remove the two lowest-degree vertices (highest degree in inverted graph)
+                g.removeConstraintVertex(g.maxDegreeVertex());
+                g.removeConstraintVertex(g.maxDegreeVertex());
+            #else
+                // remove last vertex, assuming it is part of the MIS
+                g.removeConstraintVertex(mConstraints.size()-1);
             #endif
-            vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( mConflictGraph );
+            
+            #ifdef MODULE_VERBOSE
+            cout << "Constructing a minimal infeasible set from the conflict graph: " << endl << g << endl << endl;
+            #endif
+            vec_set_const_pFormula infeasibleSubsets = extractMinimalInfeasibleSubsets_GreedyHeuristics( g );
 
             #ifdef SMTRAT_CAD_VARIABLEBOUNDS
             set<const Formula*> boundConstraints = mVariableBounds.getOriginsOfBounds();
@@ -563,21 +579,23 @@ namespace smtrat
 
     /**
      * Computes an infeasible subset of the current set of constraints by approximating a vertex cover of the given conflict graph.
+     * 
+     * Caution! The method is destructive with regard to the conflict graph.
      *
      * Heuristics:
      * Select the highest-degree vertex for the vertex cover and remove it as long as we have edges in the graph.
      *
-     * @param conflictGraph
+     * @param conflictGraph the conflict graph is destroyed during the computation
      * @return an infeasible subset of the current set of constraints
      */
-    inline vec_set_const_pFormula CADModule::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph conflictGraph )
+    inline vec_set_const_pFormula CADModule::extractMinimalInfeasibleSubsets_GreedyHeuristics( ConflictGraph& conflictGraph )
     {
         // initialize MIS with the last constraint
         vec_set_const_pFormula mis = vec_set_const_pFormula( 1, std::set<const Formula*>() );
         mis.front().insert( getConstraintAt( mConstraints.size() - 1 ) );    // the last constraint is assumed to be always in the MIS
         if( mConstraints.size() > 1 )
         { // construct set cover by greedy heuristic
-            list<ConflictGraph::ConstraintVertex> setCover = list<ConflictGraph::ConstraintVertex>();
+            list<ConflictGraph::Vertex> setCover = list<ConflictGraph::Vertex>();
             long unsigned vertex = conflictGraph.maxDegreeVertex();
             while( conflictGraph.degree( vertex ) > 0 )
             {
@@ -592,7 +610,7 @@ namespace smtrat
                 vertex = conflictGraph.maxDegreeVertex();
             }
             // collect constraints according to the vertex cover
-            for( list<ConflictGraph::ConstraintVertex>::const_iterator v = setCover.begin(); v != setCover.end(); ++v )
+            for( list<ConflictGraph::Vertex>::const_iterator v = setCover.begin(); v != setCover.end(); ++v )
                 mis.front().insert( getConstraintAt( *v ) );
         }
         return mis;

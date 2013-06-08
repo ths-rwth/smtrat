@@ -40,9 +40,6 @@
 #include <stdio.h>
 #include <ginacra/ginacra.h>
 
-
-#define LRA_SIMPLE_CONFLICT_SEARCH
-
 namespace smtrat
 {
     class LRAModule:
@@ -64,7 +61,6 @@ namespace smtrat
             typedef std::map< const GiNaC::ex*, lra::Variable<lra::Numeric>*, exPointerComp>                              ExVariableMap;
             typedef std::map< const Constraint*, std::vector< const lra::Bound<lra::Numeric>* >*, constraintPointerComp > ConstraintBoundsMap;
             typedef std::map< const Constraint*, Context, constraintPointerComp >                                           ConstraintContextMap;
-            typedef std::map< const lra::Bound<lra::Numeric>*, const Constraint* >                                        BoundConstraintMap;
 
         private:
 
@@ -82,7 +78,6 @@ namespace smtrat
             ExVariableMap                mOriginalVars;
             ExVariableMap                mSlackVars;
             ConstraintBoundsMap          mConstraintToBound;
-            BoundConstraintMap           mBoundToUnequalConstraintMap;
             std::vector<const lra::Bound<lra::Numeric>* >  mBoundCandidatesToPass;
             std::pair< std::string, GiNaC::ex > mDelta;
 
@@ -151,9 +146,7 @@ namespace smtrat
             void splitUnequalConstraint( const Constraint* );
             bool activateBound( const lra::Bound<lra::Numeric>*, std::set<const Formula*>& );
             void setBound( lra::Variable<lra::Numeric>&, bool, const lra::Numeric&, const Constraint* );
-            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             void findSimpleConflicts( const lra::Bound<lra::Numeric>& );
-            #endif
             void initialize( const Constraint* const );
     };
 
