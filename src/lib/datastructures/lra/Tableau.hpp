@@ -412,8 +412,7 @@ namespace smtrat
                 unsigned checkCorrectness() const;
                 bool rowCorrect( unsigned _rowNumber ) const;
                 #ifdef LRA_CUTS_FROM_PROOFS
-                bool isDefining(unsigned);
-                void Create_DC_Tableau();
+                const std::pair<vector<Variable<T>*>,vector<T>> isDefining(unsigned);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
@@ -2089,33 +2088,32 @@ namespace smtrat
         
         #ifdef LRA_CUTS_FROM_PROOFS
         template<class T>
-        bool Tableau<T>::isDefining(unsigned row_index) // TODO: Exclude Slacks
+        const std::pair<vector<Variable<T>*>,vector<T>> Tableau<T>::isDefining(unsigned row_index) 
         {
            Iterator row_iterator = Iterator(mRows.at(row_index).mStartEntry, mpEntries);
            Variable<T>* basic_var=mRows.at(row_index).mName;
-           Value<T> row_sum;
+           T row_sum;
+           vector<Variable<T>*> nonbasics = std::vector<Variable<T>*>();
+           vector<T> coeffs = std::vector<T>();
            while(!row_iterator.rowEnd())
            {               
-               const Variable<T>& nonbasic_var = *mColumns[row_iterator->columnNumber()].mName;
-               Value<T>& ass = nonbasic_var.assignment();
+               const Variable<T>& nonbasic_var = *mColumns[(*row_iterator).columnNumber()].mName;
+               const Value<T>& ass = nonbasic_var.assignment();
+               nonbasics.push_back(nonbasic_var);
+               coeffs.push_back(ass);
                TableauEntry<T>& entry = (*mpEntries)[row_iterator.entryID()];
-               row_sum += entry.content()*ass;
+               row_sum += ass*entry.rContent();
                row_iterator.right();
            }
-        if(row_sum == (*basic_var).infimum() || row_sum == (*basic_var).supremum()) return true;
-        else return false;   
-        }
-        
-        template<class T>
-        void Tableau<T>::Create_DC_Tableau()
+        std::pair<vector<Variable<T>*>,vector<T>> result (nonbasics,coeffs);             
+        if(basic_var->infimum() == row_sum || basic_var->supremum() == row_sum) return result;
+        else 
         {
-           unsigned numRows = mRows.size();
-           for( unsigned pos = 0; pos < numRows; ++pos )
-           {
-               
-           }
+            result.first.clear();
+            return result;        
         }
-        #endif 
+        }
+        #endif
         
         #ifdef LRA_GOMORY_CUTS
         enum GOMORY_SET
