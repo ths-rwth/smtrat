@@ -1086,7 +1086,6 @@ namespace smtrat
             // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
             Value<Numeric>* value  = new Value<Numeric>( _boundValue );
             pair<const Bound<Numeric>*, pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _var.addEqualBound( value, mpPassedFormula->end(), _constraint );
-            findSimpleConflicts( *result.first );
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
@@ -1124,6 +1123,7 @@ namespace smtrat
                 addDeduction( deduction );
             }
             #endif
+            findSimpleConflicts( *result.first );
         }
         else if( _constraint->relation() == CR_LEQ )
         {
@@ -1151,12 +1151,12 @@ namespace smtrat
                 addDeduction( deduction );
             }
             #endif
+            findSimpleConflicts( *result.first );
         }
         else if( _constraint->relation() == CR_GEQ )
         {
             Value<Numeric>* value = new Value<Numeric>( _boundValue );
             pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), _constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), _constraint );
-            findSimpleConflicts( *result.first );
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
@@ -1178,6 +1178,7 @@ namespace smtrat
                 addDeduction( deduction );
             }
             #endif
+            findSimpleConflicts( *result.first );
         }
         else
         {
@@ -1194,7 +1195,6 @@ namespace smtrat
                 }
                 Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? 1 : -1) );
                 pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
-                findSimpleConflicts( *result.first );
                 vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
                 boundVector->push_back( result.first );
                 mConstraintToBound[constraint] = boundVector;
@@ -1223,6 +1223,7 @@ namespace smtrat
                     addDeduction( deduction );
                 }
                 #endif
+                findSimpleConflicts( *result.first );
             }
             if( _constraint->relation() == CR_GREATER || _constraint->relation() == CR_NEQ )
             {
@@ -1237,7 +1238,6 @@ namespace smtrat
                 }
                 Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? -1 : 1) );
                 pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
-                findSimpleConflicts( *result.first );
                 vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
                 boundVector->push_back( result.first );
                 mConstraintToBound[constraint] = boundVector;
@@ -1264,6 +1264,7 @@ namespace smtrat
                     addDeduction( deduction );
                 }
                 #endif
+                findSimpleConflicts( *result.first );
             }
         }
     }

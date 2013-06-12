@@ -72,6 +72,7 @@ namespace smtrat
             const vs::Condition* pRecCond = mFormulaConditionMap.begin()->second;
             mFormulaConditionMap.erase( mFormulaConditionMap.begin() );
             delete pRecCond;
+            pRecCond = NULL;
         }
         delete mpStateTree;
     }
@@ -127,7 +128,7 @@ namespace smtrat
 
                     vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
                     DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
-                    ConditionVector condVector                   = ConditionVector();
+                    ConditionList condVector                   = ConditionList();
                     condVector.push_back( new vs::Condition( constraint, false, oConds, 0 ) );
                     subResult.push_back( condVector );
                     subResults.push_back( subResult );
@@ -163,14 +164,15 @@ namespace smtrat
 
             eraseDTsOfRanking( *mpStateTree );
             mpStateTree->rSubResultsSimplified() = false;
-            ConditionVector condsToDelete = ConditionVector();
-            condsToDelete.push_back( condToDelete );
+            ConditionSet condsToDelete = ConditionSet();
+            condsToDelete.insert( condToDelete );
             mpStateTree->deleteOrigins( condsToDelete );
             mpStateTree->rStateType() = COMBINE_SUBRESULTS;
             mpStateTree->rTakeSubResultCombAgain() = true;
             insertDTinRanking( mpStateTree );
             mFormulaConditionMap.erase( formulaConditionPair );
             delete condToDelete;
+            condToDelete = NULL;
             mConditionsChanged = true;
         }
         Module::removeSubformula( _subformula );
@@ -380,8 +382,8 @@ namespace smtrat
                                         if( mpPassedFormula->size() == currentState->conditions().size() )
                                         {
                                             /*
-                                                * Solution.
-                                                */
+                                             * Solution.
+                                             */
                                             #ifdef VS_DEBUG
                                             printAll();
                                             #endif
@@ -413,8 +415,8 @@ namespace smtrat
                                 }
                                 #endif
                                 /*
-                                * Set the index, if not already done, to the best variable to eliminate next.
-                                */
+                                 * Set the index, if not already done, to the best variable to eliminate next.
+                                 */
                                 if( currentState->index() == "" )
                                 {
                                     currentState->initIndex( mAllVariables );
@@ -498,8 +500,8 @@ namespace smtrat
                                     else
                                     {
                                         /*
-                                        * Check whether there are still test candidates in form of children left.
-                                        */
+                                         * Check whether there are still test candidates in form of children left.
+                                         */
                                         bool                  currentStateHasChildrenToConsider       = false;
                                         bool                  currentStateHasChildrenWithToHighDegree = false;
                                         StateVector::iterator child                                   = currentState->rChildren().begin();
@@ -684,11 +686,11 @@ EndSwitch:;
             CONSTRAINT_UNLOCK
         }
         CONSTRAINT_LOCK
-        // if( mpStateTree->conflictSets().empty() ) mpStateTree->print();
-        // #ifdef VS_LOG_INTERMEDIATE_STEPS
-        // if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
-        // #endif
-        // if( mpStateTree->conflictSets().empty() ) Module::storeAssumptionsToCheck( *mpManager );
+         if( mpStateTree->conflictSets().empty() ) mpStateTree->print();
+         #ifdef VS_LOG_INTERMEDIATE_STEPS
+         if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
+         #endif
+         if( mpStateTree->conflictSets().empty() ) Module::storeAssumptionsToCheck( *mpManager );
         assert( !mpStateTree->conflictSets().empty() );
         updateInfeasibleSubset();
         #ifdef VS_DEBUG
@@ -983,7 +985,7 @@ EndSwitch:;
         }
         if( generatedTestCandidateBeingASolution )
         {
-            for( ConditionVector::iterator cond = _currentState->rConditions().begin(); cond != _currentState->conditions().end(); ++cond )
+            for( ConditionList::iterator cond = _currentState->rConditions().begin(); cond != _currentState->conditions().end(); ++cond )
             {
                 (**cond).rFlag() = true;
             }
@@ -1028,7 +1030,7 @@ EndSwitch:;
      *
      * @sideeffect: The result is stored in the substitution result of the given state.
      */
-    bool VSModule::substituteAll( State* _currentState, ConditionVector& _conditions )
+    bool VSModule::substituteAll( State* _currentState, ConditionList& _conditions )
     {
         /*
          * Create a vector to store the results of each single substitution. Each entry corresponds to
@@ -1053,7 +1055,7 @@ EndSwitch:;
          * The conditions of the currently considered state, without
          * the one getting just eliminated.
          */
-        ConditionVector oldConditions = ConditionVector();
+        ConditionList oldConditions = ConditionList();
 
         bool anySubstitutionFailed = false;
         ConditionSetSet conflictSet = ConditionSetSet();
@@ -1061,7 +1063,7 @@ EndSwitch:;
         /*
          * Apply the most recent substitution in this state to each of its conditions.
          */
-        for( ConditionVector::iterator cond = _conditions.begin(); cond != _conditions.end(); ++cond )
+        for( ConditionList::iterator cond = _conditions.begin(); cond != _conditions.end(); ++cond )
         {
             /*
              * The constraint to substitute in.
@@ -1121,8 +1123,8 @@ EndSwitch:;
                         anyConjunctionConsistent = true;
                         if( !anySubstitutionFailed )
                         {
-                            currentDisjunction.push_back( ConditionVector() );
-                            ConditionVector& currentConjunction = currentDisjunction.back();
+                            currentDisjunction.push_back( ConditionList() );
+                            ConditionList& currentConjunction = currentDisjunction.back();
                             for( TS_ConstraintConjunction::iterator cons = consConj->begin(); cons != consConj->end(); ++cons )
                             {
                                 /*
@@ -1184,6 +1186,7 @@ EndSwitch:;
                 _currentState->rVariableBounds().removeBound( pCond->pConstraint(), pCond );
                 #endif
                 delete pCond;
+                pCond = NULL;
             }
 
             /*
@@ -1194,6 +1197,7 @@ EndSwitch:;
                 const vs::Condition* rpCond = oldConditions.back();
                 oldConditions.pop_back();
                 delete rpCond;
+                rpCond = NULL;
             }
 
             /*
@@ -1208,6 +1212,7 @@ EndSwitch:;
                         const vs::Condition* rpCond = disjunctionsOfCondConj.back().back().back();
                         disjunctionsOfCondConj.back().back().pop_back();
                         delete rpCond;
+                        rpCond = NULL;
                     }
                     disjunctionsOfCondConj.back().pop_back();
                 }
@@ -1257,8 +1262,8 @@ EndSwitch:;
          * Collect the recently added conditions and mark them as not recently added.
          */
         bool deleteExistingTestCandidates = false;
-        ConditionVector recentlyAddedConditions = ConditionVector();
-        for( ConditionVector::iterator cond = _currentState->rConditions().begin(); cond != _currentState->conditions().end(); ++cond )
+        ConditionList recentlyAddedConditions = ConditionList();
+        for( ConditionList::iterator cond = _currentState->rConditions().begin(); cond != _currentState->conditions().end(); ++cond )
         {
             if( (**cond).recentlyAdded() )
             {
@@ -1305,7 +1310,7 @@ EndSwitch:;
                      * to generate test candidates than those conditions of the already generated test
                      * candidates. If so, generate the test candidates of the better conditions.
                      */
-                    for( ConditionVector::iterator cond = recentlyAddedConditions.begin(); cond != recentlyAddedConditions.end(); ++cond )
+                    for( ConditionList::iterator cond = recentlyAddedConditions.begin(); cond != recentlyAddedConditions.end(); ++cond )
                     {
                         bool hasVariable = (**cond).constraint().hasVariable( _currentState->index() );
                         if( hasVariable )
@@ -1838,6 +1843,12 @@ EndSwitch:;
         #endif
         CONSTRAINT_UNLOCK
         Answer result = runBackends();
+        #ifdef VS_DEBUG
+        cout << "Ask backend      : ";
+        mpPassedFormula->print( cout, "", false, true );
+        cout << endl;
+        cout << "Answer           : " << ( result == True ? "True" : "False" ) << endl;
+        #endif
         CONSTRAINT_LOCK_GUARD
         switch( result )
         {
@@ -1860,12 +1871,21 @@ EndSwitch:;
                                 infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                         {
                             ConditionSet conflict = ConditionSet();
+                            #ifdef VS_DEBUG
+                            cout << "Infeasible Subset: {";
+                            #endif
                             for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                             {
+                                #ifdef VS_DEBUG
+                                cout << "  " << (*subformula)->constraint();
+                                #endif
                                 auto fcPair = formulaToConditions.find( *subformula );
                                 assert( fcPair != formulaToConditions.end() );
                                 conflict.insert( fcPair->second );
                             }
+                            #ifdef VS_DEBUG
+                            cout << "  }" << endl;
+                            #endif
                             #ifdef SMTRAT_DEVOPTION_Validation
                             if( validationSettings->logTCalls() )
                             {
@@ -1903,8 +1923,9 @@ EndSwitch:;
                     /*
                      * If the considered state is not the root, pass the infeasible subset to the father.
                      */
-                    eraseDTsOfRanking( _state->rFather() );
+                    eraseDTsOfRanking( *_state );
                     _state->passConflictToFather();
+                    eraseDTofRanking( _state->rFather() );
                     insertDTinRanking( _state->pFather() );
                 }
                 return False;
@@ -1948,7 +1969,7 @@ EndSwitch:;
         if( !_state.conditions().empty() )
         {
             set<const smtrat::Constraint*> constraints = set<const smtrat::Constraint*>();
-            for( ConditionVector::const_iterator cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
+            for( ConditionList::const_iterator cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
             {
                 constraints.insert( (**cond).pConstraint() );
             }

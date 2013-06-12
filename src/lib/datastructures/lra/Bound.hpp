@@ -421,6 +421,8 @@ namespace smtrat
                 limit().print();
                 if( _withOrigins && mpAsConstraint != NULL )
                     _out << "  from  " << *mpAsConstraint;
+                if( _withOrigins && mpInfo->neqRepresentation != NULL )
+                    _out << " [" << *mpInfo->neqRepresentation << "]";
             }
             if( mDeduced ) _out << " (deduced) ";
             if( _withOrigins )

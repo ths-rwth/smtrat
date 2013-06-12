@@ -170,8 +170,8 @@ namespace smtrat
                  */
                 ~Variable();
 
+                bool conflicting() const;
                 const Bound<T>* addBound( const Constraint*, const GiNaC::ex&, const T*, const GiNaC::numeric& = 0 );
-
                 bool updateBounds( const Bound<T>& );
 
                 bool updatedA() const
@@ -342,35 +342,75 @@ namespace smtrat
         template<class T>
         bool Bound<T>::operator <( const Bound<T>& _bound ) const
         {
-            if( mpLimit == NULL && _bound.pLimit() == NULL )
+            if( isUpperBound() && _bound.isUpperBound() )
             {
-                return (mType == STRICT_LOWER_BOUND && _bound.type() == STRICT_UPPER_BOUND );
-            }
-            else if( mpLimit == NULL && _bound.pLimit() != NULL )
-            {
-                return mType == STRICT_LOWER_BOUND;
-            }
-            else if( mpLimit != NULL && _bound.pLimit() == NULL )
-            {
-                return _bound.type() == STRICT_UPPER_BOUND;
+                if( isInfinite() )
+                {
+                    return false;
+                }
+                else
+                {
+                    if( _bound.isInfinite() )
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        if( *mpLimit < _bound.limit() )
+                        {
+                            return true;
+                        }
+                        else if( *mpLimit == _bound.limit() )
+                        {
+                            if( mType == STRICT_UPPER_BOUND )
+                            {
+                                return (_bound.type() != STRICT_UPPER_BOUND);
+                            }
+                            else if( mType == EQUAL_BOUND )
+                            {
+                                return (_bound.type() == WEAK_UPPER_BOUND);
+                            }
+                        }
+                        return false;
+                    }
+                }
             }
             else
             {
-                if( *mpLimit < _bound.limit() )
+                assert( isLowerBound() && _bound.isLowerBound() );
+                if( _bound.isInfinite() )
                 {
-                    return true;
+                    return false;
                 }
-                else if( *mpLimit == _bound.limit() )
+                else
                 {
-                    if( mType == STRICT_UPPER_BOUND && _bound.type() != STRICT_UPPER_BOUND ) return true;
-                    if( mType == WEAK_LOWER_BOUND && _bound.type() != WEAK_LOWER_BOUND && _bound.type() != STRICT_UPPER_BOUND ) return true;
-                    if( mType == EQUAL_BOUND && _bound.type() != EQUAL_BOUND && _bound.type() != WEAK_LOWER_BOUND && _bound.type() != STRICT_UPPER_BOUND ) return true;
-                    if( mType == WEAK_UPPER_BOUND && _bound.type() == STRICT_LOWER_BOUND ) return true;
+                    if( isInfinite() )
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        if( *mpLimit < _bound.limit() )
+                        {
+                            return true;
+                        }
+                        else if( *mpLimit == _bound.limit() )
+                        {
+                            if( mType == WEAK_LOWER_BOUND )
+                            {
+                                return (_bound.type() != WEAK_LOWER_BOUND);
+                            }
+                            else if( mType == EQUAL_BOUND )
+                            {
+                                return (_bound.type() == STRICT_LOWER_BOUND);
+                            }
+                        }
+                        return false;
+                    }
                 }
-                return false;
             }
         }
-
+        
         /**
          * Prints the bound on the given output stream.
          *
@@ -466,6 +506,31 @@ namespace smtrat
                 const Bound<T>* toDelete = *mUpperbounds.begin();
                 mUpperbounds.erase( mUpperbounds.begin() );
                 delete toDelete;
+            }
+        }
+        
+        /**
+         * 
+         * @return 
+         */
+        template<class T>
+        bool Variable<T>::conflicting() const
+        {
+            if( mpSupremum->isInfinite() || mpInfimum->isInfinite() )
+            {
+                return false;
+            }
+            else
+            {
+                if( mpSupremum->limit() < mpInfimum->limit() )
+                {
+                    return true;
+                }
+                else if( mpInfimum->limit() == mpSupremum->limit() )
+                {
+                    return ( mpInfimum->type() == Bound<T>::STRICT_LOWER_BOUND || mpSupremum->type() == Bound<T>::STRICT_UPPER_BOUND );
+                }
+                return false;
             }
         }
 
@@ -582,7 +647,7 @@ namespace smtrat
                     ++newBound;
                 }
             }
-            return *mpSupremum < *mpInfimum;
+            return conflicting();
         }
 
         /**
