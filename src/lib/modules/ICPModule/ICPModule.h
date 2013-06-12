@@ -30,7 +30,7 @@
 #ifndef ICPMODULE_H
 #define ICPMODULE_H
 
-#define ICP_BOXLOG
+//#define ICP_BOXLOG
 //#define SMTRAT_DEVOPTION_VALIDATION_ICP
 
 #include <ginac/ginac.h>
@@ -110,6 +110,8 @@ namespace smtrat
             std::vector< std::atomic_bool* >                                    mLRAFoundAnswer;
             LRAModule                                                           mLRA;
 
+            std::map<const Formula*, const Formula*>                            mReceivedFormulaMapping; // LraReceived -> IcpReceived
+            
             std::set<const Constraint*>                                         mCenterConstraints;
             std::set<const Formula*>                                         mBoundConstraints;
             std::set<Formula*>                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
@@ -313,7 +315,7 @@ namespace smtrat
              * creates constraints for the actual bounds of the original variables.
              * @return 
              */
-            std::set<Formula*> createConstraintsFromBounds( GiNaCRA::evaldoubleintervalmap& _map );
+            std::set<Formula*> createConstraintsFromBounds( const GiNaCRA::evaldoubleintervalmap& _map );
             
             void replaceConstraints( Formula*& _formula ) const
             {
@@ -350,6 +352,10 @@ namespace smtrat
              */
             Formula* transformDeductions( Formula* _deduction );
             
+            /**
+             * Sets the own infeasible subset according to the infeasible subset of the internal lra module.
+             */
+            void remapAndSetLraInfeasibleSubsets();
             
 #ifdef ICP_BOXLOG
             /**

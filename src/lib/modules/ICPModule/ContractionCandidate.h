@@ -60,7 +60,7 @@ namespace smtrat
             symbol      mDerivationVar;
             ex          mDerivative;
             std::set<const Formula*> mOrigin;
-            unsigned    mId;
+            const unsigned    mId;
             bool        mIsLinear;
             bool        mActive;
 
@@ -76,35 +76,44 @@ namespace smtrat
             /**
              * Constructors:
              */
-            ContractionCandidate(){}
 
-            ContractionCandidate( const ContractionCandidate& _original )
+            ContractionCandidate( const ContractionCandidate& _original ):
+            mConstraint(_original.constraint()),
+            mLhs(_original.lhs()),
+            mDerivationVar(_original.derivationVar()),
+            mDerivative(_original.derivative()),
+            mOrigin(_original.origin()),
+            mId(_original.id()),
+            mIsLinear(_original.isLinear()),
+            mActive(_original.isActive()),
+            mRWA(_original.RWA()),
+            mLastPayoff(_original.lastPayoff())
             {
-                mConstraint = _original.constraint();
-                mLhs = _original.lhs();
-                mDerivationVar = _original.derivationVar();
-                mDerivative = _original.derivative();
-                mIsLinear = _original.isLinear();
-                mActive = _original.isActive();
-                mOrigin = _original.origin();
-                mId = _original.id();
-                mRWA = _original.RWA();
-                mLastPayoff = _original.lastPayoff();
+//                mConstraint = _original.constraint();
+//                mLhs = _original.lhs();
+//                mDerivationVar = _original.derivationVar();
+//                mDerivative = _original.derivative();
+//                mIsLinear = _original.isLinear();
+//                mActive = _original.isActive();
+//                mOrigin = _original.origin();
+//                mId = _original.id();
+//                mRWA = _original.RWA();
+//                mLastPayoff = _original.lastPayoff();
             }
 
-            ContractionCandidate( symbol _lhs, const Constraint* _constraint, symbol _derivationVar, ex _derivative, const Formula* _origin ):
-            mConstraint(_constraint),
-            mLhs(_lhs),
-            mDerivationVar(_derivationVar),
-            mDerivative(_derivative),
-            mOrigin(),
-            mIsLinear(true),
-            mActive(false),
-            mRWA(1),
-            mLastPayoff(0)
-            {
-                mOrigin.insert(_origin);
-            }
+//            ContractionCandidate( symbol _lhs, const Constraint* _constraint, symbol _derivationVar, ex _derivative, const Formula* _origin ):
+//            mConstraint(_constraint),
+//            mLhs(_lhs),
+//            mDerivationVar(_derivationVar),
+//            mDerivative(_derivative),
+//            mOrigin(),
+//            mIsLinear(true),
+//            mActive(false),
+//            mRWA(1),
+//            mLastPayoff(0)
+//            {
+//                mOrigin.insert(_origin);
+//            }
 
             ContractionCandidate( symbol _lhs, const Constraint* _constraint, symbol _derivationVar, const Formula* _origin, unsigned _id ):
             mConstraint(_constraint),
