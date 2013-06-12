@@ -150,8 +150,6 @@ namespace vs
             }
 
             double valuate( const std::string&, unsigned, bool ) const;
-            bool bestVariable( std::string& ) const;
-            unsigned bestVariable2( std::string& ) const;
             bool operator ==( const Condition& ) const;
             bool operator <( const Condition& ) const;
             void print( std::ostream& = std::cout ) const;

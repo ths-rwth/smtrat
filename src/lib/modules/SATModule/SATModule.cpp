@@ -1822,8 +1822,10 @@ NextClause:
         while( backend != usedBackends().end() )
         {
             const vec_set_const_pFormula& infSubsets = (*backend)->infeasibleSubsets();
+            assert( (*backend)->solverState() != False || !infSubsets.empty() );
             for( auto infsubset = infSubsets.begin(); infsubset != infSubsets.end(); ++infsubset )
             {
+                assert( !infsubset->empty() );
                 #ifdef SMTRAT_DEVOPTION_Validation
                 if( validationSettings->logInfSubsets() )
                 {

@@ -208,8 +208,8 @@ struct subComp
 	}
 };
 
-typedef std::vector	< const Condition* >          ConditionVector					;
-typedef std::vector	< ConditionVector >           DisjunctionOfConditionConjunctions;
+typedef std::list	< const Condition* >          ConditionList					;
+typedef std::vector	< ConditionList >           DisjunctionOfConditionConjunctions;
 typedef std::vector	< const smtrat::Constraint* > TS_ConstraintConjunction			;
 
 
@@ -220,8 +220,8 @@ public:
 	 * Intern type structure:
 	 */
 	typedef std::map	< const Substitution* const, ConditionSetSetSet, subComp > 	ConflictSets		;
-	typedef std::vector	< State* >													StateVector			;
-	typedef std::vector < std::pair< ConditionVector, bool > > 						SubstitutionResult	;
+	typedef std::list	< State* >													StateVector			;
+	typedef std::vector < std::pair< ConditionList, bool > > 						SubstitutionResult	;
 	typedef std::vector < SubstitutionResult > 										SubstitutionResults	;
 	typedef std::vector < std::pair< unsigned, unsigned  > >						SubResultCombination;
     #ifdef SMTRAT_VS_VARIABLEBOUNDS
@@ -254,7 +254,7 @@ private:
 	Substitution*			 mpSubstitution				;
 	SubstitutionResults* 	 mpSubstitutionResults		;
 	SubResultCombination*	 mpSubResultCombination		;
-	ConditionVector* 		 mpConditions				;
+	ConditionList* 		 mpConditions				;
 	ConflictSets*			 mpConflictSets				;
 	StateVector* 			 mpChildren					;
     #ifdef SMTRAT_VS_VARIABLEBOUNDS
@@ -294,8 +294,8 @@ public:
 	bool					hasRecentlyAddedConditions  ( ) const 	{ return mHasRecentlyAddedConditions 									; }
 	bool&					rInconsistent				( ) 	 	{ return mInconsistent				 									; }
 	bool					isInconsistent				( ) const 	{ return mInconsistent				 									; }
-	ConditionVector&		rConditions	        		( )       	{ return *mpConditions	   			 									; }
-	const ConditionVector&	conditions	      			( ) const 	{ return *mpConditions	   			 									; }
+	ConditionList&		rConditions	        		( )       	{ return *mpConditions	   			 									; }
+	const ConditionList&	conditions	      			( ) const 	{ return *mpConditions	   			 									; }
 	Substitution&				rSubstitution			( )       	{ return *mpSubstitution 			 									; }
 	const Substitution&			substitution 			( ) const 	{ return *mpSubstitution 			 									; }
 	SubstitutionResults&		rSubstitutionResults	( )       	{ return *mpSubstitutionResults		 									; }
@@ -341,12 +341,12 @@ public:
 	bool									unfinishedAncestor					( State*& )															;
 	bool 									bestCondition						( const Condition*&,
 																				  unsigned 		 )													;
-	ConditionVector::iterator 				constraintExists 					( const smtrat::Constraint& )										;
+	ConditionList::iterator 				constraintExists 					( const smtrat::Constraint& )										;
 	// Manipulating methods.
 	void 									simplify							( )																	;
-	bool 									simplify							( ConditionVector&,
-																				  ConditionVector&,
-																				  ConditionSetSet& )												;
+	bool 									simplify							( ConditionList&,
+																				  ConditionSetSet&,
+                                                                                  bool = false     )                                 				;
 	void									setIndex							( const std::string& )  											;
 	bool									setID								( const unsigned )  												;
 	void 									addConflictSet						( const Substitution* const,
@@ -358,7 +358,7 @@ public:
 	void 									addSubstitutionResults				( std::vector< DisjunctionOfConditionConjunctions >& )				;
 	bool 									extendSubResultCombination			( )																	;
 	bool 									nextSubResultCombination			( )																	;
-	const ConditionVector					getCurrentSubresultCombination		( ) 														const	;
+	const ConditionList					getCurrentSubresultCombination		( ) 														const	;
 	bool 									refreshConditions					( )																	;
 	void									initConditionFlags					( )																	;
 	bool 									initIndex							( const GiNaC::symtab& )											;
@@ -366,11 +366,12 @@ public:
 																  				  const ConditionSet&   ,
 																				  const unsigned 		   ,
 																				  const bool 				)										;
-	int 									deleteOrigins                       ( ConditionVector& )												;
-	void 									deleteOriginsFromChildren           ( ConditionVector& )												;
-	void									deleteOriginsFromConflictSets       ( ConditionVector&, bool )											;
-	void									deleteOriginsFromSubstitutionResults( ConditionVector& )												;
-	void									deleteConditions					( ConditionVector& )												;
+    bool                                    checkConditions                     ()                                                                  ;
+	int 									deleteOrigins                       ( ConditionSet& )												;
+	void 									deleteOriginsFromChildren           ( ConditionSet& )												;
+	void									deleteOriginsFromConflictSets       ( ConditionSet&, bool )											;
+	void									deleteOriginsFromSubstitutionResults( ConditionSet& )												;
+	void									deleteConditions					( ConditionSet& )												;
 	int                                     addChild							( const std::string& 	   ,
 																				  const GiNaC::ex&         ,
 																				  const Substitution_Type& ,
@@ -432,8 +433,8 @@ public:
 };
 
 typedef std::map	< const Substitution* const, ConditionSetSetSet, subComp > 	ConflictSets		;
-typedef std::vector	< State* >													StateVector			;
-typedef std::vector < std::pair< ConditionVector, bool > > 						SubstitutionResult	;
+typedef std::list	< State* >													StateVector			;
+typedef std::vector < std::pair< ConditionList, bool > > 						SubstitutionResult	;
 typedef std::vector	< SubstitutionResult > 										SubstitutionResults	;
 typedef std::vector < std::pair< unsigned, unsigned  > >						SubResultCombination;
 
