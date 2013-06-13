@@ -329,6 +329,9 @@ namespace smtrat
             friend std::ostream& operator <<( std::ostream&, const Constraint& );
 
             // Manipulating methods.
+            static bool containsNumeric( const GiNaC::ex& );
+            static bool containsNumeric( const GiNaC::ex&, GiNaC::const_iterator );
+            static GiNaC::ex normalizeA( const GiNaC::ex& );
             void collectProperties();
             Constraint* simplify();
             void init();

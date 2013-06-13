@@ -350,10 +350,10 @@ namespace smtrat
                 bool isNegativ = false;
                 if( is_exactly_a<add>( lhs ) )
                 {
-                    const ex summand = *--lhs.end();
+                    const ex summand = *lhs.begin();
                     if( is_exactly_a<mul>( summand ) ) 
                     {
-                        const ex factor = *--summand.begin();
+                        const ex factor = *--summand.end();
                         if( is_exactly_a<numeric>( factor ) ) isNegativ = factor.info( info_flags::negative );
                     }
                 }

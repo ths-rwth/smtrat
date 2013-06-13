@@ -367,11 +367,11 @@ public:
 																				  const unsigned 		   ,
 																				  const bool 				)										;
     bool                                    checkConditions                     ()                                                                  ;
-	int 									deleteOrigins                       ( ConditionSet& )												;
-	void 									deleteOriginsFromChildren           ( ConditionSet& )												;
-	void									deleteOriginsFromConflictSets       ( ConditionSet&, bool )											;
-	void									deleteOriginsFromSubstitutionResults( ConditionSet& )												;
-	void									deleteConditions					( ConditionSet& )												;
+	int 									deleteOrigins                       ( std::set<const Condition*>& )												;
+	void 									deleteOriginsFromChildren           ( std::set<const Condition*>& )												;
+	void									deleteOriginsFromConflictSets       ( std::set<const Condition*>&, bool )											;
+	void									deleteOriginsFromSubstitutionResults( std::set<const Condition*>& )												;
+	void									deleteConditions					( std::set<const Condition*>& )												;
 	int                                     addChild							( const std::string& 	   ,
 																				  const GiNaC::ex&         ,
 																				  const Substitution_Type& ,
