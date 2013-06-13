@@ -63,7 +63,8 @@ namespace smtrat
         mLRA(MT_LRAModule, mValidationFormula, new RuntimeSettings, mLRAFoundAnswer),
         mCenterConstraints(),
         mInitialized(false),
-        mCurrentId(3)
+        mCurrentId(3),
+        mBackendCalled(false)
     {
 #ifdef ICP_BOXLOG
         icpLog.open ("icpLog.txt", ios::out | ios::trunc );
@@ -75,11 +76,8 @@ namespace smtrat
      */
     ICPModule::~ICPModule()
     {
-//        delete mHistoryActual;
         delete mHistoryRoot;
         delete mValidationFormula;
-        
-//        mCandidateManager->getInstance()->clearCandidates();
         
 #ifdef ICP_BOXLOG
         if ( icpLog.is_open() )
@@ -263,8 +261,11 @@ namespace smtrat
                 
                 // update ReceivedFormulaMapping
                 mReceivedFormulaMapping.insert(std::make_pair(tmpFormula, *_formula));
-//                mReceivedFormulaMapping[tmpFormula] = *_formula;
-
+                
+                // try to insert new icpVariable -> is original!
+                symbol tmpVar = ex_to<symbol>( (*(*_formula)->pConstraint()->variables().begin()).second );
+                mVariables.insert(std::make_pair(tmpVar, icp::IcpVariable(tmpVar, true)));
+                
 #ifdef ICPMODULE_DEBUG
                 cout << "[mLRA] Assert bound constraint: ";
                 tmpFormula->print();
@@ -380,7 +381,7 @@ namespace smtrat
                    // set interval to unbounded if not existing - we need an interval for the icpVariable
                    if ( mIntervals.find(ex_to<symbol>(newReal.second)) == mIntervals.end() )
                    {
-                       mIntervals[ex_to<symbol>(newReal.second)] = GiNaCRA::DoubleInterval::unboundedInterval();
+                       mIntervals.insert(std::make_pair(ex_to<symbol>(newReal.second), GiNaCRA::DoubleInterval::unboundedInterval()));
                    }
                    
                    // try to add icpVariable - if already existing, only add the created candidate, else create new icpVariable
@@ -460,17 +461,24 @@ namespace smtrat
             cout << "Nonlinear." << endl;
 #endif
             set<icp::ContractionCandidate*>::iterator candidateIt;
-            for( candidateIt = mNonlinearConstraints[constr].begin(); candidateIt != mNonlinearConstraints[constr].end(); ++candidateIt )
+            assert( mNonlinearConstraints.find(constr) != mNonlinearConstraints.end() );
+            
+            std::map<symbol, icp::IcpVariable, ex_is_less>::iterator toRemove;
+            for( candidateIt = mNonlinearConstraints.at(constr).begin(); candidateIt != mNonlinearConstraints.at(constr).end(); ++candidateIt )
             {
                 // remove origin, no matter if constraint is active or not ?!?
                 (*candidateIt)->removeOrigin(*_formula);
+                
+                //store slackvariable for later removal.
+                toRemove = mVariables.find((*candidateIt)->lhs());
+                assert(toRemove != mVariables.end());
 
                 // remove candidate if counter == 1, else decrement counter.
                 if( mActiveNonlinearConstraints.find( *candidateIt ) != mActiveNonlinearConstraints.end() )
                 {
-                    if( mActiveNonlinearConstraints[*candidateIt] > 1 )
+                    if( mActiveNonlinearConstraints.at(*candidateIt) > 1 )
                     {
-                        mActiveNonlinearConstraints[*candidateIt] = mActiveNonlinearConstraints[*candidateIt] - 1;
+                        mActiveNonlinearConstraints[*candidateIt] = mActiveNonlinearConstraints.at(*candidateIt) - 1;
 
                         // directly decrement linear replacements
                         for ( auto activeLinearIt = mActiveLinearConstraints.begin(); activeLinearIt != mActiveLinearConstraints.end(); ++activeLinearIt )
@@ -550,6 +558,7 @@ namespace smtrat
                     for ( auto variableIt = (*candidateIt)->constraint()->variables().begin(); variableIt != (*candidateIt)->constraint()->variables().end(); ++variableIt )
                     {
                         symbol variable = ex_to<symbol>((*variableIt).second);
+//                        cout << "Variable: " << variable << endl; 
                         std::map<symbol, icp::IcpVariable, ex_is_less>::iterator icpVar = mVariables.find(variable);
                         assert(icpVar != mVariables.end());
                         for ( auto varCandidateIt = (*icpVar).second.candidates().begin(); varCandidateIt != (*icpVar).second.candidates().end(); )
@@ -564,7 +573,6 @@ namespace smtrat
                             }
                         }
                     }
-                    mVariables.erase((*candidateIt)->lhs());
 
                     // find all linear replacements and deactivate them as well
                     for ( auto activeLinearIt = mActiveLinearConstraints.begin(); activeLinearIt != mActiveLinearConstraints.end(); )
@@ -608,6 +616,9 @@ namespace smtrat
                     }
                 }
             }
+//            cout << "Remove from variables: ";
+//            (*toRemove).second.print();
+            mVariables.erase(toRemove);
         }
 
         // linear handling
@@ -720,6 +731,8 @@ namespace smtrat
     {
         // Dirty! Normally this shouldn't be neccessary
         mInfeasibleSubsets.clear();
+        
+        mBackendCalled = false;
 
         double relativeContraction = 1;
         bool   splitOccurred = false;
@@ -748,6 +761,7 @@ namespace smtrat
         mLRA.clearDeductions();
         
         Answer lraAnswer = mLRA.isConsistent();
+//        cout << "mLRA" << endl;
         
         // catch deductions
         mLRA.updateDeductions();
@@ -769,6 +783,8 @@ namespace smtrat
             cout << endl;
 #endif
         }
+        
+        mLRA.clearDeductions();
         
         if (lraAnswer == False)
         {
@@ -960,8 +976,9 @@ namespace smtrat
                     
                     // update history node
                     mHistoryActual->addContraction(candidate);
-
-                    if ( (relativeContraction < contractionThreshold && !splitOccurred)  || mIntervals[candidate->derivationVar()].diameter() <= targetDiameter )
+                    
+                    assert(mIntervals.find(candidate->derivationVar()) != mIntervals.end() );
+                    if ( (relativeContraction < contractionThreshold && !splitOccurred)  || mIntervals.at(candidate->derivationVar()).diameter() <= targetDiameter )
                     {
                         /**
                          * remove candidate from mIcpRelevantCandidates.
@@ -989,7 +1006,7 @@ namespace smtrat
                                 }
                             }
 
-                            if ( toAdd && (*candidateIt)->isActive() && mIntervals[(*candidateIt)->derivationVar()].diameter() > targetDiameter )
+                            if ( toAdd && (*candidateIt)->isActive() && mIntervals.at((*candidateIt)->derivationVar()).diameter() > targetDiameter )
                             {
                                 addCandidateToRelevant(*candidateIt);
                             }
@@ -1008,7 +1025,7 @@ namespace smtrat
                     {
                         if ( mIntervals.find(ex_to<symbol>((*varIt).second)) != mIntervals.end() )
                         {
-                            if ( mIntervals[ex_to<symbol>((*varIt).second)].diameter() > targetDiameter )
+                            if ( mIntervals.at(ex_to<symbol>((*varIt).second)).diameter() > targetDiameter )
                             {
                                 originalAllFinished = false;
                                 break;
@@ -1072,6 +1089,7 @@ namespace smtrat
                     addAssumptionToCheck(*negatedContraction,false,"ICPContractionCheck");
     //                addAssumptionToCheck(*postContractionBox,true,"POST_CONTRACTION_BOX");
                 }
+                negatedContraction->clear();
                 delete negatedContraction;
 #endif
 
@@ -1161,14 +1179,18 @@ namespace smtrat
                     {
 #ifdef ICPMODULE_DEBUG
                         cout << "[ICP] created passed formula." << endl;
-
+                        
                         printPassedFormula();
 #endif
 #ifdef ICP_BOXLOG
                         icpLog << "backend";
                         writeBox();
 #endif
+//                        printIntervals();
+//                        cout << "Size HistoryTree: " << mHistoryRoot->sizeSubtree() << endl;
                         Answer a = runBackends();
+                        mBackendCalled = true;
+//                        cout << "Backend" << endl;
 #ifdef ICPMODULE_DEBUG
                         cout << "[ICP] Done running backends:" << a << endl;
 #endif
@@ -1195,9 +1217,16 @@ namespace smtrat
                                             {
                                                 if( (*icpVar).second.isOriginal() && (*icpVar).second.isExternalBoundsSet() )
                                                 {
-                                                    assert( (*icpVar).second.isOriginal() && (*icpVar).second.isExternalBoundsSet() && !(*icpVar).second.isExternalUpdated() );
+                                                    assert( !(*icpVar).second.isExternalUpdated() );
                                                     
-//                                                    cout << "Compare: " << *(*subformula) << " == " << **(*icpVar).second.externalLeftBound() << endl;
+//                                                    printPassedFormula();
+//                                                    (*backend)->printReceivedFormula();
+//                                                    (*backend)->printInfeasibleSubsets();
+                                                    
+//                                                    
+//                                                    (*icpVar).second.print();
+//                                                    cout << "Compare: " << *(*subformula) << endl;
+//                                                    cout << " == " << **(*icpVar).second.externalLeftBound() << endl;
 //                                                    cout << "Compare: " << *(*subformula) << " == " << **(*icpVar).second.externalRightBound() << endl;
                                                     
                                                     if ( (*subformula) == (*(*icpVar).second.externalLeftBound()) || (*subformula) == (*(*icpVar).second.externalRightBound()) )
@@ -1594,7 +1623,7 @@ namespace smtrat
                 icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), tmp, variables[varIndex] );
                 mNonlinearConstraints[_constr].insert( mNonlinearConstraints[_constr].end(), tmpCandidate );
 
-                mIntervals[variables[varIndex]] = GiNaCRA::DoubleInterval::unboundedInterval();
+                mIntervals.insert(std::make_pair(variables[varIndex], GiNaCRA::DoubleInterval::unboundedInterval()));
 
                 // activate candidate as it is nonlinear (all nonlinear candidates are active)
                 tmpCandidate->activate();
@@ -1609,7 +1638,7 @@ namespace smtrat
             icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), tmp, ex_to<symbol>(newReal.second) );
             mNonlinearConstraints[_constr].insert( mNonlinearConstraints[_constr].end(), tmpCandidate );
 
-            mIntervals[ex_to<symbol>(newReal.second)] = GiNaCRA::DoubleInterval::unboundedInterval();
+            mIntervals.insert(std::make_pair(ex_to<symbol>(newReal.second), GiNaCRA::DoubleInterval::unboundedInterval()));
 
             // activate candidate as it is nonlinear (all nonlinear candidates are active)
             tmpCandidate->activate();
@@ -1636,8 +1665,9 @@ namespace smtrat
         const ex               derivative = _selection->derivative();
         const symbol           variable   = _selection->derivationVar();
         const symbol*          varptr     = &_selection->derivationVar();
-        double                 originalDiameter = mIntervals[variable].diameter();
-        bool originalUnbounded = ( mIntervals[variable].leftType() == GiNaCRA::DoubleInterval::INFINITY_BOUND || mIntervals[variable].rightType() == GiNaCRA::DoubleInterval::INFINITY_BOUND );
+        assert(mIntervals.find(variable) != mIntervals.end());
+        double                 originalDiameter = mIntervals.at(variable).diameter();
+        bool originalUnbounded = ( mIntervals.at(variable).leftType() == GiNaCRA::DoubleInterval::INFINITY_BOUND || mIntervals.at(variable).rightType() == GiNaCRA::DoubleInterval::INFINITY_BOUND );
         
         splitOccurred    = mIcp.contract<GiNaCRA::SimpleNewton>( mIntervals, constr, derivative, variable, resultA, resultB );
         mHistoryActual->addContraction(_selection);
@@ -1652,7 +1682,7 @@ namespace smtrat
 #endif
             mHistoryActual->setSplit(varptr);
 
-            GiNaCRA::DoubleInterval originalInterval = mIntervals[variable];
+            GiNaCRA::DoubleInterval originalInterval = mIntervals.at(variable);
             
             // set intervals and update historytree
             GiNaCRA::evaldoubleintervalmap tmpRight = GiNaCRA::evaldoubleintervalmap();
@@ -1739,12 +1769,12 @@ namespace smtrat
         else
         {
             // set intervals
-            mIntervals[variable] = mIntervals[variable].intersect(resultA);
+            mIntervals[variable] = mIntervals.at(variable).intersect(resultA);
 #ifdef ICPMODULE_DEBUG
             cout << "      New interval: " << variable << " = ";
-            mIntervals[variable].dbgprint();
+            mIntervals.at(variable).dbgprint();
 #endif
-            if ( mIntervals[variable].rightType() != GiNaCRA::DoubleInterval::INFINITY_BOUND && mIntervals[variable].leftType() != GiNaCRA::DoubleInterval::INFINITY_BOUND && !originalUnbounded )
+            if ( mIntervals.at(variable).rightType() != GiNaCRA::DoubleInterval::INFINITY_BOUND && mIntervals.at(variable).leftType() != GiNaCRA::DoubleInterval::INFINITY_BOUND && !originalUnbounded )
             {
                 if ( originalDiameter == 0 )
                 {
@@ -1752,10 +1782,10 @@ namespace smtrat
                 }
                 else
                 {
-                    _relativeContraction = 1 - (mIntervals[variable].diameter() / originalDiameter);
+                    _relativeContraction = 1 - (mIntervals.at(variable).diameter() / originalDiameter);
                 }
             }
-            else if ( originalUnbounded && mIntervals[variable].unbounded() == false )
+            else if ( originalUnbounded && mIntervals.at(variable).unbounded() == false )
             {
                 // if we came from infinity and got a result, we achieve maximal relative contraction
                 _relativeContraction = 1;
@@ -1770,51 +1800,51 @@ namespace smtrat
 
     void ICPModule::initiateWeights()
     {
-        std::map<const Constraint*, ContractionCandidates>::iterator constrIt;
-        ContractionCandidates::iterator   varIt;
-        double                   minDiameter = 0;
-        double maxDiameter = 0;
-        bool                     minSet = false;
-        bool                     maxSet = false;
-        vector<symbol>           variables = vector<symbol>();
-
-        // calculate Jacobian for initial box
-        for( constrIt = mNonlinearConstraints.begin(); constrIt != mNonlinearConstraints.end(); constrIt++ )
-        {
-            std::set<icp::ContractionCandidate*> tmp = constrIt->second;
-
-            minSet = false;
-            maxSet = false;
-
-            for( varIt = tmp.begin(); varIt != tmp.end(); varIt++ )
-            {
-                (*varIt)->calcDerivative();
-
-                variables.clear();
-                const ex term = (*varIt)->derivative();
-                mIcp.searchVariables( term, &variables );
-
-                if( !minSet )
-                {
-                    minDiameter = mIntervals[(*varIt)->derivationVar()].right() - mIntervals[(*varIt)->derivationVar()].right();
-                }
-                else
-                {
-                    minDiameter = mIntervals[(*varIt)->derivationVar()].right() - mIntervals[(*varIt)->derivationVar()].right() < minDiameter
-                                  ? mIntervals[(*varIt)->derivationVar()].right() - mIntervals[(*varIt)->derivationVar()].right() : minDiameter;
-                }
-
-                if( !maxSet )
-                {
-                    maxDiameter = mIntervals[(*varIt)->derivationVar()].right() - mIntervals[(*varIt)->derivationVar()].right();
-                }
-                else
-                {
-                    maxDiameter = mIntervals[(*varIt)->derivationVar()].right() - mIntervals[(*varIt)->derivationVar()].right() > maxDiameter
-                                  ? mIntervals[(*varIt)->derivationVar()].right() - mIntervals[(*varIt)->derivationVar()].right() : maxDiameter;
-                }
-            }
-        }
+//        std::map<const Constraint*, ContractionCandidates>::iterator constrIt;
+//        ContractionCandidates::iterator   varIt;
+//        double                   minDiameter = 0;
+//        double maxDiameter = 0;
+//        bool                     minSet = false;
+//        bool                     maxSet = false;
+//        vector<symbol>           variables = vector<symbol>();
+//
+//        // calculate Jacobian for initial box
+//        for( constrIt = mNonlinearConstraints.begin(); constrIt != mNonlinearConstraints.end(); constrIt++ )
+//        {
+//            std::set<icp::ContractionCandidate*> tmp = constrIt->second;
+//
+//            minSet = false;
+//            maxSet = false;
+//
+//            for( varIt = tmp.begin(); varIt != tmp.end(); varIt++ )
+//            {
+//                (*varIt)->calcDerivative();
+//
+//                variables.clear();
+//                const ex term = (*varIt)->derivative();
+//                mIcp.searchVariables( term, &variables );
+//
+//                if( !minSet )
+//                {
+//                    minDiameter = mIntervals[(*varIt)->derivationVar()].right() - mIntervals[(*varIt)->derivationVar()].right();
+//                }
+//                else
+//                {
+//                    minDiameter = mIntervals[(*varIt)->derivationVar()].right() - mIntervals[(*varIt)->derivationVar()].right() < minDiameter
+//                                  ? mIntervals[(*varIt)->derivationVar()].right() - mIntervals[(*varIt)->derivationVar()].right() : minDiameter;
+//                }
+//
+//                if( !maxSet )
+//                {
+//                    maxDiameter = mIntervals[(*varIt)->derivationVar()].right() - mIntervals[(*varIt)->derivationVar()].right();
+//                }
+//                else
+//                {
+//                    maxDiameter = mIntervals[(*varIt)->derivationVar()].right() - mIntervals[(*varIt)->derivationVar()].right() > maxDiameter
+//                                  ? mIntervals[(*varIt)->derivationVar()].right() - mIntervals[(*varIt)->derivationVar()].right() : maxDiameter;
+//                }
+//            }
+//        }
     }
     
     void ICPModule::debugPrint()
@@ -1976,7 +2006,8 @@ namespace smtrat
             if ( (*variableIt).second.checkLinear() == false )
             {
                 symbol variable = (*variableIt).first;
-                GiNaCRA::DoubleInterval interval = mIntervals[variable];
+                assert(mIntervals.find(variable) != mIntervals.end());
+                GiNaCRA::DoubleInterval interval = mIntervals.at(variable);
                 GiNaC::symtab variables = GiNaC::symtab();
                 variables[variable.get_name()] = variable;
 
@@ -1989,8 +2020,6 @@ namespace smtrat
                 mValidationFormula->addSubformula( validationTmpFormula );
             }
         }
-
-        mValidationFormula->getPropositions();
         
         // assert all constraints in mValidationFormula
         // TODO: optimize! -> should be okay to just assert centerconstraints
@@ -2006,8 +2035,9 @@ namespace smtrat
 
         mValidationFormula->getPropositions();
         Answer centerFeasible = mLRA.isConsistent();
+//        cout << "mLRA" << endl;
         
-//        mLRA.clearDeductions();
+        mLRA.clearDeductions();
         
         if ( centerFeasible == True )
         {
@@ -2095,12 +2125,14 @@ namespace smtrat
                                 }
                                 else
                                 {
+                                    assert(mIntervals.find(ex_to<symbol>(*mulIt)) != mIntervals.end() );
                                     foundNonlinear = true;
                                     if ( tmpres < 0){
                                         // create new numeric from double of left interval bound, coeficient has been set
-                                        if ( mIntervals[ex_to<symbol>(*mulIt)].leftType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
+                                        
+                                        if ( mIntervals.at( ex_to<symbol>(*mulIt) ).leftType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
                                         {
-                                            tmpres *= GiNaC::numeric(mIntervals[ex_to<symbol>(*mulIt)].left());
+                                            tmpres *= GiNaC::numeric(mIntervals.at(ex_to<symbol>(*mulIt)).left());
                                         }
                                         else
                                         {
@@ -2110,9 +2142,9 @@ namespace smtrat
                                     else if ( tmpres > 0 && tmpres != 1 )
                                     {
                                         // create new numeric from double of right interval bound, coefficient has been set
-                                        if ( mIntervals[ex_to<symbol>(*mulIt)].rightType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
+                                        if ( mIntervals.at( ex_to<symbol>(*mulIt) ).rightType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
                                         {
-                                            tmpres *= GiNaC::numeric(mIntervals[ex_to<symbol>(*mulIt)].right());
+                                            tmpres *= GiNaC::numeric(mIntervals.at(ex_to<symbol>(*mulIt)).right());
                                         }
                                         else
                                         {
@@ -2122,10 +2154,10 @@ namespace smtrat
                                     else
                                     {
                                         // result == 1 -> has not been set yet, store both values
-                                        lBound = GiNaC::numeric(mIntervals[ex_to<symbol>(*mulIt)].left());
-                                        uBound = GiNaC::numeric(mIntervals[ex_to<symbol>(*mulIt)].right());
-                                        isLeftInfty = (mIntervals[ex_to<symbol>(*mulIt)].leftType() == GiNaCRA::DoubleInterval::INFINITY_BOUND);
-                                        isRightInfty = (mIntervals[ex_to<symbol>(*mulIt)].rightType() == GiNaCRA::DoubleInterval::INFINITY_BOUND);
+                                        lBound = GiNaC::numeric(mIntervals.at(ex_to<symbol>(*mulIt)).left());
+                                        uBound = GiNaC::numeric(mIntervals.at(ex_to<symbol>(*mulIt)).right());
+                                        isLeftInfty = (mIntervals.at(ex_to<symbol>(*mulIt)).leftType() == GiNaCRA::DoubleInterval::INFINITY_BOUND);
+                                        isRightInfty = (mIntervals.at(ex_to<symbol>(*mulIt)).rightType() == GiNaCRA::DoubleInterval::INFINITY_BOUND);
                                     }
                                 }
                             }
@@ -2146,9 +2178,10 @@ namespace smtrat
                         else
                         {
                             // found a nonlinear variable -> insert upper bound as coefficient == 1 > 0
-                            if ( mIntervals[ex_to<symbol>(*constrIt)].rightType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
+                            assert(mIntervals.find(ex_to<symbol>(*constrIt)) != mIntervals.end());
+                            if ( mIntervals.at(ex_to<symbol>(*constrIt)).rightType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
                             {
-                                res += GiNaC::numeric(mIntervals[ex_to<symbol>(*constrIt)].right());
+                                res += GiNaC::numeric(mIntervals.at(ex_to<symbol>(*constrIt)).right());
                             }
                             else
                             {
@@ -2349,9 +2382,10 @@ namespace smtrat
                 {
                     std::map<symbol, icp::IcpVariable, ex_is_less>::iterator icpVar = mVariables.find(ex_to<symbol>((*variableIt).second));
                     assert(icpVar != mVariables.end());
-                    if ( mIntervals.find(ex_to<symbol>((*variableIt).second)) != mIntervals.end() && mIntervals[ex_to<symbol>((*variableIt).second)].diameter() > _targetDiameter && (*icpVar).second.isOriginal() )
+                    if ( mIntervals.find(ex_to<symbol>((*variableIt).second)) != mIntervals.end() && mIntervals.at(ex_to<symbol>((*variableIt).second)).diameter() > _targetDiameter && (*icpVar).second.isOriginal() )
                     {
                         variable = ex_to<symbol>((*variableIt).second);
+//                        cout << "[NonLin] SplitVar: " << variable << ", Diameter: " << mIntervals.at(variable).diameter() << endl;
                         found  = true;
                         break;
                     }
@@ -2368,7 +2402,7 @@ namespace smtrat
 
                     mHistoryActual->setSplit(varptr);
                     // set intervals and update historytree
-                    GiNaCRA::DoubleInterval tmp = mIntervals[variable];
+                    GiNaCRA::DoubleInterval tmp = mIntervals.at(variable);
 
                     GiNaCRA::DoubleInterval tmpRightInt = tmp;
                     tmpRightInt.cutUntil(tmp.midpoint());
@@ -2436,9 +2470,10 @@ namespace smtrat
                 {
                     std::map<symbol, icp::IcpVariable, ex_is_less>::iterator icpVar = mVariables.find(ex_to<symbol>((*variableIt).second));
                     assert(icpVar != mVariables.end());
-                    if ( mIntervals.find(ex_to<symbol>((*variableIt).second)) != mIntervals.end() && mIntervals[ex_to<symbol>((*variableIt).second)].diameter() > _targetDiameter && (*icpVar).second.isOriginal() )
+                    if ( mIntervals.find(ex_to<symbol>((*variableIt).second)) != mIntervals.end() && mIntervals.at(ex_to<symbol>((*variableIt).second)).diameter() > _targetDiameter && (*icpVar).second.isOriginal() )
                     {
                         variable = ex_to<symbol>((*variableIt).second);
+//                        cout << "[Lin] SplitVar: " << variable << ", Diameter: " << mIntervals.at(variable).diameter() << endl;
                         found = true;
                         break;
                     }
@@ -2455,7 +2490,7 @@ namespace smtrat
 
                     mHistoryActual->setSplit(varptr);
                     // set intervals and update historytree
-                    GiNaCRA::DoubleInterval tmp = mIntervals[variable];
+                    GiNaCRA::DoubleInterval tmp = mIntervals.at(variable);
 
                     GiNaCRA::DoubleInterval tmpRightInt = tmp;
                     tmpRightInt.cutUntil(tmp.midpoint());
@@ -2609,7 +2644,7 @@ namespace smtrat
             assert(mIntervals.find((*intervalIt).first) != mIntervals.end());
 
             // only update intervals which changed
-            if ( !mIntervals[(*intervalIt).first].isEqual((*intervalIt).second) )
+            if ( !mIntervals.at((*intervalIt).first).isEqual((*intervalIt).second) )
             {
                 mIntervals[(*intervalIt).first] = (*intervalIt).second;
                 std::map<symbol, icp::IcpVariable, ex_is_less>::iterator icpVar = mVariables.find((*intervalIt).first);
@@ -2630,8 +2665,9 @@ namespace smtrat
         {
             // check that assertions have been processed properly
             assert( (*nonlinearIt).second == (*nonlinearIt).first->origin().size() );
+            assert( mIntervals.find((*nonlinearIt).first->derivationVar()) != mIntervals.end() );
 
-            if ( mIntervals[(*nonlinearIt).first->derivationVar()].diameter() > _targetDiameter || mIntervals[(*nonlinearIt).first->derivationVar()].diameter() == -1 )
+            if ( mIntervals.at((*nonlinearIt).first->derivationVar()).diameter() > _targetDiameter || mIntervals.at((*nonlinearIt).first->derivationVar()).diameter() == -1 )
             {
                 // only add if not already existing
                 if ( !findCandidateInRelevant((*nonlinearIt).first) )
@@ -2663,8 +2699,9 @@ namespace smtrat
         {
             // check that assertions have been processed properly
             assert( (*linearIt).second == (*linearIt).first->origin().size() );
+            assert( mIntervals.find((*linearIt).first->derivationVar()) != mIntervals.end() );
             
-            if ( (*linearIt).first->isActive() && ( mIntervals[(*linearIt).first->derivationVar()].diameter() > _targetDiameter || mIntervals[(*linearIt).first->derivationVar()].diameter() == -1 ) )
+            if ( (*linearIt).first->isActive() && ( mIntervals.at((*linearIt).first->derivationVar()).diameter() > _targetDiameter || mIntervals.at((*linearIt).first->derivationVar()).diameter() == -1 ) )
             {
                 if( !findCandidateInRelevant((*linearIt).first) )
                 {
@@ -2736,28 +2773,32 @@ namespace smtrat
     {
         bool newAdded = false;
         
-        mBoundConstraints.clear();
         GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
+        
+//        printIntervals();
 
         for ( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
         {            
             const symbol tmpSymbol = ex_to<symbol>((*variablesIt).second);
-//            cout << "Set: " << mVariables[tmpSymbol].isExternalBoundsSet() << " , Updated: " << mVariables[tmpSymbol].isExternalUpdated() << endl;
+//            cout << "Variable: " << tmpSymbol << endl;
+            
+//            cout << "Set: " << mVariables.at(tmpSymbol).isExternalBoundsSet() << " , Updated: " << mVariables.at(tmpSymbol).isExternalUpdated() << endl;
 
-            if ( mVariables.find(tmpSymbol) != mVariables.end() )
+            std::map<symbol, icp::IcpVariable, ex_is_less>::iterator icpVar = mVariables.find(tmpSymbol);
+            assert(icpVar != mVariables.end());
+            if ( icpVar != mVariables.end() )
             {
-                std::map<symbol, icp::IcpVariable, ex_is_less>::iterator icpVar = mVariables.find(tmpSymbol);
-                assert(icpVar != mVariables.end());
                 if( !(*icpVar).second.isExternalBoundsSet() || (*icpVar).second.isExternalUpdated())
                 {
                     // generate both bounds, left first
-                    numeric bound = GiNaC::rationalize( mIntervals[tmpSymbol].left() );
+                    assert( mIntervals.find(tmpSymbol) != mIntervals.end() );
+                    numeric bound = GiNaC::rationalize( mIntervals.at(tmpSymbol).left() );
                     GiNaC::ex leftEx = tmpSymbol - bound;
                     GiNaC::symtab variables;
                     variables.insert(std::pair<string, ex>((*variablesIt).first, (*variablesIt).second));
 
                     const Constraint* leftTmp;
-                    switch (mIntervals[tmpSymbol].leftType())
+                    switch (mIntervals.at(tmpSymbol).leftType())
                     {
                         case GiNaCRA::DoubleInterval::INFINITY_BOUND:
                             leftTmp = NULL;
@@ -2771,25 +2812,25 @@ namespace smtrat
                     }
                     if ( leftTmp != NULL )
                     {
-                        bool found = false;
-                        // check if the bound is already contained.
-                        for ( auto boundIt = mpPassedFormula->begin(); boundIt != mpPassedFormula->end(); ++boundIt )
-                        {
-                            if ( (*boundIt)->constraint().lhs() == leftEx )
-                            {
-    //                            removeSubformulaFromPassedFormula(mVariables[tmpSymbol].leftBound());
-                                found = true;
-                                break;
-                            }
-                        }
+//                        bool found = false;
+//                        // check if the bound is already contained.
+//                        for ( auto boundIt = mpPassedFormula->begin(); boundIt != mpPassedFormula->end(); ++boundIt )
+//                        {
+//                            if ( (*boundIt)->constraint().lhs() == leftEx )
+//                            {
+//    //                            removeSubformulaFromPassedFormula(mVariables[tmpSymbol].leftBound());
+//                                found = true;
+//                                break;
+//                            }
+//                        }
 
                         Formula* leftBound = new Formula(leftTmp);
                         vec_set_const_pFormula origins = vec_set_const_pFormula();
                         std::set<const Formula*> emptyTmpSet = std::set<const Formula*>();
                         origins.insert(origins.begin(), emptyTmpSet);
 
-                        if ( !found )
-                        {
+//                        if ( !found )
+//                        {
                             if ( (*icpVar).second.isExternalBoundsSet() )
                             {
                                 removeSubformulaFromPassedFormula((*icpVar).second.externalLeftBound());
@@ -2797,17 +2838,17 @@ namespace smtrat
                             addSubformulaToPassedFormula( leftBound, origins );
                             (*icpVar).second.setExternalLeftBound(mpPassedFormula->last());
 //                            cout << "Set bounds of " << tmpSymbol << " to " << *leftBound << endl;
-                            mBoundConstraints.insert(leftBound);
+//                            mBoundConstraints.insert(leftBound);
                             newAdded = true;
-                        }
+//                        }
                     }
 
                     // right:
-                    bound = GiNaC::rationalize(mIntervals[tmpSymbol].right());
+                    bound = GiNaC::rationalize(mIntervals.at(tmpSymbol).right());
                     GiNaC::ex rightEx = tmpSymbol - bound;
 
                     const Constraint* rightTmp;
-                    switch (mIntervals[tmpSymbol].rightType())
+                    switch (mIntervals.at(tmpSymbol).rightType())
                     {
                         case GiNaCRA::DoubleInterval::INFINITY_BOUND:
                             rightTmp = NULL;
@@ -2821,25 +2862,25 @@ namespace smtrat
                     }
                     if ( rightTmp != NULL )
                     {
-                        bool found = false;
-                        // check if the bound is already contained.
-                        for ( auto boundIt = mpPassedFormula->begin(); boundIt != mpPassedFormula->end(); ++boundIt )
-                        {
-                            if ( (*boundIt)->constraint().lhs() == rightEx )
-                            {
-    //                            removeSubformulaFromPassedFormula(mVariables[tmpSymbol].rightBound());
-                                found = true;
-                                break;
-                            }
-                        }
+//                        bool found = false;
+//                        // check if the bound is already contained.
+//                        for ( auto boundIt = mpPassedFormula->begin(); boundIt != mpPassedFormula->end(); ++boundIt )
+//                        {
+//                            if ( (*boundIt)->constraint().lhs() == rightEx )
+//                            {
+//    //                            removeSubformulaFromPassedFormula(mVariables[tmpSymbol].rightBound());
+//                                found = true;
+//                                break;
+//                            }
+//                        }
 
                         Formula* rightBound = new Formula(rightTmp);
                         vec_set_const_pFormula origins = vec_set_const_pFormula();
                         std::set<const Formula*> emptyTmpSet = std::set<const Formula*>();
                         origins.insert(origins.begin(), emptyTmpSet);
 
-                        if ( !found )
-                        {
+//                        if ( !found )
+//                        {
                             if ( (*icpVar).second.isExternalBoundsSet() )
                             {
                                 removeSubformulaFromPassedFormula((*icpVar).second.externalRightBound());
@@ -2847,12 +2888,11 @@ namespace smtrat
                             addSubformulaToPassedFormula( rightBound , origins);
                             (*icpVar).second.setExternalRightBound(mpPassedFormula->last());
 //                            cout << "Set bounds of " << tmpSymbol << " to " << *rightBound << endl;
-                            mBoundConstraints.insert(rightBound);
+//                            mBoundConstraints.insert(rightBound);
                             newAdded = true;
-                        }
+//                        }
                     }
                     (*icpVar).second.externalBoundsSet();
-                    (*icpVar).second.setUpdated((*icpVar).second.isInternalUpdated(),false);
                 }
                 else
                 {
@@ -2862,7 +2902,14 @@ namespace smtrat
                 
             }
         }
-        return newAdded;
+        if (mBackendCalled)
+        {
+            return newAdded;
+        }
+        else
+        {
+            return true;
+        }
     }
 
     void ICPModule::updateRelevantCandidates(symbol _var, double _relativeContraction )
@@ -2926,13 +2973,14 @@ namespace smtrat
         {            
             mLRA.inform((*formulaIt)->pConstraint());
             mValidationFormula->addSubformula((*formulaIt));
-            mValidationFormula->getPropositions();
+//            mValidationFormula->getPropositions();
             mLRA.assertSubformula(mValidationFormula->last());
         }
         
+        mValidationFormula->getPropositions();
+//        cout << "mLRA" << endl;
         Answer boxCheck = mLRA.isConsistent();
-        
-//        mLRA.clearDeductions();
+        mLRA.clearDeductions();
         
 #ifdef ICPMODULE_DEBUG
         cout << "Boxcheck: " << boxCheck << endl;

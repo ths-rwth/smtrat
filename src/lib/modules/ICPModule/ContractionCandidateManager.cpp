@@ -63,8 +63,11 @@ namespace smtrat
             tmp = new ContractionCandidate(_lhs, _constraint, _derivationVar, _origin, mCurrentId);    
         }
         
-        mCandidates[mCurrentId] = tmp;
-        return mCandidates[mCurrentId++];
+        std::pair<std::map<unsigned, ContractionCandidate*>::iterator, bool> insertionResult = mCandidates.insert(std::make_pair(mCurrentId,tmp));
+        assert( insertionResult.second );
+        ++mCurrentId;
+        
+        return (*insertionResult.first).second;
     }
     
     const unsigned ContractionCandidateManager::getId ( const ContractionCandidate* const _candidate ) const
