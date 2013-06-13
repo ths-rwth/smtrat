@@ -412,8 +412,9 @@ namespace smtrat
                 unsigned checkCorrectness() const;
                 bool rowCorrect( unsigned _rowNumber ) const;
                 #ifdef LRA_CUTS_FROM_PROOFS
-                bool isDefining(unsigned);
-                void Create_DC_Tableau();
+                const std::pair<vector<Variable<T>*>,vector<T>> isDefining(unsigned);
+                void invertColumn(unsigned);
+                void addColumns(unsigned,unsigned,int);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
@@ -2089,33 +2090,99 @@ namespace smtrat
         
         #ifdef LRA_CUTS_FROM_PROOFS
         template<class T>
-        bool Tableau<T>::isDefining(unsigned row_index) // TODO: Exclude Slacks
+        const std::pair<vector<Variable<T>*>,vector<T>> Tableau<T>::isDefining(unsigned row_index) 
         {
            Iterator row_iterator = Iterator(mRows.at(row_index).mStartEntry, mpEntries);
            Variable<T>* basic_var=mRows.at(row_index).mName;
-           Value<T> row_sum;
-           while(!row_iterator.rowEnd())
+           T row_sum;
+           vector<Variable<T>*> nonbasics = std::vector<Variable<T>*>();
+           vector<T> coeffs = std::vector<T>();
+           /* while(!row_iterator.rowEnd())
            {               
-               const Variable<T>& nonbasic_var = *mColumns[row_iterator->columnNumber()].mName;
-               Value<T>& ass = nonbasic_var.assignment();
+               const Variable<T>& nonbasic_var = *mColumns[(*row_iterator).columnNumber()].mName;
+               const Value<T>& ass = nonbasic_var.assignment();
+               nonbasics.push_back(nonbasic_var);
+               coeffs.push_back(ass);
                TableauEntry<T>& entry = (*mpEntries)[row_iterator.entryID()];
-               row_sum += entry.content()*ass;
+               row_sum += ass*entry.rContent();
                row_iterator.right();
-           }
-        if(row_sum == (*basic_var).infimum() || row_sum == (*basic_var).supremum()) return true;
-        else return false;   
+           }*/
+        std::pair<vector<Variable<T>*>,vector<T>> result (nonbasics,coeffs);            
+        if(basic_var->infimum() == row_sum || basic_var->supremum() == row_sum) return result;
+        else 
+        {
+            result.first.clear();
+            return result;        
+        }
         }
         
         template<class T>
-        void Tableau<T>::Create_DC_Tableau()
+        void Tableau<T>::invertColumn(unsigned column_index)
         {
-           unsigned numRows = mRows.size();
-           for( unsigned pos = 0; pos < numRows; ++pos )
-           {
-               
-           }
+        Iterator column_iterator = Iterator(mColumns.at(column_index).mStartEntry, mpEntries);   
+        while(!column_iterator.columnEnd())
+        {
+        (*mpEntries)[column_iterator.entryID()].content() *= -1;
+        column_iterator.down();
         }
-        #endif 
+        }
+        
+        template<class T>
+        void Tableau<T>::addColumns(unsigned columnA_index,unsigned columnB_index,int multiple)
+        {
+        Iterator columnA_iterator = Iterator(mColumns.at(columnA_index).mStartEntry, mpEntries);
+        Iterator columnB_iterator = Iterator(mColumns.at(columnB_index).mStartEntry, mpEntries);
+        while(!columnB_iterator.columnBegin())
+        {
+        if((*mpEntries)[columnA_iterator.entryID()].rowNumber() == (*mpEntries)[columnB_iterator.entryID()].rowNumber())
+            (*mpEntries)[columnA_iterator.entryID()].content() += (*mpEntries)[columnB_iterator.entryID()].content*multiple;
+        else 
+        {            
+            EntryID entryID = newTableauEntry(multiple*(*mpEntries)[columnA_iterator.entryID()].content());
+            TableauEntry<T>& entry = (*mpEntries)[entryID];
+            entry.setColumnNumber((*mpEntries)[columnB_iterator.entryID()].columnNumber());
+            entry.setRowNumber((*mpEntries)[columnA_iterator.entryID()].rowNumber());
+            TableauHead& columnHead = mColumns[entry.columnNumber()];
+            (*mpEntries)[columnA_iterator.entryID()].up() = entryID;
+            Iterator row_iterator = Iterator(columnB_iterator.entryID(), mpEntries);
+            EntryID ID1_to_be_Fixed;
+            EntryID ID2_to_be_Fixed;
+            if((*mpEntries)[row_iterator.entryID()].columnNumber() > (*mpEntries)[entryID].columnNumber())
+            {
+                while((*mpEntries)[row_iterator.entryID()].columnNumber() < (*mpEntries)[entryID].columnNumber())
+                {
+                    ID1_to_be_Fixed = row_iterator.entryID();
+                    row_iterator.left();                    
+                    ID2_to_be_Fixed = row_iterator.entryID();
+                }
+                        (*mpEntries)[ID1_to_be_Fixed].setLeft(entryID);
+                        (*mpEntries)[entryID].setRight(ID1_to_be_Fixed);
+                        (*mpEntries)[ID2_to_be_Fixed].setRight(entryID);
+                        (*mpEntries)[entryID].setLeft(ID2_to_be_Fixed);
+                        
+                        
+            }    
+            else
+            {
+                while((*mpEntries)[row_iterator.entryID()].columnNumber() > (*mpEntries)[entryID].columnNumber())
+                {
+                    ID1_to_be_Fixed = row_iterator.entryID();
+                    row_iterator.right();                    
+                    ID2_to_be_Fixed = row_iterator.entryID();               
+                }
+                        (*mpEntries)[ID1_to_be_Fixed].setRight(entryID);
+                        (*mpEntries)[entryID].setLeft(ID1_to_be_Fixed);
+                        (*mpEntries)[ID2_to_be_Fixed].setLeft(entryID);
+                        (*mpEntries)[entryID].setRight(ID2_to_be_Fixed);
+            }    
+        
+        }
+        columnB_iterator.up();
+        while((*mpEntries)[columnA_iterator.up()].rowNumber() > (*mpEntries)[columnB_iterator.entryID()].rowNumber())
+            columnA_iterator.up();
+        }
+        }
+        #endif
         
         #ifdef LRA_GOMORY_CUTS
         enum GOMORY_SET
