@@ -153,10 +153,10 @@ namespace vs
         return true;
     }
     
-    void simplify( DisjunctionOfConstraintConjunctions&, const GiNaCRA::evaldoubleintervalmap& = GiNaCRA::evaldoubleintervalmap() );
-    bool splitProducts( DisjunctionOfConstraintConjunctions&, const GiNaCRA::evaldoubleintervalmap& = GiNaCRA::evaldoubleintervalmap() );
-    bool splitProducts( const TS_ConstraintConjunction&, DisjunctionOfConstraintConjunctions&, const GiNaCRA::evaldoubleintervalmap& = GiNaCRA::evaldoubleintervalmap() );
-    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint*, const GiNaCRA::evaldoubleintervalmap& = GiNaCRA::evaldoubleintervalmap() );
+    void simplify( DisjunctionOfConstraintConjunctions& );
+    bool splitProducts( DisjunctionOfConstraintConjunctions& );
+    bool splitProducts( const TS_ConstraintConjunction&, DisjunctionOfConstraintConjunctions& );
+    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* );
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::Constraint* );
     void getOddBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& );
     void getEvenBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& );

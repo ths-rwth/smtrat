@@ -45,8 +45,7 @@ namespace vs
      */
     bool substitute( const smtrat::Constraint* _constraint,
                      const Substitution& _substitution,
-                     DisjunctionOfConstraintConjunctions& _substitutionResults,
-                     const GiNaCRA::evaldoubleintervalmap& _solutionInterval )
+                     DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
         #ifdef VS_DEBUG_SUBSTITUTION
         cout << "substitute: ( " << *_constraint << " )" << _substitution << endl;
@@ -61,12 +60,12 @@ namespace vs
         {
             case ST_NORMAL:
             {
-                substituteNormal( _constraint, _substitution, _substitutionResults, _solutionInterval );
+                substituteNormal( _constraint, _substitution, _substitutionResults );
                 break;
             }
             case ST_PLUS_EPSILON:
             {
-                if( !substitutePlusEps( _constraint, _substitution, _substitutionResults, _solutionInterval ) )
+                if( !substitutePlusEps( _constraint, _substitution, _substitutionResults ) )
                 {
                     result = false;
                 }
@@ -74,7 +73,7 @@ namespace vs
             }
             case ST_MINUS_INFINITY:
             {
-                substituteMinusInf( _constraint, _substitution, _substitutionResults, _solutionInterval );
+                substituteMinusInf( _constraint, _substitution, _substitutionResults );
                 break;
             }
             default:
@@ -83,7 +82,7 @@ namespace vs
             }
         }
         #ifdef SMTRAT_DEVOPTION_Statistics
-        if( !splitProducts( _substitutionResults, _solutionInterval ) )
+        if( !splitProducts( _substitutionResults ) )
         {
             result = false;
         }
@@ -103,8 +102,7 @@ namespace vs
      */
     void substituteNormal( const smtrat::Constraint* _constraint,
                            const Substitution& _substitution,
-                           DisjunctionOfConstraintConjunctions& _substitutionResults,
-                           const GiNaCRA::evaldoubleintervalmap& _solutionInterval )
+                           DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
         symbol sym;
         if( _constraint->variable( _substitution.variable(), sym ) )
@@ -298,7 +296,7 @@ namespace vs
             _substitutionResults.back().push_back( _constraint );
         }
 
-        simplify( _substitutionResults, _solutionInterval );
+        simplify( _substitutionResults );
     }
 
     /**
@@ -646,8 +644,7 @@ namespace vs
      */
     bool substitutePlusEps( const smtrat::Constraint* _constraint,
                             const Substitution& _substitution,
-                            DisjunctionOfConstraintConjunctions& _substitutionResults,
-                            const GiNaCRA::evaldoubleintervalmap& _solutionInterval )
+                            DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
         bool result = true;
         if( !_constraint->variables().empty() )
@@ -668,30 +665,30 @@ namespace vs
                     }
                     case smtrat::CR_LESS:
                     {
-                        result = substituteEpsGradients( _constraint, _substitution, smtrat::CR_LESS, _substitutionResults, _solutionInterval );
+                        result = substituteEpsGradients( _constraint, _substitution, smtrat::CR_LESS, _substitutionResults );
                         break;
                     }
                     case smtrat::CR_GREATER:
                     {
-                        result = substituteEpsGradients( _constraint, _substitution, smtrat::CR_GREATER, _substitutionResults, _solutionInterval );
+                        result = substituteEpsGradients( _constraint, _substitution, smtrat::CR_GREATER, _substitutionResults );
                         break;
                     }
                     case smtrat::CR_LEQ:
                     {
                         substituteTrivialCase( _constraint, _substitution, _substitutionResults );
-                        result = substituteEpsGradients( _constraint, _substitution, smtrat::CR_LESS, _substitutionResults, _solutionInterval );
+                        result = substituteEpsGradients( _constraint, _substitution, smtrat::CR_LESS, _substitutionResults );
                         break;
                     }
                     case smtrat::CR_GEQ:
                     {
                         substituteTrivialCase( _constraint, _substitution, _substitutionResults );
-                        result = substituteEpsGradients( _constraint, _substitution, smtrat::CR_GREATER, _substitutionResults, _solutionInterval );
+                        result = substituteEpsGradients( _constraint, _substitution, smtrat::CR_GREATER, _substitutionResults );
                         break;
                     }
                     default:
                         assert( false );
                 }
-                simplify( _substitutionResults, _solutionInterval );
+                simplify( _substitutionResults );
             }
             else
             {
@@ -724,8 +721,7 @@ namespace vs
     bool substituteEpsGradients( const smtrat::Constraint* _constraint,
                                  const Substitution& _substitution,
                                  const smtrat::Constraint_Relation _relation,
-                                 DisjunctionOfConstraintConjunctions& _substitutionResults,
-                                 const GiNaCRA::evaldoubleintervalmap& _solutionInterval )
+                                 DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
         bool result = true;
         symbol sym;
@@ -739,7 +735,7 @@ namespace vs
          * where the parameter relation is ~.
          */
         const smtrat::Constraint* firstCaseInequality = smtrat::Formula::newConstraint( _constraint->lhs(), _relation, _constraint->variables() );
-        substituteNormal( firstCaseInequality, substitution, _substitutionResults, _solutionInterval );
+        substituteNormal( firstCaseInequality, substitution, _substitutionResults );
 
         // Create a vector to store the results of each single substitution.
         vector<DisjunctionOfConstraintConjunctions> substitutionResultsVector;
@@ -768,9 +764,9 @@ namespace vs
 
             // Apply the substitution (without epsilon) to the new constraints.
             substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-            substituteNormal( equation, substitution, substitutionResultsVector.back(), _solutionInterval );
+            substituteNormal( equation, substitution, substitutionResultsVector.back() );
             substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
-            substituteNormal( inequality, substitution, substitutionResultsVector.back(), _solutionInterval );
+            substituteNormal( inequality, substitution, substitutionResultsVector.back() );
             
             if( !combine( substitutionResultsVector, _substitutionResults ) )
             {
@@ -795,8 +791,7 @@ namespace vs
      */
     void substituteMinusInf( const smtrat::Constraint* _constraint,
                              const Substitution& _substitution,
-                             DisjunctionOfConstraintConjunctions& _substitutionResults,
-                             const GiNaCRA::evaldoubleintervalmap& _solutionInterval )
+                             DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
         if( !_constraint->variables().empty() )
         {
@@ -814,7 +809,7 @@ namespace vs
                 {
                     substituteInfLessGreater( _constraint, _substitution, _substitutionResults );
                 }
-                simplify( _substitutionResults, _solutionInterval );
+                simplify( _substitutionResults );
             }
             else
             {

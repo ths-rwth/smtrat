@@ -1060,6 +1060,7 @@ EndSwitch:;
         bool anySubstitutionFailed = false;
         bool anySubstitutionNotApplied = false;
         ConditionSetSet conflictSet = ConditionSetSet();
+        GiNaCRA::evaldoubleintervalmap intervalSpace = _currentState->rFather().rVariableBounds().getIntervalMap();
 
         /*
          * Apply the most recent substitution in this state to each of its conditions.
@@ -1096,7 +1097,7 @@ EndSwitch:;
                  */
                 DisjunctionOfConstraintConjunctions disjunctionOfConsConj;
                 disjunctionOfConsConj = DisjunctionOfConstraintConjunctions();
-                if( !substitute( currentConstraint, currentSubstitution, disjunctionOfConsConj ) )//, _currentState->rFather().rVariableBounds().getIntervalMap() ) )
+                if( !substitute( currentConstraint, currentSubstitution, disjunctionOfConsConj ) )
                 {
                     anySubstitutionNotApplied = true;
                 }
@@ -1105,24 +1106,34 @@ EndSwitch:;
                  * Create the the conditions according to the just created constraint prototypes.
                  */
                 bool anyConjunctionConsistent = false;
+                symtab conflictingVars = symtab();
                 disjunctionsOfCondConj.push_back( DisjunctionOfConditionConjunctions() );
                 DisjunctionOfConditionConjunctions& currentDisjunction = disjunctionsOfCondConj.back();
                 for( DisjunctionOfConstraintConjunctions::iterator consConj = disjunctionOfConsConj.begin(); consConj != disjunctionOfConsConj.end();
                         ++consConj )
                 {
-                    bool conjunctionConsistent = true;
                     /*
                      * Check if the conjunction contains any inconsistent constraint.
                      */
-                    for( TS_ConstraintConjunction::iterator cons = consConj->begin(); cons != consConj->end(); ++cons )
+                    TS_ConstraintConjunction::iterator cons = consConj->begin();
+                    while( cons != consConj->end() )
                     {
-                        if( (**cons).isConsistent() == 0 )
+                        unsigned consistent = (*cons)->consistentWith( intervalSpace );
+                        if( consistent == 0 )
                         {
-                            conjunctionConsistent = false;
+                            conflictingVars.insert( (*cons)->variables().begin(), (*cons)->variables().end() );
                             break;
                         }
+                        else if( consistent == 1 )
+                        {
+                            cons = consConj->erase( cons );
+                        }
+                        else
+                        {
+                            ++cons;
+                        }
                     }
-                    if( conjunctionConsistent )
+                    if( cons == consConj->end() )
                     {
                         anyConjunctionConsistent = true;
                         if( !anySubstitutionFailed )
@@ -1131,14 +1142,8 @@ EndSwitch:;
                             ConditionList& currentConjunction = currentDisjunction.back();
                             for( TS_ConstraintConjunction::iterator cons = consConj->begin(); cons != consConj->end(); ++cons )
                             {
-                                /*
-                                 * Add all conditions to the conjunction, which are not variable-free and consistent.
-                                 */
-                                if( (**cons).isConsistent() != 1 )
-                                {
-                                    currentConjunction.push_back( new vs::Condition( *cons, _currentState->treeDepth() ) );
-                                    currentConjunction.back()->pOriginalConditions()->insert( *cond );
-                                }
+                                currentConjunction.push_back( new vs::Condition( *cons, _currentState->treeDepth() ) );
+                                currentConjunction.back()->pOriginalConditions()->insert( *cond );
                             }
                         }
                         else
@@ -1154,6 +1159,8 @@ EndSwitch:;
                     {
                         condSet.insert( _currentState->pOriginalCondition() );
                     }
+                    set< const vs::Condition* > conflictingBounds = _currentState->father().variableBounds().getOriginsOfBounds( conflictingVars );
+                    condSet.insert( conflictingBounds.begin(), conflictingBounds.end() );
                     conflictSet.insert( condSet );
                 }
             }

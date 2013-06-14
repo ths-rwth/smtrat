@@ -296,37 +296,67 @@ namespace smtrat
      */
     unsigned Constraint::consistentWith( const GiNaCRA::evaldoubleintervalmap& _solutionInterval ) const
     {
+//        cout << *this << " consistent with" << endl;
+//        for( auto iter = _solutionInterval.begin(); iter != _solutionInterval.end(); ++iter )
+//        {
+//            cout << "   " << ex( iter->first ) << " in " << iter->second << endl;
+//        }
         if( variables().empty() )
         {
+//            cout << (evaluate( ex_to<numeric>( mLhs ), relation() ) ? 1 : 0) << endl;
             return evaluate( ex_to<numeric>( mLhs ), relation() ) ? 1 : 0;
         }
         else
         {
             GiNaCRA::DoubleInterval solutionSpace = GiNaCRA::DoubleInterval::evaluate( mLhs, _solutionInterval );
-            if( solutionSpace.empty() ) return 0;
+            if( solutionSpace.empty() )
+            {
+//                cout << 2 << endl;
+                return 2;
+            }
             switch( relation() )
             {
                 case CR_EQ:
                 {
-                    if( solutionSpace.diameter() == 0 && solutionSpace.left() == 0 ) return 1;
-                    else if( !solutionSpace.contains( 0 ) ) return 0;
+                    if( solutionSpace.diameter() == 0 && solutionSpace.left() == 0 )
+                    {
+//                        cout << 1 << endl;
+                        return 1;
+                    }
+                    else if( !solutionSpace.contains( 0 ) )
+                    {
+//                        cout << 0 << endl;
+                        return 0;
+                    }
                     break;
                 }
                 case CR_NEQ:
                 {
-                    if( !solutionSpace.contains( 0 ) ) return 1;
+                    if( !solutionSpace.contains( 0 ) )
+                    {
+//                        cout << 1 << endl;
+                        return 1;
+                    }
                     break;
                 }
                 case CR_LESS:
                 {
                     if( solutionSpace.rightType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
                     {
-                        if( solutionSpace.right() < 0 ) return true;
-                        else if( solutionSpace.right() == 0 && solutionSpace.rightType() == GiNaCRA::DoubleInterval::STRICT_BOUND ) return true;
+                        if( solutionSpace.right() < 0 )
+                        {
+//                            cout << 1 << endl;
+                            return 1;
+                        }
+                        else if( solutionSpace.right() == 0 && solutionSpace.rightType() == GiNaCRA::DoubleInterval::STRICT_BOUND ) return 1;
                     }
                     if( solutionSpace.leftType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
                     {
-                        if( solutionSpace.left() >= 0 ) return false;
+                        if( solutionSpace.left() >= 0 )
+                        {
+//                            cout << 0 << endl;
+                            return 0;
+                        }
                     }
                     break;
                 }
@@ -334,12 +364,24 @@ namespace smtrat
                 {
                     if( solutionSpace.leftType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
                     {
-                        if( solutionSpace.left() > 0 ) return true;
-                        else if( solutionSpace.left() == 0 && solutionSpace.leftType() == GiNaCRA::DoubleInterval::STRICT_BOUND ) return true;
+                        if( solutionSpace.left() > 0 )
+                        {
+//                            cout << 1 << endl;
+                            return 1;
+                        }
+                        else if( solutionSpace.left() == 0 && solutionSpace.leftType() == GiNaCRA::DoubleInterval::STRICT_BOUND )
+                        {
+//                            cout << 1 << endl;
+                            return 1;
+                        }
                     }
                     if( solutionSpace.rightType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
                     {
-                        if( solutionSpace.right() <= 0 ) return false;
+                        if( solutionSpace.right() <= 0 )
+                        {
+//                            cout << 0 << endl;
+                            return 0;
+                        }
                     }
                     break;
                 }
@@ -347,12 +389,24 @@ namespace smtrat
                 {
                     if( solutionSpace.rightType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
                     {
-                        if( solutionSpace.right() <= 0 ) return true;
+                        if( solutionSpace.right() <= 0 )
+                        {
+//                            cout << 1 << endl;
+                            return 1;
+                        }
                     }
                     if( solutionSpace.leftType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
                     {
-                        if( solutionSpace.left() > 0 ) return false;
-                        else if( solutionSpace.left() == 0 && solutionSpace.leftType() == GiNaCRA::DoubleInterval::STRICT_BOUND ) return false;
+                        if( solutionSpace.left() > 0 )
+                        {
+//                            cout << 0 << endl;
+                            return 0;
+                        }
+                        else if( solutionSpace.left() == 0 && solutionSpace.leftType() == GiNaCRA::DoubleInterval::STRICT_BOUND )
+                        {
+//                            cout << 0 << endl;
+                            return 0;
+                        }
                     }
                     break;
                 }
@@ -360,21 +414,34 @@ namespace smtrat
                 {
                     if( solutionSpace.leftType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
                     {
-                        if( solutionSpace.left() >= 0 ) return true;
+                        if( solutionSpace.left() >= 0 )
+                        {
+//                            cout << 1 << endl;
+                            return 1;
+                        }
                     }
                     if( solutionSpace.rightType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
                     {
-                        if( solutionSpace.right() < 0 ) return false;
-                        else if( solutionSpace.right() == 0 && solutionSpace.rightType() == GiNaCRA::DoubleInterval::STRICT_BOUND ) return false;
+                        if( solutionSpace.right() < 0 )
+                        {
+//                            cout << 0 << endl;
+                            return 0;
+                        }
+                        else if( solutionSpace.right() == 0 && solutionSpace.rightType() == GiNaCRA::DoubleInterval::STRICT_BOUND )
+                        {
+//                            cout << 0 << endl;
+                            return 0;
+                        }
                     }
                     break;
                 }
                 default:
                 {
                     cout << "Error in isConsistent: unexpected relation symbol." << endl;
-                    return false;
+                    return 0;
                 }
             }
+//            cout << 2 << endl;
             return 2;
         }
     }
