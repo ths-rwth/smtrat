@@ -801,6 +801,7 @@ void GroebnerModule<Settings>::popBacktrackPoint( Formula::const_iterator btpoin
     //assert( mBasis.nrOriginalConstraints( ) == mBacktrackPoints.size( ) - 1 );
 }
 
+#ifdef USE_NSS
 /**
  * 
  * @param gb The current Groebner basis.
@@ -833,6 +834,7 @@ typename Settings::Polynomial GroebnerModule<Settings>::callGroebnerToSDP( const
     if( !witness.isZero( ) ) std::cout << "Found witness: " << witness << std::endl;
     return witness;
 }
+#endif
 
 /**
  * Transforms a given inequality to a polynomial such that p = 0 is equivalent to the given constraint.
@@ -851,7 +853,7 @@ typename GroebnerModule<Settings>::Polynomial GroebnerModule<Settings>::transfor
     {
         std::stringstream stream;
         stream << "AddVarGB" << constrId;
-        GiNaC::symbol varSym = ex_to<symbol > (Formula::newRealVariable( stream.str( ) ));
+        GiNaC::symbol varSym = ex_to<symbol > (Formula::newRealVariable( stream.str( ) ).second);
         mListOfVariables[stream.str()] = varSym;
         varNr = VariableListPool::addVariable( varSym );
         mAdditionalVarMap.insert(std::pair<unsigned, unsigned>(constrId, varNr));
