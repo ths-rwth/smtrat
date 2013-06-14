@@ -28,6 +28,10 @@
 #ifndef SMTRAT_VS_SUBSTITUTE_H
 #define SMTRAT_VS_SUBSTITUTE_H
 
+#ifdef SMTRAT_VS_VARIABLEBOUNDS
+#define SMTRAT_VS_VARIABLEBOUNDS_C
+#endif
+
 #include "Substitution.h"
 #include "../../misc/VS_Tools.hpp"
 #include <cmath>
@@ -35,16 +39,16 @@
 namespace vs
 {
     // Methods:
-    bool substitute( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
-    void substituteNormal( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    bool substitute( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, const GiNaCRA::evaldoubleintervalmap& = GiNaCRA::evaldoubleintervalmap() );
+    void substituteNormal( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, const GiNaCRA::evaldoubleintervalmap& = GiNaCRA::evaldoubleintervalmap() );
     void substituteNormalSqrt( const smtrat::Constraint*, const Substitution&, const GiNaC::ex&, DisjunctionOfConstraintConjunctions& );
     void substituteNormalSqrtEq( const smtrat::Constraint*, const Substitution&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::symtab&, DisjunctionOfConstraintConjunctions& );
     void substituteNormalSqrtNeq( const smtrat::Constraint*, const Substitution&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::symtab&, DisjunctionOfConstraintConjunctions& );
     void substituteNormalSqrtLess( const smtrat::Constraint*, const Substitution&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::symtab&, DisjunctionOfConstraintConjunctions& );
     void substituteNormalSqrtLeq( const smtrat::Constraint*, const Substitution&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::symtab&, DisjunctionOfConstraintConjunctions& );
-    bool substitutePlusEps( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
-    bool substituteEpsGradients( const smtrat::Constraint*, const Substitution&, const smtrat::Constraint_Relation, DisjunctionOfConstraintConjunctions& );
-    void substituteMinusInf( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
+    bool substitutePlusEps( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, const GiNaCRA::evaldoubleintervalmap& = GiNaCRA::evaldoubleintervalmap() );
+    bool substituteEpsGradients( const smtrat::Constraint*, const Substitution&, const smtrat::Constraint_Relation, DisjunctionOfConstraintConjunctions&, const GiNaCRA::evaldoubleintervalmap& = GiNaCRA::evaldoubleintervalmap() );
+    void substituteMinusInf( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, const GiNaCRA::evaldoubleintervalmap& = GiNaCRA::evaldoubleintervalmap() );
     void substituteInfLessGreater( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteTrivialCase( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteNotTrivialCase( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );

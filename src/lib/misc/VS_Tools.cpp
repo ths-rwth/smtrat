@@ -39,8 +39,9 @@ namespace vs
      * empty conjunction.
      *
      * @param _toSimplify   The disjunction of conjunctions to simplify.
+     * @param _solutionInterval
      */
-    void simplify( DisjunctionOfConstraintConjunctions& _toSimplify )
+    void simplify( DisjunctionOfConstraintConjunctions& _toSimplify, const GiNaCRA::evaldoubleintervalmap& _solutionInterval )
     {
         bool                                          containsEmptyDisjunction = false;
         DisjunctionOfConstraintConjunctions::iterator conj                     = _toSimplify.begin();
@@ -50,7 +51,7 @@ namespace vs
             TS_ConstraintConjunction::iterator cons             = (*conj).begin();
             while( cons != (*conj).end() )
             {
-                unsigned consConsistent = (**cons).isConsistent();
+                unsigned consConsistent = (**cons).consistentWith( _solutionInterval );
                 if( consConsistent == 0 )
                 {
                     conjInconsistent = true;
@@ -88,7 +89,7 @@ namespace vs
      *
      * @param _toSimplify
      */
-    bool splitProducts( DisjunctionOfConstraintConjunctions& _toSimplify )
+    bool splitProducts( DisjunctionOfConstraintConjunctions& _toSimplify, const GiNaCRA::evaldoubleintervalmap& _solutionInterval )
     {
         bool result = true;
         unsigned toSimpSize = _toSimplify.size();
@@ -118,7 +119,7 @@ namespace vs
      * @param _constraintConjunction
      * @return
      */
-    bool splitProducts( const TS_ConstraintConjunction& _constraintConjunction, DisjunctionOfConstraintConjunctions& _result )
+    bool splitProducts( const TS_ConstraintConjunction& _constraintConjunction, DisjunctionOfConstraintConjunctions& _result, const GiNaCRA::evaldoubleintervalmap& _solutionInterval )
     {
         vector<DisjunctionOfConstraintConjunctions> toCombine = vector<DisjunctionOfConstraintConjunctions>();
         for( auto constraint = _constraintConjunction.begin(); constraint != _constraintConjunction.end(); ++constraint )
@@ -155,7 +156,7 @@ namespace vs
                     {
                         toCombine.push_back( getSignCombinations( *constraint ) );
                     }
-                    simplify( toCombine.back() );
+                    simplify( toCombine.back(), _solutionInterval );
                 }
             }
             else
@@ -170,7 +171,7 @@ namespace vs
         {
             result = false;
         }
-        simplify( _result );
+        simplify( _result, _solutionInterval );
         return result;
     }
 
@@ -179,7 +180,7 @@ namespace vs
      * @param _constraintConjunction
      * @return
      */
-    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* _constraint )
+    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* _constraint, const GiNaCRA::evaldoubleintervalmap& _solutionInterval )
     {
         DisjunctionOfConstraintConjunctions result = DisjunctionOfConstraintConjunctions();
         if( _constraint->hasFactorization() )
@@ -212,7 +213,7 @@ namespace vs
                 {
                     result = getSignCombinations( _constraint );
                 }
-                simplify( result );
+                simplify( result, _solutionInterval );
             }
         }
         else

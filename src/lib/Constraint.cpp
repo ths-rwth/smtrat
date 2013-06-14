@@ -29,6 +29,8 @@
  * @version 2013-03-27
  */
 
+#include <ginacra/DoubleInterval.h>
+
 #include "Constraint.h"
 #include "ConstraintPool.h"
 #include "Formula.h"
@@ -275,6 +277,96 @@ namespace smtrat
                 {
                     if( mIsNeverNegative ) return 1;
                     if( mIsNeverZero && mIsNeverPositive ) return 0;
+                    break;
+                }
+                default:
+                {
+                    cout << "Error in isConsistent: unexpected relation symbol." << endl;
+                    return false;
+                }
+            }
+            return 2;
+        }
+    }
+    
+    /**
+     * 
+     * @param _solutionInterval
+     * @return 
+     */
+    unsigned Constraint::consistentWith( const GiNaCRA::evaldoubleintervalmap& _solutionInterval ) const
+    {
+        if( variables().empty() )
+        {
+            return evaluate( ex_to<numeric>( mLhs ), relation() ) ? 1 : 0;
+        }
+        else
+        {
+            GiNaCRA::DoubleInterval solutionSpace = GiNaCRA::DoubleInterval::evaluate( mLhs, _solutionInterval );
+            if( solutionSpace.empty() ) return 0;
+            switch( relation() )
+            {
+                case CR_EQ:
+                {
+                    if( solutionSpace.diameter() == 0 && solutionSpace.left() == 0 ) return 1;
+                    else if( !solutionSpace.contains( 0 ) ) return 0;
+                    break;
+                }
+                case CR_NEQ:
+                {
+                    if( !solutionSpace.contains( 0 ) ) return 1;
+                    break;
+                }
+                case CR_LESS:
+                {
+                    if( solutionSpace.rightType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
+                    {
+                        if( solutionSpace.right() < 0 ) return true;
+                        else if( solutionSpace.right() == 0 && solutionSpace.rightType() == GiNaCRA::DoubleInterval::STRICT_BOUND ) return true;
+                    }
+                    if( solutionSpace.leftType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
+                    {
+                        if( solutionSpace.left() >= 0 ) return false;
+                    }
+                    break;
+                }
+                case CR_GREATER:
+                {
+                    if( solutionSpace.leftType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
+                    {
+                        if( solutionSpace.left() > 0 ) return true;
+                        else if( solutionSpace.left() == 0 && solutionSpace.leftType() == GiNaCRA::DoubleInterval::STRICT_BOUND ) return true;
+                    }
+                    if( solutionSpace.rightType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
+                    {
+                        if( solutionSpace.right() <= 0 ) return false;
+                    }
+                    break;
+                }
+                case CR_LEQ:
+                {
+                    if( solutionSpace.rightType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
+                    {
+                        if( solutionSpace.right() <= 0 ) return true;
+                    }
+                    if( solutionSpace.leftType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
+                    {
+                        if( solutionSpace.left() > 0 ) return false;
+                        else if( solutionSpace.left() == 0 && solutionSpace.leftType() == GiNaCRA::DoubleInterval::STRICT_BOUND ) return false;
+                    }
+                    break;
+                }
+                case CR_GEQ:
+                {
+                    if( solutionSpace.leftType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
+                    {
+                        if( solutionSpace.left() >= 0 ) return true;
+                    }
+                    if( solutionSpace.rightType() != GiNaCRA::DoubleInterval::INFINITY_BOUND )
+                    {
+                        if( solutionSpace.right() < 0 ) return false;
+                        else if( solutionSpace.right() == 0 && solutionSpace.rightType() == GiNaCRA::DoubleInterval::STRICT_BOUND ) return false;
+                    }
                     break;
                 }
                 default:

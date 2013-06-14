@@ -49,6 +49,7 @@
 #include <assert.h>
 #include <mutex>
 #include <ginacra/utilities.h>
+#include <ginacra/ginacra.h>
 #include "config.h"
 
 namespace smtrat
@@ -316,6 +317,7 @@ namespace smtrat
             bool hasVariable( const std::string& ) const;
             static bool evaluate( const numeric&, Constraint_Relation );
             unsigned isConsistent() const;
+            unsigned consistentWith( const GiNaCRA::evaldoubleintervalmap& ) const;
             unsigned satisfiedBy( GiNaC::exmap& ) const;
             bool hasFinitelyManySolutionsIn( const std::string& ) const;
             GiNaC::ex coefficient( const GiNaC::ex&, int ) const;

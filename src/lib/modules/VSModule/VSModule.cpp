@@ -1096,7 +1096,7 @@ EndSwitch:;
                  */
                 DisjunctionOfConstraintConjunctions disjunctionOfConsConj;
                 disjunctionOfConsConj = DisjunctionOfConstraintConjunctions();
-                if( !substitute( currentConstraint, currentSubstitution, disjunctionOfConsConj ) )
+                if( !substitute( currentConstraint, currentSubstitution, disjunctionOfConsConj ) )//, _currentState->rFather().rVariableBounds().getIntervalMap() ) )
                 {
                     anySubstitutionNotApplied = true;
                 }
