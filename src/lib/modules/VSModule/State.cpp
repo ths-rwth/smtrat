@@ -667,7 +667,7 @@ namespace vs
     {
         if( _conditionVectorToSimplify.size() > 1 )
         {
-            ConditionSet redundantConditionSet = ConditionSet();
+            set<const Condition*> redundantConditionSet = set<const Condition*>();
             ConditionList::const_iterator iterA = _conditionVectorToSimplify.begin();
             
             // Check all condition combinations.
@@ -727,10 +727,10 @@ namespace vs
                             {
                                 const Condition* cond = new Condition( nConstraint, condB->flag(), condB->originalConditions(), condB->valuation(), true );
                                 cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
-                                redundantConditionSet.insert( condA );
-                                redundantConditionSet.insert( condB );
                                 _conditionVectorToSimplify.push_back( cond );
                             }
+                            redundantConditionSet.insert( condA );
+                            redundantConditionSet.insert( condB );
                             if( nConstraint->isConsistent() == 0 )
                             {
                                 ConditionSet condSet = ConditionSet();
@@ -752,10 +752,10 @@ namespace vs
                             {
                                 const Condition* cond = new Condition( nConstraint, condB->flag(), condB->originalConditions(), condB->valuation(), true );
                                 cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
-                                redundantConditionSet.insert( condA );
-                                redundantConditionSet.insert( condB );
                                 _conditionVectorToSimplify.push_back( cond );
                             }
+                            redundantConditionSet.insert( condA );
+                            redundantConditionSet.insert( condB );
                             if( nConstraint->isConsistent() == 0 )
                             {
                                 ConditionSet condSet = ConditionSet();
@@ -771,16 +771,16 @@ namespace vs
                             {
                                 ConditionSet oConds = condB->originalConditions();
                                 oConds.insert( condA->originalConditions().begin(), condA->originalConditions().end() );
-                                addCondition( nConstraint, oConds ,condB->valuation(), true );
+                                addCondition( nConstraint, oConds ,condA->valuation(), true );
                             }
                             else
                             {
                                 const Condition* cond = new Condition( nConstraint, condA->flag(), condA->originalConditions(), condA->valuation(), true );
                                 cond->pOriginalConditions()->insert( condB->originalConditions().begin(), condB->originalConditions().end() );
-                                redundantConditionSet.insert( condA );
-                                redundantConditionSet.insert( condB );
                                 _conditionVectorToSimplify.push_back( cond );
                             }
+                            redundantConditionSet.insert( condA );
+                            redundantConditionSet.insert( condB );
                             if( nConstraint->isConsistent() == 0 )
                             {
                                 ConditionSet condSet = ConditionSet();
@@ -802,10 +802,10 @@ namespace vs
                             {
                                 const Condition* cond = new Condition( nConstraint, condB->flag(), condB->originalConditions(), condB->valuation(), true );
                                 cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
-                                redundantConditionSet.insert( condA );
-                                redundantConditionSet.insert( condB );
                                 _conditionVectorToSimplify.push_back( cond );
                             }
+                            redundantConditionSet.insert( condA );
+                            redundantConditionSet.insert( condB );
                             if( nConstraint->isConsistent() == 0 )
                             {
                                 ConditionSet condSet = ConditionSet();
@@ -821,16 +821,16 @@ namespace vs
                             {
                                 ConditionSet oConds = condB->originalConditions();
                                 oConds.insert( condA->originalConditions().begin(), condA->originalConditions().end() );
-                                addCondition( nConstraint, oConds ,condB->valuation(), true );
+                                addCondition( nConstraint, oConds ,condA->valuation(), true );
                             }
                             else
                             {
                                 const Condition* cond = new Condition( nConstraint, condA->flag(), condA->originalConditions(), condA->valuation(), true );
                                 cond->pOriginalConditions()->insert( condB->originalConditions().begin(), condB->originalConditions().end() );
-                                redundantConditionSet.insert( condA );
-                                redundantConditionSet.insert( condB );
                                 _conditionVectorToSimplify.push_back( cond );
                             }
+                            redundantConditionSet.insert( condA );
+                            redundantConditionSet.insert( condB );
                             if( nConstraint->isConsistent() == 0 )
                             {
                                 ConditionSet condSet = ConditionSet();
@@ -1280,7 +1280,7 @@ namespace vs
                 rInconsistent() = true;
             }
             // Delete the conditions of this combination, which do already occur in the considered conditions of this state.
-            ConditionSet condsToDelete = ConditionSet();
+            set<const Condition*> condsToDelete = set<const Condition*>();
             ConditionList::iterator cond = rConditions().begin();
             while( cond != conditions().end() )
             {
@@ -1625,7 +1625,7 @@ namespace vs
      *              and made other states unnecessary to consider;
      *          1,  otherwise.
      */
-    int State::deleteOrigins( ConditionSet& _originsToDelete )
+    int State::deleteOrigins( set<const Condition*>& _originsToDelete )
     {
         if( _originsToDelete.empty() ) return 1;
         if( !isRoot() )
@@ -1658,7 +1658,7 @@ namespace vs
         // Remove conditions from the currently considered condition vector, which are originated by any of the given origins.
         bool conditionDeleted = false;
         bool recentlyAddedConditionLeft = false;
-        ConditionSet deletedConditions = ConditionSet();
+        set<const Condition*> deletedConditions = set<const Condition*>();
         for( auto originToDelete = _originsToDelete.begin(); originToDelete != _originsToDelete.end(); ++originToDelete )
         {
             auto condition = rConditions().begin();
@@ -1717,7 +1717,7 @@ namespace vs
      *
      * @param _conditionsToDelete The conditions to delete.
      */
-    void State::deleteConditions( ConditionSet& _conditionsToDelete )
+    void State::deleteConditions( set<const Condition*>& _conditionsToDelete )
     {
         if( _conditionsToDelete.empty() ) return;    
         // Delete everything originated by the given conditions in all children of this state.
@@ -1765,7 +1765,7 @@ namespace vs
      * 
      * @param _originsToDelete The condition for which to delete everything originated by them.
      */
-    void State::deleteOriginsFromChildren( ConditionSet& _originsToDelete )
+    void State::deleteOriginsFromChildren( set<const Condition*>& _originsToDelete )
     {
         auto child = rChildren().begin();
         while( child != children().end() )
@@ -1798,7 +1798,7 @@ namespace vs
      * 
      * @param _originsToDelete The condition for which to delete everything originated by them.
      */
-    void State::deleteOriginsFromConflictSets( ConditionSet& _originsToDelete, bool _originsAreCurrentConditions )
+    void State::deleteOriginsFromConflictSets( set<const Condition*>& _originsToDelete, bool _originsAreCurrentConditions )
     {
         ConflictSets::iterator conflictSet = mpConflictSets->begin();
         while( conflictSet != mpConflictSets->end() )
@@ -1942,7 +1942,7 @@ namespace vs
      * 
      * @param _originsToDelete The conditions for which to delete everything originated by them.
      */
-    void State::deleteOriginsFromSubstitutionResults( ConditionSet& _originsToDelete )
+    void State::deleteOriginsFromSubstitutionResults( set<const Condition*>& _originsToDelete )
     {
         if( hasSubstitutionResults() )
         {
@@ -2696,7 +2696,7 @@ namespace vs
         printConflictSets( _initiation + "   ", _out );
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         _out << _initiation << endl;
-        mpVariableBounds->print( _out, _initiation, true );
+        mpVariableBounds->print( _out, _initiation );
         _out << _initiation << endl;
         #endif
     }

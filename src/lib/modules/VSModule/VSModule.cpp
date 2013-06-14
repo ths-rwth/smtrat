@@ -164,7 +164,7 @@ namespace smtrat
 
             eraseDTsOfRanking( *mpStateTree );
             mpStateTree->rSubResultsSimplified() = false;
-            ConditionSet condsToDelete = ConditionSet();
+            set<const vs::Condition*> condsToDelete = set<const vs::Condition*>();
             condsToDelete.insert( condToDelete );
             mpStateTree->deleteOrigins( condsToDelete );
             mpStateTree->rStateType() = COMBINE_SUBRESULTS;
@@ -1058,6 +1058,7 @@ EndSwitch:;
         ConditionList oldConditions = ConditionList();
 
         bool anySubstitutionFailed = false;
+        bool anySubstitutionNotApplied = false;
         ConditionSetSet conflictSet = ConditionSetSet();
 
         /*
@@ -1095,7 +1096,10 @@ EndSwitch:;
                  */
                 DisjunctionOfConstraintConjunctions disjunctionOfConsConj;
                 disjunctionOfConsConj = DisjunctionOfConstraintConjunctions();
-                substitute( currentConstraint, currentSubstitution, disjunctionOfConsConj );
+                if( !substitute( currentConstraint, currentSubstitution, disjunctionOfConsConj ) )
+                {
+                    anySubstitutionNotApplied = true;
+                }
 
                 /*
                  * Create the the conditions according to the just created constraint prototypes.
@@ -1227,7 +1231,16 @@ EndSwitch:;
             _currentState->addSubstitutionResults( disjunctionsOfCondConj );
             if( !_currentState->isInconsistent() )
             {
-                insertDTinRanking( _currentState );
+                if( anySubstitutionNotApplied )
+                {
+                    eraseDTsOfRanking( _currentState->rFather() );
+                    _currentState->rFather().rToHighDegree() = true;
+                    insertDTinRanking( _currentState->pFather() );
+                }
+                else
+                {
+                    insertDTinRanking( _currentState );
+                }
             }
             #ifdef VS_DEBUG
             _currentState->print( "   ", cout );

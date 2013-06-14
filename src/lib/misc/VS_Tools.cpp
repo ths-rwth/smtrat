@@ -88,14 +88,19 @@ namespace vs
      *
      * @param _toSimplify
      */
-    void splitProducts( DisjunctionOfConstraintConjunctions& _toSimplify )
+    bool splitProducts( DisjunctionOfConstraintConjunctions& _toSimplify )
     {
+        bool result = true;
         unsigned toSimpSize = _toSimplify.size();
         for( unsigned pos = 0; pos < toSimpSize; )
         {
             if( !_toSimplify.begin()->empty() )
             {
-                DisjunctionOfConstraintConjunctions temp = splitProducts( _toSimplify[pos] );
+                DisjunctionOfConstraintConjunctions temp = DisjunctionOfConstraintConjunctions();
+                if( !splitProducts( _toSimplify[pos], temp ) )
+                {
+                    result = false;
+                }
                 _toSimplify.erase( _toSimplify.begin() );
                 _toSimplify.insert( _toSimplify.end(), temp.begin(), temp.end() );
                 --toSimpSize;
@@ -105,6 +110,7 @@ namespace vs
                 ++pos;
             }
         }
+        return result;
     }
 
     /**
@@ -112,9 +118,8 @@ namespace vs
      * @param _constraintConjunction
      * @return
      */
-    DisjunctionOfConstraintConjunctions splitProducts( const TS_ConstraintConjunction& _constraintConjunction )
+    bool splitProducts( const TS_ConstraintConjunction& _constraintConjunction, DisjunctionOfConstraintConjunctions& _result )
     {
-        DisjunctionOfConstraintConjunctions result = DisjunctionOfConstraintConjunctions();
         vector<DisjunctionOfConstraintConjunctions> toCombine = vector<DisjunctionOfConstraintConjunctions>();
         for( auto constraint = _constraintConjunction.begin(); constraint != _constraintConjunction.end(); ++constraint )
         {
@@ -160,8 +165,12 @@ namespace vs
                 toCombine.back().back().push_back( *constraint );
             }
         }
-        combine( toCombine, result );
-        simplify( result );
+        bool result = true;
+        if( !combine( toCombine, _result ) )
+        {
+            result = false;
+        }
+        simplify( _result );
         return result;
     }
 

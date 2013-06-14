@@ -521,7 +521,113 @@ namespace smtrat
         }
         return result;
     }
+    
+    bool Constraint::containsNumeric( const ex& _ex )
+    {
+        if( is_exactly_a<numeric>( _ex ) )
+        {
+            return true;
+        }
+        else if( is_exactly_a<add>( _ex ) || is_exactly_a<mul>( _ex ) )
+        {
+            return containsNumeric( _ex, _ex.end() );
+        }
+        else if( is_exactly_a<power>( _ex ) ) 
+        {
+            return containsNumeric( *_ex.begin() );
+        }
+        else
+        {
+            return false;
+        }
+    }
+    
+    bool Constraint::containsNumeric( const ex& _ex, GiNaC::const_iterator _exceptAt )
+    {
+        assert( is_exactly_a<add>( _ex ) || is_exactly_a<mul>( _ex ) );
+        for( GiNaC::const_iterator subEx = _ex.begin(); subEx != _ex.end(); ++subEx )
+        {
+            if( subEx != _exceptAt )
+            {
+                if( containsNumeric( *subEx ) ) return true;
+            }
+        }
+        return false;
+    }
 
+    /**
+     * 
+     * @param 
+     * @return 
+     */
+    ex Constraint::normalizeA( const ex& _lhs )
+    {
+        numeric simplificationFactorNumer = GiNaC::ONE;
+        numeric simplificationFactorDenom = GiNaC::ONE;
+        if( is_exactly_a<add>( _lhs ) )
+        {
+            for( GiNaC::const_iterator summand = _lhs.begin(); summand != _lhs.end(); ++summand )
+            {
+                const ex summandEx = *summand;
+                if( summand == _lhs.begin() )
+                {
+                    if( is_exactly_a<mul>( summandEx ) )
+                    {
+                        const ex factor = *--summandEx.end();
+                        if( is_exactly_a<numeric>( factor ) )
+                        {
+                            simplificationFactorNumer = ex_to<numeric>( factor ).denom();
+                            simplificationFactorDenom = ex_to<numeric>( factor ).numer();
+                        }
+                        assert( !containsNumeric( summandEx, --summandEx.end() ) );
+                    }
+                    else if( is_exactly_a<numeric>( summandEx ) )
+                    {
+                        simplificationFactorNumer = ex_to<numeric>( summandEx ).denom();
+                        simplificationFactorDenom = ex_to<numeric>( summandEx ).numer();
+                    }
+                }
+                else
+                {
+                    if( is_exactly_a<mul>( summandEx ) )
+                    {
+                        const ex factor = *--summandEx.end();
+                        if( is_exactly_a<numeric>( factor ) )
+                        {
+                            simplificationFactorNumer = gcd( simplificationFactorNumer, ex_to<numeric>( factor ).denom() );
+                            simplificationFactorDenom = lcm( simplificationFactorDenom, ex_to<numeric>( factor ).numer() );
+                        }
+                        else
+                        {
+                            simplificationFactorNumer = GiNaC::ONE;
+                        }
+                        assert( !containsNumeric( summandEx, --summandEx.end() ) );
+                    }
+                    else if( is_exactly_a<numeric>( summandEx ) )
+                    {
+                        simplificationFactorNumer = gcd( simplificationFactorNumer, ex_to<numeric>( summandEx ).denom() );
+                        simplificationFactorDenom = lcm( simplificationFactorDenom, ex_to<numeric>( summandEx ).numer() );
+                    }
+                    else
+                    {
+                        simplificationFactorNumer = GiNaC::ONE;
+                    }
+                }
+            }
+        }
+        else if( is_exactly_a<mul>( _lhs ) )
+        {
+            const ex factor = *--_lhs.end();
+            if( is_exactly_a<numeric>( factor ) )
+            {
+                simplificationFactorNumer = ex_to<numeric>( factor ).denom();
+                simplificationFactorDenom = ex_to<numeric>( factor ).numer();
+            }
+            assert( !containsNumeric( _lhs, --_lhs.end() ) );
+        }
+        return ex( _lhs * simplificationFactorNumer / simplificationFactorDenom ).expand().normal();
+    }
+    
     /**
      * Collects some properties of the constraint. Needs only to be applied once.
      */

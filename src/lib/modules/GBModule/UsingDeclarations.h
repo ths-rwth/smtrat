@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <ginacra/mr/MultivariateTermMR.h>
+#include <ginacra/mr/MultivariateTerm.h>
 
-typedef GiNaCRA::MultivariateTermMR Term;
+typedef GiNaCRA::MultivariateTerm Term;
 typedef GiNaCRA::BitVector BitVector;
 

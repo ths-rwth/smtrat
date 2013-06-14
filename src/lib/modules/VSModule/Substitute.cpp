@@ -43,7 +43,7 @@ namespace vs
      * @param _substitutionResults  The vector, in which to store the results of this substitution.
      *
      */
-    void substitute( const smtrat::Constraint* _constraint,
+    bool substitute( const smtrat::Constraint* _constraint,
                      const Substitution& _substitution,
                      DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
@@ -51,6 +51,7 @@ namespace vs
         cout << "substitute: ( " << *_constraint << " )" << _substitution << endl;
         #endif
 
+        bool result = true;
         CONSTRAINT_LOCK_GUARD
         /*
          * Apply the substitution according to its type.
@@ -64,7 +65,10 @@ namespace vs
             }
             case ST_PLUS_EPSILON:
             {
-                substitutePlusEps( _constraint, _substitution, _substitutionResults );
+                if( !substitutePlusEps( _constraint, _substitution, _substitutionResults ) )
+                {
+                    result = false;
+                }
                 break;
             }
             case ST_MINUS_INFINITY:
@@ -78,11 +82,15 @@ namespace vs
             }
         }
         #ifdef SMTRAT_DEVOPTION_Statistics
-        splitProducts( _substitutionResults );
+        if( !splitProducts( _substitutionResults ) )
+        {
+            result = false;
+        }
         #endif
         #ifdef VS_DEBUG_SUBSTITUTION
         print( _substitutionResults );
         #endif
+        return result;
     }
 
     /**
@@ -634,10 +642,11 @@ namespace vs
      * @param _substitution         The substitution to apply.
      * @param _substitutionResults  The vector, in which to store the results of this substitution.
      */
-    void substitutePlusEps( const smtrat::Constraint* _constraint,
+    bool substitutePlusEps( const smtrat::Constraint* _constraint,
                             const Substitution& _substitution,
                             DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
+        bool result = true;
         if( !_constraint->variables().empty() )
         {
             if( _constraint->variables().find( _substitution.variable() ) != _constraint->variables().end() )
@@ -656,24 +665,24 @@ namespace vs
                     }
                     case smtrat::CR_LESS:
                     {
-                        substituteEpsGradients( _constraint, _substitution, smtrat::CR_LESS, _substitutionResults );
+                        result = substituteEpsGradients( _constraint, _substitution, smtrat::CR_LESS, _substitutionResults );
                         break;
                     }
                     case smtrat::CR_GREATER:
                     {
-                        substituteEpsGradients( _constraint, _substitution, smtrat::CR_GREATER, _substitutionResults );
+                        result = substituteEpsGradients( _constraint, _substitution, smtrat::CR_GREATER, _substitutionResults );
                         break;
                     }
                     case smtrat::CR_LEQ:
                     {
                         substituteTrivialCase( _constraint, _substitution, _substitutionResults );
-                        substituteEpsGradients( _constraint, _substitution, smtrat::CR_LESS, _substitutionResults );
+                        result = substituteEpsGradients( _constraint, _substitution, smtrat::CR_LESS, _substitutionResults );
                         break;
                     }
                     case smtrat::CR_GEQ:
                     {
                         substituteTrivialCase( _constraint, _substitution, _substitutionResults );
-                        substituteEpsGradients( _constraint, _substitution, smtrat::CR_GREATER, _substitutionResults );
+                        result = substituteEpsGradients( _constraint, _substitution, smtrat::CR_GREATER, _substitutionResults );
                         break;
                     }
                     default:
@@ -691,6 +700,7 @@ namespace vs
         {
             cout << "Warning in substitutePlusEps: The chosen constraint has no variable" << endl;
         }
+        return result;
     }
 
     /**
@@ -708,11 +718,12 @@ namespace vs
      * @param _relation2            The relation symbol, which compares a odd derivative with zero.
      * @param _substitutionResults  The vector, in which to store the results of this substitution.
      */
-    void substituteEpsGradients( const smtrat::Constraint* _constraint,
+    bool substituteEpsGradients( const smtrat::Constraint* _constraint,
                                  const Substitution& _substitution,
                                  const smtrat::Constraint_Relation _relation,
                                  DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
+        bool result = true;
         symbol sym;
         _constraint->variable( _substitution.variable(), sym );
 
@@ -748,8 +759,6 @@ namespace vs
             derivative = derivative.diff( sym, 1 );
             SqrtEx::simplify( derivative, ex( sym ) );
 
-            assert( derivative.degree( ex( sym ) ) < (signed) equation->maxDegree( ex( sym ) ) );
-
             // Add the constraint f^i(x)~0.
             const smtrat::Constraint* inequality = smtrat::Formula::newConstraint( derivative, _relation, _constraint->variables() );
 
@@ -759,11 +768,15 @@ namespace vs
             substitutionResultsVector.push_back( DisjunctionOfConstraintConjunctions() );
             substituteNormal( inequality, substitution, substitutionResultsVector.back() );
             
-            combine( substitutionResultsVector, _substitutionResults );
+            if( !combine( substitutionResultsVector, _substitutionResults ) )
+            {
+                result = false;
+            }
 
             // Remove the last substitution result.
             substitutionResultsVector.pop_back();
         }
+        return result;
     }
 
     /**

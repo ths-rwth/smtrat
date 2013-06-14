@@ -32,6 +32,7 @@
 #include "../Formula.h"
 
 const unsigned MAX_PRODUCT_SPLIT_NUMBER = 64;
+const unsigned MAX_NUM_OF_COMBINATION_RESULT = 1000;
 
 namespace vs
 {
@@ -94,22 +95,27 @@ namespace vs
      * @param _toCombine 	The vectors to combine.
      * @param _combination 	The resulting combination.
      */
-    template <class combineType> void combine
+    template <class combineType> bool combine
     (
         const std::vector< std::vector< std::vector< combineType* > > >& _toCombine  ,
         std::vector< std::vector< combineType* > >&					     _combination
     )
     {
         // Initialize the current combination. If there is nothing to combine or an empty vector to combine with, return the empty vector.
-        if( _toCombine.empty() ) return;
+        if( _toCombine.empty() ) return true;
         std::vector< class std::vector< std::vector< combineType* > >::const_iterator > combination 
             = std::vector< class std::vector< std::vector< combineType* > >::const_iterator >();
+        unsigned estimatedResultSize = 1;
         for( auto iter = _toCombine.begin(); iter != _toCombine.end(); ++iter )
-        {;
-            if( iter->empty() ) return;
+        {
+            estimatedResultSize *= iter->size();
+            if( iter->empty() ) return true;
             else combination.push_back( iter->begin() );
         }
-
+        if( estimatedResultSize > MAX_NUM_OF_COMBINATION_RESULT )
+        {
+            return false;
+        }
 
         // As long as no more combination for the last vector in first vector of vectors exists.
         bool lastCombinationReached = false;
@@ -144,11 +150,12 @@ namespace vs
                 ++currentVector;
             }
         }
+        return true;
     }
     
     void simplify( DisjunctionOfConstraintConjunctions& );
-    void splitProducts( DisjunctionOfConstraintConjunctions& );
-    DisjunctionOfConstraintConjunctions splitProducts( const TS_ConstraintConjunction& );
+    bool splitProducts( DisjunctionOfConstraintConjunctions& );
+    bool splitProducts( const TS_ConstraintConjunction&, DisjunctionOfConstraintConjunctions& );
     DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* );
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::Constraint* );
     void getOddBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& );
