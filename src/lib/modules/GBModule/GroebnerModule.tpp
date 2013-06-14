@@ -45,7 +45,7 @@ using std::set;
 using GiNaC::ex_to;
 
 using GiNaCRA::VariableListPool;
-using GiNaCRA::MultivariatePolynomialMR;
+using GiNaCRA::MultivariatePolynomial;
 
 namespace smtrat
 {
@@ -865,22 +865,22 @@ typename GroebnerModule<Settings>::Polynomial GroebnerModule<Settings>::transfor
     switch( (*constraint)->constraint( ).relation( ) )
     {
     case CR_GEQ:
-        result = result + GiNaCRA::MultivariateTermMR( -1, varNr, 2 );
+        result = result + GiNaCRA::MultivariateTerm( -1, varNr, 2 );
         break;
     case CR_LEQ:
-        result = result + GiNaCRA::MultivariateTermMR( 1, varNr, 2 );
+        result = result + GiNaCRA::MultivariateTerm( 1, varNr, 2 );
         break;
     case CR_GREATER:
-        result = result * GiNaCRA::MultivariateTermMR( 1, varNr, 2 );
-        result = result + GiNaCRA::MultivariateTermMR( -1 );
+        result = result * GiNaCRA::MultivariateTerm( 1, varNr, 2 );
+        result = result + GiNaCRA::MultivariateTerm( -1 );
         break;
     case CR_LESS:
-        result = result * GiNaCRA::MultivariateTermMR( 1, varNr, 2 );
-        result = result + GiNaCRA::MultivariateTermMR( 1 );
+        result = result * GiNaCRA::MultivariateTerm( 1, varNr, 2 );
+        result = result + GiNaCRA::MultivariateTerm( 1 );
         break;
     case CR_NEQ:
-        result = result * GiNaCRA::MultivariateTermMR( 1, varNr, 1);
-        result = result + GiNaCRA::MultivariateTermMR( 1 );
+        result = result * GiNaCRA::MultivariateTerm( 1, varNr, 1);
+        result = result + GiNaCRA::MultivariateTerm( 1 );
         break;
     default:
         assert( false );

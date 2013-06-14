@@ -25,7 +25,7 @@
  *
  */
 
-#include <ginacra/mr/MultivariatePolynomialMR.h>
+#include <ginacra/mr/MultivariatePolynomial.h>
 #include "../../config.h"
 
 #ifndef GBSETTINGS_H
@@ -62,7 +62,7 @@ namespace smtrat
         static const unsigned                            identifier                              = 5;
         
         typedef GiNaCRA::GradedLexicgraphic              Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
 		typedef smtrat::decidePassingPolynomial			 passPolynomial;
@@ -93,7 +93,7 @@ namespace smtrat
         static const unsigned                            identifier                              = 3;
         
         typedef GiNaCRA::GradedLexicgraphic              Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
 		typedef smtrat::decidePassingPolynomial			 passPolynomial;
@@ -126,7 +126,7 @@ namespace smtrat
         static const unsigned                            identifier                              = 1;
         
         typedef GiNaCRA::GradedLexicgraphic              Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
 		typedef smtrat::decidePassingPolynomial			 passPolynomial;
@@ -159,7 +159,7 @@ namespace smtrat
         static const unsigned                            identifier                              = 2;
         
         typedef GiNaCRA::GradedLexicgraphic              Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
 		typedef smtrat::decidePassingPolynomial			 passPolynomial;
@@ -190,7 +190,7 @@ namespace smtrat
         static const unsigned                            identifier                              = 4;
         
         typedef GiNaCRA::GradedLexicgraphic              Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
 		typedef smtrat::decidePassingPolynomial			 passPolynomial;
@@ -222,7 +222,7 @@ namespace smtrat
         static const unsigned                            identifier                              = 6;
         
         typedef GiNaCRA::GradedLexicgraphic              Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
 		typedef smtrat::decidePassingPolynomial			 passPolynomial;
@@ -267,7 +267,7 @@ namespace smtrat
     struct GBSettings51A : GBSettings51
     {
         typedef GiNaCRA::Lexicographic Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
         
@@ -285,7 +285,7 @@ namespace smtrat
     struct GBSettings61A : GBSettings61
     {
         typedef GiNaCRA::Lexicographic Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
         
@@ -306,7 +306,7 @@ namespace smtrat
     struct GBSettings63 : GBSettings61
     {
         typedef GiNaCRA::GrRevLex                         Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
         
@@ -324,7 +324,7 @@ namespace smtrat
         static const unsigned                            identifier                              = 7;
         
         typedef GiNaCRA::GradedLexicgraphic              Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
 		typedef smtrat::decidePassingPolynomial			 passPolynomial;
@@ -355,7 +355,7 @@ namespace smtrat
         static const unsigned                            identifier                              = 0;
         
         typedef GiNaCRA::GradedLexicgraphic              Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
 		typedef smtrat::decidePassingPolynomial			 passPolynomial;
@@ -386,7 +386,7 @@ namespace smtrat
         static const unsigned                            identifier                              = 8;
         
         typedef GiNaCRA::GradedLexicgraphic              Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
 		typedef smtrat::decidePassingPolynomial			 passPolynomial;
@@ -417,7 +417,7 @@ namespace smtrat
         static const unsigned                            identifier                              = 9;
         
         typedef GiNaCRA::GradedLexicgraphic              Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
 		typedef smtrat::decidePassingPolynomial			 passPolynomial;
@@ -448,7 +448,7 @@ namespace smtrat
         static const unsigned                            identifier                              = 10;
         
         typedef GiNaCRA::GradedLexicgraphic              Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
 		typedef smtrat::decidePassingPolynomial			 passPolynomial;
@@ -479,7 +479,7 @@ namespace smtrat
         static const unsigned                            identifier                              = 25;
         
         typedef GiNaCRA::GradedLexicgraphic              Order;
-        typedef GiNaCRA::MultivariatePolynomialMR<Order> Polynomial;
+        typedef GiNaCRA::MultivariatePolynomial<Order> Polynomial;
         typedef GiNaCRA::MultivariateIdeal<Order>        MultivariateIdeal;
         typedef GiNaCRA::BaseReductor<Order>             Reductor;
 		typedef smtrat::decidePassingPolynomial			 passPolynomial;
@@ -509,7 +509,7 @@ namespace smtrat
     
 	struct decidePassingPolynomial {
         template<typename Comp>
-		static bool evaluate (const GiNaCRA::MultivariatePolynomialMR<Comp>& original, const GiNaCRA::MultivariatePolynomialMR<Comp>& reduced) {
+		static bool evaluate (const GiNaCRA::MultivariatePolynomial<Comp>& original, const GiNaCRA::MultivariatePolynomial<Comp>& reduced) {
 			return (original.lterm().tdeg() >= reduced.lterm().tdeg() && original.nrOfTerms() > reduced.nrOfTerms() );
 		}
 	};
