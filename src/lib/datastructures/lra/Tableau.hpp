@@ -415,6 +415,7 @@ namespace smtrat
                 const std::pair<vector<Variable<T>*>,vector<T>> isDefining(unsigned);
                 void invertColumn(unsigned);
                 void addColumns(unsigned,unsigned,int);
+                void calculate_hermite_normalform();
                 #endif
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
@@ -2098,7 +2099,7 @@ namespace smtrat
            vector<Variable<T>*> nonbasics = std::vector<Variable<T>*>();
            vector<T> coeffs = std::vector<T>();
            /* while(!row_iterator.rowEnd())
-           {               
+           {            
                const Variable<T>& nonbasic_var = *mColumns[(*row_iterator).columnNumber()].mName;
                const Value<T>& ass = nonbasic_var.assignment();
                nonbasics.push_back(nonbasic_var);
@@ -2157,8 +2158,11 @@ namespace smtrat
                 }
                         (*mpEntries)[ID1_to_be_Fixed].setLeft(entryID);
                         (*mpEntries)[entryID].setRight(ID1_to_be_Fixed);
-                        (*mpEntries)[ID2_to_be_Fixed].setRight(entryID);
-                        (*mpEntries)[entryID].setLeft(ID2_to_be_Fixed);
+                        if(ID2_to_be_Fixed != LAST_ENTRY_ID)
+                        {
+                            (*mpEntries)[ID2_to_be_Fixed].setRight(entryID);
+                            (*mpEntries)[entryID].setLeft(ID2_to_be_Fixed);
+                        }    
                         
                         
             }    
@@ -2172,8 +2176,11 @@ namespace smtrat
                 }
                         (*mpEntries)[ID1_to_be_Fixed].setRight(entryID);
                         (*mpEntries)[entryID].setLeft(ID1_to_be_Fixed);
-                        (*mpEntries)[ID2_to_be_Fixed].setLeft(entryID);
-                        (*mpEntries)[entryID].setRight(ID2_to_be_Fixed);
+                        if(ID2_to_be_Fixed)
+                        {
+                            (*mpEntries)[ID2_to_be_Fixed].setLeft(entryID);
+                            (*mpEntries)[entryID].setRight(ID2_to_be_Fixed);
+                        }    
             }    
         
         }
@@ -2181,6 +2188,18 @@ namespace smtrat
         while((*mpEntries)[columnA_iterator.up()].rowNumber() > (*mpEntries)[columnB_iterator.entryID()].rowNumber())
             columnA_iterator.up();
         }
+        }
+        template<class T> 
+        void Tableau<T>::calculate_hermite_normalform()
+        {            
+            for(unsigned i=0;i<mRows.size();i++)
+            {
+                Iterator row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
+                while(row_iterator.left() != LAST_ENTRY_ID || row_iterator.right != LAST_ENTRY_ID)
+                {
+                    // ...                                            
+                }
+            }
         }
         #endif
         
