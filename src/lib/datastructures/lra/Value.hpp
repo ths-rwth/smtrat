@@ -55,6 +55,7 @@ namespace smtrat
                 Value( const Value<T>& orig );
                 virtual ~Value();
 
+                Value<T>& operator=( const Value<T>& );
                 Value<T> operator +( const Value<T>& ) const;
                 void operator +=( const Value<T>& );
                 Value<T> operator -( const Value<T>& ) const;
@@ -109,6 +110,20 @@ namespace smtrat
 
         template<class T>
         Value<T>::~Value(){}
+        
+        
+        /**
+         * Copy the content of the given value to this one.
+         * @param _value The value to copy.
+         * @return This value after copying.
+         */
+        template<class T>
+        Value<T>& Value<T>::operator=( const Value<T>& _value )
+        {
+            mMainPart = _value.mainPart();
+            mDeltaPart = _value.deltaPart();
+            return *this;
+        }
 
         /**
          *

@@ -1219,10 +1219,6 @@ FindSecond:
                     if( value( learnt_clause[0] ) != l_Undef )
                         Module::storeAssumptionsToCheck( *mpManager );
                     #endif
-                    if( value( learnt_clause[0] ) != l_Undef )
-                    {
-                        Module::storeAssumptionsToCheck( *mpManager );
-                    }
                     assert( value( learnt_clause[0] ) == l_Undef );
                     uncheckedEnqueue( learnt_clause[0], cr );
                 }
