@@ -2569,6 +2569,75 @@ namespace vs
     }
     
     /**
+     * 
+     * @return 
+     */
+    vector< DoubleInterval > State::solutionSpace()
+    {
+        vector< DoubleInterval > result = vector< DoubleInterval >();
+        if( !isRoot() && variableBounds().isConflicting() )
+        {
+            if( substitution().type() == ST_MINUS_INFINITY )
+            {
+                if( rFather().rVariableBounds().getDoubleInterval( substitution().varAsEx() ).leftType() == DoubleInterval::INFINITY_BOUND )
+                {
+                    result.push_back( DoubleInterval::unboundedInterval() );
+                }
+                return result;
+            }
+            else
+            {
+                evaldoubleintervalmap intervals = rFather().rVariableBounds().getIntervalMap();
+                DoubleInterval solutionSpaceConst = DoubleInterval::evaluate( substitution().term().constantPart(), intervals );
+                DoubleInterval solutionSpaceFactor = DoubleInterval::evaluate( substitution().term().factor(), intervals );
+                DoubleInterval solutionSpaceRadicand = DoubleInterval::evaluate( substitution().term().radicand(), intervals );
+                DoubleInterval solutionSpaceSqrt = solutionSpaceRadicand.sqrt();
+                DoubleInterval solutionSpaceDenom = DoubleInterval::evaluate( substitution().term().denominator(), intervals );
+                DoubleInterval solutionSpace = solutionSpaceFactor * solutionSpaceSqrt;
+                solutionSpace = solutionSpace + solutionSpaceConst;
+                DoubleInterval resA;
+                DoubleInterval resB;
+                bool splitOccurred = solutionSpace.div_ext( resA, resB, solutionSpaceDenom );
+                symbol subVar = ex_to<symbol>( substitution().varAsEx() );
+                const DoubleInterval& subVarInterval = intervals[subVar];
+                if( substitution().type() == ST_PLUS_EPSILON && resA.leftType() != DoubleInterval::INFINITY_BOUND )
+                {
+                    if( resA.rightType() == DoubleInterval::INFINITY_BOUND || resA.right() == DBL_MAX )
+                    {
+                        resA = DoubleInterval( resA.left(), DoubleInterval::STRICT_BOUND, 0, DoubleInterval::INFINITY_BOUND );
+                        if( splitOccurred )
+                        {
+                            resB = DoubleInterval( resB.left(), DoubleInterval::STRICT_BOUND, 0, DoubleInterval::INFINITY_BOUND );
+                        }
+                    }
+                    else
+                    {
+                        resA = DoubleInterval( resA.left(), DoubleInterval::STRICT_BOUND, std::nextafter( resA.right(), INFINITY ), DoubleInterval::WEAK_BOUND );
+                        if( splitOccurred )
+                        {
+                            resB = DoubleInterval( resB.left(), DoubleInterval::STRICT_BOUND, std::nextafter( resB.right(), INFINITY ), DoubleInterval::WEAK_BOUND );
+                        }
+                    }
+                }
+                resA = resA.intersect( subVarInterval );
+                if( !resA.empty() )
+                {
+                    result.push_back( resA );
+                }
+                if( splitOccurred )
+                {
+                    resB = resB.intersect( subVarInterval );
+                    if( !resB.empty() )
+                    {
+                        result.push_back( resB );
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    
+    /**
      * Checks whether there are no zeros for the left-hand side of the constraint of the given condition.
      * 
      * @param _condition The condition to check.

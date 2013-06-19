@@ -1039,118 +1039,45 @@ EndSwitch:;
          */
         vector<DisjunctionOfConditionConjunctions> disjunctionsOfCondConj;
         disjunctionsOfCondConj = vector<DisjunctionOfConditionConjunctions>();
-
-        /*
-         * The substitution to apply.
-         */
+        // The substitution to apply.
         assert( !_currentState->isRoot() );
         const Substitution& currentSubstitution = _currentState->substitution();
-
-        /*
-         * The variable to substitute.
-         */
+        // The variable to substitute.
         const string& substitutionVariable = currentSubstitution.variable();
-
-        /*
-         * The conditions of the currently considered state, without
-         * the one getting just eliminated.
-         */
+        // The conditions of the currently considered state, without the one getting just eliminated.
         ConditionList oldConditions = ConditionList();
 
         bool anySubstitutionFailed = false;
-        bool anySubstitutionNotApplied = false;
+        bool allSubstitutionsApplied = true;
         ConditionSetSet conflictSet = ConditionSetSet();
         GiNaCRA::evaldoubleintervalmap intervalSpace = _currentState->rFather().rVariableBounds().getIntervalMap();
 
-        /*
-         * Apply the most recent substitution in this state to each of its conditions.
-         */
+        // Apply the substitution to the given conditions.
         for( ConditionList::iterator cond = _conditions.begin(); cond != _conditions.end(); ++cond )
         {
-            /*
-             * The constraint to substitute in.
-             */
+            // The constraint to substitute in.
             const Constraint* currentConstraint = (**cond).pConstraint();
-
-            /*
-             * Does the condition contain the variable to substitute.
-             */
+            // Does the condition contain the variable to substitute.
             symtab::const_iterator var = currentConstraint->variables().find( substitutionVariable );
             if( var == currentConstraint->variables().end() )
             {
                 if( !anySubstitutionFailed )
                 {
-                    /*
-                     * If the variable to substitute does not occur in the condition,
-                     * add the condition to the vector of conditions we just add to the
-                     * states we create.
-                     */
                     oldConditions.push_back( new vs::Condition( currentConstraint, (**cond).valuation() ) );
                     oldConditions.back()->pOriginalConditions()->insert( *cond );
                 }
             }
             else
             {
-                /*
-                 * Apply the substitution to each condition, in which the variable to substitute
-                 * occurs and collect the results.
-                 */
                 DisjunctionOfConstraintConjunctions disjunctionOfConsConj;
                 disjunctionOfConsConj = DisjunctionOfConstraintConjunctions();
-                if( !substitute( currentConstraint, currentSubstitution, disjunctionOfConsConj ) )
-                {
-                    anySubstitutionNotApplied = true;
-                }
-
-                /*
-                 * Create the the conditions according to the just created constraint prototypes.
-                 */
-                bool anyConjunctionConsistent = false;
                 symtab conflictingVars = symtab();
-                disjunctionsOfCondConj.push_back( DisjunctionOfConditionConjunctions() );
-                DisjunctionOfConditionConjunctions& currentDisjunction = disjunctionsOfCondConj.back();
-                for( DisjunctionOfConstraintConjunctions::iterator consConj = disjunctionOfConsConj.begin(); consConj != disjunctionOfConsConj.end();
-                        ++consConj )
+                if( !substitute( currentConstraint, currentSubstitution, disjunctionOfConsConj, conflictingVars, intervalSpace ) )
                 {
-                    /*
-                     * Check if the conjunction contains any inconsistent constraint.
-                     */
-                    TS_ConstraintConjunction::iterator cons = consConj->begin();
-                    while( cons != consConj->end() )
-                    {
-                        unsigned consistent = (*cons)->consistentWith( intervalSpace );
-                        if( consistent == 0 )
-                        {
-                            conflictingVars.insert( (*cons)->variables().begin(), (*cons)->variables().end() );
-                            break;
-                        }
-                        else if( consistent == 1 )
-                        {
-                            cons = consConj->erase( cons );
-                        }
-                        else
-                        {
-                            ++cons;
-                        }
-                    }
-                    if( cons == consConj->end() )
-                    {
-                        anyConjunctionConsistent = true;
-                        if( !anySubstitutionFailed )
-                        {
-                            currentDisjunction.push_back( ConditionList() );
-                            ConditionList& currentConjunction = currentDisjunction.back();
-                            for( TS_ConstraintConjunction::iterator cons = consConj->begin(); cons != consConj->end(); ++cons )
-                            {
-                                currentConjunction.push_back( new vs::Condition( *cons, _currentState->treeDepth() ) );
-                                currentConjunction.back()->pOriginalConditions()->insert( *cond );
-                            }
-                        }
-                        else
-                            break;
-                    }
+                    allSubstitutionsApplied = false;
                 }
-                if( !anyConjunctionConsistent )
+                // Create the the conditions according to the just created constraint prototypes.
+                if( disjunctionOfConsConj.empty() )
                 {
                     anySubstitutionFailed = true;
                     ConditionSet condSet  = ConditionSet();
@@ -1163,32 +1090,65 @@ EndSwitch:;
                     condSet.insert( conflictingBounds.begin(), conflictingBounds.end() );
                     conflictSet.insert( condSet );
                 }
+                else
+                {
+                    if( allSubstitutionsApplied && !anySubstitutionFailed )
+                    {
+                        disjunctionsOfCondConj.push_back( DisjunctionOfConditionConjunctions() );
+                        DisjunctionOfConditionConjunctions& currentDisjunction = disjunctionsOfCondConj.back();
+                        for( auto consConj = disjunctionOfConsConj.begin(); consConj != disjunctionOfConsConj.end(); ++consConj )
+                        {
+                            currentDisjunction.push_back( ConditionList() );
+                            ConditionList& currentConjunction = currentDisjunction.back();
+                            for( auto cons = consConj->begin(); cons != consConj->end(); ++cons )
+                            {
+                                currentConjunction.push_back( new vs::Condition( *cons, _currentState->treeDepth() ) );
+                                currentConjunction.back()->pOriginalConditions()->insert( *cond );
+                            }
+                        }
+                    }
+                }
             }
         }
+        bool cleanResultsOfThisMethod = false;
         if( anySubstitutionFailed )
         {
             _currentState->rFather().addConflicts( _currentState->pSubstitution(), conflictSet );
             _currentState->rInconsistent() = true;
-
-            /*
-             * Delete the conflict sets of this state.
-             */
+            cleanResultsOfThisMethod = true;
+        }
+        else
+        {
+            disjunctionsOfCondConj.push_back( DisjunctionOfConditionConjunctions() );
+            disjunctionsOfCondConj.back().push_back( oldConditions );
+            _currentState->addSubstitutionResults( disjunctionsOfCondConj );
+            if( !_currentState->isInconsistent() )
+            {
+                if( allSubstitutionsApplied )
+                {
+                    insertDTinRanking( _currentState );
+                }
+                else
+                {
+                    eraseDTsOfRanking( _currentState->rFather() );
+                    _currentState->rFather().rToHighDegree() = true;
+                    insertDTinRanking( _currentState->pFather() );
+                            
+                }
+            }
+            #ifdef VS_DEBUG
+            _currentState->print( "   ", cout );
+            #endif
+        }
+        if( cleanResultsOfThisMethod )
+        {
             _currentState->resetConflictSets();
-
-            /*
-             * Delete the children of this state.
-             */
             while( !_currentState->children().empty() )
             {
                 State* toDelete = _currentState->rChildren().back();
                 _currentState->rChildren().pop_back();
                 delete toDelete;
             }
-
-
-            /*
-             * Delete the conditions of this state.
-             */
             while( !_currentState->conditions().empty() )
             {
                 const vs::Condition* pCond = _currentState->rConditions().back();
@@ -1199,10 +1159,6 @@ EndSwitch:;
                 delete pCond;
                 pCond = NULL;
             }
-
-            /*
-             * Delete the everything in oldConditions.
-             */
             while( !oldConditions.empty() )
             {
                 const vs::Condition* rpCond = oldConditions.back();
@@ -1210,10 +1166,6 @@ EndSwitch:;
                 delete rpCond;
                 rpCond = NULL;
             }
-
-            /*
-             * Delete the everything in disjunctionsOfCondConj.
-             */
             while( !disjunctionsOfCondConj.empty() )
             {
                 while( !disjunctionsOfCondConj.back().empty() )
@@ -1229,31 +1181,8 @@ EndSwitch:;
                 }
                 disjunctionsOfCondConj.pop_back();
             }
-            return false;
         }
-        else
-        {
-            disjunctionsOfCondConj.push_back( DisjunctionOfConditionConjunctions() );
-            disjunctionsOfCondConj.back().push_back( oldConditions );
-            _currentState->addSubstitutionResults( disjunctionsOfCondConj );
-            if( !_currentState->isInconsistent() )
-            {
-                if( anySubstitutionNotApplied )
-                {
-                    eraseDTsOfRanking( _currentState->rFather() );
-                    _currentState->rFather().rToHighDegree() = true;
-                    insertDTinRanking( _currentState->pFather() );
-                }
-                else
-                {
-                    insertDTinRanking( _currentState );
-                }
-            }
-            #ifdef VS_DEBUG
-            _currentState->print( "   ", cout );
-            #endif
-            return true;
-        }
+        return !anySubstitutionFailed;
     }
 
     /**

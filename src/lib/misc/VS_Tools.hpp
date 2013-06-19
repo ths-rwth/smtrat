@@ -108,13 +108,13 @@ namespace vs
         unsigned estimatedResultSize = 1;
         for( auto iter = _toCombine.begin(); iter != _toCombine.end(); ++iter )
         {
-            estimatedResultSize *= iter->size();
             if( iter->empty() ) return true;
+            estimatedResultSize *= iter->size();
+            if( estimatedResultSize > MAX_NUM_OF_COMBINATION_RESULT )
+            {
+                return false;
+            }
             else combination.push_back( iter->begin() );
-        }
-        if( estimatedResultSize > MAX_NUM_OF_COMBINATION_RESULT )
-        {
-            return false;
         }
 
         // As long as no more combination for the last vector in first vector of vectors exists.
@@ -152,15 +152,15 @@ namespace vs
         }
         return true;
     }
-    
     void simplify( DisjunctionOfConstraintConjunctions& );
+    void simplify( DisjunctionOfConstraintConjunctions&, GiNaC::symtab&, const GiNaCRA::evaldoubleintervalmap& );
     bool splitProducts( DisjunctionOfConstraintConjunctions& );
     bool splitProducts( const TS_ConstraintConjunction&, DisjunctionOfConstraintConjunctions& );
     DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* );
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::Constraint* );
     void getOddBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& );
     void getEvenBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& );
-    GiNaC::ex simplify( const GiNaC::ex&, const GiNaC::symtab&  );
+    GiNaC::ex simplify( const GiNaC::ex&, const GiNaC::symtab& );
     void print( DisjunctionOfConstraintConjunctions& );
 }    // end namspace vs
 

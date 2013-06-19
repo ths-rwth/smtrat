@@ -404,6 +404,7 @@ public:
 	void									passConflictToFather				( bool = false )													;
     #ifdef SMTRAT_VS_VARIABLEBOUNDS
     bool                                    checkTestCandidatesForBounds        ( )                                                                 ;
+    std::vector< GiNaCRA::DoubleInterval >  solutionSpace()                                                                                         ;
     bool                                    hasNoRootsInVariableBounds          ( const Condition* )                                                ;
     #endif
 

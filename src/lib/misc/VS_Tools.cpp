@@ -39,7 +39,6 @@ namespace vs
      * empty conjunction.
      *
      * @param _toSimplify   The disjunction of conjunctions to simplify.
-     * @param _solutionInterval
      */
     void simplify( DisjunctionOfConstraintConjunctions& _toSimplify )
     {
@@ -76,6 +75,74 @@ namespace vs
             else
             {
                 conj++;
+            }
+            if( !containsEmptyDisjunction && conjEmpty )
+            {
+                containsEmptyDisjunction = true;
+            }
+        }
+    }
+    
+    /**
+     * Simplifies a disjunction of conjunctions of constraints by deleting consistent
+     * constraint and inconsistent conjunctions of constraints. If a conjunction of
+     * only consistent constraints exists, the simplified disjunction contains one
+     * empty conjunction.
+     *
+     * @param _toSimplify   The disjunction of conjunctions to simplify.
+     * @param _conflictingVars
+     * @param _solutionSpace
+     */
+    void simplify( DisjunctionOfConstraintConjunctions& _toSimplify, symtab& _conflictingVars, const GiNaCRA::evaldoubleintervalmap& _solutionSpace )
+    {
+        bool                                          containsEmptyDisjunction = false;
+        DisjunctionOfConstraintConjunctions::iterator conj                     = _toSimplify.begin();
+        while( conj != _toSimplify.end() )
+        {
+            bool                               conjInconsistent = false;
+            TS_ConstraintConjunction::iterator cons             = (*conj).begin();
+            while( cons != (*conj).end() )
+            {
+                if( *cons == smtrat::Formula::constraintPool().inconsistentConstraint() )
+                {
+                    conjInconsistent = true;
+                    break;
+                }
+                else if( *cons == smtrat::Formula::constraintPool().consistentConstraint() )
+                {
+                    // Delete the constraint.
+                    cons = (*conj).erase( cons );
+                }
+                else
+                {
+                    unsigned conflictingWithSolutionSpace = (*cons)->consistentWith( _solutionSpace );
+                    if( conflictingWithSolutionSpace == 0 )
+                    {
+                        _conflictingVars.insert( (*cons)->variables().begin(), (*cons)->variables().end() );
+                        conjInconsistent = true;
+                        break;
+                    }
+                    else if( conflictingWithSolutionSpace == 1 )
+                    {
+                        // Delete the constraint.
+                        cons = (*conj).erase( cons );
+                    }
+                    else
+                    {
+                        ++cons;
+                    }
+                }
+            }
+            bool conjEmpty = (*conj).empty();
+            if( conjInconsistent || (containsEmptyDisjunction && conjEmpty) )
+            {
+                // Delete the conjunction.
+                (*conj).clear();
+                conj = _toSimplify.erase( conj );
+            }
+            else
+            {
+                ++conj;
             }
             if( !containsEmptyDisjunction && conjEmpty )
             {

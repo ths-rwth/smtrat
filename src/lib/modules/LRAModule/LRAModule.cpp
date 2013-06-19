@@ -356,7 +356,7 @@ namespace smtrat
 
             #ifdef DEBUG_LRA_MODULE
             cout << "    Next pivoting element: ";
-            mTableau.printEntry( cout, pivotingElement.first );
+            mTableau.printEntry( pivotingElement.first, cout );
             cout << (pivotingElement.second ? "(True)" : "(False)");
             cout << " [" << pivotingElement.first << "]" << endl;
             #endif

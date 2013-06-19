@@ -694,6 +694,7 @@ namespace smtrat
                 EntryID beginOfBestRow = LAST_ENTRY_ID;
                 EntryID beginOfFirstConflictRow = LAST_ENTRY_ID;
                 *mpTheta = Value<T>( 0 );
+                Value<T> conflictTheta =  Value<T>( 0 );
                 for( auto rowNumber = mActiveRows.begin(); rowNumber != mActiveRows.end(); ++rowNumber )
                 {
                     Value<T> theta = Value<T>();
@@ -701,9 +702,9 @@ namespace smtrat
                     if( !result.second )
                     {
                         // Found a conflicting row.
-                        if( beginOfFirstConflictRow == LAST_ENTRY_ID || theta.mainPart() > mpTheta->mainPart() )
+                        if( beginOfFirstConflictRow == LAST_ENTRY_ID || theta.mainPart() > conflictTheta.mainPart() )
                         {
-                            *mpTheta = theta;
+                            conflictTheta = theta;
                             beginOfFirstConflictRow = result.first;
                         }
                     }
@@ -738,7 +739,7 @@ namespace smtrat
                 }
                 if( beginOfBestRow == LAST_ENTRY_ID && beginOfFirstConflictRow != LAST_ENTRY_ID )
                 {
-                    // The best pivoting element found
+                    // Found a conflict
                     return std::pair<EntryID,bool>( beginOfFirstConflictRow, false );
                 }
                 else if( beginOfBestRow != LAST_ENTRY_ID )
@@ -1152,6 +1153,8 @@ namespace smtrat
             Variable<T>* nameTmp = rowHead.mName;
             // Update the assignments of the pivoting variables
             nameTmp->rAssignment() += (*mpTheta) * pivotContent;
+            assert( nameTmp->supremum() > nameTmp->assignment() || nameTmp->supremum() == nameTmp->assignment() );
+            assert( nameTmp->infimum() < nameTmp->assignment() || nameTmp->infimum() == nameTmp->assignment() );
             columnHead.mName->rAssignment() += (*mpTheta);
             // Swap the row and the column head.
             rowHead.mName = columnHead.mName;
