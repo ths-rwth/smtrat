@@ -289,7 +289,7 @@ namespace smtrat
             static void addAssumptionToCheck( const std::set<const Constraint*>&, bool, const std::string& );
             static void storeAssumptionsToCheck( const Manager& );
             static const std::string moduleName( const ModuleType );
-            void storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> &, const std::string& = "smaller_muses") const;
+            void storeSmallerInfeasibleSubsetsCheck( const std::vector<Formula>&, const std::string& = "smaller_muses" ) const;
             std::vector<Formula> generateSubformulaeOfInfeasibleSubset( unsigned infeasiblesubset, unsigned size ) const;
             void updateDeductions();
 
