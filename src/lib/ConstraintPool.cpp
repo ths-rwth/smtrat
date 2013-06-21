@@ -18,15 +18,13 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * @file ConstraintPool.cpp
  *
  * @author Florian Corzilius
  * @author Sebastian Junges
  * @author Ulrich Loup
- * @version 2012-10-13
+ * @version 2013-06-20
  */
 
 #include "ConstraintPool.h"
@@ -37,8 +35,9 @@ using namespace GiNaC;
 namespace smtrat
 {
     /**
-     *
-     * @param _capacity
+     * Constructor of the constraint pool.
+     * 
+     * @param _capacity Expected necessary capacity of the pool.
      */
     ConstraintPool::ConstraintPool( unsigned _capacity ):
         mExternalPrefixInitialized( true ),
@@ -65,7 +64,7 @@ namespace smtrat
     }
 
     /**
-     *
+     * Destructor of the constraint pool.
      */
     ConstraintPool::~ConstraintPool()
     {
@@ -82,14 +81,15 @@ namespace smtrat
     }
 
     /**
-     *
+     * Resets the constraint pool.
+     * 
+     * Note: Do not use it. It is only made for the Benchmax.
      */
     void ConstraintPool::clear()
     {
-        lock_guard<mutex> lock1( mMutexAllocator );
-        lock_guard<mutex> lock2( mMutexArithmeticVariables );
-        lock_guard<mutex> lock3( mMutexBooleanVariables );
-        lock_guard<mutex> lock4( mMutexDomain );
+        lock_guard<mutex> lock1( mMutexArithmeticVariables );
+        lock_guard<mutex> lock2( mMutexBooleanVariables );
+        lock_guard<mutex> lock3( mMutexDomain );
         CONSTRAINT_LOCK_GUARD
         mConstraints.erase( mConsistentConstraint );
         mConstraints.erase( mInconsistentConstraint );
@@ -112,8 +112,9 @@ namespace smtrat
     }
 
     /**
-     *
-     * @return
+     * Determines the length of the longest variable name occurring in the pool.
+     * 
+     * @return The length of the longest variable name occurring in the pool.
      */
     unsigned ConstraintPool::maxLenghtOfVarName() const
     {
@@ -130,11 +131,18 @@ namespace smtrat
     }
 
     /**
-     *
-     * @param _lhs
-     * @param _rel
-     * @param _variables
-     * @return
+     * Constructs a new constraint and adds it to the pool, if it is not yet a member. If it is a
+     * member, this will be returned instead of a new constraint.
+     * 
+     * Note, that the left-hand side of the constraint is simplified and normalized, hence it is
+     * not necessarily equal to the given left-hand side. The same holds for the relation symbol.
+     * However, it is assured that the returned constraint has the same solutions as
+     * the expected one.
+     * 
+     * @param _lhs The left-hand side of the constraint.
+     * @param _rel The relation symbol of the constraint.
+     * @param _variables An over-approximation of the variables which occur on the left-hand side.
+     * @return The constructed constraint.
      */
     const Constraint* ConstraintPool::newConstraint( const ex& _lhs, const Constraint_Relation _rel, const symtab& _variables )
     {
@@ -147,27 +155,13 @@ namespace smtrat
     }
 
     /**
-     *
-     * @param _lhs
-     * @param _rhs
-     * @param _rel
-     * @param _variables
-     * @return
-     */
-    const Constraint* ConstraintPool::newConstraint( const ex& _lhs, const ex& _rhs, const Constraint_Relation _rel, const symtab& _variables )
-    {
-        CONSTRAINT_LOCK_GUARD
-        assert( hasNoOtherVariables( _lhs ) && hasNoOtherVariables( _rhs ) );
-        // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
-        //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
-        const Constraint* result = addConstraintToPool( createNormalizedConstraint( _lhs-_rhs, _rel, _variables ) );
-        return result;
-    }
-
-    /**
-     *
-     * @param _name
-     * @return
+     * Creates an arithmetic variable.
+     * 
+     * @param _name The external name of the variable to construct.
+     * @param _domain The domain of the variable to construct.
+     * @param _parsed A special flag indicating whether this variable is constructed during parsing.
+     * 
+     * @return A pair of the internal name of the variable and the variable as an expression.
      */
     pair<string,ex> ConstraintPool::newArithmeticVariable( const string& _name, Variable_Domain _domain, bool _parsed )
     {
@@ -193,8 +187,11 @@ namespace smtrat
     }
 
     /**
-     *
-     * @return
+     * Creates an auxiliary real valued variable.
+     * 
+     * @param _externalPrefix The prefix of the external name of the auxiliary variable to construct.
+     * 
+     * @return A pair of the internal name of the variable and the a variable as an expression.
      */
     pair<string,ex> ConstraintPool::newAuxiliaryRealVariable( const std::string& _externalPrefix )
     {
@@ -204,8 +201,11 @@ namespace smtrat
     }
 
     /**
-     *
-     * @return
+     * Creates an auxiliary integer valued variable.
+     * 
+     * @param _externalPrefix The prefix of the external name of the auxiliary variable to construct.
+     * 
+     * @return A pair of the internal name of the variable and the a variable as an expression.
      */
     pair<string,ex> ConstraintPool::newAuxiliaryIntVariable( const std::string& _externalPrefix )
     {
@@ -215,8 +215,10 @@ namespace smtrat
     }
 
     /**
-     *
-     * @param _name
+     * Creates a new Boolean variable.
+     * 
+     * @param _name The external name of the variable to construct.
+     * @param _parsed A special flag indicating whether this variable is constructed during parsing.
      */
     void ConstraintPool::newBooleanVariable( const string& _name, bool _parsed )
     {
@@ -228,8 +230,11 @@ namespace smtrat
     }
 
     /**
-     *
-     * @return
+     * Creates an auxiliary Boolean variable.
+     * 
+     * @param _externalPrefix The prefix of the external name of the auxiliary variable to construct.
+     * 
+     * @return The internal name of the variable.
      */
     string ConstraintPool::newAuxiliaryBooleanVariable( const std::string& _externalPrefix )
     {
@@ -242,7 +247,7 @@ namespace smtrat
     }
     
     /**
-     * 
+     * Initializes the prefix of the external variable names of internally declared (not parsed) variables.
      */
     void ConstraintPool::initExternalPrefix()
     {
@@ -285,7 +290,8 @@ namespace smtrat
     }
 
     /**
-     *
+     * Determines the number of non-linear constraints in the pool.
+     * 
      * Note: This method makes the other accesses to the constraint pool waiting.
      * @return
      */
@@ -302,9 +308,11 @@ namespace smtrat
     }
 
     /**
-     *
-     * @param _expression
-     * @return
+     * Checks whether the given expression contains variables which do not 
+     * yet occur in the constraint pool. This method is only for debug purpose.
+     * 
+     * @param _expression The expression, for which to check its variables.
+     * @return True, if it contains only variables which already occur in the constraint pool.
      */
     bool ConstraintPool::hasNoOtherVariables( const ex& _expression ) const
     {
@@ -319,13 +327,16 @@ namespace smtrat
     }
 
     /**
-     *
+     * Creates a normalized constraint, which has the same solutions as the constraint consisting of the given
+     * left-hand side and relation symbol.
+     * 
      * Note, that this method uses the allocator which is locked before calling.
      *
-     * @param _lhs
-     * @param _rel
-     * @param _variables
-     * @return
+     * @param _lhs The left-hand side of the constraint before normalization,
+     * @param _rel The relation symbol of the constraint before normalization,
+     * @param _variables An over-approximation of the variables occurring in the given left-hand side.
+     * 
+     * @return The constructed constraint.
      */
     Constraint* ConstraintPool::createNormalizedConstraint( const ex& _lhs, const Constraint_Relation _rel, const symtab& _variables ) const
     {
@@ -369,11 +380,16 @@ namespace smtrat
     }
 
     /**
-     *
+     * Adds the given constraint to the pool, if it does not yet occur in there.
+     * 
      * Note, that this method uses the allocator which is locked before calling.
+     * 
+     * @sideeffect The given constraint will be deleted, if it already occurs in the pool.
      *
-     * @param _constraint
-     * @return
+     * @param _constraint The constraint to add to the pool.
+     * 
+     * @return The given constraint, if it did not yet occur in the pool;
+     *          The equivalent constraint already occurring in the pool.
      */
     const Constraint* ConstraintPool::addConstraintToPool( Constraint* _constraint )
     {
@@ -434,9 +450,12 @@ namespace smtrat
     }
     
     /**
+     * Determines the external name of the variable which corresponds to the given internal variable name.
      * 
-     * @param _varname
-     * @return 
+     * Note, that this method uses the allocator which is locked before calling.
+     * 
+     * @param _varname The internal variable name.
+     * @return The external variable name.
      */
     string ConstraintPool::externalName( const string& _varname ) const
     {

@@ -18,13 +18,11 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * Class to create a condition object.
  * @author Florian Corzilius
  * @since 2010-07-26
- * @version 2011-12-05
+ * @version 2011-06-20
  */
 
 #include "Condition.h"
@@ -34,111 +32,48 @@ using namespace GiNaC;
 
 namespace vs
 {
-    /**
-     * Constructors:
-     */
-    Condition::Condition()
-    {
-        mpConstraint          = smtrat::Formula::newConstraint( 0, smtrat::CR_EQ, symtab() );
-        mpOriginalConditions  = new ConditionSet();
-        mpInfo                = new Info();
-        mpInfo->flag          = false;
-        mpInfo->recentlyAdded = false;
-        mpInfo->valuation     = 0;
-    }
+    Condition::Condition( const smtrat::Constraint* _cons, unsigned _val, bool _flag, const ConditionSet& _oConds, bool _rAdded ):
+        mFlag( _flag ),
+        mRecentlyAdded( _rAdded ),
+        mValuation( _val ),
+        mpConstraint( _cons ),
+        mpOriginalConditions( new ConditionSet( _oConds ) )
+    {}
 
-    Condition::Condition( const smtrat::Constraint* _constraint )
-    {
-        mpConstraint         = _constraint;
-        mpOriginalConditions = new ConditionSet();
-        mpInfo                = new Info();
-        mpInfo->flag          = false;
-        mpInfo->recentlyAdded = false;
-        mpInfo->valuation     = 0;
-    }
+    Condition::Condition( const Condition& _cond ):
+        mFlag( _cond.flag() ),
+        mRecentlyAdded( false ),
+        mValuation( _cond.valuation() ),
+        mpConstraint( _cond.pConstraint() ),
+        mpOriginalConditions( new ConditionSet( _cond.originalConditions() ) )
+    {}
 
-    Condition::Condition( const smtrat::Constraint* _constraint, const unsigned _valuation )
-    {
-        mpConstraint         = _constraint;
-        mpOriginalConditions = new ConditionSet();
-        mpInfo                = new Info();
-        mpInfo->flag          = false;
-        mpInfo->recentlyAdded = false;
-        mpInfo->valuation     = _valuation;
-    }
-
-    Condition::Condition( const smtrat::Constraint* _constraint,
-                          bool _flag,
-                          const ConditionSet& _originalConditions,
-                          unsigned _valuation )
-    {
-        mpConstraint         = _constraint;
-        mpOriginalConditions = new ConditionSet( _originalConditions );
-        mpInfo                = new Info();
-        mpInfo->flag          = _flag;
-        mpInfo->recentlyAdded = false;
-        mpInfo->valuation     = _valuation;
-    }
-
-    Condition::Condition( const smtrat::Constraint* _constraint,
-                          bool _flag,
-                          const ConditionSet& _originalConditions,
-                          unsigned _valuation,
-                          bool _recentlyAdded )
-    {
-        mpConstraint         = _constraint;
-        mpOriginalConditions = new ConditionSet( _originalConditions );
-        mpInfo                = new Info();
-        mpInfo->flag          = _flag;
-        mpInfo->recentlyAdded = _recentlyAdded;
-        mpInfo->valuation     = _valuation;
-    }
-
-    Condition::Condition( const Condition& _condition )
-    {
-        mpConstraint         = _condition.pConstraint();
-        mpOriginalConditions = new ConditionSet( _condition.originalConditions() );
-        mpInfo                = new Info();
-        mpInfo->flag          = _condition.flag();
-        mpInfo->recentlyAdded = false;
-        mpInfo->valuation     = _condition.valuation();
-    }
-
-    /**
-     * Destructor:
-     */
     Condition::~Condition()
     {
         (*mpOriginalConditions).clear();
         delete mpOriginalConditions;
-        mpOriginalConditions = NULL;
-        delete mpInfo;
     }
-
-    /**
-     * Methods:
-     */
 
     /**
      * Valuates the constraint according to a variable (it possibly not contains).
      *
-     *      +++ Note: An equation must always be better than constraints with
-     *      +++       other relation symbols.
-     *
      * @param _consideredVariable The variable which is considered in this valuation.
+     * @param _maxNumberOfVars
+     * @param _forElimination
      *
      * @return A valuation of the constraint according to an heuristic.
      */
     double Condition::valuate( const string& _consideredVariable, unsigned _maxNumberOfVars, bool _forElimination ) const
     {
-        CONSTRAINT_LOCK_GUARD
         symtab::const_iterator var = mpConstraint->variables().find( _consideredVariable );
         if( var != mpConstraint->variables().end() )
         {
             smtrat::VarInfo varInfo = constraint().varInfo( var->second );
             double maximum = 0;
-            if( _maxNumberOfVars < 4 ) maximum = 16;
-            else maximum = _maxNumberOfVars * _maxNumberOfVars;
+            if( _maxNumberOfVars < 4 )
+                maximum = 16;
+            else
+                maximum = _maxNumberOfVars * _maxNumberOfVars;
             // Check the relation symbol.
             double relationSymbolWeight = 0;
             switch( mpConstraint->relation() )
@@ -166,19 +101,16 @@ namespace vs
             }
             //Check the degree of the variable.
             double degreeWeight = varInfo.maxDegree;
-            if( maximum <= degreeWeight ) degreeWeight = maximum - 1;
+            if( maximum <= degreeWeight )
+                degreeWeight = maximum - 1;
             //Check the leading coefficient of the  given variable.
             unsigned lCoeffWeight = 0;
             if( degreeWeight <= 1 )
             {
                 if( mpConstraint->coefficient( var->second, degreeWeight ).info( info_flags::rational ) )
-                {
                     lCoeffWeight = 1;
-                }
                 else
-                {
                     lCoeffWeight = 3;
-                }
             }
             else if( degreeWeight == 2 )
             {
@@ -186,39 +118,27 @@ namespace vs
                 const ex& lhs = mpConstraint->multiRootLessLhs();
                 bool hasRationalLeadingCoefficient = lhs.coeff( var->second, degreeWeight ).info( info_flags::rational );
                 if( hasRationalLeadingCoefficient && lhs.coeff( var->second, degreeWeight - 1 ).info( info_flags::rational ) )
-                {
                     lCoeffWeight = 1;
-                }
                 else if( hasRationalLeadingCoefficient )
-                {
                     lCoeffWeight = 2;
-                }
                 else
-                {
                     lCoeffWeight = 3;
-                }
                 #else
                 bool hasRationalLeadingCoefficient = mpConstraint->coefficient( var->second, degreeWeight ).info( info_flags::rational );
                 if( hasRationalLeadingCoefficient && mpConstraint->coefficient( var->second, degreeWeight - 1 ).info( info_flags::rational ) )
-                {
                     lCoeffWeight = 1;
-                }
                 else if( hasRationalLeadingCoefficient )
-                {
                     lCoeffWeight = 2;
-                }
                 else
-                {
                     lCoeffWeight = 3;
-                }
                 #endif
             }
             // Check the number of variables.
             double numberOfVariableWeight = mpConstraint->variables().size();
             // Check how in how many monomials the variable occurs.
             double numberOfVariableOccurencesWeight = varInfo.occurences;
-            if( maximum <= numberOfVariableOccurencesWeight ) numberOfVariableOccurencesWeight = maximum - 1;
-//            #ifndef SMTRAT_STRAT_PARALLEL_MODE
+            if( maximum <= numberOfVariableOccurencesWeight )
+                numberOfVariableOccurencesWeight = maximum - 1;
             // If variable occurs only in one monomial, give a bonus if all other monomials are positive.
             double otherMonomialsPositiveWeight = 1;
             if( numberOfVariableOccurencesWeight == 1 && mpConstraint->numMonomials() > 1 )
@@ -235,25 +155,22 @@ namespace vs
                         bool monomialPos = true;
                         bool monomialNeg = true;
                         bool monomialContainsVariable = false;
-                        for( GiNaC::const_iterator factor = summandEx.begin(); factor != summandEx.end(); ++factor )
+                        for( auto factor = summandEx.begin(); factor != summandEx.end(); ++factor )
                         {
                             const ex factorEx = *factor;
                             if( is_exactly_a<symbol>( factorEx ) )
                             {
-                                if( factorEx == var->second ) monomialContainsVariable = true;
+                                if( factorEx == var->second )
+                                    monomialContainsVariable = true;
                                 monomialPos = false;
                                 monomialNeg = false;
                             }
                             else if( is_exactly_a<numeric>( factorEx ) )
                             {
                                 if( factorEx.info( info_flags::negative ) )
-                                {
                                     monomialNeg = false;
-                                }
                                 else
-                                {
                                     monomialPos = false;
-                                }
                             }
                             else if( is_exactly_a<power>( factorEx ) )
                             {
@@ -269,7 +186,8 @@ namespace vs
                                 ex subterm = *factorEx.begin();
                                 assert( is_exactly_a<symbol>( subterm ) );
                             }
-                            else assert( false );
+                            else
+                                assert( false );
                         }
                         if( !monomialContainsVariable )
                         {
@@ -285,13 +203,9 @@ namespace vs
                     else if( is_exactly_a<numeric>( summandEx ) )
                     {
                         if( summandEx.info( info_flags::negative ) )
-                        {
                             allOtherMonomialsNeg = false;
-                        }
                         else
-                        {
                             allOtherMonomialsPos = false;
-                        }
                     }
                     else if( is_exactly_a<power>( summandEx ) )
                     {
@@ -301,17 +215,15 @@ namespace vs
                         unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
                         allOtherMonomialsPos = false;
                         if( fmod( exp, 2.0 ) != 0.0 )
-                        {
                             allOtherMonomialsNeg = false;
-                        }
                         ex subterm = *summandEx.begin();
                         assert( is_exactly_a<symbol>( subterm ) );
                     }
-                    else assert( false );
+                    else
+                        assert( false );
                 }
                 if( allOtherMonomialsPos || allOtherMonomialsNeg ) otherMonomialsPositiveWeight = 2;
             }
-//            #endif
             double weightFactorTmp = maximum;
             double result = ( degreeWeight <= 2 ? 1 : 2);
             result += relationSymbolWeight/weightFactorTmp;
@@ -323,16 +235,12 @@ namespace vs
             result += numberOfVariableWeight/weightFactorTmp;
             weightFactorTmp *= maximum;
             result += numberOfVariableOccurencesWeight/weightFactorTmp;
-//            #ifndef SMTRAT_STRAT_PARALLEL_MODE
             weightFactorTmp *= maximum;
             result += otherMonomialsPositiveWeight/weightFactorTmp;
-//            #endif
             return result;
         }
         else
-        {
             return 0;
-        }
     }
 
     /**
@@ -346,13 +254,9 @@ namespace vs
     bool Condition::operator ==( const Condition& _condition ) const
     {
         if( valuation() == _condition.valuation() )
-        {
             return true;
-        }
         else
-        {
             return false;
-        }
     }
 
     /**
@@ -366,13 +270,9 @@ namespace vs
     bool Condition::operator <( const Condition& _condition ) const
     {
         if( valuation() < _condition.valuation() )
-        {
             return true;
-        }
         else
-        {
             return false;
-        }
     }
 
     /**
@@ -386,26 +286,16 @@ namespace vs
         _out << " [" << this << "]";
         _out << "   ";
         if( flag() )
-        {
             _out << "(true, ";
-        }
         else
-        {
             _out << "(false, ";
-        }
         _out << "valuation=" << valuation();
         if( recentlyAdded() )
-        {
             _out << ", recently added) {";
-        }
         else
-        {
             _out << ") {";
-        }
         if( originalConditions().empty() )
-        {
             _out << "no original condition}";
-        }
         else
         {
             ConditionSet::const_iterator oCond = originalConditions().begin();
@@ -419,6 +309,4 @@ namespace vs
             _out << " }";
         }
     }
-
 }    // end namspace vs
-

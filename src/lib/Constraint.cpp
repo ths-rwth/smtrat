@@ -47,9 +47,6 @@ namespace smtrat
 
     recursive_mutex Constraint::mMutex;
 
-    /**
-     * Constructors:
-     */
     Constraint::Constraint():
         mID( 0 ),
         mSecondHash( CR_EQ ),
@@ -126,17 +123,10 @@ namespace smtrat
         mVarInfoMap( _constraint.mVarInfoMap )
     {}
 
-    /**
-     * Destructor:
-     */
     Constraint::~Constraint()
     {
         delete mpCoefficients;
     }
-
-    /**
-     * Methods:
-     */
 
     /**
      * @param _variableName The name of the variable we search for.
@@ -681,6 +671,11 @@ namespace smtrat
         return result;
     }
     
+    /**
+     * 
+     * @param _ex
+     * @return 
+     */
     bool Constraint::containsNumeric( const ex& _ex )
     {
         if( is_exactly_a<numeric>( _ex ) )
@@ -701,6 +696,12 @@ namespace smtrat
         }
     }
     
+    /**
+     * 
+     * @param _ex
+     * @param _exceptAt
+     * @return 
+     */
     bool Constraint::containsNumeric( const ex& _ex, GiNaC::const_iterator _exceptAt )
     {
         assert( is_exactly_a<add>( _ex ) || is_exactly_a<mul>( _ex ) );
