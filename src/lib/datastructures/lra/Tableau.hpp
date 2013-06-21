@@ -2101,7 +2101,7 @@ namespace smtrat
            T row_sum;
            vector<Variable<T>*> nonbasics = std::vector<Variable<T>*>();
            vector<T> coeffs = std::vector<T>();
-           /* while(!row_iterator.rowEnd())
+           while(!row_iterator.rowEnd())
            {            
                const Variable<T>& nonbasic_var = *mColumns[(*row_iterator).columnNumber()].mName;
                const Value<T>& ass = nonbasic_var.assignment();
@@ -2110,7 +2110,7 @@ namespace smtrat
                TableauEntry<T>& entry = (*mpEntries)[row_iterator.entryID()];
                row_sum += ass*entry.rContent();
                row_iterator.right();
-           }*/
+           }
         std::pair<vector<Variable<T>*>,vector<T>> result (nonbasics,coeffs);            
         if(basic_var->infimum() == row_sum || basic_var->supremum() == row_sum) return result;
         else 
@@ -2124,10 +2124,10 @@ namespace smtrat
         void Tableau<T>::invertColumn(unsigned column_index)
         {
         Iterator column_iterator = Iterator(mColumns.at(column_index).mStartEntry, mpEntries);   
-        while(!column_iterator.columnEnd())
+        while(!column_iterator.columnBegin())
         {
         (*mpEntries)[column_iterator.entryID()].content() *= -1;
-        column_iterator.down();
+        column_iterator.up();
         }
         }
         
@@ -2136,18 +2136,35 @@ namespace smtrat
         {
         Iterator columnA_iterator = Iterator(mColumns.at(columnA_index).mStartEntry, mpEntries);
         Iterator columnB_iterator = Iterator(mColumns.at(columnB_index).mStartEntry, mpEntries);
+        // Make columnA_iterator and columnB_iterator neighbors
+        while((*mpEntries)[columnA_iterator.up()].rowNumber() > (*mpEntries)[columnB_iterator.entryID()].rowNumber())
+            columnA_iterator.up();
+        
         while(!columnB_iterator.columnBegin())
         {
         if((*mpEntries)[columnA_iterator.entryID()].rowNumber() == (*mpEntries)[columnB_iterator.entryID()].rowNumber())
-            (*mpEntries)[columnA_iterator.entryID()].content() += (*mpEntries)[columnB_iterator.entryID()].content*multiple;
+        {
+            T content = (*mpEntries)[columnA_iterator.entryID()].content() + (*mpEntries)[columnB_iterator.entryID()].content*multiple;  
+            if(content == 0)
+            {
+                EntryID to_delete = columnA_iterator.entryID;
+                columnA_iterator.up();
+                removeEntry(to_delete);                
+            }                
+            else
+                (*mpEntries)[columnA_iterator.entryID()].content() = content;                
+        }            
         else 
         {            
             EntryID entryID = newTableauEntry(multiple*(*mpEntries)[columnA_iterator.entryID()].content());
             TableauEntry<T>& entry = (*mpEntries)[entryID];
-            entry.setColumnNumber((*mpEntries)[columnB_iterator.entryID()].columnNumber());
-            entry.setRowNumber((*mpEntries)[columnA_iterator.entryID()].rowNumber());
+            entry.setColumnNumber((*mpEntries)[columnA_iterator.entryID()].columnNumber());
+            entry.setRowNumber((*mpEntries)[columnB_iterator.entryID()].rowNumber());
             TableauHead& columnHead = mColumns[entry.columnNumber()];
-            (*mpEntries)[columnA_iterator.entryID()].up() = entryID;
+            (*mpEntries)[entryID].down() = (*mpEntries)[columnA_iterator].down();
+            (*mpEntries)[(*mpEntries)[entryID].down()].up = entryID;
+            (*mpEntries)[entryID].up() = columnA_iterator.entryID();
+            (*mpEntries)[columnA_iterator].down() = entryID;
             Iterator row_iterator = Iterator(columnB_iterator.entryID(), mpEntries);
             EntryID ID1_to_be_Fixed;
             EntryID ID2_to_be_Fixed;
@@ -2188,22 +2205,70 @@ namespace smtrat
         
         }
         columnB_iterator.up();
-        while((*mpEntries)[columnA_iterator.up()].rowNumber() > (*mpEntries)[columnB_iterator.entryID()].rowNumber())
-            columnA_iterator.up();
         }
         }
         template<class T> 
         void Tableau<T>::calculate_hermite_normalform()
-        {            
+        {
+        std::vector<unsigned> diagonals = std::vector<int>();  
+            for(unsigned i=0;i<mColumns.size();i++)
+                diagonals.push_back(-1);           
+            Iterator row_iterator;
+            bool first_free=true;
             for(unsigned i=0;i<mRows.size();i++)
             {
-                Iterator row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
-                while(row_iterator.left() != LAST_ENTRY_ID || row_iterator.right != LAST_ENTRY_ID)
+            unsigned elim_pos,added_pos,diag_pos;
+            T elim_content, added_content,diag_content;    
+            row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
+            unsigned number_of_entries = mRows.at(i).mSize;
+                while(!(number_of_entries <= i+1))
                 {
-                    // ...                                            
+                    while(!row_iterator.rowEnd())
+                    {
+                        T content = (*mpEntries)[row_iterator.entryID()].content();
+                        unsigned column = (*mpEntries)[row_iterator.entryID()].columnNumber();
+                        if((*mpEntries)[row_iterator.entryID()].content() < 0)
+                            invertColumn(column); 
+                        if(diagonals.at(column) == -1)
+                        {    
+                            if(first_free)
+                            {
+                                elim_pos = column;
+                                elim_content = content; 
+                                added_pos = column;
+                                added_content = content;
+                                first_free = false;
+                            }
+                            else
+                            {
+                                if(elim_content <= content)
+                                {
+                                    elim_pos = column;
+                                    elim_content = content;                                    
+                                }
+                                else
+                                {
+                                    added_pos = column;
+                                    added_content = content;                                    
+                                }
+                            }
+                        }
+                        row_iterator.right();                    
+                    }
+                if(elim_content % added_content == 0)
+                    diag_pos = added_pos;
+                addColumns(elim_pos,added_pos,(-1)*floor(elim_content/added_content)*added_content);
+                number_of_entries = mRows.at(i).mSize;                                                                                 
                 }
+            diagonals.push_back(diag_pos);
+            // Normalize Row
+            for(int j=0;j<i;j++)
+            {
+                // ...                
+            }    
+            first_free = true;
             }
-        }
+        }        
         #endif
         
         #ifdef LRA_GOMORY_CUTS
