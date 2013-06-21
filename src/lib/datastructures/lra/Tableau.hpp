@@ -2101,7 +2101,7 @@ namespace smtrat
            T row_sum;
            vector<Variable<T>*> nonbasics = std::vector<Variable<T>*>();
            vector<T> coeffs = std::vector<T>();
-           /* while(!row_iterator.rowEnd())
+           while(!row_iterator.rowEnd())
            {            
                const Variable<T>& nonbasic_var = *mColumns[(*row_iterator).columnNumber()].mName;
                const Value<T>& ass = nonbasic_var.assignment();
@@ -2110,7 +2110,7 @@ namespace smtrat
                TableauEntry<T>& entry = (*mpEntries)[row_iterator.entryID()];
                row_sum += ass*entry.rContent();
                row_iterator.right();
-           }*/
+           }
         std::pair<vector<Variable<T>*>,vector<T>> result (nonbasics,coeffs);            
         if(basic_var->infimum() == row_sum || basic_var->supremum() == row_sum) return result;
         else 
@@ -2124,10 +2124,10 @@ namespace smtrat
         void Tableau<T>::invertColumn(unsigned column_index)
         {
         Iterator column_iterator = Iterator(mColumns.at(column_index).mStartEntry, mpEntries);   
-        while(!column_iterator.columnEnd())
+        while(!column_iterator.columnBegin())
         {
         (*mpEntries)[column_iterator.entryID()].content() *= -1;
-        column_iterator.down();
+        column_iterator.up();
         }
         }
         
@@ -2213,35 +2213,62 @@ namespace smtrat
         std::vector<unsigned> diagonals = std::vector<int>();  
             for(unsigned i=0;i<mColumns.size();i++)
                 diagonals.push_back(-1);           
-            Iterator row_iterator_diag;
-            Iterator row_iterator_eliminate;
+            Iterator row_iterator;
+            bool first_free=true;
             for(unsigned i=0;i<mRows.size();i++)
-            {                
-                row_iterator_diag = Iterator(mRows.at(i).mStartEntry, mpEntries);
-                row_iterator_eliminate = Iterator(mRows.at(i).mStartEntry, mpEntries);
-                unsigned number_of_entries = mRows.at(i).mSize;
+            {
+            unsigned elim_pos,added_pos,diag_pos;
+            T elim_content, added_content,diag_content;    
+            row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
+            unsigned number_of_entries = mRows.at(i).mSize;
                 while(!(number_of_entries <= i+1))
                 {
-                    while(diagonals.at((*mpEntries)[row_iterator_eliminate.entryID()].columnNumber()) != -1 && !row_iterator_eliminate.rowBegin())
-                        row_iterator_eliminate.left();
-                    
-                    if(row_iterator_eliminate.rowBegin() && diagonals.at((*mpEntries)[row_iterator_eliminate.entryID()].columnNumber()) != -1)
+                    while(!row_iterator.rowEnd())
                     {
-                        row_iterator_eliminate = Iterator(mRows.at(i).mStartEntry, mpEntries);
-                        while(diagonals.at((*mpEntries)[row_iterator_eliminate.entryID()].columnNumber()) != -1 && !row_iterator_eliminate.rowEnd())
-                            row_iterator_eliminate.right();
+                        T content = (*mpEntries)[row_iterator.entryID()].content();
+                        unsigned column = (*mpEntries)[row_iterator.entryID()].columnNumber();
+                        if((*mpEntries)[row_iterator.entryID()].content() < 0)
+                            invertColumn(column); 
+                        if(diagonals.at(column) == -1)
+                        {    
+                            if(first_free)
+                            {
+                                elim_pos = column;
+                                elim_content = content; 
+                                added_pos = column;
+                                added_content = content;
+                                first_free = false;
+                            }
+                            else
+                            {
+                                if(elim_content <= content)
+                                {
+                                    elim_pos = column;
+                                    elim_content = content;                                    
+                                }
+                                else
+                                {
+                                    added_pos = column;
+                                    added_content = content;                                    
+                                }
+                            }
+                        }
+                        row_iterator.right();                    
                     }
-                        
-                        addColumns((*mpEntries)[row_iterator_eliminate.entryID()].columnNumber(),
-                        (*mpEntries)[row_iterator_diag.entryID()].columnNumber(),
-                        (-1)*floor(((*mpEntries)[row_iterator_eliminate.entryID()].content()/(*mpEntries)[row_iterator_diag.entryID()].content()))*(*mpEntries)[row_iterator_diag.entryID()].content());
-                        number_of_entries = mRows.at(i).mSize;
-                        
-                }                                                              
+                if(elim_content % added_content == 0)
+                    diag_pos = added_pos;
+                addColumns(elim_pos,added_pos,(-1)*floor(elim_content/added_content)*added_content);
+                number_of_entries = mRows.at(i).mSize;                                                                                 
                 }
-            diagonals.push_back((*mpEntries)[row_iterator_diag.entryID()].columnNumber());    
-        }
-        
+            diagonals.push_back(diag_pos);
+            // Normalize Row
+            for(int j=0;j<i;j++)
+            {
+                // ...                
+            }    
+            first_free = true;
+            }
+        }        
         #endif
         
         #ifdef LRA_GOMORY_CUTS

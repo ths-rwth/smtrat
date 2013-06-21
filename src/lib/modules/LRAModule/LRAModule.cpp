@@ -423,16 +423,16 @@ namespace smtrat
                             #ifdef LRA_CUTS_FROM_PROOFS
                             lra::Tableau<lra::Numeric> DC_Tableau = lra::Tableau<lra::Numeric>(mpPassedFormula->end());
                             unsigned numRows = mTableau.rows().size();
-                            /* for( unsigned pos = 0; pos < numRows; ++pos )
+                            /*for( unsigned pos = 0; pos < numRows; ++pos )
                             {
-                                const std::pair<vector<Variable<Numeric>*>,vector<Numeric>> nonbasic_coeff_pair = std::pair<vector<Variable<Numeric>*>,vector<Numeric>>();
+                                pair<vector<Variable<Numeric>*>,vector<Numeric>> nonbasic_coeff_pair = pair<vector<Variable<Numeric>*>,vector<Numeric>>();
                                 nonbasic_coeff_pair = DC_Tableau.isDefining(pos);
                                 if(!nonbasic_coeff_pair.first.empty())
                                 {
                                 ex* help = new ex(mTableau.rows().at(pos).mName->expression());
-                                DC_Tableau.newBasicVariable(help,nonbasic_coeff_pair.first,nonbasic_coeff_pair.second);
+                                Variable<Numeric>* new_var = DC_Tableau.newBasicVariable(help,nonbasic_coeff_pair.first,nonbasic_coeff_pair.second);
                                 }
-                            } */
+                            }*/
                             #endif
                             
                             #ifdef LRA_BRANCH_AND_BOUND
