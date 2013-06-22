@@ -2217,16 +2217,18 @@ namespace smtrat
             bool first_free=true;
             for(unsigned i=0;i<mRows.size();i++)
             {
-            unsigned elim_pos,added_pos,diag_pos;
+            int elim_pos=-1,added_pos=-1,diag_pos;
+            EntryID diag_entry;
             T elim_content, added_content,diag_content;    
             row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
             unsigned number_of_entries = mRows.at(i).mSize;
-                while(!(number_of_entries <= i+1))
+            while(!(number_of_entries <= i+1))
                 {
-                    while(!row_iterator.rowEnd())
+                    while(elim_pos == added_pos)
                     {
                         T content = (*mpEntries)[row_iterator.entryID()].content();
                         unsigned column = (*mpEntries)[row_iterator.entryID()].columnNumber();
+                        diag_entry = row_iterator.entryID();
                         if((*mpEntries)[row_iterator.entryID()].content() < 0)
                             invertColumn(column); 
                         if(diagonals.at(column) == -1)
@@ -2249,10 +2251,13 @@ namespace smtrat
                                 else
                                 {
                                     added_pos = column;
-                                    added_content = content;                                    
+                                    added_content = content; 
+                                    diag_entry = row_iterator.entryID();
                                 }
                             }
                         }
+                        
+                    if(elim_pos == added_pos)
                         row_iterator.right();                    
                     }
                 if(elim_content % added_content == 0)
@@ -2262,10 +2267,15 @@ namespace smtrat
                 }
             diagonals.push_back(diag_pos);
             // Normalize Row
-            for(int j=0;j<i;j++)
+            row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
+            while(!row_iterator.rowEnd())
             {
-                // ...                
-            }    
+                if(row_iterator.entryID() != diag_entry && (*mpEntries)[diag_entry].content() <= (*mpEntries)[row_iterator.entryID()].content())
+                    addColumn((*mpEntries)[row_iterator.entryID()].columnNumber(),(*mpEntries)[diag_entry].columnNumber(),
+                             (-1)*(floor((*mpEntries)[row_iterator.entryID()].content()/(*mpEntries)[diag_entry].content())
+                             +(*mpEntries)[row_iterator.entryID()].content() % (*mpEntries)[diag_entry].content()));
+            row_iterator.right();    
+            }
             first_free = true;
             }
         }        
