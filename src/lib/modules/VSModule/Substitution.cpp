@@ -17,12 +17,11 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 /**
  * Class to create a substitution object.
  * @author Florian Corzilius
  * @since 2010-05-11
- * @version 2011-12-05
+ * @version 2013-06-20
  */
 
 #include "Substitution.h"
@@ -32,10 +31,6 @@ using namespace GiNaC;
 
 namespace vs
 {
-
-    /**
-    * Constructors:
-    */
     Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const Substitution_Type& _type, const ConditionSet& _oConditions, const smtrat::ConstraintSet& _sideCondition ):
         mpVariable( new string( _variable ) ),
         mpVarAsEx( new ex( _varAsEx ) ),
@@ -63,9 +58,6 @@ namespace vs
         mSideCondition( _sub.sideCondition() )
     {}
 
-    /**
-    * Destructor:
-    */
     Substitution::~Substitution()
     {
         delete mpVariable					;
@@ -75,77 +67,55 @@ namespace vs
     }
 
     /**
-    * Methods:
-    */
-
-    /**
-    * Valuates the substitution according to a heuristic.
-    *
-    * @return
-    */
+     * Valuates the substitution according to a heuristic.
+     *
+     * @return
+     */
     unsigned Substitution::valuate() const
     {
         if( type()==ST_MINUS_INFINITY )
-        {
             return 9;
-        }
         else if( type()==ST_NORMAL )
         {
             if( termVariables().empty() )
-            {
                 return 8;
-            }
             else
             {
                 if( term().hasSqrt() )
-                {
                     return 4;
-                }
                 else
                 {
                     if( term().denominator().info( info_flags::rational ) )
-                    {
                         return 6;
-                    }
                     else
-                    {
                         return 5;
-                    }
                 }
             }
         }
         else
         {
             if( termVariables().empty() )
-            {
                 return 7;
-            }
             else
             {
                 if( term().hasSqrt() )
-                {
                     return 1;
-                }
                 else
                 {
                     if( term().denominator().info( info_flags::rational ) )
-                    {
                         return 3;
-                    }
                     else
-                    {
                         return 2;
-                    }
                 }
             }
         }
     }
 
     /**
-    * Prints the substitution to an output stream.
-    *
-    * @param _out The output stream, where it should print.
-    */
+     * Prints the substitution to an output stream.
+     *
+     * @param _out The output stream, where it should print.
+     */
     void Substitution::print( bool _withOrigins, bool _withSideConditions, ostream& _out, const string& _init ) const
     {
         _out << _init << toString();
@@ -155,9 +125,7 @@ namespace vs
             for( auto oCond = originalConditions().begin(); oCond != originalConditions().end(); ++oCond )
             {
                 if( oCond != originalConditions().begin() )
-                {
                     _out << ", ";
-                }
                 (**oCond).constraint().print( _out );
             }
             _out << "}";
@@ -168,9 +136,7 @@ namespace vs
             for( auto sCons = sideCondition().begin(); sCons != sideCondition().end(); ++sCons )
             {
                 if( sCons != sideCondition().begin() )
-                {
                     _out << " and ";
-                }
                 _out << *sCons;
             }
         }
@@ -214,6 +180,11 @@ namespace vs
                 stringRepresentation += "[" + variable() + " ->  -infinity]";
                 break;
             }
+            case ST_INVALID:
+            {
+                stringRepresentation += "Invalid";
+                break;
+            }
             default:
             {
                 cout << "Unknown substitution type!" << endl;
@@ -240,28 +211,18 @@ namespace vs
                 if( term() == _substitution.term() )
                 {
                     if( sideCondition() == _substitution.sideCondition() )
-                    {
                         return true;
-                    }
                     else
-                    {
                         return false;
-                    }
                 }
                 else
-                {
                     return false;
-                }
             }
             else
-            {
                 return false;
-            }
         }
         else
-        {
             return false;
-        }
     }
 
 
@@ -277,76 +238,50 @@ namespace vs
     {
         int varCompResult = variable().compare( _substitution.variable() );
         if( varCompResult<0 )
-        {
             return true;
-        }
         else if( varCompResult==0 )
         {
             if( type()<_substitution.type() )
-            {
                 return true;
-            }
             else if( type()==_substitution.type() )
             {
                 signed constPartCompResult = smtrat::Constraint::exCompare( term().constantPart(), termVariables(), _substitution.term().constantPart(), _substitution.termVariables() );
                 if( constPartCompResult==-1 )
-                {
                     return true;
-                }
                 else if( constPartCompResult==0 )
                 {
                     signed factorCompResult = smtrat::Constraint::exCompare( term().factor(), termVariables(), _substitution.term().factor(), _substitution.termVariables() );
                     if( factorCompResult==-1 )
-                    {
                         return true;
-                    }
                     else if( factorCompResult==0 )
                     {
                         signed radicandCompResult = smtrat::Constraint::exCompare( term().radicand(), termVariables(), _substitution.term().radicand(), _substitution.termVariables() );
                         if( radicandCompResult==-1 )
-                        {
                             return true;
-                        }
                         else if( radicandCompResult==0 )
                         {
                             signed denominatorCompResult = smtrat::Constraint::exCompare( term().denominator(), termVariables(), _substitution.term().denominator(), _substitution.termVariables() );
                             if( denominatorCompResult==-1 )
-                            {
                                 return true;
-                            }
                             else if( sideCondition() < _substitution.sideCondition() )
-                            {
                                 return true;
-                            }
                             else
-                            {
                                 return false;
-                            }
                         }
                         else
-                        {
                             return false;
-                        }
                     }
                     else
-                    {
                         return false;
-                    }
                 }
                 else
-                {
                     return false;
-                }
             }
             else
-            {
                 return false;
-            }
         }
         else
-        {
             return false;
-        }
     }
 
     /**
@@ -363,14 +298,17 @@ namespace vs
         return _ostream;
     }
 
+    /**
+     * 
+     * @param _term
+     * @param _variables
+     */
     void Substitution::getVariables( const ex& _term, symtab& _variables )
     {
         if( _term.nops() > 1 )
         {
             for( const_iterator subterm = _term.begin(); subterm != _term.end(); ++subterm )
-            {
                 getVariables( *subterm, _variables );
-            }
         }
         else if( is_exactly_a<symbol>( _term ) )
         {

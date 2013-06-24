@@ -18,14 +18,13 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 /**
  * @file ConstraintPool.h
  *
  * @author Florian Corzilius
  * @author Sebastian Junges
  * @author Ulrich Loup
- * @version 2012-10-13
+ * @version 2013-06-20
  */
 #include "Constraint.h"
 #include <unordered_set>
@@ -65,7 +64,7 @@ namespace smtrat
 
             // Members:
 
-            ///
+            /// A flag indicating whether the prefix of the internally created external variable names has already been initialized.
             bool mExternalPrefixInitialized;
             /// id allocator
             unsigned mIdAllocator;
@@ -77,39 +76,36 @@ namespace smtrat
             unsigned mAuxiliaryIntVarCounter;
             /// A counter for the auxiliary integer valued variables.
             unsigned mArithmeticVarCounter;
-            ///
+            /// The constraint (0=0) representing any valid constraint.
             const Constraint* mConsistentConstraint;
-            ///
+            /// The constraint (0>0) representing any inconsistent constraint.
             const Constraint* mInconsistentConstraint;
-            ///
+            /// Mutex to avoid multiple access to the map of arithmetic variables
             mutable std::mutex mMutexArithmeticVariables;
-            ///
+            /// Mutex to avoid multiple access to the set of Boolean variables
             mutable std::mutex mMutexBooleanVariables;
-            ///
+            /// Mutex to avoid multiple access to the variable domain map
             mutable std::mutex mMutexDomain;
-            ///
-            mutable std::mutex mMutexAllocator;
             /// The internal prefix for a real valued variable.
             const std::string mInternalRealVarNamePrefix;
             /// The internal prefix for a integer valued variable.
             const std::string mInternalIntVarNamePrefix;
             /// The external prefix for a variable.
             std::string mExternalVarNamePrefix;
-            /// 
+            /// The map of internal variable names to external variable names.
             std::map< std::string, std::string > mInternalToExternalVarNames;
-            /// the symbol table containing the variables of all constraints
+            /// The symbol table containing the variables of all constraints.
             GiNaC::symtab mArithmeticVariables;
             /// The collection of Boolean variables in use.
             std::set<std::string> mBooleanVariables;
-            /// for each string representation its constraint (considering all constraints of which the manager has already been informed)
+            /// The constraint pool.
             fastConstraintSet mConstraints;
             /// The domain of the variables occurring in the constraints.
             std::map< GiNaC::ex, Variable_Domain, GiNaC::ex_is_less > mDomain;
-            ///
+            /// All external variable names which have been created during parsing.
             std::vector< std::string > mParsedVarNames;
 
             // Methods:
-
             static std::string prefixToInfix( const std::string& );
             bool hasNoOtherVariables( const GiNaC::ex& ) const;
             Constraint* createNormalizedConstraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& ) const;
@@ -210,11 +206,9 @@ namespace smtrat
                 return mExternalVarNamePrefix;
             }
 
-            void clear(); // Do not use it. It is only made for the Benchmax.
+            void clear();
             unsigned maxLenghtOfVarName() const;
             const Constraint* newConstraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& );
-            const Constraint* newConstraint( const GiNaC::ex&, const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& );
-
             std::pair<std::string,GiNaC::ex> newArithmeticVariable( const std::string&, Variable_Domain, bool = false );
             std::pair<std::string,GiNaC::ex> newAuxiliaryIntVariable(  const std::string& = "h_i" );
             std::pair<std::string,GiNaC::ex> newAuxiliaryRealVariable(  const std::string& = "h_r" );

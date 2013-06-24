@@ -24,7 +24,7 @@
  * Class to create a substitution object.
  * @author Florian Corzilius
  * @since 2010-05-11
- * @version 2011-12-05
+ * @version 2013-06-20
  */
 
 #ifndef SMTRAT_VS_SUBSTITUTION_H

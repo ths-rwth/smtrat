@@ -44,16 +44,6 @@ namespace vs
     class Condition
     {
         public:
-
-            /*
-             * Intern type structur:
-             */
-            struct Info
-            {
-                bool flag;
-                bool recentlyAdded;
-                unsigned valuation;
-            };
             struct condComp
             {
                 bool operator ()( const Condition* const pCondA, const Condition* const pCondB ) const
@@ -65,68 +55,51 @@ namespace vs
 
         private:
 
-            /**
-             * Members:
-             */
-            Info*                     mpInfo;
+            // Members:
+            mutable bool              mFlag;
+            mutable bool              mRecentlyAdded;
+            mutable unsigned          mValuation;
             const smtrat::Constraint* mpConstraint;
             ConditionSet*             mpOriginalConditions;
 
         public:
 
-            /**
-             * Constructors:
-             */
-
-            Condition();
-
-            Condition( const smtrat::Constraint* );
-
-            Condition( const smtrat::Constraint*, unsigned );
-
-            Condition( const smtrat::Constraint*, bool, const ConditionSet&, unsigned );
-
-            Condition( const smtrat::Constraint*, bool, const ConditionSet&, unsigned, bool );
-
+            // Constructors:
+            Condition( const smtrat::Constraint*, unsigned = 0, bool = false, const ConditionSet& = ConditionSet(), bool = false );
             Condition( const Condition& );
 
-            /**
-             * Destructor:
-             */
+            // Destructor:
             ~Condition();
 
-            /**
-             * Methods:
-             */
-
+            // Methods:
             bool& rFlag() const
             {
-                return mpInfo->flag;
+                return mFlag;
             }
 
             bool flag() const
             {
-                return mpInfo->flag;
+                return mFlag;
             }
 
             bool& rRecentlyAdded() const
             {
-                return mpInfo->recentlyAdded;
+                return mRecentlyAdded;
             }
 
             const bool recentlyAdded() const
             {
-                return mpInfo->recentlyAdded;
+                return mRecentlyAdded;
             }
 
             unsigned& rValuation() const
             {
-                return mpInfo->valuation;
+                return mValuation;
             }
 
             unsigned valuation() const
             {
-                return mpInfo->valuation;
+                return mValuation;
             }
 
             const smtrat::Constraint& constraint() const
