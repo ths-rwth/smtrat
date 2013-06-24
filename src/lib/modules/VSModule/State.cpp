@@ -1023,7 +1023,7 @@ namespace vs
      */
     bool State::nextSubResultCombination()
     {
-        assert( stateType() == COMBINE_SUBRESULTS );
+        assert( type() == COMBINE_SUBRESULTS );
         if( !hasSubResultsCombination() )
         {
             extendSubResultCombination();
@@ -1111,7 +1111,7 @@ namespace vs
      */
     bool State::refreshConditions()
     {
-        assert( stateType() == COMBINE_SUBRESULTS );
+        assert( type() == COMBINE_SUBRESULTS );
         bool conditionsChanged = false;
         if( !mpSubstitutionResults->empty() )
         {
@@ -1980,8 +1980,10 @@ namespace vs
             {
                 SqrtEx sqEx = SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand, _variables );
                 smtrat::ConstraintSet sideCond = smtrat::ConstraintSet();
-                if( isCons1Consistent != 1 ) sideCond.insert( cons1 );
-                if( isCons2Consistent != 1 ) sideCond.insert( cons2 );
+                if( isCons1Consistent != 1 )
+                    sideCond.insert( cons1 );
+                if( isCons2Consistent != 1 )
+                    sideCond.insert( cons2 );
                 Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, sqEx, _substitutionType, _oConditions, sideCond );
                 if( !updateOCondsOfSubstitutions( sub ) )
                 {
@@ -1993,9 +1995,7 @@ namespace vs
                         subResults.push_back( DisjunctionOfConditionConjunctions() );
                         subResults.back().push_back( ConditionList() );
                         for( auto cons = sideCond.begin(); cons != sideCond.end(); ++cons )
-                        {
                             subResults.back().back().push_back( new Condition( *cons, treeDepth, false, _oConditions, false ) );
-                        }
                         state->addSubstitutionResults( subResults );
                         state->rType() = SUBSTITUTION_TO_APPLY;
                     }
@@ -2014,7 +2014,10 @@ namespace vs
      */
     void State::updateValuation()
     {
-        if( toHighDegree() ) mValuation = 1;
+        if( toHighDegree() )
+        {
+            mValuation = 1;
+        }
         else
         {
             // The substitution's valuation is a number between 1 and 9 and the tree depth is equal to
