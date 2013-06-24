@@ -41,6 +41,25 @@
 
 namespace vs
 {
+    // Type and object definitions.
+    typedef std::pair<unsigned, std::pair<unsigned, unsigned> > UnsignedTriple;
+    struct unsignedPairCmp
+    {
+        bool operator ()( UnsignedTriple n1, UnsignedTriple n2 ) const
+        {
+            if( n1.first > n2.first )
+                return true;
+            else if( n1.first == n2.first )
+            {
+                if( n1.first != 1 )
+                    return n1.second.first > n2.second.first;
+                else
+                    return n1.second.second > n2.second.second;
+            }
+            else
+                return false;
+        }
+    };
     template <class elementType> struct setOfPointerComp
     {
         bool operator() ( const std::set< elementType > set1, const std::set< elementType > set2 )
@@ -65,7 +84,6 @@ namespace vs
                 return false;
         }
     };
-
     struct setOfCondPointerComp
     {
         bool operator() ( const ConditionSet set1, const ConditionSet set2 )
@@ -90,9 +108,7 @@ namespace vs
                 return false;
         }
     };
-
-    typedef std::set< ConditionSet, setOfCondPointerComp >	ConditionSetSet	;
-
+    typedef std::set< ConditionSet, setOfCondPointerComp > ConditionSetSet;
     struct setOfSetsOfCondPointerComp
     {
         bool operator() ( const ConditionSetSet setOfSet1, const ConditionSetSet setOfSet2 )
@@ -117,9 +133,7 @@ namespace vs
                 return false;
         }
     };
-
     typedef std::set< ConditionSetSet, setOfSetsOfCondPointerComp > ConditionSetSetSet;
-
     struct unsignedGreater
     {
         bool operator() ( const unsigned& lhs, const unsigned& rhs ) const
@@ -127,7 +141,6 @@ namespace vs
             return lhs>rhs;
         }
     };
-
     struct unsignedSmaller
     {
         bool operator() ( const unsigned& lhs, const unsigned& rhs ) const
@@ -135,7 +148,6 @@ namespace vs
             return lhs<rhs;
         }
     };
-
     struct subComp
     {
         bool operator() ( const Substitution* const pSubA, const Substitution* const pSubB ) const
@@ -150,9 +162,7 @@ namespace vs
                 return (*pSubA)<(*pSubB);
         }
     };
-    
     class State;
-
     typedef std::list< const Condition* >            ConditionList;
     typedef std::vector< ConditionList >             DisjunctionOfConditionConjunctions;
     typedef std::vector< const smtrat::Constraint* > TS_ConstraintConjunction;
@@ -161,16 +171,6 @@ namespace vs
     class State
     {
     public:
-        // A unsigned integer is between 0 and 4.294.967.295, so there are 4.294 different valuations.
-        // The remaining 6 digits are to make a valuation unique, so there are 967.295 different IDs.
-        static const unsigned VALUATION_FACTOR			 = 1000000;
-        static const unsigned MAX_CONSTRAINT_VALUATION 	 = 10;
-        static const unsigned MIN_VALUATION				 = 0;
-        static const unsigned MAX_VALUATION				 = UINT_MAX;
-        static const unsigned MAX_ID	  	        	 = UINT_MAX;
-        static const signed   MAX_SOLVABLE_DEGREE 		 = 2;
-        static const unsigned MAXIMUM_VARIABLE_VALUATION = 10000000;
-        
         // Intern type structure.
         enum Type{ TEST_CANDIDATE_TO_GENERATE, SUBSTITUTION_TO_APPLY, COMBINE_SUBRESULTS };
         
@@ -209,6 +209,7 @@ namespace vs
         ConditionList*        mpConditions;
         ConflictSets*		  mpConflictSets;
         StateVector* 		  mpChildren;
+        std::set<const Condition*>* mpTooHighDegreeConditions;
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         VariableBounds*       mpVariableBounds;
         #endif
@@ -275,6 +276,11 @@ namespace vs
         }
 
         unsigned id() const
+        {
+            return mID;
+        }
+        
+        unsigned& rID()
         {
             return mID;
         }
@@ -443,6 +449,16 @@ namespace vs
         {
             return *mpOriginalCondition;
         }
+        
+        const std::set<const Condition*>& tooHighDegreeConditions() const
+        {
+            return *mpTooHighDegreeConditions;
+        }
+        
+        std::set<const Condition*>& rTooHighDegreeConditions()
+        {
+            return *mpTooHighDegreeConditions;
+        }
 
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         const VariableBounds& variableBounds() const
@@ -471,7 +487,6 @@ namespace vs
         bool hasFurtherUncheckedTestCandidates() const;
         void variables( std::set< std::string >& ) const;
         unsigned numberOfNodes() const;
-        const std::pair< unsigned, unsigned > valuationPlusID() const;
         bool checkSubResultsCombs() const;
 
         // Data read and write methods.
@@ -484,7 +499,6 @@ namespace vs
         void simplify();
         bool simplify( ConditionList&, ConditionSetSet&, bool = false );
         void setIndex( const std::string& );
-        bool setID( const unsigned );
         void addConflictSet( const Substitution* const, ConditionSetSet& );
         void addConflicts( const Substitution* const, ConditionSetSet& );
         void resetConflictSets();

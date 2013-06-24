@@ -49,34 +49,12 @@ namespace smtrat
     {
         private:
 
-            /*
-             * Type and object definitions:
-             */
-            typedef std::pair<unsigned, unsigned> UnsignedPair;
-            struct unsignedPairCmp
-            {
-                bool operator ()( UnsignedPair n1, UnsignedPair n2 ) const
-                {
-                    if( n1.first > n2.first )
-                    {
-                        return true;
-                    }
-                    else if( n1.first == n2.first && n1.second > n2.second )
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-            };
-
-            typedef std::pair<UnsignedPair, vs::State*>                  ValStatePair;
-            typedef std::map<UnsignedPair, vs::State*, unsignedPairCmp>  ValuationMap;
-            typedef std::map<const Formula* const, const vs::Condition*> FormulaConditionMap;
-            typedef std::pair< std::string, GiNaC::ex >                  VarNamePair;
-            typedef std::vector<std::pair< VarNamePair, VarNamePair > >  VarNamePairVector;
+            // Type and object definitions.
+            typedef std::pair<vs::UnsignedTriple, vs::State*>                  ValStatePair;
+            typedef std::map<vs::UnsignedTriple, vs::State*, vs::unsignedPairCmp>  ValuationMap;
+            typedef std::map<const Formula* const, const vs::Condition*>   FormulaConditionMap;
+            typedef std::pair< std::string, GiNaC::ex >                    VarNamePair;
+            typedef std::vector<std::pair< VarNamePair, VarNamePair > >    VarNamePairVector;
 
             /*
              * Attributes:
@@ -131,10 +109,16 @@ namespace smtrat
             /*
              * Methods:
              */
-            bool eliminate( vs::State*, const std::string&, const vs::Condition* );
+            void increaseIDCounter()
+            {
+                assert( mIDCounter < UINT_MAX );
+                mIDCounter++;
+            }
+
+            
+            void eliminate( vs::State*, const std::string&, const vs::Condition* );
             bool substituteAll( vs::State*, vs::ConditionList& );
             void propagateNewConditions( vs::State* );
-            void increaseIDCounter();
             void insertDTinRanking( vs::State* );
             void insertDTsinRanking( vs::State* );
             bool eraseDTofRanking( vs::State& );
