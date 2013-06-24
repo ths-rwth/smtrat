@@ -18,18 +18,15 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * Class to create a state object.
  * @author Florian Corzilius
  * @since 2010-05-11
- * @version 2011-12-05
+ * @version 2013-06-20
  */
 
 #include <cmath>
 #include <float.h>
-
 #include "State.h"
 #include "../../Module.h"
 
@@ -39,17 +36,14 @@
 //#define VS_DEBUG_VARIABLE_BOUNDS
 //#define VS_LOG_INFSUBSETS
 
+using namespace std;
+using namespace GiNaC;
+#ifdef SMTRAT_VS_VARIABLEBOUNDS
+using namespace GiNaCRA;
+#endif
+
 namespace vs
 {
-    using namespace std;
-    using namespace GiNaC;
-    #ifdef SMTRAT_VS_VARIABLEBOUNDS
-    using namespace GiNaCRA;
-    #endif
-
-    /**
-     * Constructors:
-     */
     State::State():
         mConditionsSimplified( false ),
         mHasChildrenToInsert( false ),
@@ -75,7 +69,8 @@ namespace vs
         mpSubResultCombination( NULL ),
         mpConditions( new ConditionList() ),
         mpConflictSets( new ConflictSets() ),
-        mpChildren( new StateVector() )
+        mpChildren( new StateVector() ),
+        mpTooHighDegreeConditions( new set< const Condition* >() )
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         ,
         mpVariableBounds( new VariableBounds() )
@@ -107,7 +102,8 @@ namespace vs
         mpSubResultCombination( NULL ),
         mpConditions( new ConditionList() ),
         mpConflictSets( new ConflictSets() ),
-        mpChildren( new StateVector() )
+        mpChildren( new StateVector() ),
+        mpTooHighDegreeConditions( new set< const Condition* >() )
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         ,
         mpVariableBounds( new VariableBounds() )
@@ -116,6 +112,8 @@ namespace vs
 
     State::~State()
     {
+        mpTooHighDegreeConditions->clear();
+        delete mpTooHighDegreeConditions;
         delete mpConflictSets;
         while( !children().empty() )
         {
@@ -161,10 +159,6 @@ namespace vs
             delete mpSubResultCombination;
         }
     }
-
-    /**
-     * Methods:
-     */
 
     /**
      * @return The depth of the subtree with this state as root node.
@@ -271,8 +265,8 @@ namespace vs
     /**
      * Checks whether there exist more than one test candidate, which has still not been checked.
      *
-     * @return  true,   if there exist more than one test candidate, which has still not been checked;
-     *          false,  otherwise.
+     * @return  true, if there exist more than one test candidate, which has still not been checked;
+     *          false, otherwise.
      */
     bool State::hasFurtherUncheckedTestCandidates() const
     {
@@ -310,16 +304,6 @@ namespace vs
         for( auto child = children().begin(); child != children().end(); ++child )
             result += (**child).numberOfNodes();
         return result;
-    }
-
-    /**
-     * The sum of the ID and the valuation times the valuation factor.
-     *
-     * @return The sum of the ID and the valuation times the valuation factor.
-     */
-    const pair<unsigned, unsigned> State::valuationPlusID() const
-    {
-        return pair<unsigned, unsigned>( valuation(), id() );
     }
 
     /**
@@ -846,25 +830,6 @@ namespace vs
             for( auto cond = rConditions().begin(); cond != conditions().end(); ++cond )
                 (**cond).rFlag() = ((**cond).constraint().variables().find( index() ) == (**cond).constraint().variables().end());
         }
-    }
-
-    /**
-     * Sets the ID of the state.
-     *
-     * @param _id   The new value for the ID of this state.
-     *
-     * @return  true    ,if the ID to set is smaller the maximal possible id.
-     *          false   ,else.
-     */
-    bool State::setID( const unsigned _id )
-    {
-        if( _id < MAX_ID )
-        {
-            mID = _id;
-            return true;
-        }
-        else
-            return false;
     }
 
     /**
@@ -1505,7 +1470,10 @@ namespace vs
                 {
                     #ifdef SMTRAT_VS_VARIABLEBOUNDS
                     mpVariableBounds->removeBound( (*condition)->pConstraint(), *condition );
-                    #endif
+                    #endif   
+                    // Delete the condition to delete from the set of conditions with too high degree to
+                    // be entirely used for test candidate generation.
+                    mpTooHighDegreeConditions->erase( *condition );
                     deletedConditions.insert( *condition );
                     condition = rConditions().erase( condition );
                     conditionDeleted = true;
@@ -1557,6 +1525,12 @@ namespace vs
     void State::deleteConditions( set<const Condition*>& _conditionsToDelete )
     {
         if( _conditionsToDelete.empty() ) return;    
+        // Delete the conditions to delete from the set of conditions with too high degree to
+        // be entirely used for test candidate generation.
+        for( auto cond = _conditionsToDelete.begin(); cond != _conditionsToDelete.end(); ++cond )
+        {
+            mpTooHighDegreeConditions->erase( *cond );
+        }
         // Delete everything originated by the given conditions in all children of this state.
         deleteOriginsFromChildren( _conditionsToDelete );
         // Delete the conditions from the conflict sets.
@@ -2043,6 +2017,8 @@ namespace vs
         if( toHighDegree() ) mValuation = 1;
         else
         {
+            // The substitution's valuation is a number between 1 and 9 and the tree depth is equal to
+            // number of variables plus one. 4.294.967.295
             if( !isRoot() ) mValuation = 100 * treeDepth() + 10 * substitution().valuate();
             else mValuation = 1;
             if( isInconsistent() ) mValuation += 7;
@@ -2136,6 +2112,7 @@ namespace vs
             rChildren().pop_back();
             delete toDelete;
         }
+        mpTooHighDegreeConditions->clear();
         while( !conditions().empty() )
         {
             const Condition* pCond = rConditions().back();
