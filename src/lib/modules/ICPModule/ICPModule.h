@@ -108,6 +108,7 @@ namespace smtrat
 
             Formula*                                                            mValidationFormula;
             std::vector< std::atomic_bool* >                                    mLRAFoundAnswer;
+            RuntimeSettings*                                                    mLraRuntimeSettings;
             LRAModule                                                           mLRA;
 
             std::map<const Formula*, const Formula*>                            mReceivedFormulaMapping; // LraReceived -> IcpReceived
@@ -116,6 +117,7 @@ namespace smtrat
             std::set<const Formula*>                                            mBoundConstraints;
             std::set<Formula*>                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
 
+            icp::ContractionCandidate*                                          mLastCandidate;
             bool                                                                mInitialized;
             unsigned                                                            mCurrentId;
             bool                                                                mBackendCalled;
