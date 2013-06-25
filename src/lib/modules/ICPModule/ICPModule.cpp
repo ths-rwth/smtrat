@@ -36,7 +36,7 @@
 using namespace GiNaC;
 using namespace std;
 
-//#define ICPMODULE_DEBUG
+#define ICPMODULE_DEBUG
 #define BOXMANAGEMENT
 
 namespace smtrat
@@ -171,7 +171,8 @@ namespace smtrat
                 cout << endl;
     #endif
                 Formula* deduction = transformDeductions(mLRA.deductions().back());
-
+                mCreatedDeductions.insert(deduction);
+                
                 mLRA.rDeductions().pop_back();
 
                 addDeduction(deduction);
@@ -447,7 +448,6 @@ namespace smtrat
         constr->print();
         cout << endl;
 #endif
-        cout << "Remove." << endl;
         // is it nonlinear?
         if (mNonlinearConstraints.find(constr) != mNonlinearConstraints.end())
         {
@@ -638,9 +638,7 @@ namespace smtrat
 #endif
                                 mLRA.removeSubformula(formulaIt);
                                 mReceivedFormulaMapping.erase(*formulaIt);
-                                Formula* toDelete = *formulaIt;
                                 formulaIt = mValidationFormula->erase(formulaIt);
-                                delete toDelete;
                                 break;
                             }
                             else
@@ -822,6 +820,7 @@ namespace smtrat
             }
             // temporary solution - an added linear constraint might have changed the box.
             setBox(mHistoryRoot);
+            mHistoryRoot->rReasons().clear();
             mHistoryActual = mHistoryActual->addRight(new icp::HistoryNode(mIntervals,2));
             mCurrentId = mHistoryActual->id();
     #ifdef ICPMODULE_DEBUG
@@ -1209,8 +1208,6 @@ namespace smtrat
                                                     (*mInfeasibleSubsets.begin()).insert(*subformula);
                                                 }
                                             }
-                                            // update infeasible subset of HistoryNode
-                                            mHistoryActual->addInfeasibleConstraint((*subformula)->pConstraint());
                                         }
                                     }
                                     break;
@@ -1290,11 +1287,9 @@ namespace smtrat
 #ifdef ICPMODULE_DEBUG
                     cout << "Id selected box: " << mHistoryRoot->id() << " Size subtree: " << mHistoryRoot->sizeSubtree() << endl;
 #endif
-                    mHistoryActual->propagateInfeasibleSubset();
                     mHistoryActual->propagateReasons();
                     setBox(mHistoryRoot);
                     mHistoryActual = mHistoryActual->addRight(new icp::HistoryNode(mHistoryRoot->intervals(),2));
-                    mHistoryActual->setInfeasibleSubset(mHistoryRoot->getInfeasibleSubset());
                     mCurrentId = mHistoryActual->id();
 #ifdef ICPMODULE_DEBUG
                     cout << "Id actual box: " << mHistoryActual->id() << " Size subtree: " << mHistoryActual->sizeSubtree() << endl;
@@ -1312,7 +1307,34 @@ namespace smtrat
 #ifdef ICPMODULE_DEBUG
                 cout << "Generated empty interval or Box linear infeasible, Chose new box: " << endl;
 #endif
+#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
+                mHistoryActual->print();
+                
+                Formula* infeasibleSubset = new Formula(AND);
+                
+                std::set<const Constraint*> constraints;
+                
+//                cout << "size reasons root: " << mHistoryActual->parent()->rReasons().size() << endl;
+                for ( auto variableIt = mHistoryActual->rReasons().begin(); variableIt != mHistoryActual->rReasons().end(); ++variableIt )
+                {
+                    for ( auto constraintIt = (*variableIt).second.begin(); constraintIt != (*variableIt).second.end(); ++constraintIt )
+                    {
+                        constraints.insert(*constraintIt);
+                    }
+                }
+                
+                for ( auto constraintIt = constraints.begin(); constraintIt != constraints.end(); ++constraintIt )
+                {
+//                    cout << "insert." << endl;
+                    infeasibleSubset->addSubformula(new Formula(*constraintIt));
+                }
+                
+                addAssumptionToCheck(*infeasibleSubset,false,"InfeasibleSubsetCheck");
+//                delete infeasibleSubset;
+#endif
+                
                 icp::HistoryNode* newBox = chooseBox( mHistoryActual );
+                
                 if ( newBox != NULL )
                 {
                     setBox(newBox);
@@ -1325,6 +1347,10 @@ namespace smtrat
 #endif
                     // no new Box to select -> finished
                     generateInfeasibleSubset();
+                    
+                    printInfeasibleSubsets();
+                    
+//                    cout << "size infeasible subset:" << mInfeasibleSubsets.size() << endl;
                     
                     return foundAnswer(False);
                 }
@@ -1715,7 +1741,18 @@ namespace smtrat
 #endif
             
             //check that the left interval is the left part of the split
-            assert( tmpLeft.at(variable).isLessOrEqual(tmpRight.at(variable)) );
+//            cout << "Original: ";
+//            originalInterval.dbgprint();
+//            cout << "ResultB: ";
+//            resultB.dbgprint();
+//            cout << "ResultA: ";
+//            resultA.dbgprint();
+//            cout << "Left: ";
+//            tmpLeft.at(variable).dbgprint();
+//            cout << " , Right: ";
+//            tmpRight.at(variable).dbgprint();
+//            cout << endl;
+//            assert( tmpLeft.at(variable).isLessOrEqual(tmpRight.at(variable)) );
             
             // update mIntervals - usually this happens when changing to a different box, but in this case it has to be done manually, otherwise mIntervals is not affected.
             mIntervals[variable] = originalInterval.intersect(resultB);
@@ -2554,8 +2591,6 @@ namespace smtrat
     {
         if ( _basis->isLeft() )
         {
-            _basis->parent()->setInfeasibleSubset(_basis->getInfeasibleSubset());
-            
             // if spliting constraint or the constraint resulting from a contraction
             // of the splitting constraint is included in the infeasible subset
             // skip the right box and continue.
@@ -2565,36 +2600,35 @@ namespace smtrat
             assert( mIntervals.find(variable) != mIntervals.end() );
             std::pair<const Constraint*, const Constraint*> boundaryConstraints = icp::intervalToConstraint(variable, mIntervals.at(variable) );
 
-//            icp::HistoryNode::set_Constraint infeasibleSubset = _basis->rInfeasibleSubset();
             icp::HistoryNode::set_Constraint infeasibleSubset = _basis->reasons(variable);
             if ( infeasibleSubset.find(boundaryConstraints.second) == infeasibleSubset.end() )
             {
                 if ( _basis->parent() == NULL )
                 {
-                    // Todo: Update Infset?
+                    for(std::map<string, std::set<const Constraint*> >::const_iterator reasonIt = _basis->reasons().begin(); reasonIt != _basis->reasons().end(); ++reasonIt )
+                    {
+                        _basis->parent()->addReasons((*reasonIt).first, (*reasonIt).second);
+                    }
                     return NULL;
                 }
                 else
                 {
                     // skip the right box
                     _basis->removeBoundsFromReasons();
-                    for(std::map<const ex, std::set<const Constraint*>, ex_is_less >::const_iterator reasonIt = _basis->reasons().begin(); reasonIt != _basis->reasons().end(); ++reasonIt )
+                    for(std::map<string, std::set<const Constraint*> >::const_iterator reasonIt = _basis->reasons().begin(); reasonIt != _basis->reasons().end(); ++reasonIt )
                     {
                         _basis->parent()->addReasons((*reasonIt).first, (*reasonIt).second);
                     }
-//                    _basis->parent()->setInfeasibleSubset(_basis->getInfeasibleSubset());
                     chooseBox(_basis->parent());
                 }
             }
             else
             {
-//                infeasibleSubset.erase(infeasibleSubset.find(boundaryConstraints.second));
                 _basis->removeBoundsFromReasons();
-                for(std::map<const ex, std::set<const Constraint*>, ex_is_less >::const_iterator reasonIt = _basis->reasons().begin(); reasonIt != _basis->reasons().end(); ++reasonIt )
+                for(std::map<string, std::set<const Constraint*> >::const_iterator reasonIt = _basis->reasons().begin(); reasonIt != _basis->reasons().end(); ++reasonIt )
                 {
                     _basis->parent()->addReasons((*reasonIt).first, (*reasonIt).second);
                 }
-//                _basis->parent()->setInfeasibleSubset(_basis->getInfeasibleSubset());
             }
 
             return _basis->parent()->right();
@@ -2603,16 +2637,19 @@ namespace smtrat
         {
             if ( _basis->parent() == mHistoryRoot )
             {
+                for(std::map<string, std::set<const Constraint*> >::const_iterator reasonIt = _basis->reasons().begin(); reasonIt != _basis->reasons().end(); ++reasonIt )
+                {
+                    _basis->parent()->addReasons((*reasonIt).first, (*reasonIt).second);
+                }
                 return NULL;
             }
             else // select next starting from parent
             {
                 _basis->removeBoundsFromReasons();
-                for(std::map<const ex, std::set<const Constraint*>, ex_is_less >::const_iterator reasonIt = _basis->reasons().begin(); reasonIt != _basis->reasons().end(); ++reasonIt )
+                for(std::map<string, std::set<const Constraint*> >::const_iterator reasonIt = _basis->reasons().begin(); reasonIt != _basis->reasons().end(); ++reasonIt )
                 {
                     _basis->parent()->addReasons((*reasonIt).first, (*reasonIt).second);
                 }
-                _basis->parent()->setInfeasibleSubset(_basis->rInfeasibleSubset());
                 return chooseBox( _basis->parent() );
             }
         }
@@ -2926,6 +2963,7 @@ namespace smtrat
 #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
         if ( boxCheck == False )
         {
+            mLRA.printInfeasibleSubsets();
             Formula* actualAssumptions = new Formula(*mpReceivedFormula);
             for ( auto boundIt = addedBoundaries.begin(); boundIt != addedBoundaries.end(); ++boundIt )
             {
@@ -2937,7 +2975,30 @@ namespace smtrat
             delete actualAssumptions;
         }
 #endif
+        if( boxCheck != True )
+        {
+            vec_set_const_pFormula tmpSet = mLRA.infeasibleSubsets();
         
+            cout << "AA" << endl;
+            cout << "Size: " << tmpSet.size() << endl;
+            for ( auto infSetIt = tmpSet.begin(); infSetIt != tmpSet.end(); ++infSetIt )
+            {
+                
+                
+                for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
+                {
+                    cout << "Ping: " << (*formulaIt)->constraint() << " MaxMonDeg: " << (*formulaIt)->constraint().maxMonomeDegree() << ", NumMonomials: " << (*formulaIt)->constraint().numMonomials() <<endl;
+                    if( !icp::isBound( (*formulaIt)->pConstraint() ) )
+                    {
+                        cout << "ADDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD" << endl;
+                        cout << mLastCandidate->lhs().get_name() << " --> " <<*(*formulaIt)->pConstraint() << endl;
+                        assert(mpReceivedFormula->contains(mReceivedFormulaMapping[*formulaIt]));
+                        // TODO: The reason is added to the variable of the last candidate - formally this is not necessarily correct
+                        mHistoryActual->addReason((*(*formulaIt)->pConstraint()->variables().begin()).first, (*formulaIt)->pConstraint() );
+                    }
+                }
+            }
+        }
         
         // remove boundaries from mLRA module after boxChecking.
         for (auto formulaIt = mValidationFormula->begin(); formulaIt != mValidationFormula->end(); )
@@ -2976,15 +3037,18 @@ namespace smtrat
     
     void ICPModule::generateInfeasibleSubset()
     {
+        mInfeasibleSubsets.clear();
         std::set<const Formula*> temporaryIfsSet;
-
-        for ( auto constraintIt = mHistoryRoot->rInfeasibleSubset().begin(); constraintIt != mHistoryRoot->rInfeasibleSubset().end(); ++constraintIt )
+        for ( auto variableIt = mHistoryRoot->rReasons().begin(); variableIt != mHistoryRoot->rReasons().end(); ++variableIt )
         {
-            for ( auto formulaIt = mpReceivedFormula->begin(); formulaIt != mpReceivedFormula->end(); ++formulaIt )
+            for ( auto constraintIt = (*variableIt).second.begin(); constraintIt != (*variableIt).second.end(); ++constraintIt )
             {
-                if ( *constraintIt == (*formulaIt)->pConstraint() )
+                for ( auto formulaIt = mpReceivedFormula->begin(); formulaIt != mpReceivedFormula->end(); ++formulaIt )
                 {
-                    temporaryIfsSet.insert(*formulaIt);
+                    if ( *constraintIt == (*formulaIt)->pConstraint() )
+                    {
+                        temporaryIfsSet.insert(*formulaIt);
+                    }
                 }
             }
         }

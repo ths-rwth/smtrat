@@ -57,7 +57,16 @@ namespace smtrat
 
         bool isBound( const Constraint* _constraint )
         {
-            return (_constraint->maxMonomeDegree() == 1 && _constraint->numMonomials() <= 2);
+            switch( _constraint->numMonomials() )
+            {
+                case 1:
+                    return (_constraint->maxMonomeDegree() == 1 );
+                    break;
+                case 2:
+                    return (_constraint->maxMonomeDegree() == 1 && _constraint->variables().size() == 1);
+                default:
+                    return false;
+            }
         }
 
         bool isBoundIn( const ex _var, const Constraint* _constraint )
