@@ -156,8 +156,6 @@ namespace icp
                 {
                     if( *candidateIt == _candidate )
                     {
-//                        cout << "deleting: ";
-                        _candidate->print();
                         candidateIt = mCandidates.erase( candidateIt );
                     }
                     else
@@ -165,7 +163,6 @@ namespace icp
                         ++candidateIt;
                     }
                 }
-                this->print();
             }
 
             void print( ostream& _out = std::cout ) const

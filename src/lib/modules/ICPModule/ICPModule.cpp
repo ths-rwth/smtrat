@@ -2960,7 +2960,6 @@ namespace smtrat
 #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
         if ( boxCheck == False )
         {
-            mLRA.printInfeasibleSubsets();
             Formula* actualAssumptions = new Formula(*mpReceivedFormula);
             for ( auto boundIt = addedBoundaries.begin(); boundIt != addedBoundaries.end(); ++boundIt )
             {
