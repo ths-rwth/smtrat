@@ -474,47 +474,6 @@ namespace smtrat
 
     /**
      *
-     * @param _position
-     */
-    void Formula::erase( unsigned _position )
-    {
-        assert( isBooleanCombination() );
-        assert( _position < mpSubformulas->size() );
-        iterator subFormula = mpSubformulas->begin();
-        unsigned pos        = 0;
-        while( subFormula != mpSubformulas->end() )
-        {
-            if( pos == _position )
-            {
-                break;
-            }
-            ++subFormula;
-            ++pos;
-        }
-        mpSubformulas->erase( subFormula );
-    }
-
-    /**
-     *
-     * @param _formula
-     */
-    void Formula::erase( const Formula* _formula )
-    {
-        assert( isBooleanCombination() );
-        Formula::iterator subFormula = mpSubformulas->begin();
-        while( subFormula != mpSubformulas->end() )
-        {
-            if( *subFormula == _formula )
-            {
-                break;
-            }
-            ++subFormula;
-        }
-        mpSubformulas->erase( subFormula );
-    }
-
-    /**
-     *
      * @param _subformula
      * @return
      */

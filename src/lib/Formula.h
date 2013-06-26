@@ -577,8 +577,6 @@ namespace smtrat
             iterator replace( iterator, Formula* );
             void pop_back();
             void pop_front();
-            void erase( unsigned );
-            void erase( const Formula* );
             iterator erase( iterator );
 
             Formula* pruneBack();

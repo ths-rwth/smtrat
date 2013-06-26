@@ -43,7 +43,7 @@ namespace smtrat
     const unsigned MAX_DEGREE_FOR_FACTORIZATION = 40;
     const unsigned MIN_DEGREE_FOR_FACTORIZATION = 2;
     const unsigned MAX_DIMENSION_FOR_FACTORIZATION = 6;
-    const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 15;
+    const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 300;
 
     recursive_mutex Constraint::mMutex;
 
@@ -540,6 +540,67 @@ namespace smtrat
                 result = d;
         }
         return result;
+    }
+    
+    /**
+     * Calculates the Cauchy bound of the left-hand side of this constraint.
+     * Note, that the left-hand side must be univariate.
+     * 
+     * @return The Cauchy bound of the left-hand side of this constraint.
+     */
+    numeric Constraint::cauchyBound() const
+    {
+        assert( variables().size() == 1 );
+        if( is_exactly_a<add>( mLhs ) )
+        {
+            // left-hand side is  a1*x^e1 + .. + an*x^en, 
+            // where the ei are pairwise different and ai is a rational number (including 0)
+            numeric cauchyBound = GiNaC::ZERO;
+            numeric leadingCoefficient = GiNaC::ONE;
+            // Calculate a1+ .. + an - aj,  where aj is the leading coefficient
+            // and find the leading coefficient aj
+            for( auto summand = mLhs.begin(); summand != mLhs.end(); ++summand )
+            {
+                const ex& summandEx = *summand;
+                if( is_exactly_a<mul>( summandEx ) )
+                {
+                    const ex& factor = *--summandEx.end();
+                    if( is_exactly_a<numeric>( factor ) )
+                    {
+                        // summand has the form  a*x^e_i  with  ai != 1
+                        assert( summandEx.nops() == 2 );
+                        const ex& monomial = *summandEx.begin();
+                        if( is_exactly_a<symbol>(monomial) ) 
+                        {
+                            if( mMaxMonomeDegree == 1 ) // leading coefficient
+                                leadingCoefficient = abs( ex_to<numeric>( factor ) );
+                            else
+                                cauchyBound += abs( ex_to<numeric>( factor ) );
+                        }
+                        else
+                        {
+                            assert( is_exactly_a<power>(monomial) );
+                            assert( monomial.nops() == 2 );
+                            if( *(++(monomial.end())) == mMaxMonomeDegree ) // leading coefficient
+                                leadingCoefficient = abs( ex_to<numeric>( factor ) );
+                            else
+                                cauchyBound += abs( ex_to<numeric>( factor ) );
+                        }
+                    }
+                    else // summand has the form:  x^e_i
+                        ++cauchyBound;
+                }
+                else if( is_exactly_a<numeric>( summandEx ) ) // constant part, i.e. ei = 0
+                    cauchyBound += abs( ex_to<numeric>( summandEx ) );
+                else
+                    ++cauchyBound;
+            }
+            cauchyBound /= leadingCoefficient;
+            ++cauchyBound; // Because we skipped adding the leading coefficient before.
+            return cauchyBound;
+        }
+        else // left-hand side is  a*x^e  ->  cauchy bound is 1
+            return GiNaC::ONE;
     }
 
     /**

@@ -125,7 +125,7 @@ namespace vs
                 {
                     ex q = simplify( sub.constantPart(), variables );
                     // Add conjunction (q = 0) to the substitution result.
-                    _result.push_back( TS_ConstraintConjunction() );
+                    _result.push_back( ConstraintVector() );
                     _result.back().push_back( smtrat::Formula::newConstraint( q, _cons->relation(), variables ) );
                 }
                 else
@@ -135,7 +135,7 @@ namespace vs
                     {
                         ex s = simplify( sub.denominator(), variables );
                         // Add conjunction (s>0 and q </>/<=/>= 0) to the substitution result.
-                        _result.push_back( TS_ConstraintConjunction() );
+                        _result.push_back( ConstraintVector() );
                         _result.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_GREATER, variables ) );
                         _result.back().push_back( smtrat::Formula::newConstraint( q, _cons->relation(), variables ) );
                         // Add conjunction (s<0 and q >/</>=/<= 0) to the substitution result.
@@ -158,14 +158,14 @@ namespace vs
                                 assert( false );
                                 inverseRelation = smtrat::CR_EQ;
                         }
-                        _result.push_back( TS_ConstraintConjunction() );
+                        _result.push_back( ConstraintVector() );
                         _result.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_LESS, variables ) );
                         _result.back().push_back( smtrat::Formula::newConstraint( q, inverseRelation, variables ) );
                     }
                     else
                     {
                         // Add conjunction (f(-c/b)*b^k </>/<=/>= 0) to the substitution result.
-                        _result.push_back( TS_ConstraintConjunction() );
+                        _result.push_back( ConstraintVector() );
                         _result.back().push_back( smtrat::Formula::newConstraint( q, _cons->relation(), variables ) );
                     }
                 }
@@ -216,7 +216,7 @@ namespace vs
         }
         else
         {
-            _result.push_back( TS_ConstraintConjunction() );
+            _result.push_back( ConstraintVector() );
             _result.back().push_back( _cons );
         }
 
@@ -256,20 +256,20 @@ namespace vs
         ex t = simplify( _radicand, _variables );
         #ifndef VS_SUBSTITUTION_ACCORDING_PAPER
         // Add conjunction (q=0 and r=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( q, smtrat::CR_EQ, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( r, smtrat::CR_EQ, _variables ) );
         // Add conjunction (q=0 and radicand=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( q, smtrat::CR_EQ, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( t, smtrat::CR_EQ, _variables ) );
         // Add conjunction (q<0 and r>0 and q^2-r^2*radicand=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( q, smtrat::CR_LESS, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( r, smtrat::CR_GREATER, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_EQ, _variables ) );
         // Add conjunction (q>0 and r<0 and q^2-r^2*radicand=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( q, smtrat::CR_GREATER, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( r, smtrat::CR_LESS, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_EQ, _variables ) );
@@ -278,7 +278,7 @@ namespace vs
         smtrat::Constraint::normalize( qr );
         qr = simplify( qr, _variables );
         // Add conjunction (q*r<=0 and q^2-r^2*radicand=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( qr, smtrat::CR_LEQ, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_EQ, _variables ) );
         #endif
@@ -316,22 +316,22 @@ namespace vs
         ex r = simplify( _r, _variables );
         #ifndef VS_SUBSTITUTION_ACCORDING_PAPER
         // Add conjunction (q>0 and r>0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( q, smtrat::CR_GREATER, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( r, smtrat::CR_GREATER, _variables ) );
         // Add conjunction (q<0 and r<0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( q, smtrat::CR_LESS, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( r, smtrat::CR_LESS, _variables ) );
         // Add conjunction (q^2-r^2*radicand!=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_NEQ, _variables ) );
         #else
         ex qr = _q * _r;
         smtrat::Constraint::normalize( qr );
         qr = simplify( qr, _variables );
         // Add conjunction (q*r>0 and q^2-r^2*radicand!=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( qr, smtrat::CR_GREATER, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_NEQ, _variables ) );
         #endif
@@ -372,32 +372,32 @@ namespace vs
         ex r = simplify( _r, _variables );
         #ifndef VS_SUBSTITUTION_ACCORDING_PAPER
         // Add conjunction (q<0 and s>0 and q^2-r^2*radicand>0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( q, smtrat::CR_LESS, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_GREATER, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_GREATER, _variables ) );
         // Add conjunction (q>0 and s<0 and q^2-r^2*radicand>0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( q, smtrat::CR_GREATER, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_LESS, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_GREATER, _variables ) );
         // Add conjunction (r>0 and s<0 and q^2-r^2*radicand<0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( r, smtrat::CR_GREATER, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_LESS, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_LESS, _variables ) );
         // Add conjunction (r<0 and s>0 and q^2-r^2*radicand<0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( r, smtrat::CR_LESS, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_GREATER, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_LESS, _variables ) );
         // Add conjunction (r>=0 and q<0 and s>0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( r, smtrat::CR_GEQ, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( q, smtrat::CR_GREATER, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_LESS, _variables ) );
         // Add conjunction (r<=0 and q>0 and s<0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( r, smtrat::CR_LEQ, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( q, smtrat::CR_LESS, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_GREATER, _variables ) );
@@ -409,15 +409,15 @@ namespace vs
         smtrat::Constraint::normalize( rs );
         rs = simplify( rs, _variables );
         // Add conjunction (q*s<0 and q^2-r^2*radicand>0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( qs, smtrat::CR_LESS, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_GREATER, _variables ) );
         // Add conjunction (r*s<=0 and q*s<0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( rs, smtrat::CR_LEQ, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( qs, smtrat::CR_LESS, _variables ) );
         // Add conjunction (r*s<=0 and q^2-r^2*radicand<0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( rs, smtrat::CR_LEQ, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_LESS, _variables ) );
         #endif
@@ -459,31 +459,31 @@ namespace vs
         ex t = simplify( _radicand, _variables );
         #ifndef VS_SUBSTITUTION_ACCORDING_PAPER
         // Add conjunction (q<0 and s>0 and q^2-r^2*radicand>=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( q, smtrat::CR_LESS, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_GREATER, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_GEQ, _variables ) );
         // Add conjunction (q>0 and s<0 and q^2-r^2*radicand>=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( q, smtrat::CR_GREATER, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_LESS, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_GEQ, _variables ) );
         // Add conjunction (r>0 and s<0 and q^2-r^2*radicand<=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( r, smtrat::CR_GREATER, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_LESS, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_LEQ, _variables ) );
         // Add conjunction (r<0 and s>0 and q^2-r^2*radicand<=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( r, smtrat::CR_LESS, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( s, smtrat::CR_GREATER, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_LEQ, _variables ) );
         // Add conjunction (r=0 and q=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( r, smtrat::CR_EQ, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( q, smtrat::CR_EQ, _variables ) );
         // Add conjunction (radicand=0 and q=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( t, smtrat::CR_EQ, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( q, smtrat::CR_EQ, _variables ) );
         #else
@@ -494,11 +494,11 @@ namespace vs
         smtrat::Constraint::normalize( rs );
         rs = simplify( rs, _variables );
         // Add conjunction (q*s<=0 and q^2-r^2*radicand>=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( qs, smtrat::CR_LEQ, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_GEQ, _variables ) );
         // Add conjunction (r*s<=0 and q^2-r^2*radicand<=0) to the substitution result.
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         _result.back().push_back( smtrat::Formula::newConstraint( rs, smtrat::CR_LEQ, _variables ) );
         _result.back().push_back( smtrat::Formula::newConstraint( lhs, smtrat::CR_LEQ, _variables ) );
         #endif
@@ -566,7 +566,7 @@ namespace vs
             }
             else
             {
-                _result.push_back( TS_ConstraintConjunction() );
+                _result.push_back( ConstraintVector() );
                 _result.back().push_back( _cons );
             }
         }
@@ -671,7 +671,7 @@ namespace vs
             }
             else
             {
-                _result.push_back( TS_ConstraintConjunction() );
+                _result.push_back( ConstraintVector() );
                 _result.back().push_back( _cons );
             }
         }
@@ -713,7 +713,7 @@ namespace vs
             // Check, whether the variable to substitute, does not occur in the conditions we substituted in.
             assert( !_cons->coefficient( sym, i - 1 ).has( ex( sym ) ) );
             // Add conjunction (a_n=0 and ... and a_i~0) to the substitution result.
-            _result.push_back( TS_ConstraintConjunction() );
+            _result.push_back( ConstraintVector() );
             for( unsigned j = varDegree; j > i - 1; --j )
                 _result.back().push_back( smtrat::Formula::newConstraint( _cons->coefficient( sym, j ), smtrat::CR_EQ, _cons->variables() ) );
             if( i > 1 )
@@ -747,7 +747,7 @@ namespace vs
         _cons->variable( _subs.variable(), sym );
         unsigned varDegree = _cons->maxDegree( sym );
         // Check the cases (a_0=0 and ... and a_n=0)
-        _result.push_back( TS_ConstraintConjunction() );
+        _result.push_back( ConstraintVector() );
         for( unsigned i = 0; i <= varDegree; ++i )
         {
             // Check, whether the variable to substitute, does not occur in the conditions we substituted in.
@@ -778,7 +778,7 @@ namespace vs
         {
             assert( !_cons->coefficient( sym, i ).has( ex( sym ) ) );
             // Add conjunction (a_i!=0) to the substitution result.
-            _result.push_back( TS_ConstraintConjunction() );
+            _result.push_back( ConstraintVector() );
             _result.back().push_back( smtrat::Formula::newConstraint( _cons->coefficient( sym, i ), smtrat::CR_NEQ, _cons->variables() ) );
         }
     }

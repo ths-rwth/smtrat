@@ -33,7 +33,8 @@ using namespace GiNaC;
 using namespace vs;
 
 //#define VS_DEBUG
-//#define CHECK_STRICT_INEQUALITIES_WITH_BACKEND
+#define VS_ELIMINATION_WITH_FACTORIZATION
+#define VS_LOCAL_CONFLICT_SEARCH
 //#define DONT_CHECK_STRICT_INEQUALITIES
 
 namespace smtrat
@@ -176,13 +177,18 @@ namespace smtrat
         {
             if( mInfeasibleSubsets.empty() )
             {
-                #ifdef VS_LOG_INTERMEDIATE_STEPS
-                checkAnswer();
-                #endif
-                #ifdef VS_PRINT_ANSWERS
-                printAnswer();
-                #endif
-                return foundAnswer( True );
+                if( solverState() == True )
+                {
+                    #ifdef VS_LOG_INTERMEDIATE_STEPS
+                    checkAnswer();
+                    #endif
+                    #ifdef VS_PRINT_ANSWERS
+                    printAnswer();
+                    #endif
+                    return foundAnswer( True );
+                }
+                else
+                    return foundAnswer( Unknown );
             }
             else
                 return foundAnswer( False );
@@ -327,43 +333,6 @@ namespace smtrat
                             }
                             case State::TEST_CANDIDATE_TO_GENERATE:
                             {
-                                #ifdef CHECK_STRICT_INEQUALITIES_WITH_BACKEND
-                                Answer result = runBackendSolvers( currentState, true );
-                                switch( result )
-                                {
-                                    case True:
-                                    {
-                                        if( mpPassedFormula->size() == currentState->conditions().size() )
-                                        {
-                                            // Solution.
-                                            #ifdef VS_DEBUG
-                                            printAll();
-                                            #endif
-                                            #ifdef VS_LOG_INTERMEDIATE_STEPS
-                                            checkAnswer();
-                                            #endif
-                                            #ifdef VS_PRINT_ANSWERS
-                                            printAnswer();
-                                            #endif
-                                            return foundAnswer( True );
-                                        }
-                                        break;
-                                    }
-                                    case False:
-                                    {
-                                        goto EndSwitch;
-                                    }
-                                    case Unknown:
-                                    {
-                                        break;
-                                    }
-                                    default:
-                                    {
-                                        cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
-                                        return foundAnswer( Unknown );
-                                    }
-                                }
-                                #endif
                                 // Set the index, if not already done, to the best variable to eliminate next.
                                 if( currentState->index() == "" ) 
                                     currentState->initIndex( mAllVariables );
@@ -537,10 +506,15 @@ namespace smtrat
                                 // Generate test candidates for the chosen variable and the chosen condition.
                                 else
                                 {
-                                    // The degree of the constraint is appropriate to applicate this version of the virtual substitution.
-                                    symtab::const_iterator var = currentCondition->constraint().variables().find( currentState->index() );
-                                    if( var != currentCondition->constraint().variables().end() )
+                                    #ifdef VS_LOCAL_CONFLICT_SEARCH
+                                    if( currentState->hasLocalConflict() )
                                     {
+                                        eraseDTsOfRanking( *currentState );
+                                        insertDTinRanking( currentState );
+                                    }
+                                    else
+                                    {
+                                    #endif
                                         #ifdef VS_DEBUG
                                         cout << "*** Eliminate " << currentState->index() << " in ";
                                         currentCondition->constraint().print( cout );
@@ -550,22 +524,15 @@ namespace smtrat
                                         #ifdef VS_DEBUG
                                         cout << "*** Eliminate ready." << endl;
                                         #endif
+                                    #ifdef VS_LOCAL_CONFLICT_SEARCH
                                     }
-                                    else
-                                    {
-                                        (*currentCondition).rFlag() = true;
-                                        // Update the ranking entry of the state.
-                                        insertDTinRanking( currentState );
-                                    }
+                                    #endif
                                 }
                                 break;
                             }
                             default:
                                 assert( false );
                         }
-#ifdef CHECK_STRICT_INEQUALITIES_WITH_BACKEND
-EndSwitch:;
-#endif
                         #ifdef SMTRAT_VS_VARIABLEBOUNDS
                     }
                     #endif
@@ -643,9 +610,9 @@ EndSwitch:;
      * Eliminates the given variable by finding test candidates of the constraint of the given
      * condition. All this happens in the state _currentState.
      *
-     * @param _currentState     The currently considered state.
-     * @param _eliminationVar   The substitution to apply.
-     * @param _condition        The condition with the constraint, in which should be substituted.
+     * @param _currentState   The currently considered state.
+     * @param _eliminationVar The substitution to apply.
+     * @param _condition      The condition with the constraint, in which should be substituted.
      *
      * @sideeffect: For each test candidate a new child of the currently considered state
      *              is generated. The solved constraint in the currently considered
@@ -661,13 +628,15 @@ EndSwitch:;
         cout << "Factorization of constraint is  " << constraint->factorization() << endl;
         #endif
         symbol sym;
-        constraint->variable( _eliminationVar, sym );
+        if( !constraint->variable( _eliminationVar, sym ) ) return;
         bool generatedTestCandidateBeingASolution = false;
         unsigned numberOfAddedChildren = 0;
         ConditionSet oConditions = ConditionSet();
         oConditions.insert( _condition );
+        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         if( _currentState->hasRootsInVariableBounds( _condition ) )
         {
+            #endif
             Constraint_Relation relation = (*_condition).constraint().relation();
 //            cout << "Find roots of  " << (*_condition).constraint().lhs() << "  instead of  " << (*_condition).constraint().factorization() << endl;
             symtab vars = constraint->variables();
@@ -684,6 +653,7 @@ EndSwitch:;
             if( relation == CR_EQ || relation == CR_LEQ || relation == CR_GEQ )
                 subType = ST_NORMAL;
             vector< ex > factors = vector< ex >();
+            #ifdef VS_ELIMINATION_WITH_FACTORIZATION
             if( constraint->hasFactorization() )
             {
                 for( auto iter = constraint->factorization().begin(); iter != constraint->factorization().end(); ++iter )
@@ -702,6 +672,9 @@ EndSwitch:;
             {
                 factors.push_back( constraint->lhs() );
             }
+            #else
+            factors.push_back( constraint->lhs() );
+            #endif
             for( auto factor = factors.begin(); factor != factors.end(); ++factor )
             {
                 #ifdef VS_DEBUG
@@ -816,7 +789,9 @@ EndSwitch:;
                     }
                 }
             }
+        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         }
+        #endif
         if( !generatedTestCandidateBeingASolution )
         {
             // Create state ( Conditions, [x -> -infinity]):
@@ -889,7 +864,11 @@ EndSwitch:;
         bool anySubstitutionFailed = false;
         bool allSubstitutionsApplied = true;
         ConditionSetSet conflictSet = ConditionSetSet();
-        GiNaCRA::evaldoubleintervalmap intervalSpace = _currentState->rFather().rVariableBounds().getIntervalMap();
+        #ifdef SMTRAT_VS_VARIABLEBOUNDS
+        GiNaCRA::evaldoubleintervalmap intervalSpace = (currentSubstitution.type() == vs::ST_MINUS_INFINITY ? GiNaCRA::evaldoubleintervalmap() : _currentState->rFather().rVariableBounds().getIntervalMap());
+        #else
+        GiNaCRA::evaldoubleintervalmap intervalSpace = GiNaCRA::evaldoubleintervalmap();
+        #endif
         // Apply the substitution to the given conditions.
         for( auto cond = _conditions.begin(); cond != _conditions.end(); ++cond )
         {
@@ -920,8 +899,10 @@ EndSwitch:;
                     condSet.insert( *cond );
                     if( _currentState->pOriginalCondition() != NULL )
                         condSet.insert( _currentState->pOriginalCondition() );
+                    #ifdef SMTRAT_VS_VARIABLEBOUNDS
                     set< const vs::Condition* > conflictingBounds = _currentState->father().variableBounds().getOriginsOfBounds( conflictingVars );
                     condSet.insert( conflictingBounds.begin(), conflictingBounds.end() );
+                    #endif
                     conflictSet.insert( condSet );
                 }
                 else
@@ -1169,7 +1150,7 @@ EndSwitch:;
                 _state->rID() = mIDCounter;
             }
             _state->updateValuation();
-            vs::UnsignedTriple key = vs::UnsignedTriple( _state->valuation(), pair< unsigned, unsigned> ( _state->id(), _state->id() ) );
+            vs::UnsignedTriple key = vs::UnsignedTriple( _state->valuation(), pair< unsigned, unsigned> ( _state->id(), _state->backendCallValuation() ) );
             if( (mRanking.insert( ValStatePair( key, _state ) )).second == false )
             {
                 cout << "Warning: Could not insert. Entry already exists.";
@@ -1200,7 +1181,7 @@ EndSwitch:;
      */
     bool VSModule::eraseDTofRanking( State& _state )
     {
-        vs::UnsignedTriple key = vs::UnsignedTriple( _state.valuation(), pair< unsigned, unsigned> ( _state.id(), _state.id() ) );
+        vs::UnsignedTriple key = vs::UnsignedTriple( _state.valuation(), pair< unsigned, unsigned> ( _state.id(), _state.backendCallValuation() ) );
         ValuationMap::iterator valDTPair = mRanking.find( key );
         if( valDTPair != mRanking.end() )
         {
@@ -1420,16 +1401,6 @@ EndSwitch:;
         map< const Constraint*, const vs::Condition* const, smtrat::constraintPointerComp > constraintsToCheck = map< const Constraint*, const vs::Condition* const, smtrat::constraintPointerComp >();
         for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
         {
-            #ifdef CHECK_STRICT_INEQUALITIES_WITH_BACKEND
-            if( _strictInequalitiesOnly )
-            {
-                Constraint_Relation rel = (*cond)->constraint().relation();
-                if( rel == CR_LESS || rel == CR_GREATER || rel == CR_NEQ )
-                    constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( (*cond)->pConstraint(), *cond ) );
-            }
-            else
-                constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( (*cond)->pConstraint(), *cond ) );
-            #else
             if( (*cond)->flag() )
             {
                 const Constraint* constraint = (*cond)->pConstraint();
@@ -1455,7 +1426,6 @@ EndSwitch:;
             }
             else
                 constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( (*cond)->pConstraint(), *cond ) );
-            #endif
         }
         if( constraintsToCheck.empty() ) return false;
         /*
@@ -1505,18 +1475,13 @@ EndSwitch:;
     {
         // Run the backends on the constraint of the state.
         FormulaConditionMap formulaToConditions = FormulaConditionMap();
-        #ifdef CHECK_STRICT_INEQUALITIES_WITH_BACKEND
-        bool changedPassedFormula = adaptPassedFormula( *_state, formulaToConditions, true );
-        if( _strictInequalitiesOnly && !changedPassedFormula ) return True;
-        #else
         adaptPassedFormula( *_state, formulaToConditions );
-        #endif
         Answer result = runBackends();
         #ifdef VS_DEBUG
         cout << "Ask backend      : ";
         mpPassedFormula->print( cout, "", false, true );
         cout << endl;
-        cout << "Answer           : " << ( result == True ? "True" : "False" ) << endl;
+        cout << "Answer           : " << ( result == True ? "True" : ( result == False ? "False" : "Unknown" ) ) << endl;
         #endif
         switch( result )
         {

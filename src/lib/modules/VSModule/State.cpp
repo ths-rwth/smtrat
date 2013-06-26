@@ -30,10 +30,10 @@
 #include "State.h"
 #include "../../Module.h"
 
-//#define VS_DEBUG_BACKENDS
-//#define VS_DEBUG_BACKENDS_EXTENDED
 //#define VS_DEBUG_VARIABLE_VALUATIONS
 //#define VS_DEBUG_VARIABLE_BOUNDS
+//#define VS_DEBUG_LOCAL_CONFLICT_SEARCH
+//#define VS_DEBUG_ROOTS_CHECK
 //#define VS_LOG_INFSUBSETS
 
 using namespace std;
@@ -58,6 +58,7 @@ namespace vs
         #endif
         mToHighDegree( false ),
         mTryToRefreshIndex( false ),
+        mBackendCallValuation( 0 ),
         mID( 0 ),
         mValuation( 0 ),
         mType( TEST_CANDIDATE_TO_GENERATE ),
@@ -91,6 +92,7 @@ namespace vs
         #endif
         mToHighDegree( false ),
         mTryToRefreshIndex( false ),
+        mBackendCallValuation( 0 ),
         mID( 0 ),
         mValuation( 0 ),
         mType( SUBSTITUTION_TO_APPLY ),
@@ -241,6 +243,24 @@ namespace vs
         while( child != children().end() )
         {
             if( (*child)->id() == 0 )
+                ++child;
+            else
+                return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Checks whether a child exists, which is not yet marked as inconsistent.
+     * 
+     * @return True, if there exists such a child.
+     */
+    bool State::hasOnlyInconsistentChildren() const
+    {
+        StateVector::const_iterator child = children().begin();
+        while( child != children().end() )
+        {
+            if( (*child)->isInconsistent() )
                 ++child;
             else
                 return true;
@@ -1912,7 +1932,8 @@ namespace vs
         {
             SqrtEx sqEx = SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand, _variables );
             smtrat::ConstraintSet sideCond = smtrat::ConstraintSet();
-            if( isConsConsistent != 1 ) sideCond.insert( cons );
+            if( isConsConsistent != 1 )
+                sideCond.insert( cons );
             Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, sqEx, _substitutionType, _oConditions, sideCond );
             if( !updateOCondsOfSubstitutions( sub ) )
             {
@@ -2017,6 +2038,7 @@ namespace vs
         if( toHighDegree() )
         {
             mValuation = 1;
+            updateBackendCallValuation();
         }
         else
         {
@@ -2036,6 +2058,33 @@ namespace vs
         }
     }
 
+    /**
+     * Valuates the state's currently considered conditions according to a backend call.
+     * 
+     * Note: The settings are currently optimized for CAD backend calls.
+     */
+    void State::updateBackendCallValuation()
+    {
+        symtab occuringVars = symtab();
+        set< smtrat::Constraint_Relation > relationSymbols = set< smtrat::Constraint_Relation >();
+        for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
+        {
+            const symtab& vars = (*cond)->constraint().variables();
+            occuringVars.insert( vars.begin(), vars.end() );
+            relationSymbols.insert( (*cond)->constraint().relation() );
+        }
+        mBackendCallValuation = 300000*occuringVars.size();
+        if( relationSymbols.find( smtrat::CR_EQ ) != relationSymbols.end() )
+        {
+            mBackendCallValuation += 200000;
+        }
+        else if( relationSymbols.find( smtrat::CR_LEQ ) != relationSymbols.end() || relationSymbols.find( smtrat::CR_GEQ ) != relationSymbols.end() )
+        {
+            mBackendCallValuation += 100000;
+        }
+        mBackendCallValuation += conditions().size();
+    }
+    
     /**
      * Passes the original conditions of the covering set of the conflicts of this state to its father.
      */
@@ -2149,6 +2198,105 @@ namespace vs
             rType()    = COMBINE_SUBRESULTS;
         }
     }
+    
+    /**
+     * Checks whether the currently considered conditions, which have been considered for test candidate 
+     * construction, form already a conflict.
+     * 
+     * @return True, if they form a conflict.
+     */
+    bool State::hasLocalConflict()
+    {
+        if( conflictSets().empty() || !tooHighDegreeConditions().empty() || hasOnlyInconsistentChildren() ) return false;
+        #ifdef VS_DEBUG_LOCAL_CONFLICT_SEARCH
+        printAlone();
+        #endif
+        // Construct the local conflict consisting of all of the currently considered conditions,
+        // which have been considered for test candidate construction.
+        ConditionSet localConflictSet = ConditionSet();
+        for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
+        {
+            if( (*cond)->flag() ) localConflictSet.insert( *cond );
+        }
+        // Check whether the local conflict set covers for each test candidate, its conditions have generated,
+        // one of its conflict sets.
+        #ifdef VS_DEBUG_LOCAL_CONFLICT_SEARCH
+        cout << "local conflict:   { ";
+        for( auto iter = localConflictSet.begin(); iter != localConflictSet.end(); ++iter )
+            cout << (*iter)->constraint() << " ";
+        cout << "}" << endl;
+        #endif
+        ConditionSet infSubset = ConditionSet();
+        bool containsConflictToCover = false;
+        for( auto conflict = conflictSets().begin(); conflict != conflictSets().end(); ++conflict )
+        {
+            containsConflictToCover = true;
+            for( auto condSetSet = conflict->second.begin(); condSetSet != conflict->second.end(); ++condSetSet )
+            {
+                auto condSet = condSetSet->begin();
+                for( ; condSet != condSetSet->end(); ++condSet )
+                {
+                    auto condA = condSet->begin();
+                    auto condB = localConflictSet.begin();
+                    assert( condA != condSet->end() );
+                    #ifdef VS_DEBUG_LOCAL_CONFLICT_SEARCH
+                    cout << "covers:   { ";
+                    for( auto iter = condSet->begin(); iter != condSet->end(); ++iter )
+                        cout << (*iter)->constraint() << " ";
+                    cout << "}  ??";
+                    #endif
+                    while( condA != condSet->end() &&  condB != localConflictSet.end() )
+                    {
+                        if( Condition::condComp()( *condB, *condA ) )
+                            ++condB;
+                        else if( Condition::condComp()( *condA, *condB ) )
+                            break;
+                        else
+                        {
+                            ++condA;
+                            ++condB;
+                        }
+                    }
+                    if( condA == condSet->end() )
+                    {
+                        infSubset.insert( condSet->begin(), condSet->end() );
+                        #ifdef VS_DEBUG_LOCAL_CONFLICT_SEARCH
+                        cout << "   Yes!" << endl;
+                        #endif
+                        break;
+                    }
+                    else
+                    {
+                        #ifdef VS_DEBUG_LOCAL_CONFLICT_SEARCH
+                        cout << "   No!" << endl;
+                        #endif
+                    }
+                }
+                if( condSet == condSetSet->end() )
+                {
+                    #ifdef VS_DEBUG_LOCAL_CONFLICT_SEARCH
+                    cout << "No conflict set in conflict is covered!" << endl;
+                    #endif
+                    return false;
+                }
+                #ifdef VS_DEBUG_LOCAL_CONFLICT_SEARCH
+                else
+                {
+                    cout << "A conflict set in conflict is covered!" << endl;
+                }
+                #endif
+            }
+        }
+        if( containsConflictToCover )
+        {
+            ConditionSetSet localConflict = ConditionSetSet();
+            localConflict.insert( infSubset );
+            addConflictSet( NULL, localConflict );
+            return true;
+        }
+        else
+            return false;
+    }
 
     #ifdef SMTRAT_VS_VARIABLEBOUNDS
     /**
@@ -2164,6 +2312,11 @@ namespace vs
         mTestCandidateCheckedForBounds = true;
         if( !isRoot() )
         {
+            if( substitution().type() == ST_MINUS_INFINITY ) return true;
+            #ifdef VS_DEBUG_VARIABLE_BOUNDS
+            cout << ">>> Check test candidate  " << substitution() << "  against:" << endl;
+            father().variableBounds().print( cout, ">>>    " );
+            #endif
             ConditionSet conflict = ConditionSet();
             vector< DoubleInterval > solutionSpaces = solutionSpace( conflict );
             if( solutionSpaces.empty() )
@@ -2171,9 +2324,6 @@ namespace vs
                 ConditionSetSet conflicts = ConditionSetSet();
                 conflicts.insert( conflict );
                 pFather()->addConflictSet( pSubstitution(), conflicts );
-                #ifdef VS_DEBUG_VARIABLE_BOUNDS
-                father().printAlone( ">>>>    ", cout );
-                #endif
                 return false;
             }
         }
@@ -2216,6 +2366,15 @@ namespace vs
             DoubleInterval solutionSpaceDenom = DoubleInterval::evaluate( substitution().term().denominator(), intervals );
             DoubleInterval solutionSpace = solutionSpaceFactor * solutionSpaceSqrt;
             solutionSpace = solutionSpace + solutionSpaceConst;
+            #ifdef VS_DEBUG_VARIABLE_BOUNDS
+            cout << ">>> Results in:" << endl;
+            cout << ">>>    constant part      : " << solutionSpaceConst << endl;
+            cout << ">>>    factor part        : " << solutionSpaceFactor << endl;
+            cout << ">>>    radicand part      : " << solutionSpaceRadicand << endl;
+            cout << ">>>    square root part   : " << solutionSpaceSqrt << endl;
+            cout << ">>>    denominator part   : " << solutionSpaceDenom << endl;
+            cout << ">>>    numerator part     : " << solutionSpace << endl;
+            #endif
             DoubleInterval resA;
             DoubleInterval resB;
             bool splitOccurred = solutionSpace.div_ext( resA, resB, solutionSpaceDenom );
@@ -2240,14 +2399,26 @@ namespace vs
                     }
                 }
             }
+            #ifdef VS_DEBUG_VARIABLE_BOUNDS
+            cout << ">>>    division part 1    : " << resA << endl;
+            #endif
             resA = resA.intersect( subVarInterval );
+            #ifdef VS_DEBUG_VARIABLE_BOUNDS
+            cout << ">>>    intersection part 1: " << resA << endl;
+            #endif
             if( !resA.empty() )
             {
                 result.push_back( resA );
             }
             if( splitOccurred )
             {
+                #ifdef VS_DEBUG_VARIABLE_BOUNDS
+                cout << ">>>    division part 2: " << resB << endl;
+                #endif
                 resB = resB.intersect( subVarInterval );
+                #ifdef VS_DEBUG_VARIABLE_BOUNDS
+                cout << ">>>    intersection part 1: " << resB << endl;
+                #endif
                 if( !resB.empty() )
                 {
                     result.push_back( resB );
@@ -2274,10 +2445,23 @@ namespace vs
      */
     bool State::hasRootsInVariableBounds( const Condition* _condition )
     {
+        #ifdef VS_DEBUG_ROOTS_CHECK
+        cout << __func__ << ":  " << _condition->constraint() << endl;
+        #endif
         symbol sym;
         const smtrat::Constraint& cons = _condition->constraint();
         cons.variable( index(), sym );
-        evaldoubleintervalmap intervals = rVariableBounds().getIntervalMap();
+        evaldoubleintervalmap intervals = evaldoubleintervalmap();
+        if( cons.variables().size() > 1 )
+            intervals = rVariableBounds().getIntervalMap();
+        else
+        {
+            DoubleInterval varDomain = rVariableBounds().getDoubleInterval( sym );
+            numeric cb = cons.cauchyBound();
+            DoubleInterval cbInterval = DoubleInterval( -cb, DoubleInterval::STRICT_BOUND, cb, DoubleInterval::STRICT_BOUND );
+            varDomain = varDomain.intersect( cbInterval );
+            intervals[sym] = varDomain;
+        }
         DoubleInterval solutionSpace = DoubleInterval::evaluate( cons.lhs(), intervals );
         smtrat::Constraint_Relation rel = cons.relation();
         // TODO: if the condition is an equation and the degree in the index less than 3, 
@@ -2289,8 +2473,14 @@ namespace vs
                 solutionSpace.setLeftType( DoubleInterval::WEAK_BOUND );
             }
         }
+        #ifdef VS_DEBUG_ROOTS_CHECK
+        cout << "solutionSpace: " << solutionSpace << endl;
+        #endif
         if( solutionSpace.contains( 0 ) )
         {
+            #ifdef VS_DEBUG_ROOTS_CHECK
+            cout << "  -> true" << endl;
+            #endif
             return true;
         }
         else
@@ -2306,6 +2496,9 @@ namespace vs
             ConditionSetSet conflicts = ConditionSetSet();
             conflicts.insert( origins );
             addConflictSet( sub, conflicts );
+            #ifdef VS_DEBUG_ROOTS_CHECK
+            cout << "  -> false" << endl;
+            #endif
             return false;
         }
     }

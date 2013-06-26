@@ -81,11 +81,8 @@ namespace vs
         }
     };
 
-    #ifndef TS_CONSTRAINT_CONJUNCTION
-    #define TS_CONSTRAINT_CONJUNCTION
-    typedef std::vector<const smtrat::Constraint*> TS_ConstraintConjunction;
-    #endif
-    typedef std::vector<TS_ConstraintConjunction> DisjunctionOfConstraintConjunctions;
+    typedef std::vector< const smtrat::Constraint* > ConstraintVector;
+    typedef std::vector<ConstraintVector> DisjunctionOfConstraintConjunctions;
 
     // Methods:
 
@@ -155,7 +152,7 @@ namespace vs
     void simplify( DisjunctionOfConstraintConjunctions& );
     void simplify( DisjunctionOfConstraintConjunctions&, GiNaC::symtab&, const GiNaCRA::evaldoubleintervalmap& );
     bool splitProducts( DisjunctionOfConstraintConjunctions& );
-    bool splitProducts( const TS_ConstraintConjunction&, DisjunctionOfConstraintConjunctions& );
+    bool splitProducts( const ConstraintVector&, DisjunctionOfConstraintConjunctions& );
     DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* );
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::Constraint* );
     void getOddBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& );

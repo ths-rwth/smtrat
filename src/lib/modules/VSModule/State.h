@@ -17,12 +17,11 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 /**
  * Class to create a decision tuple object.
  * @author Florian Corzilius
  * @since 2010-05-11
- * @version 2011-12-05
+ * @version 2013-06-24
  */
 
 #ifndef SMTRAT_VS_STATE_H
@@ -43,7 +42,7 @@ namespace vs
 {
     // Type and object definitions.
     typedef std::pair<unsigned, std::pair<unsigned, unsigned> > UnsignedTriple;
-    struct unsignedPairCmp
+    struct unsignedTripleCmp
     {
         bool operator ()( UnsignedTriple n1, UnsignedTriple n2 ) const
         {
@@ -54,7 +53,13 @@ namespace vs
                 if( n1.first != 1 )
                     return n1.second.first > n2.second.first;
                 else
-                    return n1.second.second > n2.second.second;
+                {
+                    if( n1.second.second < n2.second.second )
+                        return true;
+                    else if( n1.second.second == n2.second.second )
+                        return n1.second.first > n2.second.first;
+                    return false;
+                }
             }
             else
                 return false;
@@ -127,27 +132,13 @@ namespace vs
                     set2++;
                 }
             }
-            if( set2!=setOfSet2.end() )
+            if( set2 != setOfSet2.end() )
                 return true;
             else
                 return false;
         }
     };
     typedef std::set< ConditionSetSet, setOfSetsOfCondPointerComp > ConditionSetSetSet;
-    struct unsignedGreater
-    {
-        bool operator() ( const unsigned& lhs, const unsigned& rhs ) const
-        {
-            return lhs>rhs;
-        }
-    };
-    struct unsignedSmaller
-    {
-        bool operator() ( const unsigned& lhs, const unsigned& rhs ) const
-        {
-            return lhs<rhs;
-        }
-    };
     struct subComp
     {
         bool operator() ( const Substitution* const pSubA, const Substitution* const pSubB ) const
@@ -165,7 +156,6 @@ namespace vs
     class State;
     typedef std::list< const Condition* >            ConditionList;
     typedef std::vector< ConditionList >             DisjunctionOfConditionConjunctions;
-    typedef std::vector< const smtrat::Constraint* > TS_ConstraintConjunction;
     typedef std::list< State* >						 StateVector;
 
     class State
@@ -197,6 +187,7 @@ namespace vs
         #endif
         bool				  mToHighDegree;
         bool				  mTryToRefreshIndex;
+        unsigned              mBackendCallValuation;
         unsigned		      mID;
         unsigned		      mValuation;
         Type                  mType;
@@ -228,7 +219,7 @@ namespace vs
             return mpFather == NULL;
         }
 
-        bool toHighDegree() const
+        const bool& toHighDegree() const
         {
             return mToHighDegree;
         }
@@ -238,8 +229,7 @@ namespace vs
             return mToHighDegree;
         }
 
-        #ifndef VS_USE_REDLOG
-        bool markedAsDeleted() const
+        const bool& markedAsDeleted() const
         {
             return mMarkedAsDeleted;
         }
@@ -248,9 +238,8 @@ namespace vs
         {
             return mMarkedAsDeleted;
         }
-        #endif
 
-        bool hasChildrenToInsert() const
+        const bool& hasChildrenToInsert() const
         {
             return mHasChildrenToInsert;
         }
@@ -265,17 +254,17 @@ namespace vs
             return *mpIndex;
         }
 
-        unsigned& rValuation()
+        const unsigned& valuation() const
         {
             return mValuation;
         }
-
-        unsigned valuation() const
+        
+        const unsigned& backendCallValuation() const
         {
-            return mValuation;
+            return mBackendCallValuation;
         }
 
-        unsigned id() const
+        const unsigned& id() const
         {
             return mID;
         }
@@ -325,7 +314,7 @@ namespace vs
             return mHasRecentlyAddedConditions;
         }
 
-        bool hasRecentlyAddedConditions() const
+        const bool& hasRecentlyAddedConditions() const
         {
             return mHasRecentlyAddedConditions;
         }
@@ -335,7 +324,7 @@ namespace vs
             return mInconsistent;
         }
 
-        bool isInconsistent() const
+        const bool& isInconsistent() const
         {
             return mInconsistent;
         }
@@ -483,6 +472,7 @@ namespace vs
         bool substitutionApplicable( const smtrat::Constraint& ) const;
         bool hasNoninvolvedCondition() const;
         bool hasChildWithID() const;
+        bool hasOnlyInconsistentChildren() const;
         bool occursInEquation( const std::string& ) const;
         bool hasFurtherUncheckedTestCandidates() const;
         void variables( std::set< std::string >& ) const;
@@ -521,10 +511,13 @@ namespace vs
         int addChild( const GiNaC::ex&, const smtrat::Constraint_Relation&, const std::string&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const Substitution_Type&, const GiNaC::symtab&, const ConditionSet& );
         int addChild( const GiNaC::ex&, const smtrat::Constraint_Relation&, const GiNaC::ex&, const smtrat::Constraint_Relation&, const std::string&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const Substitution_Type&, const GiNaC::symtab&, const ConditionSet& );
         void updateValuation();
+        void updateBackendCallValuation();
         void passConflictToFather( bool = false );
+        bool hasLocalConflict();
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         bool checkTestCandidatesForBounds();
         std::vector< GiNaCRA::DoubleInterval > solutionSpace( ConditionSet& );
+        static GiNaC::numeric cauchyBound( const GiNaC::ex& );
         bool hasRootsInVariableBounds( const Condition* );
         #endif
 
