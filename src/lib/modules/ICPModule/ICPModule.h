@@ -31,7 +31,7 @@
 #define ICPMODULE_H
 
 //#define ICP_BOXLOG
-//#define SMTRAT_DEVOPTION_VALIDATION_ICP
+#define SMTRAT_DEVOPTION_VALIDATION_ICP
 
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
@@ -87,37 +87,40 @@ namespace smtrat
             /**
              * Members:
              */
-            icp::ContractionCandidateManager*                                        mCandidateManager;
-            std::map<icp::ContractionCandidate*, unsigned>                                mActiveNonlinearConstraints;
-            std::map<icp::ContractionCandidate*, unsigned>                                mActiveLinearConstraints;
+            icp::ContractionCandidateManager*                                   mCandidateManager;
+            std::map<icp::ContractionCandidate*, unsigned>                      mActiveNonlinearConstraints;
+            std::map<icp::ContractionCandidate*, unsigned>                      mActiveLinearConstraints;
             std::map<const lra::Variable<lra::Numeric>*, std::set<icp::ContractionCandidate*> >          mLinearConstraints;
             std::map<const Constraint*, ContractionCandidates>                  mNonlinearConstraints;
             GiNaCRA::ICP                                                        mIcp;
-            GiNaCRA::evaldoubleintervalmap                                       mIntervals;
+            GiNaCRA::evaldoubleintervalmap                                      mIntervals;
             std::set<std::pair<double, unsigned>, comp>                         mIcpRelevantCandidates;
             std::map<const Constraint*, const Constraint*>                      mReplacements; // replacement -> origin
             std::map<const Constraint*, const Constraint*>                      mLinearizationReplacements;
 
             std::map<symbol, icp::IcpVariable, ex_is_less>                      mVariables;
-            std::map<const ex, symbol, ex_is_less>                                                mLinearizations;
+            std::map<const ex, symbol, ex_is_less>                              mLinearizations;
 
             GiNaC::exmap                                                        mSubstitutions; // variable -> substitution
             
-            icp::HistoryNode*                                                        mHistoryRoot;
-            icp::HistoryNode*                                                        mHistoryActual;
+            icp::HistoryNode*                                                   mHistoryRoot;
+            icp::HistoryNode*                                                   mHistoryActual;
 
             Formula*                                                            mValidationFormula;
             std::vector< std::atomic_bool* >                                    mLRAFoundAnswer;
+            RuntimeSettings*                                                    mLraRuntimeSettings;
             LRAModule                                                           mLRA;
 
             std::map<const Formula*, const Formula*>                            mReceivedFormulaMapping; // LraReceived -> IcpReceived
             
             std::set<const Constraint*>                                         mCenterConstraints;
-            std::set<const Formula*>                                         mBoundConstraints;
+            std::set<const Formula*>                                            mBoundConstraints;
             std::set<Formula*>                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
 
+            icp::ContractionCandidate*                                          mLastCandidate;
             bool                                                                mInitialized;
             unsigned                                                            mCurrentId;
+            bool                                                                mBackendCalled;
             
 #ifdef ICP_BOXLOG
             std::fstream icpLog;

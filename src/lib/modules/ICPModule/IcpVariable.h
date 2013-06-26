@@ -53,8 +53,8 @@ namespace icp
             bool                                       mLinear;
             
             // interval Bound generation
-            std::pair<bool,bool>                       mBoundsSet; // indicates if bounds have already been set -> only update them, else create new formula in passed Formula
-            std::pair<bool,bool>                       mUpdated;
+            std::pair<bool,bool>                       mBoundsSet; // internal, external
+            std::pair<bool,bool>                       mUpdated; // internal, external
             smtrat::Formula*                           mInternalLeftBound;
             smtrat::Formula*                           mInternalRightBound;
             smtrat::Formula::iterator                  mExternalLeftBound;
@@ -108,7 +108,13 @@ namespace icp
             }
             
             ~IcpVariable()
-            {}
+            {
+                if( mBoundsSet.first )
+                {
+                    delete mInternalLeftBound;
+                    delete mInternalRightBound;
+                }
+            }
 
             /*
              * Getter/Setter
@@ -150,7 +156,7 @@ namespace icp
                 {
                     if( *candidateIt == _candidate )
                     {
-                        cout << "deleting: ";
+//                        cout << "deleting: ";
                         _candidate->print();
                         candidateIt = mCandidates.erase( candidateIt );
                     }

@@ -2136,12 +2136,13 @@ namespace smtrat
         {
         Iterator columnA_iterator = Iterator(mColumns.at(columnA_index).mStartEntry, mpEntries);
         Iterator columnB_iterator = Iterator(mColumns.at(columnB_index).mStartEntry, mpEntries);
-        // Make columnA_iterator and columnB_iterator neighbors
-        while((*mpEntries)[columnA_iterator.up()].rowNumber() > (*mpEntries)[columnB_iterator.entryID()].rowNumber())
-            columnA_iterator.up();
-        
+                
         while(!columnB_iterator.columnBegin())
         {
+            // Make columnA_iterator and columnB_iterator neighbors
+            while((*mpEntries)[columnA_iterator.up()].rowNumber() > (*mpEntries)[columnB_iterator.entryID()].rowNumber())
+                columnA_iterator.up();
+            
         if((*mpEntries)[columnA_iterator.entryID()].rowNumber() == (*mpEntries)[columnB_iterator.entryID()].rowNumber())
         {
             T content = (*mpEntries)[columnA_iterator.entryID()].content() + (*mpEntries)[columnB_iterator.entryID()].content*multiple;  
@@ -2207,26 +2208,31 @@ namespace smtrat
         columnB_iterator.up();
         }
         }
+        
         template<class T> 
         std::vector<int> Tableau<T>::calculate_hermite_normalform()
         {
         std::vector<int> diagonals = std::vector<int>();  
-            for(unsigned i=0;i<mColumns.size();i++)
-                diagonals.push_back(-1);           
-            Iterator row_iterator;
-            bool first_free=true,just_deleted = false;
-            for(unsigned i=0;i<mRows.size();i++)
-            {
+        
+        for(unsigned i=0;i<mColumns.size();i++)
+            diagonals.push_back(-1);           
+        
+        Iterator row_iterator;
+        bool first_free=true,first_loop,just_deleted = false;
+        
+        for(unsigned i=0;i<mRows.size();i++)
+        {
             int elim_pos=-1,added_pos=-1;
             EntryID added_entry,elim_entry;
             T elim_content, added_content,diag_content;     
             row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
             unsigned number_of_entries = mRows.at(i).mSize;
+            first_loop = true;
             while(!(number_of_entries <= i+1))
                 {
                 if(just_deleted)
                     row_iterator = Iterator(added_entry, mpEntries);
-                else
+                else if (!first_loop)
                 {
                     if((*mpEntries)[added_entry].columnNumber() > (*mpEntries)[elim_entry])
                         row_iterator = Iterator(elim_entry);
@@ -2271,17 +2277,25 @@ namespace smtrat
                         row_iterator.right();                    
                     }
                 if(elim_content % added_content == 0)
+                {
                     just_deleted = true;
-                else
-                    just_deleted = false;
-                addColumns(elim_pos,added_pos,(-1)*floor(elim_content/added_content)*added_content);
-                if(elim_pos < added_pos)
+                    first_free = true;  
                     added_pos = elim_pos;
+                }    
                 else
-                    elim_pos = added_pos;
+                {
+                     just_deleted = false;
+                     if(elim_pos < added_pos)
+                        added_pos = elim_pos;
+                     else
+                        elim_pos = added_pos;
+                }     
+                addColumns(elim_pos,added_pos,(-1)*floor(elim_content/added_content)*added_content);
                 number_of_entries = mRows.at(i).mSize; 
-                first_free = true;
+                first_loop = false;
                 }
+            if(first_loop)
+                added_pos = (*mpEntries)[row_iterator.entryID()].columnNumber();                
             diagonals.push_back(added_pos);
             // Normalize Row
             row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
@@ -2293,7 +2307,7 @@ namespace smtrat
                              +(*mpEntries)[row_iterator.entryID()].content() % (*mpEntries)[added_entry].content()));
             row_iterator.right();    
             }
-            }
+        }
         return diagonals;    
         }        
         #endif
