@@ -36,7 +36,7 @@
 using namespace GiNaC;
 using namespace std;
 
-#define ICPMODULE_DEBUG
+//#define ICPMODULE_DEBUG
 #define BOXMANAGEMENT
 
 namespace smtrat
@@ -1308,7 +1308,6 @@ namespace smtrat
                 cout << "Generated empty interval or Box linear infeasible, Chose new box: " << endl;
 #endif
 #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-                mHistoryActual->print();
                 
                 Formula* infeasibleSubset = new Formula(AND);
                 
@@ -1347,8 +1346,6 @@ namespace smtrat
 #endif
                     // no new Box to select -> finished
                     generateInfeasibleSubset();
-                    
-                    printInfeasibleSubsets();
                     
 //                    cout << "size infeasible subset:" << mInfeasibleSubsets.size() << endl;
                     
@@ -2978,20 +2975,16 @@ namespace smtrat
         if( boxCheck != True )
         {
             vec_set_const_pFormula tmpSet = mLRA.infeasibleSubsets();
-        
-            cout << "AA" << endl;
-            cout << "Size: " << tmpSet.size() << endl;
             for ( auto infSetIt = tmpSet.begin(); infSetIt != tmpSet.end(); ++infSetIt )
             {
                 
                 
                 for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
                 {
-                    cout << "Ping: " << (*formulaIt)->constraint() << " MaxMonDeg: " << (*formulaIt)->constraint().maxMonomeDegree() << ", NumMonomials: " << (*formulaIt)->constraint().numMonomials() <<endl;
+//                    cout << "Ping: " << (*formulaIt)->constraint() << " MaxMonDeg: " << (*formulaIt)->constraint().maxMonomeDegree() << ", NumMonomials: " << (*formulaIt)->constraint().numMonomials() <<endl;
                     if( !icp::isBound( (*formulaIt)->pConstraint() ) )
                     {
-                        cout << "ADDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD" << endl;
-                        cout << mLastCandidate->lhs().get_name() << " --> " <<*(*formulaIt)->pConstraint() << endl;
+//                        cout << mLastCandidate->lhs().get_name() << " --> " <<*(*formulaIt)->pConstraint() << endl;
                         assert(mpReceivedFormula->contains(mReceivedFormulaMapping[*formulaIt]));
                         // TODO: The reason is added to the variable of the last candidate - formally this is not necessarily correct
                         mHistoryActual->addReason((*(*formulaIt)->pConstraint()->variables().begin()).first, (*formulaIt)->pConstraint() );
