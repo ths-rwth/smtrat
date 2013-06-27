@@ -412,7 +412,7 @@ namespace smtrat
                 unsigned checkCorrectness() const;
                 bool rowCorrect( unsigned _rowNumber ) const;
                 #ifdef LRA_CUTS_FROM_PROOFS
-                const std::pair<vector<Variable<T>*>,vector<T>> isDefining(unsigned);
+                bool isDefining( unsigned, std::vector<unsigned>&, std::vector<T>&, T& ) const;
                 void invertColumn(unsigned);
                 void addColumns(unsigned,unsigned,int);
                 std::vector<int> calculate_hermite_normalform();
@@ -2094,30 +2094,29 @@ namespace smtrat
         
         #ifdef LRA_CUTS_FROM_PROOFS
         template<class T>
-        const std::pair<vector<Variable<T>*>,vector<T>> Tableau<T>::isDefining(unsigned row_index) 
+        bool Tableau<T>::isDefining( unsigned row_index, std::vector<unsigned>& _variables, std::vector<T>& _coefficients, T& _lcmOfCoeffDenoms ) const
         {
-           Iterator row_iterator = Iterator(mRows.at(row_index).mStartEntry, mpEntries);
-           Variable<T>* basic_var=mRows.at(row_index).mName;
-           T row_sum;
-           vector<Variable<T>*> nonbasics = std::vector<Variable<T>*>();
-           vector<T> coeffs = std::vector<T>();
-           while(!row_iterator.rowEnd())
-           {            
-               const Variable<T>& nonbasic_var = *mColumns[(*row_iterator).columnNumber()].mName;
-               const Value<T>& ass = nonbasic_var.assignment();
-               nonbasics.push_back(nonbasic_var);
-               coeffs.push_back(ass);
-               TableauEntry<T>& entry = (*mpEntries)[row_iterator.entryID()];
-               row_sum += ass*entry.rContent();
-               row_iterator.right();
-           }
-        std::pair<vector<Variable<T>*>,vector<T>> result (nonbasics,coeffs);            
-        if(basic_var->infimum() == row_sum || basic_var->supremum() == row_sum) return result;
-        else 
-        {
-            result.first.clear();
-            return result;        
-        }
+            const Variable<T>& basic_var = *mRows.at(row_index).mName;
+            if( basic_var.infimum() == basic_var.assignment() || basic_var.supremum() == basic_var.assignment() )
+            {
+                Iterator row_iterator = Iterator( mRows.at(row_index).mStartEntry, mpEntries );
+                while( true )
+                {
+                    _variables.push_back( (*row_iterator).columnNumber() );
+                    _coefficients.push_back( (*row_iterator).content() );
+                    _lcmOfCoeffDenoms = T( GiNaC::lcm( _lcmOfCoeffDenoms.toGinacNumeric(), (*row_iterator).content().toGinacNumeric().denom() ) );
+                    if( !row_iterator.rowEnd() )
+                    {
+                        row_iterator.right();
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                return true;
+            }
+            return false;
         }
         
         template<class T>

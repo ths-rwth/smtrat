@@ -421,18 +421,35 @@ namespace smtrat
                             #endif 
 
                             #ifdef LRA_CUTS_FROM_PROOFS
-                            lra::Tableau<lra::Numeric> DC_Tableau = lra::Tableau<lra::Numeric>(mpPassedFormula->end());
-                            unsigned numRows = mTableau.rows().size();
-                            /*for( unsigned pos = 0; pos < numRows; ++pos )
+                            lra::Tableau<lra::Numeric> dc_Tableau = lra::Tableau<lra::Numeric>(mpPassedFormula->end());
+                            for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
                             {
-                                pair<vector<Variable<Numeric>*>,vector<Numeric>> nonbasic_coeff_pair = pair<vector<Variable<Numeric>*>,vector<Numeric>>();
-                                nonbasic_coeff_pair = DC_Tableau.isDefining(pos);
-                                if(!nonbasic_coeff_pair.first.empty())
+                                mTableau.newNonbasicVariable( new ex( nbVar->mName->expression() ) );
+                            }
+                            lra::Numeric lcmOfCoeffDenoms = 1;
+                            unsigned numRows = mTableau.rows().size();
+                            for( unsigned pos = 0; pos < numRows; ++pos )
+                            {
+                                vector<unsigned> non_basic_vars_positions = vector<unsigned>();
+                                vector<lra::Numeric> coefficients = vector<lra::Numeric>();
+                                if( dc_Tableau.isDefining( pos, non_basic_vars_positions, coefficients, lcmOfCoeffDenoms ) )
                                 {
-                                ex* help = new ex(mTableau.rows().at(pos).mName->expression());
-                                Variable<Numeric>* new_var = DC_Tableau.newBasicVariable(help,nonbasic_coeff_pair.first,nonbasic_coeff_pair.second);
+                                    assert( !non_basic_vars_positions.empty() );
+                                    ex* help = new ex(mTableau.rows().at(pos).mName->expression());
+                                    vector< lra::Variable<lra::Numeric>* > non_basic_vars = vector< lra::Variable<lra::Numeric>* >();
+                                    auto pos = non_basic_vars_positions.begin();
+                                    for( auto column = dc_Tableau.columns().begin(); column != dc_Tableau.columns().end(); ++column )
+                                    {
+                                        assert( pos != non_basic_vars_positions.end() );
+                                        if( column->mName->position() == *pos )
+                                        {
+                                            non_basic_vars.push_back( column->mName );
+                                            ++pos;
+                                        }
+                                    }
+                                    dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
                                 }
-                            }*/
+                            }
                             #endif
                             
                             #ifdef LRA_BRANCH_AND_BOUND
