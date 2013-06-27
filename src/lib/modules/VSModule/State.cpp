@@ -1481,6 +1481,7 @@ namespace vs
         bool conditionDeleted = false;
         bool recentlyAddedConditionLeft = false;
         set<const Condition*> deletedConditions = set<const Condition*>();
+        set<const Condition*> originsToRemove = set<const Condition*>();
         for( auto originToDelete = _originsToDelete.begin(); originToDelete != _originsToDelete.end(); ++originToDelete )
         {
             auto condition = rConditions().begin();
@@ -1489,12 +1490,24 @@ namespace vs
                 if( (*condition)->originalConditions().find( *originToDelete ) != (*condition)->originalConditions().end() )
                 {
                     #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    mpVariableBounds->removeBound( (*condition)->pConstraint(), *condition );
+                    const ex var = mpVariableBounds->removeBound( (*condition)->pConstraint(), *condition );
+                    if( is_exactly_a<symbol>( var ) )
+                    {
+                        for( auto condB = rConditions().begin(); condB != conditions().end(); ++condB )
+                        {
+                            if( (*condB)->constraint().variables().find( ex_to<symbol>( var ).get_name() ) != (*condB)->constraint().variables().end() )
+                            {
+                                originsToRemove.insert( *condB );
+                                (*condB)->rRecentlyAdded() = true;
+                            }
+                        }
+                    }
                     #endif   
                     // Delete the condition to delete from the set of conditions with too high degree to
                     // be entirely used for test candidate generation.
                     mpTooHighDegreeConditions->erase( *condition );
                     deletedConditions.insert( *condition );
+                    originsToRemove.insert( *condition );
                     condition = rConditions().erase( condition );
                     conditionDeleted = true;
                 }
@@ -1519,7 +1532,7 @@ namespace vs
         mMarkedAsDeleted   = false;
         mTryToRefreshIndex = true;
         // Delete everything originated by it in all children of this state.
-        deleteOriginsFromChildren( deletedConditions );
+        deleteOriginsFromChildren( originsToRemove );
         // Delete the conditions in the conflict sets which are originated by any of the given origins.
         deleteOriginsFromConflictSets( _originsToDelete, false );     
         // Delete the conditions.
@@ -1551,24 +1564,31 @@ namespace vs
         {
             mpTooHighDegreeConditions->erase( *cond );
         }
-        // Delete everything originated by the given conditions in all children of this state.
-        deleteOriginsFromChildren( _conditionsToDelete );
-        // Delete the conditions from the conflict sets.
-        deleteOriginsFromConflictSets( _conditionsToDelete, true );
-        // Delete everything originated by the conditions to delete in the state's children.
-        deleteOriginsFromChildren( _conditionsToDelete );
+        // Remove the given conditions from this state.
         bool conditionDeleted = false;
         bool recentlyAddedConditionLeft = false;
+        set<const Condition*> originsToRemove = set<const Condition*>();
         for( auto cond = rConditions().begin(); cond != conditions().end(); )
         {
             // Delete the condition from the vector this state considers.
             if( _conditionsToDelete.find( *cond ) != _conditionsToDelete.end() )
             {
-                #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                mpVariableBounds->removeBound( (*cond)->pConstraint(), *cond );
-                #endif
                 conditionDeleted = true;
                 cond = rConditions().erase( cond );
+                #ifdef SMTRAT_VS_VARIABLEBOUNDS
+                const ex var = mpVariableBounds->removeBound( (*cond)->pConstraint(), *cond );
+                if( is_exactly_a<symbol>( var ) )
+                {
+                    for( auto condB = rConditions().begin(); condB != conditions().end(); ++condB )
+                    {
+                        if( (*condB)->constraint().variables().find( ex_to<symbol>( var ).get_name() ) != (*condB)->constraint().variables().end() )
+                        {
+                            originsToRemove.insert( *condB );
+                            (*condB)->rRecentlyAdded() = true;
+                        }
+                    }
+                }
+                #endif
             }
             else
             {
@@ -1586,6 +1606,13 @@ namespace vs
             mInconsistent = false;
             mHasRecentlyAddedConditions = recentlyAddedConditionLeft;
         }
+        originsToRemove.insert( _conditionsToDelete.begin(), _conditionsToDelete.end() );
+        // Delete everything originated by the given conditions in all children of this state.
+        deleteOriginsFromChildren( originsToRemove );
+        // Delete the conditions from the conflict sets.
+        deleteOriginsFromConflictSets( originsToRemove, true );
+        // Delete everything originated by the conditions to delete in the state's children.
+        deleteOriginsFromChildren( originsToRemove );
         mToHighDegree      = false;
         mMarkedAsDeleted   = false;
         mTryToRefreshIndex = true;
@@ -1696,6 +1723,10 @@ namespace vs
                 #ifdef SMTRAT_VS_VARIABLEBOUNDS_B
                 if( conflictSet->first != NULL && conflictSet->first->type() == ST_INVALID )
                 {
+                    for( auto oCond = conflictSet->first->originalConditions().begin(); oCond != conflictSet->first->originalConditions().end(); ++oCond )
+                    {
+                        (*oCond)->rFlag() = false;
+                    }
                     const Substitution* subToDelete = conflictSet->first;
                     mpConflictSets->erase( conflictSet++ );
                     delete subToDelete;
