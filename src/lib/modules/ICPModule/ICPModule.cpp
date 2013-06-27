@@ -302,19 +302,13 @@ namespace smtrat
            {
                if ( (*replacementIt).second->id() == (*_formula)->pConstraint()->id() )
                {
-                   cout << "Compared: " << *(*replacementIt).second << " to " << *(*_formula)->pConstraint() << " resulting in " << *(*replacementIt).first << endl;
                    replacementPtr = (*replacementIt).first;
                    break;
                }
            }
            assert(replacementPtr != NULL);
 
-           cout << "ReplacementPtr: " << *replacementPtr << endl;
            const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(replacementPtr);
-           mLRA.printSlackVars();
-           cout << "Chosen: ";
-           slackvariable->print();
-           cout << endl;
            
            assert(slackvariable != NULL);
 
@@ -341,12 +335,10 @@ namespace smtrat
                    // set value in activeLinearConstraints
                    if ( mActiveLinearConstraints.find(*candidateIt) == mActiveLinearConstraints.end() )
                    {
-                       cout << "not found" <<endl;
                        mActiveLinearConstraints[(*candidateIt)] = 1;
                    }
                    else
                    {
-                       cout << "found" << endl;
                        mActiveLinearConstraints[(*candidateIt)] += 1;
                    }
                    
