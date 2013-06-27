@@ -322,6 +322,7 @@ namespace smtrat
             bool hasFinitelyManySolutionsIn( const std::string& ) const;
             GiNaC::ex coefficient( const GiNaC::ex&, int ) const;
             signed highestDegree() const;
+            GiNaC::numeric cauchyBound() const;
             std::map<const std::string, GiNaC::numeric, strCmp> linearAndConstantCoefficients() const;
             static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
 

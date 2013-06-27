@@ -50,15 +50,13 @@ namespace smtrat
         private:
 
             // Type and object definitions.
-            typedef std::pair<vs::UnsignedTriple, vs::State*>                  ValStatePair;
-            typedef std::map<vs::UnsignedTriple, vs::State*, vs::unsignedPairCmp>  ValuationMap;
-            typedef std::map<const Formula* const, const vs::Condition*>   FormulaConditionMap;
-            typedef std::pair< std::string, GiNaC::ex >                    VarNamePair;
-            typedef std::vector<std::pair< VarNamePair, VarNamePair > >    VarNamePairVector;
+            typedef std::pair<vs::UnsignedTriple, vs::State*>                       ValStatePair;
+            typedef std::map<vs::UnsignedTriple, vs::State*, vs::unsignedTripleCmp> ValuationMap;
+            typedef std::map<const Formula* const, const vs::Condition*>            FormulaConditionMap;
+            typedef std::pair< std::string, GiNaC::ex >                             VarNamePair;
+            typedef std::vector<std::pair< VarNamePair, VarNamePair > >             VarNamePairVector;
 
-            /*
-             * Attributes:
-             */
+            // Members.
             bool                mConditionsChanged;
             bool                mInconsistentConstraintAdded;
             unsigned            mIDCounter;
@@ -69,23 +67,16 @@ namespace smtrat
             GiNaC::symtab       mAllVariables;
             FormulaConditionMap mFormulaConditionMap;
             ValuationMap        mRanking;
-            VarNamePairVector      mVariableVector;
+            VarNamePairVector   mVariableVector;
 
         public:
 
-            /*
-             * Constructors:
-             */
+            // Constructors.
             VSModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
-            /*
-             * Destructor:
-             */
+            // Destructor.
             ~VSModule();
-
-            /*
-             * Methods:
-             */
+            
             // Interfaces.
             bool assertSubformula( Formula::const_iterator );
             Answer isConsistent();
@@ -100,21 +91,16 @@ namespace smtrat
 
         private:
 
-            /*
-             * Some more type definitions.
-             */
+            // Some more type definitions.
             typedef std::pair<vs::Substitution, vs::StateVector> ChildrenGroup;
             typedef std::vector<ChildrenGroup>                   ChildrenGroups;
 
-            /*
-             * Methods:
-             */
+            // Methods.
             void increaseIDCounter()
             {
                 assert( mIDCounter < UINT_MAX );
                 mIDCounter++;
             }
-
             
             void eliminate( vs::State*, const std::string&, const vs::Condition* );
             bool substituteAll( vs::State*, vs::ConditionList& );

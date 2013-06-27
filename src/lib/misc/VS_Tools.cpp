@@ -47,7 +47,7 @@ namespace vs
         while( conj != _toSimplify.end() )
         {
             bool                               conjInconsistent = false;
-            TS_ConstraintConjunction::iterator cons             = (*conj).begin();
+            ConstraintVector::iterator cons             = (*conj).begin();
             while( cons != (*conj).end() )
             {
                 if( *cons == smtrat::Formula::constraintPool().inconsistentConstraint() )
@@ -100,7 +100,7 @@ namespace vs
         while( conj != _toSimplify.end() )
         {
             bool                               conjInconsistent = false;
-            TS_ConstraintConjunction::iterator cons             = (*conj).begin();
+            ConstraintVector::iterator cons             = (*conj).begin();
             while( cons != (*conj).end() )
             {
                 if( *cons == smtrat::Formula::constraintPool().inconsistentConstraint() )
@@ -185,7 +185,7 @@ namespace vs
      * @param _constraintConjunction
      * @return
      */
-    bool splitProducts( const TS_ConstraintConjunction& _constraintConjunction, DisjunctionOfConstraintConjunctions& _result )
+    bool splitProducts( const ConstraintVector& _constraintConjunction, DisjunctionOfConstraintConjunctions& _result )
     {
         vector<DisjunctionOfConstraintConjunctions> toCombine = vector<DisjunctionOfConstraintConjunctions>();
         for( auto constraint = _constraintConjunction.begin(); constraint != _constraintConjunction.end(); ++constraint )
@@ -201,7 +201,7 @@ namespace vs
                         for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
                         {
                             const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_EQ, (*constraint)->variables() );
-                            toCombine.back().push_back( TS_ConstraintConjunction() );
+                            toCombine.back().push_back( ConstraintVector() );
                             toCombine.back().back().push_back( cons );
                         }
                         break;
@@ -209,7 +209,7 @@ namespace vs
                     case smtrat::CR_NEQ:
                     {
                         toCombine.push_back( DisjunctionOfConstraintConjunctions() );
-                        toCombine.back().push_back( TS_ConstraintConjunction() );
+                        toCombine.back().push_back( ConstraintVector() );
                         const ex& factorization = (*constraint)->factorization();
                         for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
                         {
@@ -228,7 +228,7 @@ namespace vs
             else
             {
                 toCombine.push_back( DisjunctionOfConstraintConjunctions() );
-                toCombine.back().push_back( TS_ConstraintConjunction() );
+                toCombine.back().push_back( ConstraintVector() );
                 toCombine.back().back().push_back( *constraint );
             }
         }
@@ -259,14 +259,14 @@ namespace vs
                     for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
                     {
                         const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_EQ, _constraint->variables() );
-                        result.push_back( TS_ConstraintConjunction() );
+                        result.push_back( ConstraintVector() );
                         result.back().push_back( cons );
                     }
                     break;
                 }
                 case smtrat::CR_NEQ:
                 {
-                    result.push_back( TS_ConstraintConjunction() );
+                    result.push_back( ConstraintVector() );
                     const ex& factorization = _constraint->factorization();
                     for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
                     {
@@ -284,7 +284,7 @@ namespace vs
         }
         else
         {
-            result.push_back( TS_ConstraintConjunction() );
+            result.push_back( ConstraintVector() );
             result.back().push_back( _constraint );
         }
         return result;
@@ -318,10 +318,10 @@ namespace vs
                 relNeg = smtrat::CR_LEQ;
             }
             bool positive = (_constraint->relation() == smtrat::CR_GEQ || _constraint->relation() == smtrat::CR_GREATER);
-            TS_ConstraintConjunction positives = TS_ConstraintConjunction();
-            TS_ConstraintConjunction alwayspositives = TS_ConstraintConjunction();
-            TS_ConstraintConjunction negatives = TS_ConstraintConjunction();
-            TS_ConstraintConjunction alwaysnegatives = TS_ConstraintConjunction();
+            ConstraintVector positives = ConstraintVector();
+            ConstraintVector alwayspositives = ConstraintVector();
+            ConstraintVector negatives = ConstraintVector();
+            ConstraintVector alwaysnegatives = ConstraintVector();
             unsigned numOfAlwaysNegatives = 0;
             const ex& product = _constraint->factorization();
             for( GiNaC::const_iterator summand = product.begin(); summand != product.end(); ++summand )
@@ -338,7 +338,7 @@ namespace vs
                 {
                     if( posConsistent == 0 )
                     {
-                        combinations.push_back( TS_ConstraintConjunction() );
+                        combinations.push_back( ConstraintVector() );
                         combinations.back().push_back( consNeg );
                         return combinations;
                     }
@@ -371,7 +371,7 @@ namespace vs
                 }
                 for( auto comb = combSelector.begin(); comb != combSelector.end(); ++comb )
                 {
-                    combinations.push_back( TS_ConstraintConjunction( alwaysnegatives ) );
+                    combinations.push_back( ConstraintVector( alwaysnegatives ) );
                     combinations.back().insert( combinations.back().end(), alwayspositives.begin(), alwayspositives.end() );
                     for( unsigned pos = 0; pos < positives.size(); ++pos )
                     {
@@ -382,13 +382,13 @@ namespace vs
             }
             else
             {
-                combinations.push_back( TS_ConstraintConjunction( alwaysnegatives ) );
+                combinations.push_back( ConstraintVector( alwaysnegatives ) );
                 combinations.back().insert( combinations.back().end(), alwayspositives.begin(), alwayspositives.end() );
             }
         }
         else
         {
-            combinations.push_back( TS_ConstraintConjunction() );
+            combinations.push_back( ConstraintVector() );
             combinations.back().push_back( _constraint );
         }
         return combinations;
@@ -481,7 +481,7 @@ namespace vs
             {
                 cout << "    (";
             }
-            TS_ConstraintConjunction::const_iterator cons = (*conj).begin();
+            ConstraintVector::const_iterator cons = (*conj).begin();
             while( cons != (*conj).end() )
             {
                 if( cons != (*conj).begin() )
