@@ -30,7 +30,7 @@
 #ifndef CONTRACTIONCANDIDATE_H
 #define CONTRACTIONCANDIDATE_H
 
-#define CCPRINTORIGINS
+//#define CCPRINTORIGINS
 
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
@@ -331,14 +331,14 @@ namespace smtrat
 #endif
             }
 
-            friend bool operator< (ContractionCandidate const& lhs, ContractionCandidate const& rhs)
+            bool operator< (ContractionCandidate const& rhs) const
             {
-                return lhs.RWA() < rhs.RWA() || (lhs.RWA() == rhs.RWA() && lhs.mId < rhs.mId );
+                return mRWA < rhs.RWA() || (mRWA == rhs.RWA() && mId < rhs.id() );
             }
 
-            friend bool operator== (ContractionCandidate const& lhs, ContractionCandidate const& rhs)
+            bool operator== (ContractionCandidate const& rhs) const
             {
-                return lhs.mId == rhs.mId;
+                return mId == rhs.id();
             }
 
         private:
@@ -347,6 +347,15 @@ namespace smtrat
              * Methods:
              */
     };
+    
+    struct contractionCandidateComp
+    {
+        bool operator() (const ContractionCandidate* const lhs, const ContractionCandidate* const rhs) const
+        {
+            return lhs->id() < rhs->id();
+        }
+    };
+    
     }// namespace icp
 }// namespace smtrat
 

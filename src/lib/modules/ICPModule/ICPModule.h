@@ -31,7 +31,9 @@
 #define ICPMODULE_H
 
 //#define ICP_BOXLOG
-#define SMTRAT_DEVOPTION_VALIDATION_ICP
+#ifdef SMTRAT_DEVOPTION_Validation
+//#define SMTRAT_DEVOPTION_VALIDATION_ICP
+#endif
 
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
@@ -65,6 +67,14 @@ namespace smtrat
                     return lhs.first < rhs.first || ((lhs.first == rhs.first) && lhs.second > rhs.second);
                 }
             };
+            
+            struct lraVarComp
+            {
+                bool operator ()( const lra::Variable<lra::Numeric>* lhs, const lra::Variable<lra::Numeric>* rhs ) const
+                {
+                    return (lhs->expression() < rhs->expression());
+                }
+            };
 
             struct linearVariable
             {
@@ -78,8 +88,8 @@ namespace smtrat
                 double                     weight;
             };
 
-            typedef set<icp::ContractionCandidate*>                      ContractionCandidates;
-            typedef std::map<ex*, weights>                             WeightMap;
+            typedef set<icp::ContractionCandidate*, icp::contractionCandidateComp>                      ContractionCandidates;
+            typedef std::map<ex*, weights, ex_is_less>                             WeightMap;
             typedef std::vector< std::set<Constraint> >              vec_set_Constraint;
 
         private:
@@ -88,17 +98,17 @@ namespace smtrat
              * Members:
              */
             icp::ContractionCandidateManager*                                   mCandidateManager;
-            std::map<icp::ContractionCandidate*, unsigned>                      mActiveNonlinearConstraints;
-            std::map<icp::ContractionCandidate*, unsigned>                      mActiveLinearConstraints;
-            std::map<const lra::Variable<lra::Numeric>*, std::set<icp::ContractionCandidate*> >          mLinearConstraints;
-            std::map<const Constraint*, ContractionCandidates>                  mNonlinearConstraints;
+            std::map<icp::ContractionCandidate*, unsigned, icp::contractionCandidateComp>                      mActiveNonlinearConstraints;
+            std::map<icp::ContractionCandidate*, unsigned, icp::contractionCandidateComp>                      mActiveLinearConstraints;
+            std::map<const lra::Variable<lra::Numeric>*, ContractionCandidates>          mLinearConstraints;
+            std::map<const Constraint*, ContractionCandidates, constraintPointerComp>                  mNonlinearConstraints;
             GiNaCRA::ICP                                                        mIcp;
             GiNaCRA::evaldoubleintervalmap                                      mIntervals;
             std::set<std::pair<double, unsigned>, comp>                         mIcpRelevantCandidates;
-            std::map<const Constraint*, const Constraint*>                      mReplacements; // replacement -> origin
-            std::map<const Constraint*, const Constraint*>                      mLinearizationReplacements;
+            std::map<const Constraint*, const Constraint*, constraintPointerComp>                      mReplacements; // replacement -> origin
+            std::map<const Constraint*, const Constraint*, constraintPointerComp>                      mLinearizationReplacements;
 
-            std::map<symbol, icp::IcpVariable, ex_is_less>                      mVariables;
+            std::map<string, icp::IcpVariable>                                  mVariables;
             std::map<const ex, symbol, ex_is_less>                              mLinearizations;
 
             GiNaC::exmap                                                        mSubstitutions; // variable -> substitution
@@ -113,7 +123,7 @@ namespace smtrat
 
             std::map<const Formula*, const Formula*>                            mReceivedFormulaMapping; // LraReceived -> IcpReceived
             
-            std::set<const Constraint*>                                         mCenterConstraints;
+            std::set<const Constraint*, constraintPointerComp>                                         mCenterConstraints;
             std::set<const Formula*>                                            mBoundConstraints;
             std::set<Formula*>                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
 

@@ -147,6 +147,7 @@ namespace icp
             void setLraVar( lra::Variable<lra::Numeric>* _lraVar )
             {
                 mLraVar = _lraVar;
+                mUpdated = std::make_pair(true,true);
             }
 
             void deleteCandidate( ContractionCandidate* _candidate )
