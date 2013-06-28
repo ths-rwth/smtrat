@@ -71,7 +71,7 @@ namespace icp
                 assert(false);
             }
 
-            IcpVariable( symbol _var, bool _original, lra::Variable<lra::Numeric>* _lraVar = NULL ):
+            IcpVariable( symbol _var, bool _original, smtrat::Formula::iterator _end, lra::Variable<lra::Numeric>* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal( _original ),
                 mCandidates(),
@@ -80,16 +80,17 @@ namespace icp
                 mLinear( true ),
                 mBoundsSet( std::make_pair(false,false) ),
                 mUpdated( std::make_pair(false,false) ),
-                mInternalLeftBound ( ),
-                mInternalRightBound ( ),
-                mExternalLeftBound ( ),
-                mExternalRightBound ( )
+                mInternalLeftBound ( NULL ),
+                mInternalRightBound ( NULL ),
+                mExternalLeftBound ( _end ),
+                mExternalRightBound ( _end )
             {
             }
 
             IcpVariable( symbol _var,
                          bool _original,
                          ContractionCandidate* _candidate,
+                         smtrat::Formula::iterator _end,
                          lra::Variable<lra::Numeric>* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal ( _original ),
@@ -99,10 +100,10 @@ namespace icp
                 mLinear( _candidate->isLinear() ),
                 mBoundsSet (std::make_pair(false,false)),
                 mUpdated( std::make_pair(false,false) ),
-                mInternalLeftBound ( ),
-                mInternalRightBound ( ),
-                mExternalLeftBound ( ),
-                mExternalRightBound ( )
+                mInternalLeftBound ( NULL ),
+                mInternalRightBound ( NULL ),
+                mExternalLeftBound ( _end ),
+                mExternalRightBound ( _end )
             {
                 mCandidates.insert( mCandidates.end(), _candidate );
             }
@@ -228,25 +229,21 @@ namespace icp
             
             smtrat::Formula* internalLeftBound() const
             {
-                assert(mBoundsSet.first);
                 return mInternalLeftBound;
             }
             
             smtrat::Formula* internalRightBound() const
             {
-                assert(mBoundsSet.first);
                 return mInternalRightBound;
             }
             
             smtrat::Formula::iterator externalLeftBound() const
             {
-                assert(mBoundsSet.second);
                 return mExternalLeftBound;
             }
             
             smtrat::Formula::iterator externalRightBound() const
             {
-                assert(mBoundsSet.second);
                 return mExternalRightBound;
             }
             
