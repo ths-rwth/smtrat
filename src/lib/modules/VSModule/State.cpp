@@ -32,10 +32,10 @@
 
 //#define VS_DEBUG_VARIABLE_VALUATIONS
 //#define VS_DEBUG_VARIABLE_BOUNDS
-//#define VS_DEBUG_LOCAL_hCONFLICT_SEARCH
+//#define VS_DEBUG_LOCAL_CONFLICT_SEARCH
 //#define VS_DEBUG_ROOTS_CHECK
 //#define VS_LOG_INFSUBSETS
-//#define VS_STURM_SEQUENCE_FOR_ROOT_CHECK
+#define VS_STURM_SEQUENCE_FOR_ROOT_CHECK
 
 using namespace std;
 using namespace GiNaC;
@@ -264,9 +264,9 @@ namespace vs
             if( (*child)->isInconsistent() )
                 ++child;
             else
-                return true;
+                return false;
         }
-        return false;
+        return true;
     }
 
     /**
@@ -1500,6 +1500,7 @@ namespace vs
                             {
                                 originsToRemove.insert( *condB );
                                 (*condB)->rRecentlyAdded() = true;
+                                (*condB)->rFlag() = false;
                             }
                         }
                     }
@@ -1558,7 +1559,6 @@ namespace vs
      */
     void State::deleteConditions( set<const Condition*>& _conditionsToDelete )
     {
-        
         if( _conditionsToDelete.empty() ) return;    
         // Delete the conditions to delete from the set of conditions with too high degree to
         // be entirely used for test candidate generation.
@@ -1585,6 +1585,7 @@ namespace vs
                         {
                             originsToRemove.insert( *condB );
                             (*condB)->rRecentlyAdded() = true;
+                            (*condB)->rFlag() = false;
                         }
                     }
                 }
@@ -2240,7 +2241,7 @@ namespace vs
      */
     bool State::hasLocalConflict()
     {
-        if( conflictSets().empty() || !tooHighDegreeConditions().empty() || hasOnlyInconsistentChildren() ) return false;
+        if( conflictSets().empty() || !tooHighDegreeConditions().empty() || !hasOnlyInconsistentChildren() ) return false;
         #ifdef VS_DEBUG_LOCAL_CONFLICT_SEARCH
         printAlone();
         #endif
@@ -2529,14 +2530,24 @@ namespace vs
                 assignment[sym] = leftBound;
                 ex imageOfLeftBound = cons.lhs().subs( assignment );
                 assert( is_exactly_a<numeric>( imageOfLeftBound ) );
-                if( intervals.begin()->second.leftType() == DoubleInterval::STRICT_BOUND && imageOfLeftBound == 0 ) --numberOfRoots;
                 assignment[sym] = rightBound;
                 ex imageOfRightBound = cons.lhs().subs( assignment );
                 assert( is_exactly_a<numeric>( imageOfRightBound ) );
-                if( intervals.begin()->second.rightType() == DoubleInterval::STRICT_BOUND && imageOfRightBound == 0 ) --numberOfRoots;
+                if( imageOfLeftBound == 0 )
+                {
+                    if( intervals.begin()->second.leftType() == DoubleInterval::WEAK_BOUND )
+                        ++numberOfRoots;
+                }
+                if( imageOfRightBound == 0 )
+                {
+                    if( intervals.begin()->second.rightType() == DoubleInterval::STRICT_BOUND && numberOfRoots != 0 )
+                        --numberOfRoots;
+                    if( intervals.begin()->second.rightType() == DoubleInterval::WEAK_BOUND )
+                        ++numberOfRoots;
+                }
                 #ifdef VS_DEBUG_ROOTS_CHECK
-                cout << "Image of right bound                    : " << imageOfLeftBound << endl;
-                cout << "Image of left bound                     : " << imageOfRightBound << endl;
+                cout << "Image of left bound                     : " << imageOfLeftBound << endl;
+                cout << "Image of right bound                    : " << imageOfRightBound << endl;
                 cout << "Number of roots according sturm sequence: " << numberOfRoots << endl;
                 #endif
                 if( numberOfRoots == 1 )
@@ -2554,19 +2565,19 @@ namespace vs
                         conflicts.insert( origins );
                         addConflictSet( NULL, conflicts );
                         #ifdef VS_DEBUG_ROOTS_CHECK
-                        cout << "  -> false" << endl;
+                        cout << "  -> false (1)" << endl;
                         #endif
                         return false;
                     }
                     #ifdef VS_DEBUG_ROOTS_CHECK
-                    cout << "  -> true" << endl;
+                    cout << "  -> true (1)" << endl;
                     #endif
                     return true;
                 }
                 else if( numberOfRoots > 1 )
                 {
                     #ifdef VS_DEBUG_ROOTS_CHECK
-                    cout << "  -> true" << endl;
+                    cout << "  -> true (2)" << endl;
                     #endif
                     return true;
                 }
@@ -2575,7 +2586,7 @@ namespace vs
             {
                 #endif
                 #ifdef VS_DEBUG_ROOTS_CHECK
-                cout << "  -> true" << endl;
+                cout << "  -> true (3)" << endl;
                 #endif
                 return true;
                 #ifdef VS_STURM_SEQUENCE_FOR_ROOT_CHECK
@@ -2594,7 +2605,7 @@ namespace vs
         conflicts.insert( origins );
         addConflictSet( sub, conflicts );
         #ifdef VS_DEBUG_ROOTS_CHECK
-        cout << "  -> false" << endl;
+        cout << "  -> false (2)" << endl;
         #endif
         return false;
     }

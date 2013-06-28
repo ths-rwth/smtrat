@@ -155,7 +155,7 @@ namespace vs
      *
      * @param _toSimplify
      */
-    bool splitProducts( DisjunctionOfConstraintConjunctions& _toSimplify )
+    bool splitProducts( DisjunctionOfConstraintConjunctions& _toSimplify, bool _onlyEquations )
     {
         bool result = true;
         unsigned toSimpSize = _toSimplify.size();
@@ -164,7 +164,7 @@ namespace vs
             if( !_toSimplify.begin()->empty() )
             {
                 DisjunctionOfConstraintConjunctions temp = DisjunctionOfConstraintConjunctions();
-                if( !splitProducts( _toSimplify[pos], temp ) )
+                if( !splitProducts( _toSimplify[pos], temp, _onlyEquations ) )
                 {
                     result = false;
                 }
@@ -185,7 +185,7 @@ namespace vs
      * @param _constraintConjunction
      * @return
      */
-    bool splitProducts( const ConstraintVector& _constraintConjunction, DisjunctionOfConstraintConjunctions& _result )
+    bool splitProducts( const ConstraintVector& _constraintConjunction, DisjunctionOfConstraintConjunctions& _result, bool _onlyEquations )
     {
         vector<DisjunctionOfConstraintConjunctions> toCombine = vector<DisjunctionOfConstraintConjunctions>();
         for( auto constraint = _constraintConjunction.begin(); constraint != _constraintConjunction.end(); ++constraint )
@@ -198,9 +198,17 @@ namespace vs
                     {
                         toCombine.push_back( DisjunctionOfConstraintConjunctions() );
                         const ex& factorization = (*constraint)->factorization();
-                        for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
+                        for( GiNaC::const_iterator factor = factorization.begin(); factor != factorization.end(); ++factor )
                         {
-                            const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_EQ, (*constraint)->variables() );
+                            const smtrat::Constraint* cons;
+                            if( is_exactly_a<power>( *factor ) )
+                            {
+                                cons = smtrat::Formula::newConstraint( *factor->begin(), smtrat::CR_EQ, (*constraint)->variables() );
+                            }
+                            else
+                            {
+                                cons = smtrat::Formula::newConstraint( *factor, smtrat::CR_EQ, (*constraint)->variables() );
+                            }
                             toCombine.back().push_back( ConstraintVector() );
                             toCombine.back().back().push_back( cons );
                         }
@@ -208,19 +216,31 @@ namespace vs
                     }
                     case smtrat::CR_NEQ:
                     {
-                        toCombine.push_back( DisjunctionOfConstraintConjunctions() );
-                        toCombine.back().push_back( ConstraintVector() );
-                        const ex& factorization = (*constraint)->factorization();
-                        for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
+                        if( !_onlyEquations )
                         {
-                            const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_NEQ, (*constraint)->variables() );
-                            toCombine.back().back().push_back( cons );
+                            toCombine.push_back( DisjunctionOfConstraintConjunctions() );
+                            toCombine.back().push_back( ConstraintVector() );
+                            const ex& factorization = (*constraint)->factorization();
+                            for( GiNaC::const_iterator factor = factorization.begin(); factor != factorization.end(); ++factor )
+                            {
+                                const smtrat::Constraint* cons;
+                                if( is_exactly_a<power>( *factor ) )
+                                {
+                                    cons = smtrat::Formula::newConstraint( *factor->begin(), smtrat::CR_NEQ, (*constraint)->variables() );
+                                }
+                                else
+                                {
+                                    cons = smtrat::Formula::newConstraint( *factor, smtrat::CR_NEQ, (*constraint)->variables() );
+                                }
+                                toCombine.back().back().push_back( cons );
+                            }
                         }
                         break;
                     }
                     default:
                     {
-                        toCombine.push_back( getSignCombinations( *constraint ) );
+                        if( !_onlyEquations )
+                            toCombine.push_back( getSignCombinations( *constraint ) );
                     }
                     simplify( toCombine.back() );
                 }
@@ -246,7 +266,7 @@ namespace vs
      * @param _constraintConjunction
      * @return
      */
-    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* _constraint )
+    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* _constraint, bool _onlyEquations )
     {
         DisjunctionOfConstraintConjunctions result = DisjunctionOfConstraintConjunctions();
         if( _constraint->hasFactorization() )
@@ -256,9 +276,17 @@ namespace vs
                 case smtrat::CR_EQ:
                 {
                     const ex& factorization = _constraint->factorization();
-                    for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
+                    for( GiNaC::const_iterator factor = factorization.begin(); factor != factorization.end(); ++factor )
                     {
-                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_EQ, _constraint->variables() );
+                        const smtrat::Constraint* cons;
+                        if( is_exactly_a<power>( *factor ) )
+                        {
+                            cons = smtrat::Formula::newConstraint( *factor->begin(), smtrat::CR_EQ, _constraint->variables() );
+                        }
+                        else
+                        {
+                            cons = smtrat::Formula::newConstraint( *factor, smtrat::CR_EQ, _constraint->variables() );
+                        }
                         result.push_back( ConstraintVector() );
                         result.back().push_back( cons );
                     }
@@ -266,18 +294,30 @@ namespace vs
                 }
                 case smtrat::CR_NEQ:
                 {
-                    result.push_back( ConstraintVector() );
-                    const ex& factorization = _constraint->factorization();
-                    for( GiNaC::const_iterator summand = factorization.begin(); summand != factorization.end(); ++summand )
+                    if( !_onlyEquations )
                     {
-                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *summand, smtrat::CR_NEQ, _constraint->variables() );
-                        result.back().push_back( cons );
+                        result.push_back( ConstraintVector() );
+                        const ex& factorization = _constraint->factorization();
+                        for( GiNaC::const_iterator factor = factorization.begin(); factor != factorization.end(); ++factor )
+                        {
+                            const smtrat::Constraint* cons;
+                            if( is_exactly_a<power>( *factor ) )
+                            {
+                                cons = smtrat::Formula::newConstraint( *factor->begin(), smtrat::CR_NEQ, _constraint->variables() );
+                            }
+                            else
+                            {
+                                cons = smtrat::Formula::newConstraint( *factor, smtrat::CR_NEQ, _constraint->variables() );
+                            }
+                            result.back().push_back( cons );
+                        }
                     }
                     break;
                 }
                 default:
                 {
-                    result = getSignCombinations( _constraint );
+                    if( !_onlyEquations )
+                        result = getSignCombinations( _constraint );
                 }
                 simplify( result );
             }

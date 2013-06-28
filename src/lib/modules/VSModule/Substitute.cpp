@@ -80,8 +80,8 @@ namespace vs
                 cout << "Error in substitute: unexpected type of substitution." << endl;
             }
         }
-        #ifdef SMTRAT_DEVOPTION_Statistics //TODO
-        if( !splitProducts( _result ) ) 
+        #ifdef SMTRAT_STRAT_Factorization
+        if( !splitProducts( _result, true ) ) 
             result = false;
         #endif
         #ifdef VS_DEBUG_SUBSTITUTION

@@ -151,9 +151,9 @@ namespace vs
     }
     void simplify( DisjunctionOfConstraintConjunctions& );
     void simplify( DisjunctionOfConstraintConjunctions&, GiNaC::symtab&, const GiNaCRA::evaldoubleintervalmap& );
-    bool splitProducts( DisjunctionOfConstraintConjunctions& );
-    bool splitProducts( const ConstraintVector&, DisjunctionOfConstraintConjunctions& );
-    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* );
+    bool splitProducts( DisjunctionOfConstraintConjunctions&, bool = false );
+    bool splitProducts( const ConstraintVector&, DisjunctionOfConstraintConjunctions&, bool = false );
+    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint*, bool = false );
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::Constraint* );
     void getOddBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& );
     void getEvenBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& );
