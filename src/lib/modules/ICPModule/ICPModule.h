@@ -31,8 +31,9 @@
 #define ICPMODULE_H
 
 //#define ICP_BOXLOG
+
 #ifdef SMTRAT_DEVOPTION_Validation
-//#define SMTRAT_DEVOPTION_VALIDATION_ICP
+        #define SMTRAT_DEVOPTION_VALIDATION_ICP
 #endif
 
 #include <ginac/ginac.h>
