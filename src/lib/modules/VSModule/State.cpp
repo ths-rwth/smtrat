@@ -32,9 +32,10 @@
 
 //#define VS_DEBUG_VARIABLE_VALUATIONS
 //#define VS_DEBUG_VARIABLE_BOUNDS
-//#define VS_DEBUG_LOCAL_CONFLICT_SEARCH
+//#define VS_DEBUG_LOCAL_hCONFLICT_SEARCH
 //#define VS_DEBUG_ROOTS_CHECK
 //#define VS_LOG_INFSUBSETS
+//#define VS_STURM_SEQUENCE_FOR_ROOT_CHECK
 
 using namespace std;
 using namespace GiNaC;
@@ -1557,6 +1558,7 @@ namespace vs
      */
     void State::deleteConditions( set<const Condition*>& _conditionsToDelete )
     {
+        
         if( _conditionsToDelete.empty() ) return;    
         // Delete the conditions to delete from the set of conditions with too high degree to
         // be entirely used for test candidate generation.
@@ -1573,8 +1575,6 @@ namespace vs
             // Delete the condition from the vector this state considers.
             if( _conditionsToDelete.find( *cond ) != _conditionsToDelete.end() )
             {
-                conditionDeleted = true;
-                cond = rConditions().erase( cond );
                 #ifdef SMTRAT_VS_VARIABLEBOUNDS
                 const ex var = mpVariableBounds->removeBound( (*cond)->pConstraint(), *cond );
                 if( is_exactly_a<symbol>( var ) )
@@ -1589,6 +1589,8 @@ namespace vs
                     }
                 }
                 #endif
+                conditionDeleted = true;
+                cond = rConditions().erase( cond );
             }
             else
             {
@@ -2488,9 +2490,15 @@ namespace vs
         else
         {
             DoubleInterval varDomain = rVariableBounds().getDoubleInterval( sym );
-            numeric cb = cons.cauchyBound();
-            DoubleInterval cbInterval = DoubleInterval( -cb, DoubleInterval::STRICT_BOUND, cb, DoubleInterval::STRICT_BOUND );
+            pair<numeric, numeric> cb = cons.cauchyBounds();
+            #ifdef VS_DEBUG_ROOTS_CHECK
+            cout << "Cauchy bounds of  " << cons.lhs() << "  are  " << cb.first << " and " << cb.second << endl;
+            #endif
+            DoubleInterval cbInterval = DoubleInterval( -cb.second, DoubleInterval::STRICT_BOUND, cb.second, DoubleInterval::STRICT_BOUND );
             varDomain = varDomain.intersect( cbInterval );
+            #ifdef VS_DEBUG_ROOTS_CHECK
+            cout << varDomain << endl;
+            #endif
             intervals[sym] = varDomain;
         }
         DoubleInterval solutionSpace = DoubleInterval::evaluate( cons.lhs(), intervals );
@@ -2509,29 +2517,86 @@ namespace vs
         #endif
         if( solutionSpace.contains( 0 ) )
         {
-            #ifdef VS_DEBUG_ROOTS_CHECK
-            cout << "  -> true" << endl;
+            #ifdef VS_STURM_SEQUENCE_FOR_ROOT_CHECK
+            if( cons.variables().size() == 1 )
+            {
+                RationalUnivariatePolynomial rup = RationalUnivariatePolynomial( cons.lhs(), sym );
+                list<RationalUnivariatePolynomial> seq = RationalUnivariatePolynomial::standardSturmSequence( rup, rup.diff() );
+                numeric leftBound = rationalize( numeric( intervals.begin()->second.left() ) );
+                numeric rightBound = rationalize( numeric( intervals.begin()->second.right() ) );
+                unsigned numberOfRoots = RationalUnivariatePolynomial::signVariations( seq, leftBound ) - RationalUnivariatePolynomial::signVariations( seq, rightBound );
+                exmap assignment = exmap();
+                assignment[sym] = leftBound;
+                ex imageOfLeftBound = cons.lhs().subs( assignment );
+                assert( is_exactly_a<numeric>( imageOfLeftBound ) );
+                if( intervals.begin()->second.leftType() == DoubleInterval::STRICT_BOUND && imageOfLeftBound == 0 ) --numberOfRoots;
+                assignment[sym] = rightBound;
+                ex imageOfRightBound = cons.lhs().subs( assignment );
+                assert( is_exactly_a<numeric>( imageOfRightBound ) );
+                if( intervals.begin()->second.rightType() == DoubleInterval::STRICT_BOUND && imageOfRightBound == 0 ) --numberOfRoots;
+                #ifdef VS_DEBUG_ROOTS_CHECK
+                cout << "Image of right bound                    : " << imageOfLeftBound << endl;
+                cout << "Image of left bound                     : " << imageOfRightBound << endl;
+                cout << "Number of roots according sturm sequence: " << numberOfRoots << endl;
+                #endif
+                if( numberOfRoots == 1 )
+                {
+                    bool constraintInconsistent = false;
+                    if( imageOfLeftBound > 0 && imageOfRightBound > 0 && cons.relation() == smtrat::CR_LESS )
+                        constraintInconsistent = true;
+                    if( imageOfLeftBound < 0 && imageOfRightBound < 0 && cons.relation() == smtrat::CR_GREATER )
+                        constraintInconsistent = true;
+                    if( constraintInconsistent )
+                    {
+                        ConditionSet origins = ConditionSet();
+                        origins.insert( _condition );
+                        ConditionSetSet conflicts = ConditionSetSet();
+                        conflicts.insert( origins );
+                        addConflictSet( NULL, conflicts );
+                        #ifdef VS_DEBUG_ROOTS_CHECK
+                        cout << "  -> false" << endl;
+                        #endif
+                        return false;
+                    }
+                    #ifdef VS_DEBUG_ROOTS_CHECK
+                    cout << "  -> true" << endl;
+                    #endif
+                    return true;
+                }
+                else if( numberOfRoots > 1 )
+                {
+                    #ifdef VS_DEBUG_ROOTS_CHECK
+                    cout << "  -> true" << endl;
+                    #endif
+                    return true;
+                }
+            }
+            else
+            {
+                #endif
+                #ifdef VS_DEBUG_ROOTS_CHECK
+                cout << "  -> true" << endl;
+                #endif
+                return true;
+                #ifdef VS_STURM_SEQUENCE_FOR_ROOT_CHECK
+            }
             #endif
-            return true;
         }
-        else
-        {
-            ConditionSet origins = ConditionSet();
-            origins.insert( _condition );
-            smtrat::ConstraintSet constraints = smtrat::ConstraintSet();
-            constraints.insert( _condition->pConstraint() );
-            Substitution* sub = new Substitution( index(), ex( sym ), ST_INVALID, origins, constraints );
-            symtab vars = cons.variables();
-            set< const Condition* > conflictingBounds = variableBounds().getOriginsOfBounds( vars );
-            origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
-            ConditionSetSet conflicts = ConditionSetSet();
-            conflicts.insert( origins );
-            addConflictSet( sub, conflicts );
-            #ifdef VS_DEBUG_ROOTS_CHECK
-            cout << "  -> false" << endl;
-            #endif
-            return false;
-        }
+        ConditionSet origins = ConditionSet();
+        origins.insert( _condition );
+        smtrat::ConstraintSet constraints = smtrat::ConstraintSet();
+        constraints.insert( _condition->pConstraint() );
+        Substitution* sub = new Substitution( index(), ex( sym ), ST_INVALID, origins, constraints );
+        symtab vars = cons.variables();
+        set< const Condition* > conflictingBounds = variableBounds().getOriginsOfBounds( vars );
+        origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
+        ConditionSetSet conflicts = ConditionSetSet();
+        conflicts.insert( origins );
+        addConflictSet( sub, conflicts );
+        #ifdef VS_DEBUG_ROOTS_CHECK
+        cout << "  -> false" << endl;
+        #endif
+        return false;
     }
     #endif
 

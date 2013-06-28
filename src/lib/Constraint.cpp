@@ -548,17 +548,17 @@ namespace smtrat
      * 
      * @return The Cauchy bound of the left-hand side of this constraint.
      */
-    numeric Constraint::cauchyBound() const
+    pair<numeric, numeric> Constraint::cauchyBounds() const
     {
         assert( variables().size() == 1 );
         if( is_exactly_a<add>( mLhs ) )
         {
             // left-hand side is  a1*x^e1 + .. + an*x^en, 
             // where the ei are pairwise different and ai is a rational number (including 0)
-            numeric cauchyBound = GiNaC::ZERO;
+            numeric maxCoeff = GiNaC::ZERO;
             numeric leadingCoefficient = GiNaC::ONE;
-            // Calculate a1+ .. + an - aj,  where aj is the leading coefficient
-            // and find the leading coefficient aj
+            numeric constantPart = GiNaC::ZERO;
+            // Find a1 and an and calculate max({a2, .. ,an-1}):
             for( auto summand = mLhs.begin(); summand != mLhs.end(); ++summand )
             {
                 const ex& summandEx = *summand;
@@ -572,35 +572,41 @@ namespace smtrat
                         const ex& monomial = *summandEx.begin();
                         if( is_exactly_a<symbol>(monomial) ) 
                         {
+                            numeric coeff = abs( ex_to<numeric>( factor ) );
                             if( mMaxMonomeDegree == 1 ) // leading coefficient
-                                leadingCoefficient = abs( ex_to<numeric>( factor ) );
-                            else
-                                cauchyBound += abs( ex_to<numeric>( factor ) );
+                                leadingCoefficient = coeff;
+                            else if( maxCoeff < coeff )
+                                maxCoeff += coeff;
                         }
                         else
                         {
                             assert( is_exactly_a<power>(monomial) );
                             assert( monomial.nops() == 2 );
+                            numeric coeff = abs( ex_to<numeric>( factor ) );
                             if( *(++(monomial.end())) == mMaxMonomeDegree ) // leading coefficient
-                                leadingCoefficient = abs( ex_to<numeric>( factor ) );
-                            else
-                                cauchyBound += abs( ex_to<numeric>( factor ) );
+                                leadingCoefficient = coeff;
+                            else if( maxCoeff < coeff )
+                                maxCoeff = coeff;
                         }
                     }
                     else // summand has the form:  x^e_i
-                        ++cauchyBound;
+                        if( mMaxMonomeDegree != 1 && maxCoeff < 1 )
+                            maxCoeff = 1;
                 }
                 else if( is_exactly_a<numeric>( summandEx ) ) // constant part, i.e. ei = 0
-                    cauchyBound += abs( ex_to<numeric>( summandEx ) );
-                else
-                    ++cauchyBound;
+                {
+                    constantPart = abs( ex_to<numeric>( summandEx ) );
+                    if( maxCoeff < constantPart )
+                        maxCoeff = constantPart;
+                }
+                // else left-hand side has the form x^e_i, with ei != 0
             }
-            cauchyBound /= leadingCoefficient;
-            ++cauchyBound; // Because we skipped adding the leading coefficient before.
-            return cauchyBound;
+            numeric lowerCauchyBound = constantPart / (constantPart + ( leadingCoefficient > maxCoeff ? leadingCoefficient : maxCoeff ));
+            numeric upperCauchyBound = 1 + (( constantPart > maxCoeff ? constantPart : maxCoeff )/leadingCoefficient);
+            return pair<numeric,numeric>( lowerCauchyBound, upperCauchyBound );
         }
         else // left-hand side is  a*x^e  ->  cauchy bound is 1
-            return GiNaC::ONE;
+            return pair<numeric, numeric>( GiNaC::ZERO, GiNaC::ONE );
     }
 
     /**
