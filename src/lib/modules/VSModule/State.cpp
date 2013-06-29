@@ -2535,8 +2535,7 @@ namespace vs
                 assert( is_exactly_a<numeric>( imageOfRightBound ) );
                 if( imageOfLeftBound == 0 )
                 {
-                    if( intervals.begin()->second.leftType() == DoubleInterval::WEAK_BOUND )
-                        ++numberOfRoots;
+                    ++numberOfRoots;
                 }
                 if( imageOfRightBound == 0 )
                 {

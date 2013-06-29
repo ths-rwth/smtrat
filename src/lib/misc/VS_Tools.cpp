@@ -212,6 +212,7 @@ namespace vs
                             toCombine.back().push_back( ConstraintVector() );
                             toCombine.back().back().push_back( cons );
                         }
+                        simplify( toCombine.back() );
                         break;
                     }
                     case smtrat::CR_NEQ:
@@ -234,15 +235,30 @@ namespace vs
                                 }
                                 toCombine.back().back().push_back( cons );
                             }
+                            simplify( toCombine.back() );
+                        }
+                        else
+                        {
+                            toCombine.push_back( DisjunctionOfConstraintConjunctions() );
+                            toCombine.back().push_back( ConstraintVector() );
+                            toCombine.back().back().push_back( *constraint );
                         }
                         break;
                     }
                     default:
                     {
                         if( !_onlyEquations )
+                        {
                             toCombine.push_back( getSignCombinations( *constraint ) );
+                            simplify( toCombine.back() );
+                        }
+                        else
+                        {
+                            toCombine.push_back( DisjunctionOfConstraintConjunctions() );
+                            toCombine.back().push_back( ConstraintVector() );
+                            toCombine.back().back().push_back( *constraint );
+                        }
                     }
-                    simplify( toCombine.back() );
                 }
             }
             else
@@ -290,6 +306,7 @@ namespace vs
                         result.push_back( ConstraintVector() );
                         result.back().push_back( cons );
                     }
+                    simplify( result );
                     break;
                 }
                 case smtrat::CR_NEQ:
@@ -311,15 +328,29 @@ namespace vs
                             }
                             result.back().push_back( cons );
                         }
+                        simplify( result );
+                    }
+                    else
+                    {
+                        result.push_back( ConstraintVector() );
+                        result.back().push_back( _constraint );
                     }
                     break;
                 }
                 default:
                 {
                     if( !_onlyEquations )
+                    {
                         result = getSignCombinations( _constraint );
+                        simplify( result );
+                    }
+                    else
+                    {
+                        result.push_back( ConstraintVector() );
+                        result.back().push_back( _constraint );
+                    }
                 }
-                simplify( result );
+                
             }
         }
         else
