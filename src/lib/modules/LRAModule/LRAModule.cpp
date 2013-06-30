@@ -421,6 +421,8 @@ namespace smtrat
                             #endif 
 
                             #ifdef LRA_CUTS_FROM_PROOFS
+                            //unsigned a=0,b=1;
+                            //mTableau.addColumns(a,b,Numeric(0.5));
                             lra::Tableau<lra::Numeric> dc_Tableau = lra::Tableau<lra::Numeric>(mpPassedFormula->end());
                             for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
                             {
