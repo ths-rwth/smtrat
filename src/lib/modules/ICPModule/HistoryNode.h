@@ -156,8 +156,8 @@ namespace smtrat
 
                 ~HistoryNode()
                 {
-                    delete mLeftChild;
-                    delete mRightChild;
+                    this->removeLeftChild();
+                    this->removeRightChild();
                 }
 
                 /**
@@ -400,16 +400,22 @@ namespace smtrat
 
                 void removeLeftChild()
                 {
-                    HistoryNode* toDelete = mLeftChild;
-                    mLeftChild = NULL;
-                    delete toDelete;
+                    if(mLeftChild != NULL)
+                    {
+                        HistoryNode* toDelete = mLeftChild;
+                        mLeftChild = NULL;
+                        delete toDelete;
+                    }
                 }
 
                 void removeRightChild()
                 {
-                    HistoryNode* toDelete = mRightChild;
-                    mRightChild = NULL;
-                    delete toDelete;
+                    if(mRightChild != NULL)
+                    {
+                        HistoryNode* toDelete = mRightChild;
+                        mRightChild = NULL;
+                        delete toDelete;
+                    }
                 }
 
                 /**

@@ -2659,7 +2659,7 @@ namespace smtrat
                     _basis->parent()->addReasons((*reasonIt).first, (*reasonIt).second);
                 }
             }
-
+            _basis->parent()->removeLeftChild();
             return _basis->parent()->right();
         }
         else // isRight
@@ -2706,11 +2706,10 @@ namespace smtrat
         }
         // set actual node as selection
         mHistoryActual = _selection;
-        delete mHistoryActual->left();
-        delete mHistoryActual->right();
-        if (mHistoryActual->parent() != NULL )
+        if( !mHistoryActual->isLeaf() )
         {
-            mHistoryActual->parent()->removeLeftChild();
+            mHistoryActual->removeLeftChild();
+            mHistoryActual->removeRightChild();
         }
     }
 
