@@ -2469,8 +2469,8 @@ namespace vs
         }
         return result;
     }
-    
-    /**
+
+     /**
      * Checks whether there are no zeros for the left-hand side of the constraint of the given condition.
      * 
      * @param _condition The condition to check.
@@ -2549,36 +2549,43 @@ namespace vs
                 cout << "Image of right bound                    : " << imageOfRightBound << endl;
                 cout << "Number of roots according sturm sequence: " << numberOfRoots << endl;
                 #endif
-                if( numberOfRoots == 1 )
+                bool constraintInconsistent = false;
+                if( numberOfRoots == 0 )
                 {
-                    bool constraintInconsistent = false;
+                    if( cons.relation() == smtrat::CR_EQ )
+                        constraintInconsistent = true;
+                    else if( imageOfLeftBound > 0 && (cons.relation() == smtrat::CR_LESS || cons.relation() == smtrat::CR_LEQ) )
+                        constraintInconsistent = true;
+                    else if( imageOfLeftBound < 0 && (cons.relation() == smtrat::CR_GREATER || cons.relation() == smtrat::CR_GEQ) )
+                        constraintInconsistent = true;
+                }
+                else if( numberOfRoots == 1 )
+                {
                     if( imageOfLeftBound > 0 && imageOfRightBound > 0 && cons.relation() == smtrat::CR_LESS )
                         constraintInconsistent = true;
                     if( imageOfLeftBound < 0 && imageOfRightBound < 0 && cons.relation() == smtrat::CR_GREATER )
                         constraintInconsistent = true;
-                    if( constraintInconsistent )
-                    {
-                        ConditionSet origins = ConditionSet();
-                        origins.insert( _condition );
-                        ConditionSetSet conflicts = ConditionSetSet();
-                        conflicts.insert( origins );
-                        addConflictSet( NULL, conflicts );
-                        #ifdef VS_DEBUG_ROOTS_CHECK
-                        cout << "  -> false (1)" << endl;
-                        #endif
-                        return false;
-                    }
-                    #ifdef VS_DEBUG_ROOTS_CHECK
-                    cout << "  -> true (1)" << endl;
-                    #endif
-                    return true;
                 }
-                else if( numberOfRoots > 1 )
+                if( constraintInconsistent )
                 {
+                    ConditionSet origins = ConditionSet();
+                    origins.insert( _condition );
+                    set< const Condition* > conflictingBounds = variableBounds().getOriginsOfBounds( sym );
+                    origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
+                    ConditionSetSet conflicts = ConditionSetSet();
+                    conflicts.insert( origins );
+                    addConflictSet( NULL, conflicts );
                     #ifdef VS_DEBUG_ROOTS_CHECK
-                    cout << "  -> true (2)" << endl;
+                    cout << "  -> false (1)" << endl;
                     #endif
-                    return true;
+                    return false;
+                }
+                if( numberOfRoots > 0 )
+                {
+                #ifdef VS_DEBUG_ROOTS_CHECK
+                cout << "  -> true (1)" << endl;
+                #endif
+                return true;
                 }
             }
             else
@@ -2592,16 +2599,29 @@ namespace vs
             }
             #endif
         }
+        bool constraintInconsistent = false;
+        if( cons.relation() == smtrat::CR_EQ )
+            constraintInconsistent = true;
+        else if( solutionSpace.right() > 0 && (cons.relation() == smtrat::CR_LESS || cons.relation() == smtrat::CR_LEQ) )
+            constraintInconsistent = true;
+        else if( solutionSpace.left() < 0 && (cons.relation() == smtrat::CR_GREATER || cons.relation() == smtrat::CR_GEQ) )
+            constraintInconsistent = true;
         ConditionSet origins = ConditionSet();
         origins.insert( _condition );
-        smtrat::ConstraintSet constraints = smtrat::ConstraintSet();
-        constraints.insert( _condition->pConstraint() );
-        Substitution* sub = new Substitution( index(), ex( sym ), ST_INVALID, origins, constraints );
         symtab vars = cons.variables();
         set< const Condition* > conflictingBounds = variableBounds().getOriginsOfBounds( vars );
         origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
         ConditionSetSet conflicts = ConditionSetSet();
         conflicts.insert( origins );
+        Substitution* sub = NULL;
+        if( !constraintInconsistent )
+        {
+            smtrat::ConstraintSet constraints = smtrat::ConstraintSet();
+            constraints.insert( _condition->pConstraint() );
+            ConditionSet subsOrigins = ConditionSet();
+            subsOrigins.insert( _condition );
+            sub = new Substitution( index(), ex( sym ), ST_INVALID, subsOrigins, constraints );
+        }
         addConflictSet( sub, conflicts );
         #ifdef VS_DEBUG_ROOTS_CHECK
         cout << "  -> false (2)" << endl;

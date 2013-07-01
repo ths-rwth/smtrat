@@ -934,19 +934,22 @@ namespace smtrat
         }
         else
         {
-            disjunctionsOfCondConj.push_back( DisjunctionOfConditionConjunctions() );
-            disjunctionsOfCondConj.back().push_back( oldConditions );
-            _currentState->addSubstitutionResults( disjunctionsOfCondConj );
             if( !_currentState->isInconsistent() )
             {
                 if( allSubstitutionsApplied )
+                {
+                    disjunctionsOfCondConj.push_back( DisjunctionOfConditionConjunctions() );
+                    disjunctionsOfCondConj.back().push_back( oldConditions );
+                    _currentState->addSubstitutionResults( disjunctionsOfCondConj );
                     insertDTinRanking( _currentState );
+                }
                 else
                 {
                     eraseDTsOfRanking( _currentState->rFather() );
+                    _currentState->rMarkedAsDeleted() = true;
                     _currentState->rFather().rToHighDegree() = true;
-                    insertDTinRanking( _currentState->pFather() );
-                            
+                    insertDTsinRanking( _currentState->pFather() );
+                    cleanResultsOfThisMethod = true;
                 }
             }
             #ifdef VS_DEBUG

@@ -105,12 +105,11 @@ namespace vs
         unsigned estimatedResultSize = 1;
         for( auto iter = _toCombine.begin(); iter != _toCombine.end(); ++iter )
         {
-            if( iter->empty() ) return true;
+            if( iter->empty() )
+                return true;
             estimatedResultSize *= iter->size();
             if( estimatedResultSize > MAX_NUM_OF_COMBINATION_RESULT )
-            {
                 return false;
-            }
             else combination.push_back( iter->begin() );
         }
 

@@ -635,6 +635,7 @@ namespace vs
             substituteNormal( inequality, substitution, substitutionResultsVector.back(), _conflictingVariables, _solutionSpace );
             if( !combine( substitutionResultsVector, _result ) )
                 result = false;
+            simplify( _result, _conflictingVariables, _solutionSpace );
             // Remove the last substitution result.
             substitutionResultsVector.pop_back();
         }

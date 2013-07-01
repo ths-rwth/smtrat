@@ -185,7 +185,7 @@ namespace vs
      * @param _constraintConjunction
      * @return
      */
-    bool splitProducts( const ConstraintVector& _constraintConjunction, DisjunctionOfConstraintConjunctions& _result, bool _onlyEquations )
+    bool splitProducts( const ConstraintVector& _constraintConjunction, DisjunctionOfConstraintConjunctions& _result, bool _onlyNeq )
     {
         vector<DisjunctionOfConstraintConjunctions> toCombine = vector<DisjunctionOfConstraintConjunctions>();
         for( auto constraint = _constraintConjunction.begin(); constraint != _constraintConjunction.end(); ++constraint )
@@ -196,43 +196,22 @@ namespace vs
                 {
                     case smtrat::CR_EQ:
                     {
-                        toCombine.push_back( DisjunctionOfConstraintConjunctions() );
-                        const ex& factorization = (*constraint)->factorization();
-                        for( GiNaC::const_iterator factor = factorization.begin(); factor != factorization.end(); ++factor )
-                        {
-                            const smtrat::Constraint* cons;
-                            if( is_exactly_a<power>( *factor ) )
-                            {
-                                cons = smtrat::Formula::newConstraint( *factor->begin(), smtrat::CR_EQ, (*constraint)->variables() );
-                            }
-                            else
-                            {
-                                cons = smtrat::Formula::newConstraint( *factor, smtrat::CR_EQ, (*constraint)->variables() );
-                            }
-                            toCombine.back().push_back( ConstraintVector() );
-                            toCombine.back().back().push_back( cons );
-                        }
-                        simplify( toCombine.back() );
-                        break;
-                    }
-                    case smtrat::CR_NEQ:
-                    {
-                        if( !_onlyEquations )
+                        if( !_onlyNeq )
                         {
                             toCombine.push_back( DisjunctionOfConstraintConjunctions() );
-                            toCombine.back().push_back( ConstraintVector() );
                             const ex& factorization = (*constraint)->factorization();
                             for( GiNaC::const_iterator factor = factorization.begin(); factor != factorization.end(); ++factor )
                             {
                                 const smtrat::Constraint* cons;
                                 if( is_exactly_a<power>( *factor ) )
                                 {
-                                    cons = smtrat::Formula::newConstraint( *factor->begin(), smtrat::CR_NEQ, (*constraint)->variables() );
+                                    cons = smtrat::Formula::newConstraint( *factor->begin(), smtrat::CR_EQ, (*constraint)->variables() );
                                 }
                                 else
                                 {
-                                    cons = smtrat::Formula::newConstraint( *factor, smtrat::CR_NEQ, (*constraint)->variables() );
+                                    cons = smtrat::Formula::newConstraint( *factor, smtrat::CR_EQ, (*constraint)->variables() );
                                 }
+                                toCombine.back().push_back( ConstraintVector() );
                                 toCombine.back().back().push_back( cons );
                             }
                             simplify( toCombine.back() );
@@ -245,9 +224,30 @@ namespace vs
                         }
                         break;
                     }
+                    case smtrat::CR_NEQ:
+                    {
+                        toCombine.push_back( DisjunctionOfConstraintConjunctions() );
+                        toCombine.back().push_back( ConstraintVector() );
+                        const ex& factorization = (*constraint)->factorization();
+                        for( GiNaC::const_iterator factor = factorization.begin(); factor != factorization.end(); ++factor )
+                        {
+                            const smtrat::Constraint* cons;
+                            if( is_exactly_a<power>( *factor ) )
+                            {
+                                cons = smtrat::Formula::newConstraint( *factor->begin(), smtrat::CR_NEQ, (*constraint)->variables() );
+                            }
+                            else
+                            {
+                                cons = smtrat::Formula::newConstraint( *factor, smtrat::CR_NEQ, (*constraint)->variables() );
+                            }
+                            toCombine.back().back().push_back( cons );
+                        }
+                        simplify( toCombine.back() );
+                        break;
+                    }
                     default:
                     {
-                        if( !_onlyEquations )
+                        if( !_onlyNeq )
                         {
                             toCombine.push_back( getSignCombinations( *constraint ) );
                             simplify( toCombine.back() );
@@ -282,7 +282,7 @@ namespace vs
      * @param _constraintConjunction
      * @return
      */
-    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* _constraint, bool _onlyEquations )
+    DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* _constraint, bool _onlyNeq )
     {
         DisjunctionOfConstraintConjunctions result = DisjunctionOfConstraintConjunctions();
         if( _constraint->hasFactorization() )
@@ -291,55 +291,55 @@ namespace vs
             {
                 case smtrat::CR_EQ:
                 {
-                    const ex& factorization = _constraint->factorization();
-                    for( GiNaC::const_iterator factor = factorization.begin(); factor != factorization.end(); ++factor )
+                    if( !_onlyNeq )
                     {
-                        const smtrat::Constraint* cons;
-                        if( is_exactly_a<power>( *factor ) )
-                        {
-                            cons = smtrat::Formula::newConstraint( *factor->begin(), smtrat::CR_EQ, _constraint->variables() );
-                        }
-                        else
-                        {
-                            cons = smtrat::Formula::newConstraint( *factor, smtrat::CR_EQ, _constraint->variables() );
-                        }
-                        result.push_back( ConstraintVector() );
-                        result.back().push_back( cons );
-                    }
-                    simplify( result );
-                    break;
-                }
-                case smtrat::CR_NEQ:
-                {
-                    if( !_onlyEquations )
-                    {
-                        result.push_back( ConstraintVector() );
                         const ex& factorization = _constraint->factorization();
                         for( GiNaC::const_iterator factor = factorization.begin(); factor != factorization.end(); ++factor )
                         {
                             const smtrat::Constraint* cons;
                             if( is_exactly_a<power>( *factor ) )
                             {
-                                cons = smtrat::Formula::newConstraint( *factor->begin(), smtrat::CR_NEQ, _constraint->variables() );
+                                cons = smtrat::Formula::newConstraint( *factor->begin(), smtrat::CR_EQ, _constraint->variables() );
                             }
                             else
                             {
-                                cons = smtrat::Formula::newConstraint( *factor, smtrat::CR_NEQ, _constraint->variables() );
+                                cons = smtrat::Formula::newConstraint( *factor, smtrat::CR_EQ, _constraint->variables() );
                             }
+                            result.push_back( ConstraintVector() );
                             result.back().push_back( cons );
                         }
-                        simplify( result );
                     }
                     else
                     {
                         result.push_back( ConstraintVector() );
                         result.back().push_back( _constraint );
                     }
+                    simplify( result );
+                    break;
+                }
+                case smtrat::CR_NEQ:
+                {
+                    result.push_back( ConstraintVector() );
+                    const ex& factorization = _constraint->factorization();
+                    for( GiNaC::const_iterator factor = factorization.begin(); factor != factorization.end(); ++factor )
+                    {
+                        const smtrat::Constraint* cons;
+                        if( is_exactly_a<power>( *factor ) )
+                        {
+                            cons = smtrat::Formula::newConstraint( *factor->begin(), smtrat::CR_NEQ, _constraint->variables() );
+                        }
+                        else
+                        {
+                            cons = smtrat::Formula::newConstraint( *factor, smtrat::CR_NEQ, _constraint->variables() );
+                        }
+                        result.back().push_back( cons );
+                    }
+                    simplify( result );
                     break;
                 }
                 default:
                 {
-                    if( !_onlyEquations )
+                    if( !_onlyNeq )
                     {
                         result = getSignCombinations( _constraint );
                         simplify( result );
