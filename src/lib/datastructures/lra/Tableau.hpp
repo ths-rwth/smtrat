@@ -415,7 +415,9 @@ namespace smtrat
                 bool isDefining( unsigned, std::vector<unsigned>&, std::vector<T>&, T& ) const;
                 void invertColumn(unsigned);
                 void addColumns(unsigned,unsigned,T);
+                void multiplyRow(unsigned,T);
                 std::vector<int> calculate_hermite_normalform();
+                void invert_HNF_Matrix(std::vector<int>&);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
@@ -2096,9 +2098,15 @@ namespace smtrat
         template<class T>
         bool Tableau<T>::isDefining( unsigned row_index, std::vector<unsigned>& _variables, std::vector<T>& _coefficients, T& _lcmOfCoeffDenoms ) const
         {
+            /*
+             * Check if the row with index row_index is a defining constraint.
+             */
             const Variable<T>& basic_var = *mRows.at(row_index).mName;
             if( basic_var.infimum() == basic_var.assignment() || basic_var.supremum() == basic_var.assignment() )
             {
+                /*
+                 * The row represents a DC. Collect the nonbasics and the referring coefficients.
+                 */
                 Iterator row_iterator = Iterator( mRows.at(row_index).mStartEntry, mpEntries );
                 while( true )
                 {
@@ -2121,40 +2129,47 @@ namespace smtrat
         
         template<class T>
         void Tableau<T>::invertColumn(unsigned column_index)
-        {   
-        Iterator column_iterator = Iterator(mColumns.at(column_index).mStartEntry, mpEntries);   
-        while(true)
-        {            
-            const T content = (*mpEntries)[column_iterator.entryID()].content();
-            (*mpEntries)[column_iterator.entryID()].rContent() = (-1)*(((*mpEntries)[column_iterator.entryID()].rContent()).toGinacNumeric());
-            if(!column_iterator.columnBegin())
+        {
+            /*
+             * Multiply all entries in the column with index column_index by -1,
+             */    
+            Iterator column_iterator = Iterator(mColumns.at(column_index).mStartEntry, mpEntries);   
+            while(true)
             {
-                column_iterator.up();            
-            } 
-            else 
-            {
-                break;
-            }
-        }        
+                const T content = (*mpEntries)[column_iterator.entryID()].content();
+                (*mpEntries)[column_iterator.entryID()].rContent() = (-1)*(((*mpEntries)[column_iterator.entryID()].rContent()).toGinacNumeric());
+                if(!column_iterator.columnBegin())
+                {
+                    column_iterator.up();            
+                } 
+                else 
+                {
+                    break;
+                }
+            }        
         }
         
         template<class T>
         void Tableau<T>::addColumns(unsigned columnA_index,unsigned columnB_index,T multiple)
-        {
-        print();    
+        {  
+            /*
+             * Add the column with index columnB_index multplied by multiple to the column with index columnA_index. 
+             */
            Iterator columnA_iterator = Iterator(mColumns.at(columnA_index).mStartEntry, mpEntries);
            Iterator columnB_iterator = Iterator(mColumns.at(columnB_index).mStartEntry, mpEntries);
                 
            while(true)
            {
-            // Make columnA_iterator and columnB_iterator neighbors
+              /* 
+               * Make columnA_iterator and columnB_iterator neighbors
+               */ 
               while((*columnA_iterator).rowNumber() > (*columnB_iterator).rowNumber())
               {
                   columnA_iterator.up();
               }    
             
            if((*columnA_iterator).rowNumber() == (*columnB_iterator).rowNumber())
-           {
+           {               
               T content = T(((*columnA_iterator).content().toGinacNumeric())+((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric())));// + (((*columnB_iterator).content).toGinacNumeric())*(multiple.toGinacNumeric());  
               if(content == 0)
               {
@@ -2215,7 +2230,7 @@ namespace smtrat
                           (*mpEntries)[entryID].setRight(ID2_to_be_Fixed);
                       }    
                 }       
-          }
+           }
            if(!columnB_iterator.columnBegin())
            {
                columnB_iterator.up();
@@ -2225,25 +2240,45 @@ namespace smtrat
                break;
            }    
            }
-           print();
+         }
+        
+        template<class T> 
+        void Tableau<T>::multiplyRow(unsigned row_index,T multiple)
+        {
+            /* 
+             * Multiply the row with index row_index by multiple.
+             */             
+            Iterator row_iterator = Iterator(mRows.at(row_index).mStartEntry, mpEntries);
+            while(true)
+            { 
+                T content = T(((*row_iterator).content().toGinacNumeric())*(multiple.toGinacNumeric()));
+                (*row_iterator).rContent() = content;
+                if(!row_iterator.rowEnd())
+                {
+                    row_iterator.right();
+                }
+                else
+                {
+                    break;
+                }
+            }
         }
         
         template<class T> 
         std::vector<int> Tableau<T>::calculate_hermite_normalform()
         {
-        std::vector<int> diagonals = std::vector<int>();  
-        
+        std::vector<int> diagonals = std::vector<int>();          
         for(unsigned i=0;i<mColumns.size();i++)
-            diagonals.push_back(-1);           
-        
-        Iterator row_iterator;
-        bool first_free=true,first_loop,just_deleted = false;
-        
+        {
+            diagonals.push_back(-1);
+        }       
+        Iterator row_iterator = Iterator(mRows.at(0).mStartEntry, mpEntries);;
+        bool first_free=true,first_loop,just_deleted = false;        
         for(unsigned i=0;i<mRows.size();i++)
         {
             int elim_pos=-1,added_pos=-1;
             EntryID added_entry,elim_entry;
-            T elim_content, added_content,diag_content;     
+            T elim_content, added_content;     
             row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
             unsigned number_of_entries = mRows.at(i).mSize;
             first_loop = true;
@@ -2253,10 +2288,10 @@ namespace smtrat
                     row_iterator = Iterator(added_entry, mpEntries);
                 else if (!first_loop)
                 {
-                    if((*mpEntries)[added_entry].columnNumber() > (*mpEntries)[elim_entry])
-                        row_iterator = Iterator(elim_entry);
+                    if((*mpEntries)[added_entry].columnNumber() > (*mpEntries)[elim_entry].columnNumber())
+                        row_iterator = Iterator(elim_entry,mpEntries);
                     else
-                        row_iterator = Iterator(added_entry);                        
+                        row_iterator = Iterator(added_entry,mpEntries);                        
                 }                
                     while(elim_pos == added_pos)
                     {
@@ -2295,7 +2330,7 @@ namespace smtrat
                     if(elim_pos == added_pos)
                         row_iterator.right();                    
                     }
-                if(elim_content % added_content == 0)
+                if(mod(( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() ) ) ) , cln::floor1( cln::the<cln::cl_RA>( added_content.toCLN() ) ) ) == 0)
                 {
                     just_deleted = true;
                     first_free = true;  
@@ -2308,27 +2343,51 @@ namespace smtrat
                         added_pos = elim_pos;
                      else
                         elim_pos = added_pos;
-                }     
-                addColumns(elim_pos,added_pos,(-1)*floor(elim_content/added_content)*added_content);
+                }  
+                T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
+                addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
                 number_of_entries = mRows.at(i).mSize; 
                 first_loop = false;
                 }
             if(first_loop)
-                added_pos = (*mpEntries)[row_iterator.entryID()].columnNumber();                
+            {
+                added_pos = (*mpEntries)[row_iterator.entryID()].columnNumber();     
+            }
             diagonals.push_back(added_pos);
-            // Normalize Row
+            /*
+             *  Normalize Row
+             */
             row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
-            while(!row_iterator.rowEnd())
+            while(true)
             {
                 if(row_iterator.entryID() != added_entry && (*mpEntries)[added_entry].content() <= (*mpEntries)[row_iterator.entryID()].content())
-                    addColumn((*mpEntries)[row_iterator.entryID()].columnNumber(),(*mpEntries)[added_entry].columnNumber(),
-                             (-1)*(floor((*mpEntries)[row_iterator.entryID()].content()/(*mpEntries)[added_entry].content())
-                             +(*mpEntries)[row_iterator.entryID()].content() % (*mpEntries)[added_entry].content()));
-            row_iterator.right();    
+                {
+                    T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( (*row_iterator).content().toCLN() / added_content.toCLN() ) ) );
+                    addColumns((*mpEntries)[row_iterator.entryID()].columnNumber(),
+                              (*mpEntries)[added_entry].columnNumber(),
+                              (-1)*(floor_value));                    
+                }
+                if(!row_iterator.rowEnd())
+                {
+                    row_iterator.right(); 
+                }
+                else
+                {
+                    break;
+                }
             }
         }
         return diagonals;    
-        }        
+        }   
+        
+        template<class T> 
+        void Tableau<T>::invert_HNF_Matrix(std::vector<int>& diagonal_positions)
+        {
+            for(unsigned i=mRows.size()-1;i>=0;i--)
+            {
+                
+            }
+        }
         #endif
         
         #ifdef LRA_GOMORY_CUTS
