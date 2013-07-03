@@ -792,7 +792,7 @@ namespace smtrat
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         }
         #endif
-        if( !generatedTestCandidateBeingASolution )
+        if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
         {
             // Create state ( Conditions, [x -> -infinity]):
             if( (*_currentState).addChild( _eliminationVar, sym, ST_MINUS_INFINITY, oConditions ) )
@@ -949,7 +949,9 @@ namespace smtrat
                     _currentState->rMarkedAsDeleted() = true;
                     _currentState->rFather().rToHighDegree() = true;
                     insertDTsinRanking( _currentState->pFather() );
-                    cleanResultsOfThisMethod = true;
+                    // TODO: this should be activated, but produces a segmentation fault then;
+                    //       now it produces memory leaks instead
+//                    cleanResultsOfThisMethod = true;
                 }
             }
             #ifdef VS_DEBUG

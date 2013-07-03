@@ -2575,6 +2575,7 @@ namespace vs
                     ConditionSetSet conflicts = ConditionSetSet();
                     conflicts.insert( origins );
                     addConflictSet( NULL, conflicts );
+                    rInconsistent() = true;
                     #ifdef VS_DEBUG_ROOTS_CHECK
                     cout << "  -> false (1)" << endl;
                     #endif
@@ -2602,9 +2603,13 @@ namespace vs
         bool constraintInconsistent = false;
         if( cons.relation() == smtrat::CR_EQ )
             constraintInconsistent = true;
-        else if( solutionSpace.right() > 0 && (cons.relation() == smtrat::CR_LESS || cons.relation() == smtrat::CR_LEQ) )
+        else if( solutionSpace.left() > 0 && cons.relation() == smtrat::CR_LEQ )
             constraintInconsistent = true;
-        else if( solutionSpace.left() < 0 && (cons.relation() == smtrat::CR_GREATER || cons.relation() == smtrat::CR_GEQ) )
+        else if( solutionSpace.right() < 0 && cons.relation() == smtrat::CR_GEQ )
+            constraintInconsistent = true;
+        else if( solutionSpace.left() >= 0 && cons.relation() == smtrat::CR_LESS )
+            constraintInconsistent = true;
+        else if( solutionSpace.right() <= 0 && cons.relation() == smtrat::CR_GREATER )
             constraintInconsistent = true;
         ConditionSet origins = ConditionSet();
         origins.insert( _condition );
