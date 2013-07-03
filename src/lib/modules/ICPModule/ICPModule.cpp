@@ -243,7 +243,7 @@ namespace smtrat
                     (*candidateIt)->print();
 #endif
                     // try to insert new icpVariable - if already existing, only a candidate is added, else a new icpVariable is created.
-                    std::pair<std::map<string, icp::IcpVariable>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*varIt).second).get_name(), icp::IcpVariable(ex_to<symbol>((*varIt).second), !( (*candidateIt)->lhs() == ex_to<symbol>((*varIt).second) ) , *candidateIt, mpPassedFormula->end())));
+                    std::pair<std::map<string, icp::IcpVariable>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*varIt).second).get_name(), icp::IcpVariable(ex_to<symbol>((*varIt).second), !( (*candidateIt)->lhs() == ex_to<symbol>((*varIt).second) ) , *candidateIt)));
                     
                     if (!added.second)
                     {
@@ -268,7 +268,7 @@ namespace smtrat
                 
                 // try to insert new icpVariable -> is original!
                 symbol tmpVar = ex_to<symbol>( (*(*_formula)->pConstraint()->variables().begin()).second );
-                mVariables.insert(std::make_pair(tmpVar.get_name(), icp::IcpVariable(tmpVar, true, mpPassedFormula->end())));
+                mVariables.insert(std::make_pair(tmpVar.get_name(), icp::IcpVariable(tmpVar, true)));
                 
 #ifdef ICPMODULE_DEBUG
                 cout << "[mLRA] Assert bound constraint: ";
@@ -392,7 +392,7 @@ namespace smtrat
                    
                    // try to add icpVariable - if already existing, only add the created candidate, else create new icpVariable
                    const std::string name = (*variableIt).first;
-                   std::pair<std::map<string, icp::IcpVariable>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*variableIt).second).get_name(), icp::IcpVariable(ex_to<symbol>((*variableIt).second), ( name != newReal.first ), newCandidate, mpPassedFormula->end() )));
+                   std::pair<std::map<string, icp::IcpVariable>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*variableIt).second).get_name(), icp::IcpVariable(ex_to<symbol>((*variableIt).second), ( name != newReal.first ), newCandidate )));
                    if(!added.second)
                    {
                        (*added.first).second.addCandidate(newCandidate);
@@ -401,7 +401,7 @@ namespace smtrat
                    // update affectedCandidates
                    for ( auto varIt = variables.begin(); varIt != variables.end(); ++varIt )
                    {
-                       std::pair<std::map<string, icp::IcpVariable>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*varIt).second).get_name(), icp::IcpVariable(ex_to<symbol>((*varIt).second), (*_formula)->pConstraint()->hasVariable((*varIt).first), newCandidate, mpPassedFormula->end() )));
+                       std::pair<std::map<string, icp::IcpVariable>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*varIt).second).get_name(), icp::IcpVariable(ex_to<symbol>((*varIt).second), (*_formula)->pConstraint()->hasVariable((*varIt).first), newCandidate )));
                        if(!added.second)
                        {
                            (*added.first).second.addCandidate(newCandidate);
@@ -1164,7 +1164,6 @@ namespace smtrat
                         writeBox();
 #endif
                         Answer a = runBackends();
-                        
                         mBackendCalled = true;
 #ifdef ICPMODULE_DEBUG
                         cout << "[ICP] Done running backends:" << a << endl;
@@ -2659,7 +2658,7 @@ namespace smtrat
                     _basis->parent()->addReasons((*reasonIt).first, (*reasonIt).second);
                 }
             }
-            _basis->parent()->removeLeftChild();
+
             return _basis->parent()->right();
         }
         else // isRight
@@ -2706,10 +2705,11 @@ namespace smtrat
         }
         // set actual node as selection
         mHistoryActual = _selection;
-        if( !mHistoryActual->isLeaf() )
+        delete mHistoryActual->left();
+        delete mHistoryActual->right();
+        if (mHistoryActual->parent() != NULL )
         {
-            mHistoryActual->removeLeftChild();
-            mHistoryActual->removeRightChild();
+            mHistoryActual->parent()->removeLeftChild();
         }
     }
 
@@ -2858,20 +2858,13 @@ namespace smtrat
                         std::set<const Formula*> emptyTmpSet = std::set<const Formula*>();
                         origins.insert(origins.begin(), emptyTmpSet);
 
-                        if ( (*icpVar).second.externalLeftBound() != mpPassedFormula->end() )
+                        if ( (*icpVar).second.isExternalBoundsSet() )
                         {
-                            Module::removeSubformula((*icpVar).second.externalLeftBound());
                             removeSubformulaFromPassedFormula((*icpVar).second.externalLeftBound());
                         }
-                        Module::inform(leftTmp);
                         addSubformulaToPassedFormula( leftBound, origins );
-                        Module::assertSubformula(mpPassedFormula->last());
                         (*icpVar).second.setExternalLeftBound(mpPassedFormula->last());
                         newAdded = true;
-                    }
-                    else
-                    {
-                        (*icpVar).second.setExternalLeftBound(mpPassedFormula->end());
                     }
 
                     // right:
@@ -2893,30 +2886,21 @@ namespace smtrat
                     }
                     if ( rightTmp != NULL )
                     {
+
                         Formula* rightBound = new Formula(rightTmp);
                         vec_set_const_pFormula origins = vec_set_const_pFormula();
                         std::set<const Formula*> emptyTmpSet = std::set<const Formula*>();
                         origins.insert(origins.begin(), emptyTmpSet);
-                        
-                        if ( (*icpVar).second.externalRightBound() != mpPassedFormula->end() )
+
+                        if ( (*icpVar).second.isExternalBoundsSet() )
                         {
-                            Module::removeSubformula((*icpVar).second.externalRightBound());
                             removeSubformulaFromPassedFormula((*icpVar).second.externalRightBound());
                         }
-                        Module::inform(rightTmp);
                         addSubformulaToPassedFormula( rightBound , origins);
-                        Module::assertSubformula(mpPassedFormula->last());
                         (*icpVar).second.setExternalRightBound(mpPassedFormula->last());
                         newAdded = true;
                     }
-                    else
-                    {
-                        (*icpVar).second.setExternalRightBound(mpPassedFormula->end());
-                    }
-                    if ( rightTmp != NULL && leftTmp != NULL )
-                        (*icpVar).second.externalBoundsSet();
-                    else
-                        (*icpVar).second.externalBoundsSet(false);
+                    (*icpVar).second.externalBoundsSet();
                 }
             }
         }
@@ -3021,6 +3005,8 @@ namespace smtrat
 #endif
         if( boxCheck != True )
         {
+            mLRA.printInfeasibleSubsets();
+            
             vec_set_const_pFormula tmpSet = mLRA.infeasibleSubsets();
             for ( auto infSetIt = tmpSet.begin(); infSetIt != tmpSet.end(); ++infSetIt )
             {
@@ -3125,10 +3111,6 @@ namespace smtrat
                             cout << endl;
         #endif
                         }
-                        else
-                        {
-                            (*pos).second.setInternalLeftBound(NULL);
-                        }
 
                         if ( boundaries.second != NULL )
                         {
@@ -3140,10 +3122,6 @@ namespace smtrat
                             rightBound->print();
                             cout << endl;
         #endif
-                        }
-                        else
-                        {
-                            (*pos).second.setInternalRightBound(NULL);
                         }
 
                         if (boundaries.second != NULL && boundaries.first != NULL)

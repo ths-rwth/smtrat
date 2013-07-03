@@ -422,35 +422,48 @@ namespace smtrat
 
                             #ifdef LRA_CUTS_FROM_PROOFS
                             //unsigned a=0,b=1;
+                            //mTableau.multiplyRow(b,Numeric(2));
                             //mTableau.addColumns(a,b,Numeric(0.5));
+                            //mTableau.calculate_hermite_normalform();
                             lra::Tableau<lra::Numeric> dc_Tableau = lra::Tableau<lra::Numeric>(mpPassedFormula->end());
                             for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
                             {
-                                mTableau.newNonbasicVariable( new ex( nbVar->mName->expression() ) );
-                            }
-                            lra::Numeric lcmOfCoeffDenoms = 1;
+                                dc_Tableau.newNonbasicVariable( new ex( nbVar->mName->expression() ) );
+                            }                            
+                            mTableau.print();
                             unsigned numRows = mTableau.rows().size();
-                            for( unsigned pos = 0; pos < numRows; ++pos )
+                            unsigned dc_count = 0;
+                            vector<unsigned> dc_positions = vector<unsigned>();
+                            for( unsigned i = 0; i < numRows; ++i )
                             {
                                 vector<unsigned> non_basic_vars_positions = vector<unsigned>();
                                 vector<lra::Numeric> coefficients = vector<lra::Numeric>();
-                                if( dc_Tableau.isDefining( pos, non_basic_vars_positions, coefficients, lcmOfCoeffDenoms ) )
+                                lra::Numeric lcmOfCoeffDenoms = 1;
+                                if( dc_Tableau.isDefining( i, non_basic_vars_positions, coefficients, lcmOfCoeffDenoms ) )
                                 {
+                                    dc_count++;
+                                    dc_positions.push_back(i);
                                     assert( !non_basic_vars_positions.empty() );
-                                    ex* help = new ex(mTableau.rows().at(pos).mName->expression());
+                                    ex* help = new ex(mTableau.rows().at(i).mName->expression());
                                     vector< lra::Variable<lra::Numeric>* > non_basic_vars = vector< lra::Variable<lra::Numeric>* >();
                                     auto pos = non_basic_vars_positions.begin();
                                     for( auto column = dc_Tableau.columns().begin(); column != dc_Tableau.columns().end(); ++column )
                                     {
                                         assert( pos != non_basic_vars_positions.end() );
-                                        if( column->mName->position() == *pos )
+                                        if( dc_Tableau.columns().at(i).mName->position() == *pos )
                                         {
-                                            non_basic_vars.push_back( column->mName );
+                                            non_basic_vars.push_back( dc_Tableau.columns().at(i).mName );
                                             ++pos;
                                         }
                                     }
                                     dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
+                                    dc_Tableau.multiplyRow(dc_count-1,lcmOfCoeffDenoms);                                    
                                 }
+                                dc_Tableau.print();
+                                vector<int> diagonals = vector<int>();
+                                diagonals = dc_Tableau.calculate_hermite_normalform();
+                                vector<int>& diagonals_ref = diagonals;
+                                dc_Tableau.invert_HNF_Matrix(diagonals_ref);
                             }
                             #endif
                             
