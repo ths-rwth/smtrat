@@ -199,7 +199,7 @@ namespace smtrat
              * Initiates weights for contractions
              */
             void initiateWeights();
-
+            
             /**
              * Printout of actual tables of linear constraints, active linear
              * constraints, nonlinear constraints and active nonlinear constraints.
