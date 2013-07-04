@@ -94,7 +94,11 @@ protected:
     std::map<unsigned, std::pair<Term, GiNaCRA::BitVector> > mRewriteRules;
 
     std::map<unsigned, unsigned> mAdditionalVarMap;
-
+    
+    /** A workaround to associate equalities in the passed formula originating from the gb
+     * (in contrast to those which originate from simplified formulae)
+     */
+    std::set<Formula*> mGbEqualities;
 
 public:
     GroebnerModule( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );

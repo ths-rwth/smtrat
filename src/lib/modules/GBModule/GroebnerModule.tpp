@@ -347,7 +347,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
             for( Formula::iterator i = mpPassedFormula->begin( ); i != mpPassedFormula->end( ); )
             {
                 assert( (*i)->getType( ) == REALCONSTRAINT );
-                if( (*i)->constraint( ).relation( ) == CR_EQ )
+                if( mGbEqualities.count(*i) == 1 )
                 {
                     i = super::removeSubformulaFromPassedFormula( i );
                 }
@@ -356,7 +356,7 @@ Answer GroebnerModule<Settings>::isConsistent( )
                     ++i;
                 }
             }
-
+            mGbEqualities.clear();
             passGB( );
         }
     }
@@ -951,6 +951,7 @@ void GroebnerModule<Settings>::passGB( )
         // TODO: replace "Formula::constraintPool().variables()" by a smaller approximations
         // of the variables contained in "simplIt->toEx( )"
         addSubformulaToPassedFormula( new Formula( Formula::newConstraint( simplIt->toEx( ), CR_EQ, Formula::constraintPool().realVariables() ) ), originals );
+        mGbEqualities.insert(mpPassedFormula->back());
     }
 }
 
