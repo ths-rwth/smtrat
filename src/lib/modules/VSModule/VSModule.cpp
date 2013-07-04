@@ -930,36 +930,6 @@ namespace smtrat
         {
             _currentState->rFather().addConflicts( _currentState->pSubstitution(), conflictSet );
             _currentState->rInconsistent() = true;
-            cleanResultsOfThisMethod = true;
-        }
-        else
-        {
-            if( !_currentState->isInconsistent() )
-            {
-                if( allSubstitutionsApplied )
-                {
-                    disjunctionsOfCondConj.push_back( DisjunctionOfConditionConjunctions() );
-                    disjunctionsOfCondConj.back().push_back( oldConditions );
-                    _currentState->addSubstitutionResults( disjunctionsOfCondConj );
-                    insertDTinRanking( _currentState );
-                }
-                else
-                {
-                    eraseDTsOfRanking( _currentState->rFather() );
-                    _currentState->rMarkedAsDeleted() = true;
-                    _currentState->rFather().rToHighDegree() = true;
-                    insertDTsinRanking( _currentState->pFather() );
-                    // TODO: this should be activated, but produces a segmentation fault then;
-                    //       now it produces memory leaks instead
-//                    cleanResultsOfThisMethod = true;
-                }
-            }
-            #ifdef VS_DEBUG
-            _currentState->print( "   ", cout );
-            #endif
-        }
-        if( cleanResultsOfThisMethod )
-        {
             _currentState->resetConflictSets();
             while( !_currentState->children().empty() )
             {
@@ -977,6 +947,52 @@ namespace smtrat
                 delete pCond;
                 pCond = NULL;
             }
+            cleanResultsOfThisMethod = true;
+        }
+        else
+        {
+            if( !_currentState->isInconsistent() )
+            {
+                if( allSubstitutionsApplied )
+                {
+                    disjunctionsOfCondConj.push_back( DisjunctionOfConditionConjunctions() );
+                    disjunctionsOfCondConj.back().push_back( oldConditions );
+                    _currentState->addSubstitutionResults( disjunctionsOfCondConj );
+                    insertDTinRanking( _currentState );
+                }
+                else
+                {
+                    eraseDTsOfRanking( _currentState->rFather() );
+                    _currentState->resetConflictSets();
+                    while( !_currentState->children().empty() )
+                    {
+                        State* toDelete = _currentState->rChildren().back();
+                        _currentState->rChildren().pop_back();
+                        delete toDelete;
+                    }
+                    while( !_currentState->conditions().empty() )
+                    {
+                        const vs::Condition* pCond = _currentState->rConditions().back();
+                        _currentState->rConditions().pop_back();
+                        #ifdef SMTRAT_VS_VARIABLEBOUNDS
+                        _currentState->rVariableBounds().removeBound( pCond->pConstraint(), pCond );
+                        #endif
+                        delete pCond;
+                        pCond = NULL;
+                    }
+                    cleanResultsOfThisMethod = true;
+                    _currentState->rMarkedAsDeleted() = true;
+                    _currentState->rFather().rToHighDegree() = true;
+                    insertDTsinRanking( _currentState->pFather() );
+                    cleanResultsOfThisMethod = true;
+                }
+            }
+            #ifdef VS_DEBUG
+            _currentState->print( "   ", cout );
+            #endif
+        }
+        if( cleanResultsOfThisMethod )
+        {
             while( !oldConditions.empty() )
             {
                 const vs::Condition* rpCond = oldConditions.back();
