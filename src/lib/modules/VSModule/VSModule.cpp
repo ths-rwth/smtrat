@@ -792,7 +792,7 @@ namespace smtrat
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         }
         #endif
-        if( !generatedTestCandidateBeingASolution )
+        if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
         {
             // Create state ( Conditions, [x -> -infinity]):
             if( (*_currentState).addChild( _eliminationVar, sym, ST_MINUS_INFINITY, oConditions ) )
@@ -930,34 +930,6 @@ namespace smtrat
         {
             _currentState->rFather().addConflicts( _currentState->pSubstitution(), conflictSet );
             _currentState->rInconsistent() = true;
-            cleanResultsOfThisMethod = true;
-        }
-        else
-        {
-            if( !_currentState->isInconsistent() )
-            {
-                if( allSubstitutionsApplied )
-                {
-                    disjunctionsOfCondConj.push_back( DisjunctionOfConditionConjunctions() );
-                    disjunctionsOfCondConj.back().push_back( oldConditions );
-                    _currentState->addSubstitutionResults( disjunctionsOfCondConj );
-                    insertDTinRanking( _currentState );
-                }
-                else
-                {
-                    eraseDTsOfRanking( _currentState->rFather() );
-                    _currentState->rMarkedAsDeleted() = true;
-                    _currentState->rFather().rToHighDegree() = true;
-                    insertDTsinRanking( _currentState->pFather() );
-                    cleanResultsOfThisMethod = true;
-                }
-            }
-            #ifdef VS_DEBUG
-            _currentState->print( "   ", cout );
-            #endif
-        }
-        if( cleanResultsOfThisMethod )
-        {
             _currentState->resetConflictSets();
             while( !_currentState->children().empty() )
             {
@@ -975,6 +947,52 @@ namespace smtrat
                 delete pCond;
                 pCond = NULL;
             }
+            cleanResultsOfThisMethod = true;
+        }
+        else
+        {
+            if( !_currentState->isInconsistent() )
+            {
+                if( allSubstitutionsApplied )
+                {
+                    disjunctionsOfCondConj.push_back( DisjunctionOfConditionConjunctions() );
+                    disjunctionsOfCondConj.back().push_back( oldConditions );
+                    _currentState->addSubstitutionResults( disjunctionsOfCondConj );
+                    insertDTinRanking( _currentState );
+                }
+                else
+                {
+                    eraseDTsOfRanking( _currentState->rFather() );
+                    _currentState->resetConflictSets();
+                    while( !_currentState->children().empty() )
+                    {
+                        State* toDelete = _currentState->rChildren().back();
+                        _currentState->rChildren().pop_back();
+                        delete toDelete;
+                    }
+                    while( !_currentState->conditions().empty() )
+                    {
+                        const vs::Condition* pCond = _currentState->rConditions().back();
+                        _currentState->rConditions().pop_back();
+                        #ifdef SMTRAT_VS_VARIABLEBOUNDS
+                        _currentState->rVariableBounds().removeBound( pCond->pConstraint(), pCond );
+                        #endif
+                        delete pCond;
+                        pCond = NULL;
+                    }
+                    cleanResultsOfThisMethod = true;
+                    _currentState->rMarkedAsDeleted() = true;
+                    _currentState->rFather().rToHighDegree() = true;
+                    insertDTsinRanking( _currentState->pFather() );
+                    cleanResultsOfThisMethod = true;
+                }
+            }
+            #ifdef VS_DEBUG
+            _currentState->print( "   ", cout );
+            #endif
+        }
+        if( cleanResultsOfThisMethod )
+        {
             while( !oldConditions.empty() )
             {
                 const vs::Condition* rpCond = oldConditions.back();

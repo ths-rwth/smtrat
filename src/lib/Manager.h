@@ -55,7 +55,7 @@ namespace smtrat
         friend class Module;
         private:
 
-            ///
+            /// a vector of flags, which indicate that an answer has been found of an antecessor module of the primary module
             std::vector< std::atomic_bool* > mPrimaryBackendFoundAnswer;
             /// the constraints so far passed to the primary backend
             Formula* mpPassedFormula;
@@ -72,21 +72,15 @@ namespace smtrat
             /// primary strategy
             StrategyGraph mStrategyGraph;
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
-            ///
+            /// contains all threads to assign jobs to
             ThreadPool* mpThreadPool;
-            ///
+            /// the number of branches occurring in the strategy (the same as the number of leaves)
             unsigned mNumberOfBranches;
-            ///
+            /// the number of cores of the system we run on
             unsigned mNumberOfCores;
-            ///
+            /// a flag indicating whether we might run in parallel eventually
             bool mRunsParallel;
-            ///
-            std::atomic_bool mInterruptibleBackends;
-            ///
-            std::mutex mInterruptionMutex;
-            ///
-            std::vector<bool> mInterruptionFlags;
-            ///
+            /// a mutex for exclusive access of the backends to members of this state
             mutable std::mutex mBackendsMutex;
 
             void initialize();
@@ -183,11 +177,6 @@ namespace smtrat
             {
                 return mRunsParallel;
             }
-
-            const bool interruptibleBackends() const
-            {
-                return mInterruptibleBackends;
-            }
             #endif
 
             void printModel( std::ostream& ) const;
@@ -198,5 +187,4 @@ namespace smtrat
             #endif
     };
 }    // namespace smtrat
-
 #endif   /** SMTRAT_MANAGER_H */

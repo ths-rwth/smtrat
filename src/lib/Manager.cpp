@@ -67,12 +67,9 @@ namespace smtrat
         #endif
     {
         mpModuleFactories = new map<const ModuleType, ModuleFactory*>();
-
         // inform it about all constraints
         for( fcs_const_iterator constraint = Formula::constraintPool().begin(); constraint != Formula::constraintPool().end(); ++constraint )
-        {
             mpPrimaryBackend->inform( (*constraint) );
-        }
     }
 
     /**
@@ -102,9 +99,7 @@ namespace smtrat
         }
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         if( mpThreadPool!=NULL )
-        {
             delete mpThreadPool;
-        }
         #endif
     }
 
@@ -119,20 +114,15 @@ namespace smtrat
     void Manager::initialize()
     {
         mNumberOfBranches = mStrategyGraph.numberOfBranches();
-        if( mNumberOfBranches>1 )
+        if( mNumberOfBranches > 1 )
         {
             mNumberOfCores = std::thread::hardware_concurrency();
-            if( mNumberOfCores>1 )
+            if( mNumberOfCores > 1 )
             {
                 mStrategyGraph.setThreadAndBranchIds();
-//mStrategyGraph.tmpPrint();
-//std::this_thread::sleep_for(std::chrono::seconds(29));
+//                mStrategyGraph.tmpPrint();
+//                std::this_thread::sleep_for(std::chrono::seconds(29));
                 mRunsParallel = true;
-                mInterruptibleBackends = true;
-                if( mInterruptibleBackends )
-                {
-                    mInterruptionFlags = vector<bool>( mNumberOfBranches, false );
-                }
                 mpThreadPool = new ThreadPool( mNumberOfBranches, mNumberOfCores );
             }
         }
@@ -154,8 +144,9 @@ namespace smtrat
             for( Module::Model::const_iterator assignment = mpPrimaryBackend->model().begin(); assignment != mpPrimaryBackend->model().end(); ++assignment )
             {
                 _out << "  (define-fun " << assignment->first << "()" << ;
-                _out << "  " << assignment->second << endl;
+                _out << "  " << assignment->second << ")" << endl;
             }
+            _out << ")"
             #else
             _out << "Model:" << endl;
             for( Module::Model::const_iterator assignment = mpPrimaryBackend->model().begin(); assignment != mpPrimaryBackend->model().end(); ++assignment )
@@ -202,23 +193,19 @@ namespace smtrat
         for( auto iter = backendValues.begin(); iter != backendValues.end(); ++iter )
         {
             assert( iter->second != _requiredBy->type() );
-            /*
-             * If for this module type an instance already exists, we just add it to the modules to return.
-             */
+            // If for this module type an instance already exists, we just add it to the modules to return.
             vector<Module*>::iterator backend = allBackends.begin();
             while( backend != allBackends.end() )
             {
                 if( (*backend)->threadPriority() == iter->first )
                 {
-                    // the backend already exists
+                    // The backend already exists.
                     backends.push_back( *backend );
                     break;
                 }
                 ++backend;
             }
-            /*
-             * Otherwise, we create a new instance of this module type and add it to the modules to return.
-             */
+            // Otherwise, we create a new instance of this module type and add it to the modules to return.
             if( backend == allBackends.end() )
             {
                 auto backendFactory = mpModuleFactories->find( iter->second );
@@ -231,11 +218,10 @@ namespace smtrat
                 pBackend->setThreadPriority( iter->first );
                 allBackends.push_back( pBackend );
                 backends.push_back( pBackend );
-                // inform it about all constraints
-                for( std::list<const Constraint* >::const_iterator constraint = _requiredBy->constraintsToInform().begin();
-                        constraint != _requiredBy->constraintsToInform().end(); ++constraint )
+                // Inform it about all constraints.
+                for( auto cons = _requiredBy->constraintsToInform().begin(); cons != _requiredBy->constraintsToInform().end(); ++cons )
                 {
-                    pBackend->inform( *constraint );
+                    pBackend->inform( *cons );
                 }
             }
         }

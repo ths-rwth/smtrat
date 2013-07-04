@@ -51,27 +51,6 @@ namespace smtrat
     class ThreadPool
     {
         private:
-            class JoinThreads
-            {
-                private:
-                    std::vector<std::thread*>& mrJoinThreads;
-
-                public:
-                    explicit JoinThreads( std::vector<std::thread*>& _rThreads ):
-                        mrJoinThreads( _rThreads )
-                    {}
-
-                    ~JoinThreads()
-                    {
-                        for( unsigned i=0; i<mrJoinThreads.size(); ++i )
-                        {
-                            if( mrJoinThreads[i]->joinable() )
-                            {
-                                mrJoinThreads[i]->join();
-                            }
-                        }
-                    }
-            };
 
             class ThreadPriorityQueue
             {
@@ -82,13 +61,9 @@ namespace smtrat
                             bool operator()( const std::shared_ptr<thread_priority>& _rThreadPriority1, std::shared_ptr<thread_priority>& _rThreadPriority2 )
                             {
                                 if( (_rThreadPriority1->second)>(_rThreadPriority2->second) )
-                                {
                                     return true;
-                                }
                                 else
-                                {
                                     return false;
-                                }
                             }
                     };
 
@@ -111,9 +86,7 @@ namespace smtrat
                     bool pop( thread_priority& _rThreadPriority )
                     {
                         if( mQueue.empty() )
-                        {
                             return false;
-                        }
                         else
                         {
                             _rThreadPriority = std::move( *mQueue.top() );
@@ -128,7 +101,8 @@ namespace smtrat
                         mQueue.push( value );
                     }
             };
-
+            
+            // Members.
             std::mutex mMutex;
             std::atomic_bool mDone;
             std::atomic_bool mPossibleOversubscription;
@@ -136,19 +110,21 @@ namespace smtrat
             unsigned mNumberOfThreads;
             unsigned mNumberOfRunningThreads;
             std::vector<std::thread*> mThreads;
-//            JoinThreads mJoiner;
             std::vector<std::condition_variable> mConditionVariables;
             // Used as protection against spurious wake ups of condition variables
             std::vector<bool> mOversubscriptionFlags;
             std::vector<packaged_task> mTasks;
             ThreadPriorityQueue mThreadPriorityQueue;
 
+            // Private methods.
             void consumeBackend( unsigned );
 
         public:
+            // Constructor and destructor.
             ThreadPool( unsigned, unsigned );
             ~ThreadPool();
 
+            // Public methods.
             void checkBackendPriority( Module* );
             std::future<Answer> submitBackend( Module* );
     };
