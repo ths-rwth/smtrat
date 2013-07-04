@@ -421,16 +421,13 @@ namespace smtrat
                             #endif 
 
                             #ifdef LRA_CUTS_FROM_PROOFS
-                            //unsigned a=0,b=1;
-                            //mTableau.multiplyRow(b,Numeric(2));
-                            //mTableau.addColumns(a,b,Numeric(0.5));
-                            //mTableau.calculate_hermite_normalform();
                             lra::Tableau<lra::Numeric> dc_Tableau = lra::Tableau<lra::Numeric>(mpPassedFormula->end());
+                            unsigned i=0;
                             for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
-                            {
-                                dc_Tableau.newNonbasicVariable( new ex( nbVar->mName->expression() ) );
+                            {                                
+                                dc_Tableau.newNonbasicVariable( new ex( mTableau.columns().at(i).mName->expression() ) );
+                                ++i;
                             }                            
-                            mTableau.print();
                             unsigned numRows = mTableau.rows().size();
                             unsigned dc_count = 0;
                             vector<unsigned> dc_positions = vector<unsigned>();
@@ -439,7 +436,7 @@ namespace smtrat
                                 vector<unsigned> non_basic_vars_positions = vector<unsigned>();
                                 vector<lra::Numeric> coefficients = vector<lra::Numeric>();
                                 lra::Numeric lcmOfCoeffDenoms = 1;
-                                if( dc_Tableau.isDefining( i, non_basic_vars_positions, coefficients, lcmOfCoeffDenoms ) )
+                                if( mTableau.isDefining( i, non_basic_vars_positions, coefficients, lcmOfCoeffDenoms ) )
                                 {
                                     dc_count++;
                                     dc_positions.push_back(i);
@@ -459,12 +456,17 @@ namespace smtrat
                                     dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
                                     dc_Tableau.multiplyRow(dc_count-1,lcmOfCoeffDenoms);                                    
                                 }
-                                dc_Tableau.print();
-                                vector<int> diagonals = vector<int>();
-                                diagonals = dc_Tableau.calculate_hermite_normalform();
-                                vector<int>& diagonals_ref = diagonals;
-                                dc_Tableau.invert_HNF_Matrix(diagonals_ref);
+                                for(auto var = coefficients.begin();var != coefficients.end();++var)
+                                    printf("%f",(*var).content().to_double());
+                            printf("S");    
                             }
+                            mTableau.print();
+                            unsigned a=0,b=2;
+                            dc_Tableau.print();
+                            vector<int> diagonals = vector<int>();
+                            // diagonals = dc_Tableau.calculate_hermite_normalform();
+                            vector<int>& diagonals_ref = diagonals;
+                            // dc_Tableau.invert_HNF_Matrix(diagonals_ref); 
                             #endif
                             
                             #ifdef LRA_BRANCH_AND_BOUND

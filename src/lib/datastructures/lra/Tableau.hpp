@@ -416,6 +416,7 @@ namespace smtrat
                 void invertColumn(unsigned);
                 void addColumns(unsigned,unsigned,T);
                 void multiplyRow(unsigned,T);
+                T Scalar_Product(Tableau<T>&,Tableau<T>&,unsigned,unsigned) const;
                 std::vector<int> calculate_hermite_normalform();
                 void invert_HNF_Matrix(std::vector<int>&);
                 #endif
@@ -2265,6 +2266,48 @@ namespace smtrat
         }
         
         template<class T> 
+        T Tableau<T>::Scalar_Product(Tableau<T>& A, Tableau<T>& B,unsigned rowA, unsigned columnB) const
+        {
+            Iterator rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry);
+            Iterator columnB_iterator = Iterator(B.mColumns.at(columnB).mStartEntry);
+            T result = T(0);
+            while(!columnB_iterator.columnBegin())
+            {
+                columnB_iterator.up();
+            }
+            while(true)
+            {
+                if((*rowA_iterator).rowNumber() == (*columnB_iterator).columnNumber())
+                {
+                result += (*rowA_iterator).rContent()*(*columnB_iterator).rContent();                
+                }
+                else if ((*rowA_iterator).rowNumber() >= (*columnB_iterator).columnNumber())
+                {
+                    while((*rowA_iterator).rowNumber() > (*columnB_iterator).columnNumber())
+                    {
+                        columnB_iterator.down();
+                    }
+                }
+                else
+                {
+                    while((*rowA_iterator).rowNumber() < (*columnB_iterator).columnNumber())
+                    {
+                        rowA_iterator.right();
+                    }                    
+                }
+                if(!rowA_iterator.rowEnd())
+                {
+                    rowA_iterator.right();
+                }
+                else
+                {
+                    break;
+                }            
+            }
+        return result;    
+        }
+        
+        template<class T> 
         std::vector<int> Tableau<T>::calculate_hermite_normalform()
         {
         std::vector<int> diagonals = std::vector<int>();          
@@ -2272,7 +2315,7 @@ namespace smtrat
         {
             diagonals.push_back(-1);
         }       
-        Iterator row_iterator = Iterator(mRows.at(0).mStartEntry, mpEntries);;
+        Iterator row_iterator = Iterator(mRows.at(0).mStartEntry, mpEntries);
         bool first_free=true,first_loop,just_deleted = false;        
         for(unsigned i=0;i<mRows.size();i++)
         {
@@ -2385,7 +2428,32 @@ namespace smtrat
         {
             for(unsigned i=mRows.size()-1;i>=0;i--)
             {
+                Iterator column_iterator = Iterator(mColumns.at(diagonal_positions.at(i)).mStartEntry, mpEntries);
                 
+                while(!column_iterator.columnBegin())
+                {
+                    T new_value = T(0);
+                    Iterator row_iterator = Iterator(mColumns.at(diagonal_positions.at(i)).mStartEntry, mpEntries);
+                    unsigned row_count = (*column_iterator).rowNumber();
+                   
+                    while((*row_iterator).rowNumber() > row_count)
+                    {
+                        row_iterator.up();
+                    }
+                    if((*row_iterator).rowNumber() == row_count)
+                    {
+                    unsigned j=i;
+                    while(diagonal_positions.at(j) != -1)
+                    {
+                        row_iterator = Iterator(mColumns.at(diagonal_positions.at(j)).mStartEntry, mpEntries);
+                        new_value = new_value - (*row_iterator).content(); 
+                        ++j;
+                    }
+                    (*row_iterator).rContent() = new_value/(*row_iterator).content();
+                    column_iterator.up();
+                    }
+                }
+                (*column_iterator).rContent() = 1/(*column_iterator).content();                
             }
         }
         #endif
