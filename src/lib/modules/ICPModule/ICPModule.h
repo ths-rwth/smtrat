@@ -194,6 +194,14 @@ namespace smtrat
              * @return true if a split has occurred
              */
             bool contraction( icp::ContractionCandidate* _selection, double& _relativeContraction );
+            
+            /**
+             * Calls the actual contraction on a separate map to check, whether contraction is possible. Returns the node, where insertion makes sense.
+             * @param _selection
+             * @param _relativeContraction
+             * @param _intervals
+             */
+            void tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, GiNaCRA::evaldoubleintervalmap _intervals );
 
             /**
              * Initiates weights for contractions
@@ -265,6 +273,20 @@ namespace smtrat
              * @param _selection the Node which contains the new context
              */
             void setBox( icp::HistoryNode* _selection );
+            
+            /**
+             * Safely removes unneeded nodes in the tree, when a new node has been set.
+             * @param _old
+             * @param _new
+             */
+            icp::HistoryNode* saveSetNode( icp::HistoryNode* _old, const icp::HistoryNode* const _new);
+            
+            /**
+             * Finds position, where to add a set of Contraction candidates into the HistoryTree and sets the actual node.
+             * @param _candidate
+             * @return 
+             */
+            icp::HistoryNode* tryToAddConstraint( ContractionCandidates _candidates, icp::HistoryNode* _node );
             
             /**
              * Fills the IcpRelevantCandidates with all nonlinear and all active linear ContractionCandidates.
