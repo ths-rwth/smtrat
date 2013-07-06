@@ -421,6 +421,10 @@ namespace smtrat
                             #endif 
 
                             #ifdef LRA_CUTS_FROM_PROOFS
+                            unsigned c=0,d=1;
+                            mTableau.print();
+                            mTableau.addColumns(c,d,Numeric(1));
+                            mTableau.print();
                             lra::Tableau<lra::Numeric> dc_Tableau = lra::Tableau<lra::Numeric>(mpPassedFormula->end());
                             unsigned i=0;
                             for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
@@ -459,13 +463,12 @@ namespace smtrat
                                     //dc_Tableau.multiplyRow(dc_count-1,lcmOfCoeffDenoms);                                    
                                 }   
                             }
-                            mTableau.print();
-                            unsigned a=1,b=3;
-                            mTableau.addColumns(a,b,a);
-                            mTableau.print();
-                            // dc_Tableau.print();
+                            //mTableau.print();
+                            unsigned a=1,b=0;
+                            //mTableau.addColumns(b,a,Numeric(1));
+                            //dc_Tableau.print();
                             //dc_Tableau.addColumns(a,b,a);
-                            // dc_Tableau.print();
+                            //dc_Tableau.print();
                             vector<int> diagonals = vector<int>();
                             //diagonals = dc_Tableau.calculate_hermite_normalform();
                             vector<int>& diagonals_ref = diagonals;
