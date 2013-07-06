@@ -443,28 +443,31 @@ namespace smtrat
                                     assert( !non_basic_vars_positions.empty() );
                                     ex* help = new ex(mTableau.rows().at(i).mName->expression());
                                     vector< lra::Variable<lra::Numeric>* > non_basic_vars = vector< lra::Variable<lra::Numeric>* >();
+                                    unsigned j=0;
                                     auto pos = non_basic_vars_positions.begin();
                                     for( auto column = dc_Tableau.columns().begin(); column != dc_Tableau.columns().end(); ++column )
                                     {
-                                        assert( pos != non_basic_vars_positions.end() );
-                                        if( dc_Tableau.columns().at(i).mName->position() == *pos )
-                                        {
-                                            non_basic_vars.push_back( dc_Tableau.columns().at(i).mName );
-                                            ++pos;
+                                        if(dc_Tableau.columns().at(j).mName->position() == *pos )
+                                        {                                                                                    
+                                            assert( pos != non_basic_vars_positions.end() );
+                                            non_basic_vars.push_back( dc_Tableau.columns().at(j).mName );
+                                            ++pos;                                            
                                         }
-                                    }
+                                    j++;    
+                                    } 
                                     dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
-                                    dc_Tableau.multiplyRow(dc_count-1,lcmOfCoeffDenoms);                                    
-                                }
-                                for(auto var = coefficients.begin();var != coefficients.end();++var)
-                                    printf("%f",(*var).content().to_double());
-                            printf("S");    
+                                    //dc_Tableau.multiplyRow(dc_count-1,lcmOfCoeffDenoms);                                    
+                                }   
                             }
                             mTableau.print();
-                            unsigned a=0,b=2;
-                            dc_Tableau.print();
+                            unsigned a=1,b=3;
+                            mTableau.addColumns(a,b,a);
+                            mTableau.print();
+                            // dc_Tableau.print();
+                            //dc_Tableau.addColumns(a,b,a);
+                            // dc_Tableau.print();
                             vector<int> diagonals = vector<int>();
-                            // diagonals = dc_Tableau.calculate_hermite_normalform();
+                            //diagonals = dc_Tableau.calculate_hermite_normalform();
                             vector<int>& diagonals_ref = diagonals;
                             // dc_Tableau.invert_HNF_Matrix(diagonals_ref); 
                             #endif
