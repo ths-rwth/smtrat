@@ -872,7 +872,7 @@ namespace smtrat
     {
         assert( variables().size() == 1 );
         assert( variables().begin()->second == var );
-        assert( lhs()-var+_bound == 0 );
+        assert( lhs()-var+_bound == 0 || lhs()+var-_bound == 0 );
         mIsNeverPositive = false;
         mIsNeverNegative = false;
         mIsNeverZero = false;
