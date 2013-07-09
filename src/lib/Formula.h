@@ -438,6 +438,11 @@ namespace smtrat
                 mpFather = NULL;
             }
 
+            static const Constraint* newBound( const GiNaC::symbol& _var, const Constraint_Relation _rel, const GiNaC::numeric& _bound )
+            {
+                return mpConstraintPool->newBound( _var, _rel, _bound );
+            }
+
             static const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
             {
                 return mpConstraintPool->newConstraint( _lhs, _rel, _variables );
