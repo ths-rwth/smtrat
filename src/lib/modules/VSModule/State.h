@@ -507,9 +507,7 @@ namespace vs
         void deleteOriginsFromConflictSets( std::set<const Condition*>&, bool );
         void deleteOriginsFromSubstitutionResults( std::set<const Condition*>& );
         void deleteConditions( std::set<const Condition*>& );
-        int addChild( const std::string&, const GiNaC::ex&, const Substitution_Type&, const ConditionSet& );
-        int addChild( const GiNaC::ex&, const smtrat::Constraint_Relation&, const std::string&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const Substitution_Type&, const GiNaC::symtab&, const ConditionSet& );
-        int addChild( const GiNaC::ex&, const smtrat::Constraint_Relation&, const GiNaC::ex&, const smtrat::Constraint_Relation&, const std::string&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const Substitution_Type&, const GiNaC::symtab&, const ConditionSet& );
+        bool addChild( const Substitution& );
         void updateValuation();
         void updateBackendCallValuation();
         void passConflictToFather( bool = false );

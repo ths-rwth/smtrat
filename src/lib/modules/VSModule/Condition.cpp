@@ -25,6 +25,8 @@
  * @version 2011-06-20
  */
 
+#define VS_PREFER_EQUATION_OVER_ALL
+
 #include "Condition.h"
 
 using namespace std;
@@ -225,7 +227,11 @@ namespace vs
                 if( allOtherMonomialsPos || allOtherMonomialsNeg ) otherMonomialsPositiveWeight = 2;
             }
             double weightFactorTmp = maximum;
+            #ifdef VS_PREFER_EQUATION_OVER_ALL
+            double result = ( (constraint().relation() == smtrat::CR_EQ || degreeWeight <= 2) ? 1 : 2);
+            #else
             double result = ( degreeWeight <= 2 ? 1 : 2);
+            #endif
             result += relationSymbolWeight/weightFactorTmp;
             weightFactorTmp *= maximum;
             result += lCoeffWeight/weightFactorTmp;
