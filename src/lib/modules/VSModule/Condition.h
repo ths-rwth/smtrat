@@ -30,8 +30,6 @@
 #ifndef SMTRAT_VS_CONDITION_H
 #define SMTRAT_VS_CONDITION_H
 
-//#define VS_ELIMINATE_MULTI_ROOTS
-
 #include <set>
 #include "../../Formula.h"
 
@@ -122,7 +120,7 @@ namespace vs
                 return *mpOriginalConditions;
             }
 
-            double valuate( const std::string&, unsigned, bool ) const;
+            double valuate( const std::string&, unsigned, bool, bool ) const;
             bool operator ==( const Condition& ) const;
             bool operator <( const Condition& ) const;
             void print( std::ostream& = std::cout ) const;

@@ -25,7 +25,6 @@
  * @version 2013-06-20
  */
 
-#include "VSModule.h"
 #include <set>
 
 using namespace std;
@@ -33,13 +32,12 @@ using namespace GiNaC;
 using namespace vs;
 
 //#define VS_DEBUG
-#define VS_ELIMINATION_WITH_FACTORIZATION
-#define VS_LOCAL_CONFLICT_SEARCH
 //#define DONT_CHECK_STRICT_INEQUALITIES
 
 namespace smtrat
 {
-    VSModule::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+    template<class Settings>
+    VSModule<Settings>::VSModule( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
         Module( _type, _formula, _conditionals, _manager ),
         mConditionsChanged( false ),
         mInconsistentConstraintAdded( false ),
@@ -47,14 +45,15 @@ namespace smtrat
         #ifdef VS_STATISTICS
         mStepCounter( 0 ),
         #endif
-        mpStateTree( new State() ),
+        mpStateTree( new State( Settings::use_variable_bounds ) ),
         mAllVariables(),
         mFormulaConditionMap(),
         mRanking(),
         mVariableVector()
     {}
 
-    VSModule::~VSModule()
+    template<class Settings>
+    VSModule<Settings>::~VSModule()
     {
         while( !mFormulaConditionMap.empty() )
         {
@@ -73,7 +72,8 @@ namespace smtrat
      * @return False, if a conflict is detected;
      *         True,  otherwise.
      */
-    bool VSModule::assertSubformula( Formula::const_iterator _subformula )
+    template<class Settings>
+    bool VSModule<Settings>::assertSubformula( Formula::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
         if( (*_subformula)->getType() == REALCONSTRAINT )
@@ -101,24 +101,23 @@ namespace smtrat
                 }
                 case 2:
                 {
-                    eraseDTsOfRanking( *mpStateTree );
                     mIDCounter = 0;
-                    symtab::const_iterator var = constraint->variables().begin();
-                    while( var != constraint->variables().end() )
-                    {
+                    for( auto var = constraint->variables().begin(); var != constraint->variables().end(); ++var )
                         mAllVariables.insert( pair<const string, symbol>( var->first, ex_to<symbol>( var->second ) ) );
-                        var++;
+                    if( Settings::incremental_solving )
+                    {
+                        eraseDTsOfRanking( *mpStateTree );
+                        ConditionSet oConds = ConditionSet();
+                        oConds.insert( condition );
+                        vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
+                        DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
+                        ConditionList condVector = ConditionList();
+                        condVector.push_back( new vs::Condition( constraint, 0, false, oConds ) );
+                        subResult.push_back( condVector );
+                        subResults.push_back( subResult );
+                        mpStateTree->addSubstitutionResults( subResults );
+                        insertDTinRanking( mpStateTree );
                     }
-                    ConditionSet oConds = ConditionSet();
-                    oConds.insert( condition );
-                    vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
-                    DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
-                    ConditionList condVector                   = ConditionList();
-                    condVector.push_back( new vs::Condition( constraint, 0, false, oConds ) );
-                    subResult.push_back( condVector );
-                    subResults.push_back( subResult );
-                    mpStateTree->addSubstitutionResults( subResults );
-                    insertDTinRanking( mpStateTree );
                     mConditionsChanged = true;
                     return true;
                 }
@@ -137,7 +136,8 @@ namespace smtrat
      *
      * @param _subformula The position of the constraint within the received constraints.
      */
-    void VSModule::removeSubformula( Formula::const_iterator _subformula )
+    template<class Settings>
+    void VSModule<Settings>::removeSubformula( Formula::const_iterator _subformula )
     {
         if( (*_subformula)->getType() == REALCONSTRAINT )
         {
@@ -145,14 +145,17 @@ namespace smtrat
             auto formulaConditionPair = mFormulaConditionMap.find( *_subformula );
             assert( formulaConditionPair != mFormulaConditionMap.end() );
             const vs::Condition* condToDelete = formulaConditionPair->second;
-            eraseDTsOfRanking( *mpStateTree );
-            mpStateTree->rSubResultsSimplified() = false;
-            set<const vs::Condition*> condsToDelete = set<const vs::Condition*>();
-            condsToDelete.insert( condToDelete );
-            mpStateTree->deleteOrigins( condsToDelete );
-            mpStateTree->rType() = State::COMBINE_SUBRESULTS;
-            mpStateTree->rTakeSubResultCombAgain() = true;
-            insertDTinRanking( mpStateTree );
+            if( Settings::incremental_solving )
+            {
+                eraseDTsOfRanking( *mpStateTree );
+                mpStateTree->rSubResultsSimplified() = false;
+                set<const vs::Condition*> condsToDelete = set<const vs::Condition*>();
+                condsToDelete.insert( condToDelete );
+                mpStateTree->deleteOrigins( condsToDelete );
+                mpStateTree->rType() = State::COMBINE_SUBRESULTS;
+                mpStateTree->rTakeSubResultCombAgain() = true;
+                insertDTinRanking( mpStateTree );
+            }
             mFormulaConditionMap.erase( formulaConditionPair );
             delete condToDelete;
             condToDelete = NULL;
@@ -168,8 +171,28 @@ namespace smtrat
      *          False,   if the so far received constraints are inconsistent;
      *          Unknown, if this module cannot determine whether the so far received constraints are consistent or not.
      */
-    Answer VSModule::isConsistent()
+    template<class Settings>
+    Answer VSModule<Settings>::isConsistent()
     {
+        if( !Settings::incremental_solving )
+        {
+            eraseDTsOfRanking( *mpStateTree );
+            delete mpStateTree;
+            mpStateTree = new State( Settings::use_variable_bounds );
+            for( auto iter = mFormulaConditionMap.begin(); iter != mFormulaConditionMap.end(); ++iter )
+            {
+                ConditionSet oConds = ConditionSet();
+                oConds.insert( iter->second );
+                vector<DisjunctionOfConditionConjunctions> subResults = vector<DisjunctionOfConditionConjunctions>();
+                DisjunctionOfConditionConjunctions subResult = DisjunctionOfConditionConjunctions();
+                ConditionList condVector = ConditionList();
+                condVector.push_back( new vs::Condition( iter->first->pConstraint(), 0, false, oConds ) );
+                subResult.push_back( condVector );
+                subResults.push_back( subResult );
+                mpStateTree->addSubstitutionResults( subResults );
+            }
+            insertDTinRanking( mpStateTree );
+        }
         if( !mpReceivedFormula->isRealConstraintConjunction() )
             return foundAnswer( Unknown );
         assert( mpReceivedFormula->size() == mFormulaConditionMap.size() );
@@ -258,7 +281,7 @@ namespace smtrat
                     }
                     else
                     {
-                        currentState->passConflictToFather();
+                        currentState->passConflictToFather( Settings::check_conflict_for_side_conditions );
                         eraseDTofRanking( currentState->rFather() );
                         insertDTinRanking( currentState->pFather() );
                     }
@@ -335,10 +358,10 @@ namespace smtrat
                             {
                                 // Set the index, if not already done, to the best variable to eliminate next.
                                 if( currentState->index() == "" ) 
-                                    currentState->initIndex( mAllVariables );
+                                    currentState->initIndex( mAllVariables, Settings::prefer_equation_over_all );
                                 else if( currentState->tryToRefreshIndex() )
                                 {
-                                    if( currentState->initIndex( mAllVariables ) )
+                                    if( currentState->initIndex( mAllVariables, Settings::prefer_equation_over_all ) )
                                     {
                                         currentState->initConditionFlags();
                                         currentState->resetConflictSets();
@@ -353,7 +376,7 @@ namespace smtrat
                                 }
                                 // Find the most adequate conditions to continue.
                                 const vs::Condition* currentCondition;
-                                if( !currentState->bestCondition( currentCondition, mAllVariables.size() ) )
+                                if( !currentState->bestCondition( currentCondition, mAllVariables.size(), Settings::prefer_equation_over_all ) )
                                 {
                                     if( currentState->tooHighDegreeConditions().empty() )
                                     {
@@ -429,7 +452,7 @@ namespace smtrat
                                                         updateInfeasibleSubset();
                                                     else
                                                     {
-                                                        currentState->passConflictToFather();
+                                                        currentState->passConflictToFather( Settings::check_conflict_for_side_conditions );
                                                         eraseDTofRanking( currentState->rFather() );
                                                         insertDTinRanking( currentState->pFather() );
                                                     }
@@ -506,15 +529,13 @@ namespace smtrat
                                 // Generate test candidates for the chosen variable and the chosen condition.
                                 else
                                 {
-                                    #ifdef VS_LOCAL_CONFLICT_SEARCH
-                                    if( currentState->hasLocalConflict() )
+                                    if( Settings::local_conflict_search && currentState->hasLocalConflict() )
                                     {
                                         eraseDTsOfRanking( *currentState );
                                         insertDTinRanking( currentState );
                                     }
                                     else
                                     {
-                                    #endif
                                         #ifdef VS_DEBUG
                                         cout << "*** Eliminate " << currentState->index() << " in ";
                                         currentCondition->constraint().print( cout );
@@ -524,9 +545,7 @@ namespace smtrat
                                         #ifdef VS_DEBUG
                                         cout << "*** Eliminate ready." << endl;
                                         #endif
-                                    #ifdef VS_LOCAL_CONFLICT_SEARCH
                                     }
-                                    #endif
                                 }
                                 break;
                             }
@@ -553,7 +572,8 @@ namespace smtrat
     /**
      * Updates the model, if the received formula was found to be satisfiable by this module.
      */
-    void VSModule::updateModel()
+    template<class Settings>
+    void VSModule<Settings>::updateModel()
     {
         clearModel();
         if( solverState() == True )
@@ -620,7 +640,8 @@ namespace smtrat
      *              already served to eliminate for the respective variable in this
      *              state.
      */
-    void VSModule::eliminate( State* _currentState, const string& _eliminationVar, const vs::Condition* _condition )
+    template<class Settings>
+    void VSModule<Settings>::eliminate( State* _currentState, const string& _eliminationVar, const vs::Condition* _condition )
     {
         // Get the constraint of this condition.
         const Constraint* constraint = (*_condition).pConstraint();
@@ -634,7 +655,7 @@ namespace smtrat
         ConditionSet oConditions = ConditionSet();
         oConditions.insert( _condition );
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
-        if( _currentState->hasRootsInVariableBounds( _condition ) )
+        if( !Settings::use_variable_bounds || _currentState->hasRootsInVariableBounds( _condition, Settings::sturm_sequence_for_root_check ) )
         {
             #endif
             Constraint_Relation relation = (*_condition).constraint().relation();
@@ -653,8 +674,7 @@ namespace smtrat
             if( relation == CR_EQ || relation == CR_LEQ || relation == CR_GEQ )
                 subType = ST_NORMAL;
             vector< ex > factors = vector< ex >();
-            #ifdef VS_ELIMINATION_WITH_FACTORIZATION
-            if( constraint->hasFactorization() )
+            if( Settings::elimination_with_factorization && constraint->hasFactorization() )
             {
                 for( auto iter = constraint->factorization().begin(); iter != constraint->factorization().end(); ++iter )
                 {
@@ -671,9 +691,6 @@ namespace smtrat
             {
                 factors.push_back( constraint->lhs() );
             }
-            #else
-            factors.push_back( constraint->lhs() );
-            #endif
             for( auto factor = factors.begin(); factor != factors.end(); ++factor )
             {
                 #ifdef VS_DEBUG
@@ -893,29 +910,29 @@ namespace smtrat
      *
      * @sideeffect: The result is stored in the substitution result of the given state.
      */
-    bool VSModule::substituteAll( State* _currentState, ConditionList& _conditions )
+    template<class Settings>
+    bool VSModule<Settings>::substituteAll( State* _currentState, ConditionList& _conditions )
     {
         /*
          * Create a vector to store the results of each single substitution. Each entry corresponds to
          * the results of a single substitution. These results can be considered as a disjunction of
          * conjunctions of constraints.
          */
-        vector<DisjunctionOfConditionConjunctions> disjunctionsOfCondConj;
-        disjunctionsOfCondConj = vector<DisjunctionOfConditionConjunctions>();
+        vector<DisjunctionOfConditionConjunctions> allSubResults = vector<DisjunctionOfConditionConjunctions>();
         // The substitution to apply.
         assert( !_currentState->isRoot() );
-        const Substitution& currentSubstitution = _currentState->substitution();
+        const Substitution& currentSubs = _currentState->substitution();
         // The variable to substitute.
-        const string& substitutionVariable = currentSubstitution.variable();
+        const string& substitutionVariable = currentSubs.variable();
         // The conditions of the currently considered state, without the one getting just eliminated.
         ConditionList oldConditions = ConditionList();
         bool anySubstitutionFailed = false;
         bool allSubstitutionsApplied = true;
         ConditionSetSet conflictSet = ConditionSetSet();
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
-        GiNaCRA::evaldoubleintervalmap intervalSpace = (currentSubstitution.type() == vs::ST_MINUS_INFINITY ? GiNaCRA::evaldoubleintervalmap() : _currentState->rFather().rVariableBounds().getIntervalMap());
+        GiNaCRA::evaldoubleintervalmap solBox = (currentSubs.type() == vs::ST_MINUS_INFINITY ? GiNaCRA::evaldoubleintervalmap() : _currentState->rFather().rVariableBounds().getIntervalMap());
         #else
-        GiNaCRA::evaldoubleintervalmap intervalSpace = GiNaCRA::evaldoubleintervalmap();
+        GiNaCRA::evaldoubleintervalmap solBox = GiNaCRA::evaldoubleintervalmap();
         #endif
         // Apply the substitution to the given conditions.
         for( auto cond = _conditions.begin(); cond != _conditions.end(); ++cond )
@@ -934,13 +951,12 @@ namespace smtrat
             }
             else
             {
-                DisjunctionOfConstraintConjunctions disjunctionOfConsConj;
-                disjunctionOfConsConj = DisjunctionOfConstraintConjunctions();
-                symtab conflictingVars = symtab();
-                if( !substitute( currentConstraint, currentSubstitution, disjunctionOfConsConj, conflictingVars, intervalSpace ) )
+                DisjunctionOfConstraintConjunctions subResult = DisjunctionOfConstraintConjunctions();
+                symtab conflVars = symtab();
+                if( !substitute( currentConstraint, currentSubs, subResult, Settings::virtual_substitution_according_paper, conflVars, solBox ) )
                     allSubstitutionsApplied = false;
                 // Create the the conditions according to the just created constraint prototypes.
-                if( disjunctionOfConsConj.empty() )
+                if( subResult.empty() )
                 {
                     anySubstitutionFailed = true;
                     ConditionSet condSet  = ConditionSet();
@@ -948,7 +964,7 @@ namespace smtrat
                     if( _currentState->pOriginalCondition() != NULL )
                         condSet.insert( _currentState->pOriginalCondition() );
                     #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    set< const vs::Condition* > conflictingBounds = _currentState->father().variableBounds().getOriginsOfBounds( conflictingVars );
+                    set< const vs::Condition* > conflictingBounds = _currentState->father().variableBounds().getOriginsOfBounds( conflVars );
                     condSet.insert( conflictingBounds.begin(), conflictingBounds.end() );
                     #endif
                     conflictSet.insert( condSet );
@@ -957,9 +973,9 @@ namespace smtrat
                 {
                     if( allSubstitutionsApplied && !anySubstitutionFailed )
                     {
-                        disjunctionsOfCondConj.push_back( DisjunctionOfConditionConjunctions() );
-                        DisjunctionOfConditionConjunctions& currentDisjunction = disjunctionsOfCondConj.back();
-                        for( auto consConj = disjunctionOfConsConj.begin(); consConj != disjunctionOfConsConj.end(); ++consConj )
+                        allSubResults.push_back( DisjunctionOfConditionConjunctions() );
+                        DisjunctionOfConditionConjunctions& currentDisjunction = allSubResults.back();
+                        for( auto consConj = subResult.begin(); consConj != subResult.end(); ++consConj )
                         {
                             currentDisjunction.push_back( ConditionList() );
                             ConditionList& currentConjunction = currentDisjunction.back();
@@ -1003,9 +1019,9 @@ namespace smtrat
             {
                 if( allSubstitutionsApplied )
                 {
-                    disjunctionsOfCondConj.push_back( DisjunctionOfConditionConjunctions() );
-                    disjunctionsOfCondConj.back().push_back( oldConditions );
-                    _currentState->addSubstitutionResults( disjunctionsOfCondConj );
+                    allSubResults.push_back( DisjunctionOfConditionConjunctions() );
+                    allSubResults.back().push_back( oldConditions );
+                    _currentState->addSubstitutionResults( allSubResults );
                     insertDTinRanking( _currentState );
                 }
                 else
@@ -1048,20 +1064,20 @@ namespace smtrat
                 delete rpCond;
                 rpCond = NULL;
             }
-            while( !disjunctionsOfCondConj.empty() )
+            while( !allSubResults.empty() )
             {
-                while( !disjunctionsOfCondConj.back().empty() )
+                while( !allSubResults.back().empty() )
                 {
-                    while( !disjunctionsOfCondConj.back().back().empty() )
+                    while( !allSubResults.back().back().empty() )
                     {
-                        const vs::Condition* rpCond = disjunctionsOfCondConj.back().back().back();
-                        disjunctionsOfCondConj.back().back().pop_back();
+                        const vs::Condition* rpCond = allSubResults.back().back().back();
+                        allSubResults.back().back().pop_back();
                         delete rpCond;
                         rpCond = NULL;
                     }
-                    disjunctionsOfCondConj.back().pop_back();
+                    allSubResults.back().pop_back();
                 }
-                disjunctionsOfCondConj.pop_back();
+                allSubResults.pop_back();
             }
         }
         return !anySubstitutionFailed;
@@ -1072,7 +1088,8 @@ namespace smtrat
      *
      * @param _currentState The currently considered state.
      */
-    void VSModule::propagateNewConditions( State* _currentState )
+    template<class Settings>
+    void VSModule<Settings>::propagateNewConditions( State* _currentState )
     {
         eraseDTsOfRanking( *_currentState );
         _currentState->rHasRecentlyAddedConditions() = false;
@@ -1108,7 +1125,7 @@ namespace smtrat
         insertDTinRanking( _currentState );
         if( !_currentState->children().empty() )
         {
-            if( deleteExistingTestCandidates || _currentState->initIndex( mAllVariables ) )
+            if( deleteExistingTestCandidates || _currentState->initIndex( mAllVariables, Settings::prefer_equation_over_all ) )
             {
                 _currentState->initConditionFlags();
                 // If the recently added conditions make another variable being the best to eliminate next delete all children.
@@ -1144,7 +1161,7 @@ namespace smtrat
                                     ConditionSet::iterator oCond = (**child).rSubstitution().rOriginalConditions().begin();
                                     while( !worseConditionFound && oCond != (**child).substitution().originalConditions().end() )
                                     {
-                                        if( (**cond).valuate( _currentState->index(), mAllVariables.size(), true ) > (**oCond).valuate( _currentState->index(), mAllVariables.size(), true ) )
+                                        if( (**cond).valuate( _currentState->index(), mAllVariables.size(), true, Settings::prefer_equation_over_all ) > (**oCond).valuate( _currentState->index(), mAllVariables.size(), true, Settings::prefer_equation_over_all ) )
                                         {
                                             newTestCandidatesGenerated = true;
                                             #ifdef VS_DEBUG
@@ -1203,7 +1220,8 @@ namespace smtrat
      *
      * @param _state The states, which will be inserted.
      */
-    void VSModule::insertDTinRanking( State* _state )
+    template<class Settings>
+    void VSModule<Settings>::insertDTinRanking( State* _state )
     {
         if( !_state->markedAsDeleted() && !(_state->isInconsistent() && _state->conflictSets().empty() && _state->conditionsSimplified()) )
         {
@@ -1233,7 +1251,8 @@ namespace smtrat
      *
      * @param _state The root of the states, which will be inserted.
      */
-    void VSModule::insertDTsinRanking( State* _state )
+    template<class Settings>
+    void VSModule<Settings>::insertDTsinRanking( State* _state )
     {
         insertDTinRanking( _state );
         if( _state->conditionsSimplified() && _state->subResultsSimplified() && !_state->takeSubResultCombAgain() && !_state->hasRecentlyAddedConditions() )
@@ -1248,7 +1267,8 @@ namespace smtrat
      *
      * @return  True, if the state was in the ranking.
      */
-    bool VSModule::eraseDTofRanking( State& _state )
+    template<class Settings>
+    bool VSModule<Settings>::eraseDTofRanking( State& _state )
     {
         vs::UnsignedTriple key = vs::UnsignedTriple( _state.valuation(), pair< unsigned, unsigned> ( _state.id(), _state.backendCallValuation() ) );
         ValuationMap::iterator valDTPair = mRanking.find( key );
@@ -1267,7 +1287,8 @@ namespace smtrat
      *
      * @param _state The root of the states, which will be erased of the ranking.
      */
-    void VSModule::eraseDTsOfRanking( State& _state )
+    template<class Settings>
+    void VSModule<Settings>::eraseDTsOfRanking( State& _state )
     {
         eraseDTofRanking( _state );
         for( auto dt = _state.rChildren().begin(); dt != _state.children().end(); ++dt )
@@ -1277,9 +1298,17 @@ namespace smtrat
     /**
      * Updates the infeasible subset.
      */
-    void VSModule::updateInfeasibleSubset( bool _includeInconsistentTestCandidates )
+    template<class Settings>
+    void VSModule<Settings>::updateInfeasibleSubset( bool _includeInconsistentTestCandidates )
     {
-        #ifdef VS_INFEASIBLE_SUBSET_GENERATION
+        if( !Settings::infeasible_subset_generation )
+        {
+            // Set the infeasible subset to the set of all received constraints.
+            mInfeasibleSubsets.push_back( set<const Formula*>() );
+            for( auto cons = mpReceivedFormula->begin(); cons != mpReceivedFormula->end(); ++cons )
+                mInfeasibleSubsets.back().insert( *cons );
+            return;
+        }
         // Determine the minimum covering sets of the conflict sets, i.e. the infeasible subsets of the root.
         ConditionSetSet minCoverSets = ConditionSetSet();
         ConditionSetSetSet confSets  = ConditionSetSetSet();
@@ -1323,12 +1352,6 @@ namespace smtrat
         }
         assert( !mInfeasibleSubsets.empty() );
         assert( !mInfeasibleSubsets.back().empty() );
-        #else
-        // Set the infeasible subset to the set of all received constraints.
-        mInfeasibleSubsets.push_back( set<const Formula*>() );
-        for( auto cons = receivedFormulaBegin(); cons != receivedFormulaEnd(); ++cons )
-            mInfeasibleSubsets.back().insert( *cons );
-        #endif
     }
 
     /**
@@ -1337,7 +1360,8 @@ namespace smtrat
      *
      * @return A symbolic assignment.
      */
-    vector<pair<string, pair<Substitution_Type, ex> > > VSModule::getSymbolicAssignment() const
+    template<class Settings>
+    vector<pair<string, pair<Substitution_Type, ex> > > VSModule<Settings>::getSymbolicAssignment() const
     {
         assert( !mConditionsChanged && mInfeasibleSubsets.empty() );
         vector<pair<string, pair<Substitution_Type, ex> > > result    = vector<pair<string, pair<Substitution_Type, ex> > >();
@@ -1374,7 +1398,8 @@ namespace smtrat
      * @param _conflictSets     The vector of sets of sets, for which the method finds all minimum covering sets.
      * @param _minCovSets   The resulting minimum covering sets.
      */
-    void VSModule::allMinimumCoveringSets( const ConditionSetSetSet& _conflictSets, ConditionSetSet& _minCovSets )
+    template<class Settings>
+    void VSModule<Settings>::allMinimumCoveringSets( const ConditionSetSetSet& _conflictSets, ConditionSetSet& _minCovSets )
     {
         if( !_conflictSets.empty() )
         {
@@ -1463,7 +1488,8 @@ namespace smtrat
      * @return  true,   if the passed formula has been changed;
      *          false,  otherwise.
      */
-    bool VSModule::adaptPassedFormula( const State& _state, FormulaConditionMap& _formulaCondMap, bool _strictInequalitiesOnly )
+    template<class Settings>
+    bool VSModule<Settings>::adaptPassedFormula( const State& _state, FormulaConditionMap& _formulaCondMap, bool _strictInequalitiesOnly )
     {
         bool changedPassedFormula = false;
         // Collect the constraints to check.
@@ -1540,7 +1566,8 @@ namespace smtrat
      *          TS_False,   if the conditions are inconsistent;
      *          TS_Unknown, if the theory solver cannot give an answer for these conditons.
      */
-    Answer VSModule::runBackendSolvers( State* _state, bool _strictInequalitiesOnly )
+    template<class Settings>
+    Answer VSModule<Settings>::runBackendSolvers( State* _state, bool _strictInequalitiesOnly )
     {
         // Run the backends on the constraint of the state.
         FormulaConditionMap formulaToConditions = FormulaConditionMap();
@@ -1617,7 +1644,7 @@ namespace smtrat
                 else
                 {
                     eraseDTsOfRanking( *_state );
-                    _state->passConflictToFather();
+                    _state->passConflictToFather( Settings::check_conflict_for_side_conditions );
                     eraseDTofRanking( _state->rFather() );
                     insertDTinRanking( _state->pFather() );
                 }
@@ -1641,7 +1668,8 @@ namespace smtrat
      * Checks the correctness of the symbolic assignment given by the path from the root
      * state to the satisfying state.
      */
-    void VSModule::checkAnswer() const
+    template<class Settings>
+    void VSModule<Settings>::checkAnswer() const
     {
         if( !mRanking.empty() )
         {
@@ -1657,7 +1685,8 @@ namespace smtrat
     /**
      * Checks whether the set of conditions is is consistent/inconsistent.
      */
-    void VSModule::logConditions( const State& _state, bool _assumption, const string& _description ) const
+    template<class Settings>
+    void VSModule<Settings>::logConditions( const State& _state, bool _assumption, const string& _description ) const
     {
         if( !_state.conditions().empty() )
         {
@@ -1675,7 +1704,8 @@ namespace smtrat
      * @param _init The beginning of each row.
      * @param _out The output stream where the history should be printed.
      */
-    void VSModule::printAll( const string& _init, ostream& _out ) const
+    template<class Settings>
+    void VSModule<Settings>::printAll( const string& _init, ostream& _out ) const
     {
         _out << _init << " Current solver status, where the constraints" << endl;
         printFormulaConditionMap( _init, _out );
@@ -1694,7 +1724,8 @@ namespace smtrat
      * @param _init The beginning of each row.
      * @param _out The output stream where the history should be printed.
      */
-    void VSModule::printFormulaConditionMap( const string& _init, ostream& _out ) const
+    template<class Settings>
+    void VSModule<Settings>::printFormulaConditionMap( const string& _init, ostream& _out ) const
     {
         for( auto cond = mFormulaConditionMap.begin(); cond != mFormulaConditionMap.end(); ++cond )
         {
@@ -1712,7 +1743,8 @@ namespace smtrat
      * @param _init The beginning of each row.
      * @param _out The output stream where the history should be printed.
      */
-    void VSModule::printRanking( const string& _init, ostream& _out ) const
+    template<class Settings>
+    void VSModule<Settings>::printRanking( const string& _init, ostream& _out ) const
     {
         for( auto valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
             (*(*valDTPair).second).printAlone( "   ", _out );
@@ -1724,7 +1756,8 @@ namespace smtrat
      * @param _init The beginning of each row.
      * @param _out The output stream where the answer should be printed.
      */
-    void VSModule::printAnswer( const string& _init, ostream& _out ) const
+    template<class Settings>
+    void VSModule<Settings>::printAnswer( const string& _init, ostream& _out ) const
     {
         _out << _init << " Answer:" << endl;
         if( mRanking.empty() )
