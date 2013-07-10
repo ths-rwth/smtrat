@@ -1,4 +1,4 @@
-set(SMTRAT_GROEBNER_Settings "5" CACHE STRING "Number of settings used for GroebnerModule")
+set(SMTRAT_GROEBNER_Settings "5" CACHE STRING "Number of setting used for GroebnerModule")
 BeginDefineModule()
 ModuleMainHeader(GBModule/GroebnerModule.h)
 FILE(GLOB_RECURSE sources *.cpp)

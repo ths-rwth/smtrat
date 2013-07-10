@@ -85,6 +85,9 @@ namespace smtrat
         ,
         mVariableBounds()
         #endif
+#ifdef SMTRAT_DEVOPTION_Statistics
+               ,mStats(CADStatistics::getInstance(0))
+#endif
     {
         mModuleType = MT_CADModule;
         mInfeasibleSubsets.clear();    // initially everything is satisfied

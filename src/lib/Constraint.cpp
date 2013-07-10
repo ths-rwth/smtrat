@@ -576,7 +576,7 @@ namespace smtrat
                             if( mMaxMonomeDegree == 1 ) // leading coefficient
                                 leadingCoefficient = coeff;
                             else if( maxCoeff < coeff )
-                                maxCoeff += coeff;
+                                maxCoeff = coeff;
                         }
                         else
                         {
@@ -599,7 +599,17 @@ namespace smtrat
                     if( maxCoeff < constantPart )
                         maxCoeff = constantPart;
                 }
-                // else left-hand side has the form x^e_i, with ei != 0
+                else if( is_exactly_a<power>( summandEx ) ) // left-hand side has the form x^e_i, with ei > 1
+                {
+                    assert( summandEx.nops() == 2 );
+                    if( *(++(summandEx.end())) != mMaxMonomeDegree && maxCoeff < GiNaC::ONE )
+                        maxCoeff = GiNaC::ONE;
+                }
+                else // left-hand side has the form x
+                {
+                    if( maxCoeff < GiNaC::ONE )
+                        maxCoeff = GiNaC::ONE;
+                }
             }
             numeric lowerCauchyBound = constantPart / (constantPart + ( leadingCoefficient > maxCoeff ? leadingCoefficient : maxCoeff ));
             numeric upperCauchyBound = 1 + (( constantPart > maxCoeff ? constantPart : maxCoeff )/leadingCoefficient);
@@ -853,6 +863,26 @@ namespace smtrat
             assert( !containsNumeric( _lhs, --_lhs.end() ) );
         }
         return ex( _lhs * simplificationFactorNumer / simplificationFactorDenom ).expand().normal();
+    }
+    
+    /**
+     * Sets the properties of this constraint being a bound.
+     */
+    void Constraint::setBoundProperties( const symbol& var, const numeric& _bound )
+    {
+        assert( variables().size() == 1 );
+        assert( variables().begin()->second == var );
+        assert( lhs()-var+_bound == 0 || lhs()+var-_bound == 0 );
+        mIsNeverPositive = false;
+        mIsNeverNegative = false;
+        mIsNeverZero = false;
+        VarInfo& varInfo = mVarInfoMap[var];
+        varInfo.occurences = 1;
+        varInfo.minDegree = 1;
+        mMaxMonomeDegree = 1;
+        mMinMonomeDegree = 1;
+        mNumMonomials = 2;
+        mConstantPart = _bound;
     }
     
     /**

@@ -35,17 +35,14 @@
 //#define VS_DEBUG_LOCAL_CONFLICT_SEARCH
 //#define VS_DEBUG_ROOTS_CHECK
 //#define VS_LOG_INFSUBSETS
-#define VS_STURM_SEQUENCE_FOR_ROOT_CHECK
 
 using namespace std;
 using namespace GiNaC;
-#ifdef SMTRAT_VS_VARIABLEBOUNDS
 using namespace GiNaCRA;
-#endif
 
 namespace vs
 {
-    State::State():
+    State::State( bool _withVariableBounds ):
         mConditionsSimplified( false ),
         mHasChildrenToInsert( false ),
         mHasRecentlyAddedConditions( false ),
@@ -53,10 +50,8 @@ namespace vs
         mMarkedAsDeleted( false ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         mTestCandidateCheckedForBounds( false ),
         mTestCandidateInBoundsCreated( false ),
-        #endif
         mToHighDegree( false ),
         mTryToRefreshIndex( false ),
         mBackendCallValuation( 0 ),
@@ -72,14 +67,11 @@ namespace vs
         mpConditions( new ConditionList() ),
         mpConflictSets( new ConflictSets() ),
         mpChildren( new StateVector() ),
-        mpTooHighDegreeConditions( new set< const Condition* >() )
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
-        ,
-        mpVariableBounds( new VariableBounds() )
-        #endif
+        mpTooHighDegreeConditions( new set< const Condition* >() ),
+        mpVariableBounds( _withVariableBounds ? new VariableBounds() : NULL )
     {}
 
-    State::State( State* const _father, const Substitution& _substitution ):
+    State::State( State* const _father, const Substitution& _substitution, bool _withVariableBounds ):
         mConditionsSimplified( false ),
         mHasChildrenToInsert( false ),
         mHasRecentlyAddedConditions( false ),
@@ -87,10 +79,8 @@ namespace vs
         mMarkedAsDeleted( false ),
         mSubResultsSimplified( false ),
         mTakeSubResultCombAgain( false ),
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         mTestCandidateCheckedForBounds( false ),
         mTestCandidateInBoundsCreated( false ),
-        #endif
         mToHighDegree( false ),
         mTryToRefreshIndex( false ),
         mBackendCallValuation( 0 ),
@@ -106,11 +96,8 @@ namespace vs
         mpConditions( new ConditionList() ),
         mpConflictSets( new ConflictSets() ),
         mpChildren( new StateVector() ),
-        mpTooHighDegreeConditions( new set< const Condition* >() )
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
-        ,
-        mpVariableBounds( new VariableBounds() )
-        #endif
+        mpTooHighDegreeConditions( new set< const Condition* >() ),
+        mpVariableBounds( _withVariableBounds ? new VariableBounds() : NULL )
     {}
 
     State::~State()
@@ -129,17 +116,16 @@ namespace vs
         {
             const Condition* pCond = rConditions().back();
             rConditions().pop_back();
-            #ifdef SMTRAT_VS_VARIABLEBOUNDS
-            mpVariableBounds->removeBound( pCond->pConstraint(), pCond );
-            #endif
+            if( mpVariableBounds != NULL )
+                mpVariableBounds->removeBound( pCond->pConstraint(), pCond );
             delete pCond;
             pCond = NULL;
         }
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
-        delete mpVariableBounds;
-        #endif
+        if( mpVariableBounds != NULL )
+            delete mpVariableBounds;
         delete mpConditions;
-        if( mpSubstitution != NULL ) delete mpSubstitution;
+        if( mpSubstitution != NULL )
+            delete mpSubstitution;
         delete mpIndex;
         if( mpSubstitutionResults != NULL )
         {
@@ -397,44 +383,41 @@ namespace vs
      * @return true     ,if it has a condition and a variable in it to generate test candidates for;
      *         false    ,otherwise.
      */
-    bool State::bestCondition( const Condition*& _bestCondition, const unsigned _numberOfAllVariables )
+    bool State::bestCondition( const Condition*& _bestCondition, const unsigned _numberOfAllVariables, bool _preferEquation )
     {
         ConditionList::iterator cond = rConditions().begin();
         if( cond == conditions().end() )
             return false;
-        else
+        assert( index() != "" );
+        // Find the best condition.
+        _bestCondition = *cond;
+        ++cond;
+        double bestConditionValuation    = _bestCondition->valuate( index(), _numberOfAllVariables, true, _preferEquation );
+        double currentConditionValuation = 0;
+        while( cond != conditions().end() )
         {
-            assert( index() != "" );
-            // Find the best condition.
-            _bestCondition = *cond;
-            ++cond;
-            double bestConditionValuation    = _bestCondition->valuate( index(), _numberOfAllVariables, true );
-            double currentConditionValuation = 0;
-            while( cond != conditions().end() )
+            if( !(**cond).flag() )
             {
-                if( !(**cond).flag() )
+                if( (*_bestCondition).flag() )
                 {
-                    if( (*_bestCondition).flag() )
+                    _bestCondition         = *cond;
+                    bestConditionValuation = _bestCondition->valuate( index(), _numberOfAllVariables, true, _preferEquation );
+                }
+                else
+                {
+                    currentConditionValuation = (**cond).valuate( index(), _numberOfAllVariables, true, _preferEquation );
+                    if( currentConditionValuation != 0 && ( currentConditionValuation < bestConditionValuation || bestConditionValuation == 0 ) )
                     {
                         _bestCondition         = *cond;
-                        bestConditionValuation = _bestCondition->valuate( index(), _numberOfAllVariables, true );
-                    }
-                    else
-                    {
-                        currentConditionValuation = (**cond).valuate( index(), _numberOfAllVariables, true );
-                        if( currentConditionValuation != 0 && ( currentConditionValuation < bestConditionValuation || bestConditionValuation == 0 ) )
-                        {
-                            _bestCondition         = *cond;
-                            bestConditionValuation = currentConditionValuation;
-                        }
+                        bestConditionValuation = currentConditionValuation;
                     }
                 }
-                ++cond;
             }
-            // If all constraints were considered to yield test candidates, return false
-            // which means that there is no condition in general. Otherwise return true.
-            return !(*_bestCondition).flag();
+            ++cond;
         }
+        // If all constraints were considered to yield test candidates, return false
+        // which means that there is no condition in general. Otherwise return true.
+        return !(*_bestCondition).flag();
     }
 
     /**
@@ -1238,7 +1221,7 @@ namespace vs
      *
      * @param   _allVariables   All globally known variables.
      */
-    bool State::initIndex( const symtab& _allVariables )
+    bool State::initIndex( const symtab& _allVariables, bool _preferEquation )
     {
         mTryToRefreshIndex = false;
         if( conditions().empty() )
@@ -1252,7 +1235,7 @@ namespace vs
             // Check for all variables their valuation for the given constraint.
             for( map<string, multiset<double> >::iterator var = varVals.begin(); var != varVals.end(); ++var )
             {
-                double varInConsVal = (**cond).valuate( var->first, _allVariables.size(), true );
+                double varInConsVal = (**cond).valuate( var->first, _allVariables.size(), true, _preferEquation );
                 if( varInConsVal != 0 )
                     varVals.at( var->first ).insert( varInConsVal );
             }
@@ -1360,28 +1343,22 @@ namespace vs
                         || constraintWithFinitlyManySolutionCandidatesInIndexExists )
                 {
                     rConditions().push_back( new Condition( _constraint, _valutation, true, _originalConditions, _recentlyAdded ) );
-                    #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    if( mpVariableBounds->addBound( _constraint, rConditions().back() ) )
+                    if( mpVariableBounds != NULL && mpVariableBounds->addBound( _constraint, rConditions().back() ) )
                         mTestCandidateCheckedForBounds = false;
-                    #endif
                 }
                 else
                 {
                     rConditions().push_back( new Condition( _constraint, _valutation, false, _originalConditions, _recentlyAdded ) );
-                    #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    if( mpVariableBounds->addBound( _constraint, rConditions().back() ) )
+                    if( mpVariableBounds != NULL && mpVariableBounds->addBound( _constraint, rConditions().back() ) )
                         mTestCandidateCheckedForBounds = false;
-                    #endif
                 }
             }
             // The state is a leaf.
             else
             {
                 rConditions().push_back( new Condition( _constraint, _valutation, false, _originalConditions, false ) );
-                #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                if( mpVariableBounds->addBound( _constraint, rConditions().back() ) )
+                if( mpVariableBounds != NULL && mpVariableBounds->addBound( _constraint, rConditions().back() ) )
                     mTestCandidateCheckedForBounds = false;
-                #endif
             }
         }
     }
@@ -1490,21 +1467,22 @@ namespace vs
             {
                 if( (*condition)->originalConditions().find( *originToDelete ) != (*condition)->originalConditions().end() )
                 {
-                    #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    const ex var = mpVariableBounds->removeBound( (*condition)->pConstraint(), *condition );
-                    if( is_exactly_a<symbol>( var ) )
+                    if( mpVariableBounds != NULL )
                     {
-                        for( auto condB = rConditions().begin(); condB != conditions().end(); ++condB )
+                        const ex var = mpVariableBounds->removeBound( (*condition)->pConstraint(), *condition );
+                        if( is_exactly_a<symbol>( var ) )
                         {
-                            if( (*condB)->constraint().variables().find( ex_to<symbol>( var ).get_name() ) != (*condB)->constraint().variables().end() )
+                            for( auto condB = rConditions().begin(); condB != conditions().end(); ++condB )
                             {
-                                originsToRemove.insert( *condB );
-                                (*condB)->rRecentlyAdded() = true;
-                                (*condB)->rFlag() = false;
+                                if( (*condB)->constraint().variables().find( ex_to<symbol>( var ).get_name() ) != (*condB)->constraint().variables().end() )
+                                {
+                                    originsToRemove.insert( *condB );
+                                    (*condB)->rRecentlyAdded() = true;
+                                    (*condB)->rFlag() = false;
+                                }
                             }
                         }
                     }
-                    #endif   
                     // Delete the condition to delete from the set of conditions with too high degree to
                     // be entirely used for test candidate generation.
                     mpTooHighDegreeConditions->erase( *condition );
@@ -1575,21 +1553,22 @@ namespace vs
             // Delete the condition from the vector this state considers.
             if( _conditionsToDelete.find( *cond ) != _conditionsToDelete.end() )
             {
-                #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                const ex var = mpVariableBounds->removeBound( (*cond)->pConstraint(), *cond );
-                if( is_exactly_a<symbol>( var ) )
+                if( mpVariableBounds != NULL )
                 {
-                    for( auto condB = rConditions().begin(); condB != conditions().end(); ++condB )
+                    const ex var = mpVariableBounds->removeBound( (*cond)->pConstraint(), *cond );
+                    if( is_exactly_a<symbol>( var ) )
                     {
-                        if( (*condB)->constraint().variables().find( ex_to<symbol>( var ).get_name() ) != (*condB)->constraint().variables().end() )
+                        for( auto condB = rConditions().begin(); condB != conditions().end(); ++condB )
                         {
-                            originsToRemove.insert( *condB );
-                            (*condB)->rRecentlyAdded() = true;
-                            (*condB)->rFlag() = false;
+                            if( (*condB)->constraint().variables().find( ex_to<symbol>( var ).get_name() ) != (*condB)->constraint().variables().end() )
+                            {
+                                originsToRemove.insert( *condB );
+                                (*condB)->rRecentlyAdded() = true;
+                                (*condB)->rFlag() = false;
+                            }
                         }
                     }
                 }
-                #endif
                 conditionDeleted = true;
                 cond = rConditions().erase( cond );
             }
@@ -1723,8 +1702,7 @@ namespace vs
             {
                 if( conflictSet->first == NULL )
                     rInconsistent() = false;
-                #ifdef SMTRAT_VS_VARIABLEBOUNDS_B
-                if( conflictSet->first != NULL && conflictSet->first->type() == ST_INVALID )
+                if( mpVariableBounds != NULL && conflictSet->first != NULL && conflictSet->first->type() == ST_INVALID )
                 {
                     for( auto oCond = conflictSet->first->originalConditions().begin(); oCond != conflictSet->first->originalConditions().end(); ++oCond )
                     {
@@ -1736,11 +1714,8 @@ namespace vs
                 }
                 else
                 {
-                #endif
                     mpConflictSets->erase( conflictSet++ );
-                #ifdef SMTRAT_VS_VARIABLEBOUNDS_B
                 }
-                #endif
             }
         }
         auto child = rChildren().begin();
@@ -1905,163 +1880,32 @@ namespace vs
     }
 
     /**
-     * Adds a state as child to this state. The substitution term is either infinity or -infinity.
+     * Adds a state as child to this state with the given substitution.
      *
-     * @param _eliminationVar       The variable, which was eliminated and now is
-     *                              element of a substitution.
-     * @param _substitutionType     The type of the substitution we create.
-     *
-     * @return  1,  if a state was successfully added;
-     *          0,  if a the state already exists;
-     *         -1,  if the side conditions fail.
+     * @param _substitution The substitution to generate the state for.
+     * 
+     * @return True, if a state has been added as child to this state.
      */
-    int State::addChild( const string& _eliminationVar, const ex& _elimVarAsEx, const Substitution_Type& _substitutionType, const ConditionSet& _oConditions )
+    bool State::addChild( const Substitution& _substitution )
     {
-        Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, _substitutionType, _oConditions );
-        if( !updateOCondsOfSubstitutions( sub ) )
+        if( !updateOCondsOfSubstitutions( _substitution ) )
         {
-            State * dt = new State( this, sub );
-            (*dt).updateValuation();
-            rChildren().push_back( dt );
-            return 1;
-        }
-        else
-        {
-            return 0;
-        }
-    }
-
-    /**
-     * Adds a state as child to this state. The conditions are formed by a condition vector plus a new condition.
-     *
-     * @param _oldConditions        The conditions of this state, minus the one
-     *                              used to eliminate the according variable.
-     * @param _lhsCondition         The left hand side of the first condition.
-     * @param _relationCondition    The relation symbol of the first condition.
-     * @param _eliminationVar       The variable, which was eliminated and now is
-     *                              element of a substitution.
-     * @param _subTermNum           The numerator of the term to which the variable is mapped.
-     * @param _subTermDenom         The denominator of the term to which the variable is mapped.
-     * @param _substitutionType     The type of the substitution we create.
-     *
-     * @return  1,  if a state was successfully added;
-     *          0,  if a the state already exists;
-     *         -1,  if the side conditions fail.
-     */
-    int State::addChild( const ex& _lhsCondition,
-                          const smtrat::Constraint_Relation& _relationCondition,
-                          const string& _eliminationVar,
-                          const ex& _elimVarAsEx,
-                          const ex& _subTermConstPart,
-                          const ex& _subTermFactor,
-                          const ex& _subTermDenom,
-                          const ex& _subTermRadicand,
-                          const Substitution_Type& _substitutionType,
-                          const symtab& _variables,
-                          const ConditionSet& _oConditions )
-    {
-        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( _lhsCondition, _relationCondition, _variables );
-        unsigned isConsConsistent = (*cons).isConsistent();
-        if( isConsConsistent != 0 )
-        {
-            SqrtEx sqEx = SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand, _variables );
-            smtrat::ConstraintSet sideCond = smtrat::ConstraintSet();
-            if( isConsConsistent != 1 )
-                sideCond.insert( cons );
-            Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, sqEx, _substitutionType, _oConditions, sideCond );
-            if( !updateOCondsOfSubstitutions( sub ) )
+            State* state = new State( this, _substitution, mpVariableBounds != NULL );
+            const smtrat::ConstraintSet& sideConds = _substitution.sideCondition();
+            for( auto sideCond = sideConds.begin(); sideCond != sideConds.end(); ++sideCond )
             {
-                State* state = new State( this, sub );
-                if( isConsConsistent != 1 )
-                {
-                    std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
-                    subResults.push_back( DisjunctionOfConditionConjunctions() );
-                    subResults.back().push_back( ConditionList() );
-                    subResults.back().back().push_back( new Condition( *sideCond.begin(), (*state).treeDepth(), false, _oConditions, false ) );
-                    state->addSubstitutionResults( subResults );
-                    state->rType() = SUBSTITUTION_TO_APPLY;
-                }
-                (*state).updateValuation();
-                rChildren().push_back( state );
-                return 1;
+                std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
+                subResults.push_back( DisjunctionOfConditionConjunctions() );
+                subResults.back().push_back( ConditionList() );
+                subResults.back().back().push_back( new Condition( *sideCond, state->treeDepth(), false, _substitution.originalConditions(), false ) );
+                state->addSubstitutionResults( subResults );
+                state->rType() = SUBSTITUTION_TO_APPLY;
             }
-            else return 0;
+            state->updateValuation();
+            rChildren().push_back( state );
+            return true;
         }
-        else return -1;
-    }
-
-    /**
-     * Adds a state as child to this state. The conditions are formed by a condition vector plus two new conditions.
-     *
-     * @param _oldConditions        The conditions of this state, minus the one
-     *                              used to eliminate the according variable.
-     * @param _lhsCondition1        The left hand side of the first condition.
-     * @param _relationCondition1   The relation symbol of the first condition.
-     * @param _lhsCondition2        The left hand side of the second condition.
-     * @param _relationCondition2   The relation symbol of the second condition.
-     * @param _constraintVariables  The variables of the constraint used to eliminate
-     *                              the according variable.
-     * @param _eliminationVar       The variable, which was eliminated and now is
-     *                              element of a substitution.
-     * @param _subTermNum           The numerator of the term to which the variable is mapped.
-     * @param _subTermDenom         The denominator of the term to which the variable is mapped.
-     * @param _substitutionType     The type of the substitution we create.
-     *
-     * @return  1,  if a state was successfully added;
-     *          0,  if a the state already exists;
-     *         -1,  if the side conditions fail.
-     */
-    int State::addChild( const ex& _lhsCondition1,
-                          const smtrat::Constraint_Relation& _relationCondition1,
-                          const ex& _lhsCondition2,
-                          const smtrat::Constraint_Relation& _relationCondition2,
-                          const string& _eliminationVar,
-                          const ex& _elimVarAsEx,
-                          const ex& _subTermConstPart,
-                          const ex& _subTermFactor,
-                          const ex& _subTermDenom,
-                          const ex& _subTermRadicand,
-                          const Substitution_Type& _substitutionType,
-                          const symtab& _variables,
-                          const ConditionSet& _oConditions )
-    {
-        const smtrat::Constraint* cons1 = smtrat::Formula::newConstraint( _lhsCondition1, _relationCondition1, _variables );
-        unsigned isCons1Consistent = (*cons1).isConsistent();
-        if( isCons1Consistent != 0 )
-        {
-            const smtrat::Constraint* cons2 = smtrat::Formula::newConstraint( _lhsCondition2, _relationCondition2, _variables );
-            unsigned isCons2Consistent = (*cons2).isConsistent();
-            if( isCons2Consistent != 0 )
-            {
-                SqrtEx sqEx = SqrtEx( _subTermConstPart, _subTermFactor, _subTermDenom, _subTermRadicand, _variables );
-                smtrat::ConstraintSet sideCond = smtrat::ConstraintSet();
-                if( isCons1Consistent != 1 )
-                    sideCond.insert( cons1 );
-                if( isCons2Consistent != 1 )
-                    sideCond.insert( cons2 );
-                Substitution sub = Substitution( _eliminationVar, _elimVarAsEx, sqEx, _substitutionType, _oConditions, sideCond );
-                if( !updateOCondsOfSubstitutions( sub ) )
-                {
-                    State* state = new State( this, sub );
-                    if( !sideCond.empty() )
-                    {
-                        unsigned treeDepth = (*state).treeDepth();
-                        std::vector<DisjunctionOfConditionConjunctions> subResults = std::vector<DisjunctionOfConditionConjunctions>();
-                        subResults.push_back( DisjunctionOfConditionConjunctions() );
-                        subResults.back().push_back( ConditionList() );
-                        for( auto cons = sideCond.begin(); cons != sideCond.end(); ++cons )
-                            subResults.back().back().push_back( new Condition( *cons, treeDepth, false, _oConditions, false ) );
-                        state->addSubstitutionResults( subResults );
-                        state->rType() = SUBSTITUTION_TO_APPLY;
-                    }
-                    state->updateValuation();
-                    rChildren().push_back( state );
-                    return 1;
-                }
-                else return 0;
-            }
-        }
-        return -1;
+        else return false;
     }
 
     /**
@@ -2122,7 +1966,7 @@ namespace vs
     /**
      * Passes the original conditions of the covering set of the conflicts of this state to its father.
      */
-    void State::passConflictToFather( bool _includeInconsistentTestCandidates )
+    void State::passConflictToFather( bool _checkConflictForSideCondition, bool _includeInconsistentTestCandidates )
     {
         assert( isInconsistent() );
         // Determine a covering set of the conflict sets.
@@ -2130,15 +1974,11 @@ namespace vs
         ConditionSetSetSet confSets = ConditionSetSetSet();
         ConflictSets::iterator nullConfSet = rConflictSets().find( NULL );
         if( nullConfSet != conflictSets().end() && !_includeInconsistentTestCandidates )
-        {
             confSets.insert( nullConfSet->second.begin(), nullConfSet->second.end() );
-        }
         else
         {
             for( ConflictSets::iterator confSet = rConflictSets().begin(); confSet != conflictSets().end(); ++confSet )
-            {
                 confSets.insert( confSet->second.begin(), confSet->second.end() );
-            }
         }
         coveringSet( confSets, covSet, treeDepth() );
         #ifdef VS_LOG_INFSUBSETS
@@ -2152,6 +1992,8 @@ namespace vs
         // Get the original conditions to the covering set.
         ConditionSet coverSetOConds = ConditionSet();
         bool coverSetOCondsContainIndexOfFather = false;
+        bool sideConditionIsPartOfConflict = !_checkConflictForSideCondition || (pOriginalCondition() == NULL || originalCondition().constraint().relation() != smtrat::CR_EQ);
+        const smtrat::ConstraintSet& subsSideConds = substitution().sideCondition();
         for( ConditionSet::iterator cond = covSet.begin(); cond != covSet.end(); ++cond )
         {
             // Add the original conditions of the condition to the conflict set.
@@ -2161,13 +2003,17 @@ namespace vs
                 while( oCond != (**cond).originalConditions().end() )
                 {
                     if( (**oCond).constraint().hasVariable( father().index() ) )
-                    {
                         coverSetOCondsContainIndexOfFather = true;
-                    }
                     coverSetOConds.insert( *oCond );
                     oCond++;
                 }
             }
+            sideConditionIsPartOfConflict |= subsSideConds.find( (*cond)->pConstraint() ) != subsSideConds.end();
+        }
+        if( !sideConditionIsPartOfConflict )
+        {
+            for( auto cond = rFather().rConditions().begin(); cond != father().conditions().end(); ++cond )
+                (*cond)->rFlag() = true;
         }
         // If a test candidate was provided by an equation and its side condition hold always,
         // add the corresponding constraint to the conflict set. (Because we omit the other test candidates )
@@ -2183,13 +2029,9 @@ namespace vs
         assert( !coverSetOConds.empty() );
         // Add the original conditions of the covering set as a conflict set to the father.
         if( !coverSetOCondsContainIndexOfFather )
-        {
             rFather().addConflictSet( NULL, conflictSet );
-        }
         else
-        {
             rFather().addConflictSet( pSubstitution(), conflictSet );
-        }
         // Delete all children, the conflict sets and the conditions of this state.
         mpConflictSets->clear();
         while( !children().empty() )
@@ -2203,9 +2045,8 @@ namespace vs
         {
             const Condition* pCond = rConditions().back();
             rConditions().pop_back();
-            #ifdef SMTRAT_VS_VARIABLEBOUNDS
-            mpVariableBounds->removeBound( pCond->pConstraint(), pCond );
-            #endif
+            if( mpVariableBounds != NULL )
+                mpVariableBounds->removeBound( pCond->pConstraint(), pCond );
             delete pCond;
             pCond = NULL;
         }
@@ -2217,14 +2058,10 @@ namespace vs
         if( hasSubResultsCombination() )
         {
             if( subResultCombination().size() == 1 )
-            {
                 fixedConditions = substitutionResults().at( subResultCombination().back().first ).size() == 1;
-            }
         }
         else
-        {
             fixedConditions = true;
-        }
         if( coverSetOCondsContainIndexOfFather && !fixedConditions )
         {
             rMarkedAsDeleted() = false;
@@ -2332,7 +2169,6 @@ namespace vs
             return false;
     }
 
-    #ifdef SMTRAT_VS_VARIABLEBOUNDS
     /**
      * Checks whether the test candidate of this state is valid against the variable intervals
      * in the father of this state.
@@ -2477,7 +2313,7 @@ namespace vs
      * @return True, if the constraint of the left-hand side of the given condition has no roots 
      *          in the variable bounds of this state.
      */
-    bool State::hasRootsInVariableBounds( const Condition* _condition )
+    bool State::hasRootsInVariableBounds( const Condition* _condition, bool _useSturmSequence )
     {
         #ifdef VS_DEBUG_ROOTS_CHECK
         cout << __func__ << ":  " << _condition->constraint() << endl;
@@ -2518,8 +2354,7 @@ namespace vs
         #endif
         if( solutionSpace.contains( 0 ) )
         {
-            #ifdef VS_STURM_SEQUENCE_FOR_ROOT_CHECK
-            if( cons.variables().size() == 1 )
+            if( _useSturmSequence && cons.variables().size() == 1 )
             {
                 RationalUnivariatePolynomial rup = RationalUnivariatePolynomial( cons.lhs(), sym );
                 list<RationalUnivariatePolynomial> seq = RationalUnivariatePolynomial::standardSturmSequence( rup, rup.diff() );
@@ -2591,14 +2426,11 @@ namespace vs
             }
             else
             {
-                #endif
                 #ifdef VS_DEBUG_ROOTS_CHECK
                 cout << "  -> true (3)" << endl;
                 #endif
                 return true;
-                #ifdef VS_STURM_SEQUENCE_FOR_ROOT_CHECK
             }
-            #endif
         }
         bool constraintInconsistent = false;
         if( cons.relation() == smtrat::CR_EQ )
@@ -2633,7 +2465,6 @@ namespace vs
         #endif
         return false;
     }
-    #endif
 
     /**
      * Prints the conditions and the substitution of this state and all its children.
@@ -2730,11 +2561,12 @@ namespace vs
         printSubstitutionResultCombination( _initiation + "   ", _out );
         _out << _initiation << endl;
         printConflictSets( _initiation + "   ", _out );
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
-        _out << _initiation << endl;
-        mpVariableBounds->print( _out, _initiation );
-        _out << _initiation << endl;
-        #endif
+        if( mpVariableBounds != NULL )
+        {
+            _out << _initiation << endl;
+            mpVariableBounds->print( _out, _initiation );
+            _out << _initiation << endl;
+        }
     }
 
     /**

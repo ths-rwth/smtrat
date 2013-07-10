@@ -108,6 +108,7 @@ namespace smtrat
             // Methods:
             static std::string prefixToInfix( const std::string& );
             bool hasNoOtherVariables( const GiNaC::ex& ) const;
+            Constraint* createNormalizedBound( const GiNaC::symbol&, const Constraint_Relation, const GiNaC::numeric& ) const;
             Constraint* createNormalizedConstraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& ) const;
             const Constraint* addConstraintToPool( Constraint* );
 
@@ -208,6 +209,7 @@ namespace smtrat
 
             void clear();
             unsigned maxLenghtOfVarName() const;
+            const Constraint* newBound( const GiNaC::symbol&, const Constraint_Relation, const GiNaC::numeric& );
             const Constraint* newConstraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& );
             std::pair<std::string,GiNaC::ex> newArithmeticVariable( const std::string&, Variable_Domain, bool = false );
             std::pair<std::string,GiNaC::ex> newAuxiliaryIntVariable(  const std::string& = "h_i" );

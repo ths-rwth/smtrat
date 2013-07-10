@@ -60,7 +60,7 @@ namespace smtrat
             };
             typedef std::map< const GiNaC::ex*, lra::Variable<lra::Numeric>*, exPointerComp>                              ExVariableMap;
             typedef std::map< const Constraint*, std::vector< const lra::Bound<lra::Numeric>* >*, constraintPointerComp > ConstraintBoundsMap;
-            typedef std::map< const Constraint*, Context, constraintPointerComp >                                           ConstraintContextMap;
+            typedef std::map< const Constraint*, Context, constraintPointerComp >                                         ConstraintContextMap;
 
         private:
 
