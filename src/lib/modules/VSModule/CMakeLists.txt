@@ -1,4 +1,4 @@
-set(SMTRAT_VS_Settings "1" CACHE STRING "Number of setting used for VSModule")
+set(SMTRAT_VS_Settings "2345" CACHE STRING "Number of setting used for VSModule")
 BeginDefineModule()
 ModuleMainHeader(VSModule/VSModule.h)
 FILE(GLOB_RECURSE sources *.cpp)

@@ -189,6 +189,7 @@ namespace smtrat
                 std::pair<const Bound<T>*, std::pair<const Bound<T>*, const Bound<T>*> > addEqualBound( Value<T>* const, smtrat::Formula::iterator, const smtrat::Constraint* = NULL );
                 void deactivateBound( const Bound<T>*, smtrat::Formula::iterator );
                 GiNaCRA::Interval getVariableBounds() const;
+                std::set< const smtrat::Formula* > getDefiningOrigins() const;
 
                 void print( std::ostream& = std::cout ) const;
                 void printAllBounds( std::ostream& = std::cout, const std::string = "" ) const;
@@ -444,6 +445,25 @@ namespace smtrat
                 upperBoundValue = supremum().limit().mainPart().toGinacNumeric();
             }
             GiNaCRA::Interval result = GiNaCRA::Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+            return result;
+        }
+
+        /**
+         *
+         * @return
+         */
+        template<class T>
+        std::set< const smtrat::Formula* > Variable<T>::getDefiningOrigins() const
+        {
+            std::set< const smtrat::Formula* > result = std::set< const smtrat::Formula* >();
+            if( !infimum().isInfinite() )
+            {
+                result.insert( infimum().origins().front().begin(), infimum().origins().front().end() );
+            }
+            if( !supremum().isInfinite() )
+            {
+                result.insert( supremum().origins().front().begin(), supremum().origins().front().end() );
+            }
             return result;
         }
 
