@@ -30,7 +30,7 @@
 #ifndef HISTORYNODE_H
 #define HISTORYNODE_H
 
-//#define HISTORY_DEBUG
+#define HISTORY_DEBUG
 
 #include "ContractionCandidate.h"
 #include "utils.h"
@@ -69,12 +69,14 @@ namespace smtrat
 
                 GiNaCRA::evaldoubleintervalmap                 mIntervals;    // intervals AFTER contraction with Candidates of the incoming edge has been applied
                 const Constraint*                              mSplit;
-                std::map<string, set_Constraint> mReasons;
+                std::map<string, set_Constraint>               mReasons;
                 HistoryNode*                                   mLeftChild;
                 HistoryNode*                                   mRightChild;
                 HistoryNode*                                   mParent;
                 std::set<const ContractionCandidate*>          mAppliedContractions;
+                set_Constraint                                 mStateInfeasibleSubset;
                 const unsigned                                 mId;
+                
 
             public:
 
@@ -90,6 +92,7 @@ namespace smtrat
                     mRightChild( _original.right() ),
                     mParent( _original.parent() ),
                     mAppliedContractions( _original.getCandidates() ),
+                    mStateInfeasibleSubset(_original.stateInfeasibleSubset() ),
                     mId( _original.id() )
                 {}
 
@@ -101,6 +104,7 @@ namespace smtrat
                     mRightChild( NULL ),
                     mParent( _parent ),
                     mAppliedContractions(),
+                    mStateInfeasibleSubset(),
                     mId( _id )
                 {}
 
@@ -112,22 +116,9 @@ namespace smtrat
                     mRightChild( NULL ),
                     mParent( NULL ),
                     mAppliedContractions(),
+                    mStateInfeasibleSubset(),
                     mId( _id )
-                {
-                    for( GiNaCRA::evaldoubleintervalmap::iterator intervalIt = _intervals.begin(); intervalIt != _intervals.end(); ++intervalIt )
-                    {
-                        const symbol var = (*intervalIt).first;
-                        std::pair<const Constraint*, const Constraint*> bounds = icp::intervalToConstraint( var, (*intervalIt).second );
-                        if( bounds.first != NULL )
-                            mReasons[var.get_name()].insert( bounds.first );
-                        //                        addReason(var, bounds.first);
-                        if( bounds.second != NULL )
-                            mReasons[var.get_name()].insert( bounds.second );
-                        //                        addReason(var, bounds.second);
-                        if( mReasons.find( var.get_name() ) == mReasons.end() )
-                            mReasons[var.get_name()] = set_Constraint();
-                    }
-                }
+                {}
 
                 HistoryNode( HistoryNode* _parent, GiNaCRA::evaldoubleintervalmap _intervals, unsigned _id ):
                     mIntervals( _intervals ),
@@ -137,27 +128,16 @@ namespace smtrat
                     mRightChild( NULL ),
                     mParent( _parent ),
                     mAppliedContractions(),
+                    mStateInfeasibleSubset(),
                     mId( _id )
-                {
-                    for( GiNaCRA::evaldoubleintervalmap::iterator intervalIt = _intervals.begin(); intervalIt != _intervals.end(); ++intervalIt )
-                    {
-                        std::pair<const Constraint*,
-                                  const Constraint*> bounds = icp::intervalToConstraint( (*intervalIt).first, (*intervalIt).second );
-                        if( bounds.first != NULL )
-                            mReasons[(*intervalIt).first.get_name()].insert( bounds.first );
-                        //                        addReason((*intervalIt).first, bounds.first);
-                        if( bounds.second != NULL )
-                            mReasons[(*intervalIt).first.get_name()].insert( bounds.second );
-                        //                        addReason((*intervalIt).first, bounds.second);
-                        if( mReasons.find( (*intervalIt).first.get_name() ) == mReasons.end() )
-                            mReasons[(*intervalIt).first.get_name()] = set_Constraint();
-                    }
-                }
+                {}
 
                 ~HistoryNode()
                 {
-                    delete mLeftChild;
-                    delete mRightChild;
+                    if(mLeftChild != NULL)
+                        delete mLeftChild;
+                    if(mRightChild != NULL)
+                        delete mRightChild;
                 }
 
                 /**
@@ -248,6 +228,16 @@ namespace smtrat
                     return false;
                 }
 
+                set_Constraint& rStateInfeasibleSubset()
+                {
+                    return mStateInfeasibleSubset;
+                }
+                
+                set_Constraint stateInfeasibleSubset() const
+                {
+                    return mStateInfeasibleSubset;
+                }
+                
                 /**
                  * updates or inserts an interval into the actual map
                  * @param _var
@@ -267,7 +257,23 @@ namespace smtrat
                         return false;
                     }
                 }
+                
+                void addInfeasibleConstraint(const Constraint* _constraint)
+                {
+                    cout << "[AddInfeasibleConstraint] " << *_constraint << endl;
+                    mStateInfeasibleSubset.insert(_constraint);
+                }
 
+                bool stateInfeasibleSubsetContainsSplit()
+                {
+                    for( set_Constraint::iterator constraintIt = mStateInfeasibleSubset.begin(); constraintIt != mStateInfeasibleSubset.end(); ++constraintIt )
+                    {
+                        if( (*constraintIt)->variables().find(this->variable().get_name()) != (*constraintIt)->variables().end() )
+                            return true;
+                    }
+                    return false;
+                }
+                
                 GiNaCRA::DoubleInterval& getInterval( const symbol _variable )
                 {
                     assert( mIntervals.find( _variable ) != mIntervals.end() );
@@ -278,7 +284,13 @@ namespace smtrat
                 {
                     mAppliedContractions.insert( _candidate );
                     // update reasons
-                    addReasons( _candidate->lhs(), _candidate->origin() );
+                    assert(!_candidate->origin().empty());
+                    // TEMPORARY!!! -> Very coarse overapprox!
+                    for( auto originIt = _candidate->rOrigin().begin(); originIt != _candidate->rOrigin().end(); ++originIt )
+                    {
+                        addReason( _candidate->derivationVar().get_name(), (*originIt)->pConstraint() );
+                    }
+                    
                 }
 
                 std::set<const ContractionCandidate*> getCandidates() const
@@ -342,12 +354,12 @@ namespace smtrat
                     }
                 }
 
-                void addReasons( const symbol _variable, std::set<const Formula*> _origins )
+                void addReasons( const symbol _variable, std::set<const Formula*, icp::ContractionCandidate::originComp> _origins )
                 {
                     assert( mReasons.find( _variable.get_name() ) != mReasons.end() );
                     bool                               contained = false;
-                    std::set<const Formula*>::iterator minimal   = _origins.begin();
-                    for( std::set<const Formula*>::iterator originIt = _origins.begin(); originIt != _origins.end(); ++originIt )
+                    std::set<const Formula*, icp::ContractionCandidate::originComp>::iterator minimal   = _origins.begin();
+                    for( std::set<const Formula*, icp::ContractionCandidate::originComp>::iterator originIt = _origins.begin(); originIt != _origins.end(); ++originIt )
                     {
                         if( mReasons.at( _variable.get_name() ).find( (*originIt)->pConstraint() ) != mReasons.at( _variable.get_name() ).end() )
                         {
@@ -365,51 +377,34 @@ namespace smtrat
                     }
                 }
 
-                void removeBoundsFromReasons()
-                {
-                    for( std::map<string, set_Constraint>::iterator variableIt = mReasons.begin(); variableIt != mReasons.end();
-                            ++variableIt )
-                    {
-                        for( set_Constraint::iterator constraintIt = (*variableIt).second.begin(); constraintIt != (*variableIt).second.end(); )
-                        {
-                            if( isBound( *constraintIt ) )
-                                constraintIt = (*variableIt).second.erase( constraintIt );
-                            else
-                                ++constraintIt;
-                        }
-                    }
-                }
-
                 const symbol variable() const
                 {
                     assert( mSplit != NULL );
                     return ex_to<symbol>( (*mSplit->variables().begin()).second );
                 }
                 
-                void propagateReasons() const
+                void propagateStateInfeasibleSubset() const
                 {
-                    if( !mParent->isRoot() )
+                    if( this->isRoot() )
                     {
-                        for( std::map<string, set_Constraint>::const_iterator variableIt = mReasons.begin(); variableIt != mReasons.end(); ++variableIt )
+                        for( set_Constraint::iterator constraintIt = mStateInfeasibleSubset.begin(); constraintIt != mStateInfeasibleSubset.end(); ++constraintIt )
                         {
-                            mParent->addReasons((*variableIt).first, (*variableIt).second );
+                            mParent->addInfeasibleConstraint(*constraintIt);
                         }
-                        mParent->propagateReasons();
+                        mParent->propagateStateInfeasibleSubset();
                     }
                 }
 
                 void removeLeftChild()
                 {
-                    HistoryNode* toDelete = mLeftChild;
+                    delete mLeftChild;
                     mLeftChild = NULL;
-                    delete toDelete;
                 }
 
                 void removeRightChild()
                 {
-                    HistoryNode* toDelete = mRightChild;
+                    delete mRightChild;
                     mRightChild = NULL;
-                    delete toDelete;
                 }
 
                 /**

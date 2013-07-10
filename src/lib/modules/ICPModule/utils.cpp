@@ -13,43 +13,36 @@ namespace smtrat
     {
         std::pair<const Constraint*, const Constraint*> intervalToConstraint( const symbol& _var, const GiNaCRA::DoubleInterval _interval )
         {
-            GiNaC::symtab variables;
-            variables.insert( std::pair<string, ex>( _var.get_name(), _var ) );
-
             // left:
             numeric           bound  = GiNaC::rationalize( _interval.left() );
-            GiNaC::ex         leftEx = _var - bound;
-
+            
             const Constraint* leftTmp;
             switch( _interval.leftType() )
             {
-                case GiNaCRA::DoubleInterval::INFINITY_BOUND:
-                    leftTmp = NULL;
-                    break;
                 case GiNaCRA::DoubleInterval::STRICT_BOUND:
-                    leftTmp = Formula::newConstraint( leftEx, Constraint_Relation::CR_GREATER, variables );
+                    leftTmp = Formula::newBound(_var, Constraint_Relation::CR_GREATER, bound);
                     break;
                 case GiNaCRA::DoubleInterval::WEAK_BOUND:
-                    leftTmp = Formula::newConstraint( leftEx, Constraint_Relation::CR_GEQ, variables );
+                    leftTmp = Formula::newBound(_var, Constraint_Relation::CR_GEQ, bound);
                     break;
+                default:
+                    leftTmp = NULL;
             }
 
             // right:
             bound = GiNaC::rationalize( _interval.right() );
-            GiNaC::ex         rightEx = _var - bound;
-
+            
             const Constraint* rightTmp;
             switch( _interval.rightType() )
             {
-                case GiNaCRA::DoubleInterval::INFINITY_BOUND:
-                    rightTmp = NULL;
-                    break;
                 case GiNaCRA::DoubleInterval::STRICT_BOUND:
-                    rightTmp = Formula::newConstraint( rightEx, Constraint_Relation::CR_LESS, variables );
+                    rightTmp = Formula::newBound( _var, Constraint_Relation::CR_LESS, bound );
                     break;
                 case GiNaCRA::DoubleInterval::WEAK_BOUND:
-                    rightTmp = Formula::newConstraint( rightEx, Constraint_Relation::CR_LEQ, variables );
+                    rightTmp = Formula::newBound( _var, Constraint_Relation::CR_LEQ, bound );
                     break;
+                default:
+                    rightTmp = NULL;
             }
 
             return std::make_pair( leftTmp, rightTmp );
