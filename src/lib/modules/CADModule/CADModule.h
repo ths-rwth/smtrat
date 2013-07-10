@@ -44,6 +44,9 @@
 #ifdef SMTRAT_CAD_VARIABLEBOUNDS
 #include "../../VariableBounds.h"
 #endif
+#ifdef SMTRAT_DEVOPTION_Statistics
+#include "CADStatistics.h"
+#endif
 
 namespace smtrat
 {
@@ -118,6 +121,9 @@ namespace smtrat
             void addDeductions( const list<pair<list<GiNaCRA::Constraint>, list<GiNaCRA::Constraint> > >& deductions );
             const Formula* getConstraintAt( unsigned index );
             void updateConstraintMap( unsigned index, bool decrement = true );
+#ifdef SMTRAT_DEVOPTION_Statistics
+			CADStatistics* mStats;
+#endif
     };
 
 }    // namespace smtrat
