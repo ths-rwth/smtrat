@@ -25,7 +25,7 @@
  *
  * @author Ulrich Loup
  * @since 2012-01-19
- * @version 2013-05-29
+ * @version 2013-07-10
  */
 
 //#define MODULE_VERBOSE
@@ -146,6 +146,9 @@ namespace smtrat
         #endif
         #else
         mCAD.alterSetting( setting );
+        #endif
+        #ifdef MODULE_VERBOSE
+        cout << "Initial CAD setting: " << endl << setting << endl;
         #endif
     }
 
