@@ -168,9 +168,7 @@ namespace vs
         typedef std::vector< std::pair< ConditionList, bool > > 				   SubstitutionResult;
         typedef std::vector< SubstitutionResult > 								   SubstitutionResults;
         typedef std::vector< std::pair< unsigned, unsigned > >                     SubResultCombination;
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         typedef smtrat::vb::VariableBounds< Condition >                            VariableBounds;
-        #endif
     private:
 
         // Members.
@@ -181,10 +179,8 @@ namespace vs
         bool				  mMarkedAsDeleted;
         bool				  mSubResultsSimplified;
         bool				  mTakeSubResultCombAgain;
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         bool                  mTestCandidateCheckedForBounds;
         bool                  mTestCandidateInBoundsCreated;
-        #endif
         bool				  mToHighDegree;
         bool				  mTryToRefreshIndex;
         unsigned              mBackendCallValuation;
@@ -201,14 +197,12 @@ namespace vs
         ConflictSets*		  mpConflictSets;
         StateVector* 		  mpChildren;
         std::set<const Condition*>* mpTooHighDegreeConditions;
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         VariableBounds*       mpVariableBounds;
-        #endif
     public:
 
         // Constructors.
-        State();
-        State( State* const, const Substitution& );
+        State( bool );
+        State( State* const, const Substitution&, bool );
 
         // Destructor.
         ~State();
@@ -449,17 +443,17 @@ namespace vs
             return *mpTooHighDegreeConditions;
         }
 
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         const VariableBounds& variableBounds() const
         {
+            assert( mpVariableBounds != NULL );
             return *mpVariableBounds;
         }
 
         VariableBounds& rVariableBounds()
         {
+            assert( mpVariableBounds != NULL );
             return *mpVariableBounds;
         }
-        #endif
 
         void setOriginalCondition( const Condition* const _pOCondition )
         {
@@ -482,7 +476,7 @@ namespace vs
         // Data read and write methods.
         State& root();
         bool unfinishedAncestor( State*& );
-        bool bestCondition( const Condition*&, unsigned );
+        bool bestCondition( const Condition*&, unsigned, bool );
         ConditionList::iterator	constraintExists( const smtrat::Constraint& );
 
         // Manipulating methods.
@@ -499,7 +493,7 @@ namespace vs
         const ConditionList getCurrentSubresultCombination() const;
         bool refreshConditions();
         void initConditionFlags();
-        bool initIndex( const GiNaC::symtab& );
+        bool initIndex( const GiNaC::symtab&, bool );
         void addCondition( const smtrat::Constraint*, const ConditionSet&, const unsigned, const bool );
         bool checkConditions();
         int deleteOrigins( std::set<const Condition*>& );
@@ -507,19 +501,15 @@ namespace vs
         void deleteOriginsFromConflictSets( std::set<const Condition*>&, bool );
         void deleteOriginsFromSubstitutionResults( std::set<const Condition*>& );
         void deleteConditions( std::set<const Condition*>& );
-        int addChild( const std::string&, const GiNaC::ex&, const Substitution_Type&, const ConditionSet& );
-        int addChild( const GiNaC::ex&, const smtrat::Constraint_Relation&, const std::string&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const Substitution_Type&, const GiNaC::symtab&, const ConditionSet& );
-        int addChild( const GiNaC::ex&, const smtrat::Constraint_Relation&, const GiNaC::ex&, const smtrat::Constraint_Relation&, const std::string&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const Substitution_Type&, const GiNaC::symtab&, const ConditionSet& );
+        bool addChild( const Substitution& );
         void updateValuation();
         void updateBackendCallValuation();
-        void passConflictToFather( bool = false );
+        void passConflictToFather( bool, bool = false );
         bool hasLocalConflict();
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         bool checkTestCandidatesForBounds();
         std::vector< GiNaCRA::DoubleInterval > solutionSpace( ConditionSet& );
         static GiNaC::numeric cauchyBound( const GiNaC::ex& );
-        bool hasRootsInVariableBounds( const Condition* );
-        #endif
+        bool hasRootsInVariableBounds( const Condition*, bool );
 
         // Printing methods.
         void print( const std::string = "***", std::ostream& = std::cout ) const;

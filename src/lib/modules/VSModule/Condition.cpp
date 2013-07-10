@@ -63,7 +63,7 @@ namespace vs
      *
      * @return A valuation of the constraint according to an heuristic.
      */
-    double Condition::valuate( const string& _consideredVariable, unsigned _maxNumberOfVars, bool _forElimination ) const
+    double Condition::valuate( const string& _consideredVariable, unsigned _maxNumberOfVars, bool _forElimination, bool _preferEquation ) const
     {
         symtab::const_iterator var = mpConstraint->variables().find( _consideredVariable );
         if( var != mpConstraint->variables().end() )
@@ -114,16 +114,6 @@ namespace vs
             }
             else if( degreeWeight == 2 )
             {
-                #ifdef VS_ELIMINATE_MULTI_ROOTS
-                const ex& lhs = mpConstraint->multiRootLessLhs();
-                bool hasRationalLeadingCoefficient = lhs.coeff( var->second, degreeWeight ).info( info_flags::rational );
-                if( hasRationalLeadingCoefficient && lhs.coeff( var->second, degreeWeight - 1 ).info( info_flags::rational ) )
-                    lCoeffWeight = 1;
-                else if( hasRationalLeadingCoefficient )
-                    lCoeffWeight = 2;
-                else
-                    lCoeffWeight = 3;
-                #else
                 bool hasRationalLeadingCoefficient = mpConstraint->coefficient( var->second, degreeWeight ).info( info_flags::rational );
                 if( hasRationalLeadingCoefficient && mpConstraint->coefficient( var->second, degreeWeight - 1 ).info( info_flags::rational ) )
                     lCoeffWeight = 1;
@@ -131,7 +121,6 @@ namespace vs
                     lCoeffWeight = 2;
                 else
                     lCoeffWeight = 3;
-                #endif
             }
             // Check the number of variables.
             double numberOfVariableWeight = mpConstraint->variables().size();
@@ -225,7 +214,11 @@ namespace vs
                 if( allOtherMonomialsPos || allOtherMonomialsNeg ) otherMonomialsPositiveWeight = 2;
             }
             double weightFactorTmp = maximum;
-            double result = ( degreeWeight <= 2 ? 1 : 2);
+            double result = 0;
+            if( _preferEquation )
+                result = ( (constraint().relation() == smtrat::CR_EQ || degreeWeight <= 2) ? 1 : 2);
+            else
+                result = ( degreeWeight <= 2 ? 1 : 2);
             result += relationSymbolWeight/weightFactorTmp;
             weightFactorTmp *= maximum;
             result += lCoeffWeight/weightFactorTmp;

@@ -144,13 +144,49 @@ namespace smtrat
      * @param _variables An over-approximation of the variables which occur on the left-hand side.
      * @return The constructed constraint.
      */
+    const Constraint* ConstraintPool::newBound( const symbol& _var, const Constraint_Relation _rel, const numeric& _bound )
+    {
+        CONSTRAINT_LOCK_GUARD
+        // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
+        //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
+        Constraint* constraint = createNormalizedBound( _var, _rel, _bound );
+        pair<fastConstraintSet::iterator, bool> iterBoolPair = mConstraints.insert( constraint );
+        if( !iterBoolPair.second )
+            delete constraint;
+        else
+            constraint->setBoundProperties( _var, _bound );
+        return *iterBoolPair.first;
+    }
+
+    /**
+     * Constructs a new constraint and adds it to the pool, if it is not yet a member. If it is a
+     * member, this will be returned instead of a new constraint.
+     * 
+     * Note, that the left-hand side of the constraint is simplified and normalized, hence it is
+     * not necessarily equal to the given left-hand side. The same holds for the relation symbol.
+     * However, it is assured that the returned constraint has the same solutions as
+     * the expected one.
+     * 
+     * @param _lhs The left-hand side of the constraint.
+     * @param _rel The relation symbol of the constraint.
+     * @param _variables An over-approximation of the variables which occur on the left-hand side.
+     * @return The constructed constraint.
+     */
     const Constraint* ConstraintPool::newConstraint( const ex& _lhs, const Constraint_Relation _rel, const symtab& _variables )
     {
         CONSTRAINT_LOCK_GUARD
         assert( hasNoOtherVariables( _lhs ) );
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
-        const Constraint* result = addConstraintToPool( createNormalizedConstraint( _lhs, _rel, _variables ) );
+        Constraint* constraint = createNormalizedConstraint( _lhs, _rel, _variables );
+        if( constraint->variables().empty() )
+        {
+            bool constraintConsistent = Constraint::evaluate( ex_to<numeric>( constraint->lhs() ), constraint->relation() );
+            delete constraint;
+            return ( constraintConsistent ? mConsistentConstraint : mInconsistentConstraint );
+        }
+        constraint->collectProperties();
+        const Constraint* result = addConstraintToPool( constraint );
         return result;
     }
 
@@ -338,6 +374,40 @@ namespace smtrat
      * 
      * @return The constructed constraint.
      */
+    Constraint* ConstraintPool::createNormalizedBound( const symbol& _var, const Constraint_Relation _rel, const numeric& _bound ) const
+    {
+        assert( _rel != CR_EQ && _rel != CR_NEQ );
+        symtab vars = symtab();
+        vars[_var.get_name()] = _var;
+        if( _rel == CR_GREATER )
+        {
+            ex lhs = _bound - _var;
+            return new Constraint( lhs, CR_LESS, vars, mIdAllocator );
+        }
+        else if( _rel == CR_GEQ )
+        {
+            ex lhs = _bound - _var;
+            return new Constraint( lhs, CR_LEQ, vars, mIdAllocator );
+        }
+        else
+        {
+            ex lhs = _var - _bound;
+            return new Constraint( lhs, _rel, vars, mIdAllocator );
+        }
+    }
+
+    /**
+     * Creates a normalized constraint, which has the same solutions as the constraint consisting of the given
+     * left-hand side and relation symbol.
+     * 
+     * Note, that this method uses the allocator which is locked before calling.
+     *
+     * @param _lhs The left-hand side of the constraint before normalization,
+     * @param _rel The relation symbol of the constraint before normalization,
+     * @param _variables An over-approximation of the variables occurring in the given left-hand side.
+     * 
+     * @return The constructed constraint.
+     */
     Constraint* ConstraintPool::createNormalizedConstraint( const ex& _lhs, const Constraint_Relation _rel, const symtab& _variables ) const
     {
         if( _rel == CR_GREATER )
@@ -393,14 +463,6 @@ namespace smtrat
      */
     const Constraint* ConstraintPool::addConstraintToPool( Constraint* _constraint )
     {
-        if( _constraint->variables().empty() )
-        {
-            bool constraintConsistent = Constraint::evaluate( ex_to<numeric>( _constraint->lhs() ), _constraint->relation() );
-            delete _constraint;
-            return ( constraintConsistent ? mConsistentConstraint : mInconsistentConstraint );
-        }
-        _constraint->collectProperties();
-        
         unsigned constraintConsistent = _constraint->isConsistent();
         if( constraintConsistent == 2 )
         {

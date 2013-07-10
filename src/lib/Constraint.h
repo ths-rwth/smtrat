@@ -335,6 +335,7 @@ namespace smtrat
             static bool containsNumeric( const GiNaC::ex& );
             static bool containsNumeric( const GiNaC::ex&, GiNaC::const_iterator );
             static GiNaC::ex normalizeA( const GiNaC::ex& );
+            void setBoundProperties( const GiNaC::symbol&, const GiNaC::numeric& );
             void collectProperties();
             Constraint* simplify();
             void init();
