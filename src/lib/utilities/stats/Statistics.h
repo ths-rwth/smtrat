@@ -4,9 +4,11 @@
  *
  * Created on September 26, 2012, 5:06 PM
  */
+ 
+#pragma once
 
-#ifndef STATISTICS_H
-#define	STATISTICS_H
+//#ifndef STATISTICS_H
+//#define	STATISTICS_H
 
 #include "../../config.h"
 
@@ -66,5 +68,5 @@ protected:
 }
 
 #endif
-#endif	/* STATISTICMODULE_H */
+//#endif	/* STATISTICMODULE_H */
 
