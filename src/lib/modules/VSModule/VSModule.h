@@ -39,13 +39,15 @@
 
 #include "Substitute.h"
 #include "State.h"
+#include "VSSettings.h"
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
+#include "VSSettings.h"
 
 namespace smtrat
 {
-    class VSModule:
-        public Module
+    template<class Settings>
+    class VSModule: public Module
     {
         private:
 
@@ -121,5 +123,7 @@ namespace smtrat
     };
 
 }    // end namespace smtrat
+
+#include "VSModule.tpp"
 
 #endif   /** VSMODULE_H */
