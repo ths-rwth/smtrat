@@ -2166,10 +2166,9 @@ namespace smtrat
             */ 
            while((*columnA_iterator).rowNumber() > (*columnB_iterator).rowNumber() && !columnA_iterator.columnBegin())
                {
-                   printf("H");
                    columnA_iterator.up();
                }    
-              EntryID ID1_to_be_Fixed;            
+              EntryID ID1_to_be_Fixed,ID2_to_be_Fixed;            
               if((*columnA_iterator).rowNumber() == (*columnB_iterator).rowNumber())
               {               
                  T content = T(((*columnA_iterator).content().toGinacNumeric())+((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric())));  
@@ -2191,56 +2190,66 @@ namespace smtrat
               {                  
                   EntryID entryID = newTableauEntry(T(((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric()))));
                   TableauEntry<T>& entry = (*mpEntries)[entryID];
-                  TableauEntry<T>& entry_down = (*mpEntries)[(*columnA_iterator).down()];
+                  TableauEntry<T>& entry_down = (*mpEntries)[(*columnA_iterator).down()];   
+                  EntryID down = (*columnA_iterator).down();
                   entry.setColumnNumber((*columnA_iterator).columnNumber());
                   entry.setRowNumber((*columnB_iterator).rowNumber());
-                  entry.setDown((*columnA_iterator).down());
+                  entry.setDown(down);
                   entry.setUp(columnA_iterator.entryID());
                   entry_down.setUp(entryID);
                   (*columnA_iterator).setDown(entryID);
                   TableauHead& columnHead = mColumns[entry.columnNumber()];
                   ++columnHead.mSize;
                   Iterator row_iterator = Iterator(columnB_iterator.entryID(), mpEntries);
+                  ID2_to_be_Fixed = row_iterator.entryID();
                   if((*row_iterator).columnNumber() > entry.columnNumber())
                   {
-                      while((*row_iterator).columnNumber() > entry.columnNumber())
+                      while((*row_iterator).columnNumber() > entry.columnNumber() && !row_iterator.rowBegin())
                       {
                           ID1_to_be_Fixed = row_iterator.entryID();
-                          row_iterator.left();                        
+                          row_iterator.left(); 
+                          ID2_to_be_Fixed = row_iterator.entryID();
                       }
-                      (*mpEntries)[ID1_to_be_Fixed].setLeft(entryID);
-                      (*mpEntries)[entryID].setRight(ID1_to_be_Fixed);
-                      (*mpEntries)[entryID].setLeft((*row_iterator).left());
-                      if(!row_iterator.rowBegin())
+                      if((*row_iterator).columnNumber() > entry.columnNumber() && row_iterator.rowBegin())
+                      {                          
+                          (*mpEntries)[entryID].setLeft(LAST_ENTRY_ID);  
+                          (*mpEntries)[entryID].setRight(ID2_to_be_Fixed);
+                          (*mpEntries)[ID2_to_be_Fixed].setLeft(entryID);
+                          TableauHead& rowHead = mRows[(*columnB_iterator).rowNumber()];
+                          rowHead.mStartEntry = entryID;
+                      }                     
+                      else
                       {
-                          row_iterator.left();
-                      }    
-                      if(row_iterator.entryID() != entryID)
-                      {
-                          (*mpEntries)[row_iterator.entryID()].setRight(entryID);
-                      }                        
-                  }  
+                          (*mpEntries)[ID2_to_be_Fixed].setRight(entryID);
+                          (*mpEntries)[ID1_to_be_Fixed].setLeft(entryID);
+                          (*mpEntries)[entryID].setLeft(ID2_to_be_Fixed); 
+                          (*mpEntries)[entryID].setRight(ID1_to_be_Fixed);
+                      }
+                  }    
                   else
                   {
-                      while((*row_iterator).columnNumber() < entry.columnNumber())
+                      while((*row_iterator).columnNumber() < entry.columnNumber() && !row_iterator.rowEnd())
                       {
                           ID1_to_be_Fixed = row_iterator.entryID();
-                          row_iterator.right();                        
-                      }
-                      (*mpEntries)[ID1_to_be_Fixed].setRight(entryID);
-                      (*mpEntries)[entryID].setLeft(ID1_to_be_Fixed);
-                      (*mpEntries)[entryID].setRight((*row_iterator).right());
-                      TableauHead& rowHead = mRows[entry.rowNumber()];
-                      ++rowHead.mSize;
-                      if(!row_iterator.rowEnd())
-                      {
                           row_iterator.right();
-                      }    
-                      if(row_iterator.entryID() != entryID)
+                          ID2_to_be_Fixed = row_iterator.entryID();
+                      }
+                      if((*row_iterator).columnNumber() < entry.columnNumber() && row_iterator.rowEnd())
                       {
-                          (*row_iterator).setLeft(entryID);
-                      }  
-                  }    
+                          (*mpEntries)[entryID].setRight(LAST_ENTRY_ID);  
+                          (*mpEntries)[entryID].setLeft(ID2_to_be_Fixed);
+                          (*mpEntries)[ID2_to_be_Fixed].setRight(entryID);
+                      }    
+                      else
+                      {                          
+                          (*mpEntries)[ID2_to_be_Fixed].setLeft(entryID);
+                          (*mpEntries)[ID1_to_be_Fixed].setRight(entryID);
+                          (*mpEntries)[entryID].setRight(ID2_to_be_Fixed); 
+                          (*mpEntries)[entryID].setLeft(ID1_to_be_Fixed);
+                      }
+                  } 
+                  TableauHead& rowHead = mRows[entry.rowNumber()];
+                  ++rowHead.mSize;                  
               }
               else
               {
@@ -2254,55 +2263,65 @@ namespace smtrat
                   TableauHead& columnHead = mColumns[entry.columnNumber()];
                   ++columnHead.mSize;
                   Iterator row_iterator = Iterator(columnB_iterator.entryID(), mpEntries);
+                  ID2_to_be_Fixed = row_iterator.entryID();
                   if((*row_iterator).columnNumber() > entry.columnNumber())
                   {
-                       while((*row_iterator).columnNumber() > entry.columnNumber())
-                       {
-                           ID1_to_be_Fixed = row_iterator.entryID();
-                           row_iterator.left();                        
-                       }
-                       (*mpEntries)[ID1_to_be_Fixed].setLeft(entryID);
-                       (*mpEntries)[entryID].setRight(ID1_to_be_Fixed);
-                       (*mpEntries)[entryID].setLeft((*row_iterator).left());
-                       if(!row_iterator.rowBegin())
-                       {
-                           row_iterator.left();
-                       }    
-                       if(row_iterator.entryID() != LAST_ENTRY_ID)
-                       {
-                           (*row_iterator).setRight(entryID);
-                       }                        
+                      
+                      while((*row_iterator).columnNumber() > entry.columnNumber() && !row_iterator.rowBegin())
+                      {
+                          ID1_to_be_Fixed = row_iterator.entryID();
+                          row_iterator.left();                     
+                          ID2_to_be_Fixed = row_iterator.entryID();
+                      }
+                      if((*row_iterator).columnNumber() > entry.columnNumber() && row_iterator.rowBegin())
+                      {
+                          (*mpEntries)[entryID].setLeft(LAST_ENTRY_ID);
+                          (*mpEntries)[entryID].setRight(ID2_to_be_Fixed);
+                          (*mpEntries)[ID2_to_be_Fixed].setLeft(entryID);
+                          TableauHead& rowHead = mRows[(*columnB_iterator).rowNumber()];
+                          rowHead.mStartEntry = entryID;                          
+                      }                     
+                      else
+                      {
+                          (*mpEntries)[ID2_to_be_Fixed].setRight(entryID);
+                          (*mpEntries)[ID1_to_be_Fixed].setLeft(entryID);
+                          (*mpEntries)[entryID].setLeft(ID2_to_be_Fixed); 
+                          (*mpEntries)[entryID].setRight(ID1_to_be_Fixed);
+                      }  
                   }  
                   else
-                  {
-                         while((*row_iterator).columnNumber() < entry.columnNumber())
-                         {
-                             ID1_to_be_Fixed = row_iterator.entryID();
-                             row_iterator.right();                        
-                         }
-                         (*mpEntries)[ID1_to_be_Fixed].setRight(entryID);
-                         (*mpEntries)[entryID].setLeft(ID1_to_be_Fixed);
-                         (*mpEntries)[entryID].setRight((*row_iterator).right());
-                         TableauHead& rowHead = mRows[entry.rowNumber()];
-                         ++rowHead.mSize;
-                         if(!row_iterator.rowEnd())
-                         {
-                             row_iterator.right();
-                         }    
-                         if(row_iterator.entryID() != entryID)
-                         {
-                             (*row_iterator).setLeft(entryID);
-                         }  
-                   }    
-              }
-              if(!columnB_iterator.columnBegin())
-              {
-                  columnB_iterator.up();
-              }
-              else
-              { 
-                  break;
-              }    
+                  {                      
+                      while((*row_iterator).columnNumber() < entry.columnNumber() && !row_iterator.rowEnd())
+                      {                             
+                          ID1_to_be_Fixed = row_iterator.entryID();
+                          row_iterator.right();     
+                          ID2_to_be_Fixed = row_iterator.entryID();
+                      }
+                      if((*row_iterator).columnNumber() < entry.columnNumber() && row_iterator.rowEnd())
+                      {
+                          (*mpEntries)[entryID].setRight(LAST_ENTRY_ID);  
+                          (*mpEntries)[entryID].setLeft(ID2_to_be_Fixed);
+                          (*mpEntries)[ID2_to_be_Fixed].setRight(entryID);
+                      }    
+                      else
+                      {                          
+                          (*mpEntries)[ID2_to_be_Fixed].setLeft(entryID);
+                          (*mpEntries)[ID1_to_be_Fixed].setRight(entryID);
+                          (*mpEntries)[entryID].setRight(ID2_to_be_Fixed); 
+                          (*mpEntries)[entryID].setLeft(ID1_to_be_Fixed);
+                      }                      
+                  }   
+               TableauHead& rowHead = mRows[entry.rowNumber()];
+               ++rowHead.mSize;                  
+               }
+               if(!columnB_iterator.columnBegin())
+               {
+                   columnB_iterator.up();
+               }
+               else
+               { 
+                   break;
+               }    
            }
         }
         
