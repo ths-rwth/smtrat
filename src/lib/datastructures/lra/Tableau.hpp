@@ -2161,22 +2161,25 @@ namespace smtrat
                 
            while(true)
            {
-              /* 
-               * Make columnA_iterator and columnB_iterator neighbors
-               */ 
-              while((*columnA_iterator).rowNumber() > (*columnB_iterator).rowNumber())
-                  {
-                      printf("H");
-                      columnA_iterator.up();
-                  }    
+           /* 
+            * Make columnA_iterator and columnB_iterator neighbors
+            */ 
+           while((*columnA_iterator).rowNumber() > (*columnB_iterator).rowNumber() && !columnA_iterator.columnBegin())
+               {
+                   printf("H");
+                   columnA_iterator.up();
+               }    
               EntryID ID1_to_be_Fixed;            
               if((*columnA_iterator).rowNumber() == (*columnB_iterator).rowNumber())
               {               
-                 T content = T(((*columnA_iterator).content().toGinacNumeric())+((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric())));// + (((*columnB_iterator).content).toGinacNumeric())*(multiple.toGinacNumeric());  
+                 T content = T(((*columnA_iterator).content().toGinacNumeric())+((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric())));  
                  if(content == 0)
                  {
                      EntryID to_delete = columnA_iterator.entryID();
-                     columnA_iterator.up();
+                     if(!columnA_iterator.columnBegin())
+                     {
+                         columnA_iterator.up();
+                     }    
                      removeEntry(to_delete);                
                  }                
                  else
@@ -2188,19 +2191,19 @@ namespace smtrat
               {                  
                   EntryID entryID = newTableauEntry(T(((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric()))));
                   TableauEntry<T>& entry = (*mpEntries)[entryID];
-                  entry.setColumnNumber((*mpEntries)[columnA_iterator.entryID()].columnNumber());
-                  entry.setRowNumber((*mpEntries)[columnB_iterator.entryID()].rowNumber());
+                  TableauEntry<T>& entry_down = (*mpEntries)[(*columnA_iterator).down()];
+                  entry.setColumnNumber((*columnA_iterator).columnNumber());
+                  entry.setRowNumber((*columnB_iterator).rowNumber());
                   entry.setDown((*columnA_iterator).down());
                   entry.setUp(columnA_iterator.entryID());
-                  TableauEntry<T>& entry_down = (*mpEntries)[(*columnA_iterator).down()];
                   entry_down.setUp(entryID);
                   (*columnA_iterator).setDown(entryID);
                   TableauHead& columnHead = mColumns[entry.columnNumber()];
                   ++columnHead.mSize;
                   Iterator row_iterator = Iterator(columnB_iterator.entryID(), mpEntries);
-                  if((*mpEntries)[row_iterator.entryID()].columnNumber() > entry.columnNumber())
+                  if((*row_iterator).columnNumber() > entry.columnNumber())
                   {
-                      while((*mpEntries)[row_iterator.entryID()].columnNumber() > entry.columnNumber())
+                      while((*row_iterator).columnNumber() > entry.columnNumber())
                       {
                           ID1_to_be_Fixed = row_iterator.entryID();
                           row_iterator.left();                        
@@ -2208,15 +2211,18 @@ namespace smtrat
                       (*mpEntries)[ID1_to_be_Fixed].setLeft(entryID);
                       (*mpEntries)[entryID].setRight(ID1_to_be_Fixed);
                       (*mpEntries)[entryID].setLeft((*row_iterator).left());
-                      row_iterator.left();
-                      if(row_iterator.entryID() != LAST_ENTRY_ID)
+                      if(!row_iterator.rowBegin())
+                      {
+                          row_iterator.left();
+                      }    
+                      if(row_iterator.entryID() != entryID)
                       {
                           (*mpEntries)[row_iterator.entryID()].setRight(entryID);
                       }                        
                   }  
                   else
                   {
-                      while((*mpEntries)[row_iterator.entryID()].columnNumber() < entry.columnNumber())
+                      while((*row_iterator).columnNumber() < entry.columnNumber())
                       {
                           ID1_to_be_Fixed = row_iterator.entryID();
                           row_iterator.right();                        
@@ -2224,30 +2230,33 @@ namespace smtrat
                       (*mpEntries)[ID1_to_be_Fixed].setRight(entryID);
                       (*mpEntries)[entryID].setLeft(ID1_to_be_Fixed);
                       (*mpEntries)[entryID].setRight((*row_iterator).right());
-                      row_iterator.right();
-                      if(row_iterator.entryID() != LAST_ENTRY_ID)
+                      TableauHead& rowHead = mRows[entry.rowNumber()];
+                      ++rowHead.mSize;
+                      if(!row_iterator.rowEnd())
                       {
-                          (*mpEntries)[row_iterator.entryID()].setLeft(entryID);
+                          row_iterator.right();
+                      }    
+                      if(row_iterator.entryID() != entryID)
+                      {
+                          (*row_iterator).setLeft(entryID);
                       }  
-                  }
-              TableauHead& rowHead = mRows[entry.rowNumber()];
-              ++rowHead.mSize;    
+                  }    
               }
               else
               {
                   EntryID entryID = newTableauEntry(T(((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric()))));
                   TableauEntry<T>& entry = (*mpEntries)[entryID];
-                  entry.setColumnNumber((*mpEntries)[columnA_iterator.entryID()].columnNumber());
-                  entry.setRowNumber((*mpEntries)[columnB_iterator.entryID()].rowNumber());
+                  entry.setColumnNumber((*columnA_iterator).columnNumber());
+                  entry.setRowNumber((*columnB_iterator).rowNumber());
                   entry.setDown(columnA_iterator.entryID());
                   entry.setUp(LAST_ENTRY_ID);
-                  (*mpEntries)[columnA_iterator.entryID()].setUp(entryID);
+                  (*columnA_iterator).setUp(entryID);
                   TableauHead& columnHead = mColumns[entry.columnNumber()];
                   ++columnHead.mSize;
                   Iterator row_iterator = Iterator(columnB_iterator.entryID(), mpEntries);
-                  if((*mpEntries)[row_iterator.entryID()].columnNumber() > entry.columnNumber())
+                  if((*row_iterator).columnNumber() > entry.columnNumber())
                   {
-                       while((*mpEntries)[row_iterator.entryID()].columnNumber() > entry.columnNumber())
+                       while((*row_iterator).columnNumber() > entry.columnNumber())
                        {
                            ID1_to_be_Fixed = row_iterator.entryID();
                            row_iterator.left();                        
@@ -2255,15 +2264,18 @@ namespace smtrat
                        (*mpEntries)[ID1_to_be_Fixed].setLeft(entryID);
                        (*mpEntries)[entryID].setRight(ID1_to_be_Fixed);
                        (*mpEntries)[entryID].setLeft((*row_iterator).left());
-                       row_iterator.left();
+                       if(!row_iterator.rowBegin())
+                       {
+                           row_iterator.left();
+                       }    
                        if(row_iterator.entryID() != LAST_ENTRY_ID)
                        {
-                           (*mpEntries)[row_iterator.entryID()].setRight(entryID);
+                           (*row_iterator).setRight(entryID);
                        }                        
                   }  
                   else
                   {
-                         while((*mpEntries)[row_iterator.entryID()].columnNumber() < entry.columnNumber())
+                         while((*row_iterator).columnNumber() < entry.columnNumber())
                          {
                              ID1_to_be_Fixed = row_iterator.entryID();
                              row_iterator.right();                        
@@ -2271,14 +2283,17 @@ namespace smtrat
                          (*mpEntries)[ID1_to_be_Fixed].setRight(entryID);
                          (*mpEntries)[entryID].setLeft(ID1_to_be_Fixed);
                          (*mpEntries)[entryID].setRight((*row_iterator).right());
-                         row_iterator.right();
-                         if(row_iterator.entryID() != LAST_ENTRY_ID)
+                         TableauHead& rowHead = mRows[entry.rowNumber()];
+                         ++rowHead.mSize;
+                         if(!row_iterator.rowEnd())
                          {
-                             (*mpEntries)[row_iterator.entryID()].setLeft(entryID);
+                             row_iterator.right();
+                         }    
+                         if(row_iterator.entryID() != entryID)
+                         {
+                             (*row_iterator).setLeft(entryID);
                          }  
-                   }
-              TableauHead& rowHead = mRows[entry.rowNumber()];
-              ++rowHead.mSize;    
+                   }    
               }
               if(!columnB_iterator.columnBegin())
               {
