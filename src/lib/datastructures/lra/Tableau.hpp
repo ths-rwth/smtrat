@@ -45,7 +45,7 @@
 //#define LRA_INTRODUCE_NEW_CONSTRAINT
 #endif
 //#define LRA_GOMORY_CUTS
-#define LRA_CUTS_FROM_PROOFS
+//#define LRA_CUTS_FROM_PROOFS
 
 namespace smtrat
 {
