@@ -813,15 +813,15 @@ namespace smtrat
                         const ex factor = *--summandEx.end();
                         if( is_exactly_a<numeric>( factor ) )
                         {
-                            simplificationFactorNumer = ex_to<numeric>( factor ).denom();
-                            simplificationFactorDenom = ex_to<numeric>( factor ).numer();
+                            simplificationFactorNumer = abs( ex_to<numeric>( factor ).denom() );
+                            simplificationFactorDenom = abs( ex_to<numeric>( factor ).numer() );
                         }
                         assert( !containsNumeric( summandEx, --summandEx.end() ) );
                     }
                     else if( is_exactly_a<numeric>( summandEx ) )
                     {
-                        simplificationFactorNumer = ex_to<numeric>( summandEx ).denom();
-                        simplificationFactorDenom = ex_to<numeric>( summandEx ).numer();
+                        simplificationFactorNumer = abs( ex_to<numeric>( summandEx ).denom() );
+                        simplificationFactorDenom = abs( ex_to<numeric>( summandEx ).numer() );
                     }
                 }
                 else
@@ -831,8 +831,8 @@ namespace smtrat
                         const ex factor = *--summandEx.end();
                         if( is_exactly_a<numeric>( factor ) )
                         {
-                            simplificationFactorNumer = gcd( simplificationFactorNumer, ex_to<numeric>( factor ).denom() );
-                            simplificationFactorDenom = lcm( simplificationFactorDenom, ex_to<numeric>( factor ).numer() );
+                            simplificationFactorNumer = lcm( simplificationFactorNumer, abs( ex_to<numeric>( factor ).denom() ) );
+                            simplificationFactorDenom = gcd( simplificationFactorDenom, abs( ex_to<numeric>( factor ).numer() ) );
                         }
                         else
                         {
@@ -842,8 +842,8 @@ namespace smtrat
                     }
                     else if( is_exactly_a<numeric>( summandEx ) )
                     {
-                        simplificationFactorNumer = gcd( simplificationFactorNumer, ex_to<numeric>( summandEx ).denom() );
-                        simplificationFactorDenom = lcm( simplificationFactorDenom, ex_to<numeric>( summandEx ).numer() );
+                        simplificationFactorNumer = lcm( simplificationFactorNumer, abs( ex_to<numeric>( summandEx ).denom() ) );
+                        simplificationFactorDenom = gcd( simplificationFactorDenom, abs( ex_to<numeric>( summandEx ).numer() ) );
                     }
                     else
                     {
@@ -857,8 +857,8 @@ namespace smtrat
             const ex factor = *--_lhs.end();
             if( is_exactly_a<numeric>( factor ) )
             {
-                simplificationFactorNumer = ex_to<numeric>( factor ).denom();
-                simplificationFactorDenom = ex_to<numeric>( factor ).numer();
+                simplificationFactorNumer = abs( ex_to<numeric>( factor ).denom() );
+                simplificationFactorDenom = abs( ex_to<numeric>( factor ).numer() );
             }
             assert( !containsNumeric( _lhs, --_lhs.end() ) );
         }

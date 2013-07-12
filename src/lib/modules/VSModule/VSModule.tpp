@@ -32,7 +32,6 @@ using namespace GiNaC;
 using namespace vs;
 
 //#define VS_DEBUG
-//#define DONT_CHECK_STRICT_INEQUALITIES
 
 namespace smtrat
 {
@@ -661,13 +660,11 @@ namespace smtrat
             Constraint_Relation relation = (*_condition).constraint().relation();
 //            cout << "Find roots of  " << (*_condition).constraint().lhs() << "  instead of  " << (*_condition).constraint().factorization() << endl;
             symtab vars = constraint->variables();
-            #ifdef DONT_CHECK_STRICT_INEQUALITIES
-            if( relation == CR_LESS || relation == CR_GREATER || relation == CR_NEQ )
+            if( !Settings::use_strict_inequalities_for_test_candidate_generation && (relation == CR_LESS || relation == CR_GREATER || relation == CR_NEQ) )
             {
                 _currentState->rTooHighDegreeConditions().insert( _condition );
                 return;
             }
-            #endif
             vars.erase( _eliminationVar );
             // Determine the substitution type: normal or +epsilon
             Substitution_Type subType = ST_PLUS_EPSILON;

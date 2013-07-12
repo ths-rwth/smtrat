@@ -45,7 +45,7 @@
 //#define LRA_INTRODUCE_NEW_CONSTRAINT
 #endif
 //#define LRA_GOMORY_CUTS
-//#define LRA_CUTS_FROM_PROOFS
+#define LRA_CUTS_FROM_PROOFS
 
 namespace smtrat
 {
@@ -2392,117 +2392,119 @@ namespace smtrat
         template<class T> 
         std::vector<int> Tableau<T>::calculate_hermite_normalform()
         {
-        std::vector<int> diagonals = std::vector<int>();          
-        for(unsigned i=0;i<mColumns.size();i++)
-        {
-            diagonals.push_back(-1);
-        }       
-        Iterator row_iterator = Iterator(mRows.at(0).mStartEntry, mpEntries);
-        bool first_free=true,first_loop,just_deleted = false;        
-        for(unsigned i=0;i<mRows.size();i++)
-        {
-            int elim_pos=-1,added_pos=-1;
-            EntryID added_entry,elim_entry;
-            T elim_content, added_content;     
-            row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
-            unsigned number_of_entries = mRows.at(i).mSize;
-            first_loop = true;
-            while(!(number_of_entries <= i+1))
-                {
-                if(just_deleted)
-                    row_iterator = Iterator(added_entry, mpEntries);
-                else if (!first_loop)
-                {
-                    if((*mpEntries)[added_entry].columnNumber() > (*mpEntries)[elim_entry].columnNumber())
-                        row_iterator = Iterator(elim_entry,mpEntries);
-                    else
-                        row_iterator = Iterator(added_entry,mpEntries);                        
-                }                
-                    while(elim_pos == added_pos)
+            std::vector<int> diagonals = std::vector<int>();          
+            for(unsigned i=0;i<mColumns.size();i++)
+            {
+                diagonals.push_back(-1);
+            }       
+            Iterator row_iterator = Iterator(mRows.at(0).mStartEntry, mpEntries);
+            bool first_free = true;
+            bool first_loop = false;
+            bool just_deleted = false;        
+            for(unsigned i=0;i<mRows.size();i++)
+            {
+                int elim_pos=-1,added_pos=-1;
+                EntryID added_entry,elim_entry;
+                T elim_content, added_content;     
+                row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
+                unsigned number_of_entries = mRows.at(i).mSize;
+                first_loop = true;
+                while(!(number_of_entries <= i+1))
                     {
-                        T content = (*mpEntries)[row_iterator.entryID()].content();
-                        unsigned column = (*mpEntries)[row_iterator.entryID()].columnNumber();
-                        if((*mpEntries)[row_iterator.entryID()].content() < 0)
-                            invertColumn(column); 
-                        if(diagonals.at(column) == -1)
-                        {    
-                            if(first_free)
-                            {
-                                elim_pos = column;
-                                elim_content = content; 
-                                added_pos = column;
-                                added_content = content;
-                                first_free = false;
-                                added_entry = row_iterator.entryID();
-                                elim_entry = row_iterator.entryID();
-                            }
-                            else
-                            {
-                                if(elim_content <= content)
+                    if(just_deleted)
+                        row_iterator = Iterator(added_entry, mpEntries);
+                    else if (!first_loop)
+                    {
+                        if((*mpEntries)[added_entry].columnNumber() > (*mpEntries)[elim_entry].columnNumber())
+                            row_iterator = Iterator(elim_entry,mpEntries);
+                        else
+                            row_iterator = Iterator(added_entry,mpEntries);                        
+                    }                
+                        while(elim_pos == added_pos)
+                        {
+                            T content = (*mpEntries)[row_iterator.entryID()].content();
+                            unsigned column = (*mpEntries)[row_iterator.entryID()].columnNumber();
+                            if((*mpEntries)[row_iterator.entryID()].content() < 0)
+                                invertColumn(column); 
+                            if(diagonals.at(column) == -1)
+                            {    
+                                if(first_free)
                                 {
                                     elim_pos = column;
-                                    elim_content = content;  
+                                    elim_content = content; 
+                                    added_pos = column;
+                                    added_content = content;
+                                    first_free = false;
+                                    added_entry = row_iterator.entryID();
                                     elim_entry = row_iterator.entryID();
                                 }
                                 else
                                 {
-                                    added_pos = column;
-                                    added_content = content; 
-                                    added_entry = row_iterator.entryID();
+                                    if(elim_content <= content)
+                                    {
+                                        elim_pos = column;
+                                        elim_content = content;  
+                                        elim_entry = row_iterator.entryID();
+                                    }
+                                    else
+                                    {
+                                        added_pos = column;
+                                        added_content = content; 
+                                        added_entry = row_iterator.entryID();
+                                    }
                                 }
-                            }
-                        }                        
-                    if(elim_pos == added_pos)
-                        row_iterator.right();                    
-                    }
-                if(mod(( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() ) ) ) , cln::floor1( cln::the<cln::cl_RA>( added_content.toCLN() ) ) ) == 0)
-                {
-                    just_deleted = true;
-                    first_free = true;  
-                    added_pos = elim_pos;
-                }    
-                else
-                {
-                     just_deleted = false;
-                     if(elim_pos < added_pos)
+                            }                        
+                        if(elim_pos == added_pos)
+                            row_iterator.right();                    
+                        }
+                    if(mod(( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() ) ) ) , cln::floor1( cln::the<cln::cl_RA>( added_content.toCLN() ) ) ) == 0)
+                    {
+                        just_deleted = true;
+                        first_free = true;  
                         added_pos = elim_pos;
-                     else
-                        elim_pos = added_pos;
-                }  
-                T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
-                addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
-                number_of_entries = mRows.at(i).mSize; 
-                first_loop = false;
+                    }    
+                    else
+                    {
+                         just_deleted = false;
+                         if(elim_pos < added_pos)
+                            added_pos = elim_pos;
+                         else
+                            elim_pos = added_pos;
+                    }  
+                    T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
+                    addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
+                    number_of_entries = mRows.at(i).mSize; 
+                    first_loop = false;
+                    }
+                if(first_loop)
+                {
+                    added_pos = (*mpEntries)[row_iterator.entryID()].columnNumber();     
                 }
-            if(first_loop)
-            {
-                added_pos = (*mpEntries)[row_iterator.entryID()].columnNumber();     
+                diagonals.push_back(added_pos);
+                /*
+                 *  Normalize Row
+                 */
+                row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
+                while(true)
+                {
+                    if(row_iterator.entryID() != added_entry && (*mpEntries)[added_entry].content() <= (*mpEntries)[row_iterator.entryID()].content())
+                    {
+                        T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( (*row_iterator).content().toCLN() / added_content.toCLN() ) ) );
+                        addColumns((*mpEntries)[row_iterator.entryID()].columnNumber(),
+                                  (*mpEntries)[added_entry].columnNumber(),
+                                  (-1)*(floor_value));                    
+                    }
+                    if(!row_iterator.rowEnd())
+                    {
+                        row_iterator.right(); 
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
             }
-            diagonals.push_back(added_pos);
-            /*
-             *  Normalize Row
-             */
-            row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
-            while(true)
-            {
-                if(row_iterator.entryID() != added_entry && (*mpEntries)[added_entry].content() <= (*mpEntries)[row_iterator.entryID()].content())
-                {
-                    T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( (*row_iterator).content().toCLN() / added_content.toCLN() ) ) );
-                    addColumns((*mpEntries)[row_iterator.entryID()].columnNumber(),
-                              (*mpEntries)[added_entry].columnNumber(),
-                              (-1)*(floor_value));                    
-                }
-                if(!row_iterator.rowEnd())
-                {
-                    row_iterator.right(); 
-                }
-                else
-                {
-                    break;
-                }
-            }
-        }
-        return diagonals;    
+            return diagonals;    
         }   
         
         template<class T> 

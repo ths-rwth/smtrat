@@ -412,20 +412,17 @@ namespace smtrat
     {
         if( _rel == CR_GREATER )
         {
-            ex lhs = -_lhs;
-            Constraint::normalize( lhs );
+            ex lhs = Constraint::normalizeA( -_lhs );
             return new Constraint( lhs, CR_LESS, _variables, mIdAllocator );
         }
         else if( _rel == CR_GEQ )
         {
-            ex lhs = -_lhs;
-            Constraint::normalize( lhs );
+            ex lhs = Constraint::normalizeA( -_lhs );
             return new Constraint( lhs, CR_LEQ, _variables, mIdAllocator );
         }
         else
         {
-            ex lhs = _lhs;
-            Constraint::normalize( lhs );
+            ex lhs = Constraint::normalizeA( _lhs );
             if( _rel == CR_EQ || _rel == CR_NEQ ) 
             {
                 bool isNegativ = false;
