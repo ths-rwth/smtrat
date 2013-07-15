@@ -882,7 +882,7 @@ namespace smtrat
         varInfo.minDegree = 1;
         mMaxMonomeDegree = 1;
         mMinMonomeDegree = 1;
-        mNumMonomials = 2;
+        mNumMonomials = (_bound == 0 ? 1 : 2);
         mConstantPart = _bound;
     }
     

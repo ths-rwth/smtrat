@@ -30,7 +30,7 @@
 #ifndef CONTRACTIONCANDIDATE_H
 #define CONTRACTIONCANDIDATE_H
 
-//#define CCPRINTORIGINS
+#define CCPRINTORIGINS
 
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
@@ -41,7 +41,7 @@ namespace smtrat
     namespace icp{
     using GiNaC::ex;
     using GiNaC::symbol;
-
+    
     class ContractionCandidate
     {
         public:
@@ -50,6 +50,16 @@ namespace smtrat
              * Typedefs:
              */
 
+            struct originComp
+            {
+                bool operator() (const Formula* const lhs, const Formula* const rhs) const
+                {
+                    assert(lhs->getType() == REALCONSTRAINT);
+                    assert(rhs->getType() == REALCONSTRAINT);
+                    return (lhs->constraint().variables().size() < rhs->constraint().variables().size() || (lhs->constraint().variables().size() == rhs->constraint().variables().size() && lhs->constraint() < rhs->constraint()) );
+                }
+            };
+            
         private:
 
             /**
@@ -59,7 +69,7 @@ namespace smtrat
             symbol      mLhs;
             symbol      mDerivationVar;
             ex          mDerivative;
-            std::set<const Formula*> mOrigin;
+            std::set<const Formula*,originComp> mOrigin;
             const unsigned    mId;
             bool        mIsLinear;
             bool        mActive;
@@ -82,38 +92,15 @@ namespace smtrat
             mLhs(_original.lhs()),
             mDerivationVar(_original.derivationVar()),
             mDerivative(_original.derivative()),
-            mOrigin(_original.origin()),
+            mOrigin(),
             mId(_original.id()),
             mIsLinear(_original.isLinear()),
             mActive(_original.isActive()),
             mRWA(_original.RWA()),
             mLastPayoff(_original.lastPayoff())
             {
-//                mConstraint = _original.constraint();
-//                mLhs = _original.lhs();
-//                mDerivationVar = _original.derivationVar();
-//                mDerivative = _original.derivative();
-//                mIsLinear = _original.isLinear();
-//                mActive = _original.isActive();
-//                mOrigin = _original.origin();
-//                mId = _original.id();
-//                mRWA = _original.RWA();
-//                mLastPayoff = _original.lastPayoff();
+                mOrigin.insert(_original.origin().begin(), _original.origin().end());
             }
-
-//            ContractionCandidate( symbol _lhs, const Constraint* _constraint, symbol _derivationVar, ex _derivative, const Formula* _origin ):
-//            mConstraint(_constraint),
-//            mLhs(_lhs),
-//            mDerivationVar(_derivationVar),
-//            mDerivative(_derivative),
-//            mOrigin(),
-//            mIsLinear(true),
-//            mActive(false),
-//            mRWA(1),
-//            mLastPayoff(0)
-//            {
-//                mOrigin.insert(_origin);
-//            }
 
             ContractionCandidate( symbol _lhs, const Constraint* _constraint, symbol _derivationVar, const Formula* _origin, unsigned _id ):
             mConstraint(_constraint),
@@ -184,12 +171,12 @@ namespace smtrat
                 return mLhs;
             }
 
-            std::set<const Formula*> origin() const
+            std::set<const Formula*, originComp> origin() const
             {
                 return mOrigin;
             }
 
-            std::set<const Formula*>& rOrigin()
+            std::set<const Formula*, originComp>& rOrigin()
             {
                 return mOrigin;
             }

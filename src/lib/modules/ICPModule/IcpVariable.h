@@ -45,10 +45,10 @@ namespace icp
             /*
              * Members
              */
-            const GiNaC::symbol                              mVar;
+            const GiNaC::symbol                        mVar;
             bool                                       mOriginal;
             std::vector<ContractionCandidate*> mCandidates;
-            lra::Variable<lra::Numeric>*                             mLraVar;
+            lra::Variable<lra::Numeric>*               mLraVar;
             bool                                       mActive;
             bool                                       mLinear;
             
