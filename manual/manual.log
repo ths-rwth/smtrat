@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2013.3.11)  12 JUL 2013 13:57
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2013.3.11)  12 JUL 2013 17:13
 entering extended mode
  %&-line parsing enabled.
 **manual.tex
@@ -648,7 +648,7 @@ LaTeX Font Info:    Try loading font information for U+msb on input line 5.
 (/usr/share/texmf-texlive/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2009/06/22 v3.00 AMS symbols B
 )
-<graphics/logo.png, id=102, 901.4478pt x 805.0878pt>
+<graphics/logo.png, id=98, 901.4478pt x 805.0878pt>
 File: graphics/logo.png Graphic file (type png)
  <use graphics/logo.png>
 [1
@@ -670,13 +670,13 @@ LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <10> not available
 (Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 5.
 Class scrbook Info: You've told me to use the font selection of the element
 (scrbook)           `sectioning' that is an alias of element `disposition'
-(scrbook)            on input line 9.
+(scrbook)            on input line 8.
 Class scrbook Info: You've told me to use the font selection of the element
 (scrbook)           `sectioning' that is an alias of element `disposition'
-(scrbook)            on input line 12.
+(scrbook)            on input line 11.
 Class scrbook Info: You've told me to use the font selection of the element
 (scrbook)           `sectioning' that is an alias of element `disposition'
-(scrbook)            on input line 22.
+(scrbook)            on input line 21.
 )
 \tf@toc=\write5
 \openout5 = `manual.toc'.
@@ -720,12 +720,9 @@ Chapter 3.
 LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <20.74> not available
 (Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 1.
 
-LaTeX Warning: Reference `app:smtrat' on page 7 undefined on input line 33.
+LaTeX Warning: Reference `' on page 7 undefined on input line 15.
 
-[7
-
-
-] (./figures/framework.tex
+(./figures/framework.tex
 Overfull \hbox (1.43997pt too wide) in paragraph at lines 3--3
  [][][][][] 
  []
@@ -740,7 +737,10 @@ Underfull \hbox (badness 10000) in paragraph at lines 6--6
  [][][][] 
  []
 
-)) (./embeddingats.tex [8]
+) [7
+
+
+]) (./embeddingats.tex [8]
 Chapter 4.
 
 Underfull \hbox (badness 10000) in paragraph at lines 36--37
@@ -775,12 +775,15 @@ nput line 24.
 
 LaTeX Warning: There were undefined references.
 
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
  ) 
 Here is how much of TeX's memory you used:
- 15234 strings out of 493848
- 265802 string characters out of 1152823
+ 15232 strings out of 493848
+ 265768 string characters out of 1152823
  358636 words of memory out of 3000000
- 18085 multiletter control sequences out of 15000+50000
+ 18084 multiletter control sequences out of 15000+50000
  15941 words of font info for 63 fonts, out of 3000000 for 9000
  714 hyphenation exceptions out of 8191
  64i,12n,61p,1333b,879s stack positions out of 5000i,500n,10000p,200000b,50000s
@@ -800,9 +803,9 @@ ssbx10.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmsy10.pfb>
 texmf-texlive/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/share/texmf-texli
 ve/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/share/texmf-texlive/fonts/ty
 pe1/public/amsfonts/cm/cmtt12.pfb>
-Output written on manual.pdf (27 pages, 1290987 bytes).
+Output written on manual.pdf (27 pages, 1289587 bytes).
 PDF statistics:
- 404 PDF objects out of 1000 (max. 8388607)
- 84 named destinations out of 1000 (max. 500000)
- 210 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 399 PDF objects out of 1000 (max. 8388607)
+ 83 named destinations out of 1000 (max. 500000)
+ 202 words of extra memory for PDF output out of 10000 (max. 10000000)
 
