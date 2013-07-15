@@ -5,8 +5,7 @@
 \BOOKMARK [0][-]{chapter.3}{General framework of SMT-RAT}{}
 \BOOKMARK [1][-]{section.3.1}{The Formula class}{chapter.3}
 \BOOKMARK [1][-]{section.3.2}{The Module class}{chapter.3}
-\BOOKMARK [1][-]{section.3.3}{The Strategy class}{chapter.3}
-\BOOKMARK [1][-]{section.3.4}{The Manager class}{chapter.3}
+\BOOKMARK [1][-]{section.3.3}{The Manager and the Strategy class}{chapter.3}
 \BOOKMARK [0][-]{chapter.4}{Embedding of a theory solver into an SMT solver}{}
 \BOOKMARK [1][-]{section.4.1}{Interfaces of a theory solver composed with SMT-RAT}{chapter.4}
 \BOOKMARK [1][-]{section.4.2}{Example: Embedding a SMT-RAT composition into OpenSMT}{chapter.4}

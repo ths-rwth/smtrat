@@ -421,7 +421,7 @@ namespace smtrat
                             #endif 
 
                             #ifdef LRA_CUTS_FROM_PROOFS
-                            unsigned c=2,d=0;
+                            unsigned c=2,d=0;                            
                             mTableau.print();
                             mTableau.addColumns(c,d,Numeric(1));
                             mTableau.print();

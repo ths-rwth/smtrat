@@ -2166,10 +2166,9 @@ namespace smtrat
             */ 
            while((*columnA_iterator).rowNumber() > (*columnB_iterator).rowNumber() && !columnA_iterator.columnBegin())
                {
-                   printf("H");
                    columnA_iterator.up();
                }    
-              EntryID ID1_to_be_Fixed;            
+              EntryID ID1_to_be_Fixed,ID2_to_be_Fixed;            
               if((*columnA_iterator).rowNumber() == (*columnB_iterator).rowNumber())
               {               
                  T content = T(((*columnA_iterator).content().toGinacNumeric())+((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric())));  
@@ -2191,56 +2190,66 @@ namespace smtrat
               {                  
                   EntryID entryID = newTableauEntry(T(((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric()))));
                   TableauEntry<T>& entry = (*mpEntries)[entryID];
-                  TableauEntry<T>& entry_down = (*mpEntries)[(*columnA_iterator).down()];
+                  TableauEntry<T>& entry_down = (*mpEntries)[(*columnA_iterator).down()];   
+                  EntryID down = (*columnA_iterator).down();
                   entry.setColumnNumber((*columnA_iterator).columnNumber());
                   entry.setRowNumber((*columnB_iterator).rowNumber());
-                  entry.setDown((*columnA_iterator).down());
+                  entry.setDown(down);
                   entry.setUp(columnA_iterator.entryID());
                   entry_down.setUp(entryID);
                   (*columnA_iterator).setDown(entryID);
                   TableauHead& columnHead = mColumns[entry.columnNumber()];
                   ++columnHead.mSize;
                   Iterator row_iterator = Iterator(columnB_iterator.entryID(), mpEntries);
+                  ID2_to_be_Fixed = row_iterator.entryID();
                   if((*row_iterator).columnNumber() > entry.columnNumber())
                   {
-                      while((*row_iterator).columnNumber() > entry.columnNumber())
+                      while((*row_iterator).columnNumber() > entry.columnNumber() && !row_iterator.rowBegin())
                       {
                           ID1_to_be_Fixed = row_iterator.entryID();
-                          row_iterator.left();                        
+                          row_iterator.left(); 
+                          ID2_to_be_Fixed = row_iterator.entryID();
                       }
-                      (*mpEntries)[ID1_to_be_Fixed].setLeft(entryID);
-                      (*mpEntries)[entryID].setRight(ID1_to_be_Fixed);
-                      (*mpEntries)[entryID].setLeft((*row_iterator).left());
-                      if(!row_iterator.rowBegin())
+                      if((*row_iterator).columnNumber() > entry.columnNumber() && row_iterator.rowBegin())
+                      {                          
+                          (*mpEntries)[entryID].setLeft(LAST_ENTRY_ID);  
+                          (*mpEntries)[entryID].setRight(ID2_to_be_Fixed);
+                          (*mpEntries)[ID2_to_be_Fixed].setLeft(entryID);
+                          TableauHead& rowHead = mRows[(*columnB_iterator).rowNumber()];
+                          rowHead.mStartEntry = entryID;
+                      }                     
+                      else
                       {
-                          row_iterator.left();
-                      }    
-                      if(row_iterator.entryID() != entryID)
-                      {
-                          (*mpEntries)[row_iterator.entryID()].setRight(entryID);
-                      }                        
-                  }  
+                          (*mpEntries)[ID2_to_be_Fixed].setRight(entryID);
+                          (*mpEntries)[ID1_to_be_Fixed].setLeft(entryID);
+                          (*mpEntries)[entryID].setLeft(ID2_to_be_Fixed); 
+                          (*mpEntries)[entryID].setRight(ID1_to_be_Fixed);
+                      }
+                  }    
                   else
                   {
-                      while((*row_iterator).columnNumber() < entry.columnNumber())
+                      while((*row_iterator).columnNumber() < entry.columnNumber() && !row_iterator.rowEnd())
                       {
                           ID1_to_be_Fixed = row_iterator.entryID();
-                          row_iterator.right();                        
-                      }
-                      (*mpEntries)[ID1_to_be_Fixed].setRight(entryID);
-                      (*mpEntries)[entryID].setLeft(ID1_to_be_Fixed);
-                      (*mpEntries)[entryID].setRight((*row_iterator).right());
-                      TableauHead& rowHead = mRows[entry.rowNumber()];
-                      ++rowHead.mSize;
-                      if(!row_iterator.rowEnd())
-                      {
                           row_iterator.right();
-                      }    
-                      if(row_iterator.entryID() != entryID)
+                          ID2_to_be_Fixed = row_iterator.entryID();
+                      }
+                      if((*row_iterator).columnNumber() < entry.columnNumber() && row_iterator.rowEnd())
                       {
-                          (*row_iterator).setLeft(entryID);
-                      }  
-                  }    
+                          (*mpEntries)[entryID].setRight(LAST_ENTRY_ID);  
+                          (*mpEntries)[entryID].setLeft(ID2_to_be_Fixed);
+                          (*mpEntries)[ID2_to_be_Fixed].setRight(entryID);
+                      }    
+                      else
+                      {                          
+                          (*mpEntries)[ID2_to_be_Fixed].setLeft(entryID);
+                          (*mpEntries)[ID1_to_be_Fixed].setRight(entryID);
+                          (*mpEntries)[entryID].setRight(ID2_to_be_Fixed); 
+                          (*mpEntries)[entryID].setLeft(ID1_to_be_Fixed);
+                      }
+                  } 
+                  TableauHead& rowHead = mRows[entry.rowNumber()];
+                  ++rowHead.mSize;                  
               }
               else
               {
@@ -2254,55 +2263,65 @@ namespace smtrat
                   TableauHead& columnHead = mColumns[entry.columnNumber()];
                   ++columnHead.mSize;
                   Iterator row_iterator = Iterator(columnB_iterator.entryID(), mpEntries);
+                  ID2_to_be_Fixed = row_iterator.entryID();
                   if((*row_iterator).columnNumber() > entry.columnNumber())
                   {
-                       while((*row_iterator).columnNumber() > entry.columnNumber())
-                       {
-                           ID1_to_be_Fixed = row_iterator.entryID();
-                           row_iterator.left();                        
-                       }
-                       (*mpEntries)[ID1_to_be_Fixed].setLeft(entryID);
-                       (*mpEntries)[entryID].setRight(ID1_to_be_Fixed);
-                       (*mpEntries)[entryID].setLeft((*row_iterator).left());
-                       if(!row_iterator.rowBegin())
-                       {
-                           row_iterator.left();
-                       }    
-                       if(row_iterator.entryID() != LAST_ENTRY_ID)
-                       {
-                           (*row_iterator).setRight(entryID);
-                       }                        
+                      
+                      while((*row_iterator).columnNumber() > entry.columnNumber() && !row_iterator.rowBegin())
+                      {
+                          ID1_to_be_Fixed = row_iterator.entryID();
+                          row_iterator.left();                     
+                          ID2_to_be_Fixed = row_iterator.entryID();
+                      }
+                      if((*row_iterator).columnNumber() > entry.columnNumber() && row_iterator.rowBegin())
+                      {
+                          (*mpEntries)[entryID].setLeft(LAST_ENTRY_ID);
+                          (*mpEntries)[entryID].setRight(ID2_to_be_Fixed);
+                          (*mpEntries)[ID2_to_be_Fixed].setLeft(entryID);
+                          TableauHead& rowHead = mRows[(*columnB_iterator).rowNumber()];
+                          rowHead.mStartEntry = entryID;                          
+                      }                     
+                      else
+                      {
+                          (*mpEntries)[ID2_to_be_Fixed].setRight(entryID);
+                          (*mpEntries)[ID1_to_be_Fixed].setLeft(entryID);
+                          (*mpEntries)[entryID].setLeft(ID2_to_be_Fixed); 
+                          (*mpEntries)[entryID].setRight(ID1_to_be_Fixed);
+                      }  
                   }  
                   else
-                  {
-                         while((*row_iterator).columnNumber() < entry.columnNumber())
-                         {
-                             ID1_to_be_Fixed = row_iterator.entryID();
-                             row_iterator.right();                        
-                         }
-                         (*mpEntries)[ID1_to_be_Fixed].setRight(entryID);
-                         (*mpEntries)[entryID].setLeft(ID1_to_be_Fixed);
-                         (*mpEntries)[entryID].setRight((*row_iterator).right());
-                         TableauHead& rowHead = mRows[entry.rowNumber()];
-                         ++rowHead.mSize;
-                         if(!row_iterator.rowEnd())
-                         {
-                             row_iterator.right();
-                         }    
-                         if(row_iterator.entryID() != entryID)
-                         {
-                             (*row_iterator).setLeft(entryID);
-                         }  
-                   }    
-              }
-              if(!columnB_iterator.columnBegin())
-              {
-                  columnB_iterator.up();
-              }
-              else
-              { 
-                  break;
-              }    
+                  {                      
+                      while((*row_iterator).columnNumber() < entry.columnNumber() && !row_iterator.rowEnd())
+                      {                             
+                          ID1_to_be_Fixed = row_iterator.entryID();
+                          row_iterator.right();     
+                          ID2_to_be_Fixed = row_iterator.entryID();
+                      }
+                      if((*row_iterator).columnNumber() < entry.columnNumber() && row_iterator.rowEnd())
+                      {
+                          (*mpEntries)[entryID].setRight(LAST_ENTRY_ID);  
+                          (*mpEntries)[entryID].setLeft(ID2_to_be_Fixed);
+                          (*mpEntries)[ID2_to_be_Fixed].setRight(entryID);
+                      }    
+                      else
+                      {                          
+                          (*mpEntries)[ID2_to_be_Fixed].setLeft(entryID);
+                          (*mpEntries)[ID1_to_be_Fixed].setRight(entryID);
+                          (*mpEntries)[entryID].setRight(ID2_to_be_Fixed); 
+                          (*mpEntries)[entryID].setLeft(ID1_to_be_Fixed);
+                      }                      
+                  }   
+               TableauHead& rowHead = mRows[entry.rowNumber()];
+               ++rowHead.mSize;                  
+               }
+               if(!columnB_iterator.columnBegin())
+               {
+                   columnB_iterator.up();
+               }
+               else
+               { 
+                   break;
+               }    
            }
         }
         
@@ -2373,117 +2392,119 @@ namespace smtrat
         template<class T> 
         std::vector<int> Tableau<T>::calculate_hermite_normalform()
         {
-        std::vector<int> diagonals = std::vector<int>();          
-        for(unsigned i=0;i<mColumns.size();i++)
-        {
-            diagonals.push_back(-1);
-        }       
-        Iterator row_iterator = Iterator(mRows.at(0).mStartEntry, mpEntries);
-        bool first_free=true,first_loop,just_deleted = false;        
-        for(unsigned i=0;i<mRows.size();i++)
-        {
-            int elim_pos=-1,added_pos=-1;
-            EntryID added_entry,elim_entry;
-            T elim_content, added_content;     
-            row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
-            unsigned number_of_entries = mRows.at(i).mSize;
-            first_loop = true;
-            while(!(number_of_entries <= i+1))
-                {
-                if(just_deleted)
-                    row_iterator = Iterator(added_entry, mpEntries);
-                else if (!first_loop)
-                {
-                    if((*mpEntries)[added_entry].columnNumber() > (*mpEntries)[elim_entry].columnNumber())
-                        row_iterator = Iterator(elim_entry,mpEntries);
-                    else
-                        row_iterator = Iterator(added_entry,mpEntries);                        
-                }                
-                    while(elim_pos == added_pos)
+            std::vector<int> diagonals = std::vector<int>();          
+            for(unsigned i=0;i<mColumns.size();i++)
+            {
+                diagonals.push_back(-1);
+            }       
+            Iterator row_iterator = Iterator(mRows.at(0).mStartEntry, mpEntries);
+            bool first_free = true;
+            bool first_loop = false;
+            bool just_deleted = false;        
+            for(unsigned i=0;i<mRows.size();i++)
+            {
+                int elim_pos=-1,added_pos=-1;
+                EntryID added_entry,elim_entry;
+                T elim_content, added_content;     
+                row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
+                unsigned number_of_entries = mRows.at(i).mSize;
+                first_loop = true;
+                while(!(number_of_entries <= i+1))
                     {
-                        T content = (*mpEntries)[row_iterator.entryID()].content();
-                        unsigned column = (*mpEntries)[row_iterator.entryID()].columnNumber();
-                        if((*mpEntries)[row_iterator.entryID()].content() < 0)
-                            invertColumn(column); 
-                        if(diagonals.at(column) == -1)
-                        {    
-                            if(first_free)
-                            {
-                                elim_pos = column;
-                                elim_content = content; 
-                                added_pos = column;
-                                added_content = content;
-                                first_free = false;
-                                added_entry = row_iterator.entryID();
-                                elim_entry = row_iterator.entryID();
-                            }
-                            else
-                            {
-                                if(elim_content <= content)
+                    if(just_deleted)
+                        row_iterator = Iterator(added_entry, mpEntries);
+                    else if (!first_loop)
+                    {
+                        if((*mpEntries)[added_entry].columnNumber() > (*mpEntries)[elim_entry].columnNumber())
+                            row_iterator = Iterator(elim_entry,mpEntries);
+                        else
+                            row_iterator = Iterator(added_entry,mpEntries);                        
+                    }                
+                        while(elim_pos == added_pos)
+                        {
+                            T content = (*mpEntries)[row_iterator.entryID()].content();
+                            unsigned column = (*mpEntries)[row_iterator.entryID()].columnNumber();
+                            if((*mpEntries)[row_iterator.entryID()].content() < 0)
+                                invertColumn(column); 
+                            if(diagonals.at(column) == -1)
+                            {    
+                                if(first_free)
                                 {
                                     elim_pos = column;
-                                    elim_content = content;  
+                                    elim_content = content; 
+                                    added_pos = column;
+                                    added_content = content;
+                                    first_free = false;
+                                    added_entry = row_iterator.entryID();
                                     elim_entry = row_iterator.entryID();
                                 }
                                 else
                                 {
-                                    added_pos = column;
-                                    added_content = content; 
-                                    added_entry = row_iterator.entryID();
+                                    if(elim_content <= content)
+                                    {
+                                        elim_pos = column;
+                                        elim_content = content;  
+                                        elim_entry = row_iterator.entryID();
+                                    }
+                                    else
+                                    {
+                                        added_pos = column;
+                                        added_content = content; 
+                                        added_entry = row_iterator.entryID();
+                                    }
                                 }
-                            }
-                        }                        
-                    if(elim_pos == added_pos)
-                        row_iterator.right();                    
-                    }
-                if(mod(( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() ) ) ) , cln::floor1( cln::the<cln::cl_RA>( added_content.toCLN() ) ) ) == 0)
-                {
-                    just_deleted = true;
-                    first_free = true;  
-                    added_pos = elim_pos;
-                }    
-                else
-                {
-                     just_deleted = false;
-                     if(elim_pos < added_pos)
+                            }                        
+                        if(elim_pos == added_pos)
+                            row_iterator.right();                    
+                        }
+                    if(mod(( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() ) ) ) , cln::floor1( cln::the<cln::cl_RA>( added_content.toCLN() ) ) ) == 0)
+                    {
+                        just_deleted = true;
+                        first_free = true;  
                         added_pos = elim_pos;
-                     else
-                        elim_pos = added_pos;
-                }  
-                T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
-                addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
-                number_of_entries = mRows.at(i).mSize; 
-                first_loop = false;
+                    }    
+                    else
+                    {
+                         just_deleted = false;
+                         if(elim_pos < added_pos)
+                            added_pos = elim_pos;
+                         else
+                            elim_pos = added_pos;
+                    }  
+                    T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
+                    addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
+                    number_of_entries = mRows.at(i).mSize; 
+                    first_loop = false;
+                    }
+                if(first_loop)
+                {
+                    added_pos = (*mpEntries)[row_iterator.entryID()].columnNumber();     
                 }
-            if(first_loop)
-            {
-                added_pos = (*mpEntries)[row_iterator.entryID()].columnNumber();     
+                diagonals.push_back(added_pos);
+                /*
+                 *  Normalize Row
+                 */
+                row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
+                while(true)
+                {
+                    if(row_iterator.entryID() != added_entry && (*mpEntries)[added_entry].content() <= (*mpEntries)[row_iterator.entryID()].content())
+                    {
+                        T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( (*row_iterator).content().toCLN() / added_content.toCLN() ) ) );
+                        addColumns((*mpEntries)[row_iterator.entryID()].columnNumber(),
+                                  (*mpEntries)[added_entry].columnNumber(),
+                                  (-1)*(floor_value));                    
+                    }
+                    if(!row_iterator.rowEnd())
+                    {
+                        row_iterator.right(); 
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
             }
-            diagonals.push_back(added_pos);
-            /*
-             *  Normalize Row
-             */
-            row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
-            while(true)
-            {
-                if(row_iterator.entryID() != added_entry && (*mpEntries)[added_entry].content() <= (*mpEntries)[row_iterator.entryID()].content())
-                {
-                    T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( (*row_iterator).content().toCLN() / added_content.toCLN() ) ) );
-                    addColumns((*mpEntries)[row_iterator.entryID()].columnNumber(),
-                              (*mpEntries)[added_entry].columnNumber(),
-                              (-1)*(floor_value));                    
-                }
-                if(!row_iterator.rowEnd())
-                {
-                    row_iterator.right(); 
-                }
-                else
-                {
-                    break;
-                }
-            }
-        }
-        return diagonals;    
+            return diagonals;    
         }   
         
         template<class T> 

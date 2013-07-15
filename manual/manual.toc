@@ -5,8 +5,7 @@
 \contentsline {chapter}{\numberline {3}General framework of \texttt {SMT-RAT}\xspace }{7}{chapter.3}
 \contentsline {section}{\numberline {3.1}The \texttt {Formula}\xspace class}{7}{section.3.1}
 \contentsline {section}{\numberline {3.2}The \texttt {Module}\xspace class}{7}{section.3.2}
-\contentsline {section}{\numberline {3.3}The \texttt {Strategy}\xspace class}{8}{section.3.3}
-\contentsline {section}{\numberline {3.4}The \texttt {Manager}\xspace class}{8}{section.3.4}
+\contentsline {section}{\numberline {3.3}The \texttt {Manager}\xspace and the \texttt {Strategy}\xspace class}{8}{section.3.3}
 \contentsline {chapter}{\numberline {4}Embedding of a theory solver into an SMT solver}{9}{chapter.4}
 \contentsline {section}{\numberline {4.1}Interfaces of a theory solver composed with \texttt {SMT-RAT}\xspace }{9}{section.4.1}
 \contentsline {section}{\numberline {4.2}Example: Embedding a \texttt {SMT-RAT}\xspace composition into \texttt {OpenSMT}\xspace }{10}{section.4.2}
