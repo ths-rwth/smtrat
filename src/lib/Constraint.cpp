@@ -799,14 +799,15 @@ namespace smtrat
      */
     ex Constraint::normalizeA( const ex& _lhs )
     {
+        ex result = _lhs.expand();
         numeric simplificationFactorNumer = GiNaC::ONE;
         numeric simplificationFactorDenom = GiNaC::ONE;
-        if( is_exactly_a<add>( _lhs ) )
+        if( is_exactly_a<add>( result ) )
         {
-            for( GiNaC::const_iterator summand = _lhs.begin(); summand != _lhs.end(); ++summand )
+            for( GiNaC::const_iterator summand = result.begin(); summand != result.end(); ++summand )
             {
                 const ex summandEx = *summand;
-                if( summand == _lhs.begin() )
+                if( summand == result.begin() )
                 {
                     if( is_exactly_a<mul>( summandEx ) )
                     {
@@ -852,17 +853,17 @@ namespace smtrat
                 }
             }
         }
-        else if( is_exactly_a<mul>( _lhs ) )
+        else if( is_exactly_a<mul>( result ) )
         {
-            const ex factor = *--_lhs.end();
+            const ex factor = *--result.end();
             if( is_exactly_a<numeric>( factor ) )
             {
                 simplificationFactorNumer = abs( ex_to<numeric>( factor ).denom() );
                 simplificationFactorDenom = abs( ex_to<numeric>( factor ).numer() );
             }
-            assert( !containsNumeric( _lhs, --_lhs.end() ) );
+            assert( !containsNumeric( result, --result.end() ) );
         }
-        return ex( _lhs * simplificationFactorNumer / simplificationFactorDenom ).expand().normal();
+        return ex( result * simplificationFactorNumer / simplificationFactorDenom ).expand().normal();
     }
     
     /**

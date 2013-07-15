@@ -1,75 +1,51 @@
 \chapter{General framework of \smtrat}
 \label{chapter:generalframework}
-
-
-Our toolbox has a modular \Cpp class design which can be used to
-compose NRA theory solvers for an SMT embedding in a \emph{dynamic}
-and \emph{hierarchic} fashion. Our NRA theory solvers are instances of
-\managerClass, which offers an interface to communicate with the
-environment and which coordinates the satisfiability check according
-to a user-defined \strategyClass. Such a strategy combines basic NRA
-theory solver modules, derived from \moduleClass. 
-%NRA theory problems are specified using the \formulaClass class. Basic
-%NRA theory solver modules are derived from the \moduleClass class.
-%Such modules can be embedded into a \managerClass, which offers an
-%interface to communicate with the environment and which coordinates
-%the satisfiability check according to a user-defined 
-%\strategyClass.
-Figure~\ref{fig:framework} shows an example configuration. Moreover, a
-\Java-based graphical user interface (GUI) can be used for an
-intuitive and user-friendly specification of strategies (and the
-automatic generation of a corresponding \strategyClass class). Next,
-we briefly describe these concepts. 
-
 \smtrat is a \Cpp library consisting of a collection of
-SMT-compliant modules which can be combined to (1) a 
-theory solver in order to extend the supported logics of an
-existing SMT solver by non-linear real arithmetic and (2) to
-SMT solver in which these modules can be (and most of them are) 
-integrated to tackle RCF. The
-latter is intended to be a testing environment for the development of
-SMT-compliant theory solvers, as the one presented in this paper.
-\smtrat defines three types of components (see Appendix 
-\ref{app:smtrat}): \emph{manager}, \emph{strategy} and \emph{module}. 
-% In addition, a frontend (1) provides the interfaces to an extern SMT 
-%solver or (2) parses the input file to an RCF formula.
-In the following we first describe the functionality of a module and
-show how the manager composes different modules according to a
+SMT-compliant implementations of methods for solving non-linear real
+arithmetic (NRA) formulas, we refer to as modules. These modules can be 
+combined to (1) a theory solver in order to extend the supported logics of an
+existing SMT solver by NRA or (2) an SMT solver for NRA. The latter is 
+especially intended to be a testing environment for the development 
+of SMT-compliant implementations of further methods tackling NRA. Here,
+the developer must only implement the given interfaces of an \smtrat 
+module and does not need to care about parsing input files, transforming
+formulas to conjunctive normal form or embedding a SAT solver in order
+to solve the Boolean skeleton of the given formula. Instead, \smtrat
+provides this and more features, such as lemma exchange and bound
+extraction, which we will explain in Section~\ref{}.
+
+\smtrat defines three types of components (see Figure 
+\ref{fig:framework}): the \emph{manager}, the \emph{strategy} and, as already mentioned, \emph{modules}. 
+In addition, a frontend (1) provides the interfaces to an extern SMT 
+solver or (2) parses the input file to a non-linear real arithmetic 
+formula, we denote in the following just as formula.
+In this section we first describe the functionality of a module and,
+then, show how the manager composes different modules according to a
 strategy to a solver.
 
-\section{The \formulaClass class} \formulaClass instances contain,
-besides a sequence of NRA constraints, a bitvector storing some
-information about the problem and the history of its check. E.g.,
-there is a bit which is $1$ if some of the constraints are equations.
-Also for each module there is a bit which is $1$ if the module was
-already invoked on the given problem. Such information can be used to
-specify conditions under which a procedure should be invoked for a
-certain problem.\smallskip
-
-\section{The \moduleClass class} A module $m$ contains a set of
-formulas, called its \emph{set of received formulas}, we denote by 
+\section{The \moduleClass class.} A module $m$ contains a set of
+formulas, called its \emph{set of received formulas} denoted by 
 $\Crcv(m)$. The main
-procedure of a module is \texttt{isConsistent()} and either decides
-whether $\Crcv$ is satisfiable or not returning \SAT or \UNSAT,
+procedure of a module  is \texttt{isConsistent()} and either decides
+whether $\Crcv(m)$ is satisfiable or not returning \SAT or \UNSAT,
 respectively, or returns \UNKNOWN. Note, that a set of formulas is
 semantically defined by their conjunction. We can manipulate the set
 of received formulas by adding (removing) formulas $\varphi$ to (from)
-it with \texttt{add($\varphi$)} (\texttt{remove($\varphi$)}). Since in
-the SMT embedding $\Crcv$ is usually changed between two consecutive
-\texttt{isConsistent()} calls only by adding/removing constraints, the
-solver's performance can be significantly improved if the modules can
+it with \texttt{add($\varphi$)} (\texttt{remove($\varphi$)}). Usually, 
+$\Crcv(m)$ is only changed slightly between two consecutive 
+\texttt{isConsistent()} calls, hence, the solver's performance can be significantly improved if the modules can
 make use of the results of previous checks, that is they support
 \emph{incrementality} and \emph{backtracking}. In case that the module
-determines the unsatisfiability of $\Crcv$, it is expected to compute
-at least one preferably small \emph{infeasible subset} $\Cinf\subseteq
-\Crcv$. Moreover, a module has the possibility to name lemmas, which
+determines the unsatisfiability of $\Crcv(m)$, it is expected to compute
+at least one preferably small \emph{infeasible subset} $\Cinf(m)\subseteq
+\Crcv(m)$. Moreover, a module has the possibility to name lemmas, which
 are formulas being tautologies, that is they hold for all assignments
 of the variables occuring in them. These lemmas should encapsulate
 information which can be extracted from a module's internal state and
 propagated among other \smtrat modules. Furthermore, \smtrat provides
 the feature that a module itself can ask other modules for the
-satisfiability of the set $\Cpass$ of formulas, called its \emph{set
-of passed formulas}, using the procedure \texttt{runBackends()} which
+satisfiability of a set of formulas, called its \emph{set
+of passed formulas} denoted by $\Cpass(m)$, using the procedure \texttt{runBackends()} which
 is controlled by the manager. 
 
 \begin{figure}[t]
@@ -82,22 +58,26 @@ is controlled by the manager.
 
 \section{The \managerClass and the \strategyClass class} A
 \emph{strategy} is a directed tree $T:=(V, E)$ with a set $V$ of
-module instances as nodes and $E\subseteq V\times \Omega\times V$,
+module (instances) as nodes and $E\subseteq V\times \Omega\times V$,
 where $\Omega$ is a set of conditions. The \emph{manager} contains the
 strategy and the input formula $C_{input}$, either received by a prefexed solver
 or parsed from an example file. Furthermore, it maintains the
-allocation of module instances as follows. Initially, the manager calls the method
-\texttt{isConsistent()} of the module instance given by the root of
-the strategy with $\Crcv = C_{input}$ being the set of received formulas of this
-module. Whenever a module instance $m\in V$ calls
-\texttt{runBackends()}, with $\Cpass$ being its set of passed
-formulas, the manager calls \texttt{isConsistent()} of each module instance
-$m'$ with \Crcv' = \Cpass being its set of received formulas, for which
+allocation of module as follows. Initially, the manager calls the method
+\texttt{isConsistent()} of the module $m_r$ given by the root of
+the strategy with $\Crcv(m_r) = C_{input}$ being the set of received formulas of this
+module. Whenever a module $m\in V$ calls
+\texttt{runBackends()}, with $\Cpass(m)$ being its set of passed
+formulas, the manager calls \texttt{isConsistent()} of each module
+$m'$ with \Crcv(m') = \Cpass(m) being its set of received formulas, for which
 an edge $(m, \omega, m')\in E$ exists such that $\omega$ holds for
-$\Cpass$, and passes the results back to $m$. Furthermore, it also
+$\Cpass(m)$, and passes the results back to $m$. Furthermore, it also
 passes back the infeasible subsets and lemmas provided by the invoked
 modules. The module $m$ can now benefit in its solving and reasoning
 process from this shared information.
 %In the following we write short $(m, m')$ for $(m, \omega, m)$ if 
 %$\omega = \True$.
+
+%A complete SMT solver for NRA can be achieved as follows.
+%The root module \CNFM transforms its set of received formulas $\Crcv^{cnf}$ to an equisatisfiable set of clauses $\Cpass^{cnf}$ and calls \texttt{runBackends($\Cpass^{cnf}$)}. The backend is a SAT-solver module \SATM, which runs DPLL-style SAT-solving on the Boolean abstraction of the set of received clauses $\Crcv^{sat}$. \SATM might call \texttt{runBackends($\Cpass^{sat}$)} for partial Boolean assignments on the corresponding set of formulas $\Cpass^{sat}$; we refer to such a backend call as \emph{theory call}. The Boolean abstraction of the obtained infeasible subsets and lemmas are stored as additional clauses. Infeasible subsets and lemmas, which contain only formulas from $\Cpass^{sat}$, prune the Boolean search space and hence the number of theory calls. Smaller infeasible subsets are usually more advantageous, because they make larger cuts in the search space. Other types of lemmas contain new formulas, so-called \emph{inventive lemmas} (\emph{non-inventive} otherwise) and might enlarge the Boolean search space, but they can reduce the complexity of later theory calls. This way we can compose SMT solvers for RCF, e.g., using the simple strategy defined by the nodes $I_{\CNFM}$, $I_{\SATM}$ and $I_{\CADM}$ 
+%and the edges $(I_{\CNFM}, I_{\SATM})$ and $(I_{\SATM}, I_{\CADM})$.
 
