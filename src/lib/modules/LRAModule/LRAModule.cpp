@@ -421,10 +421,10 @@ namespace smtrat
                             #endif 
 
                             #ifdef LRA_CUTS_FROM_PROOFS
-                            unsigned c=2,d=0;                            
-                            mTableau.print();
-                            mTableau.addColumns(c,d,Numeric(1));
-                            mTableau.print();
+                            //unsigned c=2,d=0;                            
+                            //mTableau.print();
+                            //mTableau.addColumns(c,d,Numeric(1));
+                            //mTableau.print();
                             lra::Tableau<lra::Numeric> dc_Tableau = lra::Tableau<lra::Numeric>(mpPassedFormula->end());
                             unsigned i=0;
                             for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
@@ -460,7 +460,10 @@ namespace smtrat
                                     j++;    
                                     } 
                                     dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
-                                    //dc_Tableau.multiplyRow(dc_count-1,lcmOfCoeffDenoms);                                    
+                                    if(lcmOfCoeffDenoms != 1)
+                                    {
+                                        dc_Tableau.multiplyRow(dc_count-1,lcmOfCoeffDenoms); 
+                                    }    
                                 }   
                             }
                             //mTableau.print();
@@ -469,9 +472,9 @@ namespace smtrat
                             //dc_Tableau.print();
                             //dc_Tableau.addColumns(a,b,a);
                             //dc_Tableau.print();
-                            vector<int> diagonals = vector<int>();
+                            vector<unsigned> diagonals = vector<unsigned>();
                             //diagonals = dc_Tableau.calculate_hermite_normalform();
-                            vector<int>& diagonals_ref = diagonals;
+                            vector<unsigned>& diagonals_ref = diagonals;
                             // dc_Tableau.invert_HNF_Matrix(diagonals_ref); 
                             #endif
                             

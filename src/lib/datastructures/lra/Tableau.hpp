@@ -417,8 +417,8 @@ namespace smtrat
                 void addColumns(unsigned,unsigned,T);
                 void multiplyRow(unsigned,T);
                 T Scalar_Product(Tableau<T>&,Tableau<T>&,unsigned,unsigned) const;
-                std::vector<int> calculate_hermite_normalform();
-                void invert_HNF_Matrix(std::vector<int>&);
+                std::vector<unsigned> calculate_hermite_normalform();
+                void invert_HNF_Matrix(std::vector<unsigned>&);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
@@ -2096,6 +2096,12 @@ namespace smtrat
         }
         
         #ifdef LRA_CUTS_FROM_PROOFS
+        /**
+         * Checks whether a constraint is a defining constraint. 
+         * 
+         * @return true,    if the constraint is a defining constraint
+         *         false,   otherwise   
+         */
         template<class T>
         bool Tableau<T>::isDefining( unsigned row_index, std::vector<unsigned>& _variables, std::vector<T>& _coefficients, T& _lcmOfCoeffDenoms ) const
         {
@@ -2128,12 +2134,14 @@ namespace smtrat
             return false;
         }
         
+        /**
+         * Multiplies all entries in the column with the index column_index by (-1). 
+         * 
+         * @return   
+         */        
         template<class T>
         void Tableau<T>::invertColumn(unsigned column_index)
-        {
-            /*
-             * Multiply all entries in the column with index column_index by -1,
-             */    
+        {   
             Iterator column_iterator = Iterator(mColumns.at(column_index).mStartEntry, mpEntries);   
             while(true)
             {
@@ -2150,44 +2158,51 @@ namespace smtrat
             }        
         }
         
+        /**
+         * Add the column with index columnB_index multplied by multiple 
+         * to the column with index columnA_index.
+         * 
+         * @return 
+         */        
         template<class T>
         void Tableau<T>::addColumns(unsigned columnA_index,unsigned columnB_index,T multiple)
-        {  
-            /*
-             * Add the column with index columnB_index multplied by multiple to the column with index columnA_index. 
-             */
-           Iterator columnA_iterator = Iterator(mColumns.at(columnA_index).mStartEntry, mpEntries);
-           Iterator columnB_iterator = Iterator(mColumns.at(columnB_index).mStartEntry, mpEntries);
+        {            
+            Iterator columnA_iterator = Iterator(mColumns.at(columnA_index).mStartEntry, mpEntries);
+            Iterator columnB_iterator = Iterator(mColumns.at(columnB_index).mStartEntry, mpEntries);
                 
-           while(true)
-           {
-           /* 
-            * Make columnA_iterator and columnB_iterator neighbors
-            */ 
-           while((*columnA_iterator).rowNumber() > (*columnB_iterator).rowNumber() && !columnA_iterator.columnBegin())
-               {
-                   columnA_iterator.up();
-               }    
-              EntryID ID1_to_be_Fixed,ID2_to_be_Fixed;            
-              if((*columnA_iterator).rowNumber() == (*columnB_iterator).rowNumber())
-              {               
-                 T content = T(((*columnA_iterator).content().toGinacNumeric())+((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric())));  
-                 if(content == 0)
-                 {
-                     EntryID to_delete = columnA_iterator.entryID();
-                     if(!columnA_iterator.columnBegin())
-                     {
-                         columnA_iterator.up();
-                     }    
-                     removeEntry(to_delete);                
+            while(true)
+            {
+            /* 
+             * Make columnA_iterator and columnB_iterator neighbors.
+             */ 
+            while((*columnA_iterator).rowNumber() > (*columnB_iterator).rowNumber() && !columnA_iterator.columnBegin())
+            {
+                columnA_iterator.up();
+            }    
+            EntryID ID1_to_be_Fixed,ID2_to_be_Fixed;            
+            if((*columnA_iterator).rowNumber() == (*columnB_iterator).rowNumber())
+            {
+                T content = T(((*columnA_iterator).content().toGinacNumeric())+((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric())));  
+                if(content == 0)
+                {
+                    EntryID to_delete = columnA_iterator.entryID();
+                    if(!columnA_iterator.columnBegin())
+                    {                        
+                        columnA_iterator.up();
+                    }    
+                    removeEntry(to_delete);                
                  }                
                  else
                  {
-                     (*columnA_iterator).rContent() = content;           
+                    (*columnA_iterator).rContent() = content;           
                  }    
               }
               else if((*columnA_iterator).rowNumber() < (*columnB_iterator).rowNumber()) 
-              {                  
+              {
+                  /*
+                   * A new entry has to be created under the position of columnA_iterator
+                   * and sideways to column_B_iterator.
+                   */   
                   EntryID entryID = newTableauEntry(T(((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric()))));
                   TableauEntry<T>& entry = (*mpEntries)[entryID];
                   TableauEntry<T>& entry_down = (*mpEntries)[(*columnA_iterator).down()];   
@@ -2204,6 +2219,10 @@ namespace smtrat
                   ID2_to_be_Fixed = row_iterator.entryID();
                   if((*row_iterator).columnNumber() > entry.columnNumber())
                   {
+                      /*
+                       * The new entry is left from the added entry.
+                       * Search for the entries which have to be modified.
+                       */
                       while((*row_iterator).columnNumber() > entry.columnNumber() && !row_iterator.rowBegin())
                       {
                           ID1_to_be_Fixed = row_iterator.entryID();
@@ -2228,6 +2247,10 @@ namespace smtrat
                   }    
                   else
                   {
+                      /*
+                       * The new entry is right from the added entry.
+                       * Search for the entries which have to be modified.
+                       */                      
                       while((*row_iterator).columnNumber() < entry.columnNumber() && !row_iterator.rowEnd())
                       {
                           ID1_to_be_Fixed = row_iterator.entryID();
@@ -2253,6 +2276,10 @@ namespace smtrat
               }
               else
               {
+                  /*
+                   * A new entry has to be created above the position of columnA_iterator
+                   * and sideways to column_B_iterator.
+                   */                   
                   EntryID entryID = newTableauEntry(T(((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric()))));
                   TableauEntry<T>& entry = (*mpEntries)[entryID];
                   entry.setColumnNumber((*columnA_iterator).columnNumber());
@@ -2266,7 +2293,10 @@ namespace smtrat
                   ID2_to_be_Fixed = row_iterator.entryID();
                   if((*row_iterator).columnNumber() > entry.columnNumber())
                   {
-                      
+                      /*
+                       * The new entry is left from the added entry.
+                       * Search for the entries which have to be modified.
+                       */                      
                       while((*row_iterator).columnNumber() > entry.columnNumber() && !row_iterator.rowBegin())
                       {
                           ID1_to_be_Fixed = row_iterator.entryID();
@@ -2290,7 +2320,11 @@ namespace smtrat
                       }  
                   }  
                   else
-                  {                      
+                  {
+                      /*
+                       * The new entry is right from the added entry.
+                       * Search for the entries which have to be modified.
+                       */                      
                       while((*row_iterator).columnNumber() < entry.columnNumber() && !row_iterator.rowEnd())
                       {                             
                           ID1_to_be_Fixed = row_iterator.entryID();
@@ -2325,12 +2359,14 @@ namespace smtrat
            }
         }
         
+        /**
+         * Multiply the row with index row_index by multiple.
+         * 
+         * @return 
+         */        
         template<class T> 
         void Tableau<T>::multiplyRow(unsigned row_index,T multiple)
-        {
-            /* 
-             * Multiply the row with index row_index by multiple.
-             */             
+        {            
             Iterator row_iterator = Iterator(mRows.at(row_index).mStartEntry, mpEntries);
             while(true)
             { 
@@ -2347,6 +2383,12 @@ namespace smtrat
             }
         }
         
+        /**
+         * Calculate the scalarproduct of the row with index rowA from TableauA with the column
+         * with index columnB from Tableau. 
+         * 
+         * @return   the value (T) of the scalarproduct.
+         */        
         template<class T> 
         T Tableau<T>::Scalar_Product(Tableau<T>& A, Tableau<T>& B,unsigned rowA, unsigned columnB) const
         {
@@ -2389,18 +2431,26 @@ namespace smtrat
         return result;    
         }
         
+        /**
+         * Calculate the Hermite normal form of the calling Tableau. 
+         * 
+         * @return   the vector containing the indices of the diagonal elements.
+         */        
         template<class T> 
-        std::vector<int> Tableau<T>::calculate_hermite_normalform()
+        std::vector<unsigned> Tableau<T>::calculate_hermite_normalform()
         {
-            std::vector<int> diagonals = std::vector<int>();          
+            std::vector<unsigned> diagonals = std::vector<unsigned>();          
             for(unsigned i=0;i<mColumns.size();i++)
             {
-                diagonals.push_back(-1);
+                diagonals.push_back(mColumns.size());
             }       
             Iterator row_iterator = Iterator(mRows.at(0).mStartEntry, mpEntries);
             bool first_free = true;
             bool first_loop = false;
-            bool just_deleted = false;        
+            bool just_deleted = false; 
+            /*
+             * Iterate through all rows in order to construct the HNF.
+             */
             for(unsigned i=0;i<mRows.size();i++)
             {
                 int elim_pos=-1,added_pos=-1;
@@ -2409,54 +2459,75 @@ namespace smtrat
                 row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
                 unsigned number_of_entries = mRows.at(i).mSize;
                 first_loop = true;
+                /*
+                 * Eliminate as many entries as necessary.
+                 */
                 while(!(number_of_entries <= i+1))
                     {
                     if(just_deleted)
+                    {
+                        /*
+                         * Move the iterator to the correct position if an entry
+                         * has been deleted in the last loop run.
+                         */
                         row_iterator = Iterator(added_entry, mpEntries);
+                    }    
                     else if (!first_loop)
                     {
+                        /*
+                         * If no entry was deleted during the last loop run and it is not 
+                         * the first loop run, correct the position of the iterators.
+                         */                        
                         if((*mpEntries)[added_entry].columnNumber() > (*mpEntries)[elim_entry].columnNumber())
-                            row_iterator = Iterator(elim_entry,mpEntries);
-                        else
-                            row_iterator = Iterator(added_entry,mpEntries);                        
-                    }                
-                        while(elim_pos == added_pos)
                         {
-                            T content = (*mpEntries)[row_iterator.entryID()].content();
-                            unsigned column = (*mpEntries)[row_iterator.entryID()].columnNumber();
-                            if((*mpEntries)[row_iterator.entryID()].content() < 0)
-                                invertColumn(column); 
-                            if(diagonals.at(column) == -1)
-                            {    
-                                if(first_free)
+                            row_iterator = Iterator(elim_entry,mpEntries);
+                        }    
+                        else
+                        {
+                            row_iterator = Iterator(added_entry,mpEntries);
+                        }    
+                    }                
+                    while(elim_pos == added_pos)
+                    {                        
+                        T content = (*mpEntries)[row_iterator.entryID()].content();
+                        unsigned column = (*mpEntries)[row_iterator.entryID()].columnNumber();
+                        if((*mpEntries)[row_iterator.entryID()].content() < 0)
+                        {
+                            invertColumn(column); 
+                        }    
+                        if(diagonals.at(column) == mColumns.size())
+                        {    
+                            if(first_free)
+                            {                                
+                                elim_pos = column;
+                                elim_content = content; 
+                                added_pos = column;
+                                added_content = content;
+                                first_free = false;
+                                added_entry = row_iterator.entryID();
+                                elim_entry = row_iterator.entryID();
+                            }
+                            else
+                            {
+                                if(elim_content <= content)
                                 {
                                     elim_pos = column;
-                                    elim_content = content; 
-                                    added_pos = column;
-                                    added_content = content;
-                                    first_free = false;
-                                    added_entry = row_iterator.entryID();
+                                    elim_content = content;  
                                     elim_entry = row_iterator.entryID();
                                 }
                                 else
                                 {
-                                    if(elim_content <= content)
-                                    {
-                                        elim_pos = column;
-                                        elim_content = content;  
-                                        elim_entry = row_iterator.entryID();
-                                    }
-                                    else
-                                    {
-                                        added_pos = column;
-                                        added_content = content; 
-                                        added_entry = row_iterator.entryID();
-                                    }
+                                    added_pos = column;
+                                    added_content = content; 
+                                    added_entry = row_iterator.entryID();
                                 }
-                            }                        
+                             }
+                        }                        
                         if(elim_pos == added_pos)
-                            row_iterator.right();                    
-                        }
+                        {
+                            row_iterator.right();  
+                        }    
+                    }
                     if(mod(( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() ) ) ) , cln::floor1( cln::the<cln::cl_RA>( added_content.toCLN() ) ) ) == 0)
                     {
                         just_deleted = true;
@@ -2467,9 +2538,13 @@ namespace smtrat
                     {
                          just_deleted = false;
                          if(elim_pos < added_pos)
-                            added_pos = elim_pos;
+                         {
+                             added_pos = elim_pos;
+                         }    
                          else
-                            elim_pos = added_pos;
+                         {
+                             elim_pos = added_pos;
+                         }    
                     }  
                     T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
                     addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
@@ -2507,13 +2582,17 @@ namespace smtrat
             return diagonals;    
         }   
         
+        /*
+         * Inverts the HNF matrix.
+         * 
+         * @return 
+         */
         template<class T> 
-        void Tableau<T>::invert_HNF_Matrix(std::vector<int>& diagonal_positions)
+        void Tableau<T>::invert_HNF_Matrix(std::vector<unsigned>& diagonal_positions)
         {
             for(unsigned i=mRows.size()-1;i>=0;i--)
             {
-                Iterator column_iterator = Iterator(mColumns.at(diagonal_positions.at(i)).mStartEntry, mpEntries);
-                
+                Iterator column_iterator = Iterator(mColumns.at(diagonal_positions.at(i)).mStartEntry, mpEntries);                
                 while(!column_iterator.columnBegin())
                 {
                     T new_value = T(0);
@@ -2527,7 +2606,7 @@ namespace smtrat
                     if((*row_iterator).rowNumber() == row_count)
                     {
                     unsigned j=i;
-                    while(diagonal_positions.at(j) != -1)
+                    while(diagonal_positions.at(j) != mColumns.size())
                     {
                         row_iterator = Iterator(mColumns.at(diagonal_positions.at(j)).mStartEntry, mpEntries);
                         new_value = new_value - (*row_iterator).content(); 
