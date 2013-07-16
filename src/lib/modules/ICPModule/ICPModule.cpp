@@ -36,7 +36,7 @@
 using namespace GiNaC;
 using namespace std;
 
-//#define ICPMODULE_DEBUG
+#define ICPMODULE_DEBUG
 #define BOXMANAGEMENT
 
 namespace smtrat

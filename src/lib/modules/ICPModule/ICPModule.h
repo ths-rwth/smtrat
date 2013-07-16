@@ -75,7 +75,7 @@ namespace smtrat
                     return (lhs->expression() < rhs->expression());
                 }
             };
-
+            
             struct linearVariable
             {
                 const Formula*                           constraint;
@@ -90,7 +90,6 @@ namespace smtrat
 
             typedef set<icp::ContractionCandidate*, icp::contractionCandidateComp>                      ContractionCandidates;
             typedef std::map<ex*, weights, ex_is_less>                             WeightMap;
-            typedef std::vector< std::set<Constraint> >              vec_set_Constraint;
 
         private:
 
