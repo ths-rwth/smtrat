@@ -130,7 +130,7 @@ namespace vs
                 numberOfVariableOccurencesWeight = maximum - 1;
             // If variable occurs only in one monomial, give a bonus if all other monomials are positive.
             double otherMonomialsPositiveWeight = 1;
-            if( numberOfVariableOccurencesWeight == 1 && mpConstraint->numMonomials() > 1 )
+            if( numberOfVariableOccurencesWeight == 1 && ((mpConstraint->constantPart() == 0 && mpConstraint->numMonomials() > 1) || mpConstraint->numMonomials() > 2 ) )
             {
                 const ex lhs = mpConstraint->lhs();
                 assert( is_exactly_a<add>( lhs ) );
