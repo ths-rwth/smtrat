@@ -41,6 +41,7 @@
 #include "ContractionCandidate.h"
 #include "ContractionCandidateManager.h"
 #include "HistoryNode.h"
+#include "IcpVariable.h"
 #include "../LRAModule/LRAModule.h"
 #include <ginacra/ICP.h>
 #include <ginacra/DoubleInterval.h>
@@ -107,7 +108,7 @@ namespace smtrat
             std::map<const Constraint*, const Constraint*, constraintPointerComp>                      mReplacements; // replacement -> origin
             std::map<const Constraint*, const Constraint*, constraintPointerComp>                      mLinearizationReplacements;
 
-            std::map<string, icp::IcpVariable>                                  mVariables;
+            std::map<string, icp::IcpVariable*>                                  mVariables;
             std::map<const ex, symbol, ex_is_less>                              mLinearizations;
 
             GiNaC::exmap                                                        mSubstitutions; // variable -> substitution

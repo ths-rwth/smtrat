@@ -32,12 +32,13 @@
 
 #include "ContractionCandidate.h"
 #include "../../Formula.h"
+#include "../LRAModule/LRAModule.h"
 #include <assert.h>
 
 namespace smtrat
 {
 namespace icp
-{
+{   
     class IcpVariable
     {
         private:
@@ -48,7 +49,7 @@ namespace icp
             const GiNaC::symbol                        mVar;
             bool                                       mOriginal;
             std::vector<ContractionCandidate*> mCandidates;
-            lra::Variable<lra::Numeric>*               mLraVar;
+            const lra::Variable<lra::Numeric>*               mLraVar;
             bool                                       mActive;
             bool                                       mLinear;
             
@@ -61,7 +62,7 @@ namespace icp
             smtrat::Formula::iterator                  mExternalRightBound;
 
         public:
-
+            
             /*
              * Constructors
              */
@@ -71,7 +72,7 @@ namespace icp
                 assert(false);
             }
 
-            IcpVariable( symbol _var, bool _original, lra::Variable<lra::Numeric>* _lraVar = NULL ):
+            IcpVariable( symbol _var, bool _original, const lra::Variable<lra::Numeric>* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal( _original ),
                 mCandidates(),
@@ -90,7 +91,7 @@ namespace icp
             IcpVariable( symbol _var,
                          bool _original,
                          ContractionCandidate* _candidate,
-                         lra::Variable<lra::Numeric>* _lraVar = NULL ):
+                         const lra::Variable<lra::Numeric>* _lraVar = NULL ):
                 mVar( _var ),
                 mOriginal ( _original ),
                 mCandidates(),
@@ -115,7 +116,7 @@ namespace icp
                     delete mInternalRightBound;
                 }
             }
-
+            
             /*
              * Getter/Setter
              */
@@ -132,6 +133,8 @@ namespace icp
 
             const lra::Variable<lra::Numeric>* lraVar() const
             {
+//                cout << mVar << endl;
+                assert(mLraVar != NULL);
                 return mLraVar;
             }
 
@@ -144,7 +147,7 @@ namespace icp
                 }
             }
 
-            void setLraVar( lra::Variable<lra::Numeric>* _lraVar )
+            void setLraVar( const lra::Variable<lra::Numeric>* _lraVar )
             {
                 mLraVar = _lraVar;
                 mUpdated = std::make_pair(true,true);
@@ -323,6 +326,11 @@ namespace icp
                 }
                 return false;
             }
+            
+            bool operator< (IcpVariable const& rhs) const
+            {
+                return (this->mVar.get_name() < rhs.var().get_name());
+            }
 
         private:
 
@@ -330,6 +338,16 @@ namespace icp
              * Auxiliary functions
              */
     };
+    
+    struct icpVariableComp
+    {
+        bool operator() (const IcpVariable* const _lhs, const IcpVariable* const _rhs ) const
+        {
+            return (_lhs->var().get_name() < _rhs->var().get_name());
+        }
+    };
+            
+    typedef std::set<const IcpVariable*, icpVariableComp>  set_icpVariable;
 }    // namespace icp
 } // namespace smtrat
 #endif   /* VARIABLE_H */

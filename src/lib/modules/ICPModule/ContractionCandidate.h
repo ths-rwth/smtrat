@@ -142,9 +142,7 @@ namespace smtrat
             ~ContractionCandidate()
             {
                 if ( !isLinear() )
-                {
                     delete mConstraint;
-                }
             }
 
             /**
@@ -190,9 +188,7 @@ namespace smtrat
             void removeOrigin( const Formula* _origin )
             {
                 if ( mOrigin.find(_origin) != mOrigin.end() )
-                {
                     mOrigin.erase(_origin);
-                }
             }
 
             bool hasOrigin( const Formula* _origin ) const
@@ -206,9 +202,7 @@ namespace smtrat
                 for ( originIt = mOrigin.begin(); originIt != mOrigin.end(); ++originIt )
                 {
                     if ( (*originIt)->pConstraint() == _origin )
-                    {
                         return true;
-                    }
                 }
                 return false;
             }
@@ -272,9 +266,7 @@ namespace smtrat
             void calcDerivative() throw ()
             {
                 if( mDerivative == ex() )
-                {
                     mDerivative = mConstraint->lhs().diff( mDerivationVar );
-                }
             }
 
             void activate()
