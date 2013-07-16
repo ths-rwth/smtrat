@@ -41,6 +41,7 @@
 #include "ContractionCandidate.h"
 #include "ContractionCandidateManager.h"
 #include "HistoryNode.h"
+#include "IcpVariable.h"
 #include "../LRAModule/LRAModule.h"
 #include <ginacra/ICP.h>
 #include <ginacra/DoubleInterval.h>
@@ -74,7 +75,7 @@ namespace smtrat
                     return (lhs->expression() < rhs->expression());
                 }
             };
-
+            
             struct linearVariable
             {
                 const Formula*                           constraint;
@@ -89,7 +90,6 @@ namespace smtrat
 
             typedef set<icp::ContractionCandidate*, icp::contractionCandidateComp>                      ContractionCandidates;
             typedef std::map<ex*, weights, ex_is_less>                             WeightMap;
-            typedef std::vector< std::set<Constraint> >              vec_set_Constraint;
 
         private:
 
@@ -107,7 +107,7 @@ namespace smtrat
             std::map<const Constraint*, const Constraint*, constraintPointerComp>                      mReplacements; // replacement -> origin
             std::map<const Constraint*, const Constraint*, constraintPointerComp>                      mLinearizationReplacements;
 
-            std::map<string, icp::IcpVariable>                                  mVariables;
+            std::map<string, icp::IcpVariable*>                                  mVariables;
             std::map<const ex, symbol, ex_is_less>                              mLinearizations;
 
             GiNaC::exmap                                                        mSubstitutions; // variable -> substitution
