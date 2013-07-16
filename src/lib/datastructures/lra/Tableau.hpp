@@ -426,7 +426,9 @@ namespace smtrat
                 void printHeap( std::ostream& = std::cout, unsigned = 30, const std::string = "" ) const;
                 void printEntry( EntryID, std::ostream& = std::cout, unsigned = 20 ) const;
                 void printVariables( bool = true, std::ostream& = std::cout, const std::string = "" ) const;
+                #ifdef LRA_REFINEMENT
                 void printLearnedBounds( const std::string = "", std::ostream& = std::cout ) const;
+                #endif
                 void print( std::ostream& = std::cout, unsigned = 28, const std::string = "" ) const;
 
         };
@@ -2761,6 +2763,7 @@ namespace smtrat
             }
         }
 
+        #ifdef LRA_REFINEMENT
         /**
          *
          * @param _out
@@ -2806,6 +2809,7 @@ namespace smtrat
                 _out << std::endl << std::endl;
             }
         }
+        #endif
 
         /**
          *

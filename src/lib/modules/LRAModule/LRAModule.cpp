@@ -32,6 +32,7 @@
 
 //#define DEBUG_LRA_MODULE
 #define LRA_SIMPLE_THEORY_PROPAGATION
+#define LRA_SIMPLE_CONFLICT_SEARCH
 #define LRA_ONE_REASON
 //#define LRA_BRANCH_AND_BOUND
 
@@ -339,7 +340,9 @@ namespace smtrat
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
             if( anAnswerFound() )
             {
+                #ifdef LRA_REFINEMENT
                 learnRefinements();
+                #endif
                 CONSTRAINT_UNLOCK
                 return foundAnswer( Unknown );
             }
@@ -550,6 +553,7 @@ namespace smtrat
                 {
                     // Pivot at the found pivoting entry.
                     mTableau.pivot( pivotingElement.first );
+                    #ifdef LRA_REFINEMENT
                     // Learn all bounds which have been deduced during the pivoting process.
                     while( !mTableau.rNewLearnedBounds().empty() )
                     {
@@ -588,6 +592,7 @@ namespace smtrat
                         }
                         #endif
                     }
+                    #endif
                     // Maybe a easy conflict occurred with the learned bounds.
                     if( !mInfeasibleSubsets.empty() )
                     {
@@ -1163,13 +1168,14 @@ namespace smtrat
                 addDeduction( deduction );
             }
             #endif
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
+            #endif
         }
         else if( _constraint->relation() == CR_LEQ )
         {
             Value<Numeric>* value = new Value<Numeric>( _boundValue );
             pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), _constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), _constraint );
-            findSimpleConflicts( *result.first );
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
@@ -1191,7 +1197,9 @@ namespace smtrat
                 addDeduction( deduction );
             }
             #endif
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
+            #endif
         }
         else if( _constraint->relation() == CR_GEQ )
         {
@@ -1218,7 +1226,9 @@ namespace smtrat
                 addDeduction( deduction );
             }
             #endif
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
+            #endif
         }
         else
         {
@@ -1263,7 +1273,9 @@ namespace smtrat
                     addDeduction( deduction );
                 }
                 #endif
+                #ifdef LRA_SIMPLE_CONFLICT_SEARCH
                 findSimpleConflicts( *result.first );
+                #endif
             }
             if( _constraint->relation() == CR_GREATER || _constraint->relation() == CR_NEQ )
             {
@@ -1304,7 +1316,9 @@ namespace smtrat
                     addDeduction( deduction );
                 }
                 #endif
+                #ifdef LRA_SIMPLE_CONFLICT_SEARCH
                 findSimpleConflicts( *result.first );
+                #endif
             }
         }
     }

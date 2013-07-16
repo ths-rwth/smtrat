@@ -1043,6 +1043,7 @@ FindSecond:
 
             #ifdef DEBUG_SATMODULE
             bool madeTheoryCall = false;
+            cout << "### Sat iteration" << endl;
             #endif
 
             if( confl == CRef_Undef )
@@ -1248,7 +1249,7 @@ FindSecond:
                                 (double)learnts_literals / nLearnts(),
                                 progressEstimate() * 100 );
                 }
-
+                currentAssignmentConsistent = True;
             }
             else
             {
