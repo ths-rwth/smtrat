@@ -2269,7 +2269,11 @@ namespace smtrat
                       }
                   } 
                   TableauHead& rowHead = mRows[entry.rowNumber()];
-                  ++rowHead.mSize;                  
+                  ++rowHead.mSize;                      
+                  if(columnHead.mStartEntry == columnA_iterator.entryID())
+                  {
+                      columnHead.mStartEntry = entryID;
+                  }                  
               }
               else
               {
@@ -2456,11 +2460,31 @@ namespace smtrat
                 row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
                 unsigned number_of_entries = mRows.at(i).mSize;
                 first_loop = true;
+                first_free = true;
+                just_deleted = false;
+                /*
+                 * Count how many zero entries of diagonal columns are in the
+                 * current row.
+                 */
+                unsigned diag_zero_entries=0;
+                for(unsigned j=0;j<i;j++)
+                {
+                    Iterator diagonal_iterator = Iterator(mColumns.at(diagonals.at(j)).mStartEntry, mpEntries);
+                    while((*diagonal_iterator).rowNumber() > i && !diagonal_iterator.rowBegin())
+                    {
+                        diagonal_iterator.up();
+                    }
+                    if((*diagonal_iterator).rowNumber() != i)
+                    {
+                        diag_zero_entries++;
+                    }
+                }
+                printf ("%u",diag_zero_entries);
                 /*
                  * Eliminate as many entries as necessary.
                  */
-                while(number_of_entries > i+1)
-                    {
+                while(number_of_entries + diag_zero_entries > i + 1)
+                {                    
                     if(just_deleted)
                     {
                         /*
@@ -2524,7 +2548,11 @@ namespace smtrat
                         {
                             row_iterator.right();  
                         }    
-                    }
+                    }  
+                    T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
+                    addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
+                    number_of_entries = mRows.at(i).mSize; 
+                    first_loop = false;
                     if(mod(( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() ) ) ) , cln::floor1( cln::the<cln::cl_RA>( added_content.toCLN() ) ) ) == 0)
                     {
                         /*
@@ -2534,7 +2562,7 @@ namespace smtrat
                          */
                         just_deleted = true;
                         first_free = true;  
-                        added_pos = elim_pos;
+                        elim_pos = added_pos;
                     }    
                     else
                     {
@@ -2547,24 +2575,18 @@ namespace smtrat
                          {
                              elim_pos = added_pos;
                          }    
-                    }  
-                    T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
-                    addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
-                    number_of_entries = mRows.at(i).mSize; 
-                    first_loop = false;
-                    }
+                    }                    
+                }
                 if(first_loop)
                 {
                     /*
                      * The current row does not need any eliminations.
                      * So search manually for the diagonal element.
-                     *         
-                     * Search for element that is not in a diagonal column.
                      */
-                    while(diagonals.at((*row_iterator).columnNumber()) != mColumns.size() && !row_iterator.rowEnd())
+                    while(diagonals.at((*row_iterator).columnNumber()) != mColumns.size())
                     {
-                        row_iterator.right();
-                    }                    
+                        row_iterator.right();                        
+                    }
                     added_content = (*row_iterator).content();
                     added_pos = (*row_iterator).columnNumber();
                 }
@@ -2605,6 +2627,10 @@ namespace smtrat
         {
             for(unsigned i=mRows.size()-1;i>=0;i--)
             {
+                /*
+                 * Iterate through the tableau beginning in the the last
+                 * column which only contains one element.
+                 */
                 Iterator column_iterator = Iterator(mColumns.at(diagonal_positions.at(i)).mStartEntry, mpEntries);                
                 while(!column_iterator.columnBegin())
                 {

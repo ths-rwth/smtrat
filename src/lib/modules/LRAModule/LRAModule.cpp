@@ -473,10 +473,18 @@ namespace smtrat
                             //dc_Tableau.addColumns(a,b,a);
                             //dc_Tableau.print();
                             vector<unsigned> diagonals = vector<unsigned>();
+                            if(dc_Tableau.rows().size() > 0)
+                            {
                             diagonals = dc_Tableau.calculate_hermite_normalform();
-                            dc_Tableau.print();
                             vector<unsigned>& diagonals_ref = diagonals;
-                            // dc_Tableau.invert_HNF_Matrix(diagonals_ref); 
+                            dc_Tableau.print();
+                            //dc_Tableau.invert_HNF_Matrix(diagonals_ref);
+                            dc_Tableau.print();
+                            auto iter = diagonals.begin();
+                            printf ("%u",(*iter));
+                            iter++;
+                            printf ("%u",(*iter));
+                            } 
                             #endif
                             
                             #ifdef LRA_BRANCH_AND_BOUND
