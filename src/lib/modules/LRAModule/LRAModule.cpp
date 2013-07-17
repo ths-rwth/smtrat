@@ -33,7 +33,7 @@
 //#define DEBUG_LRA_MODULE
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_SIMPLE_CONFLICT_SEARCH
-#define LRA_ONE_REASON
+//#define LRA_ONE_REASON
 //#define LRA_BRANCH_AND_BOUND
 
 using namespace std;
@@ -629,7 +629,7 @@ namespace smtrat
                     for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
                     {
                         assert( (*bound)->isActive() );
-                        infSubSet.insert( *(*bound)->pOrigins()->begin() );
+                        infSubSet.insert( (*bound)->pOrigins()->begin()->begin(), (*bound)->pOrigins()->begin()->end() );
                     }
                     mInfeasibleSubsets.push_back( infSubSet );
                 }

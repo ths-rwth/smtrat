@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2013.3.11)  16 JUL 2013 12:20
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2013.3.11)  17 JUL 2013 17:13
 entering extended mode
  %&-line parsing enabled.
 **manual.tex
@@ -755,12 +755,12 @@ Underfull \hbox (badness 10000) in paragraph at lines 6--6
 
 ]
 Chapter 4.
-
-Underfull \hbox (badness 10000) in paragraph at lines 38--39
+[11]
+Underfull \hbox (badness 10000) in paragraph at lines 42--43
 
  []
 
-[11]) (./implementingamodul.tex [12]
+) (./implementingamodul.tex [12]
 Chapter 5.
 
 Overfull \hbox (25.23068pt too wide) in paragraph at lines 39--42
@@ -787,8 +787,8 @@ LaTeX Warning: There were undefined references.
 
  ) 
 Here is how much of TeX's memory you used:
- 15238 strings out of 493848
- 266044 string characters out of 1152823
+ 15239 strings out of 493848
+ 266055 string characters out of 1152823
  349342 words of memory out of 3000000
  18099 multiletter control sequences out of 15000+50000
  15941 words of font info for 63 fonts, out of 3000000 for 9000
@@ -809,9 +809,9 @@ ic/amsfonts/cm/cmsy10.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts
 fb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/sh
 are/texmf-texlive/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/share/texmf-t
 exlive/fonts/type1/public/amsfonts/cm/cmtt8.pfb>
-Output written on manual.pdf (23 pages, 1263237 bytes).
+Output written on manual.pdf (23 pages, 1263600 bytes).
 PDF statistics:
- 354 PDF objects out of 1000 (max. 8388607)
- 71 named destinations out of 1000 (max. 500000)
+ 355 PDF objects out of 1000 (max. 8388607)
+ 72 named destinations out of 1000 (max. 500000)
  194 words of extra memory for PDF output out of 10000 (max. 10000000)
 
