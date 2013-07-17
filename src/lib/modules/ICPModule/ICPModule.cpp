@@ -36,7 +36,7 @@
 using namespace GiNaC;
 using namespace std;
 
-#define ICPMODULE_DEBUG
+//#define ICPMODULE_DEBUG
 #define BOXMANAGEMENT
 
 namespace smtrat
@@ -849,7 +849,7 @@ namespace smtrat
                 for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
                     tmp.insert((*intervalIt));
                 
-                std::set<Formula*> boundaryConstraints = createConstraintsFromBounds(tmp);
+                std::vector<Formula*> boundaryConstraints = createConstraintsFromBounds(tmp);
                 for ( auto boundaryConstraint = boundaryConstraints.begin(); boundaryConstraint != boundaryConstraints.end(); ++boundaryConstraint )
                     negatedContraction->addSubformula(*boundaryConstraint);
                 
@@ -867,7 +867,7 @@ namespace smtrat
                     for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
                         tmp.insert((*intervalIt));
                     
-                    std::set<Formula*> boundaryConstraints = createConstraintsFromBounds(tmp);
+                    std::vector<Formula*> boundaryConstraints = createConstraintsFromBounds(tmp);
                     for ( auto boundaryConstraint = boundaryConstraints.begin(); boundaryConstraint != boundaryConstraints.end(); ++boundaryConstraint )
                         mCheckContraction->addSubformula(*boundaryConstraint);
                     
@@ -886,7 +886,7 @@ namespace smtrat
                         for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
                             tmp.insert((*intervalIt));
                         
-                        std::set<Formula*> contractedBox = createConstraintsFromBounds(tmp);
+                        std::vector<Formula*> contractedBox = createConstraintsFromBounds(tmp);
                         Formula* negBox = new Formula(NOT);
                         Formula* boxConjunction = new Formula(AND);
                         for ( auto formulaIt = contractedBox.begin(); formulaIt != contractedBox.end(); ++formulaIt )
@@ -1011,7 +1011,7 @@ namespace smtrat
                     for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
                         tmp.insert((*intervalIt));
                     
-                    std::set<Formula*> contractedBox = createConstraintsFromBounds(tmp);
+                    std::vector<Formula*> contractedBox = createConstraintsFromBounds(tmp);
                     Formula* negConstraint = new Formula(NOT);
                     Formula* conjunction = new Formula(AND);
                     for ( auto formulaIt = contractedBox.begin(); formulaIt != contractedBox.end(); ++formulaIt )
@@ -1678,7 +1678,7 @@ namespace smtrat
 
 #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
 
-            std::set<Formula*> partialBox = createConstraintsFromBounds(tmpRight);
+            std::vector<Formula*> partialBox = createConstraintsFromBounds(tmpRight);
             
             Formula* negBox = new Formula(NOT);
             Formula* boxConjunction = new Formula(AND);
@@ -3118,7 +3118,7 @@ namespace smtrat
     {
 //        cout << "[CheckBoxAgainstLinearFeasibleRegion]" << endl;
 //        printIntervals();
-        std::set<Formula*> addedBoundaries = createConstraintsFromBounds(mIntervals);
+        std::vector<Formula*> addedBoundaries = createConstraintsFromBounds(mIntervals);
         
         for( auto formulaIt = addedBoundaries.begin(); formulaIt != addedBoundaries.end(); ++formulaIt )
         {            
@@ -3130,7 +3130,6 @@ namespace smtrat
 //        mLRA.printReceivedFormula();
         mValidationFormula->getPropositions();
         Answer boxCheck = mLRA.isConsistent();
-        mLRA.clearDeductions();
         
 #ifdef ICPMODULE_DEBUG
         cout << "Boxcheck: " << boxCheck << endl;
@@ -3180,20 +3179,41 @@ namespace smtrat
         }
         
         // remove boundaries from mLRA module after boxChecking.
-        for (auto formulaIt = mValidationFormula->begin(); formulaIt != mValidationFormula->end(); )
+        bool deleted = false;
+        for( auto boundIt = addedBoundaries.begin(); boundIt != addedBoundaries.end(); )
         {
-            if ( addedBoundaries.find(*formulaIt) != addedBoundaries.end()) 
+            deleted = false;
+            for (auto formulaIt = mValidationFormula->begin(); formulaIt != mValidationFormula->end(); )
             {
-                mLRA.removeSubformula(formulaIt);
-                formulaIt = mValidationFormula->erase(formulaIt);
+                if( (*boundIt)->constraint() == (*formulaIt)->constraint() )
+                {
+                    mLRA.removeSubformula(formulaIt);
+                    formulaIt = mValidationFormula->erase(formulaIt);
+                    deleted = true;
+                    break;
+                }
+                else
+                {
+                    ++formulaIt;
+                }
+
+    //            if ( addedBoundaries.find(*formulaIt) != addedBoundaries.end()) 
+    //            {
+    //                mLRA.removeSubformula(formulaIt);
+    //                formulaIt = mValidationFormula->erase(formulaIt);
+    //            }
+    //            else
+    //            {
+    //                ++formulaIt;
+    //            }
             }
-            else
-            {
-                ++formulaIt;
-            }
+            assert(deleted);
+            boundIt = addedBoundaries.erase(boundIt);
         }
         
-        addedBoundaries.clear();
+        mLRA.clearDeductions();
+        assert(addedBoundaries.empty());
+//        addedBoundaries.clear();
         
         if ( boxCheck == True )
         {
@@ -3266,9 +3286,9 @@ namespace smtrat
 //        printInfeasibleSubsets();
     }
     
-    std::set<Formula*> ICPModule::createConstraintsFromBounds( const GiNaCRA::evaldoubleintervalmap& _map )
+    std::vector<Formula*> ICPModule::createConstraintsFromBounds( const GiNaCRA::evaldoubleintervalmap& _map )
     {
-        std::set<Formula*> addedBoundaries;
+        std::vector<Formula*> addedBoundaries;
         GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
 
         for ( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
@@ -3290,7 +3310,7 @@ namespace smtrat
                         {
                             Formula* leftBound = new Formula(boundaries.first);
                             (*pos).second->setInternalLeftBound(new Formula(boundaries.first));
-                            addedBoundaries.insert(leftBound);
+                            addedBoundaries.insert(addedBoundaries.end(), leftBound);
         #ifdef ICPMODULE_DEBUG
                             cout << "Created lower boundary constraint: ";
                             leftBound->print();
@@ -3302,7 +3322,7 @@ namespace smtrat
                         {
                             Formula* rightBound = new Formula(boundaries.second);
                             (*pos).second->setInternalRightBound(new Formula(boundaries.second));
-                            addedBoundaries.insert(rightBound);
+                            addedBoundaries.insert(addedBoundaries.end(), rightBound);
         #ifdef ICPMODULE_DEBUG
                             cout << "Created upper boundary constraint: ";
                             rightBound->print();
@@ -3319,8 +3339,8 @@ namespace smtrat
                     }
                     else
                     {
-                        addedBoundaries.insert(new Formula((*pos).second->internalLeftBound()->pConstraint()));
-                        addedBoundaries.insert(new Formula((*pos).second->internalRightBound()->pConstraint()));
+                        addedBoundaries.insert(addedBoundaries.end(), new Formula((*pos).second->internalLeftBound()->pConstraint()));
+                        addedBoundaries.insert(addedBoundaries.end(), new Formula((*pos).second->internalRightBound()->pConstraint()));
                     }
                 }
             }

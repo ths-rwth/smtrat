@@ -349,7 +349,7 @@ namespace smtrat
              * creates constraints for the actual bounds of the original variables.
              * @return 
              */
-            std::set<Formula*> createConstraintsFromBounds( const GiNaCRA::evaldoubleintervalmap& _map );
+            std::vector<Formula*> createConstraintsFromBounds( const GiNaCRA::evaldoubleintervalmap& _map );
             
             void replaceConstraints( Formula*& _formula ) const
             {
