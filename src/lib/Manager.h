@@ -128,16 +128,30 @@ namespace smtrat
                 return mpPrimaryBackend->model();
             }
 
-            // Internally used interfaces
-            const std::map<const ModuleType, ModuleFactory*>& rModuleFactories() const
+            const Formula& formula() const
             {
-                return *mpModuleFactories;
+                return *mpPassedFormula;
             }
 
+            void printModel( std::ostream& ) const;
+            
+            // Internally used interfaces
             void addModuleType( const ModuleType _moduleType, ModuleFactory* _factory )
             {
                 mpModuleFactories->insert( std::pair<const ModuleType, ModuleFactory*>( _moduleType, _factory ) );
             }
+
+            const std::vector<Module*>& getAllGeneratedModules() const
+            {
+                return mGeneratedModules;
+            }
+            
+            const std::map<const ModuleType, ModuleFactory*>& rModuleFactories() const
+            {
+                return *mpModuleFactories;
+            }
+            
+        protected:
 
             StrategyGraph& rStrategyGraph()
             {
@@ -152,16 +166,7 @@ namespace smtrat
                 std::vector<Module*> result = iter->second;
                 return result;
             }
-
-            const Formula& formula() const
-            {
-                return *mpPassedFormula;
-            }
-
-            const std::vector<Module*>& getAllGeneratedModules() const
-            {
-                return mGeneratedModules;
-            }
+            
             unsigned addBackendIntoStrategyGraph( unsigned _at, ModuleType _moduleType, ConditionEvaluation _conditionEvaluation = isCondition )
             {
                 return mStrategyGraph.addBackend( _at, _moduleType, _conditionEvaluation );
@@ -179,7 +184,6 @@ namespace smtrat
             }
             #endif
 
-            void printModel( std::ostream& ) const;
             std::vector<Module*> getBackends( Formula*, Module*, std::atomic_bool* );
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             std::future<Answer> submitBackend( Module* );

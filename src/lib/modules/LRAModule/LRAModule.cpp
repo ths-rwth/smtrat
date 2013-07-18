@@ -32,7 +32,8 @@
 
 //#define DEBUG_LRA_MODULE
 #define LRA_SIMPLE_THEORY_PROPAGATION
-#define LRA_ONE_REASON
+#define LRA_SIMPLE_CONFLICT_SEARCH
+//#define LRA_ONE_REASON
 //#define LRA_BRANCH_AND_BOUND
 
 using namespace std;
@@ -339,7 +340,9 @@ namespace smtrat
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
             if( anAnswerFound() )
             {
+                #ifdef LRA_REFINEMENT
                 learnRefinements();
+                #endif
                 CONSTRAINT_UNLOCK
                 return foundAnswer( Unknown );
             }
@@ -562,6 +565,7 @@ namespace smtrat
                 {
                     // Pivot at the found pivoting entry.
                     mTableau.pivot( pivotingElement.first );
+                    #ifdef LRA_REFINEMENT
                     // Learn all bounds which have been deduced during the pivoting process.
                     while( !mTableau.rNewLearnedBounds().empty() )
                     {
@@ -600,6 +604,7 @@ namespace smtrat
                         }
                         #endif
                     }
+                    #endif
                     // Maybe a easy conflict occurred with the learned bounds.
                     if( !mInfeasibleSubsets.empty() )
                     {
@@ -633,7 +638,7 @@ namespace smtrat
                     for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
                     {
                         assert( (*bound)->isActive() );
-                        infSubSet.insert( *(*bound)->pOrigins()->begin() );
+                        infSubSet.insert( (*bound)->pOrigins()->begin()->begin(), (*bound)->pOrigins()->begin()->end() );
                     }
                     mInfeasibleSubsets.push_back( infSubSet );
                 }
@@ -1175,13 +1180,14 @@ namespace smtrat
                 addDeduction( deduction );
             }
             #endif
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
+            #endif
         }
         else if( _constraint->relation() == CR_LEQ )
         {
             Value<Numeric>* value = new Value<Numeric>( _boundValue );
             pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), _constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), _constraint );
-            findSimpleConflicts( *result.first );
             vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
             boundVector->push_back( result.first );
             mConstraintToBound[_constraint] = boundVector;
@@ -1203,7 +1209,9 @@ namespace smtrat
                 addDeduction( deduction );
             }
             #endif
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
+            #endif
         }
         else if( _constraint->relation() == CR_GEQ )
         {
@@ -1230,7 +1238,9 @@ namespace smtrat
                 addDeduction( deduction );
             }
             #endif
+            #ifdef LRA_SIMPLE_CONFLICT_SEARCH
             findSimpleConflicts( *result.first );
+            #endif
         }
         else
         {
@@ -1275,7 +1285,9 @@ namespace smtrat
                     addDeduction( deduction );
                 }
                 #endif
+                #ifdef LRA_SIMPLE_CONFLICT_SEARCH
                 findSimpleConflicts( *result.first );
+                #endif
             }
             if( _constraint->relation() == CR_GREATER || _constraint->relation() == CR_NEQ )
             {
@@ -1316,7 +1328,9 @@ namespace smtrat
                     addDeduction( deduction );
                 }
                 #endif
+                #ifdef LRA_SIMPLE_CONFLICT_SEARCH
                 findSimpleConflicts( *result.first );
+                #endif
             }
         }
     }
@@ -1428,21 +1442,27 @@ namespace smtrat
     {
         map<const string, numeric, strCmp> coeffs = _pConstraint->linearAndConstantCoefficients();
         assert( coeffs.size() > 1 );
+        
+//        map<const string, numeric, strCmp>::iterator currentCoeff = coeffs.begin();
+//        ex*                                          linearPart   = new ex( _pConstraint->lhs() - currentCoeff->second );
+//        ++currentCoeff;
+//
+//        // divide the linear Part and the constraint by the highest coefficient
+//        numeric highestCoeff = currentCoeff->second;
+//        --currentCoeff;
+//        while( currentCoeff != coeffs.end() )
+//        {
+//            currentCoeff->second /= highestCoeff;
+//            ++currentCoeff;
+//        }
+//        *linearPart /= highestCoeff;
+        
         map<const string, numeric, strCmp>::iterator currentCoeff = coeffs.begin();
-        ex*                                          linearPart   = new ex( _pConstraint->lhs() - currentCoeff->second );
-        ++currentCoeff;
-
-        // divide the linear Part and the constraint by the highest coefficient
-        numeric highestCoeff = currentCoeff->second;
-        --currentCoeff;
-        while( currentCoeff != coeffs.end() )
-        {
-            currentCoeff->second /= highestCoeff;
-            ++currentCoeff;
-        }
-        *linearPart /= highestCoeff;
+        
         if( coeffs.size() == 2 )
         {
+            numeric primCoeff = (++coeffs.begin())->second;
+            numeric constantPart = (-coeffs.begin()->second)/primCoeff;
             // constraint has one variable
             ex* var = new ex( (*_pConstraint->variables().begin()).second );
             ExVariableMap::iterator basicIter = mOriginalVars.find( var );
@@ -1451,18 +1471,30 @@ namespace smtrat
             {
                 Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( var );
                 mOriginalVars.insert( pair<const ex*, Variable<Numeric>*>( var, nonBasic ) );
-                setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
+                setBound( *nonBasic, primCoeff.is_negative(), constantPart, _pConstraint );
             }
             else
             {
                 delete var;
                 Variable<Numeric>* nonBasic = basicIter->second;
-                setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
+                setBound( *nonBasic, primCoeff.is_negative(), constantPart, _pConstraint );
             }
-            delete linearPart;
         }
         else
         {
+            ex* linearPart = new ex( _pConstraint->lhs() - currentCoeff->second );
+            ++currentCoeff;
+            numeric highestCoeff = currentCoeff->second;
+            if( highestCoeff.is_negative() )
+            {
+                --currentCoeff;
+                while( currentCoeff != coeffs.end() )
+                {
+                    currentCoeff->second = -currentCoeff->second;
+                    ++currentCoeff;
+                }
+                *linearPart = -(*linearPart);
+            }
             ExVariableMap::iterator slackIter = mSlackVars.find( linearPart );
             if( slackIter == mSlackVars.end() )
             {

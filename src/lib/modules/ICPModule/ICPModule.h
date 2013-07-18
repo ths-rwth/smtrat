@@ -38,7 +38,6 @@
 #include <ginacra/ginacra.h>
 #include "../../Module.h"
 #include "DerivativeTable.h"
-#include "ContractionCandidate.h"
 #include "ContractionCandidateManager.h"
 #include "HistoryNode.h"
 #include "IcpVariable.h"
@@ -123,7 +122,6 @@ namespace smtrat
             std::map<const Formula*, const Formula*>                            mReceivedFormulaMapping; // LraReceived -> IcpReceived
             
             std::set<const Constraint*, constraintPointerComp>                                         mCenterConstraints;
-            std::set<const Formula*>                                            mBoundConstraints;
             std::set<Formula*>                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
 
             icp::ContractionCandidate*                                          mLastCandidate;

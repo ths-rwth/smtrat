@@ -38,6 +38,51 @@ namespace smtrat
     {
     private:
         /**
+         * Structs
+         */
+        struct CCComp
+        {           
+            bool operator() (const ContractionCandidate* const _lhs, const ContractionCandidate* const _rhs)
+            {
+                if( (*_lhs->mConstraint->variables().begin()).first < (*_rhs->mConstraint->variables().begin()).first )
+                    return true;
+                else if( (*_lhs->mConstraint->variables().begin()).first > (*_rhs->mConstraint->variables().begin()).first )
+                    return false;
+                else if ( _lhs->constraint()->maxDegree((*_lhs->mConstraint->variables().begin()).second) < _rhs->constraint()->maxDegree((*_rhs->mConstraint->variables().begin()).second) )
+                    return false;
+                else if ( _lhs->constraint()->maxDegree((*_lhs->mConstraint->variables().begin()).second) > _rhs->constraint()->maxDegree((*_rhs->mConstraint->variables().begin()).second) )
+                    return true;
+                else
+                {
+                    ex left = _lhs->constraint()->lhs();
+                    ex right = _rhs->constraint()->lhs();
+                    
+                    left /= GiNaC::pow((*_lhs->mConstraint->variables().begin()).second, _lhs->constraint()->maxDegree((*_lhs->mConstraint->variables().begin()).second) );
+                    if (left.is_zero())
+                        return false;
+                    GiNaC::symtab newLeftVariables = _lhs->constraint()->variables();
+                    newLeftVariables.erase(newLeftVariables.begin());
+                    const Constraint* tmpLeft = Formula::newConstraint(left,_lhs->mConstraint->relation(), newLeftVariables);
+                    
+                    right /= GiNaC::pow((*_rhs->mConstraint->variables().begin()).second, _rhs->constraint()->maxDegree((*_rhs->mConstraint->variables().begin()).second) );
+                    GiNaC::symtab newRightVariables = _rhs->constraint()->variables();
+                    newRightVariables.erase(newRightVariables.begin());
+                    const Constraint* tmpRight = Formula::newConstraint(right,_rhs->mConstraint->relation(), newRightVariables);
+                    
+                    ContractionCandidate* lhsCopy = new ContractionCandidate(_lhs->mLhs, tmpLeft, _lhs->mDerivationVar, 0);
+                    ContractionCandidate* rhsCopy = new ContractionCandidate(_rhs->mLhs, tmpRight, _lhs->mDerivationVar, 0);
+                    
+                    bool result = CCComp::operator ()(lhsCopy, rhsCopy);
+                    
+                    delete lhsCopy;
+                    delete rhsCopy;
+                    
+                    return result;
+                }
+            }
+        };
+        
+        /**
          * Member variables
          */
         static ContractionCandidateManager* mInstance;
@@ -106,6 +151,17 @@ namespace smtrat
          * @return the set of candidates in the closure of _candidate
          */
         void closure (const ContractionCandidate* const _candidate, std::set<const ContractionCandidate*>& _candidates) const;
+        
+        std::map<unsigned, ContractionCandidate*>& rCandidates()
+        {
+            return mCandidates;
+        }
+        
+        /**
+         * Reasigns the Ids of the candidates. ATTENTION: This might change the order in which the candidates are processed as well as 
+         * any existing mapping, which uses the id of the candidates.
+         */
+        void reasignIds ();
         
     private:
         /**
