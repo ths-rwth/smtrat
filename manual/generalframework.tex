@@ -4,7 +4,8 @@
 SMT-compliant implementations of methods for solving non-linear real
 arithmetic (NRA) formulas, we refer to as modules. These modules can be 
 combined to (1) a theory solver in order to extend the supported logics of an
-existing SMT solver by NRA or (2) an SMT solver for NRA. The latter is 
+existing SMT solver by NRA (see Figure~\ref{fig:frameworkb}) or (2) an SMT 
+solver for NRA (see Figure~\ref{fig:frameworka}). The latter is 
 especially intended to be a testing environment for the development 
 of SMT-compliant implementations of further methods tackling NRA. Here,
 the developer must only implement the given interfaces of an \smtrat 
@@ -12,19 +13,34 @@ module and does not need to care about parsing input files, transforming
 formulas to conjunctive normal form or embedding a SAT solver in order
 to solve the Boolean skeleton of the given formula. Instead, \smtrat
 provides this and more features, such as lemma exchange and bound
-extraction, which we will explain in Section~\ref{}.
+extraction, which will be explained in following.
 
-\smtrat defines three types of components (see Figure 
-\ref{fig:framework}): the \emph{manager}, the \emph{strategy} and, as already mentioned, \emph{modules}. 
+\begin{figure}[ht]
+\caption{A snapshot of an \smtrat composition being an SMT solver for NRA.}
+\begin{center}
+\input{figures/framework_for_smt_solver}
+\end{center}
+\label{fig:frameworka}
+\end{figure}
+
+\begin{figure}[ht]
+\caption{A snapshot of an \smtrat composition being a theory solver embedded in an SMT solver.}
+\begin{center}
+\input{figures/framework_for_tsolver}
+\end{center}
+\label{fig:framework}b
+\end{figure}
+
+\smtrat defines three types of components: the \emph{manager}, the \emph{strategy} and, as already mentioned, \emph{modules}. 
 In addition, a frontend (1) provides the interfaces to an extern SMT 
-solver or (2) parses the input file to a non-linear real arithmetic 
+solver or (2) parses an input file to a non-linear real arithmetic 
 formula, we denote in the following just as formula.
 In this section we first describe the functionality of a module and,
 then, show how the manager composes different modules according to a
 strategy to a solver.
 
 \section{The \moduleClass class.} A module $m$ contains a set of
-formulas, called its \emph{set of received formulas} denoted by 
+formulas, called its \emph{set of received formulas} and denoted by 
 $\Crcv(m)$. The main
 procedure of a module  is \texttt{isConsistent()} and either decides
 whether $\Crcv(m)$ is satisfiable or not returning \SAT or \UNSAT,
@@ -48,21 +64,19 @@ satisfiability of a set of formulas, called its \emph{set
 of passed formulas} denoted by $\Cpass(m)$, using the procedure \texttt{runBackends()} which
 is controlled by the manager. 
 
-\begin{figure}[t]
-\caption{A snapshot of an \smtrat composition embedded in an SMT solver.}
-\begin{center}
-\input{figures/framework}
-\end{center}
-\label{fig:framework}
-\end{figure}
-
-\section{The \managerClass and the \strategyClass class} A
-\emph{strategy} is a directed tree $T:=(V, E)$ with a set $V$ of
-module (instances) as nodes and $E\subseteq V\times \Omega\times V$,
+\section{The \managerClass and the \strategyClass class} 
+\smtrat allows a user to decide how to compose the different procedures,
+which are implemented in the modules. For this purpose we provide a GUI
+where the user can create such a composition we call strategy. Further
+explanation can be found in Chapter~\ref{chapter:composingats}. Here, 
+it is enough to know that a \emph{strategy} is a directed tree $T:=(V, E)$ with a set $V$ of
+(instances of) modules as nodes and $E\subseteq V\times \Omega\times V$,
 where $\Omega$ is a set of conditions. The \emph{manager} contains the
 strategy and the input formula $C_{input}$, either received by a prefexed solver
 or parsed from an example file. Furthermore, it maintains the
-allocation of module as follows. Initially, the manager calls the method
+allocation of modules as follows. 
+
+Initially, the manager calls the method
 \texttt{isConsistent()} of the module $m_r$ given by the root of
 the strategy with $\Crcv(m_r) = C_{input}$ being the set of received formulas of this
 module. Whenever a module $m\in V$ calls
@@ -73,11 +87,44 @@ an edge $(m, \omega, m')\in E$ exists such that $\omega$ holds for
 $\Cpass(m)$, and passes the results back to $m$. Furthermore, it also
 passes back the infeasible subsets and lemmas provided by the invoked
 modules. The module $m$ can now benefit in its solving and reasoning
-process from this shared information.
-%In the following we write short $(m, m')$ for $(m, \omega, m)$ if 
-%$\omega = \True$.
+process from this shared information. 
 
-%A complete SMT solver for NRA can be achieved as follows.
-%The root module \CNFM transforms its set of received formulas $\Crcv^{cnf}$ to an equisatisfiable set of clauses $\Cpass^{cnf}$ and calls \texttt{runBackends($\Cpass^{cnf}$)}. The backend is a SAT-solver module \SATM, which runs DPLL-style SAT-solving on the Boolean abstraction of the set of received clauses $\Crcv^{sat}$. \SATM might call \texttt{runBackends($\Cpass^{sat}$)} for partial Boolean assignments on the corresponding set of formulas $\Cpass^{sat}$; we refer to such a backend call as \emph{theory call}. The Boolean abstraction of the obtained infeasible subsets and lemmas are stored as additional clauses. Infeasible subsets and lemmas, which contain only formulas from $\Cpass^{sat}$, prune the Boolean search space and hence the number of theory calls. Smaller infeasible subsets are usually more advantageous, because they make larger cuts in the search space. Other types of lemmas contain new formulas, so-called \emph{inventive lemmas} (\emph{non-inventive} otherwise) and might enlarge the Boolean search space, but they can reduce the complexity of later theory calls. This way we can compose SMT solvers for RCF, e.g., using the simple strategy defined by the nodes $I_{\CNFM}$, $I_{\SATM}$ and $I_{\CADM}$ 
-%and the edges $(I_{\CNFM}, I_{\SATM})$ and $(I_{\SATM}, I_{\CADM})$.
+A condition  $\omega\in\Omega$ on real arithmetic formulas is an
+arbitrary Boolean combinations of properties of a real arithmetic formula such as..
+\begin{itemize}
+	\item .. propositions about the Boolean structure of the formula, e.g., whether it is a conjunction of
+		real arithmetic constraints or whether it is in conjunctive normal form.
+	\item .. propositions about the constraints in the formula, e.g. whether the formula contains (does not contain)
+		(only) equations/(strict inequalities).
+	\item .. propositions about the polynomials compared by the constraints, e.g., whether they are 
+		linear, univariate, contain more than $n$ variables or have a degree smaller than $k$.
+\end{itemize}
+
+Here is a small example of a strategy forming a complete SMT solver for NRA. 
+We write short $(m, m')$ for $(m, \omega, m)$ if $\omega = \True$, which
+is the condition which holds for all NRA formulas. We construct the simple 
+strategy defined by the nodes $\CNFM$, $\SATM$ and $\CADM$ 
+and the edges $(\CNFM,\ \SATM)$ and $(\SATM,\ \CADM)$.
+The root module \CNFM transforms its set of received formulas $\Crcv(\CNFM)$ 
+to an equisatisfiable set of clauses $\Cpass(\CNFM)$ and calls 
+\texttt{runBackends()}. The invoked backend is a SAT-solver module \SATM, which 
+runs DPLL-style SAT-solving on the Boolean abstraction of the set of received 
+clauses $\Crcv(\SATM)=\Cpass(\CNFM)$. \SATM might call 
+\texttt{runBackends()} for a partial Boolean assignment corresponding to 
+a set of NRA constraints, which form $\Cpass(\SATM)$, in order to check for 
+its consistency. In literatur such a backend call is often refered to as \emph{theory call}.
+The backend module \CADM determines whether this set of constraints is consistent and 
+provides infeasible subsets if not. Furthermore, it could provide lemmas. In both
+cases \SATM abstracts the according NRA formulas to a Boolean formula and stores them
+as learned clauses. 
+
+Infeasible subsets and lemmas, which contain only formulas from 
+$\Cpass(\SATM)$, prune the Boolean search space and hence the number of theory calls. 
+Smaller infeasible subsets are usually more advantageous, because they make larger cuts 
+in the search space. Lemmas containing new constraints we call
+\emph{inventive lemmas} (\emph{non-inventive} otherwise). They might enlarge the 
+Boolean search space, but they can reduce the complexity of later theory calls.
+When using inventive lemmas, it is important to ensure that the set possible
+constraints introduced in such lemmas is finite for a given module and a given 
+input formula. Otherwise, the termination of this procedure can not be guaranteed.
 

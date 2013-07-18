@@ -611,6 +611,7 @@ namespace smtrat
      */
     void SATModule::adaptPassedFormula()
     {
+        //TODO: Just run through those from trail of not yet checked decision levels
         signed posInAssigns = 0;
         while( posInAssigns < mBooleanConstraintMap.size() )
         {
@@ -752,9 +753,9 @@ namespace smtrat
                 cr = ca.alloc( add_tmp, false );
                 clauses.push( cr );
             }
+            arrangeForWatches( cr );
             if( _type == DEDUCTED_CLAUSE )
             {
-                arrangeForWatches( cr );
                 if( value( add_tmp[1] ) != l_Undef )
                 {
                     cancelUntil( level( add_tmp ) );
@@ -778,7 +779,7 @@ namespace smtrat
     /**
      * Moves two literals which are not assigned to false to the beginning of the clause.
      * If only one literal is not assigned to false, it is moved to the beginning.
-     * If all literals are false, nothing happens.
+     * If all literals are false, the first literal is one of the literals with the highest decision level.
      *
      * @param _clause The clause in which the literals shall be reordered.
      */
@@ -787,9 +788,11 @@ namespace smtrat
         Clause& clause = ca[_clauseRef];
         assert( clause.size() > 1 );
         if( clause.size() < 3 ) return;
+        int highestLevel = -1;
         int l1 = -1;
         int l2 = -1;
         int i = 0;
+        // Search for a literal which is not assigned or assigned to true.
         for( ; i < clause.size(); ++i )
         {
             lbool lb = value( clause[i] );
@@ -803,19 +806,31 @@ namespace smtrat
                 l1 = i;
                 break;
             }
+            else if( level( var( clause[i] ) ) > highestLevel )
+            {
+                l1 = i;
+                highestLevel = level( var( clause[i] ) );
+            }
         }
         ++i;
+        // If a literal being assigned to true has been found, go on 
+        // searching for a not assigned literal. 
         for( ; i < clause.size(); ++i )
         {
             lbool lb = value( clause[i] );
             if( lb == l_Undef )
             {
+                // If one is found, set it as the first literal and 
+                // the one assigned to true as second literal.
                 l2 = l1;
                 l1 = i;
                 break;
             }
             else if( l2 < 0 && lb == l_True )
             {
+                // If there is another literal assigned to true, take
+                // it second literal as long as there has not been found
+                // an unassigned literal.
                 l2 = i;
             }
         }
@@ -1023,6 +1038,7 @@ FindSecond:
         vec<Lit> learnt_clause;
         starts++;
         #ifdef SATMODULE_WITH_CALL_NUMBER
+        unsigned debugFromCall = 0;
         unsigned numberOfTheoryCalls = 0;
         #ifndef DEBUG_SATMODULE
         cout << endl << "Number of theory calls:" << endl << endl;
@@ -1042,6 +1058,7 @@ FindSecond:
             CRef confl = propagate();
 
             #ifdef DEBUG_SATMODULE
+            cout << "### Sat iteration" << endl;
             bool madeTheoryCall = false;
             #endif
 
@@ -1054,32 +1071,41 @@ FindSecond:
                 if( mChangedPassedFormula )
                 {
                     #ifdef DEBUG_SATMODULE
-                    madeTheoryCall = true;
-                    cout << "######################################################################" << endl;
-                    cout << "###" << endl;
-                    printClauses( clauses, "Clauses", cout, "### " );
-                    cout << "###" << endl;
-                    printClauses( learnts, "Learnts", cout, "### " );
-                    cout << "###" << endl;
-                    printCurrentAssignment( cout, "### " );
-                    cout << "### " << endl;
-                    printDecisions( cout, "### " );
-                    cout << "### " << endl;
-                    cout << "### Check the constraints: ";
+                    if( numberOfTheoryCalls >= debugFromCall-1 )
+                    {
+                        madeTheoryCall = true;
+                        cout << "######################################################################" << endl;
+//                        cout << "###" << endl;
+//                        printClauses( clauses, "Clauses", cout, "### " );
+//                        cout << "###" << endl;
+//                        printClauses( learnts, "Learnts", cout, "### " );
+//                        cout << "###" << endl;
+//                        printCurrentAssignment( cout, "### " );
+                        cout << "### " << endl;
+                        printDecisions( cout, "### " );
+                        cout << "### " << endl;
+                        cout << "### Check the constraints: ";
+                    }
                     #endif
                     #ifdef SATMODULE_WITH_CALL_NUMBER
                     ++numberOfTheoryCalls;
                     #ifdef DEBUG_SATMODULE
-                    cout << "#" << numberOfTheoryCalls << "  ";
+                    if( numberOfTheoryCalls >= debugFromCall-1 )
+                    {
+                        cout << "#" << numberOfTheoryCalls << "  ";
+                    }
                     #endif
                     #endif
                     #ifdef DEBUG_SATMODULE
-                    cout << "{ ";
-                    for( Formula::const_iterator subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
+                    if( numberOfTheoryCalls >= debugFromCall )
                     {
-                        cout << (*subformula)->constraint().toString() << " ";
+                        cout << "{ ";
+                        for( Formula::const_iterator subformula = mpPassedFormula->begin(); subformula != mpPassedFormula->end(); ++subformula )
+                        {
+                            cout << (*subformula)->constraint().toString() << " ";
+                        }
+                        cout << "}" << endl;
                     }
-                    cout << "}" << endl;
                     #endif
                     mChangedPassedFormula = false;
                     CONSTRAINT_UNLOCK
@@ -1094,14 +1120,20 @@ FindSecond:
                             deductionsLearned = processLemmas();
                             #endif
                             #ifdef DEBUG_SATMODULE
-                            cout << "### Result: True!" << endl;
+                            if( numberOfTheoryCalls >= debugFromCall )
+                            {
+                                cout << "### Result: True!" << endl;
+                            }
                             #endif
                             break;
                         }
                         case False:
                         {
                             #ifdef DEBUG_SATMODULE
-                            cout << "### Result: False!" << endl;
+                            if( numberOfTheoryCalls >= debugFromCall )
+                            {
+                                cout << "### Result: False!" << endl;
+                            }
                             #endif
                             confl = learnTheoryConflict();
                             CONSTRAINT_UNLOCK
@@ -1178,21 +1210,26 @@ FindSecond:
                 learnt_clause.clear();
                 assert( confl != CRef_Undef );
                 #ifdef DEBUG_SATMODULE
-                if( madeTheoryCall )
+                if( numberOfTheoryCalls >= debugFromCall )
                 {
-                    printClause( confl, cout, "### Conflict clause: " );
+                    if( madeTheoryCall )
+                    {
+                        printClause( confl, cout, "### Conflict clause: " );
+                    }
                 }
                 #endif
-
 
                 analyze( confl, learnt_clause, backtrack_level );
 
                 #ifdef DEBUG_SATMODULE
-                if( madeTheoryCall )
+                if( numberOfTheoryCalls >= debugFromCall )
                 {
-                    printClause( learnt_clause, cout, "### Asserting clause: " );
-                    cout << "### Backtrack to level " << backtrack_level << endl;
-                    cout << "###" << endl;
+                    if( madeTheoryCall )
+                    {
+                        printClause( learnt_clause, cout, "### Asserting clause: " );
+                        cout << "### Backtrack to level " << backtrack_level << endl;
+                        cout << "###" << endl;
+                    }
                 }
                 #endif
                 cancelUntil( backtrack_level );
@@ -1248,7 +1285,7 @@ FindSecond:
                                 (double)learnts_literals / nLearnts(),
                                 progressEstimate() * 100 );
                 }
-
+                currentAssignmentConsistent = True;
             }
             else
             {
@@ -2138,7 +2175,7 @@ NextClause:
             cout << "      ok";
     }
 
-    void SATModule::printClause( CRef _clause, ostream& _out, const string& _init ) const
+    void SATModule::printClause( CRef _clause, bool _withAssignment, ostream& _out, const string& _init ) const
     {
         const Clause& c = ca[_clause];
         cout << _init;
@@ -2150,6 +2187,15 @@ NextClause:
                 cout << "-";
             }
             cout << var( c[pos] );
+            if( _withAssignment )
+            {
+                cout << " [" << (value( c[pos] ) == l_True ? "true@" : (value( c[pos] ) == l_False ? "false@" : "undef"));
+                if( value( c[pos] ) != l_Undef )
+                {
+                    cout << level( var( c[pos] ) );
+                }
+                cout << "]";
+            }
         }
         cout << endl;
     }
@@ -2301,7 +2347,19 @@ NextClause:
                 _out << _init << "             ";
             }
             signed tmp = (sign( trail[pos] ) ? -1 : 1) * var( trail[pos] );
-            _out << setw( 6 ) << tmp << " @ " << level << endl;
+            _out << setw( 6 ) << tmp << " @ " << level;
+            // if it is not a Boolean variable
+            if( mBooleanConstraintMap[(unsigned)var(trail[pos])].formula != NULL )
+            {
+                if( assigns[(unsigned)var(trail[pos])] == l_True )
+                {
+                    cout << "   ( ";
+                    mBooleanConstraintMap[(unsigned)var(trail[pos])].formula->print( cout, "", true );
+                    cout << " )";
+                    cout << " [" << mBooleanConstraintMap[(unsigned)var(trail[pos])].updateInfo << "]";
+                }
+            }
+            cout << endl;
         }
     }
 
