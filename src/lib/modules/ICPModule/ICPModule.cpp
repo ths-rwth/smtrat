@@ -315,7 +315,7 @@ namespace smtrat
            bool alreadyExisting = (mLinearConstraints.find(slackvariable) != mLinearConstraints.end());
            if (alreadyExisting)
            {
-               for ( auto candidateIt = mLinearConstraints[slackvariable].begin(); candidateIt != mLinearConstraints[slackvariable].end(); ++candidateIt )
+               for ( auto candidateIt = mLinearConstraints.at(slackvariable).begin(); candidateIt != mLinearConstraints.at(slackvariable).end(); ++candidateIt )
                {
 #ifdef ICPMODULE_DEBUG
                    cout << "[ICP] ContractionCandidates already exist: ";
@@ -3196,17 +3196,14 @@ namespace smtrat
         }
         
         // remove boundaries from mLRA module after boxChecking.
-        bool deleted = false;
         for( auto boundIt = addedBoundaries.begin(); boundIt != addedBoundaries.end(); )
         {
-            deleted = false;
             for (auto formulaIt = mValidationFormula->begin(); formulaIt != mValidationFormula->end(); )
             {
                 if( (*boundIt)->constraint() == (*formulaIt)->constraint() )
                 {
                     mLRA.removeSubformula(formulaIt);
                     formulaIt = mValidationFormula->erase(formulaIt);
-                    deleted = true;
                     break;
                 }
                 else
@@ -3224,7 +3221,6 @@ namespace smtrat
     //                ++formulaIt;
     //            }
             }
-            assert(deleted);
             boundIt = addedBoundaries.erase(boundIt);
         }
         
