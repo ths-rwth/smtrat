@@ -479,7 +479,7 @@ namespace smtrat
                             vector<unsigned>& diagonals_ref = diagonals;
                             dc_Tableau.print();
                             //dc_Tableau.invert_HNF_Matrix(diagonals_ref);
-                            dc_Tableau.print();
+                            //dc_Tableau.print();
                             auto iter = diagonals.begin();
                             printf ("%u",(*iter));
                             iter++;

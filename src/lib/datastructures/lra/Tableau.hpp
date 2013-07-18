@@ -2446,9 +2446,9 @@ namespace smtrat
                 diagonals.push_back(mColumns.size());
             }       
             Iterator row_iterator = Iterator(mRows.at(0).mStartEntry, mpEntries);
-            bool first_free = true;
-            bool first_loop = false;
-            bool just_deleted = false; 
+            bool first_free;
+            bool first_loop;
+            bool just_deleted; 
             /*
              * Iterate through all rows in order to construct the HNF.
              */
@@ -2470,7 +2470,7 @@ namespace smtrat
                 for(unsigned j=0;j<i;j++)
                 {
                     Iterator diagonal_iterator = Iterator(mColumns.at(diagonals.at(j)).mStartEntry, mpEntries);
-                    while((*diagonal_iterator).rowNumber() > i && !diagonal_iterator.rowBegin())
+                    while((*diagonal_iterator).rowNumber() > i && !diagonal_iterator.columnBegin())
                     {
                         diagonal_iterator.up();
                     }
@@ -2479,12 +2479,11 @@ namespace smtrat
                         diag_zero_entries++;
                     }
                 }
-                printf ("%u",diag_zero_entries);
                 /*
                  * Eliminate as many entries as necessary.
                  */
                 while(number_of_entries + diag_zero_entries > i + 1)
-                {                    
+                {
                     if(just_deleted)
                     {
                         /*
@@ -2509,7 +2508,7 @@ namespace smtrat
                         }    
                     }                
                     while(elim_pos == added_pos)
-                    {                        
+                    { 
                         T content = (*mpEntries)[row_iterator.entryID()].content();
                         unsigned column = (*mpEntries)[row_iterator.entryID()].columnNumber();
                         if(content < 0)
@@ -2553,16 +2552,17 @@ namespace smtrat
                     addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
                     number_of_entries = mRows.at(i).mSize; 
                     first_loop = false;
-                    if(mod(( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() ) ) ) , cln::floor1( cln::the<cln::cl_RA>( added_content.toCLN() ) ) ) == 0)
+                    if(mod(( cln::the<cln::cl_RA>( elim_content.toCLN() )  ) , cln::the<cln::cl_RA>( added_content.toCLN() ) ) == 0)
                     {
                         /*
                          * If the remain of the division is zero,
                          * the following addition will delete
                          * the entry with the ID elim_entry
                          */
-                        just_deleted = true;
-                        first_free = true;  
+                        just_deleted = true; 
+                        first_free = true;
                         elim_pos = added_pos;
+                        elim_entry = added_entry;
                     }    
                     else
                     {
@@ -2574,8 +2574,9 @@ namespace smtrat
                          else
                          {
                              elim_pos = added_pos;
-                         }    
-                    }                    
+                         }
+                    elim_content += T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric());      
+                    }                     
                 }
                 if(first_loop)
                 {
