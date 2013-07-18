@@ -35,6 +35,7 @@
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
 #include "../../Formula.h"
+#include "ContractionCandidateManager.h"
 
 namespace smtrat
 {
@@ -42,8 +43,11 @@ namespace smtrat
     using GiNaC::ex;
     using GiNaC::symbol;
     
+    class ContractionCandidateManager;
+    
     class ContractionCandidate
     {
+        friend ContractionCandidateManager;
         public:
 
             /**
@@ -70,7 +74,7 @@ namespace smtrat
             symbol      mDerivationVar;
             ex          mDerivative;
             std::set<const Formula*,originComp> mOrigin;
-            const unsigned    mId;
+            unsigned    mId;
             bool        mIsLinear;
             bool        mActive;
 

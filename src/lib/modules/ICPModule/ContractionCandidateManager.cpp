@@ -133,5 +133,14 @@ namespace smtrat
         }
     }
     
+    void ContractionCandidateManager::reasignIds ()
+    {
+//        std::set<unsigned, ContractionCandidate*> newOrderedCandidates;
+//        for (std::set<unsigned, ContractionCandidate*>::iterator candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
+//        {
+//            newOrderedCandidates.insert(std::make_pair());
+//        }
+    }
+    
 } // namespace icp
 } // namespace smtrat

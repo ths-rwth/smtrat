@@ -36,7 +36,8 @@
 using namespace GiNaC;
 using namespace std;
 
-//#define ICPMODULE_DEBUG
+#define ICPMODULE_DEBUG
+#define ICPMODULE_REDUCED_DEBUG
 #define BOXMANAGEMENT
 
 namespace smtrat
@@ -151,6 +152,7 @@ namespace smtrat
 
         // inform internal LRAmodule of the linearized constraint
         mLRA.inform(linearFormula.pConstraint());
+        
 #ifdef ICPMODULE_DEBUG
         cout << "[mLRA] inform: " << linearFormula.constraint() << endl;
 #endif
@@ -174,18 +176,22 @@ namespace smtrat
             while( !mLRA.deductions().empty() )
             {
     #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                 cout << "Create deduction for: " << endl;
                 mLRA.deductions().back()->print();
                 cout << endl;
+#endif
     #endif
                 Formula* deduction = transformDeductions(mLRA.deductions().back());
                 mCreatedDeductions.insert(deduction);
                 mLRA.rDeductions().pop_back();
                 addDeduction(deduction);
     #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                 cout << "Passed deduction: " << endl;
                 deduction->print();
                 cout << endl;
+#endif
     #endif
             }
             mInitialized = true;
@@ -241,8 +247,10 @@ namespace smtrat
                 for ( auto varIt = (*candidateIt)->constraint()->variables().begin(); varIt != (*candidateIt)->constraint()->variables().end(); ++varIt )
                 {
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                     cout << "[ICP] Added to affected canndidates: " << ex_to<symbol>((*varIt).second) << " -> ";
                     (*candidateIt)->print();
+#endif
 #endif
                     // try to insert new icpVariable - if already existing, only a candidate is added, else a new icpVariable is created.
                     icp::IcpVariable* icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), !( (*candidateIt)->lhs() == ex_to<symbol>((*varIt).second) ) , *candidateIt);
@@ -318,6 +326,7 @@ namespace smtrat
                for ( auto candidateIt = mLinearConstraints.at(slackvariable).begin(); candidateIt != mLinearConstraints.at(slackvariable).end(); ++candidateIt )
                {
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                    cout << "[ICP] ContractionCandidates already exist: ";
                    slackvariable->print();
                    cout << ", Size Origins: " << (*candidateIt)->origin().size() << endl;
@@ -325,6 +334,7 @@ namespace smtrat
                    (*_formula)->print();
                    (*candidateIt)->print();
                    cout << "Adding origin." << endl;
+#endif
 #endif
                    // add origin
                    (*candidateIt)->addOrigin(*_formula);
@@ -369,9 +379,11 @@ namespace smtrat
                    // ensure that the created candidate is set as linear
                    newCandidate->setLinear();
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                    cout << "[ICP] Create & activate candidate: ";
                    newCandidate->print();
                    slackvariable->print();
+#endif
 #endif
                    // add to linearConstraints and ActiveLinearConstraints
                    mLinearConstraints[slackvariable].insert(newCandidate);
@@ -407,8 +419,10 @@ namespace smtrat
                            delete icpVar;
                        }
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                        cout << "[ICP] Added to affected canndidates: " << ex_to<symbol>((*varIt).second) << " -> ";
                        newCandidate->print();
+#endif
 #endif
                    }
                }
@@ -482,13 +496,17 @@ namespace smtrat
                             if ( (*activeLinearIt).first->hasOrigin(*_formula) )
                             {
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                                 cout << "Remove linear origin from candidate " << (*activeLinearIt).first->id() << endl;
+#endif
 #endif
                                 (*activeLinearIt).first->removeOrigin(*_formula);
                                 if ( (*activeLinearIt).second > 1 )
                                 {
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                                     cout << "Decrease counter." << endl;
+#endif
 #endif
                                     mActiveLinearConstraints[(*activeLinearIt).first]--;
                                 }
@@ -513,7 +531,9 @@ namespace smtrat
                                         mHistoryActual->reset();
                                     }
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                                     cout << "Erase candidate from active." << endl;
+#endif
 #endif
                                     // clean up icpRelevantCandidates
                                     removeCandidateFromRelevant((*activeLinearIt).first);
@@ -592,7 +612,9 @@ namespace smtrat
                                 // deactivate candidate
                                 (*activeLinearIt).first->deactivate();
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG                                
                                 cout << "deactivate." << endl;
+#endif
 #endif
                                 
                                 activeLinearIt= mActiveLinearConstraints.erase(activeLinearIt);
@@ -610,72 +632,71 @@ namespace smtrat
 
         // linear handling
         bool mLraCleared = false;
-        for( auto linVar = mLinearConstraints.begin(); linVar != mLinearConstraints.end(); linVar++ )
+        std::map<unsigned, icp::ContractionCandidate*> candidates = mCandidateManager->getInstance()->rCandidates();
+        for ( auto candidateIt = candidates.begin(); candidateIt != candidates.end(); ++candidateIt )
         {
-            ContractionCandidates candidates = (*linVar).second;
-            for ( auto candidateIt = candidates.begin(); candidateIt != candidates.end(); ++candidateIt )
+            if ( (*candidateIt).second->isLinear() && (*candidateIt).second->hasOrigin(*_formula) )
             {
-                if ( (*candidateIt)->hasOrigin(*_formula) )
+#ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
+                cout << "Found linear candidate: ";
+                (*candidateIt).second->print();
+                cout << endl;
+#endif
+#endif
+                (*candidateIt).second->removeOrigin(*_formula);
+                if (!mLraCleared)
                 {
-#ifdef ICPMODULE_DEBUG
-                    cout << "Found linear candidate: ";
-                    (*candidateIt)->print();
-                    cout << endl;
-#endif
-                    (*candidateIt)->removeOrigin(*_formula);
-                    if (!mLraCleared)
+                    for ( auto formulaIt = mValidationFormula->begin(); formulaIt != mValidationFormula->end(); )
                     {
-                        for ( auto formulaIt = mValidationFormula->begin(); formulaIt != mValidationFormula->end(); )
+                        if ( (*formulaIt)->constraint() == (*_formula)->constraint() )
                         {
-                            if ( (*formulaIt)->constraint() == (*_formula)->constraint() )
-                            {
-                                mLraCleared = true;
+                            mLraCleared = true;
 #ifdef ICPMODULE_DEBUG
-                                cout << "[mLRA] Remove constraint: ";
-                                (*_formula)->constraint().print();
-                                cout << endl;
+                            cout << "[mLRA] Remove constraint: ";
+                            (*_formula)->constraint().print();
+                            cout << endl;
 #endif
-                                mLRA.removeSubformula(formulaIt);
-                                mReceivedFormulaMapping.erase(*formulaIt);
-                                formulaIt = mValidationFormula->erase(formulaIt);
-                                break;
-                            }
-                            else
-                            {
-                                ++formulaIt;
-                            }
-                        }
-                    }
-                    
-                    if( mActiveLinearConstraints.find( *candidateIt ) != mActiveLinearConstraints.end() )
-                    {
-                        if( mActiveLinearConstraints[*candidateIt] > 1 )
-                        {
-                            mActiveLinearConstraints[*candidateIt] = mActiveLinearConstraints[*candidateIt] - 1;
-                            // no need to remove in mLRA since counter >= 1
+                            mLRA.removeSubformula(formulaIt);
+                            mReceivedFormulaMapping.erase(*formulaIt);
+                            formulaIt = mValidationFormula->erase(formulaIt);
+                            break;
                         }
                         else
                         {
-                            // reset History to point before this candidate was used
-                            icp::HistoryNode::set_HistoryNode nodes =  mHistoryRoot->findCandidates(*candidateIt);
-                            // as the set is sorted ascending by id, we pick the node with the lowest id
-                            if ( !nodes.empty() )
-                            {
-                                icp::HistoryNode* firstNode = (*nodes.begin())->parent();
-                                if ( *firstNode == *mHistoryRoot )
-                                {
-                                    firstNode = mHistoryRoot->addRight(new icp::HistoryNode(mHistoryRoot->intervals(), 2));
-                                }
-                                setBox(firstNode);
-                                mHistoryActual->reset();
-                            }
-                            
-                            // clean up icpRelevantCandidates
-                            removeCandidateFromRelevant((*candidateIt));
-                            
-                            (*candidateIt)->deactivate();
-                            mActiveLinearConstraints.erase( *candidateIt );
+                            ++formulaIt;
                         }
+                    }
+                }
+
+                if( mActiveLinearConstraints.find( (*candidateIt).second ) != mActiveLinearConstraints.end() )
+                {
+                    if( mActiveLinearConstraints[(*candidateIt).second] > 1 )
+                    {
+                        mActiveLinearConstraints[(*candidateIt).second] = mActiveLinearConstraints[(*candidateIt).second] - 1;
+                        // no need to remove in mLRA since counter >= 1
+                    }
+                    else
+                    {
+                        // reset History to point before this candidate was used
+                        icp::HistoryNode::set_HistoryNode nodes =  mHistoryRoot->findCandidates((*candidateIt).second);
+                        // as the set is sorted ascending by id, we pick the node with the lowest id
+                        if ( !nodes.empty() )
+                        {
+                            icp::HistoryNode* firstNode = (*nodes.begin())->parent();
+                            if ( *firstNode == *mHistoryRoot )
+                            {
+                                firstNode = mHistoryRoot->addRight(new icp::HistoryNode(mHistoryRoot->intervals(), 2));
+                            }
+                            setBox(firstNode);
+                            mHistoryActual->reset();
+                        }
+
+                        // clean up icpRelevantCandidates
+                        removeCandidateFromRelevant((*candidateIt).second);
+
+                        (*candidateIt).second->deactivate();
+                        mActiveLinearConstraints.erase( (*candidateIt).second );
                     }
                 }
             }
@@ -745,17 +766,21 @@ namespace smtrat
         while( !mLRA.deductions().empty() )
         {
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
             cout << "Create deduction for: " << endl;
             mLRA.deductions().back()->print();
             cout << endl;
+#endif
 #endif
             Formula* deduction = transformDeductions(mLRA.deductions().back());
             mLRA.rDeductions().pop_back();
             addDeduction(deduction);
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG            
             cout << "Passed deduction: " << endl;
             deduction->print();
             cout << endl;
+#endif
 #endif
         }
         
@@ -799,25 +824,42 @@ namespace smtrat
             const LRAModule::ExVariableMap slackVariables = mLRA.slackVariables();
             for ( auto slackIt = slackVariables.begin(); slackIt != slackVariables.end(); ++slackIt )
             {
-                // TODO: Improve! Not neccessary to iterate over all linear constraints, only the active ones.
-                for ( auto linIt = mLinearConstraints.begin(); linIt != mLinearConstraints.end(); ++linIt )
+                std::map<const lra::Variable<lra::Numeric>*, ContractionCandidates>::iterator linIt = mLinearConstraints.find((*slackIt).second);
+                if ( linIt != mLinearConstraints.end() )
                 {
-                    // if the slackvariable corresponds to the constraint
-                    if( (*linIt).first->expression() == *(*slackIt).first )
-                    {
-                        // dirty hack: expect lhs to be set and take first item of set of CCs --> Todo: Check if it is really set in the constructors of the CCs during inform and assert
-                        GiNaCRA::Interval tmp = (*slackIt).second->getVariableBounds();
-                        // keep root updated about the initial box.
-                        mHistoryRoot->rIntervals()[(*(*linIt).second.begin())->lhs()] = GiNaCRA::DoubleInterval(tmp);
+                    // dirty hack: expect lhs to be set and take first item of set of CCs --> Todo: Check if it is really set in the constructors of the CCs during inform and assert
+                    GiNaCRA::Interval tmp = (*slackIt).second->getVariableBounds();
+                    // keep root updated about the initial box.
+                    mHistoryRoot->rIntervals()[(*(*linIt).second.begin())->lhs()] = GiNaCRA::DoubleInterval(tmp);
 //                        mVariables.at((*(*linIt).second.begin())->lhs().get_name())->setLraVar((*slackIt).second);
-                        mIntervals[(*(*linIt).second.begin())->lhs()] = GiNaCRA::DoubleInterval(tmp);
+                    mIntervals[(*(*linIt).second.begin())->lhs()] = GiNaCRA::DoubleInterval(tmp);
 #ifdef ICPMODULE_DEBUG
-                        cout << "Added interval (slackvariables): " << (*(*linIt).second.begin())->lhs() << " ";
-                        tmp.print(std::cout);
-                        cout << endl;
+#ifndef ICPMODULE_REDUCED_DEBUG
+                    cout << "Added interval (slackvariables): " << (*(*linIt).second.begin())->lhs() << " ";
+                    tmp.print(std::cout);
+                    cout << endl;
 #endif
-                    }
+#endif
                 }
+//                // TODO: Improve! Not neccessary to iterate over all linear constraints, only the active ones.
+//                for ( auto linIt = mLinearConstraints.begin(); linIt != mLinearConstraints.end(); ++linIt )
+//                {
+//                    // if the slackvariable corresponds to the constraint
+//                    if( (*linIt).first->expression() == *(*slackIt).first )
+//                    {
+//                        // dirty hack: expect lhs to be set and take first item of set of CCs --> Todo: Check if it is really set in the constructors of the CCs during inform and assert
+//                        GiNaCRA::Interval tmp = (*slackIt).second->getVariableBounds();
+//                        // keep root updated about the initial box.
+//                        mHistoryRoot->rIntervals()[(*(*linIt).second.begin())->lhs()] = GiNaCRA::DoubleInterval(tmp);
+////                        mVariables.at((*(*linIt).second.begin())->lhs().get_name())->setLraVar((*slackIt).second);
+//                        mIntervals[(*(*linIt).second.begin())->lhs()] = GiNaCRA::DoubleInterval(tmp);
+//#ifdef ICPMODULE_DEBUG
+//                        cout << "Added interval (slackvariables): " << (*(*linIt).second.begin())->lhs() << " ";
+//                        tmp.print(std::cout);
+//                        cout << endl;
+//#endif
+//                    }
+//                }
             }
             // temporary solution - an added linear constraint might have changed the box.
             setBox(mHistoryRoot);
@@ -1052,7 +1094,9 @@ namespace smtrat
                     icpLog << "split size subtree; " << mHistoryRoot->sizeSubtree() << "\n";
 #endif
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                     cout << "Size subtree: " << mHistoryActual->sizeSubtree() << " \t Size total: " << mHistoryRoot->sizeSubtree() << endl;
+#endif
 #endif
                     invalidBox = false;
                     icpFeasible = true;
@@ -1295,7 +1339,9 @@ namespace smtrat
                 {
                     // do nothing, the resetting of the tree has already been performed in validate
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG                    
                     cout << "Id actual box: " << mHistoryActual->id() << " Size subtree: " << mHistoryActual->sizeSubtree() << endl;
+#endif
 #endif
 #ifdef ICP_BOXLOG
                     icpLog << "validation added new constraints; \n";
@@ -1573,7 +1619,9 @@ namespace smtrat
         if ( mLinearizations.find(_ex) != mLinearizations.end() )
         {
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
             cout << "Existing replacement: " << _ex << " -> " << mLinearizations[_ex] << endl;
+#endif
 #endif
             /**
              * create entry in nonlinear constraints table with existing candidates
@@ -1583,9 +1631,9 @@ namespace smtrat
                 ContractionCandidates tmpList = (*constraintIt).second;
                 for ( auto candidateIt = tmpList.begin(); candidateIt != tmpList.end(); ++candidateIt )
                 {
-                    if ( (*candidateIt)->lhs() == mLinearizations[_ex] )
+                    if ( (*candidateIt)->lhs() == mLinearizations.at(_ex) )
                     {
-                        mNonlinearConstraints[_constr].insert(mNonlinearConstraints[_constr].end(), (*candidateIt));
+                        mNonlinearConstraints.at(_constr).insert(mNonlinearConstraints.at(_constr).end(), (*candidateIt));
                     }
                 }
             }
@@ -1664,10 +1712,14 @@ namespace smtrat
         if( splitOccurred )
         {
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG            
             cout << "Split occured: ";
             resultB.dbgprint();
             cout << " and ";
             resultA.dbgprint();
+#else
+            cout << "Split occured" << endl;
+#endif
 #endif
             smtrat::icp::set_icpVariable variables;
                 for( auto variableIt = _selection->constraint()->variables().begin(); variableIt != _selection->constraint()->variables().end(); ++variableIt )
@@ -1714,8 +1766,10 @@ namespace smtrat
             mHistoryActual->addRight(newRightChild);
 
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
             cout << "Created node:" << endl;
             newRightChild->print();
+#endif
 #endif
             
             // left first!
@@ -1755,8 +1809,10 @@ namespace smtrat
             mHistoryActual = mHistoryActual->addLeft(newLeftChild);
 
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG            
             cout << "Created node:" << endl;
             newLeftChild->print();
+#endif
 #endif
             
             //check that the left interval is the left part of the split
@@ -2055,7 +2111,9 @@ namespace smtrat
 
         ex constraint = _variable - GiNaC::numeric(cln::rationalize(_interval->left()));
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
         cout << "LeftBound Constraint: " << constraint << endl;
+#endif
 #endif
         switch (_interval->leftType())
         {
@@ -2072,7 +2130,9 @@ namespace smtrat
 
         constraint = _variable - GiNaC::numeric(cln::rationalize(_interval->right()));
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG        
         cout << "RightBound Constraint: " << constraint << endl;
+#endif
 #endif
         switch (_interval->rightType())
         {
@@ -2313,11 +2373,13 @@ namespace smtrat
                         break;
                 }
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                 cout << "[ICP] Validate: ";
                 linearIt->first->constraint()->print();
                 cout << " -> " << satisfied << " (" << res << ") " << endl;
                 cout << "Candidate: ";
                 linearIt->first->print();
+#endif
 #endif
                 // Strong consistency check
                 if ( !satisfied )
@@ -2365,9 +2427,11 @@ namespace smtrat
                                     if ( (*actCandidateIt).first->hasOrigin( mReplacements[(*infSetIt)->pConstraint()] ) )
                                     {
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                                         cout << "isActive ";
                                         (*actCandidateIt).first->print();
                                         cout <<  " : " << (*actCandidateIt).first->isActive() << endl;
+#endif
 #endif
                                         
                                         // if the candidate is not active we really added a constraint -> indicate the change
@@ -2441,9 +2505,11 @@ namespace smtrat
                                     if ( (*actCandidateIt).first->hasOrigin( mReplacements[(*infSetIt)->pConstraint()] ) )
                                     {
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG                                        
                                         cout << "isActive ";
                                         (*actCandidateIt).first->print();
                                         cout <<  " : " << (*actCandidateIt).first->isActive() << endl;
+#endif
 #endif
                                         
                                         // if the candidate is not active we really added a constraint -> indicate the change
@@ -2570,12 +2636,14 @@ namespace smtrat
                     mHistoryActual = mHistoryActual->addLeft(newLeftChild);
                     
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                     cout << "New right child: " << endl;
                     newRightChild->print();
                     cout << "New left child: " << endl;
                     newLeftChild->print();
                     cout << "Actual: " << endl;
                     mHistoryActual->print();
+#endif
 #endif
                     updateRelevantCandidates(variable, 0.5 );
 
@@ -2659,12 +2727,14 @@ namespace smtrat
                     mHistoryActual = mHistoryActual->addLeft(newLeftChild);
 
 #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                     cout << "New right child: " << endl;
                     newRightChild->print();
                     cout << "New left child: " << endl;
                     newLeftChild->print();
                     cout << "Actual: " << endl;
                     mHistoryActual->print();
+#endif
 #endif
                     updateRelevantCandidates(variable, 0.5 );
 
@@ -3178,7 +3248,7 @@ namespace smtrat
                     if( !icp::isBound( (*formulaIt)->pConstraint() ) )
                     {
 //                        cout << mLastCandidate->lhs().get_name() << " --> " <<*(*formulaIt)->pConstraint() << endl;
-                        assert(mpReceivedFormula->contains(mReceivedFormulaMapping[*formulaIt]));
+                        assert(mpReceivedFormula->contains(mReceivedFormulaMapping.at(*formulaIt)));
                         mHistoryActual->addInfeasibleConstraint((*formulaIt)->pConstraint());
                         for( auto variableIt = (*formulaIt)->constraint().variables().begin(); variableIt != (*formulaIt)->constraint().variables().end(); ++variableIt )
                         {
@@ -3325,9 +3395,11 @@ namespace smtrat
                             (*pos).second->setInternalLeftBound(new Formula(boundaries.first));
                             addedBoundaries.insert(addedBoundaries.end(), leftBound);
         #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                             cout << "Created lower boundary constraint: ";
                             leftBound->print();
                             cout << endl;
+#endif
         #endif
                         }
 
@@ -3337,9 +3409,11 @@ namespace smtrat
                             (*pos).second->setInternalRightBound(new Formula(boundaries.second));
                             addedBoundaries.insert(addedBoundaries.end(), rightBound);
         #ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
                             cout << "Created upper boundary constraint: ";
                             rightBound->print();
                             cout << endl;
+#endif
         #endif
                         }
 
@@ -3431,8 +3505,8 @@ namespace smtrat
             for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
             {
                 assert(mReceivedFormulaMapping.find(*formulaIt) != mReceivedFormulaMapping.end());
-                newSet.insert(mReceivedFormulaMapping[*formulaIt]);
-                assert(mpReceivedFormula->contains(mReceivedFormulaMapping[*formulaIt]));
+                newSet.insert(mReceivedFormulaMapping.at(*formulaIt));
+                assert(mpReceivedFormula->contains(mReceivedFormulaMapping.at(*formulaIt)));
             }
             assert(newSet.size() == (*infSetIt).size());
 
