@@ -82,9 +82,15 @@ namespace smtrat
         delete mLraRuntimeSettings;
         delete mHistoryRoot;
         delete mValidationFormula;
+        mLRAFoundAnswer.clear();
         
         for(auto variableIt = mVariables.begin(); variableIt != mVariables.end(); ++variableIt)
+        {
+//            mVariables.erase(variableIt);
             delete (*variableIt).second;
+        }
+        mVariables.clear();
+            
         
 #ifdef ICP_BOXLOG
         if ( icpLog.is_open() )
@@ -239,10 +245,12 @@ namespace smtrat
                     (*candidateIt)->print();
 #endif
                     // try to insert new icpVariable - if already existing, only a candidate is added, else a new icpVariable is created.
-                    std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*varIt).second).get_name(), new icp::IcpVariable(ex_to<symbol>((*varIt).second), !( (*candidateIt)->lhs() == ex_to<symbol>((*varIt).second) ) , *candidateIt)));
+                    icp::IcpVariable* icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), !( (*candidateIt)->lhs() == ex_to<symbol>((*varIt).second) ) , *candidateIt);
+                    std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*varIt).second).get_name(), icpVar));
                     if (!added.second)
                     {
                         (*added.first).second->addCandidate(*candidateIt);
+                        delete icpVar;
                     }
                 }
             }
@@ -261,7 +269,12 @@ namespace smtrat
                 symbol tmpVar = ex_to<symbol>( (*(*_formula)->pConstraint()->variables().begin()).second );
                 const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(tmpFormula->pConstraint());
                 assert( slackvariable != NULL );
-                mVariables.insert(std::make_pair(tmpVar.get_name(), new icp::IcpVariable(tmpVar, true, slackvariable )));
+                icp::IcpVariable* icpVar = new icp::IcpVariable(tmpVar, true, slackvariable );
+                std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(tmpVar.get_name(), icpVar));
+                if (!added.second)
+                {
+                    delete icpVar;
+                }
 #ifdef ICPMODULE_DEBUG
                 cout << "[mLRA] Assert bound constraint: ";
                 tmpFormula->print();
@@ -373,21 +386,25 @@ namespace smtrat
                    
                    // try to add icpVariable - if already existing, only add the created candidate, else create new icpVariable
                    const std::string name = (*variableIt).first;
-                   std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*variableIt).second).get_name(), new icp::IcpVariable(ex_to<symbol>((*variableIt).second), ( name != newReal.first ), newCandidate, slackvariable )));
+                   icp::IcpVariable* icpVar = new icp::IcpVariable(ex_to<symbol>((*variableIt).second), ( name != newReal.first ), newCandidate, slackvariable );
+                   std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*variableIt).second).get_name(), icpVar));
                    if(!added.second)
                    {
                        (*added.first).second->addCandidate(newCandidate);
                        (*added.first).second->setLraVar(slackvariable);
+                       delete icpVar;
                    }
                    
                    // update affectedCandidates
                    for ( auto varIt = variables.begin(); varIt != variables.end(); ++varIt )
                    {
-                       std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*varIt).second).get_name(), new icp::IcpVariable(ex_to<symbol>((*varIt).second), (*_formula)->pConstraint()->hasVariable((*varIt).first), newCandidate, slackvariable )));
+                       icp::IcpVariable* icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), (*_formula)->pConstraint()->hasVariable((*varIt).first), newCandidate, slackvariable );
+                       std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*varIt).second).get_name(), icpVar));
                        if(!added.second)
                        {
                            (*added.first).second->addCandidate(newCandidate);
                            (*added.first).second->setLraVar(slackvariable);
+                           delete icpVar;
                        }
 #ifdef ICPMODULE_DEBUG
                        cout << "[ICP] Added to affected canndidates: " << ex_to<symbol>((*varIt).second) << " -> ";
