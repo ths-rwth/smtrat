@@ -75,7 +75,7 @@ namespace smtrat
                     return (lhs->expression() < rhs->expression());
                 }
             };
-
+            
             struct linearVariable
             {
                 const Formula*                           constraint;
@@ -90,7 +90,6 @@ namespace smtrat
 
             typedef set<icp::ContractionCandidate*, icp::contractionCandidateComp>                      ContractionCandidates;
             typedef std::map<ex*, weights, ex_is_less>                             WeightMap;
-            typedef std::vector< std::set<Constraint> >              vec_set_Constraint;
 
         private:
 
@@ -350,7 +349,7 @@ namespace smtrat
              * creates constraints for the actual bounds of the original variables.
              * @return 
              */
-            std::set<Formula*> createConstraintsFromBounds( const GiNaCRA::evaldoubleintervalmap& _map );
+            std::vector<Formula*> createConstraintsFromBounds( const GiNaCRA::evaldoubleintervalmap& _map );
             
             void replaceConstraints( Formula*& _formula ) const
             {

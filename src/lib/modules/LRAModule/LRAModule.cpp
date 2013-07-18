@@ -427,7 +427,7 @@ namespace smtrat
                             //unsigned c=2,d=0;                            
                             //mTableau.print();
                             //mTableau.addColumns(c,d,Numeric(1));
-                            //mTableau.print();
+                            mTableau.print();
                             lra::Tableau<lra::Numeric> dc_Tableau = lra::Tableau<lra::Numeric>(mpPassedFormula->end());
                             unsigned i=0;
                             for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
@@ -469,16 +469,25 @@ namespace smtrat
                                     }    
                                 }   
                             }
-                            //mTableau.print();
+                            dc_Tableau.print();
                             unsigned a=1,b=0;
                             //mTableau.addColumns(b,a,Numeric(1));
                             //dc_Tableau.print();
                             //dc_Tableau.addColumns(a,b,a);
                             //dc_Tableau.print();
                             vector<unsigned> diagonals = vector<unsigned>();
-                            //diagonals = dc_Tableau.calculate_hermite_normalform();
+                            if(dc_Tableau.rows().size() > 0)
+                            {
+                            diagonals = dc_Tableau.calculate_hermite_normalform();
                             vector<unsigned>& diagonals_ref = diagonals;
-                            // dc_Tableau.invert_HNF_Matrix(diagonals_ref); 
+                            dc_Tableau.print();
+                            //dc_Tableau.invert_HNF_Matrix(diagonals_ref);
+                            dc_Tableau.print();
+                            auto iter = diagonals.begin();
+                            printf ("%u",(*iter));
+                            iter++;
+                            printf ("%u",(*iter));
+                            } 
                             #endif
                             
                             #ifdef LRA_BRANCH_AND_BOUND

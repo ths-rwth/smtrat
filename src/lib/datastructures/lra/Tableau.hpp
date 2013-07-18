@@ -2107,9 +2107,6 @@ namespace smtrat
         template<class T>
         bool Tableau<T>::isDefining( unsigned row_index, std::vector<unsigned>& _variables, std::vector<T>& _coefficients, T& _lcmOfCoeffDenoms ) const
         {
-            /*
-             * Check if the row with index row_index is a defining constraint.
-             */
             const Variable<T>& basic_var = *mRows.at(row_index).mName;
             if( basic_var.infimum() == basic_var.assignment() || basic_var.supremum() == basic_var.assignment() )
             {
@@ -2161,7 +2158,7 @@ namespace smtrat
         }
         
         /**
-         * Add the column with index columnB_index multplied by multiple 
+         * Adds the column with index columnB_index multplied by multiple 
          * to the column with index columnA_index.
          * 
          * @return 
@@ -2175,7 +2172,7 @@ namespace smtrat
             while(true)
             {
             /* 
-             * Make columnA_iterator and columnB_iterator neighbors.
+             * Make columnA_iterator and columnB_iterator neighbors. 
              */ 
             while((*columnA_iterator).rowNumber() > (*columnB_iterator).rowNumber() && !columnA_iterator.columnBegin())
             {
@@ -2274,7 +2271,11 @@ namespace smtrat
                       }
                   } 
                   TableauHead& rowHead = mRows[entry.rowNumber()];
-                  ++rowHead.mSize;                  
+                  ++rowHead.mSize;                      
+                  if(columnHead.mStartEntry == columnA_iterator.entryID())
+                  {
+                      columnHead.mStartEntry = entryID;
+                  }                  
               }
               else
               {
@@ -2362,7 +2363,7 @@ namespace smtrat
         }
         
         /**
-         * Multiply the row with index row_index by multiple.
+         * Multiplies the row with index row_index by multiple.
          * 
          * @return 
          */        
@@ -2386,8 +2387,8 @@ namespace smtrat
         }
         
         /**
-         * Calculate the scalarproduct of the row with index rowA from TableauA with the column
-         * with index columnB from Tableau. 
+         * Calculates the scalarproduct of the row with index rowA from Tableau A with the column
+         * with index columnB from Tableau B. 
          * 
          * @return   the value (T) of the scalarproduct.
          */        
@@ -2455,17 +2456,37 @@ namespace smtrat
              */
             for(unsigned i=0;i<mRows.size();i++)
             {
-                int elim_pos=-1,added_pos=-1;
+                unsigned elim_pos=mColumns.size(),added_pos=mColumns.size();
                 EntryID added_entry,elim_entry;
                 T elim_content, added_content;     
                 row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
                 unsigned number_of_entries = mRows.at(i).mSize;
                 first_loop = true;
+                first_free = true;
+                just_deleted = false;
+                /*
+                 * Count how many zero entries of diagonal columns are in the
+                 * current row.
+                 */
+                unsigned diag_zero_entries=0;
+                for(unsigned j=0;j<i;j++)
+                {
+                    Iterator diagonal_iterator = Iterator(mColumns.at(diagonals.at(j)).mStartEntry, mpEntries);
+                    while((*diagonal_iterator).rowNumber() > i && !diagonal_iterator.rowBegin())
+                    {
+                        diagonal_iterator.up();
+                    }
+                    if((*diagonal_iterator).rowNumber() != i)
+                    {
+                        diag_zero_entries++;
+                    }
+                }
+                printf ("%u",diag_zero_entries);
                 /*
                  * Eliminate as many entries as necessary.
                  */
-                while(!(number_of_entries <= i+1))
-                    {
+                while(number_of_entries + diag_zero_entries > i + 1)
+                {                    
                     if(just_deleted)
                     {
                         /*
@@ -2493,7 +2514,7 @@ namespace smtrat
                     {                        
                         T content = (*mpEntries)[row_iterator.entryID()].content();
                         unsigned column = (*mpEntries)[row_iterator.entryID()].columnNumber();
-                        if((*mpEntries)[row_iterator.entryID()].content() < 0)
+                        if(content < 0)
                         {
                             invertColumn(column); 
                         }    
@@ -2525,16 +2546,25 @@ namespace smtrat
                                 }
                              }
                         }                        
-                        if(elim_pos == added_pos)
+                        if(elim_pos == added_pos && !row_iterator.rowEnd())
                         {
                             row_iterator.right();  
                         }    
-                    }
+                    }  
+                    T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
+                    addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
+                    number_of_entries = mRows.at(i).mSize; 
+                    first_loop = false;
                     if(mod(( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() ) ) ) , cln::floor1( cln::the<cln::cl_RA>( added_content.toCLN() ) ) ) == 0)
                     {
+                        /*
+                         * If the remain of the division is zero,
+                         * the following addition will delete
+                         * the entry with the ID elim_entry
+                         */
                         just_deleted = true;
                         first_free = true;  
-                        added_pos = elim_pos;
+                        elim_pos = added_pos;
                     }    
                     else
                     {
@@ -2547,28 +2577,33 @@ namespace smtrat
                          {
                              elim_pos = added_pos;
                          }    
-                    }  
-                    T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
-                    addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
-                    number_of_entries = mRows.at(i).mSize; 
-                    first_loop = false;
-                    }
+                    }                    
+                }
                 if(first_loop)
                 {
-                    added_pos = (*mpEntries)[row_iterator.entryID()].columnNumber();     
+                    /*
+                     * The current row does not need any eliminations.
+                     * So search manually for the diagonal element.
+                     */
+                    while(diagonals.at((*row_iterator).columnNumber()) != mColumns.size())
+                    {
+                        row_iterator.right();                        
+                    }
+                    added_content = (*row_iterator).content();
+                    added_pos = (*row_iterator).columnNumber();
                 }
-                diagonals.push_back(added_pos);
+                diagonals.at(i) = added_pos; 
                 /*
                  *  Normalize Row
                  */
                 row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
                 while(true)
                 {
-                    if(row_iterator.entryID() != added_entry && (*mpEntries)[added_entry].content() <= (*mpEntries)[row_iterator.entryID()].content())
+                    if( ( (*row_iterator).columnNumber() != added_pos ) && ( diagonals.at((*row_iterator).columnNumber()) != mColumns.size() ) && ( added_content <= (*row_iterator).content() ) )
                     {
                         T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( (*row_iterator).content().toCLN() / added_content.toCLN() ) ) );
                         addColumns((*mpEntries)[row_iterator.entryID()].columnNumber(),
-                                  (*mpEntries)[added_entry].columnNumber(),
+                                  diagonals.at(i),
                                   (-1)*(floor_value));                    
                     }
                     if(!row_iterator.rowEnd())
@@ -2594,6 +2629,10 @@ namespace smtrat
         {
             for(unsigned i=mRows.size()-1;i>=0;i--)
             {
+                /*
+                 * Iterate through the tableau beginning in the the last
+                 * column which only contains one element.
+                 */
                 Iterator column_iterator = Iterator(mColumns.at(diagonal_positions.at(i)).mStartEntry, mpEntries);                
                 while(!column_iterator.columnBegin())
                 {
