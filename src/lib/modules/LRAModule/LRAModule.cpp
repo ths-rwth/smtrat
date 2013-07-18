@@ -1442,21 +1442,27 @@ namespace smtrat
     {
         map<const string, numeric, strCmp> coeffs = _pConstraint->linearAndConstantCoefficients();
         assert( coeffs.size() > 1 );
+        
+//        map<const string, numeric, strCmp>::iterator currentCoeff = coeffs.begin();
+//        ex*                                          linearPart   = new ex( _pConstraint->lhs() - currentCoeff->second );
+//        ++currentCoeff;
+//
+//        // divide the linear Part and the constraint by the highest coefficient
+//        numeric highestCoeff = currentCoeff->second;
+//        --currentCoeff;
+//        while( currentCoeff != coeffs.end() )
+//        {
+//            currentCoeff->second /= highestCoeff;
+//            ++currentCoeff;
+//        }
+//        *linearPart /= highestCoeff;
+        
         map<const string, numeric, strCmp>::iterator currentCoeff = coeffs.begin();
-        ex*                                          linearPart   = new ex( _pConstraint->lhs() - currentCoeff->second );
-        ++currentCoeff;
-
-        // divide the linear Part and the constraint by the highest coefficient
-        numeric highestCoeff = currentCoeff->second;
-        --currentCoeff;
-        while( currentCoeff != coeffs.end() )
-        {
-            currentCoeff->second /= highestCoeff;
-            ++currentCoeff;
-        }
-        *linearPart /= highestCoeff;
+        
         if( coeffs.size() == 2 )
         {
+            numeric primCoeff = (++coeffs.begin())->second;
+            numeric constantPart = (-coeffs.begin()->second)/primCoeff;
             // constraint has one variable
             ex* var = new ex( (*_pConstraint->variables().begin()).second );
             ExVariableMap::iterator basicIter = mOriginalVars.find( var );
@@ -1465,18 +1471,30 @@ namespace smtrat
             {
                 Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( var );
                 mOriginalVars.insert( pair<const ex*, Variable<Numeric>*>( var, nonBasic ) );
-                setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
+                setBound( *nonBasic, primCoeff.is_negative(), constantPart, _pConstraint );
             }
             else
             {
                 delete var;
                 Variable<Numeric>* nonBasic = basicIter->second;
-                setBound( *nonBasic, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
+                setBound( *nonBasic, primCoeff.is_negative(), constantPart, _pConstraint );
             }
-            delete linearPart;
         }
         else
         {
+            ex* linearPart = new ex( _pConstraint->lhs() - currentCoeff->second );
+            ++currentCoeff;
+            numeric highestCoeff = currentCoeff->second;
+            if( highestCoeff.is_negative() )
+            {
+                --currentCoeff;
+                while( currentCoeff != coeffs.end() )
+                {
+                    currentCoeff->second = -currentCoeff->second;
+                    ++currentCoeff;
+                }
+                *linearPart = -(*linearPart);
+            }
             ExVariableMap::iterator slackIter = mSlackVars.find( linearPart );
             if( slackIter == mSlackVars.end() )
             {
