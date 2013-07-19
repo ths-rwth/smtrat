@@ -75,6 +75,68 @@ namespace smtrat
                 }
             };
             
+            struct ExComp
+            {           
+                bool operator() (const ex _lhs, const ex _rhs)
+                {
+                    GiNaC::symtab lhsVariables;
+                    GiNaC::symtab rhsVariables;
+                    
+                    std::vector<symbol>* lhsVar = new std::vector<symbol>;
+                    std::vector<symbol>* rhsVar = new std::vector<symbol>;
+                    
+                    GiNaCRA::ICP::searchVariables(_lhs, lhsVar);
+                    GiNaCRA::ICP::searchVariables(_rhs, rhsVar);
+                    
+                    for( auto symbolIt = lhsVar->begin(); symbolIt != lhsVar->end(); ++symbolIt)
+                        lhsVariables.insert( std::make_pair((*symbolIt).get_name(), *symbolIt) );
+                    
+                    for( auto symbolIt = rhsVar->begin(); symbolIt != rhsVar->end(); ++symbolIt)
+                        rhsVariables.insert( std::make_pair((*symbolIt).get_name(), *symbolIt) );
+                    
+                    bool result = operator ()(_lhs, lhsVariables, _rhs, rhsVariables);
+                    cout << _lhs << " < " << _rhs << " : " << result << endl;
+                    
+                    return result;
+                }
+                
+                bool operator() (const ex _lhs, const GiNaC::symtab _lhsVariables, const ex _rhs, const GiNaC::symtab _rhsVariables )
+                {
+                    if( (*_lhsVariables.begin()).first < (*_rhsVariables.begin()).first )
+                        return true;
+                    else if( (*_lhsVariables.begin()).first > (*_rhsVariables.begin()).first )
+                        return false;
+                    else if ( _lhs.degree((*_lhsVariables.begin()).second) < _rhs.degree((*_rhsVariables.begin()).second) )
+                        return true;
+                    else if ( _lhs.degree((*_lhsVariables.begin()).second) > _rhs.degree((*_rhsVariables.begin()).second) )
+                        return false;
+                    else if ( _lhsVariables.size() == 1 ) // both are the same
+                        return false;
+                    else // 1st variable and degree are similar -> cut of
+                    {
+                        ex left = _lhs;
+                        ex right = _rhs;
+                        GiNaC::symtab leftVar = _lhsVariables;
+                        GiNaC::symtab rightVar = _rhsVariables;
+
+                        cout << left << " < " << right << " ?" << endl;
+                        
+                        
+                        left /= GiNaC::pow((*_lhsVariables.begin()).second, _lhs.degree((*_lhsVariables.begin()).second) );
+                        leftVar.erase(leftVar.begin());
+
+                        right /= GiNaC::pow((*_rhsVariables.begin()).second, _rhs.degree((*_rhsVariables.begin()).second) );
+                        rightVar.erase(rightVar.begin());
+                        if (leftVar.empty() && !rightVar.empty())
+                            return true;
+                        else if ( !leftVar.empty() && rightVar.empty() )
+                            return false;
+
+                        return ExComp::operator ()(left, leftVar, right, rightVar);
+                    }
+                }
+            };
+            
             struct linearVariable
             {
                 const Formula*                           constraint;
@@ -100,13 +162,16 @@ namespace smtrat
             std::map<icp::ContractionCandidate*, unsigned, icp::contractionCandidateComp>                      mActiveLinearConstraints;
             std::map<const lra::Variable<lra::Numeric>*, ContractionCandidates>          mLinearConstraints;
             std::map<const Constraint*, ContractionCandidates, constraintPointerComp>                  mNonlinearConstraints;
+            std::map<const ex, const Constraint*, ExComp>                                          mTemporaryMonomes;
+            std::map<const ex, const Constraint*, ExComp>                                          mTemporaryLinearizations;
+            
             GiNaCRA::ICP                                                        mIcp;
             GiNaCRA::evaldoubleintervalmap                                      mIntervals;
             std::set<std::pair<double, unsigned>, comp>                         mIcpRelevantCandidates;
             std::map<const Constraint*, const Constraint*, constraintPointerComp>                      mReplacements; // replacement -> origin
             std::map<const Constraint*, const Constraint*, constraintPointerComp>                      mLinearizationReplacements;
 
-            std::map<string, icp::IcpVariable*>                                  mVariables;
+            std::map<string, icp::IcpVariable*>                                 mVariables;
             std::map<const ex, symbol, ex_is_less>                              mLinearizations;
 
             GiNaC::exmap                                                        mSubstitutions; // variable -> substitution
@@ -183,6 +248,11 @@ namespace smtrat
              */
             ex addNonlinear( const Constraint* _constr, const ex );
 
+            /**
+             * Creates ContractionCandidates from all items in temporaryMonomes.
+             */
+            void createContractionCandidates();
+            
             /**
              * Calls the actual contraction function and implements threshold functionality
              * @param _selection
