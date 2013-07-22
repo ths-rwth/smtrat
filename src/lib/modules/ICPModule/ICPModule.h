@@ -103,30 +103,47 @@ namespace smtrat
                 bool operator() (const ex _lhs, const GiNaC::symtab _lhsVariables, const ex _rhs, const GiNaC::symtab _rhsVariables )
                 {
                     if( (*_lhsVariables.begin()).first < (*_rhsVariables.begin()).first )
+                    {
+                        cout << "LeftVarFirst < RightVarFirst" << endl;
                         return true;
+                    }
                     else if( (*_lhsVariables.begin()).first > (*_rhsVariables.begin()).first )
+                    {
+                        cout << "LeftVarFirst > RightVarFirst" << endl;
                         return false;
+                    }
                     else if ( _lhs.degree((*_lhsVariables.begin()).second) < _rhs.degree((*_rhsVariables.begin()).second) )
+                    {
+                        cout << "LeftVarFirstDegree < RightVarFirstDegree" << endl;
                         return true;
+                    }
                     else if ( _lhs.degree((*_lhsVariables.begin()).second) > _rhs.degree((*_rhsVariables.begin()).second) )
+                    {
+                        cout << "LeftVarFirstDegree > RightVarFirstDegree" << endl;
                         return false;
-                    else if ( _lhsVariables.size() == 1 ) // both are the same
+                    }
+                    else if ( _lhsVariables.size() == 1 && _rhsVariables.size() == 1) // both are the same
+                    {
+                        cout << "All Equal and Varsize == 1" << endl;
                         return false;
+                    }
                     else // 1st variable and degree are similar -> cut of
                     {
                         ex left = _lhs;
                         ex right = _rhs;
                         GiNaC::symtab leftVar = _lhsVariables;
                         GiNaC::symtab rightVar = _rhsVariables;
-
-                        cout << left << " < " << right << " ?" << endl;
                         
+                        cout << left << " < " << right << " ?" << endl;
                         
                         left /= GiNaC::pow((*_lhsVariables.begin()).second, _lhs.degree((*_lhsVariables.begin()).second) );
                         leftVar.erase(leftVar.begin());
 
                         right /= GiNaC::pow((*_rhsVariables.begin()).second, _rhs.degree((*_rhsVariables.begin()).second) );
                         rightVar.erase(rightVar.begin());
+                        
+                        cout << left << " (" << leftVar.size() << ") < " << right << " (" << rightVar.size() << ") ?" << endl;
+                        
                         if (leftVar.empty() && !rightVar.empty())
                             return true;
                         else if ( !leftVar.empty() && rightVar.empty() )

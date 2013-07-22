@@ -1697,6 +1697,7 @@ namespace smtrat
         }
         
         mTemporaryMonomes.insert(std::make_pair(_ex, _constr));
+        cout << "Size mTemporaryMonomes: " << mTemporaryMonomes.size() << endl;
         return mLinearizations[_ex];
     }
     
@@ -1704,23 +1705,20 @@ namespace smtrat
     void ICPModule::createContractionCandidates()
     {
         // Create contraction candidate object for every possible derivation variable
-//            newReal = std::pair<string,ex>(Formula::newAuxiliaryRealVariable());
-//
-//            pair<const ex, symbol> tmpPair = pair<const ex, symbol>(_ex, ex_to<symbol>(newReal.second));
-//            mLinearizations.insert(tmpPair);
-//        
-//            #ifdef ICPMODULE_DEBUG
-//            cout << "New replacement: " << _ex << " -> " << mLinearizations[_ex] << endl;
-//            #endif  
-//            
-//            mSubstitutions[newReal.second]=_ex;
-        
         for( auto expressionIt = mTemporaryMonomes.begin(); expressionIt != mTemporaryMonomes.end(); ++expressionIt )
         {
+            // cCreate mLinearzations entry
+            std::pair<string,ex> newReal = std::pair<string,ex>(Formula::newAuxiliaryRealVariable());
+            cout << "New AuxiliaryReal: " << newReal.second << endl;
+            mLinearizations[(*expressionIt).first] = ex_to<symbol>(newReal.second);
+            mSubstitutions[newReal.second]=(*expressionIt).first;
+#ifdef ICPMODULE_DEBUG
+            cout << "New replacement: " << (*expressionIt).first << " -> " << mLinearizations.at((*expressionIt).first) << endl;
+#endif  
+            
             std::vector<symbol>* variables = new std::vector<symbol>;
             mIcp.searchVariables((*expressionIt).first, variables);
             
-            std::pair<ex, symbol> newReal = *mLinearizations.find((*expressionIt).first);
             GiNaC::symtab constraintVariables;
             for( auto variableIt = variables->begin(); variableIt != variables->end(); ++variableIt )
                 constraintVariables.insert(std::make_pair(ex_to<symbol>(*variableIt).get_name(), *variableIt));
