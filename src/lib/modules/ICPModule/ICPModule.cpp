@@ -128,6 +128,8 @@ namespace smtrat
             // actual preprocessing
             linear = isLinear( _constraint, constr, replacement );
 
+            
+            
             GiNaC::symtab constraintVariables;
             vector<symbol>* temp = new vector<symbol>;
             GiNaCRA::ICP::searchVariables(replacement,temp);
@@ -147,6 +149,22 @@ namespace smtrat
             }
             else
             {
+                ex       replacement = ex();
+                createContractionCandidates();
+                
+                assert(is_exactly_a<add>(_constraint->lhs()));
+                for( auto summand = _constraint->lhs().begin(); summand != _constraint->lhs().end(); ++summand )
+                {
+                    if( is_exactly_a<mul>(*summand) )
+                    {
+                        GiNaC::const_iterator monomial = mLinearizations.find((*summand)/(*(*summand).begin()));
+                        if( monomial != mLinearizations.end() )
+                            replacement += (*(*summand).begin())* mLinearizations.at(*monomial);
+                        else if ( mLinearizations.find(*summand) )
+                            replacement += mLinearizations.at(*summand);
+                    }
+                }
+                
                 linearFormula = Formula( Formula::newConstraint(replacement,_constraint->relation(), constraintVariables) );
             }
 
@@ -1616,7 +1634,7 @@ namespace smtrat
         return isLinear;
     }
 
-    ex ICPModule::addNonlinear( const Constraint* _constr, const ex _ex )
+    void ICPModule::addNonlinear( const Constraint* _constr, const ex _ex )
     {
         std::pair<string,ex>  newReal;
 
@@ -1647,21 +1665,6 @@ namespace smtrat
         }
         else
         {
-            vector<symbol> variables;
-            mIcp.searchVariables( _ex, &variables );
-
-            // Create contraction candidate object for every possible derivation variable
-            newReal = std::pair<string,ex>(Formula::newAuxiliaryRealVariable());
-
-            pair<const ex, symbol> tmpPair = pair<const ex, symbol>(_ex, ex_to<symbol>(newReal.second));
-            mLinearizations.insert(tmpPair);
-
-#ifdef ICPMODULE_DEBUG
-            cout << "New replacement: " << _ex << " -> " << mLinearizations[_ex] << endl;
-#endif
-            
-            mSubstitutions[newReal.second]=_ex;
-
 //            for( uint varIndex = 0; varIndex < variables.size(); varIndex++ )
 //            {
 //                GiNaC::symtab varTmp = _constr->variables();
@@ -1694,12 +1697,24 @@ namespace smtrat
         }
         
         mTemporaryMonomes.insert(std::make_pair(_ex, _constr));
-        return mLinearizations[_ex];
+//        return mLinearizations[_ex];
     }
     
     
     void ICPModule::createContractionCandidates()
     {
+        // Create contraction candidate object for every possible derivation variable
+            newReal = std::pair<string,ex>(Formula::newAuxiliaryRealVariable());
+
+            pair<const ex, symbol> tmpPair = pair<const ex, symbol>(_ex, ex_to<symbol>(newReal.second));
+            mLinearizations.insert(tmpPair);
+        
+            #ifdef ICPMODULE_DEBUG
+            cout << "New replacement: " << _ex << " -> " << mLinearizations[_ex] << endl;
+            #endif  
+            
+            mSubstitutions[newReal.second]=_ex;
+        
         for( auto expressionIt = mTemporaryMonomes.begin(); expressionIt != mTemporaryMonomes.end(); ++expressionIt )
         {
             std::vector<symbol>* variables = new std::vector<symbol>;
