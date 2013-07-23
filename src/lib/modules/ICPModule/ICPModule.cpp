@@ -1641,6 +1641,13 @@ namespace smtrat
 #ifdef ICPMODULE_DEBUG
         cout << "[ICP] Adding nonlinear: " << _ex << endl;
 #endif
+        
+        cout << "mLinearizations: " << endl;
+        for( auto expressionIt = mLinearizations.begin(); expressionIt != mLinearizations.end(); ++expressionIt )
+        {
+            cout << "Compare: " << (*expressionIt).first << " == " << _ex << " : " << _ex.is_equal((*expressionIt).first) << endl;
+        }
+        
         if ( mLinearizations.find(_ex) != mLinearizations.end() )
         {
 #ifdef ICPMODULE_DEBUG
@@ -1665,6 +1672,8 @@ namespace smtrat
         }
         else
         {
+            mTemporaryMonomes.insert(std::make_pair(_ex, _constr));
+            cout << "Size mTemporaryMonomes: " << mTemporaryMonomes.size() << endl;
 //            for( uint varIndex = 0; varIndex < variables.size(); varIndex++ )
 //            {
 //                GiNaC::symtab varTmp = _constr->variables();
@@ -1695,9 +1704,6 @@ namespace smtrat
 //            // ensure that the candidate is set as nonlinear
 //            tmpCandidate->setNonlinear();
         }
-        
-        mTemporaryMonomes.insert(std::make_pair(_ex, _constr));
-        cout << "Size mTemporaryMonomes: " << mTemporaryMonomes.size() << endl;
         return mLinearizations[_ex];
     }
     
@@ -1705,7 +1711,7 @@ namespace smtrat
     void ICPModule::createContractionCandidates()
     {
         // Create contraction candidate object for every possible derivation variable
-        for( auto expressionIt = mTemporaryMonomes.begin(); expressionIt != mTemporaryMonomes.end(); ++expressionIt )
+        for( auto expressionIt = mTemporaryMonomes.begin(); expressionIt != mTemporaryMonomes.end(); )
         {
             // cCreate mLinearzations entry
             std::pair<string,ex> newReal = std::pair<string,ex>(Formula::newAuxiliaryRealVariable());
@@ -1746,7 +1752,9 @@ namespace smtrat
             tmpCandidate->activate();
             tmpCandidate->setNonlinear();
             delete variables;
+            expressionIt = mTemporaryMonomes.erase(mTemporaryMonomes.begin());
         }
+        assert(mTemporaryMonomes.empty());
     }
     
 

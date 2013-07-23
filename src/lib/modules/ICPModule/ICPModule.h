@@ -189,7 +189,7 @@ namespace smtrat
             std::map<const Constraint*, const Constraint*, constraintPointerComp>                      mLinearizationReplacements;
 
             std::map<string, icp::IcpVariable*>                                 mVariables;
-            std::map<const ex, symbol, ex_is_less>                              mLinearizations;
+            std::map<const ex, symbol, ExComp>                              mLinearizations;
 
             GiNaC::exmap                                                        mSubstitutions; // variable -> substitution
             
