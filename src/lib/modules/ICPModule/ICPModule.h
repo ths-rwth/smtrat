@@ -94,8 +94,8 @@ namespace smtrat
                     for( auto symbolIt = rhsVar->begin(); symbolIt != rhsVar->end(); ++symbolIt)
                         rhsVariables.insert( std::make_pair((*symbolIt).get_name(), *symbolIt) );
                     
-                    bool result = operator ()(_lhs, lhsVariables, _rhs, rhsVariables);
-                    cout << _lhs << " < " << _rhs << " : " << result << endl;
+                    bool result = (*this)(_lhs, lhsVariables, _rhs, rhsVariables);
+//                    cout << _lhs << " < " << _rhs << " : " << result << endl;
                     
                     return result;
                 }
@@ -104,27 +104,27 @@ namespace smtrat
                 {
                     if( (*_lhsVariables.begin()).first < (*_rhsVariables.begin()).first )
                     {
-                        cout << "LeftVarFirst < RightVarFirst" << endl;
+//                        cout << "LeftVarFirst < RightVarFirst" << endl;
                         return true;
                     }
                     else if( (*_lhsVariables.begin()).first > (*_rhsVariables.begin()).first )
                     {
-                        cout << "LeftVarFirst > RightVarFirst" << endl;
+//                        cout << "LeftVarFirst > RightVarFirst" << endl;
                         return false;
                     }
                     else if ( _lhs.degree((*_lhsVariables.begin()).second) < _rhs.degree((*_rhsVariables.begin()).second) )
                     {
-                        cout << "LeftVarFirstDegree < RightVarFirstDegree" << endl;
+//                        cout << "LeftVarFirstDegree < RightVarFirstDegree" << endl;
                         return true;
                     }
                     else if ( _lhs.degree((*_lhsVariables.begin()).second) > _rhs.degree((*_rhsVariables.begin()).second) )
                     {
-                        cout << "LeftVarFirstDegree > RightVarFirstDegree" << endl;
+//                        cout << "LeftVarFirstDegree > RightVarFirstDegree" << endl;
                         return false;
                     }
                     else if ( _lhsVariables.size() == 1 && _rhsVariables.size() == 1) // both are the same
                     {
-                        cout << "All Equal and Varsize == 1" << endl;
+//                        cout << "All Equal and Varsize == 1" << endl;
                         return false;
                     }
                     else // 1st variable and degree are similar -> cut of
@@ -134,7 +134,7 @@ namespace smtrat
                         GiNaC::symtab leftVar = _lhsVariables;
                         GiNaC::symtab rightVar = _rhsVariables;
                         
-                        cout << left << " < " << right << " ?" << endl;
+//                        cout << left << " < " << right << " ?" << endl;
                         
                         left /= GiNaC::pow((*_lhsVariables.begin()).second, _lhs.degree((*_lhsVariables.begin()).second) );
                         leftVar.erase(leftVar.begin());
@@ -142,7 +142,7 @@ namespace smtrat
                         right /= GiNaC::pow((*_rhsVariables.begin()).second, _rhs.degree((*_rhsVariables.begin()).second) );
                         rightVar.erase(rightVar.begin());
                         
-                        cout << left << " (" << leftVar.size() << ") < " << right << " (" << rightVar.size() << ") ?" << endl;
+//                        cout << left << " (" << leftVar.size() << ") < " << right << " (" << rightVar.size() << ") ?" << endl;
                         
                         if (leftVar.empty() && !rightVar.empty())
                             return true;
@@ -189,7 +189,7 @@ namespace smtrat
             std::map<const Constraint*, const Constraint*, constraintPointerComp>                      mLinearizationReplacements;
 
             std::map<string, icp::IcpVariable*>                                 mVariables;
-            std::map<const ex, symbol, ExComp>                              mLinearizations;
+            std::map<const ex, symbol, ExComp>                                  mLinearizations;
 
             GiNaC::exmap                                                        mSubstitutions; // variable -> substitution
             
@@ -268,7 +268,7 @@ namespace smtrat
             /**
              * Creates ContractionCandidates from all items in temporaryMonomes.
              */
-            void createContractionCandidates();
+            ex createContractionCandidates();
             
             /**
              * Calls the actual contraction function and implements threshold functionality
