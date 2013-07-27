@@ -469,24 +469,21 @@ namespace smtrat
                                     }    
                                 }   
                             }
-                            dc_Tableau.print();
-                            unsigned a=1,b=0;
-                            //mTableau.addColumns(b,a,Numeric(1));
-                            //dc_Tableau.print();
-                            //dc_Tableau.addColumns(a,b,a);
-                            //dc_Tableau.print();
-                            vector<unsigned> diagonals = vector<unsigned>();
+                            dc_Tableau.print();                                                      
                             if(dc_Tableau.rows().size() > 0)
                             {
-                            diagonals = dc_Tableau.calculate_hermite_normalform();
-                            vector<unsigned>& diagonals_ref = diagonals;
+                            vector<unsigned> diagonals = vector<unsigned>();    
+                            vector<unsigned>& diagonals_ref = diagonals;                            
+                            dc_Tableau.calculate_hermite_normalform(diagonals_ref);
                             dc_Tableau.print();
                             //dc_Tableau.invert_HNF_Matrix(diagonals_ref);
                             //dc_Tableau.print();
-                            auto iter = diagonals.begin();
-                            printf ("%u",(*iter));
-                            iter++;
-                            printf ("%u",(*iter));
+                            auto iter = diagonals.begin(); 
+                            while(iter != diagonals.end())
+                            {
+                                printf("%u",*iter);
+                                ++iter;
+                            }
                             } 
                             #endif
                             

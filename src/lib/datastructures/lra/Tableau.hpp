@@ -413,11 +413,12 @@ namespace smtrat
                 bool rowCorrect( unsigned _rowNumber ) const;
                 #ifdef LRA_CUTS_FROM_PROOFS
                 bool isDefining( unsigned, std::vector<unsigned>&, std::vector<T>&, T& ) const;
+                bool isDiagonal(unsigned,std::vector<unsigned>&);
                 void invertColumn(unsigned);
                 void addColumns(unsigned,unsigned,T);
                 void multiplyRow(unsigned,T);
                 T Scalar_Product(Tableau<T>&,Tableau<T>&,unsigned,unsigned) const;
-                std::vector<unsigned> calculate_hermite_normalform();
+                void calculate_hermite_normalform(std::vector<unsigned>&);
                 void invert_HNF_Matrix(std::vector<unsigned>&);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
@@ -2133,6 +2134,21 @@ namespace smtrat
             return false;
         }
         
+        template<class T>
+        bool Tableau<T>::isDiagonal(unsigned column_index , std::vector<unsigned>& diagonals)
+        {
+        unsigned i=0;
+        while(diagonals.at(i) != mColumns.size())
+        {
+            if(diagonals.at(i) == column_index)
+            {
+                return true;
+            }
+        ++i;    
+        }
+        return false;            
+        }
+        
         /**
          * Multiplies all entries in the column with the index column_index by (-1). 
          * 
@@ -2440,9 +2456,8 @@ namespace smtrat
          * @return   the vector containing the indices of the diagonal elements.
          */        
         template<class T> 
-        std::vector<unsigned> Tableau<T>::calculate_hermite_normalform()
-        {
-            std::vector<unsigned> diagonals = std::vector<unsigned>();          
+        void Tableau<T>::calculate_hermite_normalform(std::vector<unsigned>& diagonals)
+        { 
             for(unsigned i=0;i<mColumns.size();i++)
             {
                 diagonals.push_back(mColumns.size());
@@ -2485,7 +2500,7 @@ namespace smtrat
                  * Eliminate as many entries as necessary.
                  */
                 while(number_of_entries + diag_zero_entries > i + 1)
-                {
+                {    
                     if(just_deleted)
                     {
                         /*
@@ -2508,16 +2523,32 @@ namespace smtrat
                         {
                             row_iterator = Iterator(added_entry,mpEntries);
                         }    
-                    }                
+                    }
+                    /*
+                     * Make all entries in the current row positive.
+                     */
+                    Iterator help_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
+                    while(true)
+                    {
+                        if((*help_iterator).content() < 0 && !isDiagonal((*help_iterator).columnNumber(),diagonals))
+                        {
+                            invertColumn((*help_iterator).columnNumber());
+                        }
+                        if(!help_iterator.rowEnd())
+                        {
+                            help_iterator.right();
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    
                     while(elim_pos == added_pos)
                     { 
                         T content = (*mpEntries)[row_iterator.entryID()].content();
-                        unsigned column = (*mpEntries)[row_iterator.entryID()].columnNumber();
-                        if(content < 0)
-                        {
-                            invertColumn(column); 
-                        }    
-                        if(diagonals.at(column) == mColumns.size())
+                        unsigned column = (*mpEntries)[row_iterator.entryID()].columnNumber();   
+                        if(!isDiagonal(column,diagonals))
                         {    
                             if(first_free)
                             {                                
@@ -2552,6 +2583,7 @@ namespace smtrat
                     }  
                     T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
                     addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
+                    print();
                     number_of_entries = mRows.at(i).mSize; 
                     first_loop = false;
                     if(mod(( cln::the<cln::cl_RA>( elim_content.toCLN() )  ) , cln::the<cln::cl_RA>( added_content.toCLN() ) ) == 0)
@@ -2568,7 +2600,8 @@ namespace smtrat
                     }    
                     else
                     {
-                         just_deleted = false;
+                         just_deleted = false;  
+                         first_free = true;
                          if(elim_pos < added_pos)
                          {
                              added_pos = elim_pos;
@@ -2576,9 +2609,9 @@ namespace smtrat
                          else
                          {
                              elim_pos = added_pos;
-                         }
-                    elim_content += T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric());      
-                    }                     
+                         }         
+                    }
+                elim_content += T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric());        
                 }
                 if(first_loop)
                 {
@@ -2586,26 +2619,32 @@ namespace smtrat
                      * The current row does not need any eliminations.
                      * So search manually for the diagonal element.
                      */
-                    while(diagonals.at((*row_iterator).columnNumber()) != mColumns.size())
+                    while(isDiagonal((*row_iterator).columnNumber(),diagonals))
                     {
                         row_iterator.right();                        
                     }
                     added_content = (*row_iterator).content();
                     added_pos = (*row_iterator).columnNumber();
-                }
-                diagonals.at(i) = added_pos; 
+                } 
+                diagonals.at(i) = added_pos;                
                 /*
-                 *  Normalize Row
+                 *  Normalize row.
                  */
                 row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
                 while(true)
                 {
-                    if( ( (*row_iterator).columnNumber() != added_pos ) && ( diagonals.at((*row_iterator).columnNumber()) != mColumns.size() ) && ( added_content <= (*row_iterator).content() ) )
+                    /*
+                     * The current entry has to be normalized because it´s
+                     * in a diagonal column and greater or equal than the
+                     * diagonal entry in the current row.
+                     */                    
+                    if( ( (*row_iterator).columnNumber() != added_pos ) && ( isDiagonal((*row_iterator).columnNumber(),diagonals) ) && ( added_content <= (*row_iterator).content() ) )
                     {
                         T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( (*row_iterator).content().toCLN() / added_content.toCLN() ) ) );
                         addColumns((*mpEntries)[row_iterator.entryID()].columnNumber(),
                                   diagonals.at(i),
-                                  (-1)*(floor_value));                    
+                                  (-1)*(floor_value)); 
+                        print();
                     }
                     if(!row_iterator.rowEnd())
                     {
@@ -2615,9 +2654,8 @@ namespace smtrat
                     {
                         break;
                     }
-                }
-            }
-            return diagonals;    
+                }                
+            }  
         }   
         
         /*
