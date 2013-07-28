@@ -104,7 +104,7 @@ namespace smtrat
     bool ICPModule::inform( const Constraint* const _constraint )
     {
 #ifdef ICPMODULE_DEBUG
-        cout << "[ICP] inform: " << (*_constraint) << endl;
+        cout << "[ICP] inform: " << (*_constraint) << " (id: " << _constraint->id() << ")" << endl;
 #endif  
         // do not inform about boundary constraints - this leads to confusion
         if ( _constraint->variables().size() > 1 )
@@ -129,7 +129,8 @@ namespace smtrat
             linear = isLinear( _constraint, constr, replacement );
 
             Formula linearFormula;
-
+            bool informLRA = true;
+            
             if ( linear )
             {
                 linearFormula = Formula( _constraint );
@@ -139,8 +140,8 @@ namespace smtrat
                 std::vector<symbol>* variables = new std::vector<symbol>;
                 GiNaC::symtab newVariables;
                 
-                ex lhs = createContractionCandidates();
-                if( !lhs.is_zero())
+                const ex lhs = createContractionCandidates();
+                if( lhs.nops() > 0 )
                 {
                     cout << "LHS: " << lhs << endl;
                     GiNaCRA::ICP::searchVariables(lhs, variables);
@@ -150,19 +151,30 @@ namespace smtrat
                     linearFormula = Formula( Formula::newConstraint(lhs,_constraint->relation(), newVariables) );
                     delete variables;
                 }
+                else
+                {
+                    cout << "Already existing linear replacement." << endl;
+                    informLRA = false;
+                }
             }
 
-            // store replacement for later comparison when asserting
-            mReplacements[linearFormula.pConstraint()] = _constraint;
+            if( informLRA )
+            {
+                cout << "Insert into replacements:" << linearFormula.pConstraint()->id() << " -> " << _constraint->id() << endl;
+            
+                // store replacement for later comparison when asserting
+                mReplacements[linearFormula.pConstraint()] = _constraint;
 
-            // inform internal LRAmodule of the linearized constraint
-            mLRA.inform(linearFormula.pConstraint());
+                // inform internal LRAmodule of the linearized constraint
+                mLRA.inform(linearFormula.pConstraint());
 
-    #ifdef ICPMODULE_DEBUG
-            cout << "[mLRA] inform: " << linearFormula.constraint() << endl;
-    #endif
+        #ifdef ICPMODULE_DEBUG
+                cout << "[mLRA] inform: " << linearFormula.constraint() << endl;
+        #endif
 
-            assert( linearFormula.constraint().isLinear() );
+                assert( linearFormula.constraint().isLinear() );
+            }
+            
         }
         
         
@@ -202,7 +214,6 @@ namespace smtrat
 #endif
     #endif
             }
-            createContractionCandidates();
             mInitialized = true;
         }
 #ifdef ICPMODULE_DEBUG
@@ -314,17 +325,21 @@ namespace smtrat
         }
         else if ( (*_formula)->constraint().variables().size() > 1 )
         {
+            cout << "Size Variables: " << (*_formula)->constraint().variables().size() << " (" << (*_formula)->constraint() << ")" << endl;
            const Constraint* replacementPtr = NULL;
            // find replacement
            for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
            {
+               cout << "ID constraint: " << (*_formula)->pConstraint()->id() << ", ID replacement: " << (*replacementIt).second->id() << endl;
                if ( (*replacementIt).second->id() == (*_formula)->pConstraint()->id() )
                {
+                   
                    replacementPtr = (*replacementIt).first;
                    break;
                }
            }
            assert(replacementPtr != NULL);
+           cout << "ReplacementPtr -> " << *replacementPtr << endl;
            const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(replacementPtr);
            assert(slackvariable != NULL);
            
