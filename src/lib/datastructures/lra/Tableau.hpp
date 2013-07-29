@@ -419,7 +419,7 @@ namespace smtrat
                 void multiplyRow(unsigned,T);
                 T Scalar_Product(Tableau<T>&,Tableau<T>&,unsigned,unsigned) const;
                 void calculate_hermite_normalform(std::vector<unsigned>&);
-                void invert_HNF_Matrix(std::vector<unsigned>&);
+                void invert_HNF_Matrix(std::vector<unsigned>);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
@@ -2134,6 +2134,13 @@ namespace smtrat
             return false;
         }
         
+        /**
+         * Checks whether the column with index column_index 
+         * is a diagonal column. 
+         * 
+         * @return true,    if the column with index column_index is a diagonal column
+         *         false,   otherwise   
+         */        
         template<class T>
         bool Tableau<T>::isDiagonal(unsigned column_index , std::vector<unsigned>& diagonals)
         {
@@ -2632,14 +2639,14 @@ namespace smtrat
                  */
                 row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
                 while(true)
-                {
-                    /*
-                     * The current entry has to be normalized because it´s
-                     * in a diagonal column and greater or equal than the
-                     * diagonal entry in the current row.
-                     */                    
+                {                  
                     if( ( (*row_iterator).columnNumber() != added_pos ) && ( isDiagonal((*row_iterator).columnNumber(),diagonals) ) && ( added_content <= (*row_iterator).content() ) )
                     {
+                       /*
+                        * The current entry has to be normalized because it´s
+                        * in a diagonal column and greater or equal than the
+                        * diagonal entry in the current row.
+                        */                          
                         T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( (*row_iterator).content().toCLN() / added_content.toCLN() ) ) );
                         addColumns((*mpEntries)[row_iterator.entryID()].columnNumber(),
                                   diagonals.at(i),
@@ -2664,39 +2671,71 @@ namespace smtrat
          * @return 
          */
         template<class T> 
-        void Tableau<T>::invert_HNF_Matrix(std::vector<unsigned>& diagonal_positions)
+        void Tableau<T>::invert_HNF_Matrix(std::vector<unsigned> diagonals)
         {
-            for(unsigned i=mRows.size()-1;i>=0;i--)
+            /*
+             * Iterate through the tableau beginning in the the last
+             * column which only contains one element.
+             */            
+            for(int i=mRows.size()-1;i>=0;--i)
             {
                 /*
-                 * Iterate through the tableau beginning in the the last
-                 * column which only contains one element.
+                 * Move the iterator to the diagonal element in the current column
+                 * and calculate the new content for it.
                  */
-                Iterator column_iterator = Iterator(mColumns.at(diagonal_positions.at(i)).mStartEntry, mpEntries);                
+                Iterator column_iterator = Iterator(mColumns.at(diagonals.at(i)).mStartEntry, mpEntries);  
+                cout << "jo" << endl;
                 while(!column_iterator.columnBegin())
                 {
-                    T new_value = T(0);
-                    Iterator row_iterator = Iterator(mColumns.at(diagonal_positions.at(i)).mStartEntry, mpEntries);
-                    unsigned row_count = (*column_iterator).rowNumber();
-                   
-                    while((*row_iterator).rowNumber() > row_count)
+                    column_iterator.up();                    
+                }
+                (*column_iterator).rContent() = 1/(*column_iterator).content();
+                bool entry_changed=false;
+                /*
+                 * Now change the other entries in the current column if necessary.
+                 */
+                if(!column_iterator.columnBegin())
+                {
+                    column_iterator.down();
+                    entry_changed = true;
+                }
+                if(entry_changed)
+                {
+                    cout << "drin" << endl;
+                    while(true)
                     {
-                        row_iterator.up();
-                    }
-                    if((*row_iterator).rowNumber() == row_count)
-                    {
-                    unsigned j=i;
-                    while(diagonal_positions.at(j) != mColumns.size())
-                    {
-                        row_iterator = Iterator(mColumns.at(diagonal_positions.at(j)).mStartEntry, mpEntries);
-                        new_value = new_value - (*row_iterator).content(); 
-                        ++j;
-                    }
-                    (*row_iterator).rContent() = new_value/(*row_iterator).content();
-                    column_iterator.up();
+                        entry_changed = false;
+                        unsigned j = i + 1;
+                        T new_value = T(0);
+                        while(j < mRows.size())
+                        {
+                            Iterator column_iterator2 = Iterator(mColumns.at(diagonals.at(j)).mStartEntry, mpEntries);
+                            cout << "no" << endl;
+                            while((*column_iterator2).rowNumber() > (*column_iterator).rowNumber() && !column_iterator2.columnBegin())
+                            {
+                                column_iterator2.up();
+                            }
+                            if((*column_iterator2).rowNumber() == (*column_iterator).rowNumber())
+                            {
+                                new_value -= (*column_iterator2).content();
+                                entry_changed = true;
+                            }
+                            j++;
+                        }
+                        if(entry_changed)
+                        {
+                            (*column_iterator).rContent() = new_value;
+                        }    
+                        if(!column_iterator.columnEnd())
+                        {
+                            column_iterator.down();
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
                 }
-                (*column_iterator).rContent() = 1/(*column_iterator).content();                
             }
         }
         #endif

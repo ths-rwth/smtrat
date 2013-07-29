@@ -476,14 +476,14 @@ namespace smtrat
                             vector<unsigned>& diagonals_ref = diagonals;                            
                             dc_Tableau.calculate_hermite_normalform(diagonals_ref);
                             dc_Tableau.print();
-                            //dc_Tableau.invert_HNF_Matrix(diagonals_ref);
-                            //dc_Tableau.print();
-                            auto iter = diagonals.begin(); 
+                            auto iter = diagonals.begin();
                             while(iter != diagonals.end())
                             {
                                 printf("%u",*iter);
                                 ++iter;
                             }
+                            dc_Tableau.invert_HNF_Matrix(diagonals);
+                            dc_Tableau.print();                             
                             } 
                             #endif
                             
