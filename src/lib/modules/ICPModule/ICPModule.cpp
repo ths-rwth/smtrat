@@ -106,6 +106,16 @@ namespace smtrat
 #ifdef ICPMODULE_DEBUG
         cout << "[ICP] inform: " << (*_constraint) << " (id: " << _constraint->id() << ")" << endl;
 #endif  
+        GiNaC::symtab tmp;
+        for( auto variablesIt = (*_constraint).variables().begin(); variablesIt != (*_constraint).variables().end(); ++variablesIt )
+            tmp.insert(*variablesIt);
+        const ex tmpEx = (*_constraint).lhs();
+        if (!tmp.empty())
+        {
+            const ex testEx = collector( tmpEx, tmp.begin(), tmp );
+            cout << "Collected Constraint Expression: " << testEx << endl;
+        }
+        
         // do not inform about boundary constraints - this leads to confusion
         if ( _constraint->variables().size() > 1 )
         {

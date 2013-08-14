@@ -242,6 +242,31 @@ namespace smtrat
             /**
              * Methods:
              */
+            
+            ex collector(const ex _term, GiNaC::symtab::iterator _variablePosition, GiNaC::symtab& _variables)
+            {
+                if( _variablePosition != _variables.end() )
+                {
+                    cout << "Term: " << _term << endl;
+                    cout << "Variable: " << (*_variablePosition).second << endl;
+                    ex tmp = _term.collect( (*_variablePosition).second );
+                    ex newTerm = tmp.coeff( (*_variablePosition).second, 0);
+                    cout << tmp << endl;
+                    unsigned exponent = 1;
+                    while( exponent <= tmp.degree((*_variablePosition).second) )
+                    {
+                        cout << "Coeff: " << tmp.coeff((*_variablePosition).second, exponent) << endl;
+                        newTerm = newTerm + GiNaC::pow((*_variablePosition).second, exponent) * collector( tmp.coeff((*_variablePosition).second, exponent), ++_variablePosition, _variables );
+                        
+                        cout << newTerm << endl;
+                        ++exponent;
+                    }
+                    cout << "Done" << endl;
+                    return newTerm;
+                }
+                else
+                    return ex(0);
+            }
 
             /**
              * Method to determine the next combination of variable and constraint to be contracted
