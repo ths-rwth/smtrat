@@ -252,14 +252,20 @@ namespace smtrat
                     ex tmp = _term.collect( (*_variablePosition).second );
                     ex newTerm = tmp.coeff( (*_variablePosition).second, 0);
                     cout << tmp << endl;
-                    unsigned exponent = 1;
+                    int exponent = 1;
                     while( exponent <= tmp.degree((*_variablePosition).second) )
                     {
-                        cout << "Coeff: " << tmp.coeff((*_variablePosition).second, exponent) << endl;
-                        newTerm = newTerm + GiNaC::pow((*_variablePosition).second, exponent) * collector( tmp.coeff((*_variablePosition).second, exponent), ++_variablePosition, _variables );
+                        ex coeff = tmp.coeff((*_variablePosition).second, exponent);
+                        cout << "Coeff: " << coeff << endl;
+                        ex power = GiNaC::pow((*_variablePosition).second, exponent);
+                        cout << "Power: " << power << endl;
+                        GiNaC::symtab::iterator newPos = _variablePosition;
+                        ++newPos;
+                        newTerm = newTerm + power * collector( coeff, newPos, _variables );
                         
-                        cout << newTerm << endl;
-                        ++exponent;
+                        cout << "NewTerm after collect:" << newTerm << endl;
+                        exponent += 1;
+                        cout << "Degree: " << tmp.degree((*_variablePosition).second) << ", Exponent: " << exponent << endl;
                     }
                     cout << "Done" << endl;
                     return newTerm;
