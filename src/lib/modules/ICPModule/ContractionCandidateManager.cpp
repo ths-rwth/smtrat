@@ -40,27 +40,18 @@ namespace smtrat
         return mInstance;
     }
     
-    ContractionCandidate* ContractionCandidateManager::createCandidate ( symbol _lhs, const Constraint* _constraint, symbol _derivationVar, const Formula* _origin )
-    {
-        // check if candidate does not exist already
-//        for ( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
-//        {
-//            if ( _constraint == (*candidateIt).second->constraint()  && _derivationVar == (*candidateIt).second->derivationVar() )
-//            {
-//                return mCandidates[(*candidateIt).first];
-//            }
-//        }
-        
+    ContractionCandidate* ContractionCandidateManager::createCandidate ( symbol _lhs, const ex _rhs, const Constraint* _constraint, symbol _derivationVar, const Formula* _origin )
+    {        
         ContractionCandidate* tmp;
         
         // Todo: Is it better to make the replacement here instead of outside?
         if ( _origin == NULL )
         {
-            tmp = new ContractionCandidate(_lhs, _constraint, _derivationVar, mCurrentId);
+            tmp = new ContractionCandidate(_lhs, _rhs, _constraint, _derivationVar, mCurrentId);
         }
         else
         {
-            tmp = new ContractionCandidate(_lhs, _constraint, _derivationVar, _origin, mCurrentId);    
+            tmp = new ContractionCandidate(_lhs, _rhs, _constraint, _derivationVar, _origin, mCurrentId);    
         }
         
         std::pair<std::map<unsigned, ContractionCandidate*>::iterator, bool> insertionResult = mCandidates.insert(std::make_pair(mCurrentId,tmp));

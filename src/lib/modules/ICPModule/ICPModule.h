@@ -95,7 +95,6 @@ namespace smtrat
                         rhsVariables.insert( std::make_pair((*symbolIt).get_name(), *symbolIt) );
                     
                     bool result = (*this)(_lhs, lhsVariables, _rhs, rhsVariables);
-//                    cout << _lhs << " < " << _rhs << " : " << result << endl;
                     
                     return result;
                 }
@@ -104,27 +103,22 @@ namespace smtrat
                 {
                     if( (*_lhsVariables.begin()).first < (*_rhsVariables.begin()).first )
                     {
-//                        cout << "LeftVarFirst < RightVarFirst" << endl;
                         return true;
                     }
                     else if( (*_lhsVariables.begin()).first > (*_rhsVariables.begin()).first )
                     {
-//                        cout << "LeftVarFirst > RightVarFirst" << endl;
                         return false;
                     }
                     else if ( _lhs.degree((*_lhsVariables.begin()).second) < _rhs.degree((*_rhsVariables.begin()).second) )
                     {
-//                        cout << "LeftVarFirstDegree < RightVarFirstDegree" << endl;
                         return true;
                     }
                     else if ( _lhs.degree((*_lhsVariables.begin()).second) > _rhs.degree((*_rhsVariables.begin()).second) )
                     {
-//                        cout << "LeftVarFirstDegree > RightVarFirstDegree" << endl;
                         return false;
                     }
                     else if ( _lhsVariables.size() == 1 && _rhsVariables.size() == 1) // both are the same
                     {
-//                        cout << "All Equal and Varsize == 1" << endl;
                         return false;
                     }
                     else // 1st variable and degree are similar -> cut of
@@ -134,15 +128,11 @@ namespace smtrat
                         GiNaC::symtab leftVar = _lhsVariables;
                         GiNaC::symtab rightVar = _rhsVariables;
                         
-//                        cout << left << " < " << right << " ?" << endl;
-                        
                         left /= GiNaC::pow((*_lhsVariables.begin()).second, _lhs.degree((*_lhsVariables.begin()).second) );
                         leftVar.erase(leftVar.begin());
 
                         right /= GiNaC::pow((*_rhsVariables.begin()).second, _rhs.degree((*_rhsVariables.begin()).second) );
                         rightVar.erase(rightVar.begin());
-                        
-//                        cout << left << " (" << leftVar.size() << ") < " << right << " (" << rightVar.size() << ") ?" << endl;
                         
                         if (leftVar.empty() && !rightVar.empty())
                             return true;
@@ -242,37 +232,6 @@ namespace smtrat
             /**
              * Methods:
              */
-            
-            ex collector(const ex _term, GiNaC::symtab::iterator _variablePosition, GiNaC::symtab& _variables)
-            {
-                if( _variablePosition != _variables.end() )
-                {
-                    cout << "Term: " << _term << endl;
-                    cout << "Variable: " << (*_variablePosition).second << endl;
-                    ex tmp = _term.collect( (*_variablePosition).second );
-                    ex newTerm = tmp.coeff( (*_variablePosition).second, 0);
-                    cout << tmp << endl;
-                    int exponent = 1;
-                    while( exponent <= tmp.degree((*_variablePosition).second) )
-                    {
-                        ex coeff = tmp.coeff((*_variablePosition).second, exponent);
-                        cout << "Coeff: " << coeff << endl;
-                        ex power = GiNaC::pow((*_variablePosition).second, exponent);
-                        cout << "Power: " << power << endl;
-                        GiNaC::symtab::iterator newPos = _variablePosition;
-                        ++newPos;
-                        newTerm = newTerm + power * collector( coeff, newPos, _variables );
-                        
-                        cout << "NewTerm after collect:" << newTerm << endl;
-                        exponent += 1;
-                        cout << "Degree: " << tmp.degree((*_variablePosition).second) << ", Exponent: " << exponent << endl;
-                    }
-                    cout << "Done" << endl;
-                    return newTerm;
-                }
-                else
-                    return ex(0);
-            }
 
             /**
              * Method to determine the next combination of variable and constraint to be contracted

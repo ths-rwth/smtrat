@@ -36,8 +36,8 @@
 using namespace GiNaC;
 using namespace std;
 
-#define ICPMODULE_DEBUG
-#define ICPMODULE_REDUCED_DEBUG
+//#define ICPMODULE_DEBUG
+//#define ICPMODULE_REDUCED_DEBUG
 #define BOXMANAGEMENT
 
 namespace smtrat
@@ -106,15 +106,6 @@ namespace smtrat
 #ifdef ICPMODULE_DEBUG
         cout << "[ICP] inform: " << (*_constraint) << " (id: " << _constraint->id() << ")" << endl;
 #endif  
-        GiNaC::symtab tmp;
-        for( auto variablesIt = (*_constraint).variables().begin(); variablesIt != (*_constraint).variables().end(); ++variablesIt )
-            tmp.insert(*variablesIt);
-        const ex tmpEx = (*_constraint).lhs();
-        if (!tmp.empty())
-        {
-            const ex testEx = collector( tmpEx, tmp.begin(), tmp );
-            cout << "Collected Constraint Expression: " << testEx << endl;
-        }
         
         // do not inform about boundary constraints - this leads to confusion
         if ( _constraint->variables().size() > 1 )
@@ -153,7 +144,6 @@ namespace smtrat
                 const ex lhs = createContractionCandidates();
                 if( lhs.nops() > 0 )
                 {
-                    cout << "LHS: " << lhs << endl;
                     GiNaCRA::ICP::searchVariables(lhs, variables);
                     for( auto variableIt = variables->begin(); variableIt != variables->end(); ++variableIt)
                         newVariables.insert(std::make_pair((*variableIt).get_name(), *variableIt));
@@ -163,15 +153,12 @@ namespace smtrat
                 }
                 else
                 {
-                    cout << "Already existing linear replacement." << endl;
                     informLRA = false;
                 }
             }
 
             if( informLRA )
             {
-                cout << "Insert into replacements:" << linearFormula.pConstraint()->id() << " -> " << _constraint->id() << endl;
-            
                 // store replacement for later comparison when asserting
                 mReplacements[linearFormula.pConstraint()] = _constraint;
 
@@ -335,21 +322,17 @@ namespace smtrat
         }
         else if ( (*_formula)->constraint().variables().size() > 1 )
         {
-            cout << "Size Variables: " << (*_formula)->constraint().variables().size() << " (" << (*_formula)->constraint() << ")" << endl;
            const Constraint* replacementPtr = NULL;
            // find replacement
            for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
            {
-               cout << "ID constraint: " << (*_formula)->pConstraint()->id() << ", ID replacement: " << (*replacementIt).second->id() << endl;
                if ( (*replacementIt).second->id() == (*_formula)->pConstraint()->id() )
                {
-                   
                    replacementPtr = (*replacementIt).first;
                    break;
                }
            }
            assert(replacementPtr != NULL);
-           cout << "ReplacementPtr -> " << *replacementPtr << endl;
            const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(replacementPtr);
            assert(slackvariable != NULL);
            
@@ -394,6 +377,7 @@ namespace smtrat
                GiNaC::symtab variables = replacementPtr->variables();
                variables.insert(newReal);
 
+               const ex rhs = slackvariable->expression()-newReal.second;
                const Constraint* tmpConstr = Formula::newConstraint(slackvariable->expression()-newReal.second, Constraint_Relation::CR_EQ, variables );
 
                // store mapping of constraint without to constraint with linear variable, needed for comparison with failed constraints during validation
@@ -408,7 +392,7 @@ namespace smtrat
                // Create candidates for every possible variable:
                for (auto variableIt = variables.begin(); variableIt != variables.end(); ++variableIt )
                {
-                   icp::ContractionCandidate* newCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), tmpConstr, ex_to<symbol>((*variableIt).second), *_formula);
+                   icp::ContractionCandidate* newCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), rhs, tmpConstr,  ex_to<symbol>((*variableIt).second), *_formula);
 
                    // ensure that the created candidate is set as linear
                    newCandidate->setLinear();
@@ -1649,11 +1633,11 @@ namespace smtrat
         cout << "[ICP] Adding nonlinear: " << _ex << endl;
 #endif
         
-        cout << "mLinearizations: " << endl;
-        for( auto expressionIt = mLinearizations.begin(); expressionIt != mLinearizations.end(); ++expressionIt )
-        {
-            cout << "Compare: " << (*expressionIt).first << " == " << _ex << " : " << _ex.is_equal((*expressionIt).first) << endl;
-        }
+//        cout << "mLinearizations: " << endl;
+//        for( auto expressionIt = mLinearizations.begin(); expressionIt != mLinearizations.end(); ++expressionIt )
+//        {
+//            cout << "Compare: " << (*expressionIt).first << " == " << _ex << " : " << _ex.is_equal((*expressionIt).first) << endl;
+//        }
         
         if ( mLinearizations.find(_ex) != mLinearizations.end() )
         {
@@ -1680,7 +1664,7 @@ namespace smtrat
         else
         {
             mTemporaryMonomes.insert(std::make_pair(_ex, _constr));
-            cout << "Size mTemporaryMonomes: " << mTemporaryMonomes.size() << endl;
+//            cout << "Size mTemporaryMonomes: " << mTemporaryMonomes.size() << endl;
 //            for( uint varIndex = 0; varIndex < variables.size(); varIndex++ )
 //            {
 //                GiNaC::symtab varTmp = _constr->variables();
@@ -1729,7 +1713,6 @@ namespace smtrat
                 assert( (*expressionIt).second == constraint );
                 // cCreate mLinearzations entry
                 std::pair<string,ex> newReal = std::pair<string,ex>(Formula::newAuxiliaryRealVariable());
-                cout << "New AuxiliaryReal: " << newReal.second << endl;
                 mLinearizations[(*expressionIt).first] = ex_to<symbol>(newReal.second);
                 mSubstitutions[newReal.second]=(*expressionIt).first;
                 substitutions.insert(std::make_pair((*expressionIt).first, newReal.second));
@@ -1748,8 +1731,9 @@ namespace smtrat
 
                 for( uint varIndex = 0; varIndex < variables->size(); varIndex++ )
                 {
-                    const Constraint* tmp = Formula::newConstraint( (*expressionIt).first-newReal.second, Constraint_Relation::CR_EQ, constraintVariables);
-                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), tmp, variables->at(varIndex) );
+                    const ex rhs = (*expressionIt).first-newReal.second;
+                    const Constraint* tmp = Formula::newConstraint( rhs, Constraint_Relation::CR_EQ, constraintVariables);
+                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), rhs, tmp, variables->at(varIndex) );
                     mNonlinearConstraints[(*expressionIt).second].insert( mNonlinearConstraints[(*expressionIt).second].end(), tmpCandidate );
 
                     mIntervals.insert(std::make_pair(variables->at(varIndex), GiNaCRA::DoubleInterval::unboundedInterval()));
@@ -1759,8 +1743,9 @@ namespace smtrat
                 // add one candidate for the replacement variable
                 GiNaC::symtab varTmp = (*expressionIt).second->variables();
                 varTmp[ex_to<symbol>(newReal.second).get_name()] = newReal.second;
+                ex rhs = (*expressionIt).first-newReal.second;
                 const Constraint* tmp = Formula::newConstraint( (*expressionIt).first-newReal.second, Constraint_Relation::CR_EQ, varTmp);
-                icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), tmp, ex_to<symbol>(newReal.second) );
+                icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), rhs, tmp, ex_to<symbol>(newReal.second) );
                 mNonlinearConstraints[(*expressionIt).second].insert( mNonlinearConstraints[(*expressionIt).second].end(), tmpCandidate );
 
                 mIntervals.insert(std::make_pair(ex_to<symbol>(newReal.second), GiNaCRA::DoubleInterval::unboundedInterval()));
@@ -1769,7 +1754,6 @@ namespace smtrat
                 delete variables;
                 expressionIt = mTemporaryMonomes.erase(mTemporaryMonomes.begin());
             }
-            cout << "Before substitution: " << linearizedConstraint << " Size substitutions: " << substitutions.size() << endl;
             assert(is_exactly_a<add>(constraint->lhs()));
             for( auto summand = constraint->lhs().begin(); summand != constraint->lhs().end(); ++summand )
             {
@@ -1781,28 +1765,12 @@ namespace smtrat
                         coefficient = ex_to<numeric>( *(--(*summand).end()) );
                     }
                     
-                    ex summandTmp = *summand;
-                    for ( auto summandIt = summandTmp.begin(); summandIt != summandTmp.end(); ++summandIt )
-                        cout << *summandIt << endl;
-                    
-                    ExComp compare;
-                    for( auto linearizationIt = mLinearizations.begin(); linearizationIt != mLinearizations.end(); ++linearizationIt )
-                    {
-                        bool equal = !( compare(*summand, (*linearizationIt).first)  || compare((*linearizationIt).first, *summand) );
-                        cout << "Compare: " << *summand << " == " << (*linearizationIt).first << " : " << equal << endl;
-                        cout << "Coefficient: " << coefficient << endl;
-                    }
-                    
                     assert(mLinearizations.find(*summand) != mLinearizations.end());
                     ex monomialReplacement = (*mLinearizations.find(*summand)).second * coefficient;
                     linearizedConstraint += monomialReplacement;
                 }
             }
-            cout << "After substitution: " << linearizedConstraint << endl;
-            
         }
-        
-        
         assert(mTemporaryMonomes.empty());
         
         return linearizedConstraint;
@@ -1821,7 +1789,7 @@ namespace smtrat
             _selection->calcDerivative();
         }
 
-        const ex               constr     = _selection->constraint()->lhs();
+        const ex               constr     = _selection->rhs();
         const ex               derivative = _selection->derivative();
         const symbol           variable   = _selection->derivationVar();
         assert(mIntervals.find(variable) != mIntervals.end());
@@ -2009,7 +1977,7 @@ namespace smtrat
         if(_selection->derivative() == 0)
             _selection->calcDerivative();
 
-        const ex               constr     = _selection->constraint()->lhs();
+        const ex               constr     = _selection->rhs();
         const ex               derivative = _selection->derivative();
         const symbol           variable   = _selection->derivationVar();
         assert(_intervals.find(variable) != _intervals.end());
@@ -2338,7 +2306,7 @@ namespace smtrat
             // For every active linear constraint:
             for ( auto linearIt = mActiveLinearConstraints.begin(); linearIt != mActiveLinearConstraints.end(); ++linearIt)
             {
-                ex constraint = (*linearIt).first->constraint()->lhs();
+                ex constraint = (*linearIt).first->rhs();
                 GiNaC::numeric res = 0;
                 bool isLeftInfty = false;
                 bool isRightInfty = false;
@@ -2595,7 +2563,6 @@ namespace smtrat
                 }
                 else
                 {
-//                    cout << "Skipped some nodes." << endl;
                     setBox(found);
                 }
             }
@@ -3086,8 +3053,7 @@ namespace smtrat
                 if ( !findCandidateInRelevant((*nonlinearIt).first) )
                 {
 #ifdef ICPMODULE_DEBUG
-                    cout << "add to relevant candidates: ";
-                    (*nonlinearIt).first->constraint()->print();
+                    cout << "add to relevant candidates: " << (*nonlinearIt).first->rhs() << endl;
                     cout << "   id: " << (*nonlinearIt).first->id() << endl;
 #endif
                     addCandidateToRelevant((*nonlinearIt).first);
@@ -3098,8 +3064,7 @@ namespace smtrat
                 if ( findCandidateInRelevant((*nonlinearIt).first) )
                 {
 #ifdef ICPMODULE_DEBUG
-                    cout << "remove from relevant candidates due to diameter: ";
-                    (*nonlinearIt).first->constraint()->print();
+                    cout << "remove from relevant candidates due to diameter: " << (*nonlinearIt).first->rhs() << endl;
                     cout << "   id: " << (*nonlinearIt).first->id() << " , Diameter: " << mIntervals[(*nonlinearIt).first->derivationVar()].diameter() << endl;
 #endif
                     removeCandidateFromRelevant((*nonlinearIt).first);
@@ -3119,8 +3084,7 @@ namespace smtrat
                 if( !findCandidateInRelevant((*linearIt).first) )
                 {
 #ifdef ICPMODULE_DEBUG
-                    cout << "add to relevant candidates: ";
-                    (*linearIt).first->constraint()->print();
+                    cout << "add to relevant candidates: " << (*linearIt).first->rhs() << endl;
                     cout << "   id: " << (*linearIt).first->id() << endl;
 #endif
                     addCandidateToRelevant((*linearIt).first);
@@ -3131,8 +3095,7 @@ namespace smtrat
                 if ( findCandidateInRelevant((*linearIt).first) )
                 {
 #ifdef ICPMODULE_DEBUG
-                    cout << "remove from relevant candidates due to diameter: ";
-                    (*linearIt).first->constraint()->print();
+                    cout << "remove from relevant candidates due to diameter: " << (*linearIt).first->rhs() << endl;
                     cout << "   id: " << (*linearIt).first->id() << " , Diameter: " << mIntervals[(*linearIt).first->derivationVar()].diameter() << endl;
 #endif
                     removeCandidateFromRelevant((*linearIt).first);
