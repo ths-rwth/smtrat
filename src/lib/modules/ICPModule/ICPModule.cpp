@@ -144,20 +144,36 @@ namespace smtrat
                 if(!mTemporaryMonomes.empty())
                     lhs = createContractionCandidates();
                 else
-                    lhs = (*mLinearizations.find(_constraint->lhs())).second;
+                {
+                    for( auto replacementsIt = mReplacements.begin(); replacementsIt != mReplacements.end(); ++replacementsIt )
+                    {
+                        cout << "consider: " << *(*replacementsIt).second <<   " == " << *_constraint << endl;
+                        if ( (*replacementsIt).second == _constraint )
+                        {
+                            lhs = (*replacementsIt).first->lhs();
+                            break;
+                        }
+                    }
+                    informLRA = false;
+                    if( lhs == 0)
+                    {
+                        cout << "Ping" << endl;
+                    }
+                }
                 
                 
-                if( !lhs.is_zero() )
+                if( informLRA )
                 {
                     GiNaCRA::ICP::searchVariables(lhs, variables);
+                    cout << "LHS: " << lhs << ", Variables: ";
                     for( auto variableIt = variables->begin(); variableIt != variables->end(); ++variableIt)
+                    {
                         newVariables.insert(std::make_pair((*variableIt).get_name(), *variableIt));
+                        cout << (*variableIt).get_name() << ", ";
+                    }
+                    cout << endl;
 
                     linearFormula = Formula( Formula::newConstraint(lhs,_constraint->relation(), newVariables) );
-                }
-                else
-                {
-                    informLRA = false;
                 }
                 delete variables;
             }
@@ -179,8 +195,6 @@ namespace smtrat
             
         }
         
-        
-
         return (_constraint->isConsistent() != 0);
     }
 
@@ -224,7 +238,7 @@ namespace smtrat
         cout << endl;
 #endif
         assert( (*_formula)->getType() == REALCONSTRAINT );
-        if ( (*_formula)->constraint().variables().size() > 1 )
+        if ( (*_formula)->constraint().variables().size() > 1 || (mNonlinearConstraints.find((*_formula)->pConstraint()) != mNonlinearConstraints.end()) )
         {
             // Pass constraints to backends - Sure?
             addSubformulaToPassedFormula( new Formula( constr ), *_formula );
@@ -285,11 +299,11 @@ namespace smtrat
                 }
             }
         }
-        if ( (*_formula)->constraint().variables().size() == 1 && mNonlinearConstraints.find((*_formula)->pConstraint()) == mNonlinearConstraints.end() )
+        if ( (*_formula)->constraint().variables().size() == 1 && (*_formula)->constraint().varInfo((*(*_formula)->constraint().variables().begin()).second).occurences == 1 )
         {
             // ensure that it is not a nonlinear constraint with only one variable:
-            if ( mNonlinearConstraints.find((*_formula)->pConstraint()) == mNonlinearConstraints.end() )
-            {
+//            if ( mNonlinearConstraints.find((*_formula)->pConstraint()) == mNonlinearConstraints.end() )
+//            {
                 // considered constraint is activated but has no slackvariable -> it is a boundary constraint
                 Formula* tmpFormula = new Formula(**_formula);
                 mValidationFormula->addSubformula(tmpFormula);
@@ -317,13 +331,13 @@ namespace smtrat
                     assert(!mInfeasibleSubsets.empty());
                     return false;
                 }
-            }
-            else
-            {
-                // Pass constraints to backends - Sure? TODO!
-                addSubformulaToPassedFormula( new Formula( constr ), *_formula );
-                Module::assertSubformula( _formula );
-            }
+//            }
+//            else
+//            {
+//                // Pass constraints to backends - Sure? TODO!
+//                addSubformulaToPassedFormula( new Formula( constr ), *_formula );
+//                Module::assertSubformula( _formula );
+//            }
         }
         else //if ( (*_formula)->constraint().variables().size() > 1 )
         {
@@ -337,6 +351,7 @@ namespace smtrat
                    break;
                }
            }
+           cout << "searching for: " << (*_formula)->constraint() << endl;
            assert(replacementPtr != NULL);
            cout << "ReplacementPTR points to: " << *replacementPtr << endl;
            const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(replacementPtr);
@@ -1651,7 +1666,7 @@ namespace smtrat
                 {
                     if ( (*candidateIt)->lhs() == mLinearizations.at(_ex) )
                     {
-                        mNonlinearConstraints.at(_constr).insert(mNonlinearConstraints.at(_constr).end(), (*candidateIt));
+                        mNonlinearConstraints[_constr].insert((*candidateIt));
                     }
                 }
             }
@@ -3158,16 +3173,26 @@ namespace smtrat
                     numeric bound = GiNaC::rationalize( mIntervals.at(tmpSymbol).left() );
                     GiNaC::ex leftEx = tmpSymbol - bound;
                     GiNaC::symtab variables;
-                    variables.insert(std::pair<string, ex>((*variablesIt).first, (*variablesIt).second));
+                    variables.insert(std::pair<string, ex>((*variablesIt).first, tmpSymbol));
 
+                    ex test = ex( tmpSymbol - (*variablesIt).second ).expand();
+                    cout << "Test: " << test << endl;
+                    
                     const Constraint* leftTmp;
                     switch (mIntervals.at(tmpSymbol).leftType())
                     {
                         case GiNaCRA::DoubleInterval::STRICT_BOUND:
-                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
+//                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
+                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GREATER, bound);
+                            cout << "IsStrictBound: " << *leftTmp << endl;
+//                            leftTmp->printProperties();
                             break;
                         case GiNaCRA::DoubleInterval::WEAK_BOUND:
-                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
+//                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
+                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GEQ, bound);
+                            cout << "IsWeakBound: " << *leftTmp << endl;
+//                            leftTmp->printProperties();
+                            
                             break;
                         default:
                             leftTmp = NULL;
@@ -3196,10 +3221,17 @@ namespace smtrat
                     switch (mIntervals.at(tmpSymbol).rightType())
                     {
                         case GiNaCRA::DoubleInterval::STRICT_BOUND:
-                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
+//                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
+                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LESS, bound);
+                            cout << "IsStrictBound: " << *rightTmp << endl;
+//                            rightTmp->printProperties();
+                            
                             break;
                         case GiNaCRA::DoubleInterval::WEAK_BOUND:
-                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
+//                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
+                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LEQ, bound);
+                            cout << "IsWeakBound: " << *rightTmp << endl;
+//                            rightTmp->printProperties();
                             break;
                         default:
                             rightTmp = NULL;
