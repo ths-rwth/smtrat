@@ -164,49 +164,44 @@ namespace smtrat
             /**
              * Members:
              */
-            icp::ContractionCandidateManager*                                   mCandidateManager;
-            std::map<icp::ContractionCandidate*, unsigned, icp::contractionCandidateComp>                      mActiveNonlinearConstraints;
-            std::map<icp::ContractionCandidate*, unsigned, icp::contractionCandidateComp>                      mActiveLinearConstraints;
-            std::map<const lra::Variable<lra::Numeric>*, ContractionCandidates>          mLinearConstraints;
-            std::map<const Constraint*, ContractionCandidates, constraintPointerComp>                  mNonlinearConstraints;
-            std::map<const ex, const Constraint*, ExComp>                                          mTemporaryMonomes;
-            std::map<const ex, const Constraint*, ExComp>                                          mTemporaryLinearizations;
+            icp::ContractionCandidateManager*                                                   mCandidateManager; // keeps all candidates
+            std::map<icp::ContractionCandidate*, unsigned, icp::contractionCandidateComp>       mActiveNonlinearConstraints; // nonlinear candidates considered
+            std::map<icp::ContractionCandidate*, unsigned, icp::contractionCandidateComp>       mActiveLinearConstraints; // linear candidates considered
+            std::map<const lra::Variable<lra::Numeric>*, ContractionCandidates>                 mLinearConstraints; // all linear candidates
+            std::map<const Constraint*, ContractionCandidates, constraintPointerComp>           mNonlinearConstraints; // all nonlinear candidates
             
-            GiNaCRA::ICP                                                        mIcp;
-            GiNaCRA::evaldoubleintervalmap                                      mIntervals;
-            std::set<std::pair<double, unsigned>, comp>                         mIcpRelevantCandidates;
-            std::map<const Constraint*, const Constraint*, constraintPointerComp>                      mReplacements; // replacement -> origin
-            std::map<const Constraint*, const Constraint*, constraintPointerComp>                      mLinearizationReplacements;
-
-            std::map<string, icp::IcpVariable*>                                 mVariables;
-            std::map<const ex, symbol, ExComp>                                  mLinearizations;
-
-            GiNaC::exmap                                                        mSubstitutions; // variable -> substitution
+            GiNaCRA::ICP                                                                        mIcp; // ICP algorithm for contraction
+            std::map<string, icp::IcpVariable*>                                                 mVariables; // list of occurring variables
+            GiNaCRA::evaldoubleintervalmap                                                      mIntervals; // actual intervals relevant for contraction
+            std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
             
-            icp::HistoryNode*                                                   mHistoryRoot;
-            icp::HistoryNode*                                                   mHistoryActual;
-
-            Formula*                                                            mValidationFormula;
-            std::vector< std::atomic_bool* >                                    mLRAFoundAnswer;
-            RuntimeSettings*                                                    mLraRuntimeSettings;
-            LRAModule                                                           mLRA;
-
-            std::map<const Formula*, const Formula*>                            mReceivedFormulaMapping; // LraReceived -> IcpReceived
+            std::map<const ex, const Constraint*, ExComp>                                       mTemporaryMonomes; // monomes from preprocessing to be linearized
+            std::map<const Constraint*, const Constraint*, constraintPointerComp>               mReplacements; // linearized constraint -> original constraint
+            std::map<const ex, symbol, ExComp>                                                  mLinearizations; // monome -> variable
+            GiNaC::exmap                                                                        mSubstitutions; // variable -> monome/variable
             
-            std::set<const Constraint*, constraintPointerComp>                                         mCenterConstraints;
-            std::set<Formula*>                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
-
-            icp::ContractionCandidate*                                          mLastCandidate;
-            bool                                                                mInitialized;
-            unsigned                                                            mCurrentId;
-            bool                                                                mBackendCalled;
+            icp::HistoryNode*                                                                   mHistoryRoot; // Root-Node of the state-tree
+            icp::HistoryNode*                                                                   mHistoryActual; // Actual node of the state-tree
             
-#ifdef ICP_BOXLOG
-            std::fstream icpLog;
-#endif
-#ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-            Formula*                                                            mCheckContraction;
-#endif
+            Formula*                                                                            mValidationFormula; // ReceivedFormula of the internal LRA Module
+            std::map<const Formula*, const Formula*>                                            mReceivedFormulaMapping; // LraReceived -> IcpReceived
+            std::vector< std::atomic_bool* >                                                    mLRAFoundAnswer;
+            RuntimeSettings*                                                                    mLraRuntimeSettings;
+            LRAModule                                                                           mLRA; // internal LRA module
+            
+            std::set<const Constraint*, constraintPointerComp>                                  mCenterConstraints; // keeps actual centerConstaints for deletion
+            std::set<Formula*>                                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
+            icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
+            bool                                                                                mInitialized; // initialized ICPModule?
+            unsigned                                                                            mCurrentId; // keeps the currentId of the state nodes
+            bool                                                                                mBackendCalled; // has a backend already been called in the actual run?
+            
+            #ifdef ICP_BOXLOG
+            std::fstream                                                                        icpLog;
+            #endif
+            #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
+            Formula*                                                                            mCheckContraction;
+            #endif
             
 
         public:
@@ -234,31 +229,59 @@ namespace smtrat
              */
 
             /**
+             * Determines, if the given expression is linear
+             * @param _constr Needed to associate linearization with constraint
+             * @param _expr Expression, which is checked
+             * @return true, if expression is linear
+             */
+            bool isLinear( const Constraint* _constr, const ex& _expr);
+
+            /**
+             * Creates ContractionCandidates from all items in mTemporaryMonomes and empties mTemporaryMonomes.
+             */
+            ex createContractionCandidates();
+            
+            /**
+             * Initiates weights for contractions
+             */
+            void initiateWeights();
+            
+            /**
+             * Fills the IcpRelevantCandidates with all nonlinear and all active linear ContractionCandidates.
+             */
+            void fillCandidates( double _targetDiameter = 0 );
+            
+            /**
+             * Adds the specific candidate to IcpRelevantCandidates.
+             * @param _candidate
+             */
+            bool addCandidateToRelevant(icp::ContractionCandidate* _candidate);
+            
+            /**
+             * Removes a candidate from the icpRelevantCandidates.
+             * @param _candidate
+             */
+            bool removeCandidateFromRelevant(icp::ContractionCandidate* _candidate);
+            
+            /**
+             * Checks whether a candidate is already relevant.
+             * @param _candidate
+             * @return 
+             */
+            bool findCandidateInRelevant(icp::ContractionCandidate* _candidate);
+            
+            /**
+             * Update all affected candidates and reinsert them into icpRelevantCandidates
+             * @param _var
+             */
+            void updateRelevantCandidates(symbol _var, double _relativeContraction );
+            
+            /**
              * Method to determine the next combination of variable and constraint to be contracted
              * @param _it
              * @return a pair of variable and constraint
              */
-            icp::ContractionCandidate* chooseConstraint();
-
-            /**
-             * Returns if the given expression is linear. Writes a linearization into the second parameter
-             * @param _expr
-             * @param
-             * @return true if _expr is linear, else false and a linearization is written into the second parameter
-             */
-            bool isLinear( const Constraint* _constr, const ex& _expr, ex& );
-
-            /**
-             * Adds a given expression to the nonlinear table and returns the nonlinear variable
-             * @param
-             * @return
-             */
-            ex addNonlinear( const Constraint* _constr, const ex );
-
-            /**
-             * Creates ContractionCandidates from all items in temporaryMonomes.
-             */
-            ex createContractionCandidates();
+            icp::ContractionCandidate* chooseContractionCandidate();
             
             /**
              * Calls the actual contraction function and implements threshold functionality
@@ -275,18 +298,13 @@ namespace smtrat
              * @param _intervals
              */
             void tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, GiNaCRA::evaldoubleintervalmap _intervals );
-
-            /**
-             * Initiates weights for contractions
-             */
-            void initiateWeights();
             
             /**
-             * Printout of actual tables of linear constraints, active linear
-             * constraints, nonlinear constraints and active nonlinear constraints.
+             * Checks if there is a need for a split and manages the splitting and branching in the
+             * historyTree.
              */
-            void debugPrint();
-
+            std::pair<bool,symbol> checkAndPerformSplit( double _targetDiameter );
+            
             /**
              * Creates constraints from the given interval and adds them to the
              * passedFormula.
@@ -301,39 +319,18 @@ namespace smtrat
              * @return a set of violated constraints
              */
             std::pair<bool,bool> validateSolution();
-
-            /**
-             * Creates new ContractionCandidate and adds it to nonlinear constraints
-             * @param _constraint constraint which should be converted to a contractionCandidate
-             * @return pointer to new contractionCandidate, empty if unsat
-             */
-            std::vector<icp::ContractionCandidate*>* addContractionCandidate( const Formula* _constraint );
-
-            /**
-             * Checks if there is a need for a split and manages the splitting and branching in the
-             * historyTree.
-             */
-            std::pair<bool,symbol> checkAndPerformSplit( double _targetDiameter );
             
             /**
-             * Prints the mapping from variable to ContractionCandidates which contain this variable.
+             * Removes all centerconstraints from the validation formula - needed before adding actual centerconstraints
+             * and before a new contraction sequence starts in order to check linear feasibility.
              */
-            void printAffectedCandidates();
+            void clearCenterConstraintsFromValidationFormula();
             
             /**
-             * Prints all icpVariables
+             * Checks the actual intervalBox with the LRASolver
+             * @return 
              */
-            void printIcpVariables();
-            
-            /**
-             * Prints all icpRelevant candidates with their weight and id
-             */
-            void printIcpRelevantCandidates();
-            
-            /**
-             * Prints all intervals from mIntervals, should be the same intervals as in mHistoryActual->intervals().
-             */
-            void printIntervals();
+            bool checkBoxAgainstLinearFeasibleRegion();
             
             /**
              * Selects and sets the next possible interval box from the history nodes.
@@ -362,52 +359,10 @@ namespace smtrat
             icp::HistoryNode* tryToAddConstraint( ContractionCandidates _candidates, icp::HistoryNode* _node );
             
             /**
-             * Fills the IcpRelevantCandidates with all nonlinear and all active linear ContractionCandidates.
-             */
-            void fillCandidates( double _targetDiameter = 0 );
-            
-            /**
-             * Adds the specific candidate to IcpRelevantCandidates.
-             * @param _candidate
-             */
-            bool addCandidateToRelevant(icp::ContractionCandidate* _candidate);
-            
-            /**
-             * Removes a candidate from the icpRelevantCandidates.
-             * @param _candidate
-             */
-            bool removeCandidateFromRelevant(icp::ContractionCandidate* _candidate);
-            
-            /**
-             * Checks whether a candidate is already relevant.
-             * @param _candidate
-             * @return 
-             */
-            bool findCandidateInRelevant(icp::ContractionCandidate* _candidate);
-            
-            /**
              * Creates Bounds and passes them to PassedFormula for the Backends.
              * @return true if new bounds have been added
              */
             bool pushBoundsToPassedFormula();
-            
-            /**
-             * Update all affected candidates and reinsert them into icpRelevantCandidates
-             * @param _var
-             */
-            void updateRelevantCandidates(symbol _var, double _relativeContraction );
-            
-            /**
-             * Removes all centerconstraints from the validation formula - needed before adding actual centerconstraints
-             * and before a new contraction sequence starts in order to check linear feasibility.
-             */
-            void clearCenterConstraintsFromValidationFormula();
-            
-            /**
-             * Checks the actual intervalBox with the LRASolver
-             * @return 
-             */
-            bool checkBoxAgainstLinearFeasibleRegion();
             
             /**
              * Checks mIntervals if it contains an empty interval.
@@ -441,7 +396,6 @@ namespace smtrat
                     {
                         if( (*subformula)->getType() == REALCONSTRAINT )
                         {
-                            cout << "TO FIND:";
                             (*subformula)->print();
                             auto iter = mReplacements.find( (*subformula)->pConstraint() );
                             assert( iter != mReplacements.end() );
@@ -449,9 +403,7 @@ namespace smtrat
                             subformula = _formula->replace( subformula, constraintFormula );
                         }
                         else if( (*subformula)->isBooleanCombination() )
-                        {
                             replaceConstraints( *subformula );
-                        }
                     }
                 }
             }
@@ -473,6 +425,31 @@ namespace smtrat
             void writeBox();
 #endif
             
+            /**
+             * Printout of actual tables of linear constraints, active linear
+             * constraints, nonlinear constraints and active nonlinear constraints.
+             */
+            void debugPrint();
+            
+            /**
+             * Prints the mapping from variable to ContractionCandidates which contain this variable.
+             */
+            void printAffectedCandidates();
+            
+            /**
+             * Prints all icpVariables
+             */
+            void printIcpVariables();
+            
+            /**
+             * Prints all icpRelevant candidates with their weight and id
+             */
+            void printIcpRelevantCandidates();
+            
+            /**
+             * Prints all intervals from mIntervals, should be the same intervals as in mHistoryActual->intervals().
+             */
+            void printIntervals();
     };
 }    // namespace smtrat
 
