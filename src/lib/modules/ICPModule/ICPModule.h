@@ -246,14 +246,7 @@ namespace smtrat
              * @param
              * @return true if _expr is linear, else false and a linearization is written into the second parameter
              */
-            bool isLinear( const Constraint* _constr, const ex& _expr, ex& );
-
-            /**
-             * Adds a given expression to the nonlinear table and returns the nonlinear variable
-             * @param
-             * @return
-             */
-            ex addNonlinear( const Constraint* _constr, const ex );
+            bool isLinear( const Constraint* _constr, const ex& _expr);
 
             /**
              * Creates ContractionCandidates from all items in temporaryMonomes.

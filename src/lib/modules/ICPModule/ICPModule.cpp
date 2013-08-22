@@ -115,18 +115,14 @@ namespace smtrat
         if( _constraint->variables().size() > 0 )
         {
             const ex constr = _constraint->lhs();
-            ex       replacement = ex();
             bool linear;
-
 
             // add original variables to substitution mapping
             for( auto variablesIt = _constraint->variables().begin(); variablesIt != _constraint->variables().end(); ++variablesIt )
-            {
                 mSubstitutions[(*variablesIt).second] = (*variablesIt).second;
-            }
 
             // actual preprocessing
-            linear = isLinear( _constraint, constr, replacement );
+            linear = isLinear( _constraint, constr );
 
             Formula linearFormula;
             bool informLRA = true;
@@ -1460,12 +1456,10 @@ namespace smtrat
         return NULL;
     }
 
-    bool ICPModule::isLinear( const Constraint* _constr, const ex& _expr, ex& _tmpTerm )
+    bool ICPModule::isLinear( const Constraint* _constr, const ex& _expr )
     {
         bool isLinear = true;
         ex term = _expr.expand();
-        ex subsVar = ex();
-
         assert( is_exactly_a<add>( term ) || is_exactly_a<mul>( term ) || is_exactly_a<power>( term ) || is_exactly_a<symbol>( term )
                 || is_exactly_a<numeric>( term ) );
 
@@ -1482,36 +1476,25 @@ namespace smtrat
                 if( is_exactly_a<mul>( tmp ) )
                 {
                     bool firstVariable = false;
-
                     for( GiNaC::const_iterator factor = tmp.begin(); factor != tmp.end(); factor++ )
                     {
                         assert( is_exactly_a<power>( *factor ) || is_exactly_a<numeric>( *factor ) || is_exactly_a<symbol>( *factor ) );
                         ex tmpFactor = *factor;
-
                         if( is_exactly_a<power>( tmpFactor ) )
-                        {
                             summandLinear = false;
-                        }
                         else if( is_exactly_a<numeric>( tmpFactor ) )
                         {
                             if (coefficient == 0)
-                            {
                                 coefficient = ex_to<numeric>( tmpFactor );
-                            }
                             else
-                            {
                                 coefficient *= ex_to<numeric>( tmpFactor );
-                            }
                         }
                         else if( is_exactly_a<symbol>( tmpFactor ) )
                         {
                             if( !firstVariable )
                                 firstVariable = true;
                             else
-                            {
                                 summandLinear = false;
-                            }
-
                         }
                     }
 
@@ -1519,14 +1502,6 @@ namespace smtrat
                 else if( is_exactly_a<power>( tmp ) )
                 {
                     summandLinear = false;
-                }
-                else if( is_exactly_a<numeric>( tmp ) )
-                {
-                    // Constant part!
-                }
-                else if( is_exactly_a<symbol>( tmp ) )
-                {
-                    // Add to linear table
                 }
                 if( !summandLinear )
                 {
@@ -1536,18 +1511,13 @@ namespace smtrat
                     // multiplication with coefficient and more than one variable or power
                     if (coefficient != 0)
                     {
-                        subsVar = addNonlinear( _constr, tmp/coefficient );
+                        mTemporaryMonomes.insert(std::make_pair(tmp/coefficient, _constr));
                     }
                     else
                     {
-                        subsVar  = addNonlinear( _constr, tmp );
+                        mTemporaryMonomes.insert(std::make_pair(tmp, _constr));
                         coefficient = 1;
                     }
-                    _tmpTerm = _tmpTerm + coefficient*subsVar;
-                }
-                else
-                {
-                    _tmpTerm = _tmpTerm + tmp;
                 }
             }    // for summands
         }    // is add
@@ -1563,65 +1533,31 @@ namespace smtrat
                 ex tmpFactor = *factor;
 
                 if( is_exactly_a<power>( tmpFactor ) )
-                {
-                    // directly generate substitute for whole term and exit
-                    // TODO: Is it correct to directly exit? What about: x^2*y^3 ?
                     isLinear = false;
-//                    subsVar  = addNonlinear( _constr, term );
-//                    _tmpTerm = subsVar;
-//                    return isLinear;
-                }
                 else if( is_exactly_a<numeric>( tmpFactor ) )
                 {
                     if( coefficient == 0)
-                    {
                         coefficient = ex_to<numeric>(tmpFactor);
-                        _tmpTerm = coefficient;
-                    }
                     else
-                    {
                         coefficient *= ex_to<numeric>(tmpFactor);
-                        _tmpTerm = _tmpTerm * coefficient;
-                    }
-//                    // test for zero - initialize _tmpTerm
-//                    if (!_tmpTerm.is_zero()){
-//                        _tmpTerm = _tmpTerm * tmpFactor;
-//                    }else{
-//                        _tmpTerm = tmpFactor;
-//                    }
                 }
                 else if( is_exactly_a<symbol>( tmpFactor ) )
                 {
                     if( !firstVariable )
-                    {
                         firstVariable = true;
-                        if (!_tmpTerm.is_zero()){
-                            _tmpTerm = _tmpTerm * tmpFactor;
-                        }else{
-                            _tmpTerm = tmpFactor;
-                        }
-                    }
-                    else
-                    {
-                        // 2nd or higher variable
+                    else // 2nd or higher variable
                         isLinear = false;
-//                        subsVar  = addNonlinear( _constr, term );
-//                        _tmpTerm = subsVar;
-//                        return isLinear;
-                    }
                 }
             }    // for factors
             if(!isLinear)
             {
                 if(coefficient != 0)
                 {
-                    subsVar  = addNonlinear( _constr, term/coefficient );
-                    _tmpTerm = coefficient*subsVar;
+                    mTemporaryMonomes.insert(std::make_pair(term/coefficient, _constr));
                 }
                 else
                 {
-                    subsVar  = addNonlinear( _constr, term );
-                    _tmpTerm = subsVar;
+                    mTemporaryMonomes.insert(std::make_pair(term, _constr));
                 }
                 
             }
@@ -1631,52 +1567,9 @@ namespace smtrat
         {
             // Add to nonlinear table
             isLinear = false;
-            subsVar  = addNonlinear( _constr, term );
-            _tmpTerm = _tmpTerm + subsVar;
+            mTemporaryMonomes.insert(std::make_pair(term, _constr));
         }
-        else if( is_exactly_a<symbol>( term ) )
-        {
-            _tmpTerm = _tmpTerm + term;
-        }
-        else if( is_exactly_a<numeric>( term ) )
-        {
-            // Evaluate ?!?
-            _tmpTerm = _tmpTerm + term;
-        }
-
         return isLinear;
-    }
-
-    ex ICPModule::addNonlinear( const Constraint* _constr, const ex _ex )
-    {
-#ifdef ICPMODULE_DEBUG
-        cout << "[ICP] Adding nonlinear: " << _ex << endl;
-#endif
-        if ( mLinearizations.find(_ex) != mLinearizations.end() )
-        {
-#ifdef ICPMODULE_DEBUG
-#ifndef ICPMODULE_REDUCED_DEBUG
-            cout << "Existing replacement: " << _ex << " -> " << mLinearizations.at(_ex) << endl;
-#endif
-#endif
-            for ( auto constraintIt = mNonlinearConstraints.begin(); constraintIt != mNonlinearConstraints.end(); ++constraintIt )
-            {
-                ContractionCandidates tmpList = (*constraintIt).second;
-                for ( auto candidateIt = tmpList.begin(); candidateIt != tmpList.end(); ++candidateIt )
-                {
-                    if ( (*candidateIt)->lhs() == mLinearizations.at(_ex) )
-                    {
-                        mNonlinearConstraints[_constr].insert((*candidateIt));
-                    }
-                }
-            }
-            return mLinearizations.at(_ex);
-        }
-        else
-        {
-            mTemporaryMonomes.insert(std::make_pair(_ex, _constr));
-        }
-        return mLinearizations[_ex];
     }
     
     
@@ -1693,48 +1586,70 @@ namespace smtrat
             // Create contraction candidate object for every possible derivation variable
             for( auto expressionIt = mTemporaryMonomes.begin(); expressionIt != mTemporaryMonomes.end(); )
             {
-                assert( (*expressionIt).second == constraint );
-                // cCreate mLinearzations entry
-                std::pair<string,ex> newReal = std::pair<string,ex>(Formula::newAuxiliaryRealVariable());
-                mLinearizations[(*expressionIt).first] = ex_to<symbol>(newReal.second);
-                mSubstitutions[newReal.second]=(*expressionIt).first;
-                substitutions.insert(std::make_pair((*expressionIt).first, newReal.second));
-    #ifdef ICPMODULE_DEBUG
-                cout << "New replacement: " << (*expressionIt).first << " -> " << mLinearizations.at((*expressionIt).first) << endl;
-    #endif  
-
-                std::vector<symbol>* variables = new std::vector<symbol>;
-                mIcp.searchVariables((*expressionIt).first, variables);
-
-                GiNaC::symtab constraintVariables;
-                for( auto variableIt = variables->begin(); variableIt != variables->end(); ++variableIt )
-                    constraintVariables.insert(std::make_pair(ex_to<symbol>(*variableIt).get_name(), *variableIt));
-
-                constraintVariables[ex_to<symbol>(newReal.second).get_name()] = newReal.second;
-
-                for( uint varIndex = 0; varIndex < variables->size(); varIndex++ )
+                if( mLinearizations.find((*expressionIt).first) == mLinearizations.end() )
                 {
-                    const ex rhs = (*expressionIt).first-newReal.second;
-                    const Constraint* tmp = Formula::newConstraint( rhs, Constraint_Relation::CR_EQ, constraintVariables);
-                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), rhs, tmp, variables->at(varIndex) );
+                    assert( (*expressionIt).second == constraint );
+                    // cCreate mLinearzations entry
+                    std::pair<string,ex> newReal = std::pair<string,ex>(Formula::newAuxiliaryRealVariable());
+                    mLinearizations[(*expressionIt).first] = ex_to<symbol>(newReal.second);
+                    mSubstitutions[newReal.second]=(*expressionIt).first;
+                    substitutions.insert(std::make_pair((*expressionIt).first, newReal.second));
+        #ifdef ICPMODULE_DEBUG
+                    cout << "New replacement: " << (*expressionIt).first << " -> " << mLinearizations.at((*expressionIt).first) << endl;
+        #endif  
+
+                    std::vector<symbol>* variables = new std::vector<symbol>;
+                    mIcp.searchVariables((*expressionIt).first, variables);
+
+                    GiNaC::symtab constraintVariables;
+                    for( auto variableIt = variables->begin(); variableIt != variables->end(); ++variableIt )
+                        constraintVariables.insert(std::make_pair(ex_to<symbol>(*variableIt).get_name(), *variableIt));
+
+                    constraintVariables[ex_to<symbol>(newReal.second).get_name()] = newReal.second;
+
+                    for( uint varIndex = 0; varIndex < variables->size(); varIndex++ )
+                    {
+                        const ex rhs = (*expressionIt).first-newReal.second;
+                        const Constraint* tmp = Formula::newConstraint( rhs, Constraint_Relation::CR_EQ, constraintVariables);
+                        icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), rhs, tmp, variables->at(varIndex) );
+                        mNonlinearConstraints[(*expressionIt).second].insert( mNonlinearConstraints[(*expressionIt).second].end(), tmpCandidate );
+
+                        mIntervals.insert(std::make_pair(variables->at(varIndex), GiNaCRA::DoubleInterval::unboundedInterval()));
+                        tmpCandidate->activate();
+                        tmpCandidate->setNonlinear();
+                    }
+                    // add one candidate for the replacement variable
+                    GiNaC::symtab varTmp = (*expressionIt).second->variables();
+                    varTmp[ex_to<symbol>(newReal.second).get_name()] = newReal.second;
+                    ex rhs = (*expressionIt).first-newReal.second;
+                    const Constraint* tmp = Formula::newConstraint( (*expressionIt).first-newReal.second, Constraint_Relation::CR_EQ, varTmp);
+                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), rhs, tmp, ex_to<symbol>(newReal.second) );
                     mNonlinearConstraints[(*expressionIt).second].insert( mNonlinearConstraints[(*expressionIt).second].end(), tmpCandidate );
 
-                    mIntervals.insert(std::make_pair(variables->at(varIndex), GiNaCRA::DoubleInterval::unboundedInterval()));
+                    mIntervals.insert(std::make_pair(ex_to<symbol>(newReal.second), GiNaCRA::DoubleInterval::unboundedInterval()));
                     tmpCandidate->activate();
                     tmpCandidate->setNonlinear();
+                    delete variables;
                 }
-                // add one candidate for the replacement variable
-                GiNaC::symtab varTmp = (*expressionIt).second->variables();
-                varTmp[ex_to<symbol>(newReal.second).get_name()] = newReal.second;
-                ex rhs = (*expressionIt).first-newReal.second;
-                const Constraint* tmp = Formula::newConstraint( (*expressionIt).first-newReal.second, Constraint_Relation::CR_EQ, varTmp);
-                icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), rhs, tmp, ex_to<symbol>(newReal.second) );
-                mNonlinearConstraints[(*expressionIt).second].insert( mNonlinearConstraints[(*expressionIt).second].end(), tmpCandidate );
-
-                mIntervals.insert(std::make_pair(ex_to<symbol>(newReal.second), GiNaCRA::DoubleInterval::unboundedInterval()));
-                tmpCandidate->activate();
-                tmpCandidate->setNonlinear();
-                delete variables;
+                else // already existing replacement/substitution/linearization
+                {
+#ifdef ICPMODULE_DEBUG
+#ifndef ICPMODULE_REDUCED_DEBUG
+                    cout << "Existing replacement: " << (*expressionIt).first << " -> " << mLinearizations.at((*expressionIt).first) << endl;
+#endif
+#endif
+                    for ( auto constraintIt = mNonlinearConstraints.begin(); constraintIt != mNonlinearConstraints.end(); ++constraintIt )
+                    {
+                        ContractionCandidates tmpList = (*constraintIt).second;
+                        for ( auto candidateIt = tmpList.begin(); candidateIt != tmpList.end(); ++candidateIt )
+                        {
+                            if ( (*candidateIt)->lhs() == mLinearizations.at((*expressionIt).first) )
+                            {
+                                mNonlinearConstraints[(*expressionIt).second].insert((*candidateIt));
+                            }
+                        }
+                    }
+                }
                 expressionIt = mTemporaryMonomes.erase(mTemporaryMonomes.begin());
             }
             if( is_exactly_a<add>(constraint->lhs()) )

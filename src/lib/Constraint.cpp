@@ -880,6 +880,7 @@ namespace smtrat
         VarInfo& varInfo = mVarInfoMap[var];
         varInfo.occurences = 1;
         varInfo.minDegree = 1;
+        varInfo.maxDegree = 1;
         mMaxMonomeDegree = 1;
         mMinMonomeDegree = 1;
         mNumMonomials = (_bound == 0 ? 1 : 2);
