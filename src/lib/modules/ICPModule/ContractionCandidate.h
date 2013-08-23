@@ -69,7 +69,10 @@ namespace smtrat
             /**
              * Members:
              */
+//            const Constraint* mConstraint;
+            const ex          mRhs;
             const Constraint* mConstraint;
+            
             symbol      mLhs;
             symbol      mDerivationVar;
             ex          mDerivative;
@@ -92,6 +95,7 @@ namespace smtrat
              */
 
             ContractionCandidate( const ContractionCandidate& _original ):
+            mRhs(_original.rhs()),
             mConstraint(_original.constraint()),
             mLhs(_original.lhs()),
             mDerivationVar(_original.derivationVar()),
@@ -106,7 +110,8 @@ namespace smtrat
                 mOrigin.insert(_original.origin().begin(), _original.origin().end());
             }
 
-            ContractionCandidate( symbol _lhs, const Constraint* _constraint, symbol _derivationVar, const Formula* _origin, unsigned _id ):
+            ContractionCandidate( symbol _lhs, const ex _rhs, const Constraint* _constraint, symbol _derivationVar, const Formula* _origin, unsigned _id ):
+            mRhs(_rhs),
             mConstraint(_constraint),
             mLhs(_lhs),
             mDerivationVar(_derivationVar),
@@ -126,7 +131,8 @@ namespace smtrat
              * @param _constraint
              * @param _derivationVar
              */
-            ContractionCandidate( symbol _lhs, const Constraint* _constraint, symbol _derivationVar, unsigned _id ):
+            ContractionCandidate( symbol _lhs, const ex _rhs, const Constraint* _constraint, symbol _derivationVar, unsigned _id ):
+            mRhs(_rhs),
             mConstraint(_constraint),
             mLhs(_lhs),
             mDerivationVar(_derivationVar),
@@ -153,6 +159,11 @@ namespace smtrat
              * Functions:
              */
 
+            const ex rhs() const
+            {
+                return mRhs;
+            }
+            
             const Constraint* constraint() const
             {
                 return mConstraint;
@@ -247,11 +258,6 @@ namespace smtrat
                 return mId;
             }
 
-            void setConstraint( Constraint* _constraint )
-            {
-                mConstraint = _constraint;
-            }
-
             void setDerivationVar( symbol _var )
             {
                 mDerivationVar = _var;
@@ -270,7 +276,7 @@ namespace smtrat
             void calcDerivative() throw ()
             {
                 if( mDerivative == ex() )
-                    mDerivative = mConstraint->lhs().diff( mDerivationVar );
+                    mDerivative = mRhs.diff( mDerivationVar );
             }
 
             void activate()
@@ -296,7 +302,7 @@ namespace smtrat
 
             void print( ostream& _out = std::cout ) const
             {
-                _out << mId << ": \t" << *mConstraint << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
+                _out << mId << ": \t" << mRhs << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
 //                _out << mId << ": \t" << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
 #ifdef CCPRINTORIGINS
                 cout << endl << "Origins(" << mOrigin.size()<< "): " << endl;
