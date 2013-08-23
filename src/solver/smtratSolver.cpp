@@ -45,90 +45,28 @@
 #include "lib/utilities/stats/StatisticSettings.h"
 #endif //SMTRAT_DEVOPTION_Statistics
 
-
-struct Smt2Options
-{
-    int statusFlag;
-    bool printAssignment;
-};
-
 /**
  * Parse the file and save it in formula.
  * @param pathToInputFile The path to the input smt2 file.
  * @param formula A pointer to the formula object which holds the parsed input afterwards.
  * @param options Save options from the smt2 file here.
  */
-void parseInput(const std::string& pathToInputFile, smtrat::Formula* formula, smtrat::ParserSettings* settings, Smt2Options& options)
+void parseInput( const std::string& pathToInputFile, smtrat::Driver& _parser, smtrat::ParserSettings* settings, int& _statusFlag )
 {
-    // The parser
-    smtrat::Driver   parser( formula );
-    settings->setOptionsToParser(parser);
+    settings->setOptionsToParser( _parser );
     std::fstream infile( pathToInputFile.c_str() );
     if( !infile.good() )
     {
         std::cerr << "Could not open file: " << pathToInputFile << std::endl;
         exit(SMTRAT_EXIT_NOSUCHFILE);
     }
-    bool parsingSuccessful = parser.parse_stream( infile, pathToInputFile.c_str() );
+    bool parsingSuccessful = _parser.parse_stream( infile, pathToInputFile.c_str() );
     if(!parsingSuccessful)
     {
         std::cerr << "Parse error" << std::endl;
         exit(SMTRAT_EXIT_PARSERFAILURE);
     }
-    options.statusFlag = parser.status();
-    options.printAssignment = parser.printAssignment();
-}
-
-/**
- * Determine the return value of the process and its output.
- * @param status the parsed status flag of the smt2 file.
- * @param answer the answer from the solver
- * @return the corresponding return value.
- */
-int determineResult(int status, smtrat::Answer answer)
-{
-    switch( answer )
-    {
-        case smtrat::True:
-        {
-            if( status == 0 )
-            {
-                std::cout << "error, expected unsat, but returned sat" << std::endl;
-                return SMTRAT_EXIT_WRONG_ANSWER;
-            }
-            else
-            {
-                std::cout << "sat" << std::endl;
-                return SMTRAT_EXIT_SAT;
-            }
-            break;
-        }
-        case smtrat::False:
-        {
-            if( status == 1 )
-            {
-                std::cout << "error, expected sat, but returned unsat" << std::endl;
-                return SMTRAT_EXIT_WRONG_ANSWER;
-            }
-            else
-            {
-                std::cout << "unsat" << std::endl;
-                return SMTRAT_EXIT_UNSAT;
-            }
-            break;
-        }
-        case smtrat::Unknown:
-        {
-            std::cout << "unknown" << std::endl;
-            return SMTRAT_EXIT_UNKNOWN;
-            break;
-        }
-        default:
-        {
-            std::cerr << "Unexpected output!" << std::endl;
-            return SMTRAT_EXIT_UNEXPECTED_ANSWER;
-        }
-    }
+    _statusFlag = _parser.status();
 }
 
 void printTimings(smtrat::Manager* solver)
@@ -150,60 +88,155 @@ void printTimings(smtrat::Manager* solver)
  *
  */
 int main( int argc, char* argv[] )
-{
-    // This variable will hold the inputfile.
+{   
+    // This variable will hold the input file.
     std::string pathToInputFile = "";
-    // This will point to the parsed formula;
-    smtrat::Formula* form = new smtrat::Formula( smtrat::AND );
 
-    // Construct solver
-    CMakeStrategySolver* nratSolver = new CMakeStrategySolver( form );
-    std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules(nratSolver);
-
-    // Construct the settingsManager
+    // Construct the settingsManager.
     smtrat::RuntimeSettingsManager settingsManager;
     // Introduce the smtrat core settingsObjects to the manager.
     #ifdef SMTRAT_DEVOPTION_Validation
-    settingsManager.addSettingsObject("validation", smtrat::Module::validationSettings);
+    settingsManager.addSettingsObject( "validation", smtrat::Module::validationSettings );
     #endif
     // Create and introduce a parser settings object.
     smtrat::ParserSettings* parserSettings = new smtrat::ParserSettings();
-    settingsManager.addSettingsObject("parser", parserSettings);
-    // Introduce the settingsobject for the statistics to the manager.
+    settingsManager.addSettingsObject( "parser", parserSettings );
+    // Introduce the settings object for the statistics to the manager.
     #ifdef SMTRAT_DEVOPTION_Statistics
     settingsManager.addSettingsObject("stats", smtrat::CollectStatistics::settings);
     #endif
-    // Introduce the settingsObjects from the modules to the manager
-    settingsManager.addSettingsObject(settingsObjects);
 
-    // Parse commandline;
-    pathToInputFile = settingsManager.parseCommandline(argc, argv);
+    // Parse command line.
+    pathToInputFile = settingsManager.parseCommandline( argc, argv );
 
-    Smt2Options smt2options;
-    // Parse input
-    parseInput(pathToInputFile, form, parserSettings, smt2options);
+    int statusFlag = 0;
+    // Parse input.
+    smtrat::Driver parser;
+    parseInput( pathToInputFile, parser, parserSettings, statusFlag );
+    
+    // Construct solver.
+    CMakeStrategySolver* nratSolver = new CMakeStrategySolver();
+    nratSolver->rDebugOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
+    std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules( nratSolver );
+    
+    // Introduce the settingsObjects from the modules to the manager.
+    settingsManager.addSettingsObject( settingsObjects );
 
-
-    // Run solver
-    smtrat::Answer      answer     = nratSolver->isConsistent();
-    // Determine result.
-    int returnValue = determineResult(smt2options.statusFlag, answer);
-    // Print assignment.
-    if((settingsManager.printModel() || smt2options.printAssignment) && answer == smtrat::True)
+    // Apply parsed instruction.
+    int returnValue = 0;
+    smtrat::Answer lastAnswer = smtrat::Unknown;
+    smtrat::InstructionKey currentInstructionKey;
+    smtrat::InstructionValue currentInstructionValue;
+    while( parser.getInstruction( currentInstructionKey, currentInstructionValue ) )
+    {
+        switch( currentInstructionKey )
+        {
+            case smtrat::PUSHBT:
+            {
+                for( int i = 0; i<currentInstructionValue.num; ++i )
+                    nratSolver->push();
+                break;
+            }
+            case smtrat::POPBT:
+            {
+                for( int i = 0; i<currentInstructionValue.num; ++i )
+                    if( !nratSolver->pop() )
+                        parser.error( "Cannot pop an empty stack of backtrack points!", true );
+                break;
+            }
+            case smtrat::ASSERT:
+            {
+                nratSolver->add( currentInstructionValue.formula );
+                break;
+            }
+            case smtrat::CHECK:
+            {
+                lastAnswer = nratSolver->check();
+                switch( lastAnswer )
+                {
+                    case smtrat::True:
+                    {
+                        if( statusFlag == 0 )
+                        {
+                            parser.error( "expected unsat, but returned sat", true );
+                            returnValue = SMTRAT_EXIT_WRONG_ANSWER;
+                        }
+                        else
+                        {
+                            parser.rRegularOutputChannel() << "sat" << std::endl;
+                            returnValue = SMTRAT_EXIT_SAT;
+                        }
+                        break;
+                    }
+                    case smtrat::False:
+                    {
+                        if( statusFlag == 1 )
+                        {
+                            parser.error( "error, expected sat, but returned unsat", true );
+                            returnValue = SMTRAT_EXIT_WRONG_ANSWER;
+                        }
+                        else
+                        {
+                            parser.rRegularOutputChannel() << "unsat" << std::endl;
+                            returnValue = SMTRAT_EXIT_UNSAT;
+                        }
+                        break;
+                    }
+                    case smtrat::Unknown:
+                    {
+                        parser.rRegularOutputChannel() << "unknown" << std::endl;
+                        returnValue = SMTRAT_EXIT_UNKNOWN;
+                        break;
+                    }
+                    default:
+                    {
+                        parser.error( "Unexpected output!", true );
+                        returnValue = SMTRAT_EXIT_UNEXPECTED_ANSWER;
+                    }
+                }
+                break;
+            }
+            case smtrat::GET_ASSIGNMENT:
+            {
+                if( lastAnswer == smtrat::True )
+                {
+                    nratSolver->printAssignment( parser.rRegularOutputChannel() );
+                }
+                break;
+            }
+            case smtrat::GET_ASSERTS:
+            {
+                nratSolver->printAssertions( parser.rRegularOutputChannel() );
+                break;
+            }
+            case smtrat::GET_UNSAT_CORE:
+            {
+                nratSolver->printInfeasibleSubset( parser.rRegularOutputChannel() );
+                break;
+            }
+            default:
+            {
+                parser.error( "Unknown order!" );
+                assert( false );
+            }
+        }
+    }
+    
+    // Print assignment if provoked by system call.
+    if( settingsManager.printModel() && lastAnswer == smtrat::True )
     {
         std::cout << std::endl;
-        nratSolver->printModel( std::cout );
+        nratSolver->printAssignment( std::cout );
     }
 
-    if(settingsManager.doPrintTimings())
+    if( settingsManager.doPrintTimings() )
     {
-        printTimings(nratSolver);
+        printTimings( nratSolver );
     }
     // Delete the solver and the formula.
     delete nratSolver;
-    delete form;
     delete parserSettings;
-    // Export statistics
+    // Export statistics.
     #ifdef SMTRAT_DEVOPTION_Statistics
     smtrat::CollectStatistics::produceOutput();
     #endif

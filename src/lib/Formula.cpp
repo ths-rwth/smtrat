@@ -1410,11 +1410,7 @@ namespace smtrat
         if( !oper.empty() )
         {
             _out << _init << "(" << oper;
-            if( _onOneLine )
-            {
-                _out << " ";
-            }
-            else
+            if( !_onOneLine )
             {
                 _out << endl;
             }
@@ -1424,8 +1420,8 @@ namespace smtrat
                 assert( (*subFormula)->cpFather() == this );
                 if( _onOneLine )
                 {
-                    (*subFormula)->print( _out, "", _smtlib, _onOneLine );
                     _out << " ";
+                    (*subFormula)->print( _out, "", _smtlib, _onOneLine );
                 }
                 else
                 {

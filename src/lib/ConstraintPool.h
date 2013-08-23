@@ -94,6 +94,8 @@ namespace smtrat
             std::string mExternalVarNamePrefix;
             /// The map of internal variable names to external variable names.
             std::map< std::string, std::string > mInternalToExternalVarNames;
+            /// The map of external variable names to internal variable names.
+            std::map< std::string, std::string > mExternalToInternalVarNames;
             /// The symbol table containing the variables of all constraints.
             GiNaC::symtab mArithmeticVariables;
             /// The collection of Boolean variables in use.
@@ -221,6 +223,7 @@ namespace smtrat
             unsigned nrNonLinearConstraints() const;
             std::string replaceInternalByExternalVariables( const std::string& );
             std::string externalName( const std::string& ) const;
+            std::string internalName( const std::string& ) const;
             std::string stringOf( const GiNaC::ex& ) const;
             void print( std::ostream& = std::cout ) const;
             void printVariables( std::ostream& = std::cout ) const;

@@ -43,7 +43,7 @@ namespace smtrat
         public Manager
     {
         public:
-            NRATSolverCAD( Formula* = new Formula( AND ) );
+            NRATSolverCAD();
             ~NRATSolverCAD();
 
     };

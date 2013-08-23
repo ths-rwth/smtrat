@@ -122,10 +122,17 @@ typedef smtrat::Parser::token_type token_type;
 "push"          { return token::PUSH; }
 "pop"           { return token::POP; }
 
-"get-model"     { return token::GET_MODEL; }
+"get-value"      { return token::GET_VALUE; }
+"get-assignment" { return token::GET_ASSIGNMENT; }
+"get-assertions" { return token::GET_ASSERTIONS; }
+"get-proof"      { return token::GET_PROOF; }
+"get-unsat-core" { return token::GET_UNSAT_CORE; }
 
 "set-logic"     { return token::SET_LOGIC; }
 "set-info"      { return token::SET_INFO; }
+"get-info"      { return token::GET_INFO; }
+"set-option"    { return token::SET_OPTION; }
+"get-option"    { return token::GET_OPTION; }
 
 "declare-fun"   { return token::DECLARE_FUN; }
 "define-fun"    { return token::DEFINE_FUN; }
@@ -167,7 +174,7 @@ bv[0-9]+ {
     yylval->sval = new string( yytext );
     if( mTheoryVariables.find( yytext ) != mTheoryVariables.end() )
     {
-        return token::REAL_VAR;
+        return token::THEORY_VAR;
     }
     else if( mBooleanVariables.find( yytext ) != mBooleanVariables.end() )
     {

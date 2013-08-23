@@ -28,8 +28,8 @@
 namespace smtrat
 {
 
-    StrategyOne::StrategyOne( Formula* _inputFormula ):
-        Manager( _inputFormula )
+    StrategyOne::StrategyOne():
+        Manager()
     {
         addBackendIntoStrategyGraph( 0, MT_CNFerModule, isCondition );
         addBackendIntoStrategyGraph( 1, MT_SATModule, isCondition );

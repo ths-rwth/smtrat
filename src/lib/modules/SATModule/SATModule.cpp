@@ -208,6 +208,7 @@ namespace smtrat
                 removeClause( iter->second );
             }
         }
+        
         Module::removeSubformula( _subformula );
     }
 
@@ -254,7 +255,6 @@ namespace smtrat
             #ifdef SATMODULE_WITH_CALL_NUMBER
             cout << endl << endl;
             #endif
-            cancelUntil( 0 ); // TODO: remove it, when sure incrementality (removeSubformula) is working
             if( result == l_True )
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -1031,6 +1031,8 @@ FindSecond:
         cout << "###" << endl;
         printBooleanVarMap( cout, "###" );
         cout << "###" << endl;
+        unsigned debugFromCall = 0;
+        unsigned numberOfTheoryCalls = 0;
         #endif
         assert( ok );
         int      backtrack_level;
@@ -1038,8 +1040,6 @@ FindSecond:
         vec<Lit> learnt_clause;
         starts++;
         #ifdef SATMODULE_WITH_CALL_NUMBER
-        unsigned debugFromCall = 0;
-        unsigned numberOfTheoryCalls = 0;
         #ifndef DEBUG_SATMODULE
         cout << endl << "Number of theory calls:" << endl << endl;
         #endif
@@ -1164,7 +1164,7 @@ FindSecond:
                 }
             }
             #ifdef SAT_MODULE_THEORY_PROPAGATION
-            if(deductionsLearned)
+            if( deductionsLearned )
             {
                 CONSTRAINT_UNLOCK
                 continue;
@@ -1214,7 +1214,8 @@ FindSecond:
                 {
                     if( madeTheoryCall )
                     {
-                        printClause( confl, cout, "### Conflict clause: " );
+                        cout << "### Conflict clause: ";
+                        printClause( confl, cout );
                     }
                 }
                 #endif
@@ -2111,7 +2112,7 @@ NextClause:
         {
             if( mBooleanConstraintMap[k].formula != NULL )
             {
-                _out << _init << "   " << k << "  ->  " << mBooleanConstraintMap[k].formula->pConstraint();
+                _out << _init << "   " << k << "  ->  " << *mBooleanConstraintMap[k].formula->pConstraint();
                 _out << "  (" << setw( 7 ) << activity[k] << ") [" << mBooleanConstraintMap[k].updateInfo << "]" << endl;
             }
         }

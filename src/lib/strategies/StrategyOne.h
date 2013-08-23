@@ -34,7 +34,7 @@ namespace smtrat
         public Manager
     {
         public:
-            StrategyOne( Formula* = new Formula( AND ) );
+            StrategyOne();
             ~StrategyOne();
     };
 }    // namespace smtrat

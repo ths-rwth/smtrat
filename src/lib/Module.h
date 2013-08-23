@@ -143,10 +143,7 @@ namespace smtrat
             /// Stores the assignment of the current satisfiable result, if existent.
             Model mModel;
 
-        /*
-         * Methods:
-         */
-
+            // Methods.
             bool checkFirstSubformulaToPassValidity() const;
 
         public:

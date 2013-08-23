@@ -1,16 +1,108 @@
-\chapter{Embedding of a theory solver into an SMT solver}
+\chapter{Embedding of an \smtrat theory solver composition into an SMT solver}
 \label{chapter:embeddingats}
 In this section we show how to embed a composed theory solver according
 to Chapter~\ref{chapter:composingats}, e.g., the built-in theory 
 solver \texttt{NRATSolver}, into an SMT solver in order to 
 extend its supported logics by NRA. Firstly, we explain how to
-create an NRA formula and, afterwards, we introduce the 
+create an NRA formula, which is used to inform the theory solver about the
+constraints it has to check for consistency. Afterwards, we introduce the 
 interfaces of the class \managerClass, which form the interfaces of
 a theory solver composed by \smtrat.
 
 \section{Constructing an NRA formula}
 The class \formulaClass represents arbitrary NRA formulas, which are
-defined according to the following abstract grammar.
+defined according to the following abstract grammar
+
+\[
+\begin{array}{rccccccccccccc}
+  p &\quad ::=\quad & a & | & b & | & x & | & (p + p) & | & (p \cdot p) & | & (p^e) \\
+  c &\quad ::=\quad & p = 0 & | & p < 0 & | & p \leq 0 & | & p > 0 & | & p \geq 0 & | & p \neq 0 \\
+ \varphi &\quad ::=\quad & c & | & (\neg \varphi) & | &
+ (\varphi\land\varphi) & | &
+ (\varphi\lor\varphi) & | & 
+ (\varphi\rightarrow\varphi) & | \\ &&
+ (\varphi\leftrightarrow\varphi) & | &
+ (\varphi\oplus\varphi)
+\end{array}
+\]
+
+where $a$ is a rational number, $e$ is a natural number greater one, $b$ is a Boolean  and $x$ is an inherently existential 
+quantified real-valued variable. We call $p$ a polynomial and use a \ginac expression to represent it. A constraint $c$
+has its own \Cpp class and their construction is managed by a pool in order to normalize them and identify
+equal constraints according to the normalization criteria. 
+
+\subsection{Normalized constraints}
+A normalized constraint has the form
+\[a_1\overbrace{x_{1,1}^{e_{1,1}}\cdot\ldots\cdot x_{1,k_1}^{e_{1,k_1}}}^{m_1}+\ldots+a_n\overbrace{x_{n,1}^{e_{n,1}}\cdot\ldots\cdot x_{n,k_n}^{e_{n,k_n}}}^{m_n}\ + \ d\ \sim \ 0\]
+with $n\geq0$, the \emph{$i$th coefficient} $a_i$ being an integral number ($\neq 0$), $d$ being a integral number, $x_{i,j_i}$ being a real-valued variable and $e_{i,j_i}$ being a natural number greater zero (for all $1\leq i\leq n$ and $1\leq j_i\leq k_i$). Furthermore, it holds that
+$x_{i,j_i}\neq x_{i,l_i}$ if $j_i\neq l_i$ (for all $1\leq i\leq n$ and $1\leq j_i, l_i\leq k_i$) and $m_{i_1}\neq m_{i_2}$ if $i_1\neq i_2$ (for all $1\leq i_1,i_2\leq n$). If $n$ is $0$ then $d$ is $0$ and $\sim$ is either $=$ or $<$. In the former case we have the normalized representation of any variable-free consistent constraint, which semantically equals \true, and in the latter case we have the normalized representation of any variable-free inconsistent constraint, which semantically equals \false. Note that the monomials and the variables in them are ordered according the (non-deterministic) variable order of \ginac.
+Moreover, the first coefficient of normalized constraint (with respect to this order) is always positive and the greatest common divisor of $a_1,\ldots,\ a_n,\ d$ is $1$.
+
+We do some further simplifactions, such as the elimination of multiple roots of the left-hand sides in equations and inequalities with the relation symbol $\neq$, e.g., $x^3=0$ is simplified to $x=0$. We also simplify constraints whose left-hand sides are obviously always/never positive/negative, e.g., $x^2\leq 0$ is simplified to $x^2=0$, which again can be simplified to $x=0$ according to the first simplification rule.
+
+\subsection{Boolean combinations of constraints and Boolean variables}
+The \texttt{Formula} class can be constructed with a constraint as argument, which leads to a formula wrapping a constraint only. Furthermore, we can construct a formula representing a Boolean by passing its name as argument. A Boolean combinations of constraints and Boolean variables consists of a Boolean operator and the sub-formulas it interconnects. They are built by firstly constructing a formula with the according operator as argument and then adding the formulas which are the according operands. The \texttt{Formula} class provides the beforementioned constructors and interfaces to manipulate it. We give a small example constructing the formula \[(\neg b\ \land\ x^2-y<0\ \land\ 4x+y-8y^2=0 )\ \rightarrow\ (\neg\ x^2-y<0\ \lor\ b )\]
+for demonstrating how to use them. Firstly, we create the real valued variables.
+\scriptsize
+\begin{verbatim}
+std::pair<std::string,GiNaC::ex> var_x 
+ = smtrat::Formula::newArithmeticVariable( "x", smtrat::REAL_DOMAIN );
+GiNaC::ex x = var_x.second;
+std::pair<std::string,GiNaC::ex> var_y
+     = smtrat::Formula::newArithmeticVariable( "y", smtrat::REAL_DOMAIN );
+GiNaC::ex y = var_y.second;
+\end{verbatim}
+\normalsize
+Then, we collect the variables in a container.
+\scriptsize
+\begin{verbatim}
+GiNaC::symtab vars = GiNaC::symtab();
+vars.insert( var_x );
+vars.insert( var_y );
+\end{verbatim}
+\normalsize
+Afterwards we create the constraints, where we need the container of variables which have to overapproximate the
+variables occurring in the planned left-hand side of the constraint (for efficiency reasons).
+\scriptsize
+\begin{verbatim}
+GiNaC::ex lhsA = GiNaC::pow(x,2)-y;
+const smtrat::Constraint* constraintA 
+  = smtrat::Formula::newConstraint( lhsA, smtrat::CR_LESS, vars );
+GiNaC::ex lhsB = 4*x+y-8*GiNaC::pow(y,7);
+const smtrat::Constraint* constraintB
+   = smtrat::Formula::newConstraint( lhsB, smtrat::CR_EQ, vars );
+\end{verbatim}
+\normalsize
+Now, we can construct the atoms of the Boolean formula
+\scriptsize
+\begin{verbatim}
+smtrat::Formula* atomA = new smtrat::Formula( constraintA );
+smtrat::Formula* atomB = new smtrat::Formula( constraintB );
+smtrat::Formula* atomC = new smtrat::Formula( "b" );
+smtrat::Formula* atomD = new smtrat::Formula( constraintA );
+smtrat::Formula* atomE = new smtrat::Formula( "b" );
+\end{verbatim}
+\normalsize
+and the formula itself.
+\scriptsize
+\begin{verbatim}
+smtrat::Formula* phiA = new smtrat::Formula( smtrat::AND );
+smtrat::Formula* phiB = new smtrat::Formula( smtrat::NOT );
+phiB->addSubformula( atomC );
+phiA->addSubformula( phiB );
+phiA->addSubformula( atomA );
+phiA->addSubformula( atomB );
+smtrat::Formula* phiC = new smtrat::Formula( smtrat::OR );
+smtrat::Formula* phiD = new smtrat::Formula( smtrat::NOT );
+phiD->addSubformula( atomD );
+phiC->addSubformula( phiD );
+phiC->addSubformula( atomE );
+smtrat::Formula* phiE = new smtrat::Formula( smtrat::IMPLIES );
+phiE->addSubformula( phiA );
+phiE->addSubformula( phiC );
+\end{verbatim}
+\normalsize
+Note, that $\land$ and $\lor$ are $n$-ary constructors, $\neg$ is a unary constructor and all the other Boolean operators are binary.
 
 \section{Interfaces of a theory solver composed with \smtrat}
 An SMT solver can use the following interfaces:

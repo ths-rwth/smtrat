@@ -102,13 +102,14 @@
 
 %union
 {
-   unsigned                                            eval;
-   std::string*                                        sval;
-   std::vector< std::string* >*                        vsval;
-   class Formula*                                      fval;
-   std::vector< class Formula* >*                      vfval;
-   std::pair< std::string, unsigned >*                 psval;
-   std::vector< std::pair< std::string, unsigned >* >* msval;
+   unsigned                                              eval;
+   std::string*                                          sval;
+   std::vector< std::string* >*                          vsval;
+   std::vector< std::pair< std::string, std::string > >* vspval;
+   class Formula*                                        fval;
+   std::vector< class Formula* >*                        vfval;
+   std::pair< std::string, unsigned >*                   psval;
+   std::vector< std::pair< std::string, unsigned >* >*   msval;
    std::pair< GiNaC::ex, std::vector< std::unordered_map< std::string, std::pair< std::string, GiNaC::ex > >::const_iterator > >* pval;
 }
 
@@ -119,22 +120,24 @@
 %token AND OR NOT IFF XOR IMPLIES ITE LET AS TRUE FALSE
 %token DECLARE_CONST DECLARE_FUN DECLARE_SORT
 %token DEFINE_CONST DEFINE_FUN DEFINE_SORT
-%token SET_INFO SET_LOGIC
-%token GET_MODEL
+%token SET_INFO SET_OPTION SET_LOGIC
+%token GET_INFO GET_OPTION
+%token GET_VALUE GET_ASSIGNMENT GET_PROOF GET_UNSAT_CORE GET_ASSERTIONS
 %token EXIT
-%token <sval> SYM REAL_VAR BOOLEAN_VAR NUM DEC KEY BIT HEX BIN
+%token <sval> SYM THEORY_VAR BOOLEAN_VAR NUM DEC KEY BIT HEX BIN
 
 %token OB CB DB
 
-%type <sval>  value
-%type <pval>  poly polylistPlus polylistMinus polylistTimes polyOp
-%type <fval>  form equation
-%type <vfval> formlist
-%type <vsval> symlist
-%type <eval>  relation
-%type <eval>  unaryOp binaryOp naryOp
-%type <psval> bind
-%type <msval> bindlist
+%type <sval>   value
+%type <pval>   poly polylistPlus polylistMinus polylistTimes polyOp
+%type <fval>   form equation
+%type <vfval>  formlist
+%type <vsval>  symlist
+%type <vspval> varlist
+%type <eval>   relation
+%type <eval>   unaryOp binaryOp naryOp
+%type <psval>  bind
+%type <msval>  bindlist
 
 %{
 
@@ -156,37 +159,54 @@ commandlist:
 	|	command
 
 command:
-		OB ASSERT form CB                       { dv.rFormulaRoot().addSubformula( $3 ); }
-	|	OB CHECK_SAT CB                         { dv.setCheck( yyloc ); }
-	|	OB PUSH KEY CB                          { error( yyloc, "The command (push) is not supported!" ); }
-	|	OB POP KEY CB                           { error( yyloc, "The command (pop) is not is supported!" ); }
-	|	OB SET_INFO KEY value CB                { dv.checkInfo( yyloc, *$3, *$4 ); delete $4; delete $3; }
-	| 	OB SET_LOGIC SYM CB                     { dv.setLogic( yyloc, *$3 ); delete $3; }
-	|	OB GET_MODEL CB                         { dv.setPrintAssignment(); }
+		OB ASSERT form CB                       { dv.add( $3 ); }
+	|	OB CHECK_SAT CB                         { dv.check(); }
+	|	OB PUSH NUM CB                          { dv.push( *$3 ); delete $3; }
+	|	OB POP NUM CB                           { dv.pop( *$3 ); delete $3; }
+	| 	OB SET_LOGIC SYM CB                     { dv.setLogic( *$3 ); delete $3; }
+	|	OB SET_INFO KEY value CB                { dv.setInfo( *$3, *$4 ); delete $4; delete $3; }
+	|	OB GET_INFO KEY CB                      { dv.getInfo( *$3 ); delete $3; }
+	|	OB SET_OPTION KEY value CB              { dv.setOption( *$3, *$4 ); delete $4; delete $3; }
+	|	OB GET_OPTION KEY CB                    { dv.getOption( *$3 ); delete $3; }
+	|	OB GET_VALUE OB varlist CB CB           { dv.getValue( $4 ); }
+	|	OB GET_ASSIGNMENT CB                    { dv.getAssignment(); }
+	|	OB GET_PROOF CB                         { dv.getProof(); }
+	|	OB GET_UNSAT_CORE CB                    { dv.getUnsatCore(); }
+	|	OB GET_ASSERTIONS CB                    { dv.getAssertions(); }
 	|	OB DECLARE_CONST SYM SYM CB             { dv.addVariable( yyloc, *$3, *$4 ); delete $3; delete $4; }
 	| 	OB DECLARE_FUN SYM OB CB SYM CB         { dv.addVariable( yyloc, *$3, *$6 ); delete $3; delete $6; }
 	| 	OB DECLARE_FUN SYM OB symlist CB SYM CB { error( yyloc, "Declaration of function with arguments is not allowed in supported logics!" );
                                                   delete $3; delete $7; dv.free( $5 ); }
-    |   OB DECLARE_SORT SYM NUM CB              { error( yyloc, "Declaration of types not allowed in supported logics!" );
+    |   OB DECLARE_SORT SYM NUM CB              { error( yyloc, "Declaration of types are not allowed in supported logics!" );
                                                   delete $3; delete $4; }
-	| 	OB DEFINE_FUN SYM OB CB SYM CB          { error( yyloc, "Definition of functions not allowed in supported logics!" );
+	| 	OB DEFINE_FUN SYM OB CB SYM CB          { error( yyloc, "Definition of functions are not allowed in supported logics!" );
                                                   delete $3; delete $6; }
-	| 	OB DEFINE_FUN SYM OB symlist CB SYM CB  { error( yyloc, "Definition of functions not allowed in supported logics!" );
+	| 	OB DEFINE_FUN SYM OB symlist CB SYM CB  { error( yyloc, "Definition of functions are not allowed in supported logics!" );
                                                   delete $3; delete $7; dv.free( $5 ); }
-	| 	OB DEFINE_SORT SYM OB CB SYM CB         { error( yyloc, "Definition of types not allowed in supported logics!" );
+	| 	OB DEFINE_SORT SYM OB CB SYM CB         { error( yyloc, "Definition of types are not allowed in supported logics!" );
                                                   delete $3; delete $6; }
-	| 	OB DEFINE_SORT SYM OB symlist CB SYM CB { error( yyloc, "Definition of types not allowed in supported logics!" );
+	| 	OB DEFINE_SORT SYM OB symlist CB SYM CB { error( yyloc, "Definition of types are not allowed in supported logics!" );
                                                   delete $3; delete $7; dv.free( $5 ); }
 	|	OB EXIT CB
 
 symlist:
         SYM         { vector< string* >* syms = new vector< string* >(); syms->push_back( $1 ); $$ = syms; }
     |   symlist SYM { $1->push_back( $2 ); $$ = $1; }
+    
+varlist:
+        THEORY_VAR          { vector< pair< string, string > >* vars = new vector< pair< string, string > >();
+                              vars->push_back( pair< string, string >( *$1, "Theory" ) ); delete $1; $$ = vars; }
+    |   BOOLEAN_VAR         { vector< pair< string, string > >* vars = new vector< pair< string, string > >();
+                              vars->push_back( pair< string, string >( *$1, "Boolean" ) ); delete $1; $$ = vars; }
+    |   varlist THEORY_VAR  { $1->push_back( pair< string, string >( *$2, "Theory" )  ); delete $2; $$ = $1; }
+    |   varlist BOOLEAN_VAR { $1->push_back( pair< string, string >( *$2, "Boolean" )  ); delete $2; $$ = $1; }
 
 value:
-        SYM { $$ = $1; }
-    |   NUM { $$ = $1; }
-    |   DEC { $$ = $1; }
+        SYM   { $$ = $1; }
+    |   NUM   { $$ = $1; }
+    |   DEC   { $$ = $1; }
+    |   TRUE  { $$ = new string( "true" ); }
+    |   FALSE { $$ = new string( "false" ); }
 
 form:
         BOOLEAN_VAR                   { $$ = new Formula( dv.getBooleanVariable( yyloc, *$1 ) ); delete $1; }
@@ -194,7 +214,7 @@ form:
     |   FALSE                         { $$ = new Formula( smtrat::FFALSE ); }
     |   equation                      { $$ = $1; }
     |   OB relation poly poly CB      { $$ = dv.mkConstraint( *$3, *$4, $2 ); delete $3; delete $4; }
-    |   OB AS SYM SYM CB              { error( yyloc, "\"as\" is not allowed in QF_NRA or QF_LRA!" ); }
+    |   OB AS SYM SYM CB              { error( yyloc, "\"as\" is not allowed in supported logics!" ); }
 	|	OB unaryOp form CB            { $$ = dv.mkFormula( (Type) $2, $3 ); }
 	|	OB binaryOp form form CB      { $$ = dv.mkFormula( (Type) $2, $3, $4 ); }
 	|	OB naryOp formlist CB         { $$ = dv.mkFormula( (Type) $2, *$3 ); delete $3; }
@@ -251,7 +271,7 @@ bind :
                          dv.pLexer()->mBooleanVariables.insert( *$2 ); delete $2; }
 
 poly :
-        REAL_VAR                 { $$ = dv.mkPolynomial( yyloc, *$1 ); delete $1; }
+        THEORY_VAR               { $$ = dv.mkPolynomial( yyloc, *$1 ); delete $1; }
     |   DEC                      { numeric* num = dv.getNumeric( *$1 ); delete $1;
                                    $$ = new PolyVarsPair( ex( *num ), TheoryVarVec() ); delete num; }
     | 	NUM                      { $$ = new PolyVarsPair( ex( numeric( $1->c_str() ) ), TheoryVarVec() ); delete $1; }

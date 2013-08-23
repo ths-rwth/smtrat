@@ -33,8 +33,10 @@
 
 #include <string>
 #include <vector>
+#include <queue>
 #include <unordered_map>
 #include <assert.h>
+#include <fstream>
 #include <ginac/ginac.h>
 #include "../../lib/Constraint.h"
 
@@ -42,35 +44,76 @@
 
 namespace smtrat
 {
-    enum Logic { QF_NRA, QF_LRA, QF_NIA, QF_LIA };
+    enum Logic { UNDEFINED, QF_NRA, QF_LRA, QF_NIA, QF_LIA };
 
     class Formula;
 
     typedef std::unordered_map< std::string, std::pair< std::string, GiNaC::ex > > TheoryVarMap;
     typedef std::pair< GiNaC::ex, std::vector< TheoryVarMap::const_iterator > > ExVarsPair;
+    enum InstructionKey { ASSERT, PUSHBT, POPBT, CHECK, GET_VALUE, GET_ASSIGNMENT, GET_ASSERTS, GET_UNSAT_CORE, GET_PROOF, GET_INFO, SET_INFO, GET_OPTION, SET_OPTION, SET_LOGIC };
+    union InstructionValue
+    {
+        class Formula* formula;
+        std::vector< std::pair< std::string, std::string > >* varNames;
+        std::string* key;
+        std::pair< std::string, std::string >* keyValuePair;
+        int num;
+    };
+    typedef std::pair< InstructionKey, InstructionValue > Instruction;
 
     class Driver
     {
         private:
-
-            ///
-            bool mCheck;
-            ///
-            bool mPrintAssignment;
             /// enable debug output in the flex scanner
             bool mTraceScanning;
             /// enable debug output in the bison parser
             bool mTraceParsing;
             /// enable debug output in the bison parser
             bool mParsingFailed;
-            ///
-            int mStatus;
-            ///
+            /// enable debug output in the bison parser
+            bool mCheckResultActive;
+            /// Indicates whether an instruction has been given to be solved externally.
+            bool mSentSolverInstruction;
+            /// Indicates whether the last instruction could not be successfully applied.
+            bool mLastInstructionFailed;
+            /// Number of checks (only one check permitted if the status flag is set to true or false)
+            unsigned mNumOfChecks;
+            /// Supported info flags according to SMT-lib 2.0.
+            struct SmtlibInfos
+            {
+                int status = -1;
+                std::string name = "\"SMT-RAT\"";
+                std::string authors = "\"Florian Corzilius, corzilius@cs.rwth-aachen.de; Ulrich Loup, loup@cs.rwth-aachen.de; Sebastian Junges, sebastian.junges@googlemail.com; Erika Ábrahám, abraham@cs.rwth-aachen.de\"";
+                std::string version = "\"1.0\"";
+                std::map< std::string, std::string > userInfos;
+            } mInfos;
+            /// Supported option flags according to SMT-lib 2.0.
+            struct SmtlibOptions
+            {
+                std::string regular_output_channel = "\"stdout\"";
+                std::string diagnostic_output_channel = "\"stderr\"";
+                bool interactive_mode = false;
+                bool produce_unsat_cores = false;
+                bool produce_models = false;
+                bool produce_assignments = false;
+                bool print_success = false;
+                bool print_instruction = false;
+                unsigned random_seed = 0;
+                unsigned verbosity = 0;
+            } mOptions;
             Logic mLogic;
             /// Reference to the calculator context filled during parsing of the expressions.
-            class Formula *mFormulaRoot;
+            std::queue< Instruction > mInstructionQueue;
+            /// 
+            std::ostream mRegularOutputChannel;
+            /// 
+            std::ostream mDiagnosticOutputChannel;
+            ///
+            std::filebuf* mRegularOutputReadBuffer;
+            ///
+            std::filebuf* mDiagnosticOutputReadBuffer;
             /// Pointer to the current lexer instance, this is used to connect the parser to the scanner. It is used in the yylex macro.
-            class Scanner *mLexer;
+            class Scanner* mLexer;
             /// stream name (file or input stream) used for error messages.
             std::string* mStreamname;
             ///
@@ -83,25 +126,11 @@ namespace smtrat
             std::unordered_map< std::string, Formula* > mNotInvolvedBooleanBindings;
 
         public:
-            /*
-             * Constructor and destructor.
-             */
-            Driver( class Formula * );
+            // Constructor and destructor.
+            Driver();
             ~Driver();
 
-            /*
-             * Methods.
-             */
-            bool check()
-            {
-                return mCheck;
-            }
-
-            void setCheck( const class location& _loc )
-            {
-                if( mCheck ) error( _loc, "Only one (check) is supported!" );
-                else mCheck = true;
-            }
+            // Methods.
 
             bool traceScanning() const
             {
@@ -125,12 +154,12 @@ namespace smtrat
 
             int status() const
             {
-                return mStatus;
+                return mInfos.status;
             }
 
             int& rStatus()
             {
-                return mStatus;
+                return mInfos.status;
             }
 
             Scanner* pLexer()
@@ -143,19 +172,136 @@ namespace smtrat
                 return mStreamname;
             }
 
-            bool printAssignment()
+            class Formula& currentFormula()
             {
-                return mPrintAssignment;
+                assert( mInstructionQueue.back().first != ASSERT );
+                return *mInstructionQueue.back().second.formula;
             }
 
-            void setPrintAssignment()
+            class Formula* pCurrentFormula()
             {
-                mPrintAssignment = true;
+                assert( mInstructionQueue.back().first != ASSERT );
+                return mInstructionQueue.back().second.formula;
             }
-
-            smtrat::Formula& rFormulaRoot()
+            
+            std::ostream& rRegularOutputChannel()
             {
-                return *mFormulaRoot;
+                return mRegularOutputChannel;
+            }
+            
+            std::ostream& rDiagnosticOutputChannel()
+            {
+                return mRegularOutputChannel;
+            }
+            
+            const std::unordered_map< std::string, std::string >& booleanVariables() const
+            {
+                 return mBooleanVariables;
+            }
+            
+            const TheoryVarMap& theoryVariables() const
+            {
+                return mTheoryVariables;
+            }
+            
+            void check()
+            {
+                InstructionValue iv = InstructionValue();
+                iv.formula = NULL;
+                mInstructionQueue.push( Instruction( CHECK, iv ) );
+            }
+            
+            void add( class Formula* _formula )
+            {
+                InstructionValue iv = InstructionValue();
+                iv.formula = _formula;
+                mInstructionQueue.push( Instruction( ASSERT, iv ) );
+            }
+            
+            void push( const std::string& _num )
+            {
+                int number = atoi( _num.c_str() );
+                InstructionValue iv = InstructionValue();
+                iv.num = number;
+                mInstructionQueue.push( Instruction( PUSHBT, iv ) );
+            }
+            
+            void pop( const std::string& _num )
+            {
+                int number = atoi( _num.c_str() );
+                InstructionValue iv = InstructionValue();
+                iv.num = number;
+                mInstructionQueue.push( Instruction( POPBT, iv ) );
+            }
+            
+            void getAssertions()
+            {
+                InstructionValue iv = InstructionValue();
+                iv.formula = NULL;
+                mInstructionQueue.push( Instruction( GET_ASSERTS, iv ) );
+            }
+            
+            void getProof()
+            {
+                InstructionValue iv = InstructionValue();
+                iv.formula = NULL;
+                mInstructionQueue.push( Instruction( GET_PROOF, iv ) );
+            }
+            
+            void getUnsatCore()
+            {
+                InstructionValue iv = InstructionValue();
+                iv.formula = NULL;
+                mInstructionQueue.push( Instruction( GET_UNSAT_CORE, iv ) );
+            }
+            
+            void getAssignment()
+            {
+                InstructionValue iv = InstructionValue();
+                iv.formula = NULL;
+                mInstructionQueue.push( Instruction( GET_ASSIGNMENT, iv ) );
+            }
+            
+            void getInfo( const std::string& _key )
+            {
+                InstructionValue iv = InstructionValue();
+                iv.key = new std::string( _key );
+                mInstructionQueue.push( Instruction( GET_INFO, iv ) );
+            }
+            
+            void setInfo( const std::string& _key, const std::string& _value )
+            {
+                InstructionValue iv = InstructionValue();
+                iv.keyValuePair = new std::pair< std::string, std::string >( _key, _value );
+                mInstructionQueue.push( Instruction( SET_INFO, iv ) );
+            }
+            
+            void getOption( const std::string& _key )
+            {
+                InstructionValue iv = InstructionValue();
+                iv.key = new std::string( _key );
+                mInstructionQueue.push( Instruction( GET_OPTION, iv ) );
+            }
+            
+            void setOption( const std::string& _key, const std::string& _value )
+            {
+                InstructionValue iv = InstructionValue();
+                iv.keyValuePair = new std::pair< std::string, std::string >( _key, _value );
+                mInstructionQueue.push( Instruction( SET_OPTION, iv ) );
+            }
+            
+            void setLogic( const std::string& _value )
+            {
+                InstructionValue iv = InstructionValue();
+                iv.key = new std::string( _value );
+                mInstructionQueue.push( Instruction( SET_LOGIC, iv ) );
+            }
+            
+            void getValue( std::vector< std::pair< std::string, std::string > >* _value )
+            {
+                InstructionValue iv = InstructionValue();
+                iv.varNames = _value;
+                mInstructionQueue.push( Instruction( GET_VALUE, iv ) );
             }
 
             void free( std::vector< std::string* >* _toFree ) const
@@ -202,12 +348,12 @@ namespace smtrat
                 return REAL_DOMAIN;
             }
 
-            bool parse_stream( std::istream& in, const std::string& sname = "stream input" );
-            bool parse_string( const std::string& input, const std::string& sname = "string stream" );
-            bool parse_file( const std::string& filename );
-            void error( const class location&, const std::string& m );
-            void error( const std::string& m );
-            void setLogic( const class location&, const std::string& );
+            bool parse_stream( std::istream&, const std::string& = "stream input" );
+            bool parse_string( const std::string&, const std::string& = "string stream" );
+            bool parse_file( const std::string& );
+            void error( const class location&, const std::string& );
+            void error( const std::string&, bool = false );
+            void applySetLogic( const std::string& );
             void addVariable( const class location&, const std::string&, const std::string& );
             const std::string addBooleanVariable( const class location&, const std::string& = "", bool = false );
             #ifdef REPLACE_LET_EXPRESSIONS_DIRECTLY
@@ -227,7 +373,11 @@ namespace smtrat
             smtrat::Formula* mkIteInFormula( smtrat::Formula*, smtrat::Formula*, smtrat::Formula* );
             std::string* mkIteInExpr( const class location&, smtrat::Formula*, ExVarsPair&, ExVarsPair& );
             GiNaC::numeric* getNumeric( const std::string& ) const;
-            void checkInfo( const class location&, const std::string&, const std::string& );
+            bool getInstruction( InstructionKey&, InstructionValue& );
+            void applySetInfo( const std::string&, const std::string& );
+            void applyGetInfo( const std::string& );
+            void applySetOption( const std::string&, const std::string& );
+            void applyGetOption( const std::string& );
     };
 
 }    // namespace smtrat

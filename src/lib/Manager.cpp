@@ -51,13 +51,15 @@ namespace smtrat
      * Constructors:
      */
 
-    Manager::Manager( Formula* _inputFormula ):
+    Manager::Manager():
         mPrimaryBackendFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
-        mpPassedFormula( _inputFormula ),
+        mpPassedFormula( new Formula( AND ) ),
+        mBacktrackPoints(),
         mGeneratedModules( vector<Module*>( 1, new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ) ),
         mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
-        mStrategyGraph()
+        mStrategyGraph(),
+        mDebugOutputChannel( cout.rdbuf() )
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         ,
         mpThreadPool( NULL ),
@@ -101,6 +103,7 @@ namespace smtrat
         if( mpThreadPool!=NULL )
             delete mpThreadPool;
         #endif
+        delete mpPassedFormula;
     }
 
     /**
@@ -131,44 +134,100 @@ namespace smtrat
 
     /**
      * Prints the model, if there is one.
-     *
      * @param _out The stream to print on.
      */
-    void Manager::printModel( ostream& _out ) const
+    void Manager::printAssignment( ostream& _out ) const
     {
         mpPrimaryBackend->updateModel();
         if( !mpPrimaryBackend->model().empty() )
         {
-            #ifdef MODEL_IN_SMTLIB
-            _out << "(model" << endl;
-            for( Module::Model::const_iterator assignment = mpPrimaryBackend->model().begin(); assignment != mpPrimaryBackend->model().end(); ++assignment )
+            _out << "(";
+            for( Module::Model::const_iterator ass = mpPrimaryBackend->model().begin(); ass != mpPrimaryBackend->model().end(); ++ass )
             {
-                _out << "  (define-fun " << assignment->first << "()" << ;
-                _out << "  " << assignment->second << ")" << endl;
-            }
-            _out << ")"
-            #else
-            _out << "Model:" << endl;
-            for( Module::Model::const_iterator assignment = mpPrimaryBackend->model().begin(); assignment != mpPrimaryBackend->model().end(); ++assignment )
-            {
-                _out << "  ";
-                string varName = assignment->first;
-                if( assignment->second->domain != BOOLEAN_DOMAIN )
+                if( ass != mpPrimaryBackend->model().begin() )
+                    _out << " ";
+                if( ass->second->domain == BOOLEAN_DOMAIN )
                 {
-                    varName = Formula::constraintPool().externalName( varName );
-                    _out << left << setw( Formula::constraintPool().maxLenghtOfVarName() ) << varName;
-                    _out << " -> " << Formula::constraintPool().stringOf( *assignment->second->theoryValue ) << endl;
+                    _out << "(" << ass->first << " " << (ass->second->booleanValue ? "true" : "false") << ")" << endl;
                 }
                 else
                 {
-                    _out << left << setw( Formula::constraintPool().maxLenghtOfVarName() ) << varName;
-                    _out << " -> " << (assignment->second->booleanValue ? "True" : "False" ) << endl;
+                    _out << "(" <<  Formula::constraintPool().externalName( ass->first ) << " ";
+                    _out << Formula::constraintPool().stringOf( *ass->second->theoryValue ) << ")" << endl;
                 }
             }
-            #endif
+            _out << ")" << endl;
         }
     }
+    
+    /**
+     * Prints the assignment of the given variable.
+     * @param _varName Internal variable name.
+     * @param _out The stream to print on.
+     */
+    void Manager::printValue( const string& _varName, ostream& _out ) const
+    {
+        auto ass = mpPrimaryBackend->model().find( _varName );
+        if( ass->second->domain == BOOLEAN_DOMAIN )
+        {
+            _out << "(" << _varName << " " << (ass->second->booleanValue ? "true" : "false") << ")";
+        }
+        else
+        {
+            _out << "(" << Formula::constraintPool().externalName( _varName );
+            _out << " " << Formula::constraintPool().stringOf( *ass->second->theoryValue ) << ")";
+        }
+    }
+    
+    /**
+     * Prints the assignment of the given variable.
+     * @param _varName Internal variable name.
+     * @param _out The stream to print on.
+     */
+    void Manager::printAssertions( ostream& _out ) const
+    {
+        _out << "(";
+        if( mpPassedFormula->size() == 1 )
+        {
+            mpPassedFormula->back()->print( _out, "", true, true );
+        }
+        else
+        {
+            for( auto subFormula = mpPassedFormula->begin(); subFormula != mpPassedFormula->end(); ++subFormula )
+            {
+                (*subFormula)->print( _out, "", true, true );
+                _out << endl;
+            }
+        }
+        _out << ")" << endl;
+    }
 
+    /**
+     * Prints the first found infeasible subset of the set of received formulas.
+     * @param _out The stream to print on.
+     */
+    void Manager::printInfeasibleSubset( ostream& _out ) const
+    {
+        _out << "(";
+        if( !mpPrimaryBackend->infeasibleSubsets().empty() )
+        {
+            set< const Formula* > infSubSet = *mpPrimaryBackend->infeasibleSubsets().begin();
+            if( infSubSet.size() == 1 )
+            {
+                (*infSubSet.begin())->print( _out, "", true, true );
+            }
+            else
+            {
+                for( auto subFormula = infSubSet.begin(); subFormula != infSubSet.end(); ++subFormula )
+                {
+                    (*subFormula)->print( _out, "", true, true );
+                    _out << endl;
+                }
+            }
+        }
+        _out << ")" << endl;
+    }
+    
     /**
      * Get the backends to call for the given problem instance required by the given module.
      *

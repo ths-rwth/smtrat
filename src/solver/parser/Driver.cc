@@ -43,38 +43,52 @@ using namespace GiNaC;
 
 namespace smtrat
 {
-    Driver::Driver( class Formula *_formulaRoot ):
-        mCheck( false ),
-        mPrintAssignment( false ),
+    Driver::Driver():
         mTraceScanning( false ),
         mTraceParsing( false ),
         mParsingFailed( false ),
-        mStatus( -1 ),
-        mLogic( QF_NRA ),
-        mFormulaRoot( _formulaRoot ),
-        mStreamname( new std::string() ),
+        mCheckResultActive( false ),
+        mSentSolverInstruction( false ),
+        mLastInstructionFailed( false ),
+        mNumOfChecks( 0 ),
+        mInfos(),
+        mOptions(),
+        mLogic( UNDEFINED ),
+        mInstructionQueue(),
+        mRegularOutputChannel( std::cout.rdbuf() ),
+        mDiagnosticOutputChannel( std::cerr.rdbuf() ),
+        mRegularOutputReadBuffer( NULL ),
+        mDiagnosticOutputReadBuffer( NULL ),
+        mStreamname( new string() ),
         mBooleanVariables(),
         mTheoryVariables(),
         mTheoryBindings(),
         mNotInvolvedBooleanBindings()
-    {}
+    {
+        mInfos.userInfos = map< string, string >();
+    }
 
     Driver::~Driver()
     {
+        assert( mInstructionQueue.empty() );
+        if( mRegularOutputReadBuffer != NULL )
+            delete mRegularOutputReadBuffer;
+        if( mDiagnosticOutputReadBuffer != NULL )
+            delete mDiagnosticOutputReadBuffer;
         delete mStreamname;
     }
 
     /**
      * Invoke the scanner and parser for a stream.
      * 
-     * @param in input stream
-     * @param sname stream name for error messages
+     * @param _in input stream
+     * @param _sname stream name for error messages
      * @return true if successfully parsed
      */
-    bool Driver::parse_stream( istream& in, const string& sname )
+    bool Driver::parse_stream( istream& _in, const string& _sname )
     {
-        *mStreamname = sname;
-        Scanner scanner( &in );
+        *mStreamname = _sname;
+        Scanner scanner( &_in );
         scanner.set_debug( mTraceScanning );
         this->mLexer = &scanner;
         Parser parser( *this );
@@ -90,11 +104,11 @@ namespace smtrat
      * @param filename input file name
      * @return true if successfully parsed
      */
-    bool Driver::parse_file( const string& filename )
+    bool Driver::parse_file( const string& _filename )
     {
-        ifstream in( filename.c_str() );
+        ifstream in( _filename.c_str() );
         if( !in.good() ) return false;
-        return parse_stream( in, filename );
+        return parse_stream( in, _filename );
     }
 
     /**
@@ -104,10 +118,10 @@ namespace smtrat
      * @param sname stream name for error messages
      * @return true, if successfully parsed
      */
-    bool Driver::parse_string( const string& input, const string& sname )
+    bool Driver::parse_string( const string& _input, const string& _sname )
     {
-        istringstream iss( input );
-        return parse_stream( iss, sname );
+        istringstream iss( _input );
+        return parse_stream( iss, _sname );
     }
 
     /**
@@ -117,9 +131,9 @@ namespace smtrat
      * @param l
      * @param m
      */
-    void Driver::error( const class location& _loc, const string& m )
+    void Driver::error( const class location& _loc, const string& _message )
     {
-        cerr << "Parsing error at Line " << _loc.begin.line << " and Column " <<  _loc.begin.column << ": " << m << endl;
+        mRegularOutputChannel << "(error \"line " << _loc.begin.line << ", column " <<  _loc.begin.column << ": " << _message << "\")" << endl;
         mParsingFailed = true;
     }
 
@@ -129,29 +143,12 @@ namespace smtrat
      * @param l
      * @param m
      */
-    void Driver::error( const string& m )
+    void Driver::error( const string& _message, bool _fromInstruction )
     {
-        cerr << "Parsing error: " << m << endl;
+        mRegularOutputChannel << "(error \"" << _message << "\")" << endl;
         mParsingFailed = true;
-    }
-
-    /**
-     *
-     * @param _loc
-     * @param _name
-     * @return
-     */
-    void Driver::setLogic( const class location& _loc, const string& _logic )
-    {
-        if( _logic == "QF_NRA" ) {}
-        else if( _logic == "QF_LRA" ) mLogic = QF_LRA;
-        else if( _logic == "QF_NIA" )
-        {
-            mLogic = QF_NIA;
-            error( _loc, _logic + " is not supported!" );
-        }
-        else if( _logic == "QF_LIA" ) mLogic = QF_LIA;
-        else error( _loc, _logic + " is not supported!" );
+        if( _fromInstruction )
+            mLastInstructionFailed = true;
     }
 
     /**
@@ -163,6 +160,7 @@ namespace smtrat
      */
     void Driver::addVariable( const class location& _loc, const string& _name, const string& _type )
     {
+        mCheckResultActive = false;
         if( _type.compare( "Real" ) == 0 )
         {
             addTheoryVariable( _loc, _type, _name );
@@ -236,7 +234,7 @@ namespace smtrat
     TheoryVarMap::const_iterator Driver::addTheoryVariable( const class location& _loc, const string& _theory, const string& _varName, bool _isBindingVariable )
     {
         pair< string, ex > ginacConformVar;
-        if( _isBindingVariable ) ginacConformVar = mFormulaRoot->mpConstraintPool->newAuxiliaryRealVariable();
+        if( _isBindingVariable ) ginacConformVar = smtrat::Formula::mpConstraintPool->newAuxiliaryRealVariable();
         else ginacConformVar = Formula::newArithmeticVariable( _varName, getDomain( _theory ) );
         pair< TheoryVarMap::iterator, bool > res = mTheoryVariables.insert( pair< string, pair< string, ex > >( _varName.empty() ? ginacConformVar.first : _varName, ginacConformVar ) );
         if( !res.second )  error( _loc, "Multiple definition of real variable " + _varName );
@@ -256,7 +254,7 @@ namespace smtrat
             auto binding = mNotInvolvedBooleanBindings.find( _varName );
             if( binding != mNotInvolvedBooleanBindings.end() )
             {
-                mFormulaRoot->addSubformula( mkFormula( smtrat::IFF, new Formula( bvar->second ), binding->second ) );
+                currentFormula().addSubformula( mkFormula( smtrat::IFF, new Formula( bvar->second ), binding->second ) );
                 mNotInvolvedBooleanBindings.erase( binding );
             }
             return bvar->second;
@@ -406,7 +404,7 @@ namespace smtrat
         Formula* formulaIffA = new Formula( IFF );
         formulaIffA->addSubformula( new Formula( auxBoolB ) );
         formulaIffA->addSubformula( _condition );
-        mFormulaRoot->addSubformula( formulaIffA );
+        currentFormula().addSubformula( formulaIffA );
         // Add to root:  (or (not auxBoolB) (iff auxBoolA _then))
         Formula* formulaNotB = new Formula( NOT );
         formulaNotB->addSubformula( new Formula( auxBoolB ) );
@@ -416,7 +414,7 @@ namespace smtrat
         formulaIffB->addSubformula( new Formula( auxBoolA ) );
         formulaIffB->addSubformula( _then );
         formulaOrB->addSubformula( formulaIffB );
-        mFormulaRoot->addSubformula( formulaOrB );
+        currentFormula().addSubformula( formulaOrB );
         // Add to root:  (or auxBoolB (iff auxBoolA _else))
         Formula* formulaOrC = new Formula( OR );
         formulaOrC->addSubformula( new Formula( auxBoolB ) );
@@ -424,7 +422,7 @@ namespace smtrat
         formulaIffC->addSubformula( new Formula( auxBoolA ) );
         formulaIffC->addSubformula( _else );
         formulaOrC->addSubformula( formulaIffC );
-        mFormulaRoot->addSubformula( formulaOrC );
+        currentFormula().addSubformula( formulaOrC );
         return new Formula( auxBoolA );
     }
 
@@ -450,17 +448,17 @@ namespace smtrat
         Formula* formulaOrA = new Formula( OR );
         formulaOrA->addSubformula( formulaNot );
         formulaOrA->addSubformula( constraintA );
-        mFormulaRoot->addSubformula( formulaOrA );
+        currentFormula().addSubformula( formulaOrA );
         // Add to root:  (or conditionBool (= auxRealVar $5))
         Formula* formulaOrB = new Formula( OR );
         formulaOrB->addSubformula( new Formula( conditionBool ) );
         formulaOrB->addSubformula( constraintB );
-        mFormulaRoot->addSubformula( formulaOrB );
+        currentFormula().addSubformula( formulaOrB );
         // Add to root:  (iff conditionBool $3)
         Formula* formulaIff = new Formula( IFF );
         formulaIff->addSubformula( new Formula( conditionBool ) );
         formulaIff->addSubformula( _condition );
-        mFormulaRoot->addSubformula( formulaIff );
+        currentFormula().addSubformula( formulaIff );
         return new string( auxRealVar->first );
     }
 
@@ -481,21 +479,427 @@ namespace smtrat
         }
         else return new GiNaC::numeric( _numString.c_str() );
     }
+    
+    /**
+     * 
+     * @param _instruction
+     * @param _arg
+     * @return 
+     */
+    bool Driver::getInstruction( InstructionKey& _instruction, InstructionValue& _arg )
+    {
+        if( mOptions.print_success && !mLastInstructionFailed && mSentSolverInstruction )
+            mRegularOutputChannel << "(success)" << endl;
+        mSentSolverInstruction = false;
+        while( !mSentSolverInstruction )
+        {
+            mLastInstructionFailed = false;
+            if( mInstructionQueue.empty() ) return false;
+            _instruction = mInstructionQueue.front().first;
+            switch( _instruction )
+            {
+                case ASSERT:
+                {
+                    if( mOptions.print_instruction )
+                    {
+                        mRegularOutputChannel << "> (assert ";
+                        mInstructionQueue.front().second.formula->print( mRegularOutputChannel, "", true, true );
+                        mRegularOutputChannel << ")" << endl;
+                    }
+                    if( mLogic == UNDEFINED )
+                        error( "Before using assert the logic must be defined!", true );
+                    else
+                    {
+                        mCheckResultActive = false;
+                        _arg = mInstructionQueue.front().second;
+                        mSentSolverInstruction = true;
+                    }
+                    break;
+                }
+                case PUSHBT:
+                {
+                    if( mOptions.print_instruction )
+                        mRegularOutputChannel << "> (push " << mInstructionQueue.front().second.num << ")" << endl;
+                    if( mLogic == UNDEFINED )
+                        error( "Before using push the logic must be defined!", true );
+                    else
+                    {
+                        if( mInstructionQueue.front().second.num < 0 )
+                            error( "Argument of push-instruction is not legal!", true );
+                        else
+                        {
+                            mCheckResultActive = false;
+                            _arg = mInstructionQueue.front().second;
+                            mSentSolverInstruction = true;
+                        }
+                    }
+                    break;
+                }
+                case POPBT:
+                {
+                    if( mOptions.print_instruction )
+                        mRegularOutputChannel << "> (pop " << mInstructionQueue.front().second.num << ")" << endl;
+                    if( mLogic == UNDEFINED )
+                        error( "Before using pop the logic must be defined!", true );
+                    else
+                    {
+                        if( mInstructionQueue.front().second.num < 0 )
+                            error( "Argument of pop-instruction is not legal!", true );
+                        else
+                        {
+                            mCheckResultActive = false;
+                            _arg = mInstructionQueue.front().second;
+                            mSentSolverInstruction = true;
+                        }
+                    }
+                    break;
+                }
+                case CHECK:
+                {
+                    if( mOptions.print_instruction )
+                        mRegularOutputChannel << "> (check-sat)" << endl;
+                    if( mLogic == UNDEFINED )
+                        error( "Before using check-sat the logic must be defined!", true );
+                    else
+                    {
+                        ++mNumOfChecks;
+                        if( mNumOfChecks > 1 && mInfos.status != -1 )
+                            error( "No status flag permitted if more than one check instruction is given!", true );
+                        mCheckResultActive = true;
+                        mSentSolverInstruction = true;
+                    }
+                    break;
+                }
+                case GET_VALUE:
+                {
+                    error( "Value extracion is not supported!", true );
+                    break;
+                }
+                case GET_ASSIGNMENT:
+                {
+                    if( mOptions.print_instruction )
+                        mRegularOutputChannel << "> (get-assignment)" << endl;
+                    if( !mOptions.produce_assignments )
+                        error( "The assignment production must be activated to retrieve them!", true );
+                    else if( !mCheckResultActive )
+                        error( "There must be a check provoked before an assignment can be found!", true );
+                    else
+                        mSentSolverInstruction = true;
+                    break;
+                }
+                case GET_ASSERTS:
+                {
+                    if( mOptions.print_instruction )
+                        mRegularOutputChannel << "> (get-assertions)" << endl;
+                    if( !mOptions.interactive_mode )
+                        error( "The interactive mode must be activated to retrieve the assertions!", true );
+                    else
+                        mSentSolverInstruction = true;
+                    break;
+                }
+                case GET_UNSAT_CORE:
+                {
+                    if( mOptions.print_instruction )
+                        mRegularOutputChannel << "> (get-unsat-core)" << endl;
+                    if( !mOptions.produce_unsat_cores )
+                        error( "The unsat-core production must be activated to retrieve them!", true );
+                    else if( !mCheckResultActive )
+                        error( "There must be a check provoked before an assignment can be found!", true );
+                    else
+                        mSentSolverInstruction = true;
+                    break;
+                }
+                case GET_PROOF:
+                {
+                    error( "Proof generation is not supported!", true );
+                    break;
+                }
+                case GET_INFO:
+                {
+                    if( mOptions.print_instruction )
+                        mRegularOutputChannel << "> (get-info " << *mInstructionQueue.front().second.key << ")" << endl;
+                    applyGetInfo( *mInstructionQueue.front().second.key );
+                    break;
+                }
+                case SET_INFO:
+                {
+                    if( mOptions.print_instruction )
+                    {
+                        mRegularOutputChannel << "> (set-info " << mInstructionQueue.front().second.keyValuePair->first << " ";
+                        mRegularOutputChannel << mInstructionQueue.front().second.keyValuePair->second << ")" << endl;
+                    }
+                    applySetInfo( mInstructionQueue.front().second.keyValuePair->first, mInstructionQueue.front().second.keyValuePair->second );
+                    break;
+                }
+                case GET_OPTION:
+                {
+                    if( mOptions.print_instruction )
+                        mRegularOutputChannel << "> (get-option " << *mInstructionQueue.front().second.key << ")" << endl;
+                    applyGetOption( *mInstructionQueue.front().second.key );
+                    break;
+                }
+                case SET_OPTION:
+                {
+                    if( mOptions.print_instruction )
+                    {
+                        mRegularOutputChannel << "> (set-option " << mInstructionQueue.front().second.keyValuePair->first << " ";
+                        mRegularOutputChannel << mInstructionQueue.front().second.keyValuePair->second << ")" << endl;
+                    }
+                    applySetOption( mInstructionQueue.front().second.keyValuePair->first, mInstructionQueue.front().second.keyValuePair->second );
+                    break;
+                }
+                case SET_LOGIC:
+                {
+                    if( mOptions.print_instruction )
+                        mRegularOutputChannel << "> (set-logic " << *mInstructionQueue.front().second.key << ")" << endl;
+                    if( mLogic != UNDEFINED )
+                        error( "The logic has already been set!", true );
+                    else if( *mInstructionQueue.front().second.key == "QF_NRA" ) mLogic = QF_NRA;
+                    else if( *mInstructionQueue.front().second.key == "QF_LRA" ) mLogic = QF_LRA;
+                    else if( *mInstructionQueue.front().second.key == "QF_NIA" )
+                    {
+                        mLogic = QF_NIA;
+                        error( *mInstructionQueue.front().second.key + " is not supported!", true );
+                    }
+                    else if( *mInstructionQueue.front().second.key == "QF_LIA" ) mLogic = QF_LIA;
+                    else error( *mInstructionQueue.front().second.key + " is not supported!", true );
+                    break;
+                }
+                default:
+                {
+                    error( "Unknown instruction!", true );
+                    assert( false );
+                    return false;
+                }
+            }
+            if( mOptions.print_success && !mLastInstructionFailed && !mSentSolverInstruction )
+                mRegularOutputChannel << "(success)" << endl;
+            mInstructionQueue.pop();
+        }
+        return true;
+    }
 
     /**
      *
-     * @param _loc
      * @param _key
      * @param _value
      */
-    void Driver::checkInfo( const class location& _loc, const string& _key, const string& _value )
+    void Driver::applySetInfo( const string& _key, const string& _value )
     {
         if( _key.compare( ":status" ) == 0 )
         {
-            if( _value.compare( "sat" ) == 0 ) mStatus = 1;
-            else if( _value.compare( "unsat" ) == 0 ) mStatus = 0;
-            else if( _value.compare( "unknown" ) == 0 ) mStatus = -1;
-            else error( _loc, "Unknown status flag. Choose either sat, unsat or unknown!" );
+            if( _value.compare( "sat" ) == 0 ) 
+                mInfos.status = 1;
+            else if( _value.compare( "unsat" ) == 0 ) 
+                mInfos.status = 0;
+            else if( _value.compare( "unknown" ) == 0 ) 
+                mInfos.status = -1;
+            else 
+                error( "Unknown status flag. Choose either sat, unsat or unknown!", true );
         }
+        else if( _key.compare( ":name" ) == 0 || _key.compare( ":authors" ) == 0 || _key.compare( ":version" ) == 0 )
+            error( "The value of " + _key + " may not be set by set-info!", true );
+        else
+            mInfos.userInfos[_key] = _value;
+    }
+
+    /**
+     *
+     * @param _key
+     */
+    void Driver::applyGetInfo( const string& _key )
+    {
+        if( _key.compare( ":status" ) == 0 )
+        {
+            if( mInfos.status == 1 ) 
+                mRegularOutputChannel << "(" << _key << " \"sat\")" << endl;
+            else if( mInfos.status == 0 ) 
+                mRegularOutputChannel << "(" << _key << " \"unsat\")" << endl;
+            else 
+                mRegularOutputChannel << "(" << _key << " \"unknown\")" << endl;
+        }
+        else if( _key.compare( ":name" ) == 0 )
+            mRegularOutputChannel << "(" << _key << " " << mInfos.name << ")" << endl;
+        else if( _key.compare( ":authors" ) == 0 )
+            mRegularOutputChannel << "(" << _key << " " << mInfos.authors << ")" << endl;
+        else if( _key.compare( ":version" ) == 0 )
+            mRegularOutputChannel << "(" << _key << " " << mInfos.version << ")" << endl;
+        else
+        {
+            auto infoPos = mInfos.userInfos.find( _key );
+            if( infoPos != mInfos.userInfos.end() )
+                mRegularOutputChannel << "(" << _key << " " << infoPos->second << ")" << endl;
+            else
+                error( "Undefined info keyword! Use set-info to declare it before.", true );
+        }
+    }
+
+    /**
+     *
+     * @param _key
+     * @param _value
+     */
+    void Driver::applySetOption( const string& _key, const string& _value )
+    {
+        if( _key.compare( ":produce-models" ) == 0 )
+        {
+            if( mLogic != UNDEFINED )
+                error( "The " + _key + " flag must be set before the logic is defined!", true );
+            else if( _value.compare( "true" ) == 0 )
+                mOptions.produce_models = true;
+            else if( _value.compare( "false" ) == 0 )
+                mOptions.produce_models = false;
+            else 
+                error( "Cannot set :produce-models to " + _value + "! Choose either true or false.", true );
+        }
+        else if( _key.compare( ":interactive-mode" ) == 0 )
+        {
+            if( mLogic != UNDEFINED )
+                error( "The " + _key + " flag must be set before the logic is defined!", true );
+            else if( _value.compare( "true" ) == 0 ) 
+                mOptions.interactive_mode = true;
+            else if( _value.compare( "false" ) == 0 ) 
+                mOptions.interactive_mode = false;
+            else 
+                error( "Cannot set :interactive-mode to " + _value + "! Choose either true or false.", true );
+        }
+        else if( _key.compare( ":produce-unsat-cores" ) == 0 )
+        {
+            if( mLogic != UNDEFINED )
+                error( "The " + _key + " flag must be set before the logic is defined!", true );
+            else if( _value.compare( "true" ) == 0 ) 
+                mOptions.produce_unsat_cores = true;
+            else if( _value.compare( "false" ) == 0 ) 
+                mOptions.produce_unsat_cores = false;
+            else 
+                error( "Cannot set :produce-unsat-cores to " + _value + "! Choose either true or false.", true );
+        }
+        else if( _key.compare( ":produce-assignments" ) == 0 )
+        {
+            if( mLogic != UNDEFINED )
+                error( "The " + _key + " flag must be set before the logic is defined!", true );
+            else if( _value.compare( "true" ) == 0 ) 
+                mOptions.produce_assignments = true;
+            else if( _value.compare( "false" ) == 0 ) 
+                mOptions.produce_assignments = false;
+            else 
+                error( "Cannot set :produce-assignments to " + _value + "! Choose either true or false.", true );
+        }
+        else if( _key.compare( ":print-success" ) == 0 )
+        {
+            if( _value.compare( "true" ) == 0 ) 
+                mOptions.print_success = true;
+            else if( _value.compare( "false" ) == 0 ) 
+                mOptions.print_success = false;
+            else 
+                error( "Cannot set :print-success to " + _value + "! Choose either true or false.", true );
+        }
+        else if( _key.compare( ":print-instruction" ) == 0 )
+        {
+            if( _value.compare( "true" ) == 0 ) 
+                mOptions.print_instruction = true;
+            else if( _value.compare( "false" ) == 0 ) 
+                mOptions.print_instruction = false;
+            else 
+                error( "Cannot set :print-instruction to " + _value + "! Choose either true or false.", true );
+        }
+        else if( _key.compare( ":regular-output-channel" ) == 0 )
+        {
+            if( _value.compare( "stdout" ) == 0 ) 
+            {
+                if( mRegularOutputReadBuffer != NULL )
+                {
+                    delete mRegularOutputReadBuffer;
+                    mRegularOutputReadBuffer = NULL;
+                }
+                mOptions.regular_output_channel = _value;
+                mRegularOutputChannel.rdbuf( cout.rdbuf() );
+            }
+            else
+            {
+                if( mRegularOutputReadBuffer != NULL )
+                {
+                    delete mRegularOutputReadBuffer;
+                    mRegularOutputReadBuffer = NULL;
+                }
+                mRegularOutputReadBuffer = new filebuf();
+                mRegularOutputReadBuffer->open( _value, ios::out );
+                if( mRegularOutputReadBuffer->is_open() )
+                {
+                    mOptions.regular_output_channel = _value;
+                    mRegularOutputChannel.rdbuf( mRegularOutputReadBuffer );
+                }
+                else
+                {
+                    delete mRegularOutputReadBuffer;
+                    mRegularOutputReadBuffer = NULL;
+                    error( "Cannot set :regular-output-channel to " + _value + "! Invalid pathname.", true );
+                }
+            }
+        }
+        else if( _key.compare( ":diagnostic-output-channel" ) == 0 )
+        {
+            if( _value.compare( "stderr" ) == 0 ) 
+            {
+                if( mDiagnosticOutputReadBuffer != NULL )
+                {
+                    delete mDiagnosticOutputReadBuffer;
+                    mDiagnosticOutputReadBuffer = NULL;
+                }
+                mOptions.diagnostic_output_channel = _value;
+                mDiagnosticOutputChannel.rdbuf( cerr.rdbuf() );
+            }
+            else
+            {
+                if( mDiagnosticOutputReadBuffer != NULL )
+                {
+                    delete mDiagnosticOutputReadBuffer;
+                    mDiagnosticOutputReadBuffer = NULL;
+                }
+                mDiagnosticOutputReadBuffer = new filebuf();
+                mDiagnosticOutputReadBuffer->open( _value, ios::out );
+                if( mDiagnosticOutputReadBuffer->is_open() )
+                {
+                    mOptions.diagnostic_output_channel = _value;
+                    mDiagnosticOutputChannel.rdbuf( mDiagnosticOutputReadBuffer );
+                }
+                else
+                {
+                    delete mDiagnosticOutputReadBuffer;
+                    mDiagnosticOutputReadBuffer = NULL;
+                    error( "Cannot set :diagnostic-output-channel to " + _value + "! Invalid pathname.", true );
+                }
+            }
+        }
+        else
+        {
+            error( "The option " + _key + " is not supported!", true );
+        }
+    }
+
+    /**
+     *
+     * @param _key
+     */
+    void Driver::applyGetOption( const string& _key )
+    {
+        if( _key.compare( ":produce-models" ) == 0 )
+            mRegularOutputChannel << "(" << _key << (mOptions.produce_models ? " true)" : " false)") << endl;
+        else if( _key.compare( ":regular-output-channel" ) == 0 )
+            mRegularOutputChannel << "(" << _key << " " << mOptions.regular_output_channel << ")" << endl;
+        else if( _key.compare( ":diagnostic-output-channel" ) == 0 )
+            mRegularOutputChannel << "(" << _key << " " << mOptions.diagnostic_output_channel << ")" << endl;
+        else if( _key.compare( ":interactive-mode" ) == 0 )
+            mRegularOutputChannel << "(" << _key << (mOptions.interactive_mode ? " true)" : " false)") << endl;
+        else if( _key.compare( ":produce-unsat-cores" ) == 0 )
+            mRegularOutputChannel << "(" << _key << (mOptions.produce_unsat_cores ? " true)" : " false)") << endl;
+        else if( _key.compare( ":produce-assignments" ) == 0 )
+            mRegularOutputChannel << "(" << _key << (mOptions.produce_assignments ? " true)" : " false)") << endl;
+        else if( _key.compare( ":print-success" ) == 0 )
+            mRegularOutputChannel << "(" << _key << (mOptions.print_success ? " true)" : " false)") << endl;
+        else if( _key.compare( ":print-instruction" ) == 0 )
+            mRegularOutputChannel << "(" << _key << (mOptions.print_instruction ? " true)" : " false)") << endl;
+        else
+            error( "The option " + _key + " is not supported!" );
     }
 }    // namespace smtrat

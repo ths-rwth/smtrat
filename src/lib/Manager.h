@@ -59,6 +59,8 @@ namespace smtrat
             std::vector< std::atomic_bool* > mPrimaryBackendFoundAnswer;
             /// the constraints so far passed to the primary backend
             Formula* mpPassedFormula;
+            /// the backtrack points
+            std::vector< Formula::iterator > mBacktrackPoints;
             /// all generated instances of modules
             std::vector<Module*> mGeneratedModules;
             /// a mapping of each module to its backends
@@ -71,6 +73,8 @@ namespace smtrat
             std::map<const ModuleType, ModuleFactory*>* mpModuleFactories;
             /// primary strategy
             StrategyGraph mStrategyGraph;
+            /// channel to write debug output
+            std::ostream mDebugOutputChannel;
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             /// contains all threads to assign jobs to
             ThreadPool* mpThreadPool;
@@ -87,7 +91,7 @@ namespace smtrat
             #endif
 
         public:
-            Manager( Formula* = new Formula( AND ) );
+            Manager();
             ~Manager();
 
             // Main interfaces
@@ -96,12 +100,27 @@ namespace smtrat
                 return mpPrimaryBackend->inform( _constraint );
             }
 
-            bool assertSubformula( Formula::const_iterator _subformula )
+            bool add( Formula* _subformula )
             {
-                return mpPrimaryBackend->assertSubformula( _subformula );
+                mpPassedFormula->addSubformula( _subformula );
+                auto pos = mpPassedFormula->last();
+                auto btp = mBacktrackPoints.end();
+                while( btp != mBacktrackPoints.begin() )
+                {
+                    --btp;
+                    if( *btp == mpPassedFormula->end() )
+                    {
+                        *btp = pos;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                return mpPrimaryBackend->assertSubformula( pos );
             }
 
-            Answer isConsistent()
+            Answer check()
             {
                 #ifdef SMTRAT_STRAT_PARALLEL_MODE
                 initialize();
@@ -109,14 +128,35 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_MeasureTime
                 mpPrimaryBackend->startCheckTimer();
                 #endif
+                *mPrimaryBackendFoundAnswer.back() = false;
+                mpPassedFormula->getPropositions();
                 return mpPrimaryBackend->isConsistent();
             }
 
-            void removeSubformula( Formula::const_iterator _subformula )
+            Formula::iterator remove( Formula::iterator _subformula )
             {
-                mpPrimaryBackend->assertSubformula( _subformula );
+                assert( _subformula != mpPassedFormula->end() );
+                mpPrimaryBackend->removeSubformula( _subformula );
+                return mpPassedFormula->erase( _subformula );
             }
-
+            
+            void push()
+            {
+                mBacktrackPoints.push_back( mpPassedFormula->end() );
+            }
+            
+            bool pop()
+            {
+                if( mBacktrackPoints.empty() ) return false;
+                auto subFormula = mBacktrackPoints.back();
+                while( subFormula != mpPassedFormula->end() )
+                {
+                    subFormula = remove( subFormula );
+                }
+                mBacktrackPoints.pop_back();
+                return true;
+            }
+            
             const vec_set_const_pFormula& infeasibleSubsets() const
             {
                 return mpPrimaryBackend->infeasibleSubsets();
@@ -132,8 +172,11 @@ namespace smtrat
             {
                 return *mpPassedFormula;
             }
-
-            void printModel( std::ostream& ) const;
+            
+            void printAssignment( std::ostream& ) const;
+            void printValue( const std::string&, std::ostream& ) const;
+            void printAssertions( std::ostream& ) const;
+            void printInfeasibleSubset( std::ostream& ) const;
             
             // Internally used interfaces
             void addModuleType( const ModuleType _moduleType, ModuleFactory* _factory )
@@ -149,6 +192,11 @@ namespace smtrat
             const std::map<const ModuleType, ModuleFactory*>& rModuleFactories() const
             {
                 return *mpModuleFactories;
+            }
+            
+            std::ostream& rDebugOutputChannel()
+            {
+                return mDebugOutputChannel;
             }
             
         protected:

@@ -868,18 +868,22 @@ namespace smtrat
     
     /**
      * Sets the properties of this constraint being a bound.
+     * 
+     * @param _var
+     * @param _bound
      */
-    void Constraint::setBoundProperties( const symbol& var, const numeric& _bound )
+    void Constraint::setBoundProperties( const symbol& _var, const numeric& _bound )
     {
         assert( variables().size() == 1 );
-        assert( variables().begin()->second == var );
-        assert( lhs()-var+_bound == 0 || lhs()+var-_bound == 0 );
+        assert( variables().begin()->second == _var );
+        assert( lhs()-_var+_bound == 0 || lhs()+_var-_bound == 0 );
         mIsNeverPositive = false;
         mIsNeverNegative = false;
         mIsNeverZero = false;
-        VarInfo& varInfo = mVarInfoMap[var];
+        VarInfo& varInfo = mVarInfoMap[_var];
         varInfo.occurences = 1;
         varInfo.minDegree = 1;
+        varInfo.maxDegree = 1;
         mMaxMonomeDegree = 1;
         mMinMonomeDegree = 1;
         mNumMonomials = (_bound == 0 ? 1 : 2);

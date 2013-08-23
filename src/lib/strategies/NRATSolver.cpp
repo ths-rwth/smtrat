@@ -34,8 +34,8 @@
 namespace smtrat
 {
 
-    NRATSolver::NRATSolver( Formula* _inputFormula ):
-        Manager( _inputFormula )
+    NRATSolver::NRATSolver():
+        Manager()
     {
         unsigned position = 0;
         #ifdef SMTRAT_ENABLE_Preprocessing
@@ -44,7 +44,6 @@ namespace smtrat
         position = addBackendIntoStrategyGraph( position, MT_CNFerModule );
         #endif
         position = addBackendIntoStrategyGraph( position, MT_SATModule );
-
 //        #ifdef SMTRAT_ENABLE_ReduceModule
 //        position = addBackendIntoStrategyGraph( position, MT_ReduceModule );
 //        #else
@@ -58,13 +57,11 @@ namespace smtrat
         position = addBackendIntoStrategyGraph( position, MT_LRAModule );
         #endif
         #ifdef SMTRAT_ENABLE_GroebnerModule
-        position = addBackendIntoStrategyGraph( position, MT_GroebnerModule );
+//        position = addBackendIntoStrategyGraph( position, MT_GroebnerModule );
         #endif
-
         #ifdef SMTRAT_ENABLE_VSModule
         position = addBackendIntoStrategyGraph( position, MT_VSModule );
         #endif
-
         #ifdef SMTRAT_ENABLE_CADModule
         position = addBackendIntoStrategyGraph( position, MT_CADModule );
         #endif

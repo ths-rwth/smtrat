@@ -52,6 +52,7 @@ namespace smtrat
         mInternalIntVarNamePrefix( "i_" ),
         mExternalVarNamePrefix( "_" ),
         mInternalToExternalVarNames(),
+        mExternalToInternalVarNames(),
         mArithmeticVariables(),
         mBooleanVariables(),
         mConstraints(),
@@ -211,6 +212,7 @@ namespace smtrat
         else out << mInternalIntVarNamePrefix;
         out << mArithmeticVarCounter++;
         mInternalToExternalVarNames[out.str()] = _name;
+        mExternalToInternalVarNames[_name] = out.str();
         // Create the GiNaC variable
         symtab emptySymtab;
         parser reader( emptySymtab );
@@ -524,6 +526,21 @@ namespace smtrat
     }
     
     /**
+     * Determines the internal name of the variable which corresponds to the given external variable name.
+     * 
+     * Note, that this method uses the allocator which is locked before calling.
+     * 
+     * @param _varname The external variable name.
+     * @return The internal variable name.
+     */
+    string ConstraintPool::internalName( const string& _varname ) const
+    {
+        auto iter = mExternalToInternalVarNames.find( _varname );
+        assert( iter != mExternalToInternalVarNames.end() );
+        return iter->second;
+    }
+    
+    /**
      * Transforms the given expression to a string and replaces on the fly the internal GiNaC 
      * variables by their external representation.
      * 
@@ -536,49 +553,62 @@ namespace smtrat
         string result = "";
         if( is_exactly_a<add>( _toTransform ) )
         {
+            result += "(+";
             for( GiNaC::const_iterator subterm = _toTransform.begin(); subterm != _toTransform.end(); ++subterm )
-            {
-                if( subterm != _toTransform.begin() )
-                {
-                    result += "+";
-                }
-                result += stringOf( *subterm );
-            }
+                result += " " + stringOf( *subterm );
+            result += ")";
         }
         else if( is_exactly_a<mul>( _toTransform ) )
         {
+            result += "(*";
             for( GiNaC::const_iterator subterm = _toTransform.begin(); subterm != _toTransform.end(); ++subterm )
-            {
-                if( subterm != _toTransform.begin() )
-                {
-                    result += "*";
-                }
-                result += stringOf( *subterm );
-            }
+                result += " " + stringOf( *subterm );
+            result += ")";
         }
         else if( is_exactly_a<power>( _toTransform ) )
         {
             assert( _toTransform.nops() == 2 );
-            ex exponent = *(++_toTransform.begin());
-            stringstream out;
-            out << exponent;
-            ex subterm = *_toTransform.begin();
-            result += stringOf( subterm ) + "^" + out.str();
+            numeric exponent = ex_to<numeric>( *(++_toTransform.begin()) );
+            if( exponent.is_integer() )
+            {
+                int expAsInt = exponent.to_int();
+                if( expAsInt < 0 )
+                    result += "(/ 1 ";
+                ex subterm = *_toTransform.begin();
+                if( abs( exponent ) > 1 )
+                    result += "(*";
+                for( int i = 0; i < expAsInt; ++i )
+                    result += " " + stringOf( subterm );
+                if( abs( exponent ) > 1 )
+                    result += ")";
+                if( expAsInt < 0 )
+                    result += ")";
+            }
+            else
+            {
+                stringstream out;
+                out << _toTransform;
+                result += out.str();
+            }
         }
         else if( is_exactly_a<numeric>( _toTransform ) )
         {
             numeric num = ex_to<numeric>( _toTransform );
             if( num.is_negative() )
-            {
-                result += "(-";
-            }
+                result += "(- ";
+            numeric absOfNum = abs( num );
             stringstream out;
-            out << abs( num );
+            if( absOfNum.is_integer() )
+            {
+                out << absOfNum;
+            }
+            else
+            {
+                out << "(/ " << absOfNum.numer() << " " << absOfNum.denom() << ")";
+            }
             result += out.str();
             if( num.is_negative() )
-            {
                 result += ")";
-            }
         }
         else if( is_exactly_a<symbol>( _toTransform ) )
         {

@@ -34,8 +34,8 @@
 namespace smtrat
 {
 
-    NRATSolverCAD::NRATSolverCAD( Formula* _inputFormula ):
-        Manager( _inputFormula )
+    NRATSolverCAD::NRATSolverCAD():
+        Manager()
     {
         unsigned position = 0;
         #ifdef SMTRAT_ENABLE_Preprocessing
