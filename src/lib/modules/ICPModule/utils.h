@@ -37,6 +37,12 @@ namespace smtrat
          * @return
          */
         bool isBoundIn( const ex _var, const Constraint* _constraint );
+        
+        /**
+        * Checks mIntervals if it contains an empty interval.
+        * @return 
+        */
+        bool intervalBoxContainsEmptyInterval(const GiNaCRA::evaldoubleintervalmap& _intervals);
     }
 }
 

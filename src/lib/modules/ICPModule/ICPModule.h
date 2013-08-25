@@ -365,12 +365,6 @@ namespace smtrat
             bool pushBoundsToPassedFormula();
             
             /**
-             * Checks mIntervals if it contains an empty interval.
-             * @return 
-             */
-            bool intervalBoxContainsEmptyInterval();
-            
-            /**
              * generates and sets the infeasible subset
              */
             void generateInfeasibleSubset();
