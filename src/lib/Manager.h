@@ -47,9 +47,7 @@ namespace smtrat
 {
     // Forward declaration to speed up compile-time.
     class Constraint;
-    /**
-     * Base class for solvers. This is the interface to the user.
-     */
+    // Base class for solvers. This is the interface to the user.
     class Manager
     {
         friend class Module;
@@ -95,11 +93,28 @@ namespace smtrat
             ~Manager();
 
             // Main interfaces
+            
+            /**
+             * Informs the solver about a constraint. Optimally, it should be informed about all constraints,
+             * which it will receive eventually, before any of them is added as part of a formula with the 
+             * interface add(..).
+             * @param _constraint The constraint to inform about.
+             * @return false, if it is easy to decide (for any module used of this solver), whether 
+             *          the constraint itself is inconsistent;
+             *          true, otherwise.
+             */
             bool inform( const Constraint* const _constraint )
             {
                 return mpPrimaryBackend->inform( _constraint );
             }
 
+            /**
+             * Adds the given formula to the conjunction of formulas, which will be considered for the next 
+             * satisfiability check.
+             * @param _subformula The formula to add.
+             * @return false, if it is easy to decide whether adding this formula creates a conflict;
+             *          true, otherwise.
+             */
             bool add( Formula* _subformula )
             {
                 mpPassedFormula->addSubformula( _subformula );
@@ -120,6 +135,12 @@ namespace smtrat
                 return mpPrimaryBackend->assertSubformula( pos );
             }
 
+            /**
+             * Checks the so far added formulas for satisfiability.
+             * @return True, if the conjunction of the so far added formulas is satisfiable;
+             *          False, if it not satisfiable;
+             *          Unknown, if this solver cannot decide whether it is satisfiable or not.
+             */
             Answer check()
             {
                 #ifdef SMTRAT_STRAT_PARALLEL_MODE
@@ -133,6 +154,13 @@ namespace smtrat
                 return mpPrimaryBackend->isConsistent();
             }
 
+            /**
+             * Removes the formula at the given position in the conjunction of formulas,
+             * which will be considered for the next satisfiability check.
+             * @param _subformula The position of the formula to remove.
+             * @return false, if it is easy to decide whether adding this formula creates a conflict;
+             *          true, otherwise.
+             */
             Formula::iterator remove( Formula::iterator _subformula )
             {
                 assert( _subformula != mpPassedFormula->end() );
@@ -140,11 +168,26 @@ namespace smtrat
                 return mpPassedFormula->erase( _subformula );
             }
             
+            /**
+             * Pushes a backtrack point to the stack of backtrack points.
+             * 
+             * Note, that this interface has not necessarily be used to apply a solver constructed
+             * with SMT-RAT, but is often required by state-of-the-art SMT solvers when embedding
+             * a theory solver constructed with SMT-RAT into them.
+             */
             void push()
             {
                 mBacktrackPoints.push_back( mpPassedFormula->end() );
             }
             
+            /**
+             * Pops a backtrack point from the stack of backtrack points. This provokes, that
+             * all formulas which have been added after that backtrack point are removed.
+             * 
+             * Note, that this interface has not necessarily be used to apply a solver constructed
+             * with SMT-RAT, but is often required by state-of-the-art SMT solvers when embedding
+             * a theory solver constructed with SMT-RAT into them.
+             */
             bool pop()
             {
                 if( mBacktrackPoints.empty() ) return false;
@@ -157,17 +200,36 @@ namespace smtrat
                 return true;
             }
             
+            /**
+             * @return All infeasible subsets of the set so far added formulas.
+             * 
+             * Note, that the conjunction of the so far added formulas must be inconsistent to
+             * receive an infeasible subset.
+             */
             const vec_set_const_pFormula& infeasibleSubsets() const
             {
                 return mpPrimaryBackend->infeasibleSubsets();
             }
 
+            /**
+             * @return An assignment of the variables, which occur in the so far added
+             *          formulas, to values of their domains, such that it satisfies the 
+             *          conjunction of these formulas.
+             * 
+             * Note, that an assignment is only provided if the conjunction of so far added
+             * formulas is satisfiable. Furthermore, when solving non-linear real arithmetic 
+             * formulas the assignment could contain other variables or freshly introduced
+             * variables.
+             */
             const Module::Model model() const
             {
                 mpPrimaryBackend->updateModel();
                 return mpPrimaryBackend->model();
             }
 
+            /**
+             * @return The conjunction of so far added formulas.
+             */
             const Formula& formula() const
             {
                 return *mpPassedFormula;

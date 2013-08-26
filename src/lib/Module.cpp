@@ -44,9 +44,7 @@
 
 using namespace std;
 
-/**
- * Main smtrat namespace.
- */
+// Main smtrat namespace.
 namespace smtrat
 {
     vector<string> Module::mAssumptionToCheck = vector<string>();
@@ -56,6 +54,8 @@ namespace smtrat
     ValidationSettings* Module::validationSettings = new ValidationSettings();
     #endif
 
+    // Constructor.
+    
     Module::Module( ModuleType type, const Formula* const _formula, Conditionals& _foundAnswer, Manager* const _tsManager ):
         mId( 0 ),
         mThreadPriority( thread_priority( 0 , 0 ) ),
@@ -89,6 +89,8 @@ namespace smtrat
 #endif
     {}
 
+    // Destructor.
+    
     Module::~Module()
     {
         delete mpPassedFormula;
@@ -97,16 +99,20 @@ namespace smtrat
     }
 
     /**
-     * Checks the received formula for consistency.
+     * Checks the received formula for consistency. Note, that this is an implementation of 
+     * the satisfiability check of the conjunction of the so far received formulas, which does
+     * actually nothing but passing the problem to its backends. This implementation is only used
+     * internally and must be overwritten by any module implementation.
      *
-     * @return  TS_True,    if the received formula is consistent;
-     *          TS_False,   if the received formula is inconsistent;
-     *          TS_Unknown, otherwise.
+     * @return True,    if the received formula is satisfiable;
+     *          False,   if the received formula is not satisfiable;
+     *          Unknown, otherwise.
      */
     Answer Module::isConsistent()
     {
         assert( mInfeasibleSubsets.empty() );
 
+        // Copy the received formula to the passed formula.
         Formula::const_iterator subformula = mpReceivedFormula->begin();
         for( Formula::const_iterator passedSubformula = mpPassedFormula->begin(); passedSubformula != mpPassedFormula->end(); ++passedSubformula )
         {
@@ -117,7 +123,7 @@ namespace smtrat
         {
             addReceivedSubformulaToPassedFormula( subformula++ );
         }
-
+        // Run the backends on the passed formula and return its answer.
         Answer a = runBackends();
         if( a == False )
         {
@@ -128,9 +134,13 @@ namespace smtrat
     }
 
     /**
-     *
-     * @param _constraint
-     * @return
+     * Informs the module about the given constraint. It should be tried to inform this
+     * module about any constraint it could receive eventually before assertSubformula
+     * is called (preferably for the first time, but at least before adding a formula
+     * containing that constraint).
+     * @param _constraint The constraint to inform about.
+     * @return false, if it can be easily decided whether the given constraint is inconsistent;
+     *          true, otherwise.
      */
     bool Module::inform( const Constraint* const _constraint )
     {
@@ -144,8 +154,10 @@ namespace smtrat
     /**
      * The module has to take the given sub-formula of the received formula into account.
      *
-     * @param _subformula
-     * @return
+     * @param _subformula The sub-formula to take additionally into account.
+     * @return false, if it can be easily decided that this sub-formula causes a conflict with
+     *          the already considered sub-formulas;
+     *          true, otherwise.
      */
     bool Module::assertSubformula( Formula::const_iterator _receivedSubformula )
     {
@@ -162,11 +174,11 @@ namespace smtrat
     }
 
     /**
-     * This is an alternative method for removeSubformula, in which the passed subformula is given explicitely.
-     * Notice that this is generally less save then using remove,
-     * but in case the module is simple and manages passing and receiving itself, it may be beneficial to use this method.
-     * @param _receivedSubformula The received subformula which is to be removed
-     * @param _passed The subformula in the passed formula which originates from this received subformula.
+     * This is an alternative method to removeSubformula, in which the passed sub-formula is given explicitly.
+     * Note, that this is generally less save then using remove, but in case the module is simple and manages 
+     * passing and receiving itself, it may be beneficial to use this method.
+     * @param _receivedSubformula The received sub-formula which is to be removed
+     * @param _passed The sub-formula in the passed formula which originates from this received sub-formula.
      */
     void Module::clearReceivedFormula(Formula::const_iterator _receivedSubformula, Formula::iterator _passed )
     {
@@ -174,9 +186,7 @@ namespace smtrat
         {
             removeSubformulaFromPassedFormula( _passed, false, true );
         }
-        /*
-         * Delete all infeasible subsets in which the constraint to delete occurs.
-         */
+        // Delete all infeasible subsets in which the constraint to delete occurs.
         vec_set_const_pFormula::iterator infSubSet = mInfeasibleSubsets.begin();
         while( infSubSet != mInfeasibleSubsets.end() )
         {
@@ -202,7 +212,9 @@ namespace smtrat
 
     }
     /**
-     * Removes a everything related to a sub formula of the received formula.
+     * Removes everything related to the given sub-formula of the received formula. However,
+     * it is desired not to lose track of search spaces where no satisfying  assignment can 
+     * be found for the remaining sub-formulas.
      *
      * @param _subformula The sub formula of the received formula to remove.
      */
@@ -213,53 +225,29 @@ namespace smtrat
         cout << " " << **_receivedSubformula << " [" << *_receivedSubformula << "]" << endl << endl;
         #endif
         if( mFirstUncheckedReceivedSubformula == _receivedSubformula )
-        {
             ++mFirstUncheckedReceivedSubformula;
-        }
-
-
-        /*
-         * Check if the constraint to delete is an original constraint of constraints in the vector
-         * of passed constraints.
-         */
+        // Check if the constraint to delete is an original constraint of constraints in the vector
+        // of passed constraints.
         Formula::iterator passedSubformula = mpPassedFormula->begin();
         while( passedSubformula != mpPassedFormula->end() )
         {
-            /*
-             * Remove the received formula from the set of origins.
-             */
+            // Remove the received formula from the set of origins.
             vec_set_const_pFormula&          formulaOrigins = mPassedformulaOrigins[*passedSubformula];
             vec_set_const_pFormula::iterator formulaOrigin  = formulaOrigins.begin();
             while( formulaOrigin != formulaOrigins.end() )
             {
-                /*
-                 * If the received formula is in the set of origins, erase it.
-                 */
-
+                // If the received formula is in the set of origins, erase it.
                 if( formulaOrigin->find( *_receivedSubformula ) != formulaOrigin->end() )
-                {
-                    // Erase the changed set.
                     formulaOrigin = formulaOrigins.erase( formulaOrigin );
-                }
                 else
-                {
                     ++formulaOrigin;
-                }
             }
-
             if( formulaOrigins.empty() )
-            {
                 passedSubformula = removeSubformulaFromPassedFormula( passedSubformula );
-            }
             else
-            {
                 ++passedSubformula;
-            }
         }
-
-        /*
-         * Delete all infeasible subsets in which the constraint to delete occurs.
-         */
+        // Delete all infeasible subsets in which the constraint to delete occurs.
         vec_set_const_pFormula::iterator infSubSet = mInfeasibleSubsets.begin();
         while( infSubSet != mInfeasibleSubsets.end() )
         {
@@ -267,26 +255,20 @@ namespace smtrat
             while( infSubformula != infSubSet->end() )
             {
                 if( *infSubformula == *_receivedSubformula )
-                {
                     break;
-                }
                 ++infSubformula;
             }
             if( infSubformula != infSubSet->end() )
-            {
                 infSubSet = mInfeasibleSubsets.erase( infSubSet );
-            }
             else
-            {
                 ++infSubSet;
-            }
         }
-        if( mInfeasibleSubsets.empty() ) mSolverState = Unknown;
-
+        if( mInfeasibleSubsets.empty() ) 
+            mSolverState = Unknown;
     }
 
     /**
-     * Updates the model, if the solver has detected the consistency of the received formula
+     * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
      */
     void Module::updateModel()
     {
@@ -298,8 +280,10 @@ namespace smtrat
     }
 
     /**
-     *
-     * @param _subformula
+     * Copies the given sub-formula of the received formula to the passed formula. Note, that
+     * there is always a link between sub-formulas of the passed formulas to sub-formulas of
+     * the received formulas, which are responsible for its occurrence.
+     * @param _subformula The sub-formula of the received formula to copy.
      */
     void Module::addReceivedSubformulaToPassedFormula( Formula::const_iterator _subformula )
     {
@@ -307,9 +291,10 @@ namespace smtrat
     }
 
     /**
-     *
-     * @param _formula
-     * @param _origins
+     * Adds the given formula to the passed formula.
+     * @param _formula The formula to add to the passed formula.
+     * @param _origins The link of the formula to add to the passed formula to sub-formulas 
+     *         of the received formulas, which are responsible for its occurrence
      */
     void Module::addSubformulaToPassedFormula( Formula* _formula, const vec_set_const_pFormula& _origins )
     {
@@ -321,14 +306,14 @@ namespace smtrat
         {
             mFirstSubformulaToPass = mpPassedFormula->last();
             assert( checkFirstSubformulaToPassValidity() );
-
         }
     }
 
     /**
-     *
-     * @param _formula
-     * @param _origin
+     * Adds the given formula to the passed formula.
+     * @param _formula The formula to add to the passed formula.
+     * @param _origin The sub-formula of the received formula being responsible for the
+     *        occurrence of the formula to add to the passed formula.
      */
     void Module::addSubformulaToPassedFormula( Formula* _formula, const Formula* _origin )
     {
@@ -342,7 +327,6 @@ namespace smtrat
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
         {
             mFirstSubformulaToPass = mpPassedFormula->last();
-
             assert( checkFirstSubformulaToPassValidity() );
         }
     }
@@ -435,21 +419,7 @@ namespace smtrat
     }
 
     /**
-     * Provides some special case checks which can be executed at the start.
-     *
-     * @return
-     */
-    Answer Module::specialCaseConsistencyCheck() const
-    {
-        if( mpReceivedFormula->empty() )
-        {
-            return True;
-        }
-        return Unknown;
-    }
-
-    /**
-     *
+     * Copies the infeasible subsets of the passed formula
      */
     void Module::getInfeasibleSubsets()
     {

@@ -79,7 +79,7 @@ namespace smtrat
         friend class ValidationSettings;
         #endif
         public:
-            ///
+            /// Data type for storing the domain and the value of an assignment.
             typedef struct
             {
                 Variable_Domain domain;
@@ -102,7 +102,7 @@ namespace smtrat
         protected:
             /// A unique ID to identify this module instance. (Could be useful but currently nowhere used)
             unsigned mId;
-            ///
+            /// The priority of this module to get a thread for running its check procedure.
             thread_priority mThreadPriority;
             /// Stores the infeasible subsets.
             vec_set_const_pFormula mInfeasibleSubsets;
@@ -118,7 +118,7 @@ namespace smtrat
         private:
             /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
             Answer mSolverState;
-            ///
+            /// This flag is passed to any backend and if it determines an answer to a prior check call, this flag is fired.
             std::atomic_bool* mBackendsFoundAnswer;
             /// Vector of Booleans: If any of them is true, we have to terminate a running check procedure.
             Conditionals mFoundAnswer;
@@ -170,6 +170,7 @@ namespace smtrat
             virtual void removeSubformula( Formula::const_iterator );
             virtual void updateModel();
 
+            // Methods to read and write on the members.
             inline Answer solverState() const
             {
                 return mSolverState;
@@ -281,6 +282,12 @@ namespace smtrat
                 mFirstUncheckedReceivedSubformula = mpReceivedFormula->end();
             }
 
+            const std::vector< std::atomic_bool* >& answerFound() const
+            {
+                return mFoundAnswer;
+            }
+
+            // Methods for debugging purposes.
             static void addAssumptionToCheck( const Formula&, bool, const std::string& );
             static void addAssumptionToCheck( const std::set<const Formula*>&, bool, const std::string& );
             static void addAssumptionToCheck( const std::set<const Constraint*>&, bool, const std::string& );
@@ -290,13 +297,15 @@ namespace smtrat
             std::vector<Formula> generateSubformulaeOfInfeasibleSubset( unsigned infeasiblesubset, unsigned size ) const;
             void updateDeductions();
 
-            const std::vector< std::atomic_bool* >& answerFound() const
-            {
-                return mFoundAnswer;
-            }
-
         protected:
 
+            // Internally used methods.
+            
+            /**
+             * Checks for all antecedent modules and those which run in parallel with the same antecedent modules, 
+             * whether one of them has determined a result.
+             * @return True, if one of them has determined a result.
+             */
             bool anAnswerFound() const
             {
                 for( auto iter = mFoundAnswer.begin(); iter != mFoundAnswer.end(); ++iter )
@@ -306,6 +315,9 @@ namespace smtrat
                 return false;
             }
             
+            /**
+             * Clears the assignment, if any was found
+             */
             void clearModel()
             {
                 while( !mModel.empty() )
@@ -321,6 +333,14 @@ namespace smtrat
                 }
             }
             
+            /**
+             * Extends the model by the assignment of the given variable to the given value.
+             * 
+             * @param _varName The name of the variable for which we want to add an assignment.
+             * @param _assignment The value and the domain of the assignment.
+             * @return true, if the assignment could be successfully added;
+             *          false, if the given variable is already assigned to a value by the model of this module.
+             */
             bool extendModel( const std::string& _varName, Assignment* _assignment )
             {
                 if( _assignment->domain != BOOLEAN_DOMAIN )
@@ -351,7 +371,6 @@ namespace smtrat
             void addOrigin( const Formula* const, std::set< const Formula* >& );
             void addOrigins( const Formula* const, vec_set_const_pFormula& );
             void getOrigins( const Formula* const, vec_set_const_pFormula& ) const;
-            Answer specialCaseConsistencyCheck() const;
             void getInfeasibleSubsets();
             static bool modelsDisjoint( const Model&, const Model& );
             void getBackendsModel();
@@ -364,19 +383,15 @@ namespace smtrat
             const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
             const std::set<const Formula*>& getOrigins( Formula::const_iterator ) const;
 
-            /*
-             * Printing methods:
-             */
         public:
+            // Printing methods.
             void print( std::ostream& = std::cout, const std::string = "***" ) const;
             void printReceivedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printPassedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printInfeasibleSubsets( std::ostream& = std::cout, const std::string = "***" ) const;
 
-            /*
-             * Measuring module times:
-             */
         private:
+            // Measuring module times.
             clock::time_point mTimerCheckStarted;
             clock::time_point mTimerAddStarted;
             clock::time_point mTimerRemoveStarted;

@@ -47,10 +47,8 @@ using GiNaC::symbol;
 
 namespace smtrat
 {
-    /**
-     * Constructors:
-     */
-
+    // Constructor.
+    
     Manager::Manager():
         mPrimaryBackendFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
         mpPassedFormula( new Formula( AND ) ),
@@ -74,9 +72,8 @@ namespace smtrat
             mpPrimaryBackend->inform( (*constraint) );
     }
 
-    /**
-     * Destructor:
-     */
+    // Destructor.
+    
     Manager::~Manager()
     {
         Module::storeAssumptionsToCheck( *this );
@@ -106,13 +103,11 @@ namespace smtrat
         delete mpPassedFormula;
     }
 
-    /**
-     * Methods:
-     */
+    // Methods.
 
     #ifdef SMTRAT_STRAT_PARALLEL_MODE
     /**
-     *
+     * Initializes some members of the manager, which are only needed for supporting parallel module calls.
      */
     void Manager::initialize()
     {
@@ -133,8 +128,10 @@ namespace smtrat
     #endif
 
     /**
-     * Prints the model, if there is one.
-     * @param _out The stream to print on.
+     * Prints the currently found assignment of variables occurring in the so far 
+     * added formulas to values of their domains, if the conjunction of these 
+     * formulas is satisfiable.
+     * @param The stream to print on.
      */
     void Manager::printAssignment( ostream& _out ) const
     {
@@ -161,7 +158,7 @@ namespace smtrat
     }
     
     /**
-     * Prints the assignment of the given variable.
+     * Prints the assignment of the given variable, if it has one.
      * @param _varName Internal variable name.
      * @param _out The stream to print on.
      */
@@ -180,8 +177,7 @@ namespace smtrat
     }
     
     /**
-     * Prints the assignment of the given variable.
-     * @param _varName Internal variable name.
+     * Prints the so far added formulas.
      * @param _out The stream to print on.
      */
     void Manager::printAssertions( ostream& _out ) const
@@ -236,7 +232,7 @@ namespace smtrat
      * @param _foundAnswer A conditional
      *
      * @return  A vector of modules, which the module defined by _requiredBy calls in parallel to achieve
-     *          an answer to the given instance.
+     *           an answer to the given instance.
      */
     vector<Module*> Manager::getBackends( Formula* _formula, Module* _requiredBy, atomic_bool* _foundAnswer )
     {
@@ -289,7 +285,7 @@ namespace smtrat
 
     #ifdef SMTRAT_STRAT_PARALLEL_MODE
     /**
-     *
+     * 
      * @param _pModule
      * @return
      */
@@ -300,7 +296,7 @@ namespace smtrat
     }
 
     /**
-     *
+     * 
      * @param _pModule
      */
     void Manager::checkBackendPriority( Module* _pModule )
