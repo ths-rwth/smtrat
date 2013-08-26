@@ -68,5 +68,16 @@ namespace smtrat
                 return (isBound( _constraint ) && _constraint->hasVariable( ex_to<symbol>( _var ).get_name() ));
             return false;
         }
+        
+        
+        bool intervalBoxContainsEmptyInterval(const GiNaCRA::evaldoubleintervalmap& _intervals)
+        {
+            for ( auto intervalIt = _intervals.begin(); intervalIt != _intervals.end(); ++intervalIt )
+            {
+                if ( (*intervalIt).second.empty() )
+                    return true;
+            }
+            return false;
+        }
     }
 }

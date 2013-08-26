@@ -903,7 +903,7 @@ namespace smtrat
                     #endif
 
                     // catch if new interval is empty -> we can drop box and chose next box
-                    if ( intervalBoxContainsEmptyInterval() )
+                    if ( icp::intervalBoxContainsEmptyInterval(mIntervals) )
                     {
                         #ifdef ICPMODULE_DEBUG
                         cout << "GENERATED EMPTY INTERVAL, Drop Box: " << endl;
@@ -1663,7 +1663,7 @@ namespace smtrat
     }
     
     
-        bool ICPModule::addCandidateToRelevant(icp::ContractionCandidate* _candidate)
+    bool ICPModule::addCandidateToRelevant(icp::ContractionCandidate* _candidate)
     {
         if ( _candidate->isActive() )
         {
@@ -1677,6 +1677,7 @@ namespace smtrat
         return false;
     }
     
+    
     bool ICPModule::removeCandidateFromRelevant(icp::ContractionCandidate* _candidate)
     {
         for ( auto candidateIt = mIcpRelevantCandidates.begin(); candidateIt != mIcpRelevantCandidates.end(); ++candidateIt )
@@ -1689,6 +1690,7 @@ namespace smtrat
         }
         return false;
     }
+    
     
     bool ICPModule::findCandidateInRelevant(icp::ContractionCandidate* _candidate)
     {
@@ -2819,14 +2821,14 @@ namespace smtrat
                     switch (mIntervals.at(tmpSymbol).leftType())
                     {
                         case GiNaCRA::DoubleInterval::STRICT_BOUND:
-//                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
-                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GREATER, bound);
+                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
+//                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GREATER, bound);
                             cout << "IsStrictBound: " << *leftTmp << endl;
 //                            leftTmp->printProperties();
                             break;
                         case GiNaCRA::DoubleInterval::WEAK_BOUND:
-//                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
-                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GEQ, bound);
+                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
+//                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GEQ, bound);
                             cout << "IsWeakBound: " << *leftTmp << endl;
 //                            leftTmp->printProperties();
                             
@@ -2857,15 +2859,15 @@ namespace smtrat
                     switch (mIntervals.at(tmpSymbol).rightType())
                     {
                         case GiNaCRA::DoubleInterval::STRICT_BOUND:
-//                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
-                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LESS, bound);
+                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
+//                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LESS, bound);
                             cout << "IsStrictBound: " << *rightTmp << endl;
 //                            rightTmp->printProperties();
                             
                             break;
                         case GiNaCRA::DoubleInterval::WEAK_BOUND:
-//                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
-                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LEQ, bound);
+                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
+//                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LEQ, bound);
                             cout << "IsWeakBound: " << *rightTmp << endl;
 //                            rightTmp->printProperties();
                             break;
@@ -2895,17 +2897,6 @@ namespace smtrat
             return newAdded;
         else
             return true;
-    }
-    
-    
-    bool ICPModule::intervalBoxContainsEmptyInterval()
-    {
-        for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
-        {
-            if ( (*intervalIt).second.empty() )
-                return true;
-        }
-        return false;
     }
     
     
