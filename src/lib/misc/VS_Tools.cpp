@@ -527,8 +527,10 @@ namespace vs
                 _expression.unitcontprim( var->second, un, con, prim );
                 if( con.info( info_flags::rational ) )
                 {
+                    cout << ex(prim * un) << endl;
                     return prim * un;
                 }
+                cout << _expression << endl;
                 return _expression;
             }
         }

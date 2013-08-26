@@ -743,7 +743,6 @@ namespace smtrat
                     case 3:
                     {
                         ex radicand = ex( pow( coeffs.at( 1 ), 2 ) - 4 * coeffs.at( 2 ) * coeffs.at( 0 ) );
-                        Constraint::normalize( radicand );
                         bool constraintHasZeros = false;
                         // Create state ({a==0, b!=0} + oldConditions, [x -> -c/b]):
                         const smtrat::Constraint* cons11 = smtrat::Formula::newConstraint( coeffs.at( 2 ), CR_EQ, vars );

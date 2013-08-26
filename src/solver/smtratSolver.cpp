@@ -51,7 +51,7 @@
  * @param formula A pointer to the formula object which holds the parsed input afterwards.
  * @param options Save options from the smt2 file here.
  */
-void parseInput( const std::string& pathToInputFile, smtrat::Driver& _parser, smtrat::ParserSettings* settings, int& _statusFlag )
+void parseInput( const std::string& pathToInputFile, smtrat::Driver& _parser, smtrat::ParserSettings* settings )
 {
     settings->setOptionsToParser( _parser );
     std::fstream infile( pathToInputFile.c_str() );
@@ -66,7 +66,6 @@ void parseInput( const std::string& pathToInputFile, smtrat::Driver& _parser, sm
         std::cerr << "Parse error" << std::endl;
         exit(SMTRAT_EXIT_PARSERFAILURE);
     }
-    _statusFlag = _parser.status();
 }
 
 void printTimings(smtrat::Manager* solver)
@@ -109,10 +108,9 @@ int main( int argc, char* argv[] )
     // Parse command line.
     pathToInputFile = settingsManager.parseCommandline( argc, argv );
 
-    int statusFlag = 0;
     // Parse input.
     smtrat::Driver parser;
-    parseInput( pathToInputFile, parser, parserSettings, statusFlag );
+    parseInput( pathToInputFile, parser, parserSettings );
     
     // Construct solver.
     CMakeStrategySolver* nratSolver = new CMakeStrategySolver();
@@ -156,7 +154,7 @@ int main( int argc, char* argv[] )
                 {
                     case smtrat::True:
                     {
-                        if( statusFlag == 0 )
+                        if( parser.status() == 0 )
                         {
                             parser.error( "expected unsat, but returned sat", true );
                             returnValue = SMTRAT_EXIT_WRONG_ANSWER;
@@ -170,7 +168,7 @@ int main( int argc, char* argv[] )
                     }
                     case smtrat::False:
                     {
-                        if( statusFlag == 1 )
+                        if( parser.status() == 1 )
                         {
                             parser.error( "error, expected sat, but returned unsat", true );
                             returnValue = SMTRAT_EXIT_WRONG_ANSWER;
