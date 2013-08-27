@@ -315,13 +315,8 @@ Answer GroebnerModule<Settings>::isConsistent( )
             #ifdef SMTRAT_DEVOPTION_Statistics
             mStats->EffectivenessOfConflicts(mInfeasibleSubsets.back().size()/mpReceivedFormula->size());
             #endif
-
             #ifdef CHECK_SMALLER_MUSES
-            unsigned infsubsetsize = mInfeasibleSubsets.front().size();
-            if(infsubsetsize > 1) {
-                std::vector<Formula> infsubset = generateSubformulaeOfInfeasibleSubset(0, infsubsetsize-1);
-                storeSmallerInfeasibleSubsetsCheck(infsubset);
-            }
+            Module::checkInfSubsetForMinimality( mInfeasibleSubsets->begin() );
             #endif
             return foundAnswer( False );
         }

@@ -172,45 +172,7 @@ namespace smtrat
 
         return true;
     }
-
-    /**
-     * This is an alternative method to removeSubformula, in which the passed sub-formula is given explicitly.
-     * Note, that this is generally less save then using remove, but in case the module is simple and manages 
-     * passing and receiving itself, it may be beneficial to use this method.
-     * @param _receivedSubformula The received sub-formula which is to be removed
-     * @param _passed The sub-formula in the passed formula which originates from this received sub-formula.
-     */
-    void Module::clearReceivedFormula(Formula::const_iterator _receivedSubformula, Formula::iterator _passed )
-    {
-        if( _passed != mpPassedFormula->end() )
-        {
-            removeSubformulaFromPassedFormula( _passed, false, true );
-        }
-        // Delete all infeasible subsets in which the constraint to delete occurs.
-        vec_set_const_pFormula::iterator infSubSet = mInfeasibleSubsets.begin();
-        while( infSubSet != mInfeasibleSubsets.end() )
-        {
-            set<const Formula*>::iterator infSubformula = infSubSet->begin();
-            while( infSubformula != infSubSet->end() )
-            {
-                if( *infSubformula == *_receivedSubformula )
-                {
-                    break;
-                }
-                ++infSubformula;
-            }
-            if( infSubformula != infSubSet->end() )
-            {
-                infSubSet = mInfeasibleSubsets.erase( infSubSet );
-            }
-            else
-            {
-                ++infSubSet;
-            }
-        }
-        if( mInfeasibleSubsets.empty() ) mSolverState = Unknown;
-
-    }
+    
     /**
      * Removes everything related to the given sub-formula of the received formula. However,
      * it is desired not to lose track of search spaces where no satisfying  assignment can 
@@ -303,10 +265,7 @@ namespace smtrat
         mpPassedFormula->addSubformula( _formula );
         mPassedformulaOrigins[_formula] = _origins;
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
-        {
             mFirstSubformulaToPass = mpPassedFormula->last();
-            assert( checkFirstSubformulaToPassValidity() );
-        }
     }
 
     /**
@@ -325,69 +284,7 @@ namespace smtrat
         originals.front().insert( _origin );
         mPassedformulaOrigins[_formula] = originals;
         if( mFirstSubformulaToPass == mpPassedFormula->end() )
-        {
             mFirstSubformulaToPass = mpPassedFormula->last();
-            assert( checkFirstSubformulaToPassValidity() );
-        }
-    }
-
-    /**
-     *
-     * @param _formula
-     * @param _origins
-     */
-    void Module::setOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins )
-    {
-        assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
-        mPassedformulaOrigins[_formula] = _origins;
-    }
-
-    /**
-     *
-     * @param _formula
-     * @param _origins
-     */
-    void Module::addOrigin( const Formula* const _formula, set< const Formula* >& _origin )
-    {
-        assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
-        mPassedformulaOrigins[_formula].push_back( _origin );
-    }
-
-    /**
-     *
-     * @param _formula
-     * @param _origins
-     */
-    void Module::addOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins )
-    {
-        assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
-        vec_set_const_pFormula& formulaOrigins = mPassedformulaOrigins[_formula];
-        formulaOrigins.insert( formulaOrigins.end(), _origins.begin(), _origins.end() );
-    }
-
-    /**
-     *
-     * @param _subformula
-     * @return
-     */
-    const std::set<const Formula*>& Module::getOrigins( Formula::const_iterator _subformula ) const
-    {
-        FormulaOrigins::const_iterator origins = mPassedformulaOrigins.find( *_subformula );
-        assert( origins != mPassedformulaOrigins.end() );
-        assert( origins->second.size() == 1 );
-        return origins->second.front();
-    }
-
-    /**
-     *
-     * @param _subformula
-     * @param _origins
-     */
-    void Module::getOrigins( const Formula* const _subformula, vec_set_const_pFormula& _origins ) const
-    {
-        FormulaOrigins::const_iterator origins = mPassedformulaOrigins.find( _subformula );
-        assert( origins != mPassedformulaOrigins.end() );
-        _origins = origins->second;
     }
 
     /**
@@ -436,10 +333,11 @@ namespace smtrat
     }
 
     /**
-     *
-     * @param _modelA
-     * @param _modelB
-     * @return
+     * Checks whether there is no variable assigned by both models.
+     * @param _modelA The first model to check for.
+     * @param _modelB The second model to check for.
+     * @return true, if there is no variable assigned by both models;
+     *          false, otherwise.
      */
     bool Module::modelsDisjoint( const Model& _modelA, const Model& _modelB )
     {
@@ -459,24 +357,8 @@ namespace smtrat
     }
 
     /**
-     *
-     * @param _model
-     * @return
-     */
-    bool modelVariablesExist( const Module::Model& _model )
-    {
-        Module::Model::const_iterator assignment = _model.begin();
-        while( assignment != _model.end() )
-        {
-            GiNaC::symtab allVars = Formula::constraintPool().realVariables();
-            if( allVars.find( assignment->first ) == allVars.end() ) return false;
-            ++assignment;
-        }
-        return true;
-    }
-
-    /**
-     *
+     * Stores the model of a backend which determined satisfiability of the passed 
+     * formula in the model of this module.
      */
     void Module::getBackendsModel()
     {
@@ -487,7 +369,6 @@ namespace smtrat
             if( (*module)->solverState() == True )
             {
                 assert( modelsDisjoint( mModel, (*module)->model() ) );
-                assert( modelVariablesExist( (*module)->model() ) );
                 (*module)->updateModel();
                 mModel.insert( (*module)->model().begin(), (*module)->model().end() );
                 break;
@@ -501,9 +382,7 @@ namespace smtrat
      * in a backend contains sub formulas of the passed formula and an infeasible subset of
      * this module contains sub formulas of the received formula. In this method the LATTER is
      * returned.
-     *
      * @param _backend The backend from which to obtain the infeasible subsets.
-     *
      * @return The infeasible subsets the given backend provides.
      */
     vec_set_const_pFormula Module::getInfeasibleSubsets( const Module& _backend ) const
@@ -525,11 +404,7 @@ namespace smtrat
             {
                 vec_set_const_pFormula formOrigins = vec_set_const_pFormula();
                 getOrigins( *cons, formOrigins );
-
-
-                /*
-                 * Find the smallest set of origins.
-                 */
+                // Find the smallest set of origins.
                 vec_set_const_pFormula::const_iterator smallestOriginSet = formOrigins.begin();
                 vec_set_const_pFormula::const_iterator originSet         = formOrigins.begin();
                 while( originSet != formOrigins.end() )
@@ -540,16 +415,11 @@ namespace smtrat
                         break;
                     }
                     else if( originSet->size() < smallestOriginSet->size() )
-                    {
                         smallestOriginSet = originSet;
-                    }
                     ++originSet;
                 }
                 assert( smallestOriginSet != formOrigins.end() );
-
-                /*
-                 * Add its formulas to the infeasible subset.
-                 */
+                // Add its formulas to the infeasible subset.
                 for( set<const Formula*>::const_iterator originFormula = smallestOriginSet->begin(); originFormula != smallestOriginSet->end();
                         ++originFormula )
                 {
@@ -562,7 +432,6 @@ namespace smtrat
 
     /**
      * Runs the backend solvers on the passed formula.
-     *
      * @return True,    if the passed formula is consistent;
      *          False,   if the passed formula is inconsistent;
      *          Unknown, otherwise.
@@ -575,21 +444,15 @@ namespace smtrat
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         stopCheckTimer();
         #endif
-        /*
-         * Get the backends to be considered from the manager.
-         */
+        // Get the backends to be considered from the manager.
         mUsedBackends = mpManager->getBackends( mpPassedFormula, this, mBackendsFoundAnswer );
         mAllBackends = mpManager->getAllBackends( this );
-
         unsigned numberOfUsedBackends = mUsedBackends.size();
         if( numberOfUsedBackends>0 )
         {
-            /*
-             * Update the backends.
-             */
+            // Update the backends.
             if( mFirstSubformulaToPass != mpPassedFormula->end() )
             {
-                assert( checkFirstSubformulaToPassValidity() );
                 // Update the propositions of the passed formula
                 mpPassedFormula->getPropositions();
                 bool assertionFailed = false;
@@ -602,16 +465,12 @@ namespace smtrat
                     {
                         auto iter = mFirstConstraintToInform;
                         for( ; iter != mConstraintsToInform.end(); ++iter )
-                        {
                             (*module)->inform( *iter );
-                        }
                     }
                     for( Formula::const_iterator subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
                     {
                         if( !(*module)->assertSubformula( subformula ) )
-                        {
                             assertionFailed = true;
-                        }
                     }
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->stopAddTimer();
@@ -631,17 +490,11 @@ namespace smtrat
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             if( mpManager->runsParallel() )
             {
-                /*
-                 * Run the backend solver parallel until the first answers true or false.
-                 */
+                // Run the backend solver parallel until the first answers true or false.
                 if( anAnswerFound() )
-                {
                     return Unknown;
-                }
-
                 unsigned highestIndex = numberOfUsedBackends-1;
                 vector< std::future<Answer> > futures( highestIndex );
-
                 for( unsigned i=0; i<highestIndex; ++i )
                 {
                     #ifdef MODULE_VERBOSE
@@ -650,7 +503,6 @@ namespace smtrat
                     #endif
                     futures[ i ] = mpManager->submitBackend( mUsedBackends[ i ] );
                 }
-
                 mpManager->checkBackendPriority( mUsedBackends[ highestIndex ] );
                 #ifdef MODULE_VERBOSE
                 cout << endl << "Call to module " << moduleName( mUsedBackends[ highestIndex ]->type() ) << endl;
@@ -658,7 +510,6 @@ namespace smtrat
                 #endif
                 result = mUsedBackends[ highestIndex ]->isConsistent();
                 mUsedBackends[ highestIndex ]->receivedFormulaChecked();
-
                 for( unsigned i=0; i<highestIndex; ++i )
                 {
                     // Futures must be received, otherwise inconsistent state.
@@ -675,9 +526,7 @@ namespace smtrat
             else
             {
             #endif
-                /*
-                 * Run the backend solver sequentially until the first answers true or false.
-                 */
+                // Run the backend solver sequentially until the first answers true or false.
                 vector<Module*>::iterator module = mUsedBackends.begin();
                 while( module != mUsedBackends.end() && result == Unknown )
                 {
@@ -702,9 +551,7 @@ namespace smtrat
                     if( validationSettings->logTCalls() )
                     {
                         if( result != Unknown )
-                        {
                             addAssumptionToCheck( *mpPassedFormula, result == True, moduleName( (*module)->type() ) );
-                        }
                     }
                     #endif
                     ++module;
@@ -723,59 +570,42 @@ namespace smtrat
     }
 
     /**
-     *
-     * @param _subformula
-     * @return
+     * Removes everything related to the sub-formula to remove from the passed formula in the backends of this module.
+     * Afterwards the sub-formula is removed from the passed formula.
+     * @param _subformula The sub-formula to remove from the passed formula.
+     * @return 
      */
-    Formula::iterator Module::removeSubformulaFromPassedFormula( Formula::iterator _subformula, bool local, bool forceBackendCall )
+    Formula::iterator Module::removeSubformulaFromPassedFormula( Formula::iterator _subformula )
     {
         assert( _subformula != mpPassedFormula->end() );
-        assert( !local || !forceBackendCall );
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         int timers = stopAllTimers();
         #endif
-
-        if( _subformula == mpPassedFormula->end() ) cout << "Error!" << endl;
-
-        /*
-         * Check whether the passed sub-formula has already been part of a consistency check of the backends.
-         */
+        assert( _subformula != mpPassedFormula->end() );
+        // Check whether the passed sub-formula has already been part of a consistency check of the backends.
         bool subformulaChecked = true;
-        if(forceBackendCall || local )
+        if( _subformula == mFirstSubformulaToPass )
         {
-            if( _subformula == mFirstSubformulaToPass )
-            {
-                ++mFirstSubformulaToPass;
-            }
+            ++mFirstSubformulaToPass;
+            subformulaChecked = false;
         }
         else
         {
-            if( _subformula == mFirstSubformulaToPass )
+            Formula::const_iterator iter = mFirstSubformulaToPass;
+            while( iter != mpPassedFormula->end() )
             {
-                ++mFirstSubformulaToPass;
-                subformulaChecked = false;
-            }
-            else
-            {
-                Formula::const_iterator iter = mFirstSubformulaToPass;
-                while( iter != mpPassedFormula->end() )
+                if( iter == _subformula )
                 {
-                    if( iter == _subformula )
-                    {
-                        subformulaChecked = false;
-                        break;
-                    }
-                    ++iter;
+                    subformulaChecked = false;
+                    break;
                 }
+                ++iter;
             }
         }
-
-        /*
-         * Remove the sub-formula from the backends, if it was considered in their consistency checks.
-         */
+        // Remove the sub-formula from the backends, if it was considered in their consistency checks.
         if( subformulaChecked )
         {
-            if( mpManager != NULL && !local )
+            if( mpManager != NULL )
             {
                 mAllBackends = mpManager->getAllBackends( this );
                 for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
@@ -790,9 +620,7 @@ namespace smtrat
                 }
             }
         }
-        /*
-         * Delete the sub formula from the passed formula.
-         */
+        // Delete the sub formula from the passed formula.
         mPassedformulaOrigins.erase( *_subformula );
         Formula::iterator result = mpPassedFormula->erase( _subformula );
         #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -802,8 +630,10 @@ namespace smtrat
     }
 
     /**
-     *
-     * @param _answer
+     * Sets the solver state to the given answer value. This method also fires the flag 
+     * given by the antecessor module of this module to true, if the given answer value is not Unknown.
+     * CALL THIS METHOD ALWAYS BEFORE RETURNING A RESULT WITH ISCONSISTENT!!!
+     * @param _answer The found answer.
      */
     Answer Module::foundAnswer( Answer _answer )
     {
@@ -812,65 +642,25 @@ namespace smtrat
         if( mpManager != NULL && _answer != Unknown )
         {
             if( !anAnswerFound() )
-            {
                 *mFoundAnswer.back() = true;
-            }
         }
         return _answer;
     }
 
     /**
-     *
-     * @param _answer
-     * @param _byBackend
+     * Adds a constraint to the collection of constraints of this module, which are informed to a 
+     * freshly generated backend.
+     * @param The constraint to add.
      */
     void Module::addConstraintToInform( const Constraint* const constraint )
     {
         mConstraintsToInform.push_back(constraint);
         if(mFirstConstraintToInform == mConstraintsToInform.end())
-        {
             mFirstConstraintToInform = --mConstraintsToInform.end();
-        }
     }
 
     /**
-     *
-     * @param _subformula
-     * @return
-     */
-    Formula::iterator Module::pruneSubformulaFromPassedFormula( Formula::iterator _subformula )
-    {
-        assert( _subformula != mpPassedFormula->end() );
-        #ifdef SMTRAT_DEVOPTION_MeasureTime
-        int timers = stopAllTimers();
-        #endif
-        /*
-         * Delete the sub formula from the passed formula.
-         */
-        if( mpManager != NULL )
-        {
-            mAllBackends = mpManager->getAllBackends( this );
-            for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
-            {
-                #ifdef SMTRAT_DEVOPTION_MeasureTime
-                (*module)->startRemoveTimer();
-                #endif
-                (*module)->removeSubformula( _subformula );
-                #ifdef SMTRAT_DEVOPTION_MeasureTime
-                (*module)->stopRemoveTimer();
-                #endif
-
-            }
-        }
-        mPassedformulaOrigins.erase( *_subformula );
-        #ifdef SMTRAT_DEVOPTION_MeasureTime
-        startTimers(timers);
-        #endif
-        return mpPassedFormula->prune( _subformula );
-    }
-
-    /**
-     *
+     * Stores all deductions of any backend of this module in its own deduction vector.
      */
     void Module::updateDeductions()
     {
@@ -896,25 +686,10 @@ namespace smtrat
     }
 
     /**
-     *
-     * @return
-     */
-    bool Module::checkFirstSubformulaToPassValidity() const
-    {
-        for( Formula::const_iterator it = mpPassedFormula->begin(); it != mpPassedFormula->end(); ++it )
-        {
-            if( mFirstSubformulaToPass == it )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * Add a formula to the assumption vector and its predetermined consistency status.
-     * @param _formula
-     * @param _consistent
+     * @param _formula The formula which should be consistent/inconsistent.
+     * @param _consistent A flag indicating whether the conjunction of the given constraints should be
+     *         consistent or inconsistent.
      * @see Module::storeAssumptionsToCheck
      */
     void Module::addAssumptionToCheck( const Formula& _formula, bool _consistent, const string& _moduleName )
@@ -932,9 +707,10 @@ namespace smtrat
     }
 
     /**
-     * Add a conjunction of _constraints to the assumption vector and its predetermined consistency status.
-     * @param _constraints
-     * @param _consistent
+     * Add a conjunction of formulas to the assumption vector and its predetermined consistency status.
+     * @param _formulas The formulas, whose conjunction should be consistent/inconsistent.
+     * @param _consistent A flag indicating whether the conjunction of the given constraints should be
+     *         consistent or inconsistent.
      * @see Module::storeAssumptionsToCheck
      */
     void Module::addAssumptionToCheck( const set<const Formula*>& _formulas, bool _consistent, const string& _moduleName )
@@ -942,11 +718,8 @@ namespace smtrat
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and";
-        for( set<const Formula*>::const_iterator formula = _formulas.begin();
-             formula != _formulas.end(); ++formula )
-        {
+        for( auto formula = _formulas.begin(); formula != _formulas.end(); ++formula )
             assumption += " " + (*formula)->toString( false, true );
-        }
         assumption += " " + _moduleName;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
@@ -957,8 +730,9 @@ namespace smtrat
 
     /**
      * Add a conjunction of _constraints to the assumption vector and its predetermined consistency status.
-     * @param _constraints
-     * @param _consistent
+     * @param _constraints The constraints, whose conjunction should be consistent/inconsistent.
+     * @param _consistent A flag indicating whether the conjunction of the given constraints should be
+     *         consistent or inconsistent.
      * @see Module::storeAssumptionsToCheck
      */
     void Module::addAssumptionToCheck( const set<const Constraint*>& _constraints, bool _consistent, const string& _moduleName )
@@ -966,11 +740,8 @@ namespace smtrat
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and";
-        for( set<const Constraint*>::const_iterator constraint = _constraints.begin();
-             constraint != _constraints.end(); ++constraint )
-        {
+        for( auto constraint = _constraints.begin(); constraint != _constraints.end(); ++constraint )
             assumption += " " + (*constraint)->smtlibString();
-        }
         assumption += " " + _moduleName;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
@@ -980,8 +751,9 @@ namespace smtrat
     }
 
     /**
-     * Prints the collected assumptions in the assumption vector into _filename with an appropriate smt2 header including all variables used.
-     * @param _filename
+     * Prints the collected assumptions in the assumption vector into _filename with an appropriate smt2 
+     * header including all variables used.
+     * @param _filename The name of the smt2-file to store the formulas.
      */
     void Module::storeAssumptionsToCheck( const Manager& _manager )
     {
@@ -990,33 +762,24 @@ namespace smtrat
         {
             ofstream smtlibFile;
             smtlibFile.open( validationSettings->path() );
-            for( vector< string >::const_iterator assum = Module::mAssumptionToCheck.begin();
-                 assum != Module::mAssumptionToCheck.end(); ++assum )
-            { // for each assumption add a new solver-call by resetting the search state
+            for( auto assum = Module::mAssumptionToCheck.begin(); assum != Module::mAssumptionToCheck.end(); ++assum )
+            { 
+                // For each assumption add a new solver-call by resetting the search state.
                 smtlibFile << "(reset)\n";
                 smtlibFile << "(set-logic QF_NRA)\n";
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
-                // add all real-valued variables
+                // Add all real-valued variables.
                 GiNaC::symtab allVariables = Formula::constraintPool().realVariables();
-                for( GiNaC::symtab::const_iterator var = allVariables.begin();
-                    var != allVariables.end(); ++var )
-                {
+                for( auto var = allVariables.begin(); var != allVariables.end(); ++var )
                     smtlibFile << "(declare-fun " << var->first << " () Real)\n";
-                }
-                // add all Boolean variables
+                // Add all Boolean variables.
                 set<string> allBooleans = Formula::constraintPool().booleanVariables();
-                for( set<string>::const_iterator var = allBooleans.begin();
-                    var != allBooleans.end(); ++var )
-                {
+                for( auto var = allBooleans.begin(); var != allBooleans.end(); ++var )
                     smtlibFile << "(declare-fun " << *var << " () Bool)\n";
-                }
-                // add module name variables
-                for( set<string>::const_iterator involvedModule = Module::mVariablesInAssumptionToCheck.begin();
-                     involvedModule != Module::mVariablesInAssumptionToCheck.end(); ++involvedModule )
-                {
-                    smtlibFile << "(declare-fun " << *involvedModule << " () Bool)\n";
-                }
+                // Add module name variables.
+                for( auto invMod = Module::mVariablesInAssumptionToCheck.begin(); invMod != Module::mVariablesInAssumptionToCheck.end(); ++invMod )
+                    smtlibFile << "(declare-fun " << *invMod << " () Bool)\n";
                 smtlibFile << *assum;
             }
             smtlibFile << "(exit)";
@@ -1024,93 +787,66 @@ namespace smtrat
         }
         #endif
     }
-
+    
     /**
-     * Store subsets as smt2 files in order to check them later.
-     * @param
-     * @param
+     * Checks the given infeasible subset for minimality by storing all subsets of it, which have a smaller size 
+     * which differs from the size of the infeasible subset not more than the given threshold.
+     * @param _infsubset The infeasible subset to check for minimality.
+     * @param _filename The name of the file to store the infeasible subsets in order to be able to check their infeasibility.
+     * @param _maxSizeDifference The maximal difference between the sizes of the subsets compared to the size of the infeasible subset.
      */
-    void Module::storeSmallerInfeasibleSubsetsCheck(const std::vector<Formula> & subformulae, const std::string& filename) const {
-        stringstream _filename;
-        _filename << filename << "_" << moduleName(mModuleType) << "_" << mSmallerMusesCheckCounter << ".smt2";
+    void Module::checkInfSubsetForMinimality( vec_set_const_pFormula::const_iterator _infsubset, const string& _filename, unsigned _maxSizeDifference ) const
+    {
+        stringstream filename;
+        filename << _filename << "_" << moduleName(mModuleType) << "_" << mSmallerMusesCheckCounter << ".smt2";
         ofstream smtlibFile;
-        smtlibFile.open( _filename.str() );
-        for( vector< Formula >::const_iterator subformula = subformulae.begin();
-             subformula != subformulae.end(); ++subformula )
-        { // for each assumption add a new solver-call by resetting the search state
-            smtlibFile << "(reset)\n";
-            smtlibFile << "(set-logic QF_NRA)\n";
-            smtlibFile << "(set-option :interactive-mode true)\n";
-            smtlibFile << "(set-info :smt-lib-version 2.0)\n";
-            // add all real-valued variables
-            GiNaC::symtab allVars = Formula::constraintPool().realVariables();
-            for( GiNaC::symtab::const_iterator var = allVars.begin(); var != allVars.end(); ++var )
+        smtlibFile.open( filename.str() );
+        for( unsigned size = _infsubset->size() - _maxSizeDifference; size < _infsubset->size(); ++size )
+        {
+            // 000000....000011111 (size-many ones)
+            unsigned bitvector = (1 << size) - 1;
+            // 000000....100000000
+            unsigned limit = (1 << _infsubset->size());
+            unsigned nextbitvector;
+            while( bitvector < limit )
             {
-                smtlibFile << "(declare-fun " << var->first << " () Real)\n";
+                // Compute lexicographical successor of the bit vector.
+                unsigned int tmp = (bitvector | (bitvector - 1)) + 1;
+                nextbitvector = tmp | ((((tmp & -tmp) / (bitvector & -bitvector)) >> 1) - 1);
+                // For each assumption add a new solver-call by resetting the search state.
+                smtlibFile << "(reset)\n";
+                smtlibFile << "(set-logic QF_NRA)\n";
+                smtlibFile << "(set-option :interactive-mode true)\n";
+                smtlibFile << "(set-info :smt-lib-version 2.0)\n";
+                // Add all real-valued variables.
+                GiNaC::symtab allVars = Formula::constraintPool().realVariables();
+                for( GiNaC::symtab::const_iterator var = allVars.begin(); var != allVars.end(); ++var )
+                    smtlibFile << "(declare-fun " << var->first << " () Real)\n";
+                string assumption = "";
+                assumption += "(set-info :status sat)\n";
+                assumption += "(assert (and ";
+                for( auto it = _infsubset->begin(); it != _infsubset->end(); ++it )
+                {
+                    if( bitvector & 1 )
+                        assumption += " " + (*it)->toString();
+                    bitvector >>= 1;
+                }
+                assumption += "))\n";
+                assumption += "(get-assertions)\n";
+                assumption += "(check-sat)\n";
+                smtlibFile << assumption;
+                bitvector = nextbitvector;
+                ++mSmallerMusesCheckCounter;
             }
-            string assumption = "";
-            assumption += "(set-info :status sat)\n";
-            assumption += "(assert (and ";
-            assumption += subformula->toString();
-            assumption += "))\n";
-            assumption += "(get-assertions)\n";
-            assumption += "(check-sat)\n";
-            smtlibFile << assumption;
         }
         smtlibFile << "(exit)";
         smtlibFile.close();
-        ++mSmallerMusesCheckCounter;
-    }
-
-     /**
-     * Generates all subformulae of the given size
-     * @param size the number of constraints
-     * @return A set of subformulae
-     */
-    std::vector<Formula> Module::generateSubformulaeOfInfeasibleSubset(unsigned infeasibleset, unsigned size ) const {
-        assert(size < mInfeasibleSubsets[infeasibleset].size());
-
-        //000000....000011111 (size-many ones)
-        unsigned bitvector = (1 << size) - 1;
-        //000000....100000000
-        unsigned limit = (1 << mInfeasibleSubsets[infeasibleset].size());
-        unsigned nextbitvector;
-
-        std::vector<Formula> subformulae;
-        while(bitvector < limit) {
-            Formula formula(AND);
-            // compute lexicographical successor of the bitvector
-            unsigned int tmp = (bitvector | (bitvector - 1)) + 1;
-            nextbitvector = tmp | ((((tmp & -tmp) / (bitvector & -bitvector)) >> 1) - 1);
-
-            // fill formula
-            for(auto it = mInfeasibleSubsets[infeasibleset].begin(); it != mInfeasibleSubsets[infeasibleset].end(); ++it) {
-                if(bitvector & 1) {
-                    formula.addSubformula((*it)->pConstraint());
-                }
-                bitvector >>= 1;
-            }
-            // add subformulae
-            subformulae.push_back(formula);
-            bitvector = nextbitvector;
-        }
-        return subformulae;
-    }
-    /**
-     *
-     * @param _moduleType
-     * @return
-     */
-    const string Module::moduleName( const ModuleType _moduleType )
-    {
-        return moduleTypeToString(_moduleType);
     }
 
     /**
      * Prints everything relevant of the solver.
-     *
-     * @param _out  The output stream where the answer should be printed.
-     * @param _initiation   The line initiation.
+     * @param _out The output stream where the answer should be printed.
+     * @param _initiation The line initiation.
      */
     void Module::print( ostream& _out, const string _initiation ) const
     {
@@ -1130,52 +866,46 @@ namespace smtrat
 
     /**
      * Prints the vector of the received formula.
-     *
-     * @param _out          The output stream where the answer should be printed.
-     * @param _initiation   The line initiation.
+     * @param _out The output stream where the answer should be printed.
+     * @param _initiation The line initiation.
      */
     void Module::printReceivedFormula( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "Received formula:" << endl;
-        for( Formula::const_iterator receivedSubformula = mpReceivedFormula->begin(); receivedSubformula != mpReceivedFormula->end();
-                ++receivedSubformula )
+        for( auto form = mpReceivedFormula->begin(); form != mpReceivedFormula->end(); ++form )
         {
             _out << _initiation << "  ";
-            _out << setw( 30 ) << (*receivedSubformula)->toString( true );
+            _out << setw( 30 ) << (*form)->toString( true );
             stringstream out;
-            out << "  [" << *receivedSubformula << "]";
+            out << "  [" << *form << "]";
             _out << setw( 15 ) << out.str();
-            if( (*receivedSubformula)->deducted() ) _out << " deducted";
+            if( (*form)->deducted() ) _out << " deducted";
             _out << endl;
         }
     }
 
     /**
      * Prints the vector of passed formula.
-     *
-     * @param _out          The output stream where the answer should be printed.
-     * @param _initiation   The line initiation.
+     * @param _out The output stream where the answer should be printed.
+     * @param _initiation The line initiation.
      */
     void Module::printPassedFormula( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "Passed formula:" << endl;
-        for( Formula::const_iterator passedSubformula = mpPassedFormula->begin(); passedSubformula != mpPassedFormula->end(); ++passedSubformula )
+        for( auto form = mpPassedFormula->begin(); form != mpPassedFormula->end(); ++form )
         {
-            FormulaOrigins::const_iterator formulaOrigins = mPassedformulaOrigins.find( *passedSubformula );
+            auto formulaOrigins = mPassedformulaOrigins.find( *form );
             assert( formulaOrigins != mPassedformulaOrigins.end() );
             _out << _initiation << "  ";
-            _out << setw( 30 ) << (*passedSubformula)->toString( true );
+            _out << setw( 30 ) << (*form)->toString( true );
             stringstream out;
-            out << "  [" << *passedSubformula << "]" << " from " << "(";
+            out << "  [" << *form << "]" << " from " << "(";
             _out << setw( 22 ) << out.str();
-            for( vec_set_const_pFormula::const_iterator oSubformulas = formulaOrigins->second.begin(); oSubformulas != formulaOrigins->second.end();
-                    ++oSubformulas )
+            for( auto oSubformulas = formulaOrigins->second.begin(); oSubformulas != formulaOrigins->second.end(); ++oSubformulas )
             {
                 _out << " {";
-                for( set<const Formula*>::const_iterator oSubformula = oSubformulas->begin(); oSubformula != oSubformulas->end(); ++oSubformula )
-                {
+                for( auto oSubformula = oSubformulas->begin(); oSubformula != oSubformulas->end(); ++oSubformula )
                     _out << " [" << *oSubformula << "]";
-                }
                 _out << " }";
             }
             _out << " )" << endl;
@@ -1184,128 +914,22 @@ namespace smtrat
 
     /**
      * Prints the infeasible subsets.
-     *
-     * @param _out          The output stream where the answer should be printed.
-     * @param _initiation   The line initiation.
+     * @param _out The output stream where the answer should be printed.
+     * @param _initiation The line initiation.
      */
     void Module::printInfeasibleSubsets( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "Infeasible subsets:" << endl;
         _out << _initiation << "   {";
-        for( vec_set_const_pFormula::const_iterator infSubSet = mInfeasibleSubsets.begin(); infSubSet != mInfeasibleSubsets.end(); ++infSubSet )
+        for( auto infSubSet = mInfeasibleSubsets.begin(); infSubSet != mInfeasibleSubsets.end(); ++infSubSet )
         {
             if( infSubSet != mInfeasibleSubsets.begin() )
-            {
                 _out << endl << _initiation << "    ";
-            }
             _out << " {";
-            for( set<const Formula*>::const_iterator infSubFormula = infSubSet->begin(); infSubFormula != infSubSet->end(); ++infSubFormula )
-            {
+            for( auto infSubFormula = infSubSet->begin(); infSubFormula != infSubSet->end(); ++infSubFormula )
                 _out << " " << **infSubFormula;
-            }
             _out << " }";
         }
         _out << " }" << endl;
     }
-
-    void Module::startAddTimer()
-    {
-        assert(!mTimerAddRunning);
-        mTimerAddRunning = true;
-        mTimerAddStarted = clock::now();
-    }
-
-    void Module::stopAddTimer()
-    {
-        assert(mTimerAddRunning);
-        mTimerAddTotal += std::chrono::duration_cast<timeunit>(clock::now() - mTimerAddStarted);
-        mTimerAddRunning = false;
-    }
-
-    void Module::startCheckTimer()
-    {
-        assert(!mTimerCheckRunning);
-        mTimerCheckRunning = true;
-        mTimerCheckStarted = clock::now();
-    }
-
-    void Module::stopCheckTimer()
-    {
-        assert(mTimerCheckRunning);
-        mTimerCheckTotal += std::chrono::duration_cast<timeunit>(clock::now() - mTimerCheckStarted);
-        mTimerCheckRunning = false;
-    }
-
-    void Module::startRemoveTimer()
-    {
-        assert(!mTimerRemoveRunning);
-        mTimerRemoveRunning = true;
-        mTimerRemoveStarted = clock::now();
-
-    }
-
-    void Module::stopRemoveTimer()
-    {
-        assert(mTimerRemoveRunning);
-        mTimerRemoveTotal += std::chrono::duration_cast<timeunit>(clock::now() - mTimerRemoveStarted);
-        mTimerRemoveRunning = false;
-    }
-
-    void Module::startTimers(int timers)
-    {
-        if( (timers & 1) > 0 )
-        {
-            startAddTimer();
-        }
-        if( (timers & 2) > 0 )
-        {
-            startCheckTimer();
-        }
-        if( (timers & 4) > 0 )
-        {
-            startRemoveTimer();
-        }
-    }
-
-    int Module::stopAllTimers()
-    {
-        int result = 0;
-        if( mTimerAddRunning )
-        {
-            stopAddTimer();
-            result |= 1;
-        }
-        if(mTimerCheckRunning)
-        {
-            stopCheckTimer();
-            result |= 2;
-        }
-        if( mTimerRemoveRunning )
-        {
-            stopRemoveTimer();
-            result |= 4;
-        }
-        return result;
-    }
-
-    double Module::getAddTimerMS() const
-    {
-        return mTimerAddTotal.count() / 1000;
-    }
-
-    double Module::getCheckTimerMS() const
-    {
-        return mTimerCheckTotal.count() / 1000;
-    }
-
-    double Module::getRemoveTimerMS() const
-    {
-        return mTimerRemoveTotal.count() / 1000;
-    }
-
-    unsigned Module::getNrConsistencyChecks() const
-    {
-        return mNrConsistencyChecks;
-    }
-
-}    // namespace smtrat
+} // namespace smtrat
