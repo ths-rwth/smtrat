@@ -317,15 +317,16 @@ namespace smtrat
             // find replacement
             for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
             {
+                cout << "Consider: " << *(*replacementIt).first << " (id: " << (*replacementIt).first->id() <<") - > " << *(*replacementIt).second << " (id: " << (*replacementIt).second->id() << ")" << endl;
                 if ( (*replacementIt).second->id() == (*_formula)->pConstraint()->id() )
                 {
                     replacementPtr = (*replacementIt).first;
                     break;
                 }
             }
-//            cout << "searching for: " << (*_formula)->constraint() << endl;
+            cout << "searching for: " << (*_formula)->constraint() << " (id: " << (*_formula)->constraint().id() << ")" << endl;
             assert(replacementPtr != NULL);
-//            cout << "ReplacementPTR points to: " << *replacementPtr << endl;
+            cout << "ReplacementPTR points to: " << *replacementPtr << endl;
             const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(replacementPtr);
             assert(slackvariable != NULL);
 
@@ -1123,47 +1124,46 @@ namespace smtrat
                             assert(infeasibleSubsets().empty());
                             bool isBoundInfeasible = false;
                             bool isBound = false;
-
+                            
                             vector<Module*>::const_iterator backend = usedBackends().begin();
                             while( backend != usedBackends().end() )
                             {
-                                if( !(*backend)->infeasibleSubsets().empty() )
+                                assert( !(*backend)->infeasibleSubsets().empty() );
+                                (*backend)->printInfeasibleSubsets();
+                                for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
+                                        infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                                 {
-                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
-                                            infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
+                                    for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                                     {
-                                        for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
+                                        isBound = false;
+                                        std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.begin();
+                                        for ( ; icpVar != mVariables.end(); ++icpVar )
                                         {
-                                            isBound = false;
-                                            std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.begin();
-                                            for ( ; icpVar != mVariables.end(); ++icpVar )
+                                            if( (*icpVar).second->isOriginal() && (*icpVar).second->isExternalBoundsSet() )
                                             {
-                                                if( (*icpVar).second->isOriginal() && (*icpVar).second->isExternalBoundsSet() )
+                                                assert( !(*icpVar).second->isExternalUpdated() );
+                                                if ( (*subformula) == (*(*icpVar).second->externalLeftBound()) || (*subformula) == (*(*icpVar).second->externalRightBound()) )
                                                 {
-                                                    assert( !(*icpVar).second->isExternalUpdated() );
-                                                    if ( (*subformula) == (*(*icpVar).second->externalLeftBound()) || (*subformula) == (*(*icpVar).second->externalRightBound()) )
-                                                    {
-                                                        isBound = true;
-                                                        isBoundInfeasible = true;
-                                                        break;
-                                                    }
+                                                    isBound = true;
+                                                    isBoundInfeasible = true;
+                                                    break;
                                                 }
-                                            }
-                                            if(!isBound)
-                                            {
-                                                if (mInfeasibleSubsets.empty())
-                                                {
-                                                    set<const Formula*> infeasibleSubset = set<const Formula*>();
-                                                    infeasibleSubset.insert(*subformula);
-                                                    mInfeasibleSubsets.insert(mInfeasibleSubsets.begin(), infeasibleSubset);
-                                                }
-                                                else
-                                                    (*mInfeasibleSubsets.begin()).insert(*subformula);
                                             }
                                         }
+                                        if(!isBound)
+                                        {
+                                            if (mInfeasibleSubsets.empty())
+                                            {
+                                                set<const Formula*> infeasibleSubset = set<const Formula*>();
+                                                infeasibleSubset.insert(*subformula);
+                                                mInfeasibleSubsets.insert(mInfeasibleSubsets.begin(), infeasibleSubset);
+                                            }
+                                            else
+                                                (*mInfeasibleSubsets.begin()).insert(*subformula);
+                                        }
                                     }
-                                    break;
                                 }
+                                break;
                             }
                             if ( isBoundInfeasible )
                             {
@@ -1503,7 +1503,7 @@ namespace smtrat
             {
                 for( auto summand = constraint->lhs().begin(); summand != constraint->lhs().end(); ++summand )
                 {
-//                    cout << "Summand: " << *summand << endl;
+                    cout << "Summand: " << *summand << endl;
                     if( is_exactly_a<mul>(*summand) )
                     {
                         numeric coefficient = 1;
@@ -1531,7 +1531,7 @@ namespace smtrat
                             linearizedConstraint += (*mLinearizations.find(*summand)).second;
                         else
                         {
-                            cout << "Stuff" << endl;
+//                            cout << "Stuff" << endl;
                             linearizedConstraint += *summand;
                         }
                     }
@@ -1539,8 +1539,18 @@ namespace smtrat
             }
             else if( is_exactly_a<mul>(constraint->lhs()) )
             {
+//                cout << "MUL" << endl;
+                linearizedConstraint = 1;
+                for( auto factor = constraint->lhs().begin(); factor != constraint->lhs().end(); ++factor)
+                {
+                    if( is_exactly_a<numeric>(*factor) )
+                    {
+                        linearizedConstraint *= *factor;
+                        break;
+                    }
+                }
                 assert(mLinearizations.find(constraint->lhs()) != mLinearizations.end());
-                linearizedConstraint = (*mLinearizations.find(constraint->lhs())).second;
+                linearizedConstraint *= (*mLinearizations.find(constraint->lhs())).second;
             }
         }
         assert(mTemporaryMonomes.empty());
@@ -2913,8 +2923,17 @@ namespace smtrat
             std::set<const Formula*> definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
             for( auto formulaIt = definingOrigins.begin(); formulaIt != definingOrigins.end(); ++formulaIt )
             {
-                assert( mReceivedFormulaMapping.find(*formulaIt) != mReceivedFormulaMapping.end() );
-                temporaryIfsSet.insert(mReceivedFormulaMapping.at(*formulaIt));
+//                assert( mReceivedFormulaMapping.find(*formulaIt) != mReceivedFormulaMapping.end() );
+                for( auto lraFormulaIt = mReceivedFormulaMapping.begin(); lraFormulaIt != mReceivedFormulaMapping.end(); ++lraFormulaIt )
+                {
+                    if( (*lraFormulaIt).first->constraint().id() == (*formulaIt)->constraint().id() )
+                    {
+                        temporaryIfsSet.insert((*lraFormulaIt).second);
+                        break;
+                    }
+                }
+                cout << "Defining origin: " << **formulaIt << endl;
+//                temporaryIfsSet.insert(mReceivedFormulaMapping.at(*formulaIt));
             }
         }
         for ( auto constraintIt = mHistoryRoot->rStateInfeasibleConstraints().begin(); constraintIt != mHistoryRoot->rStateInfeasibleConstraints().end(); ++constraintIt )
