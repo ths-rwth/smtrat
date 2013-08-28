@@ -69,9 +69,9 @@ namespace smtrat
         mCenterConstraints(),
         mCreatedDeductions(),
         mLastCandidate(NULL),
-        mInitialized(false),
+        mIsIcpInitialized(false),
         mCurrentId(1),
-        mBackendCalled(false)
+        mIsBackendCalled(false)
     {
         #ifdef ICP_BOXLOG
         icpLog.open ("icpLog.txt", ios::out | ios::trunc );
@@ -189,7 +189,7 @@ namespace smtrat
 
         // create and initialize slackvariables
         mLRA.initialize();
-        if( !mInitialized)
+        if( !mIsIcpInitialized)
         {
             // catch deductions
             mLRA.updateDeductions();
@@ -214,7 +214,7 @@ namespace smtrat
                 #endif
                 #endif
             }
-            mInitialized = true;
+            mIsIcpInitialized = true;
         }
         #ifdef ICPMODULE_DEBUG
         cout << "[ICP] Assertion: ";
@@ -285,9 +285,15 @@ namespace smtrat
         {
             // considered constraint is activated but has no slackvariable -> it is a boundary constraint
             Formula* tmpFormula = new Formula(**_formula);
+            assert(tmpFormula->getType() == REALCONSTRAINT);
             mValidationFormula->addSubformula(tmpFormula);
             // update ReceivedFormulaMapping
             mReceivedFormulaMapping.insert(std::make_pair(tmpFormula, *_formula));
+            cout << "inserted: ";
+            tmpFormula->print();
+            cout << ", ";
+            (*_formula)->print();
+            cout << endl;
             // try to insert new icpVariable -> is original!
             symbol tmpVar = ex_to<symbol>( (*(*_formula)->pConstraint()->variables().begin()).second );
 //            cout << "PConstraint: " << *tmpFormula->pConstraint() << "Nops: " << tmpFormula->pConstraint()->lhs().nops() << endl;
@@ -426,13 +432,20 @@ namespace smtrat
             }
 
             // assert in mLRA
+            assert(replacementPtr != NULL);
             Formula* tmpFormula = new Formula(replacementPtr);
+            assert(tmpFormula->getType() == REALCONSTRAINT);
             mValidationFormula->addSubformula(tmpFormula);
             mValidationFormula->getPropositions();
 
             // update ReceivedFormulaMapping
             mReceivedFormulaMapping.insert(std::make_pair(tmpFormula, *_formula));
-
+            cout << "inserted: ";
+            tmpFormula->print();
+            cout << ", ";
+            (*_formula)->print();
+            cout << endl;
+            
             if( !mLRA.assertSubformula(mValidationFormula->last()) )
             {
                 remapAndSetLraInfeasibleSubsets();
@@ -711,7 +724,7 @@ namespace smtrat
     {
         // Dirty! Normally this shouldn't be neccessary
         mInfeasibleSubsets.clear();
-        mBackendCalled = false;
+        mIsBackendCalled = false;
         double relativeContraction = 1;
         bool   splitOccurred = false;
         std::pair<bool,symbol> didSplit;
@@ -865,6 +878,7 @@ namespace smtrat
                 
                 while ( !mIcpRelevantCandidates.empty() && !splitOccurred )
                 {
+                    
                     #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
                     mCheckContraction = new Formula(*mpReceivedFormula);
                     
@@ -1115,7 +1129,7 @@ namespace smtrat
                         writeBox();
                         #endif
                         Answer a = runBackends();
-                        mBackendCalled = true;
+                        mIsBackendCalled = true;
                         #ifdef ICPMODULE_DEBUG
                         cout << "[ICP] Done running backends:" << a << endl;
                         #endif
@@ -2904,7 +2918,7 @@ namespace smtrat
                 }
             }
         }
-        if (mBackendCalled)
+        if (mIsBackendCalled)
             return newAdded;
         else
             return true;
@@ -2916,22 +2930,40 @@ namespace smtrat
         mInfeasibleSubsets.clear();
         std::set<const Formula*> temporaryIfsSet;
         GiNaC::symtab variables;
+        mLRA.printReceivedFormula();
+        cout << "ValidationFormula: ";
+        mValidationFormula->print();
+        cout << endl;
+        cout << "Size mReceivedFormulaMapping: " << mReceivedFormulaMapping.size() << endl;
         for( auto variableIt = mHistoryActual->rStateInfeasibleVariables().begin(); variableIt != mHistoryActual->rStateInfeasibleVariables().end(); ++variableIt )
         {
             cout << "Consider Variable: ";
             (*variableIt)->print();
+            
+            
+            
+            
             std::set<const Formula*> definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
             for( auto formulaIt = definingOrigins.begin(); formulaIt != definingOrigins.end(); ++formulaIt )
             {
+                cout << "Defining origin: ";
+                (*formulaIt)->print();
+                cout << endl;
 //                assert( mReceivedFormulaMapping.find(*formulaIt) != mReceivedFormulaMapping.end() );
                 for( auto lraFormulaIt = mReceivedFormulaMapping.begin(); lraFormulaIt != mReceivedFormulaMapping.end(); ++lraFormulaIt )
                 {
-                    if( (*lraFormulaIt).first->constraint().id() == (*formulaIt)->constraint().id() )
-                    {
-                        temporaryIfsSet.insert((*lraFormulaIt).second);
-                        break;
-                    }
+                    cout << "Compare: ";
+                    (*formulaIt)->print();
+                    cout << " == ";
+                    (*lraFormulaIt).first->print();
+                    cout << endl;
+//                    if( (*lraFormulaIt).first->constraint().id() == (*formulaIt)->constraint().id() )
+//                    {
+//                        temporaryIfsSet.insert((*lraFormulaIt).second);
+//                        break;
+//                    }
                 }
+                assert(false);
                 cout << "Defining origin: " << **formulaIt << endl;
 //                temporaryIfsSet.insert(mReceivedFormulaMapping.at(*formulaIt));
             }
