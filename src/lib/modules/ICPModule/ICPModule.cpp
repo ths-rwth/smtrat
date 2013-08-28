@@ -152,13 +152,13 @@ namespace smtrat
                 if( informLRA )
                 {
                     GiNaCRA::ICP::searchVariables(lhs, variables);
-                    cout << "LHS: " << lhs << ", Variables: ";
+//                    cout << "LHS: " << lhs << ", Variables: ";
                     for( auto variableIt = variables->begin(); variableIt != variables->end(); ++variableIt)
                     {
                         newVariables.insert(std::make_pair((*variableIt).get_name(), *variableIt));
-                        cout << (*variableIt).get_name() << ", ";
+//                        cout << (*variableIt).get_name() << ", ";
                     }
-                    cout << endl;
+//                    cout << endl;
 
                     linearFormula = Formula( Formula::newConstraint(lhs,_constraint->relation(), newVariables) );
                 }
@@ -290,7 +290,7 @@ namespace smtrat
             mReceivedFormulaMapping.insert(std::make_pair(tmpFormula, *_formula));
             // try to insert new icpVariable -> is original!
             symbol tmpVar = ex_to<symbol>( (*(*_formula)->pConstraint()->variables().begin()).second );
-            cout << "PConstraint: " << *tmpFormula->pConstraint() << "Nops: " << tmpFormula->pConstraint()->lhs().nops() << endl;
+//            cout << "PConstraint: " << *tmpFormula->pConstraint() << "Nops: " << tmpFormula->pConstraint()->lhs().nops() << endl;
             const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(tmpFormula->pConstraint());
             assert( slackvariable != NULL );
             icp::IcpVariable* icpVar = new icp::IcpVariable(tmpVar, true, slackvariable );
@@ -317,13 +317,14 @@ namespace smtrat
             // find replacement
             for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
             {
+                cout << "Consider: " << *(*replacementIt).first << " (id: " << (*replacementIt).first->id() <<") - > " << *(*replacementIt).second << " (id: " << (*replacementIt).second->id() << ")" << endl;
                 if ( (*replacementIt).second->id() == (*_formula)->pConstraint()->id() )
                 {
                     replacementPtr = (*replacementIt).first;
                     break;
                 }
             }
-            cout << "searching for: " << (*_formula)->constraint() << endl;
+            cout << "searching for: " << (*_formula)->constraint() << " (id: " << (*_formula)->constraint().id() << ")" << endl;
             assert(replacementPtr != NULL);
             cout << "ReplacementPTR points to: " << *replacementPtr << endl;
             const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(replacementPtr);
@@ -1123,51 +1124,51 @@ namespace smtrat
                             assert(infeasibleSubsets().empty());
                             bool isBoundInfeasible = false;
                             bool isBound = false;
-
+                            
                             vector<Module*>::const_iterator backend = usedBackends().begin();
                             while( backend != usedBackends().end() )
                             {
-                                if( !(*backend)->infeasibleSubsets().empty() )
+                                assert( !(*backend)->infeasibleSubsets().empty() );
+                                (*backend)->printInfeasibleSubsets();
+                                for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
+                                        infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
                                 {
-                                    for( vec_set_const_pFormula::const_iterator infsubset = (*backend)->infeasibleSubsets().begin();
-                                            infsubset != (*backend)->infeasibleSubsets().end(); ++infsubset )
+                                    for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                                     {
-                                        for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
+                                        isBound = false;
+                                        std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.begin();
+                                        for ( ; icpVar != mVariables.end(); ++icpVar )
                                         {
-                                            isBound = false;
-                                            std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.begin();
-                                            for ( ; icpVar != mVariables.end(); ++icpVar )
+                                            if( (*icpVar).second->isOriginal() && (*icpVar).second->isExternalBoundsSet() )
                                             {
-                                                if( (*icpVar).second->isOriginal() && (*icpVar).second->isExternalBoundsSet() )
+                                                assert( !(*icpVar).second->isExternalUpdated() );
+                                                if ( (*subformula) == (*(*icpVar).second->externalLeftBound()) || (*subformula) == (*(*icpVar).second->externalRightBound()) )
                                                 {
-                                                    assert( !(*icpVar).second->isExternalUpdated() );
-                                                    if ( (*subformula) == (*(*icpVar).second->externalLeftBound()) || (*subformula) == (*(*icpVar).second->externalRightBound()) )
-                                                    {
-                                                        isBound = true;
-                                                        isBoundInfeasible = true;
-                                                        break;
-                                                    }
+                                                    isBound = true;
+                                                    isBoundInfeasible = true;
+                                                    break;
                                                 }
-                                            }
-                                            if(!isBound)
-                                            {
-                                                if (mInfeasibleSubsets.empty())
-                                                {
-                                                    set<const Formula*> infeasibleSubset = set<const Formula*>();
-                                                    infeasibleSubset.insert(*subformula);
-                                                    mInfeasibleSubsets.insert(mInfeasibleSubsets.begin(), infeasibleSubset);
-                                                }
-                                                else
-                                                    (*mInfeasibleSubsets.begin()).insert(*subformula);
                                             }
                                         }
+                                        if(!isBound)
+                                        {
+                                            if (mInfeasibleSubsets.empty())
+                                            {
+                                                set<const Formula*> infeasibleSubset = set<const Formula*>();
+                                                infeasibleSubset.insert(*subformula);
+                                                mInfeasibleSubsets.insert(mInfeasibleSubsets.begin(), infeasibleSubset);
+                                            }
+                                            else
+                                                (*mInfeasibleSubsets.begin()).insert(*subformula);
+                                        }
                                     }
-                                    break;
                                 }
+                                break;
                             }
                             if ( isBoundInfeasible )
                             {
                                 // set stateInfeasibleSubset
+                                assert(!mInfeasibleSubsets.empty());
                                 for (auto infSetIt = (*mInfeasibleSubsets.begin()).begin(); infSetIt != (*mInfeasibleSubsets.begin()).end(); ++infSetIt )
                                 {
                                     if( icp::isBound((*infSetIt)->pConstraint()) )
@@ -1431,7 +1432,7 @@ namespace smtrat
             const Constraint* constraint = (*mTemporaryMonomes.begin()).second;
             GiNaC::exmap substitutions;
             
-            cout << "Constraint: " << *constraint << endl;
+//            cout << "Constraint: " << *constraint << endl;
 
             // Create contraction candidate object for every possible derivation variable
             for( auto expressionIt = mTemporaryMonomes.begin(); expressionIt != mTemporaryMonomes.end(); )
@@ -1509,7 +1510,7 @@ namespace smtrat
                         if( is_exactly_a<numeric>( *(--(*summand).end())) )
                             coefficient = ex_to<numeric>( *(--(*summand).end()) );
 
-                        cout << "Coefficient: " << coefficient << endl;
+//                        cout << "Coefficient: " << coefficient << endl;
 
                         if(mLinearizations.find(*summand) != mLinearizations.end() )
                         {
@@ -1518,7 +1519,7 @@ namespace smtrat
                         }
                         else
                         {
-                            cout << "Linear" << endl;
+//                            cout << "Linear" << endl;
                             linearizedConstraint += *summand;
                         }
                     }
@@ -1530,7 +1531,7 @@ namespace smtrat
                             linearizedConstraint += (*mLinearizations.find(*summand)).second;
                         else
                         {
-                            cout << "Stuff" << endl;
+//                            cout << "Stuff" << endl;
                             linearizedConstraint += *summand;
                         }
                     }
@@ -1538,8 +1539,18 @@ namespace smtrat
             }
             else if( is_exactly_a<mul>(constraint->lhs()) )
             {
+//                cout << "MUL" << endl;
+                linearizedConstraint = 1;
+                for( auto factor = constraint->lhs().begin(); factor != constraint->lhs().end(); ++factor)
+                {
+                    if( is_exactly_a<numeric>(*factor) )
+                    {
+                        linearizedConstraint *= *factor;
+                        break;
+                    }
+                }
                 assert(mLinearizations.find(constraint->lhs()) != mLinearizations.end());
-                linearizedConstraint = (*mLinearizations.find(constraint->lhs())).second;
+                linearizedConstraint *= (*mLinearizations.find(constraint->lhs())).second;
             }
         }
         assert(mTemporaryMonomes.empty());
@@ -2814,22 +2825,22 @@ namespace smtrat
                     GiNaC::symtab variables;
                     variables.insert(std::pair<string, ex>((*variablesIt).first, tmpSymbol));
 
-                    ex test = ex( tmpSymbol - (*variablesIt).second ).expand();
-                    cout << "Test: " << test << endl;
+//                    ex test = ex( tmpSymbol - (*variablesIt).second ).expand();
+//                    cout << "Test: " << test << endl;
                     
                     const Constraint* leftTmp;
                     switch (mIntervals.at(tmpSymbol).leftType())
                     {
                         case GiNaCRA::DoubleInterval::STRICT_BOUND:
-                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
-//                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GREATER, bound);
-                            cout << "IsStrictBound: " << *leftTmp << endl;
+//                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
+                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GREATER, bound);
+//                            cout << "IsStrictBound: " << *leftTmp << endl;
 //                            leftTmp->printProperties();
                             break;
                         case GiNaCRA::DoubleInterval::WEAK_BOUND:
-                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
-//                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GEQ, bound);
-                            cout << "IsWeakBound: " << *leftTmp << endl;
+//                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
+                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GEQ, bound);
+//                            cout << "IsWeakBound: " << *leftTmp << endl;
 //                            leftTmp->printProperties();
                             
                             break;
@@ -2859,16 +2870,16 @@ namespace smtrat
                     switch (mIntervals.at(tmpSymbol).rightType())
                     {
                         case GiNaCRA::DoubleInterval::STRICT_BOUND:
-                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
-//                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LESS, bound);
-                            cout << "IsStrictBound: " << *rightTmp << endl;
+//                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
+                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LESS, bound);
+//                            cout << "IsStrictBound: " << *rightTmp << endl;
 //                            rightTmp->printProperties();
                             
                             break;
                         case GiNaCRA::DoubleInterval::WEAK_BOUND:
-                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
-//                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LEQ, bound);
-                            cout << "IsWeakBound: " << *rightTmp << endl;
+//                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
+                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LEQ, bound);
+//                            cout << "IsWeakBound: " << *rightTmp << endl;
 //                            rightTmp->printProperties();
                             break;
                         default:
@@ -2907,11 +2918,22 @@ namespace smtrat
         GiNaC::symtab variables;
         for( auto variableIt = mHistoryActual->rStateInfeasibleVariables().begin(); variableIt != mHistoryActual->rStateInfeasibleVariables().end(); ++variableIt )
         {
+            cout << "Consider Variable: ";
+            (*variableIt)->print();
             std::set<const Formula*> definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
             for( auto formulaIt = definingOrigins.begin(); formulaIt != definingOrigins.end(); ++formulaIt )
             {
-                assert( mReceivedFormulaMapping.find(*formulaIt) != mReceivedFormulaMapping.end() );
-                temporaryIfsSet.insert(mReceivedFormulaMapping.at(*formulaIt));
+//                assert( mReceivedFormulaMapping.find(*formulaIt) != mReceivedFormulaMapping.end() );
+                for( auto lraFormulaIt = mReceivedFormulaMapping.begin(); lraFormulaIt != mReceivedFormulaMapping.end(); ++lraFormulaIt )
+                {
+                    if( (*lraFormulaIt).first->constraint().id() == (*formulaIt)->constraint().id() )
+                    {
+                        temporaryIfsSet.insert((*lraFormulaIt).second);
+                        break;
+                    }
+                }
+                cout << "Defining origin: " << **formulaIt << endl;
+//                temporaryIfsSet.insert(mReceivedFormulaMapping.at(*formulaIt));
             }
         }
         for ( auto constraintIt = mHistoryRoot->rStateInfeasibleConstraints().begin(); constraintIt != mHistoryRoot->rStateInfeasibleConstraints().end(); ++constraintIt )
