@@ -155,7 +155,7 @@ namespace smtrat
         if( !iterBoolPair.second )
             delete constraint;
         else
-            constraint->setBoundProperties( _var, _bound );
+            constraint->setBoundProperties( _var, ((_rel == CR_GREATER || _rel == CR_GEQ) ? _bound : -_bound ) );
         return *iterBoolPair.first;
     }
 
