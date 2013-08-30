@@ -32,7 +32,7 @@
 
 //#define ICP_BOXLOG
 
-#define SMTRAT_DEVOPTION_VALIDATION_ICP
+//#define SMTRAT_DEVOPTION_VALIDATION_ICP
 
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
@@ -181,7 +181,7 @@ namespace smtrat
             icp::HistoryNode*                                                                   mHistoryActual; // Actual node of the state-tree
             
             Formula*                                                                            mValidationFormula; // ReceivedFormula of the internal LRA Module
-            std::map<const Formula*, const Formula*, formulaPtrComp>                            mReceivedFormulaMapping; // LraReceived -> IcpReceived
+//            std::map<const Formula*, const Formula*, formulaPtrComp>                            mReceivedFormulaMapping; // LraReceived -> IcpReceived
             std::vector< std::atomic_bool* >                                                    mLRAFoundAnswer;
             RuntimeSettings*                                                                    mLraRuntimeSettings;
             LRAModule                                                                           mLRA; // internal LRA module
