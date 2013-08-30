@@ -75,16 +75,24 @@ namespace smtrat
                 }
             };
             
+            struct formulaPtrComp
+            {
+                bool operator ()(const Formula* _lhs, const Formula* _rhs ) const
+                {
+                    assert(_lhs->getType() == REALCONSTRAINT);
+                    assert(_rhs->getType() == REALCONSTRAINT);
+                    return _lhs->constraint().id() < _rhs->constraint().id();
+                }
+            };
+            
             struct ExComp
             {           
                 bool operator() (const ex _lhs, const ex _rhs)
                 {
                     GiNaC::symtab lhsVariables;
                     GiNaC::symtab rhsVariables;
-                    
                     std::vector<symbol>* lhsVar = new std::vector<symbol>;
                     std::vector<symbol>* rhsVar = new std::vector<symbol>;
-                    
                     GiNaCRA::ICP::searchVariables(_lhs, lhsVar);
                     GiNaCRA::ICP::searchVariables(_rhs, rhsVar);
                     
@@ -95,32 +103,21 @@ namespace smtrat
                         rhsVariables.insert( std::make_pair((*symbolIt).get_name(), *symbolIt) );
                     
                     bool result = (*this)(_lhs, lhsVariables, _rhs, rhsVariables);
-                    
                     return result;
                 }
                 
                 bool operator() (const ex _lhs, const GiNaC::symtab _lhsVariables, const ex _rhs, const GiNaC::symtab _rhsVariables )
                 {
                     if( (*_lhsVariables.begin()).first < (*_rhsVariables.begin()).first )
-                    {
                         return true;
-                    }
                     else if( (*_lhsVariables.begin()).first > (*_rhsVariables.begin()).first )
-                    {
                         return false;
-                    }
                     else if ( _lhs.degree((*_lhsVariables.begin()).second) < _rhs.degree((*_rhsVariables.begin()).second) )
-                    {
                         return true;
-                    }
                     else if ( _lhs.degree((*_lhsVariables.begin()).second) > _rhs.degree((*_rhsVariables.begin()).second) )
-                    {
                         return false;
-                    }
                     else if ( _lhsVariables.size() == 1 && _rhsVariables.size() == 1) // both are the same
-                    {
                         return false;
-                    }
                     else // 1st variable and degree are similar -> cut of
                     {
                         ex left = _lhs;
@@ -184,7 +181,7 @@ namespace smtrat
             icp::HistoryNode*                                                                   mHistoryActual; // Actual node of the state-tree
             
             Formula*                                                                            mValidationFormula; // ReceivedFormula of the internal LRA Module
-            std::map<const Formula*, const Formula*>                                            mReceivedFormulaMapping; // LraReceived -> IcpReceived
+            std::map<const Formula*, const Formula*, formulaPtrComp>                            mReceivedFormulaMapping; // LraReceived -> IcpReceived
             std::vector< std::atomic_bool* >                                                    mLRAFoundAnswer;
             RuntimeSettings*                                                                    mLraRuntimeSettings;
             LRAModule                                                                           mLRA; // internal LRA module
@@ -192,9 +189,9 @@ namespace smtrat
             std::set<const Constraint*, constraintPointerComp>                                  mCenterConstraints; // keeps actual centerConstaints for deletion
             std::set<Formula*>                                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
-            bool                                                                                mInitialized; // initialized ICPModule?
+            bool                                                                                mIsIcpInitialized; // initialized ICPModule?
             unsigned                                                                            mCurrentId; // keeps the currentId of the state nodes
-            bool                                                                                mBackendCalled; // has a backend already been called in the actual run?
+            bool                                                                                mIsBackendCalled; // has a backend already been called in the actual run?
             
             #ifdef ICP_BOXLOG
             std::fstream                                                                        icpLog;

@@ -869,14 +869,14 @@ namespace smtrat
     /**
      * Sets the properties of this constraint being a bound.
      * 
-     * @param _var
-     * @param _bound
+     * @param _var The bounded variable of this constraint.
+     * @param _constantPart The constant part of this constraint, considering that the left-hand side is zero.
      */
-    void Constraint::setBoundProperties( const symbol& _var, const numeric& _bound )
+    void Constraint::setBoundProperties( const symbol& _var, const numeric& _constantPart )
     {
         assert( variables().size() == 1 );
         assert( variables().begin()->second == _var );
-        assert( lhs()-_var+_bound == 0 || lhs()+_var-_bound == 0 );
+        assert( lhs()-_var-_constantPart == 0 || lhs()+_var-_constantPart == 0 );
         mIsNeverPositive = false;
         mIsNeverNegative = false;
         mIsNeverZero = false;
@@ -886,8 +886,8 @@ namespace smtrat
         varInfo.maxDegree = 1;
         mMaxMonomeDegree = 1;
         mMinMonomeDegree = 1;
-        mNumMonomials = (_bound == 0 ? 1 : 2);
-        mConstantPart = -_bound;
+        mNumMonomials = (_constantPart == 0 ? 1 : 2);
+        mConstantPart = _constantPart;
     }
     
     /**

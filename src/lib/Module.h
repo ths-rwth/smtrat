@@ -143,12 +143,7 @@ namespace smtrat
             /// Stores the assignment of the current satisfiable result, if existent.
             Model mModel;
 
-            // Methods.
-            bool checkFirstSubformulaToPassValidity() const;
-
         public:
-
-            //DEPRECATED
             std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForRemoval;
             //DEPRECATED
             std::set<Formula::iterator, FormulaIteratorConstraintIdCompare> mScheduledForAdding;
@@ -286,16 +281,20 @@ namespace smtrat
             {
                 return mFoundAnswer;
             }
+            
+            const std::string moduleName( const ModuleType _moduleType ) const
+            {
+                return moduleTypeToString( _moduleType );
+            }
+            
+            void updateDeductions();
 
             // Methods for debugging purposes.
             static void addAssumptionToCheck( const Formula&, bool, const std::string& );
             static void addAssumptionToCheck( const std::set<const Formula*>&, bool, const std::string& );
             static void addAssumptionToCheck( const std::set<const Constraint*>&, bool, const std::string& );
             static void storeAssumptionsToCheck( const Manager& );
-            static const std::string moduleName( const ModuleType );
-            void storeSmallerInfeasibleSubsetsCheck( const std::vector<Formula>&, const std::string& = "smaller_muses" ) const;
-            std::vector<Formula> generateSubformulaeOfInfeasibleSubset( unsigned infeasiblesubset, unsigned size ) const;
-            void updateDeductions();
+            void checkInfSubsetForMinimality( vec_set_const_pFormula::const_iterator, const std::string& = "smaller_muses", unsigned = 1 ) const;
 
         protected:
 
@@ -361,35 +360,60 @@ namespace smtrat
                     return false;
                 }
             }
+            
+            void setOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins )
+            {
+                assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
+                mPassedformulaOrigins[_formula] = _origins;
+            }
+
+            void addOrigin( const Formula* const _formula, set< const Formula* >& _origin )
+            {
+                assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
+                mPassedformulaOrigins[_formula].push_back( _origin );
+            }
+
+            void addOrigins( const Formula* const _formula, vec_set_const_pFormula& _origins )
+            {
+                assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
+                vec_set_const_pFormula& formulaOrigins = mPassedformulaOrigins[_formula];
+                formulaOrigins.insert( formulaOrigins.end(), _origins.begin(), _origins.end() );
+            }
+            
+            const std::set<const Formula*>& getOrigins( Formula::const_iterator _subformula ) const
+            {
+                FormulaOrigins::const_iterator origins = mPassedformulaOrigins.find( *_subformula );
+                assert( origins != mPassedformulaOrigins.end() );
+                assert( origins->second.size() == 1 );
+                return origins->second.front();
+            }
+            
+            void getOrigins( const Formula* const _subformula, vec_set_const_pFormula& _origins ) const
+            {
+                FormulaOrigins::const_iterator origins = mPassedformulaOrigins.find( _subformula );
+                assert( origins != mPassedformulaOrigins.end() );
+                _origins = origins->second;
+            }
 
             Answer foundAnswer( Answer );
             void addConstraintToInform( const Constraint* const _constraint );
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );
             void addSubformulaToPassedFormula( Formula*, const vec_set_const_pFormula& );
             void addSubformulaToPassedFormula( Formula*, const Formula* );
-            void setOrigins( const Formula* const, vec_set_const_pFormula& );
-            void addOrigin( const Formula* const, std::set< const Formula* >& );
-            void addOrigins( const Formula* const, vec_set_const_pFormula& );
-            void getOrigins( const Formula* const, vec_set_const_pFormula& ) const;
             void getInfeasibleSubsets();
             static bool modelsDisjoint( const Model&, const Model& );
             void getBackendsModel();
             Answer runBackends();
-            void clearReceivedFormula( Formula::const_iterator _received, Formula::iterator _passed );
-            Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator, bool local = false, bool forceBackendCall = false );
-            Formula::iterator pruneSubformulaFromPassedFormula( Formula::iterator );
+            Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator );
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
             const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
-            const std::set<const Formula*>& getOrigins( Formula::const_iterator ) const;
-
         public:
             // Printing methods.
             void print( std::ostream& = std::cout, const std::string = "***" ) const;
             void printReceivedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printPassedFormula( std::ostream& = std::cout, const std::string = "***" ) const;
             void printInfeasibleSubsets( std::ostream& = std::cout, const std::string = "***" ) const;
-
         private:
             // Measuring module times.
             clock::time_point mTimerCheckStarted;
@@ -398,25 +422,105 @@ namespace smtrat
             timeunit mTimerAddTotal;
             timeunit mTimerCheckTotal;
             timeunit mTimerRemoveTotal;
-            // for debug purposes
+            // For debug purposes.
             bool mTimerAddRunning;
             bool mTimerCheckRunning;
             bool mTimerRemoveRunning;
             unsigned mNrConsistencyChecks;
         public:
-            void startCheckTimer();
-            void stopCheckTimer();
-            void startAddTimer();
-            void stopAddTimer();
-            void startRemoveTimer();
-            void stopRemoveTimer();
-            int stopAllTimers();
-            void startTimers(int timers);
-            double getAddTimerMS() const;
-            double getCheckTimerMS() const;
-            double getRemoveTimerMS() const;
-            unsigned getNrConsistencyChecks() const;
+            void startAddTimer()
+            {
+                assert(!mTimerAddRunning);
+                mTimerAddRunning = true;
+                mTimerAddStarted = clock::now();
+            }
 
+            void stopAddTimer()
+            {
+                assert( mTimerAddRunning );
+                mTimerAddTotal += std::chrono::duration_cast<timeunit>( clock::now() - mTimerAddStarted );
+                mTimerAddRunning = false;
+            }
+
+            void startCheckTimer()
+            {
+                assert( !mTimerCheckRunning );
+                mTimerCheckRunning = true;
+                mTimerCheckStarted = clock::now();
+            }
+
+            void stopCheckTimer()
+            {
+                assert( mTimerCheckRunning );
+                mTimerCheckTotal += std::chrono::duration_cast<timeunit>( clock::now() - mTimerCheckStarted );
+                mTimerCheckRunning = false;
+            }
+
+            void startRemoveTimer()
+            {
+                assert( !mTimerRemoveRunning );
+                mTimerRemoveRunning = true;
+                mTimerRemoveStarted = clock::now();
+
+            }
+
+            void stopRemoveTimer()
+            {
+                assert( mTimerRemoveRunning );
+                mTimerRemoveTotal += std::chrono::duration_cast<timeunit>( clock::now() - mTimerRemoveStarted );
+                mTimerRemoveRunning = false;
+            }
+
+            void startTimers( int timers )
+            {
+                if( ( timers & 1 ) > 0 )
+                    startAddTimer();
+                if( ( timers & 2 ) > 0 )
+                    startCheckTimer();
+                if( ( timers & 4 ) > 0 )
+                    startRemoveTimer();
+            }
+
+            int stopAllTimers()
+            {
+                int result = 0;
+                if( mTimerAddRunning )
+                {
+                    stopAddTimer();
+                    result |= 1;
+                }
+                if( mTimerCheckRunning )
+                {
+                    stopCheckTimer();
+                    result |= 2;
+                }
+                if( mTimerRemoveRunning )
+                {
+                    stopRemoveTimer();
+                    result |= 4;
+                }
+                return result;
+            }
+
+            double getAddTimerMS() const
+            {
+                return mTimerAddTotal.count() / 1000;
+            }
+
+            double getCheckTimerMS() const
+            {
+                return mTimerCheckTotal.count() / 1000;
+            }
+
+            double getRemoveTimerMS() const
+            {
+                return mTimerRemoveTotal.count() / 1000;
+            }
+
+            unsigned getNrConsistencyChecks() const
+            {
+                return mNrConsistencyChecks;
+            }
     };
 }    // namespace smtrat
 #endif   /* SMTRAT_MODULE_H */
