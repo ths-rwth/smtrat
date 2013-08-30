@@ -152,6 +152,33 @@ namespace smtrat
         #endif
         #ifdef MODULE_VERBOSE
         cout << "Initial CAD setting: " << endl << setting << endl;
+        #ifdef SMTRAT_CAD_ALTERNATIVE_SETTING
+        cout << "SMTRAT_CAD_ALTERNATIVE_SETTING set" << endl;
+        #endif
+        #ifdef SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING
+        cout << "SMTRAT_CAD_DISABLEEQUATIONDETECT_SETTING set" << endl;
+        #endif
+        #ifdef SMTRAT_CAD_GENERIC_SETTING
+        cout << "SMTRAT_CAD_GENERIC_SETTING set" << endl;
+        #endif
+        #ifdef SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
+        cout << "SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION set" << endl;
+        #endif
+        #ifdef SMTRAT_CAD_DISABLE_SMT
+        cout << "SMTRAT_CAD_DISABLE_SMT set" << endl;
+        #endif
+        #ifdef SMTRAT_CAD_DISABLE_MIS
+        cout << "SMTRAT_CAD_DISABLE_MIS set" << endl;
+        #endif
+        #ifdef SMTRAT_CAD_DISABLE_MIS
+        cout << "SMTRAT_CAD_DISABLE_MIS set" << endl;
+        #endif
+        
+        #define SMTRAT_CAD_DISABLE_THEORYPROPAGATION
+        //#define SMTRAT_CAD_DISABLE_MIS
+        //#define CHECK_SMALLER_MUSES
+        //#define SMTRAT_CAD_ONEMOSTDEGREEVERTEX_MISHEURISTIC
+        //#define SMTRAT_CAD_TWOMOSTDEGREEVERTICES_MISHEURISTIC
         #endif
     }
 
