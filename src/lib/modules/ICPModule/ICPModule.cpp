@@ -36,7 +36,7 @@
 using namespace GiNaC;
 using namespace std;
 
-#define ICPMODULE_DEBUG
+//#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
 #define BOXMANAGEMENT
 
@@ -1159,12 +1159,16 @@ namespace smtrat
                                                 {
                                                     isBound = true;
                                                     isBoundInfeasible = true;
+                                                    assert(mVariables.find( (*(*subformula)->constraint().variables().begin()).first ) != mVariables.end() );
+                                                    mHistoryActual->addInfeasibleVariable(mVariables.at((*(*subformula)->constraint().variables().begin()).first));
+                                                    cout << "Added infeasible variable" << endl;
                                                     break;
                                                 }
                                             }
                                         }
                                         if(!isBound)
                                         {
+                                            cout << "Add to infeasible subset: " << **subformula << endl;
                                             if (mInfeasibleSubsets.empty())
                                             {
                                                 set<const Formula*> infeasibleSubset = set<const Formula*>();
@@ -1187,13 +1191,19 @@ namespace smtrat
                                     if( icp::isBound((*infSetIt)->pConstraint()) )
                                     {
                                         assert( mVariables.find( (*(*infSetIt)->constraint().variables().begin()).first ) != mVariables.end() );
-                                        mHistoryActual->addInfeasibleVariable( mVariables.at((*(*infSetIt)->constraint().variables().begin()).first) );
+//                                        mHistoryActual->addInfeasibleVariable( mVariables.at((*(*infSetIt)->constraint().variables().begin()).first) );
+//                                        cout << "Added infeasible Variable." << endl;
                                     }
                                     else
+                                    {
                                         mHistoryActual->addInfeasibleConstraint((*infSetIt)->pConstraint());
+                                        cout << "Added infeasible Constraint." << endl;
+                                    }
+                                        
                                 }
                                 // clear infeasible subsets
                                 mInfeasibleSubsets.clear();
+                                mHistoryActual->print();
                                 #ifdef BOXMANAGEMENT
                                 #ifdef ICPMODULE_DEBUG
                                 cout << "InfSet of Backend contained bound, Chose new box: " << endl;
@@ -2848,14 +2858,14 @@ namespace smtrat
                     switch (mIntervals.at(tmpSymbol).leftType())
                     {
                         case GiNaCRA::DoubleInterval::STRICT_BOUND:
-//                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
-                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GREATER, bound);
+                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
+//                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GREATER, bound);
 //                            cout << "IsStrictBound: " << *leftTmp << endl;
 //                            leftTmp->printProperties();
                             break;
                         case GiNaCRA::DoubleInterval::WEAK_BOUND:
-//                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
-                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GEQ, bound);
+                            leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
+//                            leftTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_GEQ, bound);
 //                            cout << "IsWeakBound: " << *leftTmp << endl;
 //                            leftTmp->printProperties();
                             
@@ -2886,15 +2896,15 @@ namespace smtrat
                     switch (mIntervals.at(tmpSymbol).rightType())
                     {
                         case GiNaCRA::DoubleInterval::STRICT_BOUND:
-//                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
-                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LESS, bound);
+                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
+//                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LESS, bound);
 //                            cout << "IsStrictBound: " << *rightTmp << endl;
 //                            rightTmp->printProperties();
                             
                             break;
                         case GiNaCRA::DoubleInterval::WEAK_BOUND:
-//                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
-                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LEQ, bound);
+                            rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
+//                            rightTmp = Formula::newBound(tmpSymbol, Constraint_Relation::CR_LEQ, bound);
 //                            cout << "IsWeakBound: " << *rightTmp << endl;
 //                            rightTmp->printProperties();
                             break;
@@ -2948,8 +2958,9 @@ namespace smtrat
             std::set<const Formula*> definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
             for( auto formulaIt = definingOrigins.begin(); formulaIt != definingOrigins.end(); ++formulaIt )
             {
-//                cout << "Defining origin: ";
-//                (*formulaIt)->print();
+                cout << "Defining origin: ";
+                (*formulaIt)->print();
+                cout << endl;
 //                cout << endl;
 //                assert( mReceivedFormulaMapping.find(*formulaIt) != mReceivedFormulaMapping.end() );
 //                for( auto lraFormulaIt = mReceivedFormulaMapping.begin(); lraFormulaIt != mReceivedFormulaMapping.end(); ++lraFormulaIt )
@@ -2985,7 +2996,7 @@ namespace smtrat
                     }
                 }
                 
-                
+//                
 //                cout << "Defining origin: " << **formulaIt << endl;
 //                temporaryIfsSet.insert(mReceivedFormulaMapping.at(*formulaIt));
             }
@@ -3002,6 +3013,13 @@ namespace smtrat
                 }
             }
         }
+        
+        for( auto constraintIt = temporaryIfsSet.begin(); constraintIt != temporaryIfsSet.end(); ++constraintIt )
+        {
+            (*constraintIt)->print();
+            cout << endl;
+        }
+        
         mInfeasibleSubsets.push_back(temporaryIfsSet);
     }
     

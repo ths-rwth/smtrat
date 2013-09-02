@@ -24,12 +24,12 @@ namespace smtrat
             switch( _interval.leftType() )
             {
                 case GiNaCRA::DoubleInterval::STRICT_BOUND:
-                    leftTmp = Formula::newBound(_var, Constraint_Relation::CR_GREATER, bound);
-//                    leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
+//                    leftTmp = Formula::newBound(_var, Constraint_Relation::CR_GREATER, bound);
+                    leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GREATER, variables);
                     break;
                 case GiNaCRA::DoubleInterval::WEAK_BOUND:
-                    leftTmp = Formula::newBound(_var, Constraint_Relation::CR_GEQ, bound);
-//                    leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
+//                    leftTmp = Formula::newBound(_var, Constraint_Relation::CR_GEQ, bound);
+                    leftTmp = Formula::newConstraint(leftEx, Constraint_Relation::CR_GEQ, variables);
                     break;
                 default:
                     leftTmp = NULL;
@@ -43,12 +43,12 @@ namespace smtrat
             switch( _interval.rightType() )
             {
                 case GiNaCRA::DoubleInterval::STRICT_BOUND:
-//                    rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
-                    rightTmp = Formula::newBound( _var, Constraint_Relation::CR_LESS, bound );
+                    rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LESS, variables);
+//                    rightTmp = Formula::newBound( _var, Constraint_Relation::CR_LESS, bound );
                     break;
                 case GiNaCRA::DoubleInterval::WEAK_BOUND:
-//                    rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
-                    rightTmp = Formula::newBound( _var, Constraint_Relation::CR_LEQ, bound );
+                    rightTmp = Formula::newConstraint(rightEx, Constraint_Relation::CR_LEQ, variables);
+//                    rightTmp = Formula::newBound( _var, Constraint_Relation::CR_LEQ, bound );
                     break;
                 default:
                     rightTmp = NULL;

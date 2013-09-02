@@ -498,13 +498,13 @@ namespace smtrat
                     for( GiNaCRA::evaldoubleintervalmap::const_iterator intervalIt = mIntervals.begin(); intervalIt != mIntervals.end();
                             ++intervalIt )
                     {
-                        cout << (*intervalIt).first << "\t : ";
+                        _out << (*intervalIt).first << "\t : ";
                         (*intervalIt).second.dbgprint();
                     }
                     _out << "Applied Contractions: ";
                     if( mAppliedContractions.size() > 0 )
                     {
-                        cout << endl;
+                        _out << endl;
                         for( std::set<const ContractionCandidate*>::iterator candidateIt = mAppliedContractions.begin();
                                 candidateIt != mAppliedContractions.end(); ++candidateIt )
                         {
@@ -512,9 +512,31 @@ namespace smtrat
                         }
                     }
                     else
-                        cout << "None" << endl;
+                        _out << "None" << endl;
+                    _out << "Infeasible Variables: ";
+                    if( !mStateInfeasibleVariables.empty())
+                    {
+                        _out << endl;
+                        for( set_icpVariable::iterator varIt = mStateInfeasibleVariables.begin(); varIt != mStateInfeasibleVariables.end(); ++varIt )
+                        (*varIt)->print();
+                    }
+                    else
+                    {
+                        _out << "None" << endl;
+                    }
                     
-                    printReasons();
+                    _out << "Infeasible Constraints: ";
+                    if( !mStateInfeasibleConstraints.empty() )
+                    {
+                        _out << endl;
+                        for( ConstraintSet::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
+                        _out << **constraintIt << endl;
+                    }
+                    else
+                    {
+                        _out << "None" << endl;
+                    }
+//                    printReasons();
                 }
 
                 void printReasons( ostream& _out = std::cout ) const

@@ -32,7 +32,9 @@
 
 //#define ICP_BOXLOG
 
-//#define SMTRAT_DEVOPTION_VALIDATION_ICP
+//#ifdef SMTRAT_DEVOPTION_Validation
+#define SMTRAT_DEVOPTION_VALIDATION_ICP
+//#endif
 
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
