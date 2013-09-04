@@ -179,7 +179,7 @@ namespace icp
                 _out << endl;
             }
 
-            bool isActive() const
+            const bool isActive() const
             {
                 return mActive;
             }
@@ -330,6 +330,12 @@ namespace icp
             bool operator< (IcpVariable const& rhs) const
             {
                 return (this->mVar.get_name() < rhs.var().get_name());
+            }
+            
+            friend std::ostream& operator<<( std::ostream& os, const IcpVariable& _var )
+            {
+                os << _var.var() << " [Orig.: " << _var.isOriginal() << ", act.: " << _var.isActive() << "]";
+                return os;
             }
 
         private:

@@ -270,13 +270,13 @@ namespace smtrat
                 
                 void addInfeasibleConstraint(const Constraint* _constraint)
                 {
-//                    cout << "[AddInfeasibleConstraint] " << *_constraint << endl;
+                    cout << "[AddInfeasibleConstraint] " << *_constraint << endl;
                     mStateInfeasibleConstraints.insert(_constraint);
                 }
                 
                 void addInfeasibleVariable( const IcpVariable* _variable, bool _addOnlyVariable = false )
                 {
-//                    cout << "[AddInfeasibleVariable] " << *_variable << endl;
+                    cout << "[AddInfeasibleVariable] " << *_variable << endl;
                     mStateInfeasibleVariables.insert(_variable);
                     
                     if(!_addOnlyVariable)

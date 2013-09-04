@@ -36,7 +36,7 @@
 using namespace GiNaC;
 using namespace std;
 
-//#define ICPMODULE_DEBUG
+#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
 #define BOXMANAGEMENT
 
@@ -2947,18 +2947,16 @@ namespace smtrat
 //        mValidationFormula->print();
 //        cout << endl;
 //        cout << "Size mReceivedFormulaMapping: " << mReceivedFormulaMapping.size() << endl;
-        for( auto variableIt = mHistoryActual->rStateInfeasibleVariables().begin(); variableIt != mHistoryActual->rStateInfeasibleVariables().end(); ++variableIt )
+        for( auto variableIt = mHistoryRoot->rStateInfeasibleVariables().begin(); variableIt != mHistoryRoot->rStateInfeasibleVariables().end(); ++variableIt )
         {
-//            cout << "Consider Variable: ";
-//            (*variableIt)->print();
-            
-            
-            
+            cout << "Consider Variable: " << **variableIt << endl;
             
             std::set<const Formula*> definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
             for( auto formulaIt = definingOrigins.begin(); formulaIt != definingOrigins.end(); ++formulaIt )
             {
-                cout << "Defining origin: ";
+                cout << "Defining origin for ";
+                (*variableIt)->print();
+                cout << " = ";
                 (*formulaIt)->print();
                 cout << endl;
 //                cout << endl;
