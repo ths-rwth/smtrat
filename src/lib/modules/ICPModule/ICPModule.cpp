@@ -36,7 +36,7 @@
 using namespace GiNaC;
 using namespace std;
 
-#define ICPMODULE_DEBUG
+//#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
 #define BOXMANAGEMENT
 
@@ -829,6 +829,7 @@ namespace smtrat
             setBox(mHistoryRoot);
             mHistoryRoot->rReasons().clear();
             mHistoryRoot->rStateInfeasibleConstraints().clear();
+            mHistoryRoot->rStateInfeasibleVariables().clear();
             mHistoryActual = mHistoryActual->addRight(new icp::HistoryNode(mIntervals,2));
             mCurrentId = mHistoryActual->id();
             #ifdef ICPMODULE_DEBUG
@@ -918,7 +919,7 @@ namespace smtrat
                     #endif
 
                     // catch if new interval is empty -> we can drop box and chose next box
-                    if ( icp::intervalBoxContainsEmptyInterval(mIntervals) )
+                    if ( mIntervals.at(candidate->derivationVar()).empty() )
                     {
                         #ifdef ICPMODULE_DEBUG
                         cout << "GENERATED EMPTY INTERVAL, Drop Box: " << endl;
@@ -1203,7 +1204,6 @@ namespace smtrat
                                 }
                                 // clear infeasible subsets
                                 mInfeasibleSubsets.clear();
-                                mHistoryActual->print();
                                 #ifdef BOXMANAGEMENT
                                 #ifdef ICPMODULE_DEBUG
                                 cout << "InfSet of Backend contained bound, Chose new box: " << endl;
@@ -1239,9 +1239,13 @@ namespace smtrat
                             }
                         }
                         else // if answer == true or answer == unknown
+                        {
+                            mHistoryActual->propagateStateInfeasibleConstraints();
+                            mHistoryActual->propagateStateInfeasibleVariables();
                             return foundAnswer(a);
+                        }
                     }
-                    else
+                    else // Box hasn't changed
                     {
                         #ifdef BOXMANAGEMENT
                         #ifdef ICPMODULE_DEBUG
@@ -1275,7 +1279,7 @@ namespace smtrat
                         #endif
                     }
                 }
-                else
+                else // valid Box, newConstraintAdded
                 {
                     // do nothing, the resetting of the tree has already been performed in validate
                     #ifdef ICPMODULE_DEBUG
@@ -1299,11 +1303,11 @@ namespace smtrat
                 {
                     assert(mVariables.find(mLastCandidate->derivationVar().get_name()) != mVariables.end());
                     mHistoryActual->addInfeasibleVariable(mVariables.at(mLastCandidate->derivationVar().get_name()));
-//                    if (mHistoryActual->rReasons().find(mLastCandidate->lhs().get_name()) != mHistoryActual->rReasons().end())
-//                    {
-//                        for( auto constraintIt = mHistoryActual->rReasons().at(mLastCandidate->derivationVar().get_name()).begin(); constraintIt != mHistoryActual->rReasons().at(mLastCandidate->derivationVar().get_name()).end(); ++constraintIt )
-//                            mHistoryActual->addInfeasibleConstraint(*constraintIt);
-//                    }
+                    if (mHistoryActual->rReasons().find(mLastCandidate->derivationVar().get_name()) != mHistoryActual->rReasons().end())
+                    {
+                        for( auto constraintIt = mHistoryActual->rReasons().at(mLastCandidate->derivationVar().get_name()).begin(); constraintIt != mHistoryActual->rReasons().at(mLastCandidate->derivationVar().get_name()).end(); ++constraintIt )
+                            mHistoryActual->addInfeasibleConstraint(*constraintIt);
+                    }
                 }
                 
                 mLastCandidate = NULL;
@@ -1320,6 +1324,7 @@ namespace smtrat
                     #endif
                     // no new Box to select -> finished
                     mHistoryActual->propagateStateInfeasibleConstraints();
+                    mHistoryActual->propagateStateInfeasibleVariables();
                     generateInfeasibleSubset();
                     printInfeasibleSubsets();
                     return foundAnswer(False);
@@ -2716,7 +2721,8 @@ namespace smtrat
                         _basis->parent()->addInfeasibleConstraint(*constraintIt);
                     
                     for( auto variableIt = _basis->rStateInfeasibleVariables().begin(); variableIt != _basis->rStateInfeasibleVariables().end(); ++variableIt )
-                    _basis->parent()->addInfeasibleVariable(*variableIt,true);
+                        _basis->parent()->addInfeasibleVariable(*variableIt,true);
+                    
                     chooseBox(_basis->parent());
                 }
             }
@@ -2942,23 +2948,18 @@ namespace smtrat
         mInfeasibleSubsets.clear();
         std::set<const Formula*> temporaryIfsSet;
         GiNaC::symtab variables;
-//        mLRA.printReceivedFormula();
-//        cout << "ValidationFormula: ";
-//        mValidationFormula->print();
-//        cout << endl;
-//        cout << "Size mReceivedFormulaMapping: " << mReceivedFormulaMapping.size() << endl;
         for( auto variableIt = mHistoryRoot->rStateInfeasibleVariables().begin(); variableIt != mHistoryRoot->rStateInfeasibleVariables().end(); ++variableIt )
         {
-            cout << "Consider Variable: " << **variableIt << endl;
+//            cout << "Consider Variable: " << **variableIt << endl;
             
             std::set<const Formula*> definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
             for( auto formulaIt = definingOrigins.begin(); formulaIt != definingOrigins.end(); ++formulaIt )
             {
-                cout << "Defining origin for ";
-                (*variableIt)->print();
-                cout << " = ";
-                (*formulaIt)->print();
-                cout << endl;
+//                cout << "Defining origin for ";
+//                (*variableIt)->print();
+//                cout << " = ";
+//                (*formulaIt)->print();
+//                cout << endl;
 //                cout << endl;
 //                assert( mReceivedFormulaMapping.find(*formulaIt) != mReceivedFormulaMapping.end() );
 //                for( auto lraFormulaIt = mReceivedFormulaMapping.begin(); lraFormulaIt != mReceivedFormulaMapping.end(); ++lraFormulaIt )
@@ -2974,30 +2975,48 @@ namespace smtrat
 ////                        break;
 ////                    }
 //                }
-                for( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
+                
+                bool hasAdditionalVariables = false;
+                for( GiNaC::symtab::const_iterator varIt = mpReceivedFormula->realValuedVars().begin(); varIt != mpReceivedFormula->realValuedVars().end(); ++varIt )
                 {
-                    if( (*replacementIt).first->id() == (*formulaIt)->constraint().id() )
+                    if((*formulaIt)->constraint().hasVariable((*varIt).first))
                     {
-                        unsigned id = (*replacementIt).second->id();
-                        bool found = false;
-                        for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
-                        {
-                            if( (*receivedFormulaIt)->constraint().id() == id )
-                            {
-                                temporaryIfsSet.insert(*receivedFormulaIt);
-                                found = true;
-                                break;
-                            }
-                        }
-                        assert(found);
+                        hasAdditionalVariables = true;
                         break;
                     }
                 }
                 
-//                
-//                cout << "Defining origin: " << **formulaIt << endl;
-//                temporaryIfsSet.insert(mReceivedFormulaMapping.at(*formulaIt));
-            }
+                if( hasAdditionalVariables)
+                {
+                    for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
+                    {
+                        if( icp::isBoundIn((*variableIt)->var(), (*receivedFormulaIt)->pConstraint()) )
+                            temporaryIfsSet.insert(*receivedFormulaIt);
+                    }
+                }
+                else
+                {
+                    for( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
+                    {
+                        if( (*replacementIt).first->id() == (*formulaIt)->constraint().id() )
+                        {
+                            unsigned id = (*replacementIt).second->id();
+                            bool found = false;
+                            for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
+                            {
+                                if( (*receivedFormulaIt)->constraint().id() == id )
+                                {
+                                    temporaryIfsSet.insert(*receivedFormulaIt);
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            assert(found);
+                            break;
+                        }
+                    }
+                } // has no additional variables
+            }// for all definingOrigins
         }
         for ( auto constraintIt = mHistoryRoot->rStateInfeasibleConstraints().begin(); constraintIt != mHistoryRoot->rStateInfeasibleConstraints().end(); ++constraintIt )
         {
