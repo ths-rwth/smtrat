@@ -175,7 +175,7 @@ namespace smtrat
             std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
             
             std::map<const ex, const Constraint*, ExComp>                                       mTemporaryMonomes; // monomes from preprocessing to be linearized
-            std::map<const Constraint*, const Constraint*, constraintPointerComp>               mReplacements; // linearized constraint -> original constraint
+            std::map<const Constraint*, const Constraint*, constraintIdComp>               mReplacements; // linearized constraint -> original constraint
             std::map<const ex, symbol, ExComp>                                                  mLinearizations; // monome -> variable
             GiNaC::exmap                                                                        mSubstitutions; // variable -> monome/variable
             

@@ -324,7 +324,7 @@ namespace smtrat
             for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
             {
 //                cout << "Consider: " << *(*replacementIt).first << " (id: " << (*replacementIt).first->id() <<") - > " << *(*replacementIt).second << " (id: " << (*replacementIt).second->id() << ")" << endl;
-                if ( (*replacementIt).second->id() == (*_formula)->pConstraint()->id() )
+                if ( (*replacementIt).second == (*_formula)->pConstraint() )
                 {
                     replacementPtr = (*replacementIt).first;
                     break;
@@ -481,12 +481,12 @@ namespace smtrat
             std::map<string, icp::IcpVariable*>::iterator toRemove;
             for( candidateIt = mNonlinearConstraints.at(constr).begin(); candidateIt != mNonlinearConstraints.at(constr).end(); ++candidateIt )
             {
-                // remove origin, no matter if constraint is active or not ?!?
+                // remove origin, no matter if constraint is active or not
                 (*candidateIt)->removeOrigin(*_formula);
                 
                 //store slackvariable for later removal.
-                toRemove = mVariables.find((*candidateIt)->lhs().get_name());
-                assert(toRemove != mVariables.end());
+//                toRemove = mVariables.find((*candidateIt)->lhs().get_name());
+//                assert(toRemove != mVariables.end());
 
                 // remove candidate if counter == 1, else decrement counter.
                 if( mActiveNonlinearConstraints.find( *candidateIt ) != mActiveNonlinearConstraints.end() )
@@ -622,7 +622,7 @@ namespace smtrat
                     }
                 }
             }
-            mVariables.erase(toRemove);
+//            mVariables.erase(toRemove);
         }
 
         // linear handling
@@ -1162,14 +1162,14 @@ namespace smtrat
                                                     isBoundInfeasible = true;
                                                     assert(mVariables.find( (*(*subformula)->constraint().variables().begin()).first ) != mVariables.end() );
                                                     mHistoryActual->addInfeasibleVariable(mVariables.at((*(*subformula)->constraint().variables().begin()).first));
-                                                    cout << "Added infeasible variable" << endl;
+//                                                    cout << "Added infeasible variable" << endl;
                                                     break;
                                                 }
                                             }
                                         }
                                         if(!isBound)
                                         {
-                                            cout << "Add to infeasible subset: " << **subformula << endl;
+//                                            cout << "Add to infeasible subset: " << **subformula << endl;
                                             if (mInfeasibleSubsets.empty())
                                             {
                                                 set<const Formula*> infeasibleSubset = set<const Formula*>();
@@ -1198,7 +1198,7 @@ namespace smtrat
                                     else
                                     {
                                         mHistoryActual->addInfeasibleConstraint((*infSetIt)->pConstraint());
-                                        cout << "Added infeasible Constraint." << endl;
+//                                        cout << "Added infeasible Constraint." << endl;
                                     }
                                         
                                 }
@@ -1222,7 +1222,7 @@ namespace smtrat
                                     mHistoryActual->propagateStateInfeasibleVariables();
                                     // no new Box to select -> finished
                                     generateInfeasibleSubset();
-                                    printInfeasibleSubsets();
+//                                    printInfeasibleSubsets();
                                     return foundAnswer(False);
                                 }
                                 #else
@@ -1270,7 +1270,7 @@ namespace smtrat
                             mHistoryActual->propagateStateInfeasibleConstraints();
                             mHistoryActual->propagateStateInfeasibleVariables();
                             generateInfeasibleSubset();
-                            printInfeasibleSubsets();
+//                            printInfeasibleSubsets();
                             return foundAnswer(False);
                         }
                         #else
@@ -1326,7 +1326,7 @@ namespace smtrat
                     mHistoryActual->propagateStateInfeasibleConstraints();
                     mHistoryActual->propagateStateInfeasibleVariables();
                     generateInfeasibleSubset();
-                    printInfeasibleSubsets();
+//                    printInfeasibleSubsets();
                     return foundAnswer(False);
                 }
                 #else
@@ -2771,6 +2771,7 @@ namespace smtrat
             {
                 mIntervals[(*intervalIt).first] = (*intervalIt).second;
                 std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.find((*intervalIt).first.get_name());
+//                cout << "Searching for " << (*intervalIt).first.get_name() << endl;
                 assert(icpVar != mVariables.end());
                 (*icpVar).second->setUpdated();
             }
@@ -2998,13 +2999,12 @@ namespace smtrat
                 {
                     for( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
                     {
-                        if( (*replacementIt).first->id() == (*formulaIt)->constraint().id() )
+                        if( (*replacementIt).first == (*formulaIt)->pConstraint() )
                         {
-                            unsigned id = (*replacementIt).second->id();
                             bool found = false;
                             for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
                             {
-                                if( (*receivedFormulaIt)->constraint().id() == id )
+                                if( (*receivedFormulaIt)->pConstraint() == (*replacementIt).second )
                                 {
                                     temporaryIfsSet.insert(*receivedFormulaIt);
                                     found = true;
@@ -3162,12 +3162,12 @@ namespace smtrat
             {
                 for ( auto replacementsIt = mReplacements.begin(); replacementsIt != mReplacements.end(); ++replacementsIt )
                 {
-                    if( (*formulaIt)->constraint().id() == (*replacementsIt).first->id() )
+                    if( (*formulaIt)->pConstraint() == (*replacementsIt).first )
                     {
                         bool found = false;
                         for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
                         {
-                            if( (*replacementsIt).second->id() == (*receivedFormulaIt)->constraint().id() )
+                            if( (*replacementsIt).second == (*receivedFormulaIt)->pConstraint() )
                             {
                                 newSet.insert(*receivedFormulaIt);
                                 found = true;

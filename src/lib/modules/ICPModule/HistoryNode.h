@@ -30,7 +30,7 @@
 #ifndef HISTORYNODE_H
 #define HISTORYNODE_H
 
-#define HISTORY_DEBUG
+//#define HISTORY_DEBUG
 
 #include "IcpVariable.h"
 #include "ContractionCandidate.h"
