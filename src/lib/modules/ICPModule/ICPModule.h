@@ -201,7 +201,11 @@ namespace smtrat
             #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
             Formula*                                                                            mCheckContraction;
             #endif
-            
+
+            /*
+             *  Constants
+             */
+            static const unsigned mSplittingStrategy = 3;
 
         public:
 
@@ -299,10 +303,19 @@ namespace smtrat
             void tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, GiNaCRA::evaldoubleintervalmap _intervals );
             
             /**
+             * Selects the next splitting direction according to different heuristics.
+             * @param _targetDiameter
+             * @return 
+             */
+            const double calculateSplittingImpact ( const GiNaC::symbol& _var, icp::ContractionCandidate& _candidate ) const;
+            
+            /**
              * Checks if there is a need for a split and manages the splitting and branching in the
              * historyTree.
+             * @param _targetDiameter
+             * @return if a split has happened and in which dimension.
              */
-            std::pair<bool,symbol> checkAndPerformSplit( double _targetDiameter );
+            std::pair<bool,symbol> checkAndPerformSplit( const double& _targetDiameter );
             
             /**
              * Creates constraints from the given interval and adds them to the

@@ -1992,12 +1992,72 @@ namespace smtrat
     }
     
     
-    std::pair<bool,symbol> ICPModule::checkAndPerformSplit( double _targetDiameter )
+    const double ICPModule::calculateSplittingImpact ( const GiNaC::symbol& _var, icp::ContractionCandidate& _candidate ) const
+    {
+        double impact = 0;
+        assert(mIntervals.count(_var) > 0);
+        assert(_var == _candidate.derivationVar());
+        double originalDiameter = mIntervals.at(_var).diameter();
+        switch(mSplittingStrategy)
+        {
+            case 1: // Select biggest interval
+            {
+                impact = originalDiameter;
+                break;
+            }
+            case 2: // Rule of Hansen and Walster - select interval with most varying function values
+            {
+                GiNaCRA::evaldoubleintervalmap* tmpIntervals = new GiNaCRA::evaldoubleintervalmap(mIntervals);
+                tmpIntervals->emplace(_var,GiNaCRA::DoubleInterval(1));
+                GiNaCRA::DoubleInterval derivedEvalInterval = GiNaCRA::DoubleInterval::evaluate(_candidate.derivative(), *tmpIntervals);
+                impact = derivedEvalInterval.diameter() * originalDiameter;
+                delete tmpIntervals;
+                break;
+            }
+            case 3: // Rule of Ratz - minimize width of inclusion
+            {
+                GiNaCRA::evaldoubleintervalmap* tmpIntervals = new GiNaCRA::evaldoubleintervalmap(mIntervals);
+                tmpIntervals->emplace(_var,GiNaCRA::DoubleInterval(1));
+                GiNaCRA::DoubleInterval derivedEvalInterval = GiNaCRA::DoubleInterval::evaluate(_candidate.derivative(), *tmpIntervals);
+                GiNaCRA::DoubleInterval negCenter = GiNaCRA::DoubleInterval(mIntervals.at(_var).midpoint()).minus();
+                negCenter = negCenter.add(mIntervals.at(_var));
+                derivedEvalInterval = derivedEvalInterval.mul(negCenter);
+                impact = derivedEvalInterval.diameter();
+                delete tmpIntervals;
+                break;
+            }
+            case 4: // Select according to optimal machine representation of bounds
+            {
+                if(mIntervals.at(_var).contains(0))
+                {
+                    impact = originalDiameter;
+                }
+                else
+                {
+                    impact = originalDiameter/(mIntervals.at(_var).right() > 0 ? mIntervals.at(_var).left() : mIntervals.at(_var).right());
+                }
+                break;
+            }
+            default:
+            {
+                impact = originalDiameter;
+                break;
+            }
+        }
+        #ifdef ICPMODULE_DEBUG
+        cout << __PRETTY_FUNCTION__ << " Rule " << mSplittingStrategy << ": " << impact << endl;
+        #endif
+        return impact;
+    }
+    
+    
+    std::pair<bool,symbol> ICPModule::checkAndPerformSplit( const double& _targetDiameter )
     {
         std::pair<bool,symbol> result;
         result.first = false;
         bool found = false;
-
+        double maximalImpact = 0;
+        
         // first check all intevals from nonlinear contractionCandidats -> backwards to begin at the most important candidate
         for ( auto candidateIt = mActiveNonlinearConstraints.rbegin(); candidateIt != mActiveNonlinearConstraints.rend(); ++candidateIt )
         {
@@ -2011,9 +2071,13 @@ namespace smtrat
                     assert(icpVar != mVariables.end());
                     if ( mIntervals.find(ex_to<symbol>((*variableIt).second)) != mIntervals.end() && mIntervals.at(ex_to<symbol>((*variableIt).second)).diameter() > _targetDiameter && (*icpVar).second->isOriginal() )
                     {
-                        variable = ex_to<symbol>((*variableIt).second);
-                        found  = true;
-                        break;
+                        double actualImpact = calculateSplittingImpact(ex_to<symbol>((*variableIt).second), *(*candidateIt).first);
+                        if( actualImpact > maximalImpact )
+                        {
+                            variable = ex_to<symbol>((*variableIt).second);
+                            found = true;
+                            maximalImpact = actualImpact;
+                        }
                     }
                 }
 
@@ -2092,9 +2156,13 @@ namespace smtrat
                     assert(icpVar != mVariables.end());
                     if ( mIntervals.find(ex_to<symbol>((*variableIt).second)) != mIntervals.end() && mIntervals.at(ex_to<symbol>((*variableIt).second)).diameter() > _targetDiameter && (*icpVar).second->isOriginal() )
                     {
-                        variable = ex_to<symbol>((*variableIt).second);
-                        found = true;
-                        break;
+                        double actualImpact = calculateSplittingImpact(ex_to<symbol>((*variableIt).second), *(*candidateIt).first);
+                        if( actualImpact > maximalImpact )
+                        {
+                            variable = ex_to<symbol>((*variableIt).second);
+                            found = true;
+                            maximalImpact = actualImpact;
+                        }
                     }
                 }
                 if ( found )
