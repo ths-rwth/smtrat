@@ -2071,12 +2071,21 @@ namespace smtrat
                     assert(icpVar != mVariables.end());
                     if ( mIntervals.find(ex_to<symbol>((*variableIt).second)) != mIntervals.end() && mIntervals.at(ex_to<symbol>((*variableIt).second)).diameter() > _targetDiameter && (*icpVar).second->isOriginal() )
                     {
-                        double actualImpact = calculateSplittingImpact(ex_to<symbol>((*variableIt).second), *(*candidateIt).first);
-                        if( actualImpact > maximalImpact )
+                        if(mSplittingStrategy > 0)
+                        {
+                            double actualImpact = calculateSplittingImpact(ex_to<symbol>((*variableIt).second), *(*candidateIt).first);
+                            if( actualImpact > maximalImpact )
+                            {
+                                variable = ex_to<symbol>((*variableIt).second);
+                                found = true;
+                                maximalImpact = actualImpact;
+                            }
+                        }
+                        else
                         {
                             variable = ex_to<symbol>((*variableIt).second);
                             found = true;
-                            maximalImpact = actualImpact;
+                            break;
                         }
                     }
                 }
@@ -2156,12 +2165,21 @@ namespace smtrat
                     assert(icpVar != mVariables.end());
                     if ( mIntervals.find(ex_to<symbol>((*variableIt).second)) != mIntervals.end() && mIntervals.at(ex_to<symbol>((*variableIt).second)).diameter() > _targetDiameter && (*icpVar).second->isOriginal() )
                     {
-                        double actualImpact = calculateSplittingImpact(ex_to<symbol>((*variableIt).second), *(*candidateIt).first);
-                        if( actualImpact > maximalImpact )
+                        if(mSplittingStrategy > 0)
+                        {
+                            double actualImpact = calculateSplittingImpact(ex_to<symbol>((*variableIt).second), *(*candidateIt).first);
+                            if( actualImpact > maximalImpact )
+                            {
+                                variable = ex_to<symbol>((*variableIt).second);
+                                found = true;
+                                maximalImpact = actualImpact;
+                            }
+                        }
+                        else
                         {
                             variable = ex_to<symbol>((*variableIt).second);
                             found = true;
-                            maximalImpact = actualImpact;
+                            break;
                         }
                     }
                 }

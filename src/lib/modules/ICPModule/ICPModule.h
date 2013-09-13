@@ -205,7 +205,7 @@ namespace smtrat
             /*
              *  Constants
              */
-            static const unsigned mSplittingStrategy = 3;
+            static const unsigned mSplittingStrategy = 0;
 
         public:
 
