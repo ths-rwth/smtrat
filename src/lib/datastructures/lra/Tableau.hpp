@@ -412,14 +412,15 @@ namespace smtrat
                 unsigned checkCorrectness() const;
                 bool rowCorrect( unsigned _rowNumber ) const;
                 #ifdef LRA_CUTS_FROM_PROOFS
-                bool isDefining( unsigned, std::vector<unsigned>&, std::vector<T>&, T& ) const;
+                bool isDefining( unsigned, std::vector<unsigned>&, std::vector<T>&, T&, T& ) const;
                 bool isDiagonal(unsigned,std::vector<unsigned>&);
                 void invertColumn(unsigned);
                 void addColumns(unsigned,unsigned,T);
                 void multiplyRow(unsigned,T);
-                T Scalar_Product(Tableau<T>&,Tableau<T>&,unsigned,unsigned) const;
+                T Scalar_Product(Tableau<T>&,Tableau<T>&,unsigned,unsigned,T) const;
                 void calculate_hermite_normalform(std::vector<unsigned>&);
                 void invert_HNF_Matrix(std::vector<unsigned>);
+                bool create_cut_from_proof(Tableau<T>&,unsigned&,T&);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
@@ -2106,15 +2107,15 @@ namespace smtrat
          *         false,   otherwise   
          */
         template<class T>
-        bool Tableau<T>::isDefining( unsigned row_index, std::vector<unsigned>& _variables, std::vector<T>& _coefficients, T& _lcmOfCoeffDenoms ) const
+        bool Tableau<T>::isDefining( unsigned row_index, std::vector<unsigned>& _variables, std::vector<T>& _coefficients, T& _lcmOfCoeffDenoms, T& max_value ) const
         {
             const Variable<T>& basic_var = *mRows.at(row_index).mName;
+            Iterator row_iterator = Iterator( mRows.at(row_index).mStartEntry, mpEntries );
             if( basic_var.infimum() == basic_var.assignment() || basic_var.supremum() == basic_var.assignment() )
             {
                 /*
                  * The row represents a DC. Collect the nonbasics and the referring coefficients.
                  */
-                Iterator row_iterator = Iterator( mRows.at(row_index).mStartEntry, mpEntries );
                 while( true )
                 {
                     _variables.push_back( (*row_iterator).columnNumber() );
@@ -2130,6 +2131,25 @@ namespace smtrat
                     }
                 }
                 return true;
+            }
+            else
+            {
+                while( true )
+                {
+                    T abs_content = abs((*row_iterator).content());
+                    if(abs_content > max_value)
+                    {
+                        max_value = abs_content;                        
+                    }
+                    if( !row_iterator.rowEnd() )
+                    {
+                        row_iterator.right();
+                    }
+                    else
+                    {
+                        break;
+                    }                    
+                }                
             }
             return false;
         }
@@ -2416,7 +2436,7 @@ namespace smtrat
          * @return   the value (T) of the scalarproduct.
          */        
         template<class T> 
-        T Tableau<T>::Scalar_Product(Tableau<T>& A, Tableau<T>& B,unsigned rowA, unsigned columnB) const
+        T Tableau<T>::Scalar_Product(Tableau<T>& A, Tableau<T>& B,unsigned rowA, unsigned columnB, T lcm) const
         {
             Iterator rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry);
             Iterator columnB_iterator = Iterator(B.mColumns.at(columnB).mStartEntry);
@@ -2427,32 +2447,32 @@ namespace smtrat
             }
             while(true)
             {
-                if((*rowA_iterator).rowNumber() == (*columnB_iterator).columnNumber())
-                {
-                result += (*rowA_iterator).rContent()*(*columnB_iterator).rContent();                
-                }
-                else if ((*rowA_iterator).rowNumber() >= (*columnB_iterator).columnNumber())
+                if ((*rowA_iterator).rowNumber() > (*columnB_iterator).columnNumber())
                 {
                     while((*rowA_iterator).rowNumber() > (*columnB_iterator).columnNumber())
                     {
                         columnB_iterator.down();
                     }
                 }
-                else
+                else if((*rowA_iterator).rowNumber() < (*columnB_iterator).columnNumber())
                 {
                     while((*rowA_iterator).rowNumber() < (*columnB_iterator).columnNumber())
                     {
                         rowA_iterator.right();
                     }                    
                 }
-                if(!rowA_iterator.rowEnd())
+                if((*rowA_iterator).rowNumber() == (*columnB_iterator).columnNumber())
                 {
-                    rowA_iterator.right();
+                    result += (*rowA_iterator).rContent()*(*columnB_iterator).rContent()*lcm;                
+                }
+                if(rowA_iterator.rowEnd() || columnB_iterator.columnEnd())
+                {
+                    break;
                 }
                 else
                 {
-                    break;
-                }            
+                    rowA_iterator.right();
+                }
             }
         return result;    
         }
@@ -2640,7 +2660,7 @@ namespace smtrat
                 row_iterator = Iterator(mRows.at(i).mStartEntry, mpEntries);
                 while(true)
                 {                  
-                    if( ( (*row_iterator).columnNumber() != added_pos ) && ( isDiagonal((*row_iterator).columnNumber(),diagonals) ) && ( added_content <= (*row_iterator).content() ) )
+                    if( ( (*row_iterator).columnNumber() != added_pos ) && ( isDiagonal((*row_iterator).columnNumber(),diagonals) ) && ( added_content <= abs( (*row_iterator).content() ) ) )
                     {
                        /*
                         * The current entry has to be normalized because it´s
@@ -2738,7 +2758,48 @@ namespace smtrat
                 }
             }
         }
-        #endif
+        
+        /**
+         * Checks whether a cut from proof can be constructed with the row with index row_index
+         * in the DC_Tableau. 
+         * 
+         * @return true,    if the proof can be constructed.
+         *         false,   otherwise   
+         */        
+        template<class T>
+        bool Tableau<T>::create_cut_from_proof(Tableau<T>& DC_Tableau, unsigned& row_index, T& lcm)
+        {
+            Value<T> result = T(0);
+            Iterator row_iterator = Iterator(DC_Tableau.mRows.at(row_index).mStartEntry, DC_Tableau.mpEntries); 
+            /*
+             * Calculate H^(-1)*b 
+             */
+            while(true)
+            {
+                const Variable<T>& basic_var = *mRows[row_index].mName;
+                const Value<T>& basic_var_assignment = basic_var.assignment();
+                result += basic_var_assignment*(*row_iterator).content()*lcm;
+                if(row_iterator.rowEnd())
+                {
+                    break;
+                }
+                else
+                {
+                    row_iterator.right();
+                }                
+            }
+            /*if(!(T((*result)).toGinacNumeric()).is_integer())
+            {
+               // Construct the Cut
+               return true; 
+            }
+            else
+            {
+                return false;                
+            }*/
+            return true;
+        }
+                #endif
         
         #ifdef LRA_GOMORY_CUTS
         enum GOMORY_SET

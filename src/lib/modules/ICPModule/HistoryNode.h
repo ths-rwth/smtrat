@@ -30,7 +30,7 @@
 #ifndef HISTORYNODE_H
 #define HISTORYNODE_H
 
-#define HISTORY_DEBUG
+//#define HISTORY_DEBUG
 
 #include "IcpVariable.h"
 #include "ContractionCandidate.h"
@@ -260,25 +260,43 @@ namespace smtrat
 
                 bool stateInfeasibleConstraintsContainSplit()
                 {
-                    for( ConstraintSet::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
+                    for( set_icpVariable::const_iterator variableIt = mStateInfeasibleVariables.begin(); variableIt != mStateInfeasibleVariables.end(); ++variableIt )
                     {
-                        if( (*constraintIt)->variables().find(this->variable().get_name()) != (*constraintIt)->variables().end() )
+                        if( (*variableIt)->var() == this->variable() )
+                        {
                             return true;
+                        }
                     }
                     return false;
+//                    for( ConstraintSet::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
+//                    {
+//                        if( (*constraintIt)->variables().find(this->variable().get_name()) != (*constraintIt)->variables().end() && (*constraintIt)->maxDegree(this->variable()) == 1 && (*constraintIt)->variables().size() == 1 )
+//                            return true;
+//                    }
+//                    return false;
                 }
                 
-                void addInfeasibleConstraint(const Constraint* _constraint)
+                bool addInfeasibleConstraint(const Constraint* _constraint, bool _addOnlyConstraint = false)
                 {
-//                    cout << "[AddInfeasibleConstraint] " << *_constraint << endl;
-                    mStateInfeasibleConstraints.insert(_constraint);
+//                    cout << "[" << this->id() << "][AddInfeasibleConstraint] " << *_constraint << endl;
+                    if(!_addOnlyConstraint)
+                    {
+                        // also add all variables contained in the constraint to stateInfeasibleVariables
+                        for( GiNaC::symtab::const_iterator variableIt = _constraint->variables().begin(); variableIt != _constraint->variables().end(); ++variableIt )
+                        {
+                            if(mVariableReasons.find((*variableIt).first) != mVariableReasons.end())
+                            {
+                                for( set_icpVariable::const_iterator icpVarIt = mVariableReasons.at((*variableIt).first).begin(); icpVarIt != mVariableReasons.at((*variableIt).first).end(); ++icpVarIt )
+                                    addInfeasibleVariable(*icpVarIt);
+                            }
+                        }
+                    }
+                    return mStateInfeasibleConstraints.insert(_constraint).second;
                 }
                 
-                void addInfeasibleVariable( const IcpVariable* _variable, bool _addOnlyVariable = false )
+                bool addInfeasibleVariable( const IcpVariable* _variable, bool _addOnlyVariable = false )
                 {
-//                    cout << "[AddInfeasibleVariable] " << *_variable << endl;
-                    mStateInfeasibleVariables.insert(_variable);
-                    
+//                    cout << "[" << this->id() << "][AddInfeasibleVariable] " << *_variable << endl;
                     if(!_addOnlyVariable)
                     {
                         //also add the reasons for the variables
@@ -288,6 +306,7 @@ namespace smtrat
                                 mStateInfeasibleVariables.insert(*variableIt);
                         }
                     }
+                    return mStateInfeasibleVariables.insert(_variable).second;
                 }
 
                 void addContraction( ContractionCandidate* _candidate, set_icpVariable _variables )
@@ -498,13 +517,13 @@ namespace smtrat
                     for( GiNaCRA::evaldoubleintervalmap::const_iterator intervalIt = mIntervals.begin(); intervalIt != mIntervals.end();
                             ++intervalIt )
                     {
-                        cout << (*intervalIt).first << "\t : ";
+                        _out << (*intervalIt).first << "\t : ";
                         (*intervalIt).second.dbgprint();
                     }
                     _out << "Applied Contractions: ";
                     if( mAppliedContractions.size() > 0 )
                     {
-                        cout << endl;
+                        _out << endl;
                         for( std::set<const ContractionCandidate*>::iterator candidateIt = mAppliedContractions.begin();
                                 candidateIt != mAppliedContractions.end(); ++candidateIt )
                         {
@@ -512,9 +531,31 @@ namespace smtrat
                         }
                     }
                     else
-                        cout << "None" << endl;
+                        _out << "None" << endl;
+                    _out << "Infeasible Variables: ";
+                    if( !mStateInfeasibleVariables.empty())
+                    {
+                        _out << endl;
+                        for( set_icpVariable::iterator varIt = mStateInfeasibleVariables.begin(); varIt != mStateInfeasibleVariables.end(); ++varIt )
+                        (*varIt)->print();
+                    }
+                    else
+                    {
+                        _out << "None" << endl;
+                    }
                     
-                    printReasons();
+                    _out << "Infeasible Constraints: ";
+                    if( !mStateInfeasibleConstraints.empty() )
+                    {
+                        _out << endl;
+                        for( ConstraintSet::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
+                        _out << **constraintIt << endl;
+                    }
+                    else
+                    {
+                        _out << "None" << endl;
+                    }
+//                    printReasons();
                 }
 
                 void printReasons( ostream& _out = std::cout ) const
