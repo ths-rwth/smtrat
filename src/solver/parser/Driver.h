@@ -362,7 +362,7 @@ namespace smtrat
             void addVariable( const class location&, const std::string&, const std::string& );
             const std::string addBooleanVariable( const class location&, const std::string& = "", bool = false );
             void addTheoryBinding( const class location&, const std::string&, ExVarsPair* );
-            smtrat::Formula* booleanBinding( const std::string&, Formula* );
+            smtrat::Formula* booleanBinding( const class location&, const std::string&, Formula* );
             smtrat::Formula* appendBindings( std::vector< smtrat::Formula* >&, smtrat::Formula* );
             TheoryVarMap::const_iterator addTheoryVariable( const class location&, const std::string&, const std::string& = "", bool = false );
             const std::string& getBooleanVariable( const class location&, const std::string& );

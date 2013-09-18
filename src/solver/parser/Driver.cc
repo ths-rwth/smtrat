@@ -165,17 +165,14 @@ namespace smtrat
         if( _type.compare( "Real" ) == 0 )
         {
             addTheoryVariable( _loc, _type, _name );
-            mLexer->mTheoryVariables.insert( _name );
         }
         else if( _type.compare( "Int" ) == 0 )
         {
             addTheoryVariable( _loc, _type, _name );
-            mLexer->mTheoryVariables.insert( _name );
         }
         else if( _type.compare( "Bool" ) == 0 )
         {
             addBooleanVariable( _loc, _name );
-            mLexer->mBooleanVariables.insert( _name );
         }
         else error( _loc, "Only declarations of real-valued and Boolean variables are allowed!");
     }
@@ -187,6 +184,7 @@ namespace smtrat
      */
     const string Driver::addBooleanVariable( const class location& _loc, const string& _varName, bool _isBindingVariable )
     {
+        mLexer->mBooleanVariables.insert( _varName );
         string booleanName = "";
         if( _isBindingVariable )
             booleanName = Formula::newAuxiliaryBooleanVariable();
@@ -214,6 +212,7 @@ namespace smtrat
         if( !mTheoryBindings.insert( pair< string, ExVarsPair >( _varName, *_exVarsPair ) ).second )
             error( _loc, "Multiple definition of real variable " + _varName );
         mVariableStack.top().push_back( pair< string, unsigned >( _varName, 1 ) );
+        pLexer()->mTheoryVariables.insert( _varName );
     }
     
     /**
@@ -222,10 +221,10 @@ namespace smtrat
      * @param _formula
      * @return 
      */
-    Formula* Driver::booleanBinding( const string& _varName, Formula* _formula )
+    Formula* Driver::booleanBinding( const class location& _loc, const string& _varName, Formula* _formula )
     {
         Formula* result = new Formula( IFF );
-        result->addSubformula( new Formula( _varName ) );
+        result->addSubformula( new Formula( addBooleanVariable( _loc, _varName, true ) ) );
         result->addSubformula( _formula );
         mVariableStack.top().push_back( pair< string, unsigned >( _varName, 0 ) );
         return result;
@@ -263,6 +262,7 @@ namespace smtrat
      */
     TheoryVarMap::const_iterator Driver::addTheoryVariable( const class location& _loc, const string& _theory, const string& _varName, bool _isBindingVariable )
     {
+        mLexer->mTheoryVariables.insert( _varName );
         pair< string, ex > ginacConformVar;
         if( _isBindingVariable ) ginacConformVar = smtrat::Formula::mpConstraintPool->newAuxiliaryRealVariable();
         else ginacConformVar = Formula::newArithmeticVariable( _varName, getDomain( _theory ) );
