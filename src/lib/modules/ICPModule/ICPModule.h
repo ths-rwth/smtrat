@@ -32,7 +32,9 @@
 
 //#define ICP_BOXLOG
 
+//#ifdef SMTRAT_DEVOPTION_Validation
 //#define SMTRAT_DEVOPTION_VALIDATION_ICP
+//#endif
 
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
@@ -173,7 +175,7 @@ namespace smtrat
             std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
             
             std::map<const ex, const Constraint*, ExComp>                                       mTemporaryMonomes; // monomes from preprocessing to be linearized
-            std::map<const Constraint*, const Constraint*, constraintPointerComp>               mReplacements; // linearized constraint -> original constraint
+            std::map<const Constraint*, const Constraint*, constraintIdComp>               mReplacements; // linearized constraint -> original constraint
             std::map<const ex, symbol, ExComp>                                                  mLinearizations; // monome -> variable
             GiNaC::exmap                                                                        mSubstitutions; // variable -> monome/variable
             
@@ -199,7 +201,11 @@ namespace smtrat
             #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
             Formula*                                                                            mCheckContraction;
             #endif
-            
+
+            /*
+             *  Constants
+             */
+            static const unsigned mSplittingStrategy = 0;
 
         public:
 
@@ -297,10 +303,19 @@ namespace smtrat
             void tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, GiNaCRA::evaldoubleintervalmap _intervals );
             
             /**
+             * Selects the next splitting direction according to different heuristics.
+             * @param _targetDiameter
+             * @return 
+             */
+            const double calculateSplittingImpact ( const GiNaC::symbol& _var, icp::ContractionCandidate& _candidate ) const;
+            
+            /**
              * Checks if there is a need for a split and manages the splitting and branching in the
              * historyTree.
+             * @param _targetDiameter
+             * @return if a split has happened and in which dimension.
              */
-            std::pair<bool,symbol> checkAndPerformSplit( double _targetDiameter );
+            std::pair<bool,symbol> checkAndPerformSplit( const double& _targetDiameter );
             
             /**
              * Creates constraints from the given interval and adds them to the

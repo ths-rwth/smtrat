@@ -438,15 +438,18 @@ namespace smtrat
                             unsigned numRows = mTableau.rows().size();
                             unsigned dc_count = 0;
                             vector<unsigned> dc_positions = vector<unsigned>();
+                            vector<lra::Numeric> lcm_rows = vector<lra::Numeric>();
                             for( unsigned i = 0; i < numRows; ++i )
                             {
                                 vector<unsigned> non_basic_vars_positions = vector<unsigned>();
                                 vector<lra::Numeric> coefficients = vector<lra::Numeric>();
                                 lra::Numeric lcmOfCoeffDenoms = 1;
-                                if( mTableau.isDefining( i, non_basic_vars_positions, coefficients, lcmOfCoeffDenoms ) )
+                                lra::Numeric max_value = 0;
+                                if( mTableau.isDefining( i, non_basic_vars_positions, coefficients, lcmOfCoeffDenoms, max_value ) )
                                 {
                                     dc_count++;
                                     dc_positions.push_back(i);
+                                    lcm_rows.push_back(lcmOfCoeffDenoms);
                                     assert( !non_basic_vars_positions.empty() );
                                     ex* help = new ex(mTableau.rows().at(i).mName->expression());
                                     vector< lra::Variable<lra::Numeric>* > non_basic_vars = vector< lra::Variable<lra::Numeric>* >();
@@ -483,6 +486,15 @@ namespace smtrat
                                 ++iter;
                             }
                             dc_Tableau.invert_HNF_Matrix(diagonals);
+                            bool creatable = false;
+                            for(unsigned i=0;i<dc_positions.size();i++)
+                            {
+                                creatable = dc_Tableau.create_cut_from_proof(mTableau,dc_positions.at(i),lcm_rows.at(i));
+                                if(creatable)
+                                {
+                                    break;
+                                }
+                            }
                             dc_Tableau.print();                             
                             } 
                             #endif
@@ -492,8 +504,8 @@ namespace smtrat
                             exmap::const_iterator map_iterator = _rMap.begin();
                             for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
                             {
-                            numeric ass = ex_to<numeric>(map_iterator->second);     
-                                if((Formula::domain(*(var->first)) == INTEGER_DOMAIN) && !ass.is_integer())
+                            numeric ass = ex_to<numeric>(map_iterator->second); 
+                            if((Formula::domain(*(var->first)) == INTEGER_DOMAIN) && !ass.is_integer())
                                 {   
                                    Formula* deductionA = new Formula(OR);
                                    stringstream sstream;
