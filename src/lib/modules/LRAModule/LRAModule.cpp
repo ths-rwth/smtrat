@@ -59,7 +59,7 @@ namespace smtrat
         mBoundCandidatesToPass()
     {
         stringstream out;
-        out << "delta_" << mId;
+        out << "delta_" << id();
         mDelta = Formula::newAuxiliaryRealVariable( out.str() );
     }
 

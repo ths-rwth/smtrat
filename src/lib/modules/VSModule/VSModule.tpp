@@ -580,10 +580,10 @@ namespace smtrat
             for( unsigned i = mVariableVector.size(); i<=mRanking.begin()->second->treeDepth(); ++i )
             {
                 stringstream outA;
-                outA << "m_inf_" << mId << "_" << i;
+                outA << "m_inf_" << id() << "_" << i;
                 VarNamePair minfVar = Formula::newAuxiliaryRealVariable( outA.str() );
                 stringstream outB;
-                outB << "eps_" << mId << "_" << i;
+                outB << "eps_" << id() << "_" << i;
                 VarNamePair epsVar = Formula::newAuxiliaryRealVariable( outB.str() );
                 mVariableVector.push_back( pair<VarNamePair,VarNamePair>( minfVar, epsVar ) );
             }

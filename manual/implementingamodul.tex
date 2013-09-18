@@ -1,296 +1,211 @@
 \chapter{Implementing further modules}
 \label{chapter:implementingamodule}
-In this chapter we explain how to implement further modules. One
-principle of the design of \smtrat is that you can take advantage of
-all the features it provides, but you do not have to.
+In this chapter we explain how to implement further modules. A module is a derivation
+of the class \texttt{Module} and we give an 
+introduction to its members, interfaces and auxiliary methods in the following of this
+chapter. A new module and, hence, the corresponding \Cpp source and header files can be easily
+created when using the script \texttt{writeModules.py}. Its single argument is the module's name
+and the script creates a new folder in \texttt{src/lib/modules/} containing the
+source and header file with the interfaces yet to implement. A new module should be created
+only this way, as the script takes care of a correct integration of the corresponding code
+into \smtrat.
 
-\section{Quickstart}
-Figure~\ref{fig:rudiimplementation} shows the most rudimentary way of how a module
-can be implemented. Furthermore, there are a few more things which must be added to
-\smtrat:
-\begin{enumerate}
-	\item Add the module type \texttt{MT\_MyModule} to the \texttt{enum}
-		\texttt{ModuleType} of all module types in \texttt{src/ModuleType.h}.
-	\item The file \texttt{src/modules/Modules.h} has to include the header of the new module, i.e.
-		add ``\texttt{\#include "MyModule.h"}'' to  \texttt{modules/Modules.h}.
-	\item Extend the mapping of module types to module factories in the constructor
-		of the class \managerClass:
-\begin{verbatim}
-addModuleType
-(
-    MT_MyModule,
-    new StandardModuleFactory<MyModule>()
-);
-\end{verbatim}
-	\item Add a proposition to the class \texttt{src/Formula.h} which expresses for a
-		formula	that your module cannot solve it, that is returns
-		\texttt{unknown} or calls its backend
-		(for further details to this see Section~\ref{sec:runbackend}). Each existing
-		proposition is represented by a bit in a \texttt{bitset} within \texttt{Formula},
-		currently of size $64$.	Hence, the proposition to add has to take an unused bit.
-		If all bits are used the bitset must be extended.
-		An example of how to add this proposition is given by
-		Figure~\ref{fig:proposition}.
-	\item Extend the method \texttt{Formula::notSolvableBy}
-		by the case that \texttt{\_moduleType} is \texttt{MT\_MyModule} returning
-		the before created proposition as shown in Figure~\ref{fig:notSolvableBy}
-	\item Extend the method \texttt{Formula::resetSolvableByModuleFlags}\ldots
-
-	\item Finally, the file \texttt{src/CMakeLists.txt} has to be updated. Add to the set
-		of \texttt{lib\_modules\_headers} ``\texttt{src/modules/MyModule.h}'' and to the set
-		of \texttt{lib\_modules\_src} ``\texttt{src/modules/MyModule.cpp}''.
-\end{enumerate}
-
-\begin{figure}[htb]
-\caption{The most rudimentary way of a module can be implemented.}
-\label{fig:rudiimplementation}
-\begin{verbatim}
-#include "../Module.h"
-
-class MyModule : public Module
-{
-public:
-    MyModule( Manager* const _manager )
-        : Module( _Manager )
-    { mModuleType	= MT_MyModule; }
-
-    ~MyModule( ) { }
-};
-\end{verbatim}
-\end{figure}
-
-\begin{figure}[htb]
-\caption{Example of how to add a proposition to \texttt{Formula.h}.}
-\label{fig:proposition}
-\begin{verbatim}
-
-..
-    static const Condition PROP_CANNOT_BE_SOLVED_BY_MYMODULE
-        = Condition().set( 53, 1 );
-..
-\end{verbatim}
-\end{figure}
-
-\begin{figure}[htb]
-\caption{How to extend the method \texttt{Formula::notSolvableBy} in \texttt{Formula.cpp}.}
-\label{fig:notSolvableBy}
-\begin{verbatim}
-void Formula::notSolvableBy( ModuleType _moduleType )
-{
-    switch( _moduleType )
-    {
-	    ..
-	    case MT_MyModule:
-	    {
-	        mPropositions |= PROP_CANNOT_BE_SOLVED_BY_MYMODULE;
-	        break;
-	    }
-	    ..
-    }
-}
-\end{verbatim}
-\end{figure}
-
-The generated module now uses the straightforward implementation of the superclass
-\texttt{Module}. This includes many useful methods to read and
-manipulate the data in the module and the interfaces which can be extended
-such that they contain the actual implementation of your module.
-
-\section{Members of a modul}
-Before we explain the virtual interfaces containing the actual
-implementation of your modul we give a small description of the members
-of \texttt{Module}.
+\section{Members of a module}
+Here is an overview of those members of the class \texttt{Module}, which can be accessed directly.
+They form the most important ones for an implementation of a new module.
 
 \begin{itemize}
-	\item \begin{verbatim}vector< unsigned > mBackTrackPoints\end{verbatim}
-		Stores the backtrack points.
-	\item \begin{verbatim}vector< Formula > mInfeasibleSubsets\end{verbatim}
-		Stores the infeasible subsets of the so far received constraints, if the module determined their
-		inconsistency before. An object of the type \texttt{Formula} currently consists
-		of a conjunction of constraints and stores which of the propositions, defined in
-		Chapter~\ref{chapter:composingats}, hold.
+	\item \begin{verbatim}vector<set<const Formula*>> mInfeasibleSubsets\end{verbatim}
+		Stores the infeasible subsets of the so far received formulas, if the module determined that
+		their conjunction is not satisfiable.
 	\item \begin{verbatim}Manager* const mpManager\end{verbatim}
-		A pointer to the manager which stores this module. By this pointer the modul can obtain
-		its backend, which gets assigned by the manager as it implements the strategy.
-	\item \begin{verbatim}ModuleType mModuleType\end{verbatim}
-		The type of this module.
-	\item \begin{verbatim}vector< Module* > mBackend\end{verbatim}
-		The pointer to the module's backend. The backend is stored in the manager.
-	\item \begin{verbatim}vector< unsigned > mBackendBacktrackpoints\end{verbatim}
-		The backtrack points in the backend.
-	\item \begin{verbatim}bool mBackendUptodate\end{verbatim}
-		A flag which indicates that the current backend considers the so
-		far passed constraints.
-	\item \begin{verbatim}Formula* mpReceivedConstraints\end{verbatim}
-		The vector of the so far received constraints.
-	\item \begin{verbatim}Formula* mpPassedConstraints\end{verbatim}
-		The vector of the so far passed constraints.
+		A pointer to the manager which maintains the allocation of modules (including this one) to other 
+		modules, when they call a backend for a certain formula. For further details see Chapter~\ref{chapter:composingats}.
+	\item \begin{verbatim}Formula* mpReceivedFormula\end{verbatim}
+		Stores the conjunction of the so far received formulas, which this module considers
+		for a satisfiability check.
+	\item \begin{verbatim}Formula* mpPassedFormula\end{verbatim}
+		Stores the conjunction of the formulas which this module has passed to a backend to be
+		solved for satisfiability.
 \end{itemize}
 
-\section{Virtual interfaces}
-In the following we explain the virtual interfaces
-of the module, showing what their implementation in \texttt{Module} already
-provides and how they should be extended in your module.
+\section{Interfaces to implement}
+In the following we explain which interfaces must be implemented in a module.
 
 \subsection{Informing about a constraint}
-\begin{verbatim}void inform( Constraint* _constraint )\end{verbatim}
-Informs the module about the existance of the given constraint. This information might
-be useful for the module. The implementation in the \texttt{Module} does just nothing by calling
-this method.
-
 \begin{figure}[htb]
 \label{fig:exa_inform}
 \caption{Example showing how to implement the method \texttt{inform}}
 \begin{verbatim}
-	void MyModule::inform( Constraint* _constraint )
+	bool MyModule::inform( const Constraint* const  _constraint )
 	{
-	    /*
-	     * Write the implementation here.
-	     */
+	    // Write the implementation here.
 	}
 \end{verbatim}
 \end{figure}
+Informs the module about the existence of the given constraint usually before
+any formula containing constraints is added to this module for consideration
+of a later satisfiability check. At least it can be expected, that this method
+is called, before a formula containing the given constraint is added 
+to this module for consideration of a later satisfiability check. 
+Note that this information might be useful for the module, e.g., for the 
+initialization of the datastructures it uses.
 
-\subsection{Adding a constraint}
-\begin{verbatim}bool addConstraint( Constraint* _constraint )\end{verbatim}
-Adds a constraint to the vector of the so far received constraints of the module. If the module
-can already decide whether the given constraint is not consistent, it returns \false
-otherwise \true. This is exactly how it is implemented in \texttt{Module}, unless
-it does no kind of consistency check on the given constraint, that is it always adds the
-given constraint to the vector of the so far received constraints and returns \true.
-Note, that implementing your own module might need some initialization in this method,
-but you should always call \texttt{Module::addConstraint} at the beginning of your
-implementation of \texttt{addConstraint}.
-
+\subsection{Asserting a received formula}
 \begin{figure}[htb]
-\label{fig:exa_addconstraint}
-\caption{Example showing how to implement the method \texttt{addConstraint}}
+\label{fig:exa_assertsubformula}
+\caption{Example showing how to implement the method \texttt{assertSubformula}}
 \begin{verbatim}
-	bool MyModule::addConstraint( Constraint* _constraint )
+	bool MyModule::assertSubformula( Formula::const_iterator _subformula )
 	{
-	    Module::addConstraint( _constraint );
-	    /*
-	     * Write the implementation here.
-	     */
+	    Module::assertSubformula( _subformula );
+	    // Write the implementation here.
 	}
 \end{verbatim}
 \end{figure}
+Asserts the formula at the given position in the conjunction of received formulas 
+(\texttt{mpReceivedFormula}), meaning that this module has to include this formula
+in the next satisfiability check. If the module
+can already decide whether the given formula is not satisfiable itself, it returns \false
+otherwise \true. In comparison to the interface \texttt{inform}, any previous solving results
+could be consulted to determine this information.
+Note, that the implementation of a new module might need some initialization in this method
+and has always to call \texttt{Module::assertSubformula} at the beginning.
 
-\subsection{Checking for consistency}
-\begin{verbatim}Answer isConsistent()\end{verbatim}
-Implements the actual consistency check of the constraints this module has so far received.
-There are three options how this module can answer: it can determine that these constraints
-are consistent and returns \true, or it determines inconsistency and returns
-\false. Otherwise, it returns \texttt{unknown}. If this module has a backend, it can call it
-to check the consistency of any set of constraints. How to run the backend is shown in
-Section~\ref{sec:runbackend}. The method \texttt{Module::isConsistent} does nothing more than directly
-calling its backend on the
-so far received constraints. A module has also the opportunity to reason about the conflicts
-occured, if it determines inconsistency. For this purpose it can store several infeasible
-subsets of the set of so far received constraints, which can be accessed as seen before.
-
+\subsection{Removing a received formula}
 \begin{figure}[htb]
-\label{fig:exa_isconsistent}
-\caption{Example showing how to implement the method \texttt{isConsistent}}
+\label{fig:exa_removesubformula}
+\caption{Example showing how to implement the method \texttt{removeSubformula}}
 \begin{verbatim}
-	Answer MyModule::isConsistent( )
+	void MyModule::removeSubformula( Formula::iterator _subformula )
 	{
-	    /*
-	     * Write the implementation here.
-	     */
+	    // Write the implementation here.
+	    Module::removeSubformula( _subformula );
 	}
 \end{verbatim}
 \end{figure}
+Removes the formula at the given position from the conjunction of received formulas
+(\texttt{mpReceivedFormula}). Everything,
+which has been stored in this module and depends on this formula must be removed. In the end of
+this method, \texttt{Module::removeSubformula} must be called. It handles the removing of everything
+depending on this formula in the derived members of this module, including the infeasible subsets,
+the passed formula and the mapping of passed formulas to received formulas, which is introduced in
+Section~\ref{sec:runbackend}. Hence, you do not need to take care of this.
 
-\subsection{Pushing a backtrack point}
-\begin{verbatim}void pushBacktrackPoint()\end{verbatim}
-Adds a backtrack point to the stack of backtrackpoints. This is already implemented by
-\texttt{Module::pushBacktrackPoint}. It might be necessary to store the current state
-of the datastructure used in your module.
-
+\subsection{Checking for satisfiability}
 \begin{figure}[htb]
-\label{fig:exa_pushBacktrackPoint}
-\caption{Example showing how to implement the method \texttt{pushBacktrackPoint}}
+\label{fig:exa_check}
+\caption{Example showing how to implement the method \texttt{check}}
 \begin{verbatim}
-	void MyModule::pushBacktrackPoint( )
+	Answer MyModule::check()
 	{
-	    Module::pushBacktrackPoint();
-	    /*
-	     * Write the implementation here.
-	     */
+	    // Write the implementation here.
 	}
 \end{verbatim}
 \end{figure}
-
-\subsection{Popping a backtrack point}
-\begin{verbatim}void popBacktrackPoint()\end{verbatim}
-Removes the last backtrack point from the stack of backtrack points and undoes everything
-which has been done after adding that backtrack point. \newline\texttt{Module::popBacktrackPoint}
-already removes the corresponding constraints from the vector of the so far received
-constraints, applies \texttt{popBacktrackPoint} in its backend until it does not
-contain any constraint created as a consequence of a removed received constraint, and
-removes all infeasible subsets containing removed received constraints. If you implement
-\texttt{popBacktrackPoint} make sure that everything stored additionally, which
-depends on the removed received constraints, gets deleted. Call
-\texttt{Module::popBacktrackPoint} afterwards.
-
-\begin{figure}[htb]
-\label{fig:exa_popBacktrackPoint}
-\caption{Example showing how to implement the method \texttt{popBacktrackPoint}}
+Implements the actual satisfiability check of the conjunction of formulas, which have been asserted in this module.
+There are three options how this module can answer: it either determines that the formulas
+are satisfiable and returns \true, it determines unsatisfiability and returns
+\false, or it cannot give a conclusive answer and returns \texttt{unknown}. Note, that the method \texttt{Answer foundAnswer( Answer )} must
+be invoked with the found answer, before return it. Its return value has the same value as its argument and, hence, you could call it the
+following (prettying) way:
 \begin{verbatim}
-	void MyModule::popBacktrackPoint( )
-	{
-	    /*
-	     * Write the implementation here.
-	     */
-	    Module::popBacktrackPoint();
-	}
+Answer MyModule::check()
+{
+    ...
+    return foundAnswer( yourAnswer );
+}
 \end{verbatim}
-\end{figure}
+Furthermore, modules can always call
+a backend in order to check the satisfiability of any conjunction of formulas. How to run the backend is shown in
+Section~\ref{sec:runbackend}. A module has also the opportunity to reason about the conflicts
+occurred, if it determines unsatisfiability. For this purpose it has store at least one infeasible
+subsets of the set of so far received formulas.
 
-\section{Running the backend module}
+\section{Running backend modules}
 \label{sec:runbackend}
-Fortunately, there is no need to manage the addition of constraints to the backend, or pushing and
-popping its backtrack points. This would be even more involved as we do allow changing the
+Modules can always call a backend in order to check the satisfiability of any conjunction of formulas.
+Fortunately, there is no need to manage the assertion or removement of formulas to the backend. 
+This would be even more involved as we do allow changing the
 backend if it is appropiate (more details to this are explained in Chapter~\ref{chapter:composingats}).
 Running the backend is done in two steps:
 \begin{enumerate}
-	\item Fill up the vector of the so far passed constraints.
-	\item Call \texttt{runBackend()}.
+	\item Change the passed formula to the formula which should be solved by the backend. Keep in mind,
+	       that the passed formula could still contain formulas of the previous backend call.
+	\item Call \texttt{runBackends()}.
 \end{enumerate}
-The first step is a bit more tricky, as we need to know which received constraints led to a passed
-constraint. For this purpose a modul contains a mapping from a passed constraint to one or more
-sets of received constraints. We give a small example by showing the behavior of one of the modules
-we provide, the \simplifierModuleClass. Let us assume that this modul has so far received the following
+The first step is a bit more tricky, as we need to know which received formulas led to a passed
+formula. For this purpose a module contains a mapping from a passed formula to one or more
+sets of received formulas. We give a small example by showing the behavior of one of the modules
+we provide, the \simplifierModuleClass. Let us assume that this module has so far received the following
 constraints:
 $$c_0:x\leq0,\ c_1:x\geq 0,\ c_2:x=0$$
 \simplifierModuleClass combines the first two constraints $c_0$ and $c_1$ to $c_3:x=0$. Then it combines
 $c_3$ with $c_2$ to $c_5:x=0$. Afterwards it calls its backend on the only remaining constraint,
-that is the passed constraints contain only $c_5:x=0$. The mapping of $c_5$ to the received constraints it
+that means the passed constraints contain only $c_5:x=0$. The mapping of $c_5$ to the received constraints it
 stems from is $$c_5\ \mapsto\ (\{c_0,\ c_1\},\ \{c_2\}).$$
 
-The mapping is maintained automatically and offers two methods to add constraints to the vector
-of the passed constraints:
+The mapping is maintained automatically and offers two methods to add formulas to the vector
+of the passed formulas:
 \begin{itemize}
-	\item \begin{verbatim}bool addReceivedConstraintToPassedConstraints( unsigned _pos )\end{verbatim}
-		Adds the constraint at the given positition of the vector of the so far received constraints
-		to the vector of the passed constraints. The mapping to its \emph{original constraints} contains
-		only the constraint at the given position in the vector of received constraints. It returns
-		\true if a constraint has been added, which only occurs if the given position is
-		indeed within the range of the vector of received constraints and this constraint has not
-		yet been added.
+	\item \begin{verbatim}void addReceivedSubformulaToPassedFormula( Formula::const_iterator )\end{verbatim}
+		Adds the formula at the given positition in the conjuntion of the so far received formulas
+		to the conjunction of the passed formulas. The mapping to its \emph{original formulas} contains
+		only the formula at the given position in the vector of received formula
 	\item
 		\begin{verbatim}
-		bool addConstraintToPassedConstraints
+		void addSubformulaToPassedFormula
 		(
-		    Constraint*                  _constraint,
-		    vector< set< Constraint* > > _origins
+		    Formula*,
+		    const vec_set_const_pFormula&
 		)
 		\end{verbatim}
-		Adds the given constraint to the vector of the passed constraints. It is mapped to the given
-		original constraints \texttt{\_origins}. It returns \true if a constraint has been
-		added, which only occurs if the given constraint has not yet been added. Note, that
-		\texttt{\_origins} must contain only members of the vector of so far received constraints. We
-		do not check this by reason of efficiency.
+		Adds the given formula to the vector of the passed formulas. It is mapped to the given
+		original formulas. Note, that the second argument must contain only subformulas of the conjunction 
+		of so far received formulas. We	do not check this by reason of efficiency.
+\end{itemize}
+If the original formulas of a passed formula are only empty sets, by reason of a belated removing of the according
+received formulas, this passed formula will be automatically removed from the backends and the passed formula.
+
+The second step is really just calling \texttt{runBackends()} and processing its return value, which can be
+\true, \false, or \texttt{unknown}.
+
+\section{Auxilliary functions}
+The \texttt{module} class provides a rich set of methods for debugging purposes. Besides some 
+printing methods, \smtrat helps to maintain the correctness of new modules during their development.
+It therefore provides methods to store formulas with their assumed satisfiability status in order
+to check them belatedly by any SMT solver which is capable to parse \texttt{.smt2} files and solve
+the stored formula. To be able to use the following methods, the compiler flag \texttt{SMTRAT\_DEVOPTION\_Validation}
+must be activated, which can be easily achieved when using \ccmake.
+
+\begin{itemize}
+	\item \begin{verbatim}static void addAssumptionToCheck( const X&, bool, const string& ) \end{verbatim}
+		Adds the given formulas to those, which are going to be stored as an \texttt{.smt2} file,
+		with the assumption that they are satisfiable, if the given Boolean argument is \true, or unsatisfiable,
+		if the given Boolean argument is \false. The formulas can be passed as one of the following types (\texttt{X} can be one of the following datastructures)
+		\begin{itemize}
+		\item \texttt{Formula} (a single formula of any type)
+		\item \texttt{set<const Formula*>} (a set of formulas, which is considered to be a conjunction)
+		\item \texttt{set<const Constraint*>} (a set of constraints, which is considered to be a conjunction)
+		\end{itemize}
+		The third argument of this function is any string which helps to identify the assumption, e.g.,
+		involving the name of the module and for which purpose this assumption has been made.
+	\item \begin{verbatim}static void storeAssumptionsToCheck( const Manager& )\end{verbatim}
+		This method stores all collected assumptions to the file \texttt{assumptions.smt2}, which can be checked
+		later by any SMT solver which is capable to parse \texttt{.smt2} files and solve
+		the stored formula. As this method is static, we need to pass the module's manager (\texttt{*mpManager}).
+		Note that this method will be automatically called when destructing the given manager. Invoking this
+		method is only reasonable, if the solving aborts directly afterwards and, hence, omits the manager's
+		destructor.
+	\item \begin{verbatim}void checkInfSubsetForMinimality
+(
+    vector<set<const Formula*>>::const_iterator,
+    const string&,
+    unsigned
+) const 
+\end{verbatim}
+This method checks the infeasible subset at the given position for minimality, that is it checks whether there is a subset of it having maximally $n$ elements less, which is still infeasible.
+As for some approaches it is computationally to hard to provide always a minimal infeasible subset, they rather provide infeasible subsets not necessarily being minimal. This method helps 
+to ananlyze how close the size of the encountered infeasible subsets is to a minimal one.
 \end{itemize}
 

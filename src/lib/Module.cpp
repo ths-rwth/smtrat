@@ -59,9 +59,9 @@ namespace smtrat
     Module::Module( ModuleType type, const Formula* const _formula, Conditionals& _foundAnswer, Manager* const _tsManager ):
         mId( 0 ),
         mThreadPriority( thread_priority( 0 , 0 ) ),
+        mModuleType( type ),
         mInfeasibleSubsets(),
         mpManager( _tsManager ),
-        mModuleType( type ),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new Formula( AND ) ),
         mSolverState( Unknown ),
@@ -102,7 +102,7 @@ namespace smtrat
      * Checks the received formula for consistency. Note, that this is an implementation of 
      * the satisfiability check of the conjunction of the so far received formulas, which does
      * actually nothing but passing the problem to its backends. This implementation is only used
-     * internally and must be overwritten by any module implementation.
+     * internally and must be overwritten by any derived module.
      *
      * @return True,    if the received formula is satisfiable;
      *          False,   if the received formula is not satisfiable;

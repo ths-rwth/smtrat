@@ -158,8 +158,10 @@ namespace smtrat
              * Removes the formula at the given position in the conjunction of formulas,
              * which will be considered for the next satisfiability check.
              * @param _subformula The position of the formula to remove.
-             * @return false, if it is easy to decide whether adding this formula creates a conflict;
-             *          true, otherwise.
+             * @return An iterator to the formula after the position of the just removed
+             *          formula. If the removed formula has been the last element, the 
+             *          end of the conjunction of formulas, which will be considered for the 
+             *          next satisfiability check is returned.
              */
             Formula::iterator remove( Formula::iterator _subformula )
             {

@@ -1,14 +1,13 @@
 \chapter{Introduction}
 \label{chapter:intro}
-This manual describes \smtrat, a toolbox which is specifically tailored to be
-used by an SMT solver in order to solve non-linear real arithmetic
-(NRA) efficiently.  NRA is an important but hard-to-solve theory and
-only a fragment of it can be handled by some of the currently existing
-SMT solvers.  The toolbox consists of four modules, implementing the
-virtual substitution method, the cylindrical algebraic decomposition
-method, a groebner bases simplifier and a general simplifier,
-respectively. The intention of the toolbox is that an SMT-compliant
-theory solver can be achieved by composing these modules according to
-a user defined strategy and with the goal to exploit their advantages.
-Furthermore, it supports the addition of further modules implementing
-other methods dealing with real arithmetic.
+This manual describes \smtrat, a \Cpp library consisting of a collection of
+SMT-compliant implementations of methods for solving non-linear real
+arithmetic (NRA) formulas, we refer to as modules. These modules can be 
+combined to (1) a theory solver in order to extend the supported logics of an
+existing SMT solver by NRA or (2) an SMT solver for NRA. The latter is 
+especially intended to be a testing environment for the development 
+of SMT-compliant implementations of further methods tackling NRA.
+\smtrat provides a graphical user interface for the creation of such
+module combinations according to a strategy. It decides dynamically
+which modules solve a given NRA formula, involving the formula's
+properties and the solving history.

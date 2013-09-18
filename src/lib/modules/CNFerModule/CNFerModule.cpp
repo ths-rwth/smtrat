@@ -38,7 +38,6 @@ namespace smtrat
         Module( _type, _formula, _conditionals, _manager ),
         mFirstNotCheckedFormula()
     {
-        this->mModuleType = _type;
     }
 
     CNFerModule::~CNFerModule(){}

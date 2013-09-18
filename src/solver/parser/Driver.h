@@ -34,13 +34,12 @@
 #include <string>
 #include <vector>
 #include <queue>
+#include <stack>
 #include <unordered_map>
 #include <assert.h>
 #include <fstream>
 #include <ginac/ginac.h>
 #include "../../lib/Constraint.h"
-
-#define REPLACE_LET_EXPRESSIONS_DIRECTLY
 
 namespace smtrat
 {
@@ -123,7 +122,9 @@ namespace smtrat
             ///
             std::unordered_map< std::string, ExVarsPair > mTheoryBindings;
             ///
-            std::unordered_map< std::string, Formula* > mNotInvolvedBooleanBindings;
+            std::stack< std::vector< std::pair< std::string, unsigned > > > mVariableStack;
+            ///
+            std::vector< smtrat::Formula* > mInnerConstraintBindings;
 
         public:
             // Constructor and destructor.
@@ -174,13 +175,13 @@ namespace smtrat
 
             class Formula& currentFormula()
             {
-                assert( mInstructionQueue.back().first != ASSERT );
+                assert( mInstructionQueue.back().first == ASSERT );
                 return *mInstructionQueue.back().second.formula;
             }
 
             class Formula* pCurrentFormula()
             {
-                assert( mInstructionQueue.back().first != ASSERT );
+                assert( mInstructionQueue.back().first == ASSERT );
                 return mInstructionQueue.back().second.formula;
             }
             
@@ -314,17 +315,21 @@ namespace smtrat
                 }
                 delete _toFree;
             }
-
-            void free( std::vector< std::pair< std::string, unsigned >* >* _toFree )
+            
+            void pushVariableStack()
             {
-                while( !_toFree->empty() )
+                mVariableStack.push( std::vector< std::pair< std::string, unsigned > >() );
+            }
+
+            void popVariableStack()
+            {
+                while( !mVariableStack.top().empty() )
                 {
-                    std::pair< std::string, unsigned >* tmp = _toFree->back();
-                    if( tmp->second == 0 ) freeBooleanVariableName( tmp->first );
-                    else freeTheoryVariableName( tmp->first );
-                    _toFree->pop_back(); delete tmp;
+                    if( mVariableStack.top().back().second == 0 ) freeBooleanVariableName( mVariableStack.top().back().first );
+                    else freeTheoryVariableName( mVariableStack.top().back().first );
+                    mVariableStack.top().pop_back();
                 }
-                delete _toFree;
+                mVariableStack.pop();
             }
 
             unsigned type( const std::string& _varName ) const
@@ -356,10 +361,9 @@ namespace smtrat
             void applySetLogic( const std::string& );
             void addVariable( const class location&, const std::string&, const std::string& );
             const std::string addBooleanVariable( const class location&, const std::string& = "", bool = false );
-            #ifdef REPLACE_LET_EXPRESSIONS_DIRECTLY
             void addTheoryBinding( const class location&, const std::string&, ExVarsPair* );
-            #endif
-            void addBooleanBinding( const class location&, const std::string&, Formula* );
+            smtrat::Formula* booleanBinding( const std::string&, Formula* );
+            smtrat::Formula* appendBindings( std::vector< smtrat::Formula* >&, smtrat::Formula* );
             TheoryVarMap::const_iterator addTheoryVariable( const class location&, const std::string&, const std::string& = "", bool = false );
             const std::string& getBooleanVariable( const class location&, const std::string& );
             void freeBooleanVariableName( const std::string& );

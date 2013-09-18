@@ -1110,12 +1110,12 @@ namespace smtrat
             if( exp < mMinMonomeDegree ) mMinMonomeDegree = exp;
         }
         else assert( false );
-        if( ( mConstantPart.is_negative() < 0 && mIsNeverPositive ) || ( mConstantPart.is_positive() > 0 && mIsNeverNegative ) )
+        if( ( mConstantPart.is_negative() && mIsNeverPositive ) || ( mConstantPart.is_positive() && mIsNeverNegative ) )
         {
             mIsNeverZero = true;
         }
     }
-
+    
     /**
      * Applies some cheap simplifications to the constraints.
      *
