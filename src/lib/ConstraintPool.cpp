@@ -397,6 +397,129 @@ namespace smtrat
             return new Constraint( lhs, _rel, vars, mIdAllocator );
         }
     }
+    
+    /**
+     * Yet another unnecessary auxiliary method due to the non-determinism of GiNaC.
+     * @param _ex An expanded polynomial.
+     * @return True, if the lexicographically smallest monomial has a negative coefficient.
+     *          False, otherwise.
+     */
+    bool lexicograficallySmallestMonomialHasNegativeCoefficient( const ex& _ex, const symtab& _variables )
+    {
+        if( is_exactly_a<add>( _ex ) )
+        {
+            bool smallestMonomialHasNegativeCoefficient = false;
+            bool currentMonomialHasNegativeCoefficient = false;
+            map<string,unsigned> varDegreeMapA = map<string,unsigned>();
+            map<string,unsigned> varDegreeMapB = map<string,unsigned>();
+            for( auto var = _variables.begin(); var != _variables.end(); ++var )
+            {
+                varDegreeMapA[var->first] = 0;
+                varDegreeMapB[var->first] = 0;
+            }
+            for( GiNaC::const_iterator summand = _ex.begin(); summand != _ex.end(); ++summand )
+            {
+                if( summand != _ex.begin() )
+                {
+                    currentMonomialHasNegativeCoefficient = false;
+                    for( auto var = varDegreeMapB.begin(); var != varDegreeMapB.end(); ++var )
+                        var->second = 0;
+                }
+                const ex summandEx = *summand;
+                if( is_exactly_a<mul>( summandEx ) )
+                {
+                    for( GiNaC::const_iterator factor = summandEx.begin(); factor != summandEx.end(); ++factor )
+                    {
+                        const ex factorEx = *factor;
+                        if( is_exactly_a<symbol>( factorEx ) )
+                        {
+                            stringstream tmpStream;
+                            tmpStream << factorEx;
+                            varDegreeMapB[tmpStream.str()] = 1;
+                        }
+                        else if( is_exactly_a<numeric>( factorEx ) )
+                        {
+                            currentMonomialHasNegativeCoefficient = factorEx.info( info_flags::negative );
+                        }
+                        else if( is_exactly_a<power>( factorEx ) )
+                        {
+                            assert( factorEx.nops() == 2 );
+                            ex exponent = *(++(factorEx.begin()));
+                            assert( !exponent.info( info_flags::negative ) );
+                            unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
+                            ex subterm = *factorEx.begin();
+                            assert( is_exactly_a<symbol>( subterm ) );
+                            stringstream tmpStream;
+                            tmpStream << subterm;
+                            varDegreeMapB[tmpStream.str()] = exp;
+                        }
+                        else assert( false );
+                    }
+                }
+                else if( is_exactly_a<symbol>( summandEx ) )
+                {
+                    stringstream tmpStream;
+                    tmpStream << summandEx;
+                    varDegreeMapB[tmpStream.str()] = 1;
+                }
+                else if( is_exactly_a<numeric>( summandEx ) )
+                {
+                    return summandEx.info( info_flags::negative );
+                }
+                else if( is_exactly_a<power>( summandEx ) )
+                {
+                    assert( summandEx.nops() == 2 );
+                    ex exponent = *(++(summandEx.begin()));
+                    assert( !exponent.info( info_flags::negative ) );
+                    unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
+                    ex subterm = *summandEx.begin();
+                    assert( is_exactly_a<symbol>( subterm ) );
+                    stringstream tmpStream;
+                    tmpStream << subterm;
+                    varDegreeMapB[tmpStream.str()] = exp;
+                }
+                else assert( false );
+                if( summand == _ex.begin() )
+                {
+                    varDegreeMapA.swap( varDegreeMapB );
+                    smallestMonomialHasNegativeCoefficient = currentMonomialHasNegativeCoefficient;
+                }
+                else
+                {
+                    auto iterA = varDegreeMapA.begin();
+                    auto iterB = varDegreeMapB.begin();
+                    while( iterA != varDegreeMapA.end() )
+                    {
+                        assert( iterB != varDegreeMapB.end() );
+                        if( iterA->second < iterB->second )
+                        {
+                            break;
+                        }
+                        else if( iterA->second > iterB->second )
+                        {
+                            varDegreeMapA.swap( varDegreeMapB );
+                            smallestMonomialHasNegativeCoefficient = currentMonomialHasNegativeCoefficient;
+                            break;
+                        }
+                        ++iterA;
+                        ++iterB;
+                    }
+                }
+            }
+            return smallestMonomialHasNegativeCoefficient;
+        }
+        else if( is_exactly_a<mul>( _ex ) )
+        {
+            for( GiNaC::const_iterator factor = _ex.begin(); factor != _ex.end(); ++factor )
+                if( is_exactly_a<numeric>( *factor ) )
+                    return _ex.info( info_flags::negative );
+            return false;
+        }
+        else if( is_exactly_a<numeric>( _ex ) )
+            return _ex.info( info_flags::negative );
+        else
+            return false;
+    }
 
     /**
      * Creates a normalized constraint, which has the same solutions as the constraint consisting of the given
@@ -427,22 +550,7 @@ namespace smtrat
             ex lhs = Constraint::normalizeA( _lhs );
             if( _rel == CR_EQ || _rel == CR_NEQ ) 
             {
-                bool isNegativ = false;
-                if( is_exactly_a<add>( lhs ) )
-                {
-                    const ex summand = *lhs.begin();
-                    if( is_exactly_a<mul>( summand ) ) 
-                    {
-                        const ex factor = *--summand.end();
-                        if( is_exactly_a<numeric>( factor ) ) isNegativ = factor.info( info_flags::negative );
-                    }
-                }
-                else if( is_exactly_a<mul>( lhs ) )
-                {
-                    const ex factor = *--lhs.end();
-                    if( is_exactly_a<numeric>( factor ) ) isNegativ = factor.info( info_flags::negative );
-                }
-                if( isNegativ ) lhs = ex( -lhs ).expand();
+                if( lexicograficallySmallestMonomialHasNegativeCoefficient( lhs, _variables ) ) lhs = ex( -lhs ).expand();
             }
             return new Constraint( lhs, _rel, _variables, mIdAllocator );
         }
