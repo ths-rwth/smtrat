@@ -41,8 +41,8 @@ Moreover, the first coefficient of normalized constraint (with respect to this o
 We do some further simplifactions, such as the elimination of multiple roots of the left-hand sides in equations and inequalities with the relation symbol $\neq$, e.g., $x^3=0$ is simplified to $x=0$. We also simplify constraints whose left-hand sides are obviously always/never positive/negative, e.g., $x^2\leq 0$ is simplified to $x^2=0$, which again can be simplified to $x=0$ according to the first simplification rule.
 
 \subsection{Boolean combinations of constraints and Boolean variables}
-The \texttt{Formula} class can be constructed with a constraint as argument, which leads to a formula wrapping a constraint only. Furthermore, we can construct a formula representing a Boolean by passing its name as argument. A Boolean combinations of constraints and Boolean variables consists of a Boolean operator and the sub-formulas it interconnects. They are built by firstly constructing a formula with the according operator as argument and then adding the formulas which are the according operands. The \texttt{Formula} class provides the beforementioned constructors and interfaces to manipulate it. We give a small example constructing the formula \[(\neg b\ \land\ x^2-y<0\ \land\ 4x+y-8y^2=0 )\ \rightarrow\ (\neg\ x^2-y<0\ \lor\ b )\]
-for demonstrating how to use them. Firstly, we create the real valued variables.
+The \texttt{Formula} class can be constructed with a constraint as argument, which leads to a formula wrapping a constraint only. Furthermore, we can construct a formula representing a Boolean by passing its name as argument. A Boolean combinations of constraints and Boolean variables consists of a Boolean operator and the sub-formulas it interconnects. They are built by firstly constructing a formula with the according operator as argument and then adding the formulas which are the according operands. The \texttt{Formula} class provides the beforementioned constructors and interfaces to manipulate it. We give a small example constructing the formula \[(\neg b\ \land\ x^2-y<0\ \land\ 4x+y-8y^2=0 )\ \rightarrow\ (\neg(x^2-y<0)\ \lor\ b )\]
+, with the Boolean variable $b$ and the real-valued variables $x$ and $y$, for demonstration. Firstly, we create the real valued variables.
 \scriptsize
 \begin{verbatim}
 std::pair<std::string,GiNaC::ex> var_x 
@@ -107,46 +107,43 @@ Note, that $\land$ and $\lor$ are $n$-ary constructors, $\neg$ is a unary constr
 \section{Interfaces of a theory solver composed with \smtrat}
 An SMT solver can use the following interfaces:
 \begin{itemize}
-	\item \begin{verbatim}bool inform( const string& _constraint, bool _infix )\end{verbatim}
-		Informs the theory solver about the existence of the given constraint in form of
-		a string. The second argument is a flag, which indicates whether the given constraint
-		is written in infix or prefix notation.
-	\item \begin{verbatim}
-		bool addConstraint
-		(
-		    const string& _constraint,
-		    const bool _infix,
-		    const bool _polarity
-		)
-		\end{verbatim}
-		Adds the given constraint in form of a string to the theory solver. The second argument 
-		is a flag, which indicates whether the given constraint is written in infix or prefix 
-		notation. The last argument is again a flag which is \true if the constraint
-		has to hold in the given form and \false if its inversion has to hold. The inversion 
-		operator for a constraint simply changes its relation symbol in the following way:
-		$$\begin{array}{ccc}
-			= & \mapsto & \neq \\
-			\neq & \mapsto & = \\
-			\leq & \mapsto & > \\
-			\geq & \mapsto & < \\
-			< & \mapsto & \geq \\
-			> & \mapsto & \leq \\
-		\end{array}$$\\[2ex]
-		
-    \item \begin{verbatim}Answer isConsistent( )\end{verbatim}
-    	Checks the so far received constraints for consistency. The answer can either be
-    	\true, if the set of the so far received constraints is consistent, or 
-    	\false, if it is inconsistent, and \texttt{unknown}, if the theory 
-    	solver cannot reason about it.
-    \item \begin{verbatim}void pushBacktrackPoint( )\end{verbatim}
+	\item \begin{verbatim}bool inform( const Constraint* const )\end{verbatim}
+		Informs the solver about a constraint. Optimally, it should be informed about all constraints,
+        which it will receive eventually, before any of them is added as part of a formula with the 
+        interface \texttt{add(..)}. The method returns \false if it is easy to decide (for any module used of this solver), whether 
+        the constraint itself is inconsistent.
+	\item \begin{verbatim}bool add( Formula* )\end{verbatim}
+		Adds the given formula to the conjunction of formulas, which will be considered for the next 
+        satisfiability check. The method returns \false, if it is easy to decide whether the given formula is not satisfiability.
+	\item \begin{verbatim}Formula::iterator remove( Formula::iterator )\end{verbatim}
+		Removes the formula at the given position in the conjunction of formulas,
+        which will be considered for the next satisfiability check. It returns an iterator to the
+        formula after the position of the just removed formula. If the removed formula has been the 
+        last element, the end of the conjunction of formulas, which will be considered for the 
+        next satisfiability check is returned.
+    \item \begin{verbatim}Answer check()\end{verbatim}
+    	In general it checks the so far added formulas for satisfiability. In the case of adding a 
+    	\smtrat composed theory solver to an SMT solver, these formulas are only constraints. The answer can either be
+    	\true, if satisfiability has been detected, or 
+    	\false, if the formulas are not satisfiability, and \texttt{unknown}, if the composition
+    	cannot give a conclusive answer. Note that if the composition does not include a complete
+    	procedure for the given logic as a final backend, the last of the three cases might occur.
+    \item \begin{verbatim}void push()\end{verbatim}
     	Pushes a backtrack point to the stack of backtrack points.
-    \item \begin{verbatim}void popBacktrackPoint( )\end{verbatim}
+    \item \begin{verbatim}bool pop()\end{verbatim}
     	Pops a backtrack point from the stack of backtrack points and undoes everything
-		which has been done after adding that backtrack point.
-    \item \begin{verbatim}vector< vector< unsigned > > getReasons( )\end{verbatim}
-    	Returns one or more reasons for the inconsistency of the constraints. A reason
-    	is an infeasible subset of the so far received constraints. An element of a reason
-    	is a number $i$ and means that the $i$th received constraint is an element of
-    	this infeasible subset.
+		which has been done after adding that backtrack point. It returns \false if no backtrack
+		point is on the stack.
+    \item \begin{verbatim}const vector<set<const Formula*>>& infeasibleSubsets() const\end{verbatim}
+    	Returns one or more reasons for the unsatisfiability of the considered conjunction of 
+    	formulas of this \smtrat composition. A reason
+    	is an infeasible subset of the sub-formulas of this conjunction.
+    \item \begin{verbatim}const Module::Model model() const\end{verbatim}
+    	Returns an assignment of the variables, which occur in the so far added
+        formulas, to values of their domains, such that it satisfies the 
+        conjunction of these formulas. Note, that an assignment is only provided if the conjunction of so far added
+        formulas is satisfiable. Furthermore, when solving non-linear real arithmetic 
+        formulas the assignment could contain other variables or freshly introduced
+        variables.
 \end{itemize}
 

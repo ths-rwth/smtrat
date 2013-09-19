@@ -96,20 +96,19 @@ namespace smtrat
             ///
             typedef std::chrono::microseconds timeunit;
 
-        /*
-         * Members:
-         */
-        protected:
+        // Members.
+        private:
             /// A unique ID to identify this module instance. (Could be useful but currently nowhere used)
             unsigned mId;
             /// The priority of this module to get a thread for running its check procedure.
             thread_priority mThreadPriority;
+            /// The type of this module.
+            ModuleType mModuleType;
+        protected:
             /// Stores the infeasible subsets.
             vec_set_const_pFormula mInfeasibleSubsets;
             /// A reference to the manager.
             Manager* const mpManager;
-            /// The type of this module.
-            ModuleType mModuleType;
             /// The formula passed to this module.
             const Formula* mpReceivedFormula;
             /// The formula passed to the backends of this module.

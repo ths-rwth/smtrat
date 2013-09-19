@@ -89,7 +89,6 @@ namespace smtrat
                ,mStats(CADStatistics::getInstance(0))
 #endif
     {
-        mModuleType = MT_CADModule;
         mInfeasibleSubsets.clear();    // initially everything is satisfied
         // CAD setting
         GiNaCRA::CADSettings setting = mCAD.setting();

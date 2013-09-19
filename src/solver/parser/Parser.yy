@@ -108,8 +108,6 @@
    std::vector< std::pair< std::string, std::string > >* vspval;
    class Formula*                                        fval;
    std::vector< class Formula* >*                        vfval;
-   std::pair< std::string, unsigned >*                   psval;
-   std::vector< std::pair< std::string, unsigned >* >*   msval;
    std::pair< GiNaC::ex, std::vector< std::unordered_map< std::string, std::pair< std::string, GiNaC::ex > >::const_iterator > >* pval;
 }
 
@@ -130,14 +128,12 @@
 
 %type <sval>   value
 %type <pval>   poly polylistPlus polylistMinus polylistTimes polyOp
-%type <fval>   form equation
-%type <vfval>  formlist
+%type <fval>   form equation bind
+%type <vfval>  formlist bindlist
 %type <vsval>  symlist
 %type <vspval> varlist
 %type <eval>   relation
 %type <eval>   unaryOp binaryOp naryOp
-%type <psval>  bind
-%type <msval>  bindlist
 
 %{
 
@@ -215,10 +211,10 @@ form:
     |   equation                      { $$ = $1; }
     |   OB relation poly poly CB      { $$ = dv.mkConstraint( *$3, *$4, $2 ); delete $3; delete $4; }
     |   OB AS SYM SYM CB              { error( yyloc, "\"as\" is not allowed in supported logics!" ); }
-	|	OB unaryOp form CB            { $$ = dv.mkFormula( (Type) $2, $3 ); }
-	|	OB binaryOp form form CB      { $$ = dv.mkFormula( (Type) $2, $3, $4 ); }
-	|	OB naryOp formlist CB         { $$ = dv.mkFormula( (Type) $2, *$3 ); delete $3; }
-    |   OB LET OB bindlist CB form CB { dv.free( $4 ); $$ = $6; }
+	|	OB unaryOp form CB            { $$ = dv.mkFormula( $2, $3 ); }
+	|	OB binaryOp form form CB      { $$ = dv.mkFormula( $2, $3, $4 ); }
+	|	OB naryOp formlist CB         { $$ = dv.mkFormula( $2, *$3 ); delete $3; }
+    |   OB let OB bindlist CB form CB { $$ = dv.appendBindings( *$4, $6 ); delete $4; dv.popVariableStack(); }
     |   OB ITE form form form CB      { $$ = dv.mkIteInFormula( $3, $4, $5 ); }
 
 formlist :
@@ -249,25 +245,18 @@ naryOp :
 		AND { $$ = smtrat::AND; }
     |	OR  { $$ = smtrat::OR; }
 
+let :
+        LET { dv.pushVariableStack(); }
+
 bindlist :
-		bind          { $$ = new vector< pair< string, unsigned >* >(); $$->push_back( $1 ); }
-	|	bindlist bind { $$ = $1; $$->push_back( $2 ); }
+		bind          { $$ = new vector< smtrat::Formula* >(); if( $1 != NULL ) { $$->push_back( $1 ); } }
+	|	bind bindlist { $$ = $2; if( $1 != NULL ) { $$->push_back( $1 ); } }
 
 bind :
-        OB SYM poly CB {
-                         #ifdef REPLACE_LET_EXPRESSIONS_DIRECTLY
-                         dv.addTheoryBinding( yyloc, *$2, $3 );
-                         #else
-                         TheoryVarMap::const_iterator rv = dv.addTheoryVariable( yyloc, "Real", *$2, true );
-                         PolyVarsPair* pvp = dv.mkPolynomial( yyloc, rv );
-                         Formula* f = dv.mkConstraint( *pvp, *$3, CR_EQ ); delete pvp;
-                         dv.rFormulaRoot().addSubformula( f );
-                         #endif
-                         $$ = new pair< string, unsigned >( *$2, 1 ); delete $3;
+        OB SYM poly CB { dv.addTheoryBinding( yyloc, *$2, $3 ); $$ = NULL; delete $3;
                          dv.pLexer()->mTheoryVariables.insert( *$2 ); delete $2; }
 	|	OB SYM form CB { const string boolVarName = dv.addBooleanVariable( yyloc, *$2, true );
-                         dv.addBooleanBinding( yyloc, *$2, $3 );
-                         $$ = new pair< string, unsigned >( *$2, 0 );
+                         $$ = dv.booleanBinding( *$2, $3 );
                          dv.pLexer()->mBooleanVariables.insert( *$2 ); delete $2; }
 
 poly :

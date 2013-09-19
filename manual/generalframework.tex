@@ -42,14 +42,14 @@ strategy to a solver.
 \section{The \moduleClass class.} A module $m$ contains a set of
 formulas, called its \emph{set of received formulas} and denoted by 
 $\Crcv(m)$. The main
-procedure of a module  is \texttt{isConsistent()} and either decides
+procedure of a module  is \texttt{check()} and either decides
 whether $\Crcv(m)$ is satisfiable or not returning \SAT or \UNSAT,
 respectively, or returns \UNKNOWN. Note, that a set of formulas is
 semantically defined by their conjunction. We can manipulate the set
 of received formulas by adding (removing) formulas $\varphi$ to (from)
 it with \texttt{add($\varphi$)} (\texttt{remove($\varphi$)}). Usually, 
 $\Crcv(m)$ is only changed slightly between two consecutive 
-\texttt{isConsistent()} calls, hence, the solver's performance can be significantly improved if the modules can
+\texttt{check()} calls, hence, the solver's performance can be significantly improved if the modules can
 make use of the results of previous checks, that is they support
 \emph{incrementality} and \emph{backtracking}. In case that the module
 determines the unsatisfiability of $\Crcv(m)$, it is expected to compute
@@ -65,6 +65,7 @@ of passed formulas} denoted by $\Cpass(m)$, using the procedure \texttt{runBacke
 is controlled by the manager. 
 
 \section{The \managerClass and the \strategyClass class} 
+\label{sec:managerstrategy}
 \smtrat allows a user to decide how to compose the different procedures,
 which are implemented in the modules. For this purpose we provide a GUI
 where the user can create such a composition we call strategy. Further
@@ -77,11 +78,11 @@ or parsed from an example file. Furthermore, it maintains the
 allocation of modules as follows. 
 
 Initially, the manager calls the method
-\texttt{isConsistent()} of the module $m_r$ given by the root of
+\texttt{check()} of the module $m_r$ given by the root of
 the strategy with $\Crcv(m_r) = C_{input}$ being the set of received formulas of this
 module. Whenever a module $m\in V$ calls
 \texttt{runBackends()}, with $\Cpass(m)$ being its set of passed
-formulas, the manager calls \texttt{isConsistent()} of each module
+formulas, the manager calls \texttt{check()} of each module
 $m'$ with \Crcv(m') = \Cpass(m) being its set of received formulas, for which
 an edge $(m, \omega, m')\in E$ exists such that $\omega$ holds for
 $\Cpass(m)$, and passes the results back to $m$. Furthermore, it also

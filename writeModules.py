@@ -1,28 +1,26 @@
 import sys
 import os
-moduleName = sys.argv[1]
 
-moduleDirectory = 'src/lib/modules/' + moduleName
-if not os.path.isdir(moduleDirectory):
-   os.makedirs(moduleDirectory)
-
-cmakeContent = '\n\
+def cmakeContent(modName):
+  result = '\n\
 BeginDefineModule()\n\
-ModuleMainHeader({0}/{0}.h)\n\
+ModuleMainHeader('+modName+'/'+modName+'.h)\n\
 FILE(GLOB_RECURSE sources *.cpp)\n\
 foreach(src ${sources})\n\
     AddModuleSource(${src})\n\
 endforeach()\n\
-ModuleName({0})\n\
-ModuleClass({0})\n\
+ModuleName('+modName+')\n\
+ModuleClass('+modName+')\n\
 ModuleVersion(0 0 1)\n\
 EndDefineModule(moduleEnabled)\n\
 \n\
-if(${{moduleEnabled}})\n\
+if(${moduleEnabled})\n\
     # do something\n\
-endif()'.format(moduleName)
+endif()'
+  return result
 
-headerContent = '/*\n\
+def headerContent(modName):
+  result = '/*\n\
  * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox\n\
  * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges\n\
  *\n\
@@ -43,7 +41,7 @@ headerContent = '/*\n\
  *\n\
  */\n\
 /**\n\
- * @file {0}.h\n\
+ * @file '+modName+'.h\n\
  * @author YOUR NAME <YOUR EMAIL ADDRESS>\n\
  *\n\
  * @version DATE\n\
@@ -55,15 +53,15 @@ headerContent = '/*\n\
 #include "../../Module.h"\n\
 \n\
 namespace smtrat\n\
-{{\n\
-    class {0} : public Module\n\
-    {{\n\
+{\n\
+    class '+modName+' : public Module\n\
+    {\n\
         private:\n\
             // Members.\n\
         public:\n\
-            {0}( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );\n\
+            '+modName+'( ModuleType _type, const Formula* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );\n\
 \n\
-            ~{0}();\n\
+            ~'+modName+'();\n\
 \n\
             // Main interfaces.\n\
             bool inform( const Constraint* const );\n\
@@ -71,10 +69,12 @@ namespace smtrat\n\
             void removeSubformula( Formula::const_iterator );\n\
             void updateModel();\n\
             Answer isConsistent();\n\
-    }};\n\
-}}'.format(moduleName)    
+    };\n\
+}'
+  return result
 
-sourceContent = '/*\n\
+def sourceContent(modName):
+  result = '/*\n\
  * SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox\n\
  * Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Erika Abraham, Sebastian Junges\n\
  *\n\
@@ -95,33 +95,33 @@ sourceContent = '/*\n\
  *\n\
  */\n\
 /*\n\
- * File:   {0}.cpp\n\
+ * File:   '+modName+'.cpp\n\
  * @author YOUR NAME <YOUR EMAIL ADDRESS>\n\
  *\n\
  * @version DATE\n\
  * Created on DATE.\n\
  */\n\
 \n\
-#include "{0}.h"\n\
+#include "'+modName+'.h"\n\
 \n\
 namespace smtrat\n\
-{{\n\
+{\n\
     /**\n\
      * Constructors.\n\
      */\n\
 \n\
-    {0}::{0}( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):\n\
+    '+modName+'::'+modName+'( ModuleType _type, const Formula* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):\n\
         Module( _type, _formula, _conditionals, _manager )\n\
-    {{\n\
-    }}\n\
+    {\n\
+    }\n\
 \n\
     /**\n\
      * Destructor.\n\
      */\n\
 \n\
-    {0}::~{0}()\n\
-    {{\n\
-    }}\n\
+    '+modName+'::~'+modName+'()\n\
+    {\n\
+    }\n\
 \n\
     /**\n\
      * Main interfaces.\n\
@@ -135,12 +135,12 @@ namespace smtrat\n\
      * @return False, if the it can be determined that the constraint itself is conflicting;\n\
      *          True,  otherwise.\n\
      */\n\
-    bool {0}::inform( const Constraint* const _constraint )\n\
-    {{\n\
+    bool '+modName+'::inform( const Constraint* const _constraint )\n\
+    {\n\
         Module::inform( _constraint ); // This must be invoked at the beginning of this method.\n\
         // Your code.\n\
         return _constraint->isConsistent() != 0;\n\
-    }}\n\
+    }\n\
 \n\
     /**\n\
      * Add the subformula of the received formula at the given position to the considered ones of this module.\n\
@@ -149,12 +149,12 @@ namespace smtrat\n\
      * @return False, if it is easy to decide whether the subformula at the given position is unsatisfiable;\n\
      *          True,  otherwise.\n\
      */\n\
-    bool {0}::assertSubformula( Formula::const_iterator _subformula )\n\
-    {{\n\
+    bool '+modName+'::assertSubformula( Formula::const_iterator _subformula )\n\
+    {\n\
         Module::assertSubformula( _subformula ); // This must be invoked at the beginning of this method.\n\
         // Your code.\n\
         return true; // This should be adapted according to your implementation.\n\
-    }}\n\
+    }\n\
 \n\
     /**\n\
      * Removes the subformula of the received formula at the given position to the considered ones of this module.\n\
@@ -162,45 +162,82 @@ namespace smtrat\n\
      *\n\
      * @param _subformula The position of the subformula to remove.\n\
      */\n\
-    void {0}::removeSubformula( Formula::const_iterator _subformula )\n\
-    {{\n\
+    void '+modName+'::removeSubformula( Formula::const_iterator _subformula )\n\
+    {\n\
         // Your code.\n\
         Module::removeSubformula( _subformula ); // This must be invoked at the end of this method.\n\
-    }}\n\
+    }\n\
 \n\
     /**\n\
      * Updates the current assignment into the model.\n\
      * Note, that this is a unique but possibly symbolic assignment maybe containing newly introduced variables.\n\
      */\n\
-    void {0}::updateModel()\n\
-    {{\n\
+    void '+modName+'::updateModel()\n\
+    {\n\
         mModel.clear();\n\
         if( solverState() == True )\n\
-        {{\n\
+        {\n\
             // Your code.\n\
-        }}\n\
-    }}\n\
+        }\n\
+    }\n\
 \n\
     /**\n\
      * Checks the received formula for consistency.\n\
      */\n\
-    Answer {0}::isConsistent()\n\
-    {{\n\
+    Answer '+modName+'::isConsistent()\n\
+    {\n\
         // Your code.\n\
         return Unknown; // This should be adapted according to your implementation.\n\
-    }}\n\
-}}'.format(moduleName)
+    }\n\
+}'
+  return result
+
+
+
+# Print usage information
+def printUsage():
+  print( "Usage: python "+sys.argv[0]+" m\n" )
+  print( "            m: name of the module to create" )
+  print( "" )
+  print( "Example: python "+sys.argv[0]+" MyModule" )
+
+#
+# Parse input.
+#
+moduleName = ""
+i = 0
+for entry in sys.argv:
+  try:
+    if i == 1:
+      if entry == "-h" or entry == "--help":
+        printUsage()
+        sys.exit(1)
+      moduleName = entry
+  except ValueError:
+    print( "Error:",entry, "should be an appropriate value at position %i." % i )
+    printUsage()
+    sys.exit(0)
+  i += 1
+if i != 2:
+  print( "Error: Insufficient number of arguments." )
+  printUsage()
+  sys.exit(0)
+
+moduleDirectory = 'src/lib/modules/' + moduleName
+if not os.path.isdir(moduleDirectory):
+  os.makedirs(moduleDirectory)
 
 cmakeFile = open(moduleDirectory + '/CMakeLists.txt', 'w')
-cmakeFile.write(cmakeContent)
+cmakeFile.write(cmakeContent(moduleName))
 cmakeFile.close()
 
 headerFile = open(moduleDirectory + '/' + moduleName + '.h', 'w')
-headerFile.write(headerContent)
+headerFile.write(headerContent(moduleName))
 headerFile.close()
 
 sourceFile = open(moduleDirectory + '/' + moduleName + '.cpp', 'w')
-sourceFile.write(sourceContent)
+sourceFile.write(sourceContent(moduleName))
 sourceFile.close()
 
+sys.exit(1)
 
