@@ -724,7 +724,7 @@ namespace smtrat
                 return false;
             }
         }
-        // Do not store theory lemma
+        // Do not store the clause as it is of size one and implies a assignment directly
         if( add_tmp.size() == 1 )
         {
             cancelUntil( 0 );
@@ -739,17 +739,19 @@ namespace smtrat
             }
             return false;
         }
-        // Learn theory lemma
+        // Store the clause
         else
         {
             CRef cr;
             if( _type != NORMAL_CLAUSE )
             {
+                // Store it as learned clause
                 cr = ca.alloc( add_tmp, _type );
                 learnts.push( cr );
             }
             else
             {
+                // Store it as normal clause
                 cr = ca.alloc( add_tmp, false );
                 clauses.push( cr );
             }
@@ -758,11 +760,12 @@ namespace smtrat
             {
                 if( value( add_tmp[1] ) != l_Undef )
                 {
-                    cancelUntil( level( add_tmp ) );
+                    int lev = level( add_tmp );
+                    cancelUntil( lev > 0 ? lev-1 : 0 );
                 }
             }
             attachClause( cr );
-//            // Clause is unit
+            // Clause is unit
             if( _type == DEDUCTED_CLAUSE )
             {
                 Clause& c = ca[cr];
@@ -873,7 +876,7 @@ FindSecond:
     }
 
     /**
-     *
+     * The highest decision level which assigned a literal of the given clause.
      * @param _clause
      * @return
      */
@@ -1031,7 +1034,7 @@ FindSecond:
         cout << "###" << endl;
         printBooleanVarMap( cout, "###" );
         cout << "###" << endl;
-        unsigned debugFromCall = 0;
+        unsigned debugFromCall = 1;
         unsigned numberOfTheoryCalls = 0;
         #endif
         assert( ok );
@@ -1075,12 +1078,12 @@ FindSecond:
                     {
                         madeTheoryCall = true;
                         cout << "######################################################################" << endl;
-//                        cout << "###" << endl;
-//                        printClauses( clauses, "Clauses", cout, "### " );
-//                        cout << "###" << endl;
-//                        printClauses( learnts, "Learnts", cout, "### " );
-//                        cout << "###" << endl;
-//                        printCurrentAssignment( cout, "### " );
+                        cout << "###" << endl;
+                        printClauses( clauses, "Clauses", cout, "### " );
+                        cout << "###" << endl;
+                        printClauses( learnts, "Learnts", cout, "### " );
+                        cout << "###" << endl;
+                        printCurrentAssignment( cout, "### " );
                         cout << "### " << endl;
                         printDecisions( cout, "### " );
                         cout << "### " << endl;
