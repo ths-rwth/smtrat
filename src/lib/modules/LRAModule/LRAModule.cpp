@@ -489,7 +489,11 @@ namespace smtrat
                             bool creatable = false;
                             for(unsigned i=0;i<dc_positions.size();i++)
                             {
-                                creatable = dc_Tableau.create_cut_from_proof(mTableau,dc_positions.at(i),lcm_rows.at(i));
+                                vector<lra::Numeric> coefficients2 = vector<lra::Numeric>();
+                                ex cut = ex();
+                                ex pcut = ex(cut);
+                                creatable = dc_Tableau.create_cut_from_proof(dc_Tableau,mTableau,dc_positions.at(i),lcm_rows.at(i),coefficients2,cut);
+                                //mTableau.newBasicVariable();
                                 if(creatable)
                                 {
                                     break;

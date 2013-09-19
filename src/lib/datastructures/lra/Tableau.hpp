@@ -420,7 +420,7 @@ namespace smtrat
                 T Scalar_Product(Tableau<T>&,Tableau<T>&,unsigned,unsigned,T) const;
                 void calculate_hermite_normalform(std::vector<unsigned>&);
                 void invert_HNF_Matrix(std::vector<unsigned>);
-                bool create_cut_from_proof(Tableau<T>&,unsigned&,T&);
+                bool create_cut_from_proof(Tableau<T>&,Tableau<T>&,unsigned&,T&,std::vector<T>&,ex&);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
@@ -2438,8 +2438,8 @@ namespace smtrat
         template<class T> 
         T Tableau<T>::Scalar_Product(Tableau<T>& A, Tableau<T>& B,unsigned rowA, unsigned columnB, T lcm) const
         {
-            Iterator rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry);
-            Iterator columnB_iterator = Iterator(B.mColumns.at(columnB).mStartEntry);
+            Iterator rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry,A.mpEntries);
+            Iterator columnB_iterator = Iterator(B.mColumns.at(columnB).mStartEntry,B.mpEntries);
             T result = T(0);
             while(!columnB_iterator.columnBegin())
             {
@@ -2767,7 +2767,7 @@ namespace smtrat
          *         false,   otherwise   
          */        
         template<class T>
-        bool Tableau<T>::create_cut_from_proof(Tableau<T>& DC_Tableau, unsigned& row_index, T& lcm)
+        bool Tableau<T>::create_cut_from_proof(Tableau<T>& Inverted_Tableau, Tableau<T>& DC_Tableau, unsigned& row_index, T& lcm,std::vector<T>& coefficients,ex& cut)
         {
             Value<T> result = T(0);
             Iterator row_iterator = Iterator(DC_Tableau.mRows.at(row_index).mStartEntry, DC_Tableau.mpEntries); 
@@ -2788,16 +2788,29 @@ namespace smtrat
                     row_iterator.right();
                 }                
             }
-            /*if(!(T((*result)).toGinacNumeric()).is_integer())
+            if(!((result.mainPart()).toGinacNumeric().is_integer()))
             {
                // Construct the Cut
+               T product = T(0);
+               unsigned i=0;
+               while(i < DC_Tableau.mColumns.size())
+               {
+                   product = Scalar_Product(Inverted_Tableau,DC_Tableau,row_index,i,lcm);
+                   const Variable<T>& non_basic_var = *mColumns[i].mName;
+                   if(product != 0)
+                   {
+                       cut += product.toGinacNumeric()*(non_basic_var.expression());
+                   }
+                   coefficients.push_back(product);
+                   ++i;
+               }
                return true; 
             }
             else
             {
                 return false;                
-            }*/
-            return true;
+            }
+            return  true;
         }
                 #endif
         
