@@ -490,9 +490,11 @@ namespace smtrat
                             for(unsigned i=0;i<dc_positions.size();i++)
                             {
                                 vector<lra::Numeric> coefficients2 = vector<lra::Numeric>();
+                                vector<bool> non_basics_proof = vector<bool>();
+                                vector< lra::Variable<lra::Numeric>* > non_basic_vars2 = vector< lra::Variable<lra::Numeric>* >();
                                 ex cut = ex();
                                 ex pcut = ex(cut);
-                                creatable = dc_Tableau.create_cut_from_proof(dc_Tableau,mTableau,dc_positions.at(i),lcm_rows.at(i),coefficients2,cut);
+                                creatable = dc_Tableau.create_cut_from_proof(dc_Tableau,mTableau,dc_positions.at(i),lcm_rows.at(i),coefficients2,non_basics_proof,cut,diagonals);
                                 //mTableau.newBasicVariable();
                                 if(creatable)
                                 {
