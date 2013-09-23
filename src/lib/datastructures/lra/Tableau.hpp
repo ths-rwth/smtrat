@@ -414,13 +414,14 @@ namespace smtrat
                 #ifdef LRA_CUTS_FROM_PROOFS
                 bool isDefining( unsigned, std::vector<unsigned>&, std::vector<T>&, T&, T& ) const;
                 bool isDiagonal(unsigned,std::vector<unsigned>&);
+                unsigned revert_diagonals(unsigned,std::vector<unsigned>&);
                 void invertColumn(unsigned);
                 void addColumns(unsigned,unsigned,T);
                 void multiplyRow(unsigned,T);
-                T Scalar_Product(Tableau<T>&,Tableau<T>&,unsigned,unsigned,T) const;
+                T Scalar_Product(Tableau<T>&,Tableau<T>&,unsigned,unsigned,T,std::vector<unsigned>&) ;
                 void calculate_hermite_normalform(std::vector<unsigned>&);
                 void invert_HNF_Matrix(std::vector<unsigned>);
-                bool create_cut_from_proof(Tableau<T>&,unsigned&,T&);
+                bool create_cut_from_proof(Tableau<T>&,Tableau<T>&,unsigned&,T&,std::vector<T>&,std::vector<bool>&,ex&,std::vector<unsigned>&,std::vector<unsigned>&);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
@@ -2177,6 +2178,25 @@ namespace smtrat
         }
         
         /**
+         * Returns the the actual index of the column with
+         * index column_index in the permutated tableau.   
+         */        
+        template<class T>
+        unsigned Tableau<T>::revert_diagonals(unsigned column_index,std::vector<unsigned>& diagonals)
+        {
+            unsigned i=0;
+            while(diagonals.at(i) != mColumns.size())   
+            {
+                if(diagonals.at(i) == column_index)
+                {
+                    return i;
+                }
+                ++i;
+            }
+            return mColumns.size();
+        }
+        
+        /**
          * Multiplies all entries in the column with the index column_index by (-1). 
          * 
          * @return   
@@ -2436,42 +2456,32 @@ namespace smtrat
          * @return   the value (T) of the scalarproduct.
          */        
         template<class T> 
-        T Tableau<T>::Scalar_Product(Tableau<T>& A, Tableau<T>& B,unsigned rowA, unsigned columnB, T lcm) const
+        T Tableau<T>::Scalar_Product(Tableau<T>& A, Tableau<T>& B,unsigned rowA, unsigned columnB, T lcm,std::vector<unsigned>& diagonals) 
         {
-            Iterator rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry);
-            Iterator columnB_iterator = Iterator(B.mColumns.at(columnB).mStartEntry);
+            Iterator rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry,A.mpEntries);
+            Iterator columnB_iterator = Iterator(B.mColumns.at(columnB).mStartEntry,B.mpEntries);
             T result = T(0);
-            while(!columnB_iterator.columnBegin())
-            {
-                columnB_iterator.up();
-            }
             while(true)
             {
-                if ((*rowA_iterator).rowNumber() > (*columnB_iterator).columnNumber())
+                rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry,A.mpEntries);
+                unsigned actual_column = revert_diagonals((*rowA_iterator).columnNumber(),diagonals); 
+                while(actual_column != (*columnB_iterator).rowNumber()
+                      && !rowA_iterator.rowEnd())
                 {
-                    while((*rowA_iterator).rowNumber() > (*columnB_iterator).columnNumber())
-                    {
-                        columnB_iterator.down();
-                    }
+                    actual_column = revert_diagonals((*rowA_iterator).columnNumber(),diagonals);
+                    rowA_iterator.right();                                        
                 }
-                else if((*rowA_iterator).rowNumber() < (*columnB_iterator).columnNumber())
+                if(actual_column == (*columnB_iterator).rowNumber())
                 {
-                    while((*rowA_iterator).rowNumber() < (*columnB_iterator).columnNumber())
-                    {
-                        rowA_iterator.right();
-                    }                    
+                    result += (*rowA_iterator).rContent()*(*columnB_iterator).rContent()*lcm;
                 }
-                if((*rowA_iterator).rowNumber() == (*columnB_iterator).columnNumber())
-                {
-                    result += (*rowA_iterator).rContent()*(*columnB_iterator).rContent()*lcm;                
-                }
-                if(rowA_iterator.rowEnd() || columnB_iterator.columnEnd())
+                if(columnB_iterator.columnBegin())
                 {
                     break;
                 }
                 else
                 {
-                    rowA_iterator.right();
+                    columnB_iterator.up();
                 }
             }
         return result;    
@@ -2714,7 +2724,7 @@ namespace smtrat
                 /*
                  * Now change the other entries in the current column if necessary.
                  */
-                if(!column_iterator.columnBegin())
+                if(!column_iterator.columnEnd())
                 {
                     column_iterator.down();
                     entry_changed = true;
@@ -2767,18 +2777,20 @@ namespace smtrat
          *         false,   otherwise   
          */        
         template<class T>
-        bool Tableau<T>::create_cut_from_proof(Tableau<T>& DC_Tableau, unsigned& row_index, T& lcm)
+        bool Tableau<T>::create_cut_from_proof(Tableau<T>& Inverted_Tableau, Tableau<T>& DC_Tableau, unsigned& row_index, T& lcm,std::vector<T>& coefficients,std::vector<bool>& non_basics_proof,ex& cut,std::vector<unsigned>& diagonals,std::vector<unsigned>& dc_positions)
         {
             Value<T> result = T(0);
-            Iterator row_iterator = Iterator(DC_Tableau.mRows.at(row_index).mStartEntry, DC_Tableau.mpEntries); 
+            Iterator row_iterator = Iterator(mRows.at(row_index).mStartEntry,mpEntries); 
             /*
              * Calculate H^(-1)*b 
              */
+            unsigned i;
             while(true)
             {
-                const Variable<T>& basic_var = *mRows[row_index].mName;
+                i = revert_diagonals((*row_iterator).columnNumber(),diagonals);
+                const Variable<T>& basic_var = *(DC_Tableau.mRows)[dc_positions.at(i)].mName;
                 const Value<T>& basic_var_assignment = basic_var.assignment();
-                result += basic_var_assignment*(*row_iterator).content()*lcm;
+                result += basic_var_assignment*(*row_iterator).content()*lcm;                    
                 if(row_iterator.rowEnd())
                 {
                     break;
@@ -2788,16 +2800,33 @@ namespace smtrat
                     row_iterator.right();
                 }                
             }
-            /*if(!(T((*result)).toGinacNumeric()).is_integer())
+            if(!((result.mainPart()).toGinacNumeric().is_integer()))
             {
                // Construct the Cut
+               T product = T(0);
+               unsigned i=0;
+               while(i < DC_Tableau.mColumns.size())
+               {
+                   product = Scalar_Product(Inverted_Tableau,DC_Tableau,row_index,i,lcm,diagonals);
+                   const Variable<T>& non_basic_var = *mColumns[diagonals.at(i)].mName;
+                   if(product != 0)
+                   {
+                       cut += (result.mainPart()).toGinacNumeric().denom()*product.toGinacNumeric()*(non_basic_var.expression());
+                       coefficients.push_back(product);
+                       non_basics_proof.push_back(true);
+                   }
+                   else
+                   {
+                       non_basics_proof.push_back(false);
+                   }
+                   ++i;
+               }
                return true; 
             }
             else
             {
                 return false;                
-            }*/
-            return true;
+            }
         }
                 #endif
         
@@ -2822,10 +2851,8 @@ namespace smtrat
             Iterator row_iterator = Iterator( mRows.at(_rowPosition).mStartEntry, mpEntries );
             std::vector<GOMORY_SET> splitting = std::vector<GOMORY_SET>();
             // Check, whether the conditions of a Gomory Cut are satisfied
-            //cout << "GOMORY" << endl;
             while( !row_iterator.rowEnd() )
-            {
-            //cout << "IN" << endl;    
+            { 
                 const Variable<T>& nonBasicVar = *mColumns[row_iterator->columnNumber()].mName;
                 if( nonBasicVar.infimum() == nonBasicVar.assignment() || nonBasicVar.supremum() == nonBasicVar.assignment() )
                 {
@@ -2842,13 +2869,10 @@ namespace smtrat
                 }                                 
                 else
                 {
-                    //cout << "return" << endl;
                     return NULL;
                 }                               
                 row_iterator.right();
-                //cout << "HI" << endl;
             }
-            //cout << "OUT" << endl;
             // A Gomory Cut can be constructed              
             std::vector<T> coeffs = std::vector<T>();
             T coeff;
@@ -2892,7 +2916,6 @@ namespace smtrat
                 row_iterator.right();
                 ++vec_iter;
             }            
-    //        print();
             const smtrat::Constraint* gomory_constr = smtrat::Formula::newConstraint( sum-1, smtrat::CR_GEQ, smtrat::Formula::constraintPool().realVariables() );
             ex *psum = new ex( sum - gomory_constr->constantPart() );
             Value<T>* bound = new Value<T>( gomory_constr->constantPart() );
@@ -2936,8 +2959,6 @@ namespace smtrat
             rowHead.mStartEntry = currentStartEntryOfRow;
             rowHead.mSize = coeffs.size();
             rowHead.mName = var; 
-            //printVariables();
-            //cout << *gomory_constr << endl;
             return gomory_constr;     
         }
         #endif
