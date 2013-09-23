@@ -424,10 +424,11 @@ namespace smtrat
                             #endif 
 
                             #ifdef LRA_CUTS_FROM_PROOFS
-                            //unsigned c=2,d=0;                            
-                            //mTableau.print();
-                            //mTableau.addColumns(c,d,Numeric(1));
                             mTableau.print();
+                            /*
+                             * Build the new Tableau consisting out
+                             * of the defining constraints.
+                             */
                             lra::Tableau<lra::Numeric> dc_Tableau = lra::Tableau<lra::Numeric>(mpPassedFormula->end());
                             unsigned i=0;
                             for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
@@ -475,6 +476,9 @@ namespace smtrat
                             dc_Tableau.print();                                                      
                             if(dc_Tableau.rows().size() > 0)
                             {
+                            /*
+                             * At least one DC exists -> Construct and embed it.
+                             */    
                             vector<unsigned> diagonals = vector<unsigned>();    
                             vector<unsigned>& diagonals_ref = diagonals;                            
                             dc_Tableau.calculate_hermite_normalform(diagonals_ref);
@@ -485,24 +489,40 @@ namespace smtrat
                                 printf("%u",*iter);
                                 ++iter;
                             }
+                            printf("Before");
                             dc_Tableau.invert_HNF_Matrix(diagonals);
+                            printf("After");
                             bool creatable = false;
+                            ex cut = ex();
                             for(unsigned i=0;i<dc_positions.size();i++)
                             {
                                 vector<lra::Numeric> coefficients2 = vector<lra::Numeric>();
                                 vector<bool> non_basics_proof = vector<bool>();
                                 vector< lra::Variable<lra::Numeric>* > non_basic_vars2 = vector< lra::Variable<lra::Numeric>* >();
-                                ex cut = ex();
-                                ex pcut = ex(cut);
-                                creatable = dc_Tableau.create_cut_from_proof(dc_Tableau,mTableau,dc_positions.at(i),lcm_rows.at(i),coefficients2,non_basics_proof,cut,diagonals);
-                                //mTableau.newBasicVariable();
+                                printf("Before");
+                                creatable = dc_Tableau.create_cut_from_proof(dc_Tableau,mTableau,i,lcm_rows.at(i),coefficients2,non_basics_proof,cut,diagonals,dc_positions);
+                                printf("After");
+                                ex* pcut = new ex(cut);
+                                auto vector_iterator = non_basics_proof.begin();
+                                unsigned j=0;
+                                while(vector_iterator != non_basics_proof.end())
+                                {
+                                    if(*vector_iterator)
+                                    {
+                                        non_basic_vars2.push_back(mTableau.columns().at(j).mName);
+                                    }
+                                    ++vector_iterator;
+                                    ++j;
+                                }
+                                mTableau.newBasicVariable(pcut,non_basic_vars2,coefficients2);
                                 if(creatable)
                                 {
                                     break;
                                 }
-                            }
+                            } 
                             dc_Tableau.print();                             
                             } 
+                            mTableau.print();
                             #endif
                             
                             #ifdef LRA_BRANCH_AND_BOUND
