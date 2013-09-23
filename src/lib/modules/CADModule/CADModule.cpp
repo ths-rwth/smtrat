@@ -28,7 +28,7 @@
  * @version 2013-07-10
  */
 
-//#define MODULE_VERBOSE
+#define MODULE_VERBOSE
 
 #include "../../Manager.h"
 #include "CADModule.h"
@@ -630,7 +630,7 @@ namespace smtrat
                 // add v to the setCover
                 setCover.push_back( vertex );
                 // remove coverage information of v from conflictGraph
-                conflictGraph.removeAdjacentVertices( vertex );
+                conflictGraph.invertConflictingVertices( vertex );
                 #ifdef MODULE_VERBOSE
                 cout << "Conflict graph after removal of " << vertex << ": " << endl << conflictGraph << endl << endl;
                 #endif
