@@ -1923,7 +1923,7 @@ namespace smtrat
             case 2: // Rule of Hansen and Walster - select interval with most varying function values
             {
                 GiNaCRA::evaldoubleintervalmap* tmpIntervals = new GiNaCRA::evaldoubleintervalmap(mIntervals);
-                tmpIntervals->emplace(_var,GiNaCRA::DoubleInterval(1));
+                tmpIntervals->insert(std::make_pair(_var,GiNaCRA::DoubleInterval(1)));
                 GiNaCRA::DoubleInterval derivedEvalInterval = GiNaCRA::DoubleInterval::evaluate(_candidate.derivative(), *tmpIntervals);
                 impact = derivedEvalInterval.diameter() * originalDiameter;
                 delete tmpIntervals;
@@ -1932,7 +1932,7 @@ namespace smtrat
             case 3: // Rule of Ratz - minimize width of inclusion
             {
                 GiNaCRA::evaldoubleintervalmap* tmpIntervals = new GiNaCRA::evaldoubleintervalmap(mIntervals);
-                tmpIntervals->emplace(_var,GiNaCRA::DoubleInterval(1));
+                tmpIntervals->insert(std::make_pair(_var,GiNaCRA::DoubleInterval(1)));
                 GiNaCRA::DoubleInterval derivedEvalInterval = GiNaCRA::DoubleInterval::evaluate(_candidate.derivative(), *tmpIntervals);
                 GiNaCRA::DoubleInterval negCenter = GiNaCRA::DoubleInterval(mIntervals.at(_var).midpoint()).minus();
                 negCenter = negCenter.add(mIntervals.at(_var));
