@@ -31,23 +31,23 @@
 #define ICPMODULE_H
 
 //#define ICP_BOXLOG
-
+#define BOXMANAGEMENT
+#define RAISESPLITTOSATSOLVER
 //#ifdef SMTRAT_DEVOPTION_Validation
 //#define SMTRAT_DEVOPTION_VALIDATION_ICP
 //#endif
 
-#include <ginac/ginac.h>
-#include <ginacra/ginacra.h>
+
 #include "../../Module.h"
 #include "DerivativeTable.h"
 #include "ContractionCandidateManager.h"
 #include "HistoryNode.h"
 #include "IcpVariable.h"
 #include "../LRAModule/LRAModule.h"
-#include <ginacra/ICP.h>
 #include <ginacra/DoubleInterval.h>
 #include "../../VariableBounds.h"
 #include "IcpVariable.h"
+#include "utils.h"
 #include <fstream>
 
 namespace smtrat
@@ -87,62 +87,6 @@ namespace smtrat
                 }
             };
             
-            struct ExComp
-            {           
-                bool operator() (const ex _lhs, const ex _rhs)
-                {
-                    GiNaC::symtab lhsVariables;
-                    GiNaC::symtab rhsVariables;
-                    std::vector<symbol>* lhsVar = new std::vector<symbol>;
-                    std::vector<symbol>* rhsVar = new std::vector<symbol>;
-                    GiNaCRA::ICP::searchVariables(_lhs, lhsVar);
-                    GiNaCRA::ICP::searchVariables(_rhs, rhsVar);
-                    
-                    for( auto symbolIt = lhsVar->begin(); symbolIt != lhsVar->end(); ++symbolIt)
-                        lhsVariables.insert( std::make_pair((*symbolIt).get_name(), *symbolIt) );
-                    
-                    for( auto symbolIt = rhsVar->begin(); symbolIt != rhsVar->end(); ++symbolIt)
-                        rhsVariables.insert( std::make_pair((*symbolIt).get_name(), *symbolIt) );
-                    
-                    bool result = (*this)(_lhs, lhsVariables, _rhs, rhsVariables);
-                    return result;
-                }
-                
-                bool operator() (const ex _lhs, const GiNaC::symtab _lhsVariables, const ex _rhs, const GiNaC::symtab _rhsVariables )
-                {
-                    if( (*_lhsVariables.begin()).first < (*_rhsVariables.begin()).first )
-                        return true;
-                    else if( (*_lhsVariables.begin()).first > (*_rhsVariables.begin()).first )
-                        return false;
-                    else if ( _lhs.degree((*_lhsVariables.begin()).second) < _rhs.degree((*_rhsVariables.begin()).second) )
-                        return true;
-                    else if ( _lhs.degree((*_lhsVariables.begin()).second) > _rhs.degree((*_rhsVariables.begin()).second) )
-                        return false;
-                    else if ( _lhsVariables.size() == 1 && _rhsVariables.size() == 1) // both are the same
-                        return false;
-                    else // 1st variable and degree are similar -> cut of
-                    {
-                        ex left = _lhs;
-                        ex right = _rhs;
-                        GiNaC::symtab leftVar = _lhsVariables;
-                        GiNaC::symtab rightVar = _rhsVariables;
-                        
-                        left /= GiNaC::pow((*_lhsVariables.begin()).second, _lhs.degree((*_lhsVariables.begin()).second) );
-                        leftVar.erase(leftVar.begin());
-
-                        right /= GiNaC::pow((*_rhsVariables.begin()).second, _rhs.degree((*_rhsVariables.begin()).second) );
-                        rightVar.erase(rightVar.begin());
-                        
-                        if (leftVar.empty() && !rightVar.empty())
-                            return true;
-                        else if ( !leftVar.empty() && rightVar.empty() )
-                            return false;
-
-                        return ExComp::operator ()(left, leftVar, right, rightVar);
-                    }
-                }
-            };
-            
             struct linearVariable
             {
                 const Formula*                           constraint;
@@ -157,6 +101,7 @@ namespace smtrat
 
             typedef set<icp::ContractionCandidate*, icp::contractionCandidateComp>                      ContractionCandidates;
             typedef std::map<ex*, weights, ex_is_less>                             WeightMap;
+            
 
         private:
 
@@ -174,9 +119,8 @@ namespace smtrat
             GiNaCRA::evaldoubleintervalmap                                                      mIntervals; // actual intervals relevant for contraction
             std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
             
-            std::map<const ex, const Constraint*, ExComp>                                       mTemporaryMonomes; // monomes from preprocessing to be linearized
-            std::map<const Constraint*, const Constraint*, constraintIdComp>               mReplacements; // linearized constraint -> original constraint
-            std::map<const ex, symbol, ExComp>                                                  mLinearizations; // monome -> variable
+            std::map<const Constraint*, const Constraint*, constraintIdComp>                    mReplacements; // linearized constraint -> original constraint
+            std::map<const ex, symbol, icp::ExComp>                                             mLinearizations; // monome -> variable
             GiNaC::exmap                                                                        mSubstitutions; // variable -> monome/variable
             
             icp::HistoryNode*                                                                   mHistoryRoot; // Root-Node of the state-tree
@@ -191,6 +135,9 @@ namespace smtrat
             std::set<const Constraint*, constraintPointerComp>                                  mCenterConstraints; // keeps actual centerConstaints for deletion
             std::set<Formula*>                                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
+            #ifdef RAISESPLITTOSATSOLVER
+            std::queue<std::set<const Constraint*> >                                            mBoxStorage; // keeps the box before contraction
+            #endif
             bool                                                                                mIsIcpInitialized; // initialized ICPModule?
             unsigned                                                                            mCurrentId; // keeps the currentId of the state nodes
             bool                                                                                mIsBackendCalled; // has a backend already been called in the actual run?
@@ -232,17 +179,9 @@ namespace smtrat
              */
 
             /**
-             * Determines, if the given expression is linear
-             * @param _constr Needed to associate linearization with constraint
-             * @param _expr Expression, which is checked
-             * @return true, if expression is linear
-             */
-            bool isLinear( const Constraint* _constr, const ex& _expr);
-
-            /**
              * Creates ContractionCandidates from all items in mTemporaryMonomes and empties mTemporaryMonomes.
              */
-            ex createContractionCandidates();
+            ex createContractionCandidates(icp::ExToConstraintMap& _tempMonomes );
             
             /**
              * Initiates weights for contractions

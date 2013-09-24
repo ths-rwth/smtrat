@@ -38,7 +38,7 @@ using namespace std;
 
 //#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
-#define BOXMANAGEMENT
+
 
 namespace smtrat
 {
@@ -55,7 +55,6 @@ namespace smtrat
         mVariables(),
         mIntervals(),
         mIcpRelevantCandidates(),
-        mTemporaryMonomes(),
         mReplacements(),
         mLinearizations(),
         mSubstitutions(),
@@ -69,6 +68,9 @@ namespace smtrat
         mCenterConstraints(),
         mCreatedDeductions(),
         mLastCandidate(NULL),
+        #ifdef RAISESPLITTOSATSOLVER
+        mBoxStorage(),
+        #endif
         mIsIcpInitialized(false),
         mCurrentId(1),
         mIsBackendCalled(false)
@@ -113,13 +115,14 @@ namespace smtrat
         if( _constraint->variables().size() > 0 )
         {
             const ex constr = _constraint->lhs();
-            bool linear;
+            bool linear = false;
             // add original variables to substitution mapping
             for( auto variablesIt = _constraint->variables().begin(); variablesIt != _constraint->variables().end(); ++variablesIt )
                 mSubstitutions[(*variablesIt).second] = (*variablesIt).second;
 
             // actual preprocessing
-            linear = isLinear( _constraint, constr );
+            icp::ExToConstraintMap temporaryMonomes;
+            linear = icp::isLinear( _constraint, constr, temporaryMonomes );
             Formula linearFormula;
             bool informLRA = true;
             
@@ -131,13 +134,12 @@ namespace smtrat
                 GiNaC::symtab newVariables;
                 
                 ex lhs;
-                if(!mTemporaryMonomes.empty())
-                    lhs = createContractionCandidates();
+                if(!temporaryMonomes.empty())
+                    lhs = createContractionCandidates(temporaryMonomes);
                 else
                 {
                     for( auto replacementsIt = mReplacements.begin(); replacementsIt != mReplacements.end(); ++replacementsIt )
                     {
-//                        cout << "consider: " << *(*replacementsIt).second <<   " == " << *_constraint << endl;
                         if ( (*replacementsIt).second == _constraint )
                         {
                             lhs = (*replacementsIt).first->lhs();
@@ -148,23 +150,20 @@ namespace smtrat
                     assert(lhs != 0);
                 }
                 
+                assert(temporaryMonomes.empty());
                 
                 if( informLRA )
                 {
                     GiNaCRA::ICP::searchVariables(lhs, variables);
-//                    cout << "LHS: " << lhs << ", Variables: ";
                     for( auto variableIt = variables->begin(); variableIt != variables->end(); ++variableIt)
                     {
                         newVariables.insert(std::make_pair((*variableIt).get_name(), *variableIt));
-//                        cout << (*variableIt).get_name() << ", ";
                     }
-//                    cout << endl;
 
                     linearFormula = Formula( Formula::newConstraint(lhs,_constraint->relation(), newVariables) );
                 }
                 delete variables;
             }
-
             if( informLRA )
             {
                 // store replacement for later comparison when asserting
@@ -176,9 +175,7 @@ namespace smtrat
                 #endif
                 assert( linearFormula.constraint().isLinear() );
             }
-            
         }
-        
         return (_constraint->isConsistent() != 0);
     }
 
@@ -240,10 +237,11 @@ namespace smtrat
             #endif
             for( auto candidateIt = mNonlinearConstraints[constr].begin(); candidateIt != mNonlinearConstraints[constr].end(); ++candidateIt )
             {
-                if( mActiveNonlinearConstraints.find( *candidateIt ) != mActiveNonlinearConstraints.end() )
+                std::map<icp::ContractionCandidate*, unsigned, icp::contractionCandidateComp>::iterator activeCandidateIt = mActiveNonlinearConstraints.find( *candidateIt );
+                if( activeCandidateIt != mActiveNonlinearConstraints.end() )
                 {
                     (*candidateIt)->addOrigin(*_formula);
-                    mActiveNonlinearConstraints[*candidateIt] += 1;
+                    (*activeCandidateIt).second += 1;
                     #ifdef ICPMODULE_DEBUG
                     cout << "[ICP] Increased candidate count: ";
                     (*candidateIt)->print();
@@ -854,6 +852,16 @@ namespace smtrat
 
             while ( icpFeasible )
             {
+                #ifdef RAISESPLITTOSATSOLVER
+                std::set<const Constraint*> box;
+                for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
+                {
+                    std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*intervalIt).first, (*intervalIt).second);
+                    box.insert(boundaries.first);
+                    box.insert(boundaries.second);
+                }
+                mBoxStorage.push(box);
+                #endif
                 #ifdef ICPMODULE_DEBUG
                 cout << "********************** [ICP] Contraction **********************" << endl;
                 cout << "Subtree size: " << mHistoryRoot->sizeSubtree() << endl;
@@ -1036,7 +1044,9 @@ namespace smtrat
                 didSplit.first = false;
                 // perform splitting if possible
                 if ( !invalidBox && !splitOccurred )
+                {
                     didSplit = checkAndPerformSplit( targetDiameter );
+                }
 
                 if ( didSplit.first || (splitOccurred && !invalidBox) )
                 {
@@ -1047,6 +1057,9 @@ namespace smtrat
                     #ifndef ICPMODULE_REDUCED_DEBUG
                     cout << "Size subtree: " << mHistoryActual->sizeSubtree() << " \t Size total: " << mHistoryRoot->sizeSubtree() << endl;
                     #endif
+                    #endif
+                    #ifdef RAISESPLITTOSATSOLVER
+                    return foundAnswer(Unknown);
                     #endif
                     invalidBox = false;
                     icpFeasible = true;
@@ -1340,133 +1353,18 @@ namespace smtrat
     }
     
     
-    bool ICPModule::isLinear( const Constraint* _constr, const ex& _expr )
-    {
-        bool isLinear = true;
-        ex term = _expr.expand();
-        assert( is_exactly_a<add>( term ) || is_exactly_a<mul>( term ) || is_exactly_a<power>( term ) || is_exactly_a<symbol>( term )
-                || is_exactly_a<numeric>( term ) );
-
-        if( is_exactly_a<add>( term ) )
-        {
-            for( GiNaC::const_iterator summand = term.begin(); summand != term.end(); summand++ )
-            {
-                assert( is_exactly_a<mul>( *summand ) || is_exactly_a<power>( *summand ) || is_exactly_a<symbol>( *summand )
-                        || is_exactly_a<numeric>( *summand ) );
-                bool summandLinear = true;
-                ex tmp = *summand;
-                GiNaC::numeric coefficient = 0;
-
-                if( is_exactly_a<mul>( tmp ) )
-                {
-                    bool firstVariable = false;
-                    for( GiNaC::const_iterator factor = tmp.begin(); factor != tmp.end(); factor++ )
-                    {
-                        assert( is_exactly_a<power>( *factor ) || is_exactly_a<numeric>( *factor ) || is_exactly_a<symbol>( *factor ) );
-                        ex tmpFactor = *factor;
-                        if( is_exactly_a<power>( tmpFactor ) )
-                            summandLinear = false;
-                        else if( is_exactly_a<numeric>( tmpFactor ) )
-                        {
-                            if (coefficient == 0)
-                                coefficient = ex_to<numeric>( tmpFactor );
-                            else
-                                coefficient *= ex_to<numeric>( tmpFactor );
-                        }
-                        else if( is_exactly_a<symbol>( tmpFactor ) )
-                        {
-                            if( !firstVariable )
-                                firstVariable = true;
-                            else
-                                summandLinear = false;
-                        }
-                    }
-
-                }
-                else if( is_exactly_a<power>( tmp ) )
-                {
-                    summandLinear = false;
-                }
-                if( !summandLinear )
-                {
-                    // Add summand to nonlinear table
-                    isLinear = false;
-                    // multiplication with coefficient and more than one variable or power
-                    if (coefficient != 0)
-                    {
-                        mTemporaryMonomes.insert(std::make_pair(tmp/coefficient, _constr));
-                    }
-                    else
-                    {
-                        mTemporaryMonomes.insert(std::make_pair(tmp, _constr));
-                        coefficient = 1;
-                    }
-                }
-            }    // for summands
-        }    // is add
-        else if( is_exactly_a<mul>( term ) )
-        {
-            bool firstVariable = false;
-            GiNaC::numeric coefficient = 0;
-            
-            for( GiNaC::const_iterator factor = term.begin(); factor != term.end(); factor++ )
-            {
-                assert( is_exactly_a<power>( *factor ) || is_exactly_a<numeric>( *factor ) || is_exactly_a<symbol>( *factor ) );
-                ex tmpFactor = *factor;
-
-                if( is_exactly_a<power>( tmpFactor ) )
-                    isLinear = false;
-                else if( is_exactly_a<numeric>( tmpFactor ) )
-                {
-                    if( coefficient == 0)
-                        coefficient = ex_to<numeric>(tmpFactor);
-                    else
-                        coefficient *= ex_to<numeric>(tmpFactor);
-                }
-                else if( is_exactly_a<symbol>( tmpFactor ) )
-                {
-                    if( !firstVariable )
-                        firstVariable = true;
-                    else // 2nd or higher variable
-                        isLinear = false;
-                }
-            }    // for factors
-            if(!isLinear)
-            {
-                if(coefficient != 0)
-                {
-                    mTemporaryMonomes.insert(std::make_pair(term/coefficient, _constr));
-                }
-                else
-                {
-                    mTemporaryMonomes.insert(std::make_pair(term, _constr));
-                }
-                
-            }
-            return isLinear;
-        }    // is mul
-        else if( is_exactly_a<power>( term ) )
-        {
-            // Add to nonlinear table
-            isLinear = false;
-            mTemporaryMonomes.insert(std::make_pair(term, _constr));
-        }
-        return isLinear;
-    }
-    
-    
-    ex ICPModule::createContractionCandidates()
+    ex ICPModule::createContractionCandidates(icp::ExToConstraintMap& _tempMonomes)
     {
         ex linearizedConstraint = ex();
-        if( !mTemporaryMonomes.empty() )
+        if( !_tempMonomes.empty() )
         {
-            const Constraint* constraint = (*mTemporaryMonomes.begin()).second;
+            const Constraint* constraint = (*_tempMonomes.begin()).second;
             GiNaC::exmap substitutions;
             
 //            cout << "Constraint: " << *constraint << endl;
 
             // Create contraction candidate object for every possible derivation variable
-            for( auto expressionIt = mTemporaryMonomes.begin(); expressionIt != mTemporaryMonomes.end(); )
+            for( auto expressionIt = _tempMonomes.begin(); expressionIt != _tempMonomes.end(); )
             {
                 if( mLinearizations.find((*expressionIt).first) == mLinearizations.end() )
                 {
@@ -1528,7 +1426,7 @@ namespace smtrat
                         }
                     }
                 }
-                expressionIt = mTemporaryMonomes.erase(mTemporaryMonomes.begin());
+                expressionIt = _tempMonomes.erase(_tempMonomes.begin());
             }
             if( is_exactly_a<add>(constraint->lhs()) )
             {
@@ -1584,7 +1482,7 @@ namespace smtrat
                 linearizedConstraint *= (*mLinearizations.find(constraint->lhs())).second;
             }
         }
-        assert(mTemporaryMonomes.empty());
+        assert(_tempMonomes.empty());
         return linearizedConstraint;
     }
     
@@ -2056,14 +1954,16 @@ namespace smtrat
         std::pair<bool,symbol> result;
         result.first = false;
         bool found = false;
-        double maximalImpact = 0;
-        
+        symbol variable = (*mIntervals.begin()).first; // Initialized to some dummy value
+        double maximalImpact = 0;   
         // first check all intevals from nonlinear contractionCandidats -> backwards to begin at the most important candidate
         for ( auto candidateIt = mActiveNonlinearConstraints.rbegin(); candidateIt != mActiveNonlinearConstraints.rend(); ++candidateIt )
         {
+            if(found)
+                break;
             if ( (*candidateIt).first->isActive() )
             {
-                symbol variable = ex_to<symbol>((*candidateIt).first->constraint()->variables().begin()->second);
+                variable = ex_to<symbol>((*candidateIt).first->constraint()->variables().begin()->second);
                 // search for the biggest interval and check if it is larger than the target Diameter
                 for ( auto variableIt = (*candidateIt).first->constraint()->variables().begin(); variableIt != (*candidateIt).first->constraint()->variables().end(); ++variableIt )
                 {
@@ -2088,76 +1988,16 @@ namespace smtrat
                             break;
                         }
                     }
-                }
-
-                if ( found )
-                {
-                    //perform split and add two historyNodes
-                    #ifdef ICPMODULE_DEBUG
-                    cout << "[ICP] Split performed in: " << variable<< endl;
-                    cout << "Size mIntervals: " << mIntervals.size() << endl;
-                    #endif
-                    // set intervals and update historytree
-                    GiNaCRA::DoubleInterval tmp = mIntervals.at(variable);
-
-                    GiNaCRA::DoubleInterval tmpRightInt = tmp;
-                    tmpRightInt.cutUntil(tmp.midpoint());
-                    tmpRightInt.setLeftType(GiNaCRA::DoubleInterval::WEAK_BOUND);
-                    mIntervals[variable] = tmpRightInt;
-                    GiNaCRA::evaldoubleintervalmap tmpRight = GiNaCRA::evaldoubleintervalmap();
-
-                    for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
-                        tmpRight.insert((*intervalIt));
-
-                    icp::HistoryNode* newRightChild = new icp::HistoryNode(tmpRight, mCurrentId+2);
-                    std::pair<const Constraint*, const Constraint*> boundaryConstraints = icp::intervalToConstraint(variable, tmpRightInt);
-                    newRightChild->setSplit(boundaryConstraints.first);
-                    mHistoryActual->addRight(newRightChild);
-
-                    // left first!
-                    GiNaCRA::DoubleInterval tmpLeftInt = tmp;
-                    tmpLeftInt.cutFrom(tmp.midpoint());
-                    tmpLeftInt.setRightType(GiNaCRA::DoubleInterval::STRICT_BOUND);
-                    mIntervals[variable] = tmpLeftInt;
-                    GiNaCRA::evaldoubleintervalmap tmpLeft = GiNaCRA::evaldoubleintervalmap();
-
-                    for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
-                        tmpLeft.insert((*intervalIt));
-                    
-                    icp::HistoryNode* newLeftChild = new icp::HistoryNode(tmpLeft, ++mCurrentId);
-                    boundaryConstraints = icp::intervalToConstraint(variable, tmpLeftInt);
-                    newLeftChild->setSplit(boundaryConstraints.second);
-                    ++mCurrentId;
-                    mHistoryActual = mHistoryActual->addLeft(newLeftChild);
-                    
-                    #ifdef ICPMODULE_DEBUG
-                    #ifndef ICPMODULE_REDUCED_DEBUG
-                    cout << "New right child: " << endl;
-                    newRightChild->print();
-                    cout << "New left child: " << endl;
-                    newLeftChild->print();
-                    cout << "Actual: " << endl;
-                    mHistoryActual->print();
-                    #endif
-                    #endif
-                    updateRelevantCandidates(variable, 0.5 );
-
-                    // only perform one split at a time and then contract
-                    result.first = true;
-                    result.second = variable;
-                    std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.find(variable.get_name());
-                    assert(icpVar != mVariables.end());
-                    (*icpVar).second->setUpdated();
-                    return result;
                 }
             }
         }
-
         for ( auto candidateIt = mActiveLinearConstraints.rbegin(); candidateIt != mActiveLinearConstraints.rend(); ++candidateIt )
         {
+            if(found)
+                break;
             if ( (*candidateIt).first->isActive() )
             {
-                symbol variable = ex_to<symbol>((*candidateIt).first->constraint()->variables().begin()->second);
+                variable = ex_to<symbol>((*candidateIt).first->constraint()->variables().begin()->second);
                 // search for the biggest interval and check if it is larger than the target Diameter
                 for ( auto variableIt = (*candidateIt).first->constraint()->variables().begin(); variableIt != (*candidateIt).first->constraint()->variables().end(); ++variableIt )
                 {
@@ -2183,66 +2023,122 @@ namespace smtrat
                         }
                     }
                 }
-                if ( found )
-                {
-                    //perform split and add two historyNodes
-                    #ifdef ICPMODULE_DEBUG
-                    cout << "[ICP] Split performed in: " << variable << endl;
-                    cout << "Size mIntervals: " << mIntervals.size() << endl;
-                    #endif
-
-                    // set intervals and update historytree
-                    GiNaCRA::DoubleInterval tmp = mIntervals.at(variable);
-                    GiNaCRA::DoubleInterval tmpRightInt = tmp;
-                    tmpRightInt.cutUntil(tmp.midpoint());
-                    tmpRightInt.setLeftType(GiNaCRA::DoubleInterval::WEAK_BOUND);
-                    mIntervals[variable] = tmpRightInt;
-                    GiNaCRA::evaldoubleintervalmap tmpRight = GiNaCRA::evaldoubleintervalmap();
-
-                    for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
-                        tmpRight.insert((*intervalIt));
-
-                    icp::HistoryNode* newRightChild = new icp::HistoryNode(tmpRight, mCurrentId+2);
-                    std::pair<const Constraint*, const Constraint*> boundaryConstraints = icp::intervalToConstraint(variable, tmpRightInt);
-                    newRightChild->setSplit(boundaryConstraints.first);
-                    mHistoryActual->addRight(newRightChild);
-
-                    // left first!
-                    GiNaCRA::DoubleInterval tmpLeftInt = tmp;
-                    tmpLeftInt.cutFrom(tmp.midpoint());
-                    tmpLeftInt.setRightType(GiNaCRA::DoubleInterval::STRICT_BOUND);
-                    mIntervals[variable] = tmpLeftInt;
-                    GiNaCRA::evaldoubleintervalmap tmpLeft = GiNaCRA::evaldoubleintervalmap();
-
-                    for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
-                        tmpLeft.insert((*intervalIt));
-                    
-                    icp::HistoryNode* newLeftChild = new icp::HistoryNode(tmpLeft, ++mCurrentId);
-                    boundaryConstraints = icp::intervalToConstraint(variable, tmpLeftInt);
-                    newLeftChild->setSplit(boundaryConstraints.second);
-                    ++mCurrentId;
-                    mHistoryActual = mHistoryActual->addLeft(newLeftChild);
-                    #ifdef ICPMODULE_DEBUG
-                    #ifndef ICPMODULE_REDUCED_DEBUG
-                    cout << "New right child: " << endl;
-                    newRightChild->print();
-                    cout << "New left child: " << endl;
-                    newLeftChild->print();
-                    cout << "Actual: " << endl;
-                    mHistoryActual->print();
-                    #endif
-                    #endif
-
-                    updateRelevantCandidates(variable, 0.5 );
-                    // only perform one split at a time and then contract
-                    result.first = true;
-                    result.second = variable;
-                    std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.find(variable.get_name());
-                    assert(icpVar != mVariables.end());
-                    (*icpVar).second->setUpdated();
-                    return result;
-                }
             }
+        }
+        if ( found )
+        {
+            #ifdef RAISESPLITTOSATSOLVER
+            // Create deductions
+            Formula* deduction = new Formula( AND );
+
+            // create prequesites: ((B' AND CCs) -> h_b)
+            Formula* contraction = new Formula( OR );
+            Formula* prequesites = new Formula( AND );
+            Formula* negPrequesites = new Formula( NOT );
+            ConstraintSet contractions = mHistoryActual->appliedConstraints();
+            assert( mBoxStorage.size() == 1 );
+            std::set<const Constraint*> box = mBoxStorage.front();
+            mBoxStorage.pop();
+            for( auto constraintIt = contractions.begin(); constraintIt != contractions.end(); ++constraintIt )
+            {
+                Formula* constraint = new Formula( *constraintIt );
+                prequesites->addSubformula( constraint );
+            }
+            for( auto constraintIt = box.begin(); constraintIt != box.end(); ++constraintIt )
+                prequesites->addSubformula( *constraintIt );
+
+            negPrequesites->addSubformula( prequesites );
+            std::string contractedBoxVar = Formula::newAuxiliaryBooleanVariable();
+            Formula* contractedBox = new Formula( contractedBoxVar );
+            Formula* contractedBoxCopy = new Formula( *contractedBox );
+            contraction->addSubformula( negPrequesites );
+            contraction->addSubformula( contractedBox );
+            deduction->addSubformula( contraction );
+
+            // create deductions for all bounds: (h_b -> bound)
+            Formula* negContractedBox = new Formula( NOT );
+            negContractedBox->addSubformula( contractedBoxCopy );
+
+            for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
+            {
+                std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*intervalIt).first, (*intervalIt).second);
+                Formula* impliedLeftBound = new Formula( OR );
+                Formula* negContractedBoxCopy = new Formula( *negContractedBox );
+                impliedLeftBound->addSubformula( negContractedBoxCopy );
+                impliedLeftBound->addSubformula( boundaries.first );
+
+                Formula* impliedRightBound = new Formula( OR );
+                Formula* negContractedBoxCopy2 = new Formula( *negContractedBox );
+                impliedRightBound->addSubformula( negContractedBoxCopy2 );
+                impliedRightBound->addSubformula( boundaries.second );
+
+                deduction->addSubformula( impliedLeftBound );
+                deduction->addSubformula( impliedRightBound );
+            }
+
+            // create split: (x < b OR x>= b)
+            numeric bound  = GiNaC::rationalize( mIntervals.at(variable).midpoint() );
+            GiNaC::ex BoundEx = variable - bound;
+            GiNaC::symtab variables;
+            variables.insert(make_pair(variable.get_name(), variable));
+            const Constraint* left = new Constraint(BoundEx, CR_LESS, variables);
+            const Constraint* right = new Constraint(BoundEx, CR_GEQ, variables);
+            Formula* less = new Formula( left );
+            Formula* geq = new Formula( right );
+            deduction->addSubformula( less );
+            deduction->addSubformula( geq );
+
+            addDeduction( deduction );
+            result.first = true;
+            result.second = variable;
+            return result;
+            #else
+            //perform split and add two historyNodes
+            #ifdef ICPMODULE_DEBUG
+            cout << "[ICP] Split performed in: " << variable<< endl;
+            cout << "Size mIntervals: " << mIntervals.size() << endl;
+            #endif
+            // set intervals and update historytree
+            GiNaCRA::DoubleInterval tmp = mIntervals.at(variable);
+
+            GiNaCRA::DoubleInterval tmpRightInt = tmp;
+            tmpRightInt.cutUntil(tmp.midpoint());
+            tmpRightInt.setLeftType(GiNaCRA::DoubleInterval::WEAK_BOUND);
+            mIntervals[variable] = tmpRightInt;
+            GiNaCRA::evaldoubleintervalmap tmpRight = GiNaCRA::evaldoubleintervalmap();
+
+            for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
+                tmpRight.insert((*intervalIt));
+
+            icp::HistoryNode* newRightChild = new icp::HistoryNode(tmpRight, mCurrentId+2);
+            std::pair<const Constraint*, const Constraint*> boundaryConstraints = icp::intervalToConstraint(variable, tmpRightInt);
+            newRightChild->setSplit(boundaryConstraints.first);
+            mHistoryActual->addRight(newRightChild);
+
+            // left first!
+            GiNaCRA::DoubleInterval tmpLeftInt = tmp;
+            tmpLeftInt.cutFrom(tmp.midpoint());
+            tmpLeftInt.setRightType(GiNaCRA::DoubleInterval::STRICT_BOUND);
+            mIntervals[variable] = tmpLeftInt;
+            GiNaCRA::evaldoubleintervalmap tmpLeft = GiNaCRA::evaldoubleintervalmap();
+
+            for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
+                tmpLeft.insert((*intervalIt));
+
+            icp::HistoryNode* newLeftChild = new icp::HistoryNode(tmpLeft, ++mCurrentId);
+            boundaryConstraints = icp::intervalToConstraint(variable, tmpLeftInt);
+            newLeftChild->setSplit(boundaryConstraints.second);
+            ++mCurrentId;
+            mHistoryActual = mHistoryActual->addLeft(newLeftChild);
+            updateRelevantCandidates(variable, 0.5 );
+            // only perform one split at a time and then contract
+            result.first = true;
+            result.second = variable;
+            std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.find(variable.get_name());
+            assert(icpVar != mVariables.end());
+            (*icpVar).second->setUpdated();
+            return result;
+            #endif
         }
         return result;
     }
@@ -3087,17 +2983,14 @@ namespace smtrat
                     {
                         if( (*replacementIt).first == (*formulaIt)->pConstraint() )
                         {
-                            bool found = false;
                             for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
                             {
                                 if( (*receivedFormulaIt)->pConstraint() == (*replacementIt).second )
                                 {
                                     temporaryIfsSet.insert(*receivedFormulaIt);
-                                    found = true;
                                     break;
                                 }
                             }
-                            assert(found);
                             break;
                         }
                     }
@@ -3250,17 +3143,14 @@ namespace smtrat
                 {
                     if( (*formulaIt)->pConstraint() == (*replacementsIt).first )
                     {
-                        bool found = false;
                         for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
                         {
                             if( (*replacementsIt).second == (*receivedFormulaIt)->pConstraint() )
                             {
                                 newSet.insert(*receivedFormulaIt);
-                                found = true;
                                 break;
                             }
                         }
-                        assert(found);
                         break;
                     }
                 }
