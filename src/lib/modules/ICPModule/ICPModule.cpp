@@ -1073,6 +1073,9 @@ namespace smtrat
                     #endif
                     #endif
                     #ifdef RAISESPLITTOSATSOLVER
+                    #ifdef ICPMODULE_DEBUG
+                    cout << "Return unknown, raise deductions for split." << endl;
+                    #endif
                     return foundAnswer(Unknown);
                     #endif
                     invalidBox = false;
