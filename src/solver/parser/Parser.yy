@@ -253,7 +253,7 @@ bindlist :
 	|	bind bindlist { $$ = $2; if( $1 != NULL ) { $$->push_back( $1 ); } }
 
 bind :
-        OB SYM poly CB { dv.addTheoryBinding( yyloc, *$2, $3 ); $$ = NULL; delete $3; delete $2; }
+        OB SYM poly CB { $$ = dv.addTheoryBinding( yyloc, *$2, $3 ); delete $3; delete $2; }
 	|	OB SYM form CB { $$ = dv.booleanBinding( yyloc, *$2, $3 ); delete $2; }
 
 poly :

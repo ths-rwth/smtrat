@@ -63,6 +63,7 @@ namespace smtrat
         mBooleanVariables(),
         mTheoryVariables(),
         mTheoryBindings(),
+        mTheoryIteBindings(),
         mVariableStack(),
         mInnerConstraintBindings()
     {
@@ -205,14 +206,38 @@ namespace smtrat
      * @param _loc
      * @param _varName
      * @param _exVarsPair
+     * @return 
      */
-    void Driver::addTheoryBinding( const class location& _loc, const string& _varName, ExVarsPair* _exVarsPair )
+    Formula* Driver::addTheoryBinding( const class location& _loc, const string& _varName, ExVarsPair* _exVarsPair )
     {
         assert( mTheoryBindings.find( _varName ) == mTheoryBindings.end() );
         if( !mTheoryBindings.insert( pair< string, ExVarsPair >( _varName, *_exVarsPair ) ).second )
             error( _loc, "Multiple definition of real variable " + _varName );
         mVariableStack.top().push_back( pair< string, unsigned >( _varName, 1 ) );
         pLexer()->mTheoryVariables.insert( _varName );
+        if( !mInnerConstraintBindings.empty()  )
+        {
+            if( mInnerConstraintBindings.size() == 1 )
+            {
+                Formula* result = mInnerConstraintBindings.back();
+                mInnerConstraintBindings.pop_back();
+                return result;
+            }
+            else
+            {
+                Formula* result = new Formula( AND );
+                while( !mInnerConstraintBindings.empty() )
+                {
+                    result->addSubformula( mInnerConstraintBindings.back() );
+                    mInnerConstraintBindings.pop_back();
+                }
+                return result;
+            }
+        }
+        else
+        {
+            return NULL;
+        }
     }
     
     /**
@@ -311,6 +336,7 @@ namespace smtrat
         mTheoryVariables.erase( _varName );
         mLexer->mTheoryVariables.erase( _varName );
         mTheoryBindings.erase( _varName );
+        mTheoryIteBindings.erase( _varName );
     }
 
     /**
@@ -355,8 +381,24 @@ namespace smtrat
     Formula* Driver::mkConstraint( const ExVarsPair& _lhs, const ExVarsPair& _rhs, unsigned _rel )
     {
         symtab vars = symtab();
-        for( auto iter = _lhs.second.begin(); iter != _lhs.second.end(); ++iter ) vars.insert( (*iter)->second );
-        for( auto iter = _rhs.second.begin(); iter != _rhs.second.end(); ++iter ) vars.insert( (*iter)->second );
+        for( auto iter = _lhs.second.begin(); iter != _lhs.second.end(); ++iter )
+        {
+            vars.insert( (*iter)->second );
+            auto bindingVars = mTheoryIteBindings.find( (*iter)->first );
+            if( bindingVars != mTheoryIteBindings.end() )
+            {
+                mInnerConstraintBindings.push_back( new Formula( bindingVars->second ) );
+            }
+        }
+        for( auto iter = _rhs.second.begin(); iter != _rhs.second.end(); ++iter )
+        {
+            vars.insert( (*iter)->second );
+            auto bindingVars = mTheoryIteBindings.find( (*iter)->first );
+            if( bindingVars != mTheoryIteBindings.end() )
+            {
+                mInnerConstraintBindings.push_back( new Formula( bindingVars->second ) );
+            }
+        }
         Constraint_Relation rel = (Constraint_Relation) _rel;
         if( !mInnerConstraintBindings.empty() )
         {
@@ -430,30 +472,23 @@ namespace smtrat
     Formula* Driver::mkIteInFormula( Formula* _condition, Formula* _then, Formula* _else )
     {
         Formula* result = new Formula( AND );
-        string auxBoolA = Formula::newAuxiliaryBooleanVariable();
-        string auxBoolB = Formula::newAuxiliaryBooleanVariable();
-        // Add: (iff auxBoolB _condition)
+        string auxBool = Formula::newAuxiliaryBooleanVariable();
+        // Add: (iff auxBool _condition)
         Formula* formulaIffA = new Formula( IFF );
-        formulaIffA->addSubformula( new Formula( auxBoolB ) );
+        formulaIffA->addSubformula( new Formula( auxBool ) );
         formulaIffA->addSubformula( _condition );
         result->addSubformula( formulaIffA );
-        // Add: (or (not auxBoolB) _then)
+        // Add: (or (not auxBool) _then)
         Formula* formulaNotB = new Formula( NOT );
-        formulaNotB->addSubformula( new Formula( auxBoolB ) );
+        formulaNotB->addSubformula( new Formula( auxBool ) );
         Formula* formulaOrB = new Formula( OR );
         formulaOrB->addSubformula( formulaNotB );
-        Formula* formulaIffB = new Formula( IFF );
-        formulaIffB->addSubformula( new Formula( auxBoolA ) );
-        formulaIffB->addSubformula( _then );
-        formulaOrB->addSubformula( formulaIffB );
+        formulaOrB->addSubformula( _then );
         result->addSubformula( formulaOrB );
-        // Add: (or auxBoolB _else)
+        // Add: (or auxBool _else)
         Formula* formulaOrC = new Formula( OR );
-        formulaOrC->addSubformula( new Formula( auxBoolB ) );
-        Formula* formulaIffC = new Formula( IFF );
-        formulaIffC->addSubformula( new Formula( auxBoolA ) );
-        formulaIffC->addSubformula( _else );
-        formulaOrC->addSubformula( formulaIffC );
+        formulaOrC->addSubformula( new Formula( auxBool ) );
+        formulaOrC->addSubformula( _else );
         result->addSubformula( formulaOrC );
         return result;
     }
@@ -474,23 +509,32 @@ namespace smtrat
         Formula* constraintA = mkConstraint( *lhs, _then, CR_EQ );
         Formula* constraintB = mkConstraint( *lhs, _else, CR_EQ );
         delete lhs;
+        Formula* notTmp = new Formula( NOT );
+        string dependencyBool = addBooleanVariable( _loc, "", true ); 
+        notTmp->addSubformula( new Formula( dependencyBool ) );
+        Formula* innerConstraintBinding = new Formula( AND );
         // Add to inner constraint bindings:  (or (not conditionBool) (= auxRealVar $4))
         Formula* formulaNot = new Formula( NOT );
         formulaNot->addSubformula( new Formula( conditionBool ) );
         Formula* formulaOrA = new Formula( OR );
         formulaOrA->addSubformula( formulaNot );
         formulaOrA->addSubformula( constraintA );
-        mInnerConstraintBindings.push_back( formulaOrA );
+        innerConstraintBinding->addSubformula( formulaOrA );
         // Add to inner constraint bindings:  (or conditionBool (= auxRealVar $5))
         Formula* formulaOrB = new Formula( OR );
         formulaOrB->addSubformula( new Formula( conditionBool ) );
         formulaOrB->addSubformula( constraintB );
-        mInnerConstraintBindings.push_back( formulaOrB );
+        innerConstraintBinding->addSubformula( formulaOrB );
         // Add to inner constraint bindings:  (iff conditionBool $3)
         Formula* formulaIff = new Formula( IFF );
         formulaIff->addSubformula( new Formula( conditionBool ) );
         formulaIff->addSubformula( _condition );
-        mInnerConstraintBindings.push_back( formulaIff );
+        innerConstraintBinding->addSubformula( formulaIff );
+        Formula* result = new Formula( OR );
+        result->addSubformula( notTmp );
+        result->addSubformula( innerConstraintBinding );
+        mInnerConstraintBindings.push_back( result );
+        mTheoryIteBindings[auxRealVar->first] = dependencyBool;
         return new string( auxRealVar->first );
     }
 

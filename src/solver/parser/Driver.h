@@ -122,6 +122,8 @@ namespace smtrat
             ///
             std::unordered_map< std::string, ExVarsPair > mTheoryBindings;
             ///
+            std::unordered_map< std::string, std::string > mTheoryIteBindings;
+            ///
             std::stack< std::vector< std::pair< std::string, unsigned > > > mVariableStack;
             ///
             std::vector< smtrat::Formula* > mInnerConstraintBindings;
@@ -361,7 +363,7 @@ namespace smtrat
             void applySetLogic( const std::string& );
             void addVariable( const class location&, const std::string&, const std::string& );
             const std::string addBooleanVariable( const class location&, const std::string& = "", bool = false );
-            void addTheoryBinding( const class location&, const std::string&, ExVarsPair* );
+            smtrat::Formula* addTheoryBinding( const class location&, const std::string&, ExVarsPair* );
             smtrat::Formula* booleanBinding( const class location&, const std::string&, Formula* );
             smtrat::Formula* appendBindings( std::vector< smtrat::Formula* >&, smtrat::Formula* );
             TheoryVarMap::const_iterator addTheoryVariable( const class location&, const std::string&, const std::string& = "", bool = false );
