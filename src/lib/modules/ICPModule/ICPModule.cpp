@@ -2044,14 +2044,13 @@ namespace smtrat
         }
         if ( found )
         {
+            cout << "Attempt to split in " << variable << endl;
             #ifdef RAISESPLITTOSATSOLVER
             // Create deductions
             Formula* deduction = new Formula( AND );
 
             // create prequesites: ((B' AND CCs) -> h_b)
             Formula* contraction = new Formula( OR );
-            Formula* prequesites = new Formula( AND );
-            Formula* negPrequesites = new Formula( NOT );
             ConstraintSet contractions = mHistoryActual->appliedConstraints();
             cout << "Size of Box-Storage: " << mBoxStorage.size() << endl;
             assert( mBoxStorage.size() == 1 );
@@ -2059,27 +2058,29 @@ namespace smtrat
             mBoxStorage.pop();
             for( auto constraintIt = contractions.begin(); constraintIt != contractions.end(); ++constraintIt )
             {
+                Formula* negation = new Formula( NOT );
                 Formula* constraint = new Formula( *constraintIt );
-                prequesites->addSubformula( constraint );
+                negation->addSubformula( constraint );
+                contraction->addSubformula( negation );
             }
             for( auto constraintIt = box.begin(); constraintIt != box.end(); ++constraintIt )
             {
-                cout << **constraintIt << endl;
+                Formula* negation = new Formula( NOT );
                 Formula* constraint = new Formula( *constraintIt );
-                prequesites->addSubformula( constraint );
+                negation->addSubformula( constraint );
+                contraction->addSubformula( negation );
             }
 
-            negPrequesites->addSubformula( prequesites );
             std::string contractedBoxVar = Formula::newAuxiliaryBooleanVariable();
             Formula* contractedBox = new Formula( contractedBoxVar );
             Formula* contractedBoxCopy = new Formula( *contractedBox );
-            contraction->addSubformula( negPrequesites );
+            Formula* contractedBoxCopy2 = new Formula( *contractedBox );
             contraction->addSubformula( contractedBox );
             deduction->addSubformula( contraction );
 
             // create deductions for all bounds: (h_b -> bound)
-            Formula* negContractedBox = new Formula( NOT );
-            negContractedBox->addSubformula( contractedBoxCopy );
+            Formula negContractedBox = Formula( NOT );
+            negContractedBox.addSubformula( contractedBoxCopy );
 
             for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
             {
@@ -2087,7 +2088,7 @@ namespace smtrat
                 if(boundaries.first != NULL)
                 {
                     Formula* impliedLeftBound = new Formula( OR );
-                    Formula* negContractedBoxCopy = new Formula( *negContractedBox );
+                    Formula* negContractedBoxCopy = new Formula( negContractedBox );
                     impliedLeftBound->addSubformula( negContractedBoxCopy );
                     impliedLeftBound->addSubformula( boundaries.first );
                     deduction->addSubformula( impliedLeftBound );
@@ -2095,25 +2096,32 @@ namespace smtrat
                 if(boundaries.second != NULL)
                 {
                     Formula* impliedRightBound = new Formula( OR );
-                    Formula* negContractedBoxCopy2 = new Formula( *negContractedBox );
+                    Formula* negContractedBoxCopy2 = new Formula( negContractedBox );
                     impliedRightBound->addSubformula( negContractedBoxCopy2 );
                     impliedRightBound->addSubformula( boundaries.second );
                     deduction->addSubformula( impliedRightBound );
                 }
             }
 
-            // create split: (x < b OR x>= b)
+            // create split: (not h_b OR x < b OR x>= b)
             numeric bound  = GiNaC::rationalize( mIntervals.at(variable).midpoint() );
             GiNaC::ex BoundEx = variable - bound;
             GiNaC::symtab variables;
             variables.insert(make_pair(variable.get_name(), variable));
-            const Constraint* left = new Constraint(BoundEx, CR_LESS, variables);
-            const Constraint* right = new Constraint(BoundEx, CR_GEQ, variables);
+            const Constraint* left = Formula::newConstraint(BoundEx, CR_LESS, variables);
+            const Constraint* right = Formula::newConstraint(BoundEx, CR_GEQ, variables);
+            Formula* split = new Formula( OR );
             Formula* less = new Formula( left );
             Formula* geq = new Formula( right );
-            deduction->addSubformula( less );
-            deduction->addSubformula( geq );
+            Formula* negContraction = new Formula( NOT );
+            negContraction->addSubformula(contractedBoxCopy2);
+            split->addSubformula(negContraction);
+            split->addSubformula( less );
+            split->addSubformula( geq );
+            deduction->addSubformula( split );
 
+            deduction->print();
+            
             addDeduction( deduction );
             result.first = true;
             result.second = variable;
