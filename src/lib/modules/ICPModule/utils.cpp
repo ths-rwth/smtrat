@@ -7,10 +7,124 @@
 
 #include "utils.h"
 
+using namespace GiNaC;
+
 namespace smtrat
 {
     namespace icp
     {
+        bool isLinear( const Constraint* _constr, const ex& _expr, ExToConstraintMap& _tempMonomes )
+        {
+            bool isLinear = true;
+            ex term = _expr.expand();
+            assert( is_exactly_a<add>( term ) || is_exactly_a<mul>( term ) || is_exactly_a<power>( term ) || is_exactly_a<symbol>( term )
+                    || is_exactly_a<numeric>( term ) );
+
+            if( is_exactly_a<add>( term ) )
+            {
+                for( GiNaC::const_iterator summand = term.begin(); summand != term.end(); summand++ )
+                {
+                    assert( is_exactly_a<mul>( *summand ) || is_exactly_a<power>( *summand ) || is_exactly_a<symbol>( *summand )
+                            || is_exactly_a<numeric>( *summand ) );
+                    bool summandLinear = true;
+                    ex tmp = *summand;
+                    GiNaC::numeric coefficient = 0;
+
+                    if( is_exactly_a<mul>( tmp ) )
+                    {
+                        bool firstVariable = false;
+                        for( GiNaC::const_iterator factor = tmp.begin(); factor != tmp.end(); factor++ )
+                        {
+                            assert( is_exactly_a<power>( *factor ) || is_exactly_a<numeric>( *factor ) || is_exactly_a<symbol>( *factor ) );
+                            ex tmpFactor = *factor;
+                            if( is_exactly_a<power>( tmpFactor ) )
+                                summandLinear = false;
+                            else if( is_exactly_a<numeric>( tmpFactor ) )
+                            {
+                                if (coefficient == 0)
+                                    coefficient = ex_to<numeric>( tmpFactor );
+                                else
+                                    coefficient *= ex_to<numeric>( tmpFactor );
+                            }
+                            else if( is_exactly_a<symbol>( tmpFactor ) )
+                            {
+                                if( !firstVariable )
+                                    firstVariable = true;
+                                else
+                                    summandLinear = false;
+                            }
+                        }
+
+                    }
+                    else if( is_exactly_a<power>( tmp ) )
+                    {
+                        summandLinear = false;
+                    }
+                    if( !summandLinear )
+                    {
+                        // Add summand to nonlinear table
+                        isLinear = false;
+                        // multiplication with coefficient and more than one variable or power
+                        if (coefficient != 0)
+                        {
+                            _tempMonomes.insert(std::make_pair(tmp/coefficient, _constr));
+                        }
+                        else
+                        {
+                            _tempMonomes.insert(std::make_pair(tmp, _constr));
+                            coefficient = 1;
+                        }
+                    }
+                }    // for summands
+            }    // is add
+            else if( is_exactly_a<mul>( term ) )
+            {
+                bool firstVariable = false;
+                GiNaC::numeric coefficient = 0;
+
+                for( GiNaC::const_iterator factor = term.begin(); factor != term.end(); factor++ )
+                {
+                    assert( is_exactly_a<power>( *factor ) || is_exactly_a<numeric>( *factor ) || is_exactly_a<symbol>( *factor ) );
+                    ex tmpFactor = *factor;
+
+                    if( is_exactly_a<power>( tmpFactor ) )
+                        isLinear = false;
+                    else if( is_exactly_a<numeric>( tmpFactor ) )
+                    {
+                        if( coefficient == 0)
+                            coefficient = ex_to<numeric>(tmpFactor);
+                        else
+                            coefficient *= ex_to<numeric>(tmpFactor);
+                    }
+                    else if( is_exactly_a<symbol>( tmpFactor ) )
+                    {
+                        if( !firstVariable )
+                            firstVariable = true;
+                        else // 2nd or higher variable
+                            isLinear = false;
+                    }
+                }    // for factors
+                if(!isLinear)
+                {
+                    if(coefficient != 0)
+                    {
+                        _tempMonomes.insert(std::make_pair(term/coefficient, _constr));
+                    }
+                    else
+                    {
+                        _tempMonomes.insert(std::make_pair(term, _constr));
+                    }
+                }
+                return isLinear;
+            }    // is mul
+            else if( is_exactly_a<power>( term ) )
+            {
+                // Add to nonlinear table
+                _tempMonomes.insert(std::make_pair(term, _constr));
+            }
+            return isLinear;
+        }
+        
         std::pair<const Constraint*, const Constraint*> intervalToConstraint( const symbol& _var, const GiNaCRA::DoubleInterval _interval )
         {
             // left:

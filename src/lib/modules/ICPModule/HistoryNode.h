@@ -34,7 +34,6 @@
 
 #include "IcpVariable.h"
 #include "ContractionCandidate.h"
-#include "utils.h"
 
 namespace smtrat
 {
@@ -199,7 +198,7 @@ namespace smtrat
                     {
                         if( mIntervals.find( (*intervalIt).first ) != mIntervals.end() )
                         {
-                            if( mIntervals[(*intervalIt).first] != (*intervalIt).second )
+                            if( mIntervals.at((*intervalIt).first) != (*intervalIt).second )
                                 mIntervals[(*intervalIt).first] = (*intervalIt).second;
                         }
                         else
@@ -237,6 +236,29 @@ namespace smtrat
                     }
                     return false;
                 }
+                
+                std::set<const ContractionCandidate*>& rAppliedContractions()
+                {
+                    return mAppliedContractions;
+                }
+                
+                std::set<const ContractionCandidate*> appliedContractions()
+                {
+                    return mAppliedContractions;
+                }
+                
+                ConstraintSet appliedConstraints()
+                {
+                    ConstraintSet appliedConstraints;
+                    for( std::set<const ContractionCandidate*>::iterator candidateIt = mAppliedContractions.begin(); candidateIt != mAppliedContractions.end(); ++candidateIt )
+                    {
+                        for( std::set<const Formula*,ContractionCandidate::originComp>::iterator originIt = (*candidateIt)->origin().begin(); originIt != (*candidateIt)->origin().end(); ++originIt )
+                        {
+                            appliedConstraints.insert((*originIt)->pConstraint());
+                        }
+                    }
+                    return appliedConstraints;
+                }
 
                 ConstraintSet& rStateInfeasibleConstraints()
                 {
@@ -268,17 +290,10 @@ namespace smtrat
                         }
                     }
                     return false;
-//                    for( ConstraintSet::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
-//                    {
-//                        if( (*constraintIt)->variables().find(this->variable().get_name()) != (*constraintIt)->variables().end() && (*constraintIt)->maxDegree(this->variable()) == 1 && (*constraintIt)->variables().size() == 1 )
-//                            return true;
-//                    }
-//                    return false;
                 }
                 
                 bool addInfeasibleConstraint(const Constraint* _constraint, bool _addOnlyConstraint = false)
                 {
-//                    cout << "[" << this->id() << "][AddInfeasibleConstraint] " << *_constraint << endl;
                     if(!_addOnlyConstraint)
                     {
                         // also add all variables contained in the constraint to stateInfeasibleVariables
@@ -296,7 +311,6 @@ namespace smtrat
                 
                 bool addInfeasibleVariable( const IcpVariable* _variable, bool _addOnlyVariable = false )
                 {
-//                    cout << "[" << this->id() << "][AddInfeasibleVariable] " << *_variable << endl;
                     if(!_addOnlyVariable)
                     {
                         //also add the reasons for the variables
@@ -359,11 +373,9 @@ namespace smtrat
                     if( mReasons.find( _variable ) == mReasons.end() )
                         mReasons[_variable] = ConstraintSet();
                     
-//                    cout << "Try to insert " << *_reason << endl;
                     bool inserted = mReasons.at( _variable ).insert( _reason ).second;
                     if( inserted )
                     {
-//                        cout << "[" << _variable << "] Adding reason " << *_reason << endl;
                         for( GiNaC::symtab::const_iterator varIt = _reason->variables().begin(); varIt != _reason->variables().end(); ++varIt )
                         {
                             if( mReasons.find((*varIt).first) == mReasons.end() )
@@ -376,7 +388,6 @@ namespace smtrat
 
                 void addReasons( string _variable, ConstraintSet _reasons )
                 {
-//                    assert( mReasons.find( _variable ) != mReasons.end() );
                     for( ConstraintSet::iterator reasonsIt = _reasons.begin(); reasonsIt != _reasons.end(); ++reasonsIt )
                         addReason( _variable, (*reasonsIt) );
                 }
@@ -631,7 +642,7 @@ namespace smtrat
 
                 friend bool operator==( HistoryNode const& lhs, HistoryNode const& rhs )
                 {
-                    return lhs.id() == rhs.id();
+                    return lhs.mId == rhs.mId;
                 }
 
             private:
