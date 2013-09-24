@@ -36,7 +36,7 @@
 using namespace GiNaC;
 using namespace std;
 
-//#define ICPMODULE_DEBUG
+#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
 
 
@@ -853,14 +853,28 @@ namespace smtrat
             while ( icpFeasible )
             {
                 #ifdef RAISESPLITTOSATSOLVER
+                while(!mBoxStorage.empty())
+                    mBoxStorage.pop();
+                
                 std::set<const Constraint*> box;
                 for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
                 {
+                    (*intervalIt).second.dbgprint();
                     std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*intervalIt).first, (*intervalIt).second);
-                    box.insert(boundaries.first);
-                    box.insert(boundaries.second);
+                    if( boundaries.first != NULL )
+                    {
+                        box.insert(boundaries.first);
+                        cout << "insert: " << *boundaries.first << endl;
+                    }
+                    if( boundaries.second != NULL )
+                    {
+                        box.insert(boundaries.second);
+                        cout << "insert: " << *boundaries.second << endl;
+                    }
                 }
                 mBoxStorage.push(box);
+                
+                cout << "ADD TO BOX!" << endl;
                 #endif
                 #ifdef ICPMODULE_DEBUG
                 cout << "********************** [ICP] Contraction **********************" << endl;
@@ -2036,6 +2050,7 @@ namespace smtrat
             Formula* prequesites = new Formula( AND );
             Formula* negPrequesites = new Formula( NOT );
             ConstraintSet contractions = mHistoryActual->appliedConstraints();
+            cout << "Size of Box-Storage: " << mBoxStorage.size() << endl;
             assert( mBoxStorage.size() == 1 );
             std::set<const Constraint*> box = mBoxStorage.front();
             mBoxStorage.pop();
@@ -2045,7 +2060,11 @@ namespace smtrat
                 prequesites->addSubformula( constraint );
             }
             for( auto constraintIt = box.begin(); constraintIt != box.end(); ++constraintIt )
-                prequesites->addSubformula( *constraintIt );
+            {
+                cout << **constraintIt << endl;
+                Formula* constraint = new Formula( *constraintIt );
+                prequesites->addSubformula( constraint );
+            }
 
             negPrequesites->addSubformula( prequesites );
             std::string contractedBoxVar = Formula::newAuxiliaryBooleanVariable();
@@ -2062,18 +2081,22 @@ namespace smtrat
             for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
             {
                 std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*intervalIt).first, (*intervalIt).second);
-                Formula* impliedLeftBound = new Formula( OR );
-                Formula* negContractedBoxCopy = new Formula( *negContractedBox );
-                impliedLeftBound->addSubformula( negContractedBoxCopy );
-                impliedLeftBound->addSubformula( boundaries.first );
-
-                Formula* impliedRightBound = new Formula( OR );
-                Formula* negContractedBoxCopy2 = new Formula( *negContractedBox );
-                impliedRightBound->addSubformula( negContractedBoxCopy2 );
-                impliedRightBound->addSubformula( boundaries.second );
-
-                deduction->addSubformula( impliedLeftBound );
-                deduction->addSubformula( impliedRightBound );
+                if(boundaries.first != NULL)
+                {
+                    Formula* impliedLeftBound = new Formula( OR );
+                    Formula* negContractedBoxCopy = new Formula( *negContractedBox );
+                    impliedLeftBound->addSubformula( negContractedBoxCopy );
+                    impliedLeftBound->addSubformula( boundaries.first );
+                    deduction->addSubformula( impliedLeftBound );
+                }
+                if(boundaries.second != NULL)
+                {
+                    Formula* impliedRightBound = new Formula( OR );
+                    Formula* negContractedBoxCopy2 = new Formula( *negContractedBox );
+                    impliedRightBound->addSubformula( negContractedBoxCopy2 );
+                    impliedRightBound->addSubformula( boundaries.second );
+                    deduction->addSubformula( impliedRightBound );
+                }
             }
 
             // create split: (x < b OR x>= b)
