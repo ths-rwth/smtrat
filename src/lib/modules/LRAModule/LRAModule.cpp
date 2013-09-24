@@ -514,15 +514,15 @@ namespace smtrat
                                     ++vector_iterator;
                                     ++j;
                                 }
-                                mTableau.newBasicVariable(pcut,non_basic_vars2,coefficients2);
                                 if(creatable)
                                 {
+                                    mTableau.newBasicVariable(pcut,non_basic_vars2,coefficients2);
                                     break;
                                 }
-                            } 
-                            dc_Tableau.print();                             
-                            } 
+                            }                            
+                            dc_Tableau.print();                              
                             mTableau.print();
+                            }
                             #endif
                             
                             #ifdef LRA_BRANCH_AND_BOUND

@@ -413,15 +413,17 @@ namespace smtrat
                 bool rowCorrect( unsigned _rowNumber ) const;
                 #ifdef LRA_CUTS_FROM_PROOFS
                 bool isDefining( unsigned, std::vector<unsigned>&, std::vector<T>&, T&, T& ) const;
-                bool isDiagonal(unsigned,std::vector<unsigned>&);
-                unsigned revert_diagonals(unsigned,std::vector<unsigned>&);
-                void invertColumn(unsigned);
-                void addColumns(unsigned,unsigned,T);
-                void multiplyRow(unsigned,T);
-                T Scalar_Product(Tableau<T>&,Tableau<T>&,unsigned,unsigned,T,std::vector<unsigned>&) ;
-                void calculate_hermite_normalform(std::vector<unsigned>&);
-                void invert_HNF_Matrix(std::vector<unsigned>);
-                bool create_cut_from_proof(Tableau<T>&,Tableau<T>&,unsigned&,T&,std::vector<T>&,std::vector<bool>&,ex&,std::vector<unsigned>&,std::vector<unsigned>&);
+                bool isDefining_Easy( std::vector<unsigned>&, unsigned );
+                bool isDiagonal( unsigned, std::vector<unsigned>& );
+                unsigned position_DC( std::vector<unsigned>&, unsigned );
+                unsigned revert_diagonals( unsigned, std::vector<unsigned>& );
+                void invertColumn( unsigned );
+                void addColumns( unsigned, unsigned, T );
+                void multiplyRow( unsigned, T );
+                T Scalar_Product( Tableau<T>&, Tableau<T>&, unsigned, unsigned, T, std::vector<unsigned>&, std::vector<unsigned>& );
+                void calculate_hermite_normalform( std::vector<unsigned>& );
+                void invert_HNF_Matrix( std::vector<unsigned> );
+                bool create_cut_from_proof( Tableau<T>&, Tableau<T>&, unsigned&, T&, std::vector<T>&, std::vector<bool>&, ex&, std::vector<unsigned>&, std::vector<unsigned>& );
                 #endif
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
@@ -2156,6 +2158,27 @@ namespace smtrat
         }
         
         /**
+         * Checks whether the row with index row_index 
+         * is defining. 
+         * 
+         * @return true,    if so
+         *         false,   otherwise   
+         */ 
+        template<class T>
+        bool Tableau<T>::isDefining_Easy(std::vector<unsigned>& dc_positions,unsigned row_index)
+        {
+            auto vector_iterator = dc_positions.begin();
+            while(vector_iterator != dc_positions.end())
+            {
+                if(*vector_iterator == row_index)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        /**
          * Checks whether the column with index column_index 
          * is a diagonal column. 
          * 
@@ -2175,6 +2198,27 @@ namespace smtrat
         ++i;    
         }
         return false;            
+        }
+        
+        /**
+         * Returns the row of the defining constraint with index row_index
+         * in the Tableau containing this DC.
+         * 
+         */ 
+        template<class T>
+        unsigned Tableau<T>::position_DC(std::vector<unsigned>& dc_positions, unsigned row_index)
+        {
+            auto vector_iterator = dc_positions.begin();
+            unsigned i=0;
+            while(vector_iterator != dc_positions.end())
+            {
+                if(*vector_iterator == row_index)
+                {
+                    return i;
+                }
+                ++i;
+            }
+            return i;
         }
         
         /**
@@ -2451,12 +2495,12 @@ namespace smtrat
         
         /**
          * Calculates the scalarproduct of the row with index rowA from Tableau A with the column
-         * with index columnB from Tableau B. 
+         * with index columnB from Tableau B considering that the columns in B are permutated. 
          * 
          * @return   the value (T) of the scalarproduct.
          */        
         template<class T> 
-        T Tableau<T>::Scalar_Product(Tableau<T>& A, Tableau<T>& B,unsigned rowA, unsigned columnB, T lcm,std::vector<unsigned>& diagonals) 
+        T Tableau<T>::Scalar_Product(Tableau<T>& A, Tableau<T>& B,unsigned rowA, unsigned columnB, T lcm,std::vector<unsigned>& diagonals,std::vector<unsigned>& dc_positions) 
         {
             Iterator rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry,A.mpEntries);
             Iterator columnB_iterator = Iterator(B.mColumns.at(columnB).mStartEntry,B.mpEntries);
@@ -2465,15 +2509,18 @@ namespace smtrat
             {
                 rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry,A.mpEntries);
                 unsigned actual_column = revert_diagonals((*rowA_iterator).columnNumber(),diagonals); 
-                while(actual_column != (*columnB_iterator).rowNumber()
-                      && !rowA_iterator.rowEnd())
+                if(isDefining_Easy(dc_positions,(*columnB_iterator).rowNumber()));
                 {
-                    actual_column = revert_diagonals((*rowA_iterator).columnNumber(),diagonals);
-                    rowA_iterator.right();                                        
-                }
-                if(actual_column == (*columnB_iterator).rowNumber())
-                {
-                    result += (*rowA_iterator).rContent()*(*columnB_iterator).rContent()*lcm;
+                    while(actual_column != position_DC(dc_positions,(*columnB_iterator).rowNumber())
+                          && !rowA_iterator.rowEnd())
+                    {
+                        actual_column = revert_diagonals((*rowA_iterator).columnNumber(),diagonals);
+                        rowA_iterator.right();                                        
+                    }
+                    if(actual_column == position_DC(dc_positions,(*columnB_iterator).rowNumber()))
+                    {
+                        result += (*rowA_iterator).rContent()*(*columnB_iterator).rContent()*lcm;
+                    }
                 }
                 if(columnB_iterator.columnBegin())
                 {
@@ -2807,11 +2854,11 @@ namespace smtrat
                unsigned i=0;
                while(i < DC_Tableau.mColumns.size())
                {
-                   product = Scalar_Product(Inverted_Tableau,DC_Tableau,row_index,i,lcm,diagonals);
+                   product = Scalar_Product(Inverted_Tableau,DC_Tableau,row_index,i,lcm,diagonals,dc_positions);
                    const Variable<T>& non_basic_var = *mColumns[diagonals.at(i)].mName;
                    if(product != 0)
                    {
-                       cut += (result.mainPart()).toGinacNumeric().denom()*product.toGinacNumeric()*(non_basic_var.expression());
+                       cut += (non_basic_var.expression());
                        coefficients.push_back(product);
                        non_basics_proof.push_back(true);
                    }
