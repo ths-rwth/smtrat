@@ -2217,6 +2217,7 @@ namespace smtrat
                     return i;
                 }
                 ++i;
+                ++vector_iterator;
             }
             return i;
         }
@@ -2503,32 +2504,34 @@ namespace smtrat
         T Tableau<T>::Scalar_Product(Tableau<T>& A, Tableau<T>& B,unsigned rowA, unsigned columnB, T lcm,std::vector<unsigned>& diagonals,std::vector<unsigned>& dc_positions) 
         {
             Iterator rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry,A.mpEntries);
-            Iterator columnB_iterator = Iterator(B.mColumns.at(columnB).mStartEntry,B.mpEntries);
             T result = T(0);
             while(true)
             {
-                rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry,A.mpEntries);
+                Iterator columnB_iterator = Iterator(B.mColumns.at(columnB).mStartEntry,B.mpEntries);
                 unsigned actual_column = revert_diagonals((*rowA_iterator).columnNumber(),diagonals); 
-                if(isDefining_Easy(dc_positions,(*columnB_iterator).rowNumber()));
-                {
-                    while(actual_column != position_DC(dc_positions,(*columnB_iterator).rowNumber())
-                          && !rowA_iterator.rowEnd())
+                    while(true)
                     {
-                        actual_column = revert_diagonals((*rowA_iterator).columnNumber(),diagonals);
-                        rowA_iterator.right();                                        
-                    }
-                    if(actual_column == position_DC(dc_positions,(*columnB_iterator).rowNumber()))
-                    {
-                        result += (*rowA_iterator).rContent()*(*columnB_iterator).rContent()*lcm;
-                    }
-                }
-                if(columnB_iterator.columnBegin())
+                        if(actual_column == position_DC(dc_positions,(*columnB_iterator).rowNumber()))
+                        {
+                            result = (*rowA_iterator).content()*(*columnB_iterator).content()*lcm;
+                            break;
+                        }
+                        if(columnB_iterator.columnBegin())
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            columnB_iterator.up();
+                        }
+                    }    
+                if(rowA_iterator.rowEnd())
                 {
                     break;
                 }
                 else
                 {
-                    columnB_iterator.up();
+                    rowA_iterator.right();
                 }
             }
         return result;    
@@ -2666,6 +2669,8 @@ namespace smtrat
                         }    
                     }  
                     T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
+                    cout << elim_pos << endl;
+                    cout << added_pos << endl;
                     addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
                     print();
                     number_of_entries = mRows.at(i).mSize; 
@@ -2723,7 +2728,10 @@ namespace smtrat
                         * The current entry has to be normalized because it´s
                         * in a diagonal column and greater or equal than the
                         * diagonal entry in the current row.
-                        */                          
+                        */   
+                        cout << "Normalize" << endl;
+                        cout << (*mpEntries)[row_iterator.entryID()].columnNumber() << endl;
+                        cout << diagonals.at(i) << endl;
                         T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( (*row_iterator).content().toCLN() / added_content.toCLN() ) ) );
                         addColumns((*mpEntries)[row_iterator.entryID()].columnNumber(),
                                   diagonals.at(i),
