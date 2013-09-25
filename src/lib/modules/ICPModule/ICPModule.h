@@ -136,7 +136,7 @@ namespace smtrat
             std::set<Formula*>                                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
             #ifdef RAISESPLITTOSATSOLVER
-            std::queue<std::set<const Constraint*> >                                            mBoxStorage; // keeps the box before contraction
+            std::queue<std::set<const Formula*> >                                            mBoxStorage; // keeps the box before contraction
             #endif
             bool                                                                                mIsIcpInitialized; // initialized ICPModule?
             unsigned                                                                            mCurrentId; // keeps the currentId of the state nodes
@@ -316,9 +316,23 @@ namespace smtrat
             bool pushBoundsToPassedFormula();
             
             /**
+             * Compute hull of defining origins for set of icpVariables.
+             * @param _reasons
+             * @return 
+             */
+            std::set<const Formula*> variableReasonHull( icp::set_icpVariable& _reasons );
+            
+            /**
+             * Compute hull of defining origins for set of constraints.
+             * @param _map
+             * @return 
+             */
+            std::set<const Formula*> constraintReasonHull( ConstraintSet& _reasons );
+            
+            /**
              * generates and sets the infeasible subset
              */
-            void generateInfeasibleSubset();
+            std::set<const Formula*> collectReasons( icp::HistoryNode* _node );
             
             /**
              * creates constraints for the actual bounds of the original variables.
