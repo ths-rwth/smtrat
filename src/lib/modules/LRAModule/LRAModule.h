@@ -148,6 +148,7 @@ namespace smtrat
             void setBound( lra::Variable<lra::Numeric>&, bool, const lra::Numeric&, const Constraint* );
             void findSimpleConflicts( const lra::Bound<lra::Numeric>& );
             void initialize( const Constraint* const );
+            Answer branch_and_bound();
     };
 
 }    // namespace smtrat

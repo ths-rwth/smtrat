@@ -85,7 +85,7 @@ namespace smtrat
                     mIntervals(),
                     mSplit( NULL ),
                     mReasons(),
-                            mVariableReasons(),
+                    mVariableReasons(),
                     mLeftChild( NULL ),
                     mRightChild( NULL ),
                     mParent( _parent ),
