@@ -75,6 +75,12 @@ namespace smtrat
             bool mSentSolverInstruction;
             /// Indicates whether the last instruction could not be successfully applied.
             bool mLastInstructionFailed;
+            ///
+            bool mPolarity;
+            ///
+            bool mTwoFormulaMode;
+            ///
+            std::stack<bool> mTwoFormulaModeHist;
             /// Number of checks (only one check permitted if the status flag is set to true or false)
             unsigned mNumOfChecks;
             /// Supported info flags according to SMT-lib 2.0.
@@ -205,6 +211,38 @@ namespace smtrat
             const TheoryVarMap& theoryVariables() const
             {
                 return mTheoryVariables;
+            }
+            
+            bool polarity() const
+            {
+                return mPolarity;
+            }
+            
+            void changePolarity()
+            {
+                mPolarity = !mPolarity;
+            }
+            
+            bool twoFormulaMode() const
+            {
+                return mTwoFormulaMode;
+            }
+            
+            void setTwoFormulaMode()
+            {
+                mTwoFormulaModeHist.push( mTwoFormulaMode );
+                mTwoFormulaMode = true;
+            }
+            
+            void restoreTwoFormulaMode()
+            {
+                mTwoFormulaMode = mTwoFormulaModeHist.top();
+                mTwoFormulaModeHist.pop();
+            }
+            
+            void setPolarity( bool _pol )
+            {
+                mPolarity = _pol;
             }
             
             void check()
@@ -373,9 +411,12 @@ namespace smtrat
             ExVarsPair* mkPolynomial( const class location&, std::string& );
             ExVarsPair* mkPolynomial( const class location&, TheoryVarMap::const_iterator );
             smtrat::Formula* mkConstraint( const ExVarsPair&, const ExVarsPair&, unsigned );
-            smtrat::Formula* mkFormula( unsigned, smtrat::Formula* );
+            smtrat::Formula* mkTrue();
+            smtrat::Formula* mkFalse();
+            smtrat::Formula* mkBoolean( const class location&, const std::string& );
             smtrat::Formula* mkFormula( unsigned, smtrat::Formula*, smtrat::Formula* );
             smtrat::Formula* mkFormula( unsigned, std::vector< smtrat::Formula* >& );
+            smtrat::Formula* mkIff( smtrat::Formula*, smtrat::Formula*, smtrat::Formula*, smtrat::Formula*, bool ) const;
             smtrat::Formula* mkIteInFormula( smtrat::Formula*, smtrat::Formula*, smtrat::Formula* );
             std::string* mkIteInExpr( const class location&, smtrat::Formula*, ExVarsPair&, ExVarsPair& );
             GiNaC::numeric* getNumeric( const std::string& ) const;
