@@ -850,6 +850,23 @@ namespace smtrat
                 }
                 
                 std::set<const Formula*> box = variableReasonHull(icpVariables);
+                
+//                std::set<const Formula*> box;
+//                for( auto variableIt = mVariables.begin(); variableIt != mVariables.end(); ++variableIt )
+//                {
+//                    if( (*variableIt).second->isOriginal() )
+//                    {
+//                        std::set<const Formula*> tmp = (*variableIt).second->lraVar()->getDefiningOrigins();
+//                        box.insert(tmp.begin(),tmp.end());
+//                        cout << "Get origins." << endl;
+//                        for(auto tmpIt = tmp.begin(); tmpIt != tmp.end(); ++tmpIt)
+//                        {
+//                            (*tmpIt)->print();
+//                        }
+//                    }
+//                }
+                
+                
                 mBoxStorage.push(box);
 //                cout << "ADD TO BOX!" << endl;
                 #endif
@@ -2962,7 +2979,7 @@ namespace smtrat
             std::set<const Formula*> definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
             for( auto formulaIt = definingOrigins.begin(); formulaIt != definingOrigins.end(); ++formulaIt )
             {
-                cout << "Defining origin: " << **formulaIt << " FOR " << (*variableIt) << endl;
+                cout << "Defining origin: " << **formulaIt << " FOR " << *(*variableIt) << endl;
                 bool hasAdditionalVariables = false;
                 for( GiNaC::symtab::const_iterator varIt = mpReceivedFormula->realValuedVars().begin(); varIt != mpReceivedFormula->realValuedVars().end(); ++varIt )
                 {
