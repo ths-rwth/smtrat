@@ -30,7 +30,7 @@
 #ifndef CONTRACTIONCANDIDATE_H
 #define CONTRACTIONCANDIDATE_H
 
-//#define CCPRINTORIGINS
+#define CCPRINTORIGINS
 
 #include <ginac/ginac.h>
 #include <ginacra/ginacra.h>
@@ -184,7 +184,7 @@ namespace smtrat
                 return mLhs;
             }
 
-            std::set<const Formula*, originComp> origin() const
+            const std::set<const Formula*, originComp>& origin() const
             {
                 return mOrigin;
             }
