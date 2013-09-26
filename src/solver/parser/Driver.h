@@ -228,10 +228,10 @@ namespace smtrat
                 return mTwoFormulaMode;
             }
             
-            void setTwoFormulaMode()
+            void setTwoFormulaMode( bool _newMode )
             {
                 mTwoFormulaModeHist.push( mTwoFormulaMode );
-                mTwoFormulaMode = true;
+                mTwoFormulaMode = _newMode;
             }
             
             void restoreTwoFormulaMode()

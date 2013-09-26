@@ -817,7 +817,7 @@ namespace smtrat
                 results->addSubformula( negatedCases );
                 results->addSubformula( result );
             }
-            return result;
+            return results;
         }
         else
         {

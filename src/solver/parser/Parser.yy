@@ -220,10 +220,10 @@ form:
 	|	OB xorOp form form CB         { dv.restoreTwoFormulaMode(); $$ = dv.mkFormula( smtrat::XOR, $3, $4 ); }
 	|	OB naryOp formlist CB         { $$ = dv.mkFormula( $2, *$3 ); delete $3; }
     |   OB let OB bindlist CB form CB { $$ = dv.appendBindings( *$4, $6 ); delete $4; dv.popVariableStack(); }
-    |   OB iteOp cond form form CB    { $$ = dv.mkIteInFormula( $3, $4, $5 ); dv.setPolarity( $2 ); }
+    |   OB iteOp cond form form CB    { $$ = dv.mkIteInFormula( $3, $4, $5 ); dv.setPolarity( $2 ); dv.restoreTwoFormulaMode(); }
 
 cond:
-        form { $$ = $1; dv.restoreTwoFormulaMode(); }
+        form { $$ = $1; dv.restoreTwoFormulaMode(); dv.setTwoFormulaMode( false ); }
 
 formlist:
 		form          { $$ = new vector< Formula* >( 1, $1 ); }
@@ -234,7 +234,7 @@ equation:
     |  OB eqOp poly poly CB { $$ = dv.mkConstraint( *$3, *$4, CR_EQ ); delete $3; delete $4; dv.restoreTwoFormulaMode(); }
 
 eqOp:
-        EQ { dv.setTwoFormulaMode(); }
+        EQ { dv.setTwoFormulaMode( true ); }
 
 relation:
 		LEQ     { $$ = CR_LEQ; }
@@ -250,17 +250,17 @@ impliesOp:
 		IMPLIES { $$ = (dv.polarity() ? smtrat::OR : smtrat::AND); dv.changePolarity(); }
 
 iffOp:
-    	IFF     { dv.setTwoFormulaMode(); }
+    	IFF     { dv.setTwoFormulaMode( true ); }
 
 xorOp:
-    	XOR     { dv.setTwoFormulaMode(); }
+    	XOR     { dv.setTwoFormulaMode( true ); }
 
 naryOp:
 		AND { $$ = (dv.polarity() ? smtrat::AND : smtrat::OR); }
     |	OR  { $$ = (dv.polarity() ? smtrat::OR : smtrat::AND); }
 
 let:
-        LET { dv.pushVariableStack(); dv.setTwoFormulaMode(); }
+        LET { dv.pushVariableStack(); dv.setTwoFormulaMode( true ); }
 
 bindlist:
 		bind          { dv.restoreTwoFormulaMode(); $$ = new vector< smtrat::Formula* >(); if( $1 != NULL ) { $$->push_back( $1 ); } }
@@ -276,10 +276,10 @@ poly:
                                      $$ = new PolyVarsPair( ex( *num ), TheoryVarVec() ); delete num; }
     | 	NUM                        { $$ = new PolyVarsPair( ex( numeric( $1->c_str() ) ), TheoryVarVec() ); delete $1; }
     |  	polyOp                     { $$ = $1; }
-    |   OB iteOp cond poly poly CB { $$ = dv.mkPolynomial( yyloc, *dv.mkIteInExpr( yyloc, $3, *$4, *$5 ) ); dv.setPolarity( $2 ); }
+    |   OB iteOp cond poly poly CB { $$ = dv.mkPolynomial( yyloc, *dv.mkIteInExpr( yyloc, $3, *$4, *$5 ) ); dv.setPolarity( $2 ); dv.restoreTwoFormulaMode(); }
     
 iteOp:
-		ITE { $$ = dv.polarity(); dv.setPolarity( true ); dv.setTwoFormulaMode(); }
+		ITE { $$ = dv.polarity(); dv.setPolarity( true ); dv.setTwoFormulaMode( true ); }
 
 polyOp:
 		OB DIV poly poly CB       { $3->second.insert( $3->second.end(), $4->second.begin(), $4->second.end() ); $3->first /= $4->first; delete $4; $$ = $3; }
