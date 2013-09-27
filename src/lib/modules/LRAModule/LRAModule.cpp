@@ -34,7 +34,11 @@
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_SIMPLE_CONFLICT_SEARCH
 //#define LRA_ONE_REASON
+#ifndef LRA_GOMORY_CUTS
+#ifndef LRA_CUTS_FROM_PROOFS
 //#define LRA_BRANCH_AND_BOUND
+#endif
+#endif
 
 using namespace std;
 using namespace smtrat::lra;
@@ -384,154 +388,23 @@ namespace smtrat
                             #endif
 
                             #ifdef LRA_GOMORY_CUTS 
-                            exmap rMap_ = getRationalModel();
-                            vector<const Constraint*> constr_vec = vector<const Constraint*>();
-                            bool all_int = true;
-                            unsigned numRows = mTableau.rows().size();
-                            for( unsigned pos = 0; pos < numRows; ++pos )
-                            { 
-                                ex referring_ex = mTableau.rows().at( pos ).mName->expression();
-                                ex* preferring_ex = new ex(referring_ex);
-                                auto help = mOriginalVars.find(preferring_ex);
-                                if(help != mOriginalVars.end() && (Formula::domain(*(help->first)) == INTEGER_DOMAIN))
-                                {
-                                    auto found_ex = rMap_.find(referring_ex);                                
-                                    numeric ass = ex_to<numeric>(found_ex->second);
-                                    if(!ass.is_integer())
-                                    {
-                                        all_int=false;    
-                                        const Constraint* gomory_constr = mTableau.gomoryCut(ass, pos, constr_vec);
-                                        if( gomory_constr != NULL )
-                                        {
-                                            Formula* deductionA = new Formula(OR);
-                                            auto vec_iter = constr_vec.begin();
-                                            while(vec_iter != constr_vec.end())
-                                            {
-                                                Formula* notItem = new Formula(NOT);
-                                                notItem->addSubformula(*vec_iter);
-                                                deductionA->addSubformula(notItem);
-                                                ++vec_iter;
-                                            }
-                                            deductionA->addSubformula(gomory_constr);
-                                            addDeduction(deductionA);   
-                                        }                                                                
-                                    }
-                                }    
-                            }                            
-                            if(all_int) 
-                                return foundAnswer(True);
-                            return foundAnswer(Unknown);
+                            if( gomory_cut() )
+                            {
+                                return foundAnswer( Unknown );
+                            }
                             #endif 
 
                             #ifdef LRA_CUTS_FROM_PROOFS
-                            mTableau.print();
-                            /*
-                             * Build the new Tableau consisting out
-                             * of the defining constraints.
-                             */
-                            lra::Tableau<lra::Numeric> dc_Tableau = lra::Tableau<lra::Numeric>(mpPassedFormula->end());
-                            unsigned i=0;
-                            for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
-                            {                                
-                                dc_Tableau.newNonbasicVariable( new ex( mTableau.columns().at(i).mName->expression() ) );
-                                ++i;
-                            }                            
-                            unsigned numRows = mTableau.rows().size();
-                            unsigned dc_count = 0;
-                            vector<unsigned> dc_positions = vector<unsigned>();
-                            vector<lra::Numeric> lcm_rows = vector<lra::Numeric>();
-                            for( unsigned i = 0; i < numRows; ++i )
+                            if( cuts_from_proofs() )
                             {
-                                vector<unsigned> non_basic_vars_positions = vector<unsigned>();
-                                vector<lra::Numeric> coefficients = vector<lra::Numeric>();
-                                lra::Numeric lcmOfCoeffDenoms = 1;
-                                lra::Numeric max_value = 0;
-                                if( mTableau.isDefining( i, non_basic_vars_positions, coefficients, lcmOfCoeffDenoms, max_value ) )
-                                {
-                                    dc_count++;
-                                    dc_positions.push_back(i);
-                                    lcm_rows.push_back(lcmOfCoeffDenoms);
-                                    assert( !non_basic_vars_positions.empty() );
-                                    ex* help = new ex(mTableau.rows().at(i).mName->expression());
-                                    vector< lra::Variable<lra::Numeric>* > non_basic_vars = vector< lra::Variable<lra::Numeric>* >();
-                                    unsigned j=0;
-                                    auto pos = non_basic_vars_positions.begin();
-                                    for( auto column = dc_Tableau.columns().begin(); column != dc_Tableau.columns().end(); ++column )
-                                    {
-                                        if(dc_Tableau.columns().at(j).mName->position() == *pos )
-                                        {                                                                                    
-                                            assert( pos != non_basic_vars_positions.end() );
-                                            non_basic_vars.push_back( dc_Tableau.columns().at(j).mName );
-                                            ++pos;                                            
-                                        }
-                                    j++;    
-                                    } 
-                                    dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
-                                    if(lcmOfCoeffDenoms != 1)
-                                    {
-                                        dc_Tableau.multiplyRow(dc_count-1,lcmOfCoeffDenoms); 
-                                    }    
-                                }   
-                            }
-                            dc_Tableau.print();                                                      
-                            if(dc_Tableau.rows().size() > 0)
-                            {
-                                /*
-                                 * At least one DC exists -> Construct and embed it.
-                                 */    
-                                vector<unsigned> diagonals = vector<unsigned>();    
-                                vector<unsigned>& diagonals_ref = diagonals;                            
-                                dc_Tableau.calculate_hermite_normalform(diagonals_ref);
-                                dc_Tableau.print();
-                                auto iter = diagonals.begin();
-                                while(iter != diagonals.end())
-                                {
-                                    printf("%u",*iter);
-                                    ++iter;
-                                }
-                                dc_Tableau.invert_HNF_Matrix(diagonals);
-                                bool creatable = false;
-                                ex cut = ex();
-                                for(unsigned i=0;i<dc_positions.size();i++)
-                                {
-                                    vector<lra::Numeric> coefficients2 = vector<lra::Numeric>();
-                                    vector<bool> non_basics_proof = vector<bool>();
-                                    vector< lra::Variable<lra::Numeric>* > non_basic_vars2 = vector< lra::Variable<lra::Numeric>* >();
-                                    lra::Numeric upper_bound;
-                                    lra::Numeric lower_bound;
-                                    creatable = dc_Tableau.create_cut_from_proof(dc_Tableau,mTableau,i,lcm_rows.at(i),coefficients2,non_basics_proof,cut,diagonals,dc_positions,upper_bound,lower_bound);
-                                    ex* pcut = new ex(cut);
-                                    auto vector_iterator = non_basics_proof.begin();
-                                    unsigned j=0;
-                                    while(vector_iterator != non_basics_proof.end())
-                                    {
-                                        if(*vector_iterator)
-                                        {
-                                            non_basic_vars2.push_back(dc_Tableau.columns().at(diagonals.at(j)).mName);
-                                        }
-                                        ++vector_iterator;
-                                        ++j;
-                                    }
-                                    if(creatable)
-                                    {
-                                        mTableau.newBasicVariable(pcut,non_basic_vars2,coefficients2);
-                                        mTableau.print();
-                                        //mTableau.rows().at(mTableau.rows().size()-1).mName->setSupremum(upper_bound);
-                                        //mTableau.rows().at(mTableau.rows().size()-1).mName->setSupremum(lower_bound);
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        return branch_and_bound();
-                                    }
-                                }                            
+                                return foundAnswer( Unknown );
                             }
                             #endif
                             
                             #ifdef LRA_BRANCH_AND_BOUND
-                            if(branch_and_bound == Unknown)
+                            if( branch_and_bound() )
                             {
-                                return foundAnswer(Unknown);
+                                return foundAnswer( Unknown );
                             }
                             #endif
                             CONSTRAINT_UNLOCK
@@ -1576,7 +1449,182 @@ namespace smtrat
         }
     }
     
-    Answer LRAModule::branch_and_bound()
+    #ifdef LRA_GOMORY_CUTS
+    /**
+     * 
+     * @return True, if a branching occurred.
+     *          False, otherwise.
+     */
+    bool LRAModule::gomory_cut()
+    {
+        exmap rMap_ = getRationalModel();
+        vector<const Constraint*> constr_vec = vector<const Constraint*>();
+        bool all_int = true;
+        unsigned numRows = mTableau.rows().size();
+        for( unsigned pos = 0; pos < numRows; ++pos )
+        { 
+            ex referring_ex = mTableau.rows().at( pos ).mName->expression();
+            ex* preferring_ex = new ex(referring_ex);
+            auto help = mOriginalVars.find(preferring_ex);
+            if(help != mOriginalVars.end() && (Formula::domain(*(help->first)) == INTEGER_DOMAIN))
+            {
+                auto found_ex = rMap_.find(referring_ex);                                
+                numeric ass = ex_to<numeric>(found_ex->second);
+                if(!ass.is_integer())
+                {
+                    all_int=false;    
+                    const Constraint* gomory_constr = mTableau.gomoryCut(ass, pos, constr_vec);
+                    if( gomory_constr != NULL )
+                    {
+                        Formula* deductionA = new Formula(OR);
+                        auto vec_iter = constr_vec.begin();
+                        while(vec_iter != constr_vec.end())
+                        {
+                            Formula* notItem = new Formula(NOT);
+                            notItem->addSubformula(*vec_iter);
+                            deductionA->addSubformula(notItem);
+                            ++vec_iter;
+                        }
+                        deductionA->addSubformula(gomory_constr);
+                        addDeduction(deductionA);   
+                    }                                                                
+                }
+            }    
+        }                            
+        return !all_int;
+    }
+    #endif
+    
+    #ifdef LRA_CUTS_FROM_PROOFS
+    /**
+     * 
+     * @return True, if a branching occurred.
+     *          False, otherwise.
+     */
+    bool LRAModule::cuts_from_proofs()
+    {
+        mTableau.print();
+        // Check if the solution is integer.
+        auto var = mOriginalVars.begin();
+        while( var != mOriginalVars.end() )
+        {
+            if( Formula::domain(*(var->first)) == INTEGER_DOMAIN && !var->second->assignment().mainPart().content().is_integer() )
+            {
+                break;
+            }
+            ++var;
+        }
+        if( var == mOriginalVars.end() )
+        {
+            return false;
+        }
+        /*
+         * Build the new Tableau consisting out
+         * of the defining constraints.
+         */
+        lra::Tableau<lra::Numeric> dc_Tableau = lra::Tableau<lra::Numeric>(mpPassedFormula->end());
+        unsigned i=0;
+        for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
+        {                                
+            dc_Tableau.newNonbasicVariable( new ex( mTableau.columns().at(i).mName->expression() ) );
+            ++i;
+        }                            
+        unsigned numRows = mTableau.rows().size();
+        unsigned dc_count = 0;
+        vector<unsigned> dc_positions = vector<unsigned>();
+        vector<lra::Numeric> lcm_rows = vector<lra::Numeric>();
+        for( unsigned i = 0; i < numRows; ++i )
+        {
+            vector<unsigned> non_basic_vars_positions = vector<unsigned>();
+            vector<lra::Numeric> coefficients = vector<lra::Numeric>();
+            lra::Numeric lcmOfCoeffDenoms = 1;
+            lra::Numeric max_value = 0;
+            if( mTableau.isDefining( i, non_basic_vars_positions, coefficients, lcmOfCoeffDenoms, max_value ) )
+            {
+                dc_count++;
+                dc_positions.push_back(i);
+                lcm_rows.push_back(lcmOfCoeffDenoms);
+                assert( !non_basic_vars_positions.empty() );
+                ex* help = new ex(mTableau.rows().at(i).mName->expression());
+                vector< lra::Variable<lra::Numeric>* > non_basic_vars = vector< lra::Variable<lra::Numeric>* >();
+                unsigned j=0;
+                auto pos = non_basic_vars_positions.begin();
+                for( auto column = dc_Tableau.columns().begin(); column != dc_Tableau.columns().end(); ++column )
+                {
+                    if(dc_Tableau.columns().at(j).mName->position() == *pos )
+                    {                                                                                    
+                        assert( pos != non_basic_vars_positions.end() );
+                        non_basic_vars.push_back( dc_Tableau.columns().at(j).mName );
+                        ++pos;                                            
+                    }
+                j++;    
+                } 
+                dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
+                if(lcmOfCoeffDenoms != 1)
+                {
+                    dc_Tableau.multiplyRow(dc_count-1,lcmOfCoeffDenoms); 
+                }    
+            }   
+        }
+        dc_Tableau.print();                                                      
+        if(dc_Tableau.rows().size() > 0)
+        {
+            /*
+             * At least one DC exists -> Construct and embed it.
+             */    
+            vector<unsigned> diagonals = vector<unsigned>();    
+            vector<unsigned>& diagonals_ref = diagonals;                            
+            dc_Tableau.calculate_hermite_normalform(diagonals_ref);
+            dc_Tableau.print();
+            auto iter = diagonals.begin();
+            while(iter != diagonals.end())
+            {
+                printf("%u",*iter);
+                ++iter;
+            }
+            dc_Tableau.invert_HNF_Matrix(diagonals);
+            bool creatable = false;
+            ex cut = ex();
+            for(unsigned i=0;i<dc_positions.size();i++)
+            {
+                vector<lra::Numeric> coefficients2 = vector<lra::Numeric>();
+                vector<bool> non_basics_proof = vector<bool>();
+                vector< lra::Variable<lra::Numeric>* > non_basic_vars2 = vector< lra::Variable<lra::Numeric>* >();
+                lra::Numeric upper_bound;
+                lra::Numeric lower_bound;
+                creatable = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, lcm_rows.at(i), coefficients2, non_basics_proof, cut, diagonals, dc_positions, upper_bound, lower_bound );
+                ex* pcut = new ex(cut);
+                auto vector_iterator = non_basics_proof.begin();
+                unsigned j=0;
+                while(vector_iterator != non_basics_proof.end())
+                {
+                    if(*vector_iterator)
+                    {
+                        non_basic_vars2.push_back(dc_Tableau.columns().at(diagonals.at(j)).mName);
+                    }
+                    ++vector_iterator;
+                    ++j;
+                }
+                if(creatable)
+                {
+                    mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
+                    mTableau.print();
+                    //mTableau.rows().at(mTableau.rows().size()-1).mName->setSupremum(upper_bound);
+                    //mTableau.rows().at(mTableau.rows().size()-1).mName->setSupremum(lower_bound);
+                    return true;
+                }
+            }
+        }
+        return branch_and_bound();
+    }
+    #endif
+    
+    /**
+     * 
+     * @return True, if a branching occurred.
+     *          False, otherwise.
+     */
+    bool LRAModule::branch_and_bound()
     {
         exmap _rMap = getRationalModel();
         exmap::const_iterator map_iterator = _rMap.begin();
@@ -1596,11 +1644,11 @@ namespace smtrat
                 deductionA->addSubformula(lessEqualConstraint);
                 deductionA->addSubformula(biggerEqualConstraint);
                 addDeduction(deductionA);
-                return foundAnswer(Unknown);
+                return true;
             }
             ++map_iterator;
         }
-        return foundAnswer(True);
+        return false;
     }
 
     /**

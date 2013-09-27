@@ -106,7 +106,6 @@ namespace smtrat
             GiNaC::exmap getRationalModel() const;
             GiNaCRA::evalintervalmap getVariableBounds() const;
             void initialize();
-            Answer isIntegerConsistent();
 
             void printLinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
             void printNonlinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
@@ -122,6 +121,11 @@ namespace smtrat
                 mTableau.print( _out, 28, _init );
             }
 
+            const ExVariableMap& originalVariables() const
+            {
+                return mOriginalVars;
+            }
+            
             const ExVariableMap& slackVariables() const
             {
                 return mSlackVars;
@@ -148,7 +152,9 @@ namespace smtrat
             void setBound( lra::Variable<lra::Numeric>&, bool, const lra::Numeric&, const Constraint* );
             void findSimpleConflicts( const lra::Bound<lra::Numeric>& );
             void initialize( const Constraint* const );
-            Answer branch_and_bound();
+            bool gomory_cut();
+            bool cuts_from_proofs();
+            bool branch_and_bound();
     };
 
 }    // namespace smtrat
