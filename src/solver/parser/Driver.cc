@@ -896,8 +896,10 @@ namespace smtrat
         // Add to inner constraint bindings:  (iff conditionBool $3)
         Formula* notAuxBool = new Formula( NOT );
         notAuxBool->addSubformula( new Formula( conditionBool ) );
-        Formula* formulaIff = mkIff( new Formula( conditionBool ), _condition->pruneFront(), notAuxBool, _condition->pruneFront(), false );
+        Formula* caseB = _condition->pruneFront();
+        Formula* caseBNeg = _condition->pruneFront();
         delete _condition;
+        Formula* formulaIff = mkIff( new Formula( conditionBool ), caseB, notAuxBool, caseBNeg, false );
         innerConstraintBinding->addSubformula( formulaIff );
         Formula* result = new Formula( OR );
         result->addSubformula( notTmp );

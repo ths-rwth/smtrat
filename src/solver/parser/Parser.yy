@@ -231,7 +231,7 @@ formlist:
 
 equation:
        OB eqOp form form CB { $$ = dv.mkFormula( (dv.polarity() ? smtrat::IFF : smtrat::XOR), $3, $4 ); dv.restoreTwoFormulaMode(); }
-    |  OB eqOp poly poly CB { $$ = dv.mkConstraint( *$3, *$4, CR_EQ ); delete $3; delete $4; dv.restoreTwoFormulaMode(); }
+    |  OB eqOp poly poly CB { dv.restoreTwoFormulaMode(); $$ = dv.mkConstraint( *$3, *$4, CR_EQ ); delete $3; delete $4; }
 
 eqOp:
         EQ { dv.setTwoFormulaMode( true ); }
