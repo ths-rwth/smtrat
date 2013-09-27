@@ -408,7 +408,9 @@ namespace smtrat
                             }
                             #endif
                             CONSTRAINT_UNLOCK
-                            return foundAnswer(True);
+                            assert( assignmentCorrect() );
+                            printRationalModel();
+                            return foundAnswer( True );
                         }
                         // Otherwise, resolve the notequal-constraints (create the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
                         else
@@ -552,6 +554,7 @@ namespace smtrat
         #ifdef LRA_REFINEMENT
         learnRefinements();
         #endif
+        assert( assignmentCorrect() );
         return foundAnswer( True );
     }
 
@@ -1496,6 +1499,7 @@ namespace smtrat
     #endif
     
     #ifdef LRA_CUTS_FROM_PROOFS
+    #define LRA_DEBUG_CUTS_FROM_PROOFS
     /**
      * 
      * @return True, if a branching occurred.
@@ -1503,7 +1507,11 @@ namespace smtrat
      */
     bool LRAModule::cuts_from_proofs()
     {
+        #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+        cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+        cout << "Cut from proofs:" << endl;
         mTableau.print();
+        #endif
         // Check if the solution is integer.
         auto var = mOriginalVars.begin();
         while( var != mOriginalVars.end() )
@@ -1516,6 +1524,10 @@ namespace smtrat
         }
         if( var == mOriginalVars.end() )
         {
+            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+            cout << "Assignment is already integer!" << endl;
+            cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+            #endif
             return false;
         }
         /*
@@ -1566,22 +1578,29 @@ namespace smtrat
                 }    
             }   
         }
-        dc_Tableau.print();                                                      
         if(dc_Tableau.rows().size() > 0)
         {
+            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+            cout << "Defining constraint:" << endl;
+            dc_Tableau.print();   
+            #endif
             /*
              * At least one DC exists -> Construct and embed it.
              */    
             vector<unsigned> diagonals = vector<unsigned>();    
             vector<unsigned>& diagonals_ref = diagonals;                            
             dc_Tableau.calculate_hermite_normalform(diagonals_ref);
+            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+            cout << "HNF of defining constraints:" << endl;
             dc_Tableau.print();
+            cout << "Actual order of columns:" << endl;
             auto iter = diagonals.begin();
             while(iter != diagonals.end())
             {
                 printf("%u",*iter);
                 ++iter;
             }
+            #endif
             dc_Tableau.invert_HNF_Matrix(diagonals);
             bool creatable = false;
             ex cut = ex();
@@ -1594,6 +1613,9 @@ namespace smtrat
                 lra::Numeric lower_bound;
                 creatable = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, lcm_rows.at(i), coefficients2, non_basics_proof, cut, diagonals, dc_positions, upper_bound, lower_bound );
                 ex* pcut = new ex(cut);
+                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+                cout << "Proof of unsatisfiability:  " << *pcut << " = 0" << endl;
+                #endif
                 auto vector_iterator = non_basics_proof.begin();
                 unsigned j=0;
                 while(vector_iterator != non_basics_proof.end())
@@ -1607,14 +1629,32 @@ namespace smtrat
                 }
                 if(creatable)
                 {
+                    #ifndef LRA_DEBUG_CUTS_FROM_PROOFS
                     mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
+                    #else
+                    auto var = mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
+                    cout << "After adding proof for unsatisfiability:" << endl;
+                    var->print();
+                    var->printAllBounds();
                     mTableau.print();
+                    cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+                    #endif
                     //mTableau.rows().at(mTableau.rows().size()-1).mName->setSupremum(upper_bound);
                     //mTableau.rows().at(mTableau.rows().size()-1).mName->setSupremum(lower_bound);
                     return true;
                 }
             }
+            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+            cout << "Found no proof of unsatisfiability!" << endl;
+            #endif
         }
+        #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+        else
+        {
+            cout << "No defining constraint!" << endl;
+        }
+        cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+        #endif
         return branch_and_bound();
     }
     #endif
@@ -1649,6 +1689,32 @@ namespace smtrat
             ++map_iterator;
         }
         return false;
+    }
+    
+    /**
+     * 
+     * @return 
+     */
+    bool LRAModule::assignmentCorrect() const
+    {
+        if( solverState() == False ) return true;
+        exmap model = getRationalModel();
+        for( auto ass = model.begin(); ass != model.end(); ++ass )
+        {
+            if( Formula::domain( ass->first ) == INTEGER_DOMAIN  && !ex_to<numeric>(ass->second).is_integer() )
+            {
+                return false;
+            }
+        }
+        for( auto constraint = mpReceivedFormula->begin(); constraint != mpReceivedFormula->end(); ++constraint )
+        {
+            if( (*constraint)->constraint().satisfiedBy( model ) != 1 )
+            {
+                assert( (*constraint)->constraint().satisfiedBy( model ) == 0 );
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
