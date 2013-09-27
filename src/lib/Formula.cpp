@@ -1139,9 +1139,11 @@ namespace smtrat
     }
 
     /**
-     *
-     * @param _formula
-     * @param _keepConstraints
+     * Resolves the outermost negation of the given formula.
+     * @param _formula The formula to resolve the negation for.
+     * @param _keepConstraints A flag indicating whether to change constraints in order 
+     * to resolve the negation in front of them, or to keep the constraints and leave 
+     * the negation.
      */
     bool Formula::resolveNegation( Formula& _formula, bool _keepConstraint )
     {

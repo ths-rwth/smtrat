@@ -45,8 +45,8 @@ namespace smtrat
         #endif
         position = addBackendIntoStrategyGraph( position, MT_SATModule );
 
-        #ifdef SMTRAT_ENABLE_VRWModule
-        position = addBackendIntoStrategyGraph( position, MT_VRWModule );
+        #ifdef SMTRAT_ENABLE_LRAModule
+        position = addBackendIntoStrategyGraph( position, MT_LRAModule );
         #endif
         #ifdef SMTRAT_ENABLE_CacheModule
         //position = addBackendIntoStrategyGraph( position, MT_CacheModule );

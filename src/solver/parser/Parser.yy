@@ -102,6 +102,7 @@
 
 %union
 {
+   bool                                                  bval;
    unsigned                                              eval;
    std::string*                                          sval;
    std::vector< std::string* >*                          vsval;
@@ -128,12 +129,13 @@
 
 %type <sval>   value
 %type <pval>   poly polylistPlus polylistMinus polylistTimes polyOp
-%type <fval>   form equation bind
+%type <fval>   cond form equation bind
 %type <vfval>  formlist bindlist
 %type <vsval>  symlist
 %type <vspval> varlist
 %type <eval>   relation
-%type <eval>   unaryOp binaryOp naryOp
+%type <eval>   negation impliesOp naryOp
+%type <bval>   iteOp eqOp iffOp xorOp
 
 %{
 
@@ -205,85 +207,100 @@ value:
     |   FALSE { $$ = new string( "false" ); }
 
 form:
-        BOOLEAN_VAR                   { $$ = new Formula( dv.getBooleanVariable( yyloc, *$1 ) ); delete $1; }
-    |   TRUE                          { $$ = new Formula( smtrat::TTRUE ); }
-    |   FALSE                         { $$ = new Formula( smtrat::FFALSE ); }
+        BOOLEAN_VAR                   { $$ = dv.mkBoolean( yyloc, *$1 ); delete $1; }
+    |   TRUE                          { $$ = dv.mkTrue(); }
+    |   FALSE                         { $$ = dv.mkFalse(); }
     |   equation                      { $$ = $1; }
     |   OB relation poly poly CB      { $$ = dv.mkConstraint( *$3, *$4, $2 ); delete $3; delete $4; }
     |   OB AS SYM SYM CB              { error( yyloc, "\"as\" is not allowed in supported logics!" ); }
-	|	OB unaryOp form CB            { $$ = dv.mkFormula( $2, $3 ); }
-	|	OB binaryOp form form CB      { $$ = dv.mkFormula( $2, $3, $4 ); }
+	|	OB negation form CB           { $$ = $3; dv.changePolarity(); }
+	|	OB impliesOp form             { dv.changePolarity(); } 
+                          form CB     { $$ = dv.mkFormula( $2, $3, $5 ); }
+	|	OB iffOp form form CB         { dv.restoreTwoFormulaMode(); $$ = dv.mkFormula( smtrat::IFF, $3, $4 ); }
+	|	OB xorOp form form CB         { dv.restoreTwoFormulaMode(); $$ = dv.mkFormula( smtrat::XOR, $3, $4 ); }
 	|	OB naryOp formlist CB         { $$ = dv.mkFormula( $2, *$3 ); delete $3; }
     |   OB let OB bindlist CB form CB { $$ = dv.appendBindings( *$4, $6 ); delete $4; dv.popVariableStack(); }
-    |   OB ITE form form form CB      { $$ = dv.mkIteInFormula( $3, $4, $5 ); }
+    |   OB iteOp cond form form CB    { $$ = dv.mkIteInFormula( $3, $4, $5 ); dv.setPolarity( $2 ); dv.restoreTwoFormulaMode(); }
 
-formlist :
+cond:
+        form { $$ = $1; dv.restoreTwoFormulaMode(); dv.setTwoFormulaMode( false ); }
+
+formlist:
 		form          { $$ = new vector< Formula* >( 1, $1 ); }
     |	formlist form { $1->push_back( $2 ); $$ = $1; }
 
 equation:
-       OB EQ form form CB { $$ = dv.mkFormula( smtrat::IFF, $3, $4 ); }
-    |  OB EQ poly poly CB { $$ = dv.mkConstraint( *$3, *$4, CR_EQ ); delete $3; delete $4; }
+       OB eqOp form form CB { $$ = dv.mkFormula( (dv.polarity() ? smtrat::IFF : smtrat::XOR), $3, $4 ); dv.restoreTwoFormulaMode(); }
+    |  OB eqOp poly poly CB { dv.restoreTwoFormulaMode(); $$ = dv.mkConstraint( *$3, *$4, CR_EQ ); delete $3; delete $4; }
 
+eqOp:
+        EQ { dv.setTwoFormulaMode( true ); }
 
-relation :
+relation:
 		LEQ     { $$ = CR_LEQ; }
     |	GEQ     { $$ = CR_GEQ; }
     |	LESS    { $$ = CR_LESS; }
     |	GREATER { $$ = CR_GREATER; }
     |	NEQ     { $$ = CR_NEQ; }
 
-unaryOp :
-		NOT { $$ = smtrat::NOT; }
+negation:
+		NOT { dv.changePolarity(); $$ = smtrat::NOT; }
 
-binaryOp :
-		IMPLIES { $$ = smtrat::IMPLIES; }
-    |	IFF     { $$ = smtrat::IFF; }
-    |	XOR     { $$ = smtrat::XOR; }
+impliesOp:
+		IMPLIES { $$ = (dv.polarity() ? smtrat::OR : smtrat::AND); dv.changePolarity(); }
 
-naryOp :
-		AND { $$ = smtrat::AND; }
-    |	OR  { $$ = smtrat::OR; }
+iffOp:
+    	IFF     { dv.setTwoFormulaMode( true ); }
 
-let :
-        LET { dv.pushVariableStack(); }
+xorOp:
+    	XOR     { dv.setTwoFormulaMode( true ); }
 
-bindlist :
-		bind          { $$ = new vector< smtrat::Formula* >(); if( $1 != NULL ) { $$->push_back( $1 ); } }
+naryOp:
+		AND { $$ = (dv.polarity() ? smtrat::AND : smtrat::OR); }
+    |	OR  { $$ = (dv.polarity() ? smtrat::OR : smtrat::AND); }
+
+let:
+        LET { dv.pushVariableStack(); dv.setTwoFormulaMode( true ); }
+
+bindlist:
+		bind          { dv.restoreTwoFormulaMode(); $$ = new vector< smtrat::Formula* >(); if( $1 != NULL ) { $$->push_back( $1 ); } }
 	|	bind bindlist { $$ = $2; if( $1 != NULL ) { $$->push_back( $1 ); } }
 
-bind :
-        OB SYM poly CB { dv.addTheoryBinding( yyloc, *$2, $3 ); $$ = NULL; delete $3; delete $2; }
+bind:
+        OB SYM poly CB { $$ = dv.addTheoryBinding( yyloc, *$2, $3 ); delete $3; delete $2; }
 	|	OB SYM form CB { $$ = dv.booleanBinding( yyloc, *$2, $3 ); delete $2; }
 
-poly :
-        THEORY_VAR               { $$ = dv.mkPolynomial( yyloc, *$1 ); delete $1; }
-    |   DEC                      { numeric* num = dv.getNumeric( *$1 ); delete $1;
-                                   $$ = new PolyVarsPair( ex( *num ), TheoryVarVec() ); delete num; }
-    | 	NUM                      { $$ = new PolyVarsPair( ex( numeric( $1->c_str() ) ), TheoryVarVec() ); delete $1; }
-    |  	polyOp                   { $$ = $1; }
-    |   OB ITE form poly poly CB { $$ = dv.mkPolynomial( yyloc, *dv.mkIteInExpr( yyloc, $3, *$4, *$5 ) ); }
+poly:
+        THEORY_VAR                 { $$ = dv.mkPolynomial( yyloc, *$1 ); delete $1; }
+    |   DEC                        { numeric* num = dv.getNumeric( *$1 ); delete $1;
+                                     $$ = new PolyVarsPair( ex( *num ), TheoryVarVec() ); delete num; }
+    | 	NUM                        { $$ = new PolyVarsPair( ex( numeric( $1->c_str() ) ), TheoryVarVec() ); delete $1; }
+    |  	polyOp                     { $$ = $1; }
+    |   OB iteOp cond poly poly CB { $$ = dv.mkPolynomial( yyloc, *dv.mkIteInExpr( yyloc, $3, *$4, *$5 ) ); dv.setPolarity( $2 ); dv.restoreTwoFormulaMode(); }
+    
+iteOp:
+		ITE { $$ = dv.polarity(); dv.setPolarity( true ); dv.setTwoFormulaMode( true ); }
 
-polyOp :
+polyOp:
 		OB DIV poly poly CB       { $3->second.insert( $3->second.end(), $4->second.begin(), $4->second.end() ); $3->first /= $4->first; delete $4; $$ = $3; }
 	|	OB MINUS poly CB          { $3->first *= -1; $$ = $3; }
 	|	OB PLUS polylistPlus CB   { $$ = $3; }
 	|	OB MINUS polylistMinus CB { $$ = $3; }
 	|	OB TIMES polylistTimes CB { $$ = $3; }
 
-polylistPlus :
+polylistPlus:
 		poly polylistPlus { $1->second.insert( $1->second.end(), $2->second.begin(), $2->second.end() );
                             $1->first += $2->first; $$ = $1; delete $2; }
 	|	poly poly         { $1->second.insert( $1->second.end(), $2->second.begin(), $2->second.end() );
                             $1->first += $2->first; $$ = $1; delete $2; }
 
-polylistMinus :
+polylistMinus:
 		poly polylistMinus { $1->second.insert( $1->second.end(), $2->second.begin(), $2->second.end() );
                              $1->first -= $2->first; $$ = $1; delete $2; }
 	|	poly poly          { $1->second.insert( $1->second.end(), $2->second.begin(), $2->second.end() );
                              $1->first -= $2->first; $$ = $1; delete $2; }
 
-polylistTimes :
+polylistTimes:
 		poly polylistTimes  { $1->second.insert( $1->second.end(), $2->second.begin(), $2->second.end() );
                               $1->first *= $2->first; $$ = $1; delete $2; }
 	|	poly poly           { $1->second.insert( $1->second.end(), $2->second.begin(), $2->second.end() );

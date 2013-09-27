@@ -27,6 +27,8 @@
 
 #include <set>
 
+#include "State.h"
+
 using namespace std;
 using namespace GiNaC;
 using namespace vs;
@@ -284,6 +286,18 @@ namespace smtrat
                         eraseDTofRanking( currentState->rFather() );
                         insertDTinRanking( currentState->pFather() );
                     }
+                }
+                else if( currentState->takeSubResultCombAgain() && currentState->type() == State::COMBINE_SUBRESULTS )
+                {
+                    #ifdef VS_DEBUG
+                    cout << "*** Refresh conditons:" << endl;
+                    #endif
+                    currentState->refreshConditions();
+                    currentState->rTakeSubResultCombAgain() = false;
+                    #ifdef VS_DEBUG
+                    currentState->printAlone( "   ", cout );
+                    cout << "*** Conditions refreshed." << endl;
+                    #endif
                 }
                 else if( currentState->hasRecentlyAddedConditions() )//&& !(currentState->takeSubResultCombAgain() && currentState->isRoot() ) )
                 {
@@ -926,6 +940,11 @@ namespace smtrat
         bool allSubstitutionsApplied = true;
         ConditionSetSet conflictSet = ConditionSetSet();
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
+        if( _currentState->rFather().rVariableBounds().isConflicting() )
+        {
+            _currentState->rFather().printAlone();
+            _currentState->printAlone();
+        }
         GiNaCRA::evaldoubleintervalmap solBox = (currentSubs.type() == vs::ST_MINUS_INFINITY ? GiNaCRA::evaldoubleintervalmap() : _currentState->rFather().rVariableBounds().getIntervalMap());
         #else
         GiNaCRA::evaldoubleintervalmap solBox = GiNaCRA::evaldoubleintervalmap();
@@ -1089,18 +1108,6 @@ namespace smtrat
     {
         eraseDTsOfRanking( *_currentState );
         _currentState->rHasRecentlyAddedConditions() = false;
-        if( _currentState->takeSubResultCombAgain() && _currentState->type() == State::COMBINE_SUBRESULTS )
-        {
-            #ifdef VS_DEBUG
-            cout << "*** Refresh conditons:" << endl;
-            #endif
-            _currentState->refreshConditions();
-            _currentState->rTakeSubResultCombAgain() = false;
-            #ifdef VS_DEBUG
-            _currentState->printAlone( "   ", cout );
-            cout << "*** Conditions refreshed." << endl;
-            #endif
-        }
         // Collect the recently added conditions and mark them as not recently added.
         bool deleteExistingTestCandidates = false;
         ConditionList recentlyAddedConditions = ConditionList();

@@ -13,6 +13,7 @@
 #include <ginacra/ginacra.h>
 #include "../../Formula.h"
 #include "ginacra/ICP.h"
+#include "../LRAModule/LRAModule.h"
 
 namespace smtrat
 {
@@ -112,6 +113,8 @@ namespace smtrat
         */
         bool intervalBoxContainsEmptyInterval(const GiNaCRA::evaldoubleintervalmap& _intervals);
         
+        
+        const smtrat::lra::Variable<lra::Numeric>* getOriginalLraVar ( const ex& _var, LRAModule& _lra );
         
     }
 }

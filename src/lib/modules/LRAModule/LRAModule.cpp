@@ -34,7 +34,11 @@
 #define LRA_SIMPLE_THEORY_PROPAGATION
 #define LRA_SIMPLE_CONFLICT_SEARCH
 //#define LRA_ONE_REASON
+#ifndef LRA_GOMORY_CUTS
+#ifndef LRA_CUTS_FROM_PROOFS
 //#define LRA_BRANCH_AND_BOUND
+#endif
+#endif
 
 using namespace std;
 using namespace smtrat::lra;
@@ -384,173 +388,29 @@ namespace smtrat
                             #endif
 
                             #ifdef LRA_GOMORY_CUTS 
-                            exmap rMap_ = getRationalModel();
-                            vector<const Constraint*> constr_vec = vector<const Constraint*>();
-                            bool all_int = true;
-                            unsigned numRows = mTableau.rows().size();
-                            for( unsigned pos = 0; pos < numRows; ++pos )
-                            { 
-                                ex referring_ex = mTableau.rows().at( pos ).mName->expression();
-                                ex* preferring_ex = new ex(referring_ex);
-                                auto help = mOriginalVars.find(preferring_ex);
-                                if(help != mOriginalVars.end() && (Formula::domain(*(help->first)) == INTEGER_DOMAIN))
-                                {
-                                    auto found_ex = rMap_.find(referring_ex);                                
-                                    numeric ass = ex_to<numeric>(found_ex->second);
-                                    if(!ass.is_integer())
-                                    {
-                                        all_int=false;    
-                                        const Constraint* gomory_constr = mTableau.gomoryCut(ass, pos, constr_vec);
-                                        if( gomory_constr != NULL )
-                                        {
-                                            Formula* deductionA = new Formula(OR);
-                                            auto vec_iter = constr_vec.begin();
-                                            while(vec_iter != constr_vec.end())
-                                            {
-                                                Formula* notItem = new Formula(NOT);
-                                                notItem->addSubformula(*vec_iter);
-                                                deductionA->addSubformula(notItem);
-                                                ++vec_iter;
-                                            }
-                                            deductionA->addSubformula(gomory_constr);
-                                            addDeduction(deductionA);   
-                                        }                                                                
-                                    }
-                                }    
-                            }                            
-                            if(all_int) 
-                                return foundAnswer(True);
-                            return foundAnswer(Unknown);
+                            if( gomory_cut() )
+                            {
+                                return foundAnswer( Unknown );
+                            }
                             #endif 
 
                             #ifdef LRA_CUTS_FROM_PROOFS
-                            mTableau.print();
-                            /*
-                             * Build the new Tableau consisting out
-                             * of the defining constraints.
-                             */
-                            lra::Tableau<lra::Numeric> dc_Tableau = lra::Tableau<lra::Numeric>(mpPassedFormula->end());
-                            unsigned i=0;
-                            for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
-                            {                                
-                                dc_Tableau.newNonbasicVariable( new ex( mTableau.columns().at(i).mName->expression() ) );
-                                ++i;
-                            }                            
-                            unsigned numRows = mTableau.rows().size();
-                            unsigned dc_count = 0;
-                            vector<unsigned> dc_positions = vector<unsigned>();
-                            vector<lra::Numeric> lcm_rows = vector<lra::Numeric>();
-                            for( unsigned i = 0; i < numRows; ++i )
+                            if( cuts_from_proofs() )
                             {
-                                vector<unsigned> non_basic_vars_positions = vector<unsigned>();
-                                vector<lra::Numeric> coefficients = vector<lra::Numeric>();
-                                lra::Numeric lcmOfCoeffDenoms = 1;
-                                lra::Numeric max_value = 0;
-                                if( mTableau.isDefining( i, non_basic_vars_positions, coefficients, lcmOfCoeffDenoms, max_value ) )
-                                {
-                                    dc_count++;
-                                    dc_positions.push_back(i);
-                                    lcm_rows.push_back(lcmOfCoeffDenoms);
-                                    assert( !non_basic_vars_positions.empty() );
-                                    ex* help = new ex(mTableau.rows().at(i).mName->expression());
-                                    vector< lra::Variable<lra::Numeric>* > non_basic_vars = vector< lra::Variable<lra::Numeric>* >();
-                                    unsigned j=0;
-                                    auto pos = non_basic_vars_positions.begin();
-                                    for( auto column = dc_Tableau.columns().begin(); column != dc_Tableau.columns().end(); ++column )
-                                    {
-                                        if(dc_Tableau.columns().at(j).mName->position() == *pos )
-                                        {                                                                                    
-                                            assert( pos != non_basic_vars_positions.end() );
-                                            non_basic_vars.push_back( dc_Tableau.columns().at(j).mName );
-                                            ++pos;                                            
-                                        }
-                                    j++;    
-                                    } 
-                                    dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
-                                    if(lcmOfCoeffDenoms != 1)
-                                    {
-                                        dc_Tableau.multiplyRow(dc_count-1,lcmOfCoeffDenoms); 
-                                    }    
-                                }   
-                            }
-                            dc_Tableau.print();                                                      
-                            if(dc_Tableau.rows().size() > 0)
-                            {
-                            /*
-                             * At least one DC exists -> Construct and embed it.
-                             */    
-                            vector<unsigned> diagonals = vector<unsigned>();    
-                            vector<unsigned>& diagonals_ref = diagonals;                            
-                            dc_Tableau.calculate_hermite_normalform(diagonals_ref);
-                            dc_Tableau.print();
-                            auto iter = diagonals.begin();
-                            while(iter != diagonals.end())
-                            {
-                                printf("%u",*iter);
-                                ++iter;
-                            }
-                            printf("Before");
-                            dc_Tableau.invert_HNF_Matrix(diagonals);
-                            printf("After");
-                            bool creatable = false;
-                            ex cut = ex();
-                            for(unsigned i=0;i<dc_positions.size();i++)
-                            {
-                                vector<lra::Numeric> coefficients2 = vector<lra::Numeric>();
-                                vector<bool> non_basics_proof = vector<bool>();
-                                vector< lra::Variable<lra::Numeric>* > non_basic_vars2 = vector< lra::Variable<lra::Numeric>* >();
-                                printf("Before");
-                                creatable = dc_Tableau.create_cut_from_proof(dc_Tableau,mTableau,i,lcm_rows.at(i),coefficients2,non_basics_proof,cut,diagonals,dc_positions);
-                                printf("After");
-                                ex* pcut = new ex(cut);
-                                auto vector_iterator = non_basics_proof.begin();
-                                unsigned j=0;
-                                while(vector_iterator != non_basics_proof.end())
-                                {
-                                    if(*vector_iterator)
-                                    {
-                                        non_basic_vars2.push_back(mTableau.columns().at(j).mName);
-                                    }
-                                    ++vector_iterator;
-                                    ++j;
-                                }
-                                if(creatable)
-                                {
-                                    mTableau.newBasicVariable(pcut,non_basic_vars2,coefficients2);
-                                    break;
-                                }
-                            }                            
-                            dc_Tableau.print();                              
-                            mTableau.print();
+                                return foundAnswer( Unknown );
                             }
                             #endif
                             
                             #ifdef LRA_BRANCH_AND_BOUND
-                            exmap _rMap = getRationalModel();
-                            exmap::const_iterator map_iterator = _rMap.begin();
-                            for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
+                            if( branch_and_bound() )
                             {
-                            numeric ass = ex_to<numeric>(map_iterator->second); 
-                            if((Formula::domain(*(var->first)) == INTEGER_DOMAIN) && !ass.is_integer())
-                                {   
-                                   Formula* deductionA = new Formula(OR);
-                                   stringstream sstream;
-                                   sstream << *(var->first);
-                                   symtab *setOfVar = new symtab();
-                                   setOfVar->insert(pair< std::string, ex >(sstream.str(),*(var->first)));
-                                   ass = numeric(cln::floor1(cln::the<cln::cl_RA>(ass.to_cl_N())));
-                                   const Constraint* lessEqualConstraint = Formula::newConstraint(*(var->first) - ass,CR_LEQ,*setOfVar);
-                                   const Constraint* biggerEqualConstraint= Formula::newConstraint(*(var->first) - ass - 1,CR_GEQ,*setOfVar);
-                                   deductionA->addSubformula(lessEqualConstraint);
-                                   deductionA->addSubformula(biggerEqualConstraint);
-                                   addDeduction(deductionA);
-                                   return foundAnswer(Unknown);
-                                }
-                            ++map_iterator;
+                                return foundAnswer( Unknown );
                             }
                             #endif
                             CONSTRAINT_UNLOCK
-                            return foundAnswer(True);
+                            assert( assignmentCorrect() );
+                            printRationalModel();
+                            return foundAnswer( True );
                         }
                         // Otherwise, resolve the notequal-constraints (create the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
                         else
@@ -694,6 +554,7 @@ namespace smtrat
         #ifdef LRA_REFINEMENT
         learnRefinements();
         #endif
+        assert( assignmentCorrect() );
         return foundAnswer( True );
     }
 
@@ -1589,6 +1450,271 @@ namespace smtrat
             mTableau.setBlandsRuleStart( mTableau.columns().size() );
             #endif
         }
+    }
+    
+    #ifdef LRA_GOMORY_CUTS
+    /**
+     * 
+     * @return True, if a branching occurred.
+     *          False, otherwise.
+     */
+    bool LRAModule::gomory_cut()
+    {
+        exmap rMap_ = getRationalModel();
+        vector<const Constraint*> constr_vec = vector<const Constraint*>();
+        bool all_int = true;
+        unsigned numRows = mTableau.rows().size();
+        for( unsigned pos = 0; pos < numRows; ++pos )
+        { 
+            ex referring_ex = mTableau.rows().at( pos ).mName->expression();
+            ex* preferring_ex = new ex(referring_ex);
+            auto help = mOriginalVars.find(preferring_ex);
+            if(help != mOriginalVars.end() && (Formula::domain(*(help->first)) == INTEGER_DOMAIN))
+            {
+                auto found_ex = rMap_.find(referring_ex);                                
+                numeric ass = ex_to<numeric>(found_ex->second);
+                if(!ass.is_integer())
+                {
+                    all_int=false;    
+                    const Constraint* gomory_constr = mTableau.gomoryCut(ass, pos, constr_vec);
+                    if( gomory_constr != NULL )
+                    {
+                        Formula* deductionA = new Formula(OR);
+                        auto vec_iter = constr_vec.begin();
+                        while(vec_iter != constr_vec.end())
+                        {
+                            Formula* notItem = new Formula(NOT);
+                            notItem->addSubformula(*vec_iter);
+                            deductionA->addSubformula(notItem);
+                            ++vec_iter;
+                        }
+                        deductionA->addSubformula(gomory_constr);
+                        addDeduction(deductionA);   
+                    }                                                                
+                }
+            }    
+        }                            
+        return !all_int;
+    }
+    #endif
+    
+    #ifdef LRA_CUTS_FROM_PROOFS
+    #define LRA_DEBUG_CUTS_FROM_PROOFS
+    /**
+     * 
+     * @return True, if a branching occurred.
+     *          False, otherwise.
+     */
+    bool LRAModule::cuts_from_proofs()
+    {
+        #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+        cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+        cout << "Cut from proofs:" << endl;
+        mTableau.print();
+        #endif
+        // Check if the solution is integer.
+        auto var = mOriginalVars.begin();
+        while( var != mOriginalVars.end() )
+        {
+            if( Formula::domain(*(var->first)) == INTEGER_DOMAIN && !var->second->assignment().mainPart().content().is_integer() )
+            {
+                break;
+            }
+            ++var;
+        }
+        if( var == mOriginalVars.end() )
+        {
+            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+            cout << "Assignment is already integer!" << endl;
+            cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+            #endif
+            return false;
+        }
+        /*
+         * Build the new Tableau consisting out
+         * of the defining constraints.
+         */
+        lra::Tableau<lra::Numeric> dc_Tableau = lra::Tableau<lra::Numeric>(mpPassedFormula->end());
+        unsigned i=0;
+        for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
+        {                                
+            dc_Tableau.newNonbasicVariable( new ex( mTableau.columns().at(i).mName->expression() ) );
+            ++i;
+        }                            
+        unsigned numRows = mTableau.rows().size();
+        unsigned dc_count = 0;
+        vector<unsigned> dc_positions = vector<unsigned>();
+        vector<lra::Numeric> lcm_rows = vector<lra::Numeric>();
+        for( unsigned i = 0; i < numRows; ++i )
+        {
+            vector<unsigned> non_basic_vars_positions = vector<unsigned>();
+            vector<lra::Numeric> coefficients = vector<lra::Numeric>();
+            lra::Numeric lcmOfCoeffDenoms = 1;
+            lra::Numeric max_value = 0;
+            if( mTableau.isDefining( i, non_basic_vars_positions, coefficients, lcmOfCoeffDenoms, max_value ) )
+            {
+                dc_count++;
+                dc_positions.push_back(i);
+                lcm_rows.push_back(lcmOfCoeffDenoms);
+                assert( !non_basic_vars_positions.empty() );
+                ex* help = new ex(mTableau.rows().at(i).mName->expression());
+                vector< lra::Variable<lra::Numeric>* > non_basic_vars = vector< lra::Variable<lra::Numeric>* >();
+                unsigned j=0;
+                auto pos = non_basic_vars_positions.begin();
+                for( auto column = dc_Tableau.columns().begin(); column != dc_Tableau.columns().end(); ++column )
+                {
+                    if(dc_Tableau.columns().at(j).mName->position() == *pos )
+                    {                                                                                    
+                        assert( pos != non_basic_vars_positions.end() );
+                        non_basic_vars.push_back( dc_Tableau.columns().at(j).mName );
+                        ++pos;                                            
+                    }
+                j++;    
+                } 
+                dc_Tableau.newBasicVariable( help, non_basic_vars, coefficients );
+                if(lcmOfCoeffDenoms != 1)
+                {
+                    dc_Tableau.multiplyRow(dc_count-1,lcmOfCoeffDenoms); 
+                }    
+            }   
+        }
+        if(dc_Tableau.rows().size() > 0)
+        {
+            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+            cout << "Defining constraint:" << endl;
+            dc_Tableau.print();   
+            #endif
+            /*
+             * At least one DC exists -> Construct and embed it.
+             */    
+            vector<unsigned> diagonals = vector<unsigned>();    
+            vector<unsigned>& diagonals_ref = diagonals;                            
+            dc_Tableau.calculate_hermite_normalform(diagonals_ref);
+            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+            cout << "HNF of defining constraints:" << endl;
+            dc_Tableau.print();
+            cout << "Actual order of columns:" << endl;
+            auto iter = diagonals.begin();
+            while(iter != diagonals.end())
+            {
+                printf("%u",*iter);
+                ++iter;
+            }
+            #endif
+            dc_Tableau.invert_HNF_Matrix(diagonals);
+            bool creatable = false;
+            ex cut = ex();
+            for(unsigned i=0;i<dc_positions.size();i++)
+            {
+                vector<lra::Numeric> coefficients2 = vector<lra::Numeric>();
+                vector<bool> non_basics_proof = vector<bool>();
+                vector< lra::Variable<lra::Numeric>* > non_basic_vars2 = vector< lra::Variable<lra::Numeric>* >();
+                lra::Numeric upper_bound;
+                lra::Numeric lower_bound;
+                creatable = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, lcm_rows.at(i), coefficients2, non_basics_proof, cut, diagonals, dc_positions, upper_bound, lower_bound );
+                ex* pcut = new ex(cut);
+                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+                cout << "Proof of unsatisfiability:  " << *pcut << " = 0" << endl;
+                #endif
+                auto vector_iterator = non_basics_proof.begin();
+                unsigned j=0;
+                while(vector_iterator != non_basics_proof.end())
+                {
+                    if(*vector_iterator)
+                    {
+                        non_basic_vars2.push_back(dc_Tableau.columns().at(diagonals.at(j)).mName);
+                    }
+                    ++vector_iterator;
+                    ++j;
+                }
+                if(creatable)
+                {
+                    #ifndef LRA_DEBUG_CUTS_FROM_PROOFS
+                    mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
+                    #else
+                    auto var = mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
+                    cout << "After adding proof for unsatisfiability:" << endl;
+                    var->print();
+                    var->printAllBounds();
+                    mTableau.print();
+                    cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+                    #endif
+                    //mTableau.rows().at(mTableau.rows().size()-1).mName->setSupremum(upper_bound);
+                    //mTableau.rows().at(mTableau.rows().size()-1).mName->setSupremum(lower_bound);
+                    return true;
+                }
+            }
+            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+            cout << "Found no proof of unsatisfiability!" << endl;
+            #endif
+        }
+        #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
+        else
+        {
+            cout << "No defining constraint!" << endl;
+        }
+        cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+        #endif
+        return branch_and_bound();
+    }
+    #endif
+    
+    /**
+     * 
+     * @return True, if a branching occurred.
+     *          False, otherwise.
+     */
+    bool LRAModule::branch_and_bound()
+    {
+        exmap _rMap = getRationalModel();
+        exmap::const_iterator map_iterator = _rMap.begin();
+        for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
+        {
+            numeric ass = ex_to<numeric>(map_iterator->second); 
+            if((Formula::domain(*(var->first)) == INTEGER_DOMAIN) && !ass.is_integer())
+            {
+                Formula* deductionA = new Formula(OR);
+                stringstream sstream;
+                sstream << *(var->first);
+                symtab *setOfVar = new symtab();
+                setOfVar->insert(pair< std::string, ex >(sstream.str(),*(var->first)));
+                ass = numeric(cln::floor1(cln::the<cln::cl_RA>(ass.to_cl_N())));
+                const Constraint* lessEqualConstraint = Formula::newConstraint(*(var->first) - ass,CR_LEQ,*setOfVar);
+                const Constraint* biggerEqualConstraint= Formula::newConstraint(*(var->first) - ass - 1,CR_GEQ,*setOfVar);
+                deductionA->addSubformula(lessEqualConstraint);
+                deductionA->addSubformula(biggerEqualConstraint);
+                addDeduction(deductionA);
+                return true;
+            }
+            ++map_iterator;
+        }
+        return false;
+    }
+    
+    /**
+     * 
+     * @return 
+     */
+    bool LRAModule::assignmentCorrect() const
+    {
+        if( solverState() == False ) return true;
+        exmap model = getRationalModel();
+        for( auto ass = model.begin(); ass != model.end(); ++ass )
+        {
+            if( Formula::domain( ass->first ) == INTEGER_DOMAIN  && !ex_to<numeric>(ass->second).is_integer() )
+            {
+                return false;
+            }
+        }
+        for( auto constraint = mpReceivedFormula->begin(); constraint != mpReceivedFormula->end(); ++constraint )
+        {
+            if( (*constraint)->constraint().satisfiedBy( model ) != 1 )
+            {
+                assert( (*constraint)->constraint().satisfiedBy( model ) == 0 );
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

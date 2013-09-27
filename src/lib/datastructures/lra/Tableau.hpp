@@ -45,7 +45,9 @@
 //#define LRA_INTRODUCE_NEW_CONSTRAINT
 #endif
 //#define LRA_GOMORY_CUTS
+#ifndef LRA_GOMORY_CUTS
 //#define LRA_CUTS_FROM_PROOFS
+#endif
 
 namespace smtrat
 {
@@ -415,7 +417,7 @@ namespace smtrat
                 bool isDefining( unsigned, std::vector<unsigned>&, std::vector<T>&, T&, T& ) const;
                 bool isDefining_Easy( std::vector<unsigned>&, unsigned );
                 bool isDiagonal( unsigned, std::vector<unsigned>& );
-                unsigned position_DC( std::vector<unsigned>&, unsigned );
+                unsigned position_DC( unsigned, std::vector<unsigned>& );
                 unsigned revert_diagonals( unsigned, std::vector<unsigned>& );
                 void invertColumn( unsigned );
                 void addColumns( unsigned, unsigned, T );
@@ -423,7 +425,7 @@ namespace smtrat
                 T Scalar_Product( Tableau<T>&, Tableau<T>&, unsigned, unsigned, T, std::vector<unsigned>&, std::vector<unsigned>& );
                 void calculate_hermite_normalform( std::vector<unsigned>& );
                 void invert_HNF_Matrix( std::vector<unsigned> );
-                bool create_cut_from_proof( Tableau<T>&, Tableau<T>&, unsigned&, T&, std::vector<T>&, std::vector<bool>&, ex&, std::vector<unsigned>&, std::vector<unsigned>& );
+                bool create_cut_from_proof( Tableau<T>&, Tableau<T>&, unsigned&, T&, std::vector<T>&, std::vector<bool>&, ex&, std::vector<unsigned>&, std::vector<unsigned>&, T&, T& );
                 #endif
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
@@ -2206,7 +2208,7 @@ namespace smtrat
          * 
          */ 
         template<class T>
-        unsigned Tableau<T>::position_DC(std::vector<unsigned>& dc_positions, unsigned row_index)
+        unsigned Tableau<T>::position_DC(unsigned row_index,std::vector<unsigned>& dc_positions)
         {
             auto vector_iterator = dc_positions.begin();
             unsigned i=0;
@@ -2217,8 +2219,9 @@ namespace smtrat
                     return i;
                 }
                 ++i;
+                ++vector_iterator;
             }
-            return i;
+            return mRows.size();
         }
         
         /**
@@ -2273,6 +2276,7 @@ namespace smtrat
         template<class T>
         void Tableau<T>::addColumns(unsigned columnA_index,unsigned columnB_index,T multiple)
         {            
+            cout << __func__ << "( " << columnA_index << ", " << columnB_index << ", " << multiple << " )" << endl;
             Iterator columnA_iterator = Iterator(mColumns.at(columnA_index).mStartEntry, mpEntries);
             Iterator columnB_iterator = Iterator(mColumns.at(columnB_index).mStartEntry, mpEntries);
                 
@@ -2503,37 +2507,41 @@ namespace smtrat
         T Tableau<T>::Scalar_Product(Tableau<T>& A, Tableau<T>& B,unsigned rowA, unsigned columnB, T lcm,std::vector<unsigned>& diagonals,std::vector<unsigned>& dc_positions) 
         {
             Iterator rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry,A.mpEntries);
-            Iterator columnB_iterator = Iterator(B.mColumns.at(columnB).mStartEntry,B.mpEntries);
             T result = T(0);
             while(true)
             {
-                rowA_iterator = Iterator(A.mRows.at(rowA).mStartEntry,A.mpEntries);
+                Iterator columnB_iterator = Iterator(B.mColumns.at(columnB).mStartEntry,B.mpEntries);
                 unsigned actual_column = revert_diagonals((*rowA_iterator).columnNumber(),diagonals); 
-                if(isDefining_Easy(dc_positions,(*columnB_iterator).rowNumber()));
-                {
-                    while(actual_column != position_DC(dc_positions,(*columnB_iterator).rowNumber())
-                          && !rowA_iterator.rowEnd())
+                    while(true)
                     {
-                        actual_column = revert_diagonals((*rowA_iterator).columnNumber(),diagonals);
-                        rowA_iterator.right();                                        
-                    }
-                    if(actual_column == position_DC(dc_positions,(*columnB_iterator).rowNumber()))
-                    {
-                        result += (*rowA_iterator).rContent()*(*columnB_iterator).rContent()*lcm;
-                    }
-                }
-                if(columnB_iterator.columnBegin())
+                        if(actual_column == position_DC((*columnB_iterator).rowNumber(),dc_positions))
+                        {
+                            result += (*rowA_iterator).content()*(*columnB_iterator).content()*lcm;
+                            break;
+                        }
+                        if(columnB_iterator.columnBegin())
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            columnB_iterator.up();
+                        }
+                    }    
+                if(rowA_iterator.rowEnd())
                 {
                     break;
                 }
                 else
                 {
-                    columnB_iterator.up();
+                    rowA_iterator.right();
                 }
             }
+        cout << result << endl;    
         return result;    
         }
         
+        #define LRA_DEBUG_HNF 
         /**
          * Calculate the Hermite normal form of the calling Tableau. 
          * 
@@ -2666,8 +2674,15 @@ namespace smtrat
                         }    
                     }  
                     T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
+                    cout << "floor_value = " << floor_value << endl;
+                    cout << "added_content = " << added_content << endl;
+                    cout << "elim_content = " << elim_content << endl;
+                    cout << "T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()) = " << T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()) << endl;
                     addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
+                    #ifdef LRA_DEBUG_HNF
+                    cout << "Add " << (added_pos+1) << ". column to " << (elim_pos+1) << ". column:" << endl;
                     print();
+                    #endif
                     number_of_entries = mRows.at(i).mSize; 
                     first_loop = false;
                     if(mod(( cln::the<cln::cl_RA>( elim_content.toCLN() )  ) , cln::the<cln::cl_RA>( added_content.toCLN() ) ) == 0)
@@ -2723,7 +2738,10 @@ namespace smtrat
                         * The current entry has to be normalized because it´s
                         * in a diagonal column and greater or equal than the
                         * diagonal entry in the current row.
-                        */                          
+                        */   
+                        cout << "Normalize" << endl;
+                        cout << (*mpEntries)[row_iterator.entryID()].columnNumber() << endl;
+                        cout << diagonals.at(i) << endl;
                         T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( (*row_iterator).content().toCLN() / added_content.toCLN() ) ) );
                         addColumns((*mpEntries)[row_iterator.entryID()].columnNumber(),
                                   diagonals.at(i),
@@ -2761,7 +2779,6 @@ namespace smtrat
                  * and calculate the new content for it.
                  */
                 Iterator column_iterator = Iterator(mColumns.at(diagonals.at(i)).mStartEntry, mpEntries);  
-                cout << "jo" << endl;
                 while(!column_iterator.columnBegin())
                 {
                     column_iterator.up();                    
@@ -2778,7 +2795,6 @@ namespace smtrat
                 }
                 if(entry_changed)
                 {
-                    cout << "drin" << endl;
                     while(true)
                     {
                         entry_changed = false;
@@ -2787,7 +2803,6 @@ namespace smtrat
                         while(j < mRows.size())
                         {
                             Iterator column_iterator2 = Iterator(mColumns.at(diagonals.at(j)).mStartEntry, mpEntries);
-                            cout << "no" << endl;
                             while((*column_iterator2).rowNumber() > (*column_iterator).rowNumber() && !column_iterator2.columnBegin())
                             {
                                 column_iterator2.up();
@@ -2824,7 +2839,7 @@ namespace smtrat
          *         false,   otherwise   
          */        
         template<class T>
-        bool Tableau<T>::create_cut_from_proof(Tableau<T>& Inverted_Tableau, Tableau<T>& DC_Tableau, unsigned& row_index, T& lcm,std::vector<T>& coefficients,std::vector<bool>& non_basics_proof,ex& cut,std::vector<unsigned>& diagonals,std::vector<unsigned>& dc_positions)
+        bool Tableau<T>::create_cut_from_proof(Tableau<T>& Inverted_Tableau, Tableau<T>& DC_Tableau, unsigned& row_index, T& lcm,std::vector<T>& coefficients,std::vector<bool>& non_basics_proof,ex& cut,std::vector<unsigned>& diagonals,std::vector<unsigned>& dc_positions, T& upper, T& lower)
         {
             Value<T> result = T(0);
             Iterator row_iterator = Iterator(mRows.at(row_index).mStartEntry,mpEntries); 
@@ -2849,17 +2864,32 @@ namespace smtrat
             }
             if(!((result.mainPart()).toGinacNumeric().is_integer()))
             {
+               // Calculate the lcm of all entries in the row with index row_index in the DC_Tableau
+               Iterator row_iterator = Iterator(DC_Tableau.mRows.at(dc_positions.at(row_index)).mStartEntry,DC_Tableau.mpEntries);
+               T lcm_row = T(1);
+               while(true)
+               {
+                   lcm  = T(GiNaC::lcm( lcm.toGinacNumeric(),(*row_iterator).content().toGinacNumeric()));
+                   if(!row_iterator.rowEnd())
+                   {
+                       row_iterator.right();
+                   }
+                   else
+                   {
+                       break;
+                   }                   
+               }
                // Construct the Cut
                T product = T(0);
                unsigned i=0;
-               while(i < DC_Tableau.mColumns.size())
+               while(i < Inverted_Tableau.mRows.size())
                {
                    product = Scalar_Product(Inverted_Tableau,DC_Tableau,row_index,i,lcm,diagonals,dc_positions);
                    const Variable<T>& non_basic_var = *mColumns[diagonals.at(i)].mName;
                    if(product != 0)
                    {
-                       cut += (non_basic_var.expression());
-                       coefficients.push_back(product);
+                       cut += (non_basic_var.expression())*(((product.toGinacNumeric())*((result.mainPart()).toGinacNumeric()).denom())/lcm_row.toGinacNumeric());
+                       coefficients.push_back(product.toGinacNumeric()/lcm_row.toGinacNumeric());
                        non_basics_proof.push_back(true);
                    }
                    else
@@ -2871,7 +2901,7 @@ namespace smtrat
                return true; 
             }
             else
-            {
+            {                
                 return false;                
             }
         }

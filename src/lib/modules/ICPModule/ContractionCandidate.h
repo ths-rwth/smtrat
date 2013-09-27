@@ -184,7 +184,7 @@ namespace smtrat
                 return mLhs;
             }
 
-            std::set<const Formula*, originComp> origin() const
+            const std::set<const Formula*, originComp>& origin() const
             {
                 return mOrigin;
             }

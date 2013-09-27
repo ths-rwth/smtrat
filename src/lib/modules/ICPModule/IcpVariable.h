@@ -335,6 +335,13 @@ namespace icp
             friend std::ostream& operator<<( std::ostream& os, const IcpVariable& _var )
             {
                 os << _var.var() << " [Orig.: " << _var.isOriginal() << ", act.: " << _var.isActive() << "]";
+                if( _var.mLraVar != NULL )
+                {
+                    os << endl;
+                    _var.mLraVar->print(os);
+                    os << endl;
+                    _var.mLraVar->printAllBounds(os);
+                }
                 return os;
             }
 

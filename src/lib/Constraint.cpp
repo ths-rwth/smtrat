@@ -837,7 +837,7 @@ namespace smtrat
                         }
                         else
                         {
-                            simplificationFactorNumer = GiNaC::ONE;
+                            simplificationFactorDenom = GiNaC::ONE;
                         }
                         assert( !containsNumeric( summandEx, --summandEx.end() ) );
                     }
@@ -848,7 +848,7 @@ namespace smtrat
                     }
                     else
                     {
-                        simplificationFactorNumer = GiNaC::ONE;
+                        simplificationFactorDenom = GiNaC::ONE;
                     }
                 }
             }

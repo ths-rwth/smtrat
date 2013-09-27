@@ -50,6 +50,9 @@ namespace smtrat
         mCheckResultActive( false ),
         mSentSolverInstruction( false ),
         mLastInstructionFailed( false ),
+        mPolarity( true ),
+        mTwoFormulaMode( false ),
+        mTwoFormulaModeHist(),
         mNumOfChecks( 0 ),
         mInfos(),
         mOptions(),
@@ -63,6 +66,7 @@ namespace smtrat
         mBooleanVariables(),
         mTheoryVariables(),
         mTheoryBindings(),
+        mTheoryIteBindings(),
         mVariableStack(),
         mInnerConstraintBindings()
     {
@@ -205,14 +209,38 @@ namespace smtrat
      * @param _loc
      * @param _varName
      * @param _exVarsPair
+     * @return 
      */
-    void Driver::addTheoryBinding( const class location& _loc, const string& _varName, ExVarsPair* _exVarsPair )
+    Formula* Driver::addTheoryBinding( const class location& _loc, const string& _varName, ExVarsPair* _exVarsPair )
     {
         assert( mTheoryBindings.find( _varName ) == mTheoryBindings.end() );
         if( !mTheoryBindings.insert( pair< string, ExVarsPair >( _varName, *_exVarsPair ) ).second )
             error( _loc, "Multiple definition of real variable " + _varName );
         mVariableStack.top().push_back( pair< string, unsigned >( _varName, 1 ) );
         pLexer()->mTheoryVariables.insert( _varName );
+        if( !mInnerConstraintBindings.empty()  )
+        {
+            if( mInnerConstraintBindings.size() == 1 )
+            {
+                Formula* result = mInnerConstraintBindings.back();
+                mInnerConstraintBindings.pop_back();
+                return result;
+            }
+            else
+            {
+                Formula* result = new Formula( AND );
+                while( !mInnerConstraintBindings.empty() )
+                {
+                    result->addSubformula( mInnerConstraintBindings.back() );
+                    mInnerConstraintBindings.pop_back();
+                }
+                return result;
+            }
+        }
+        else
+        {
+            return NULL;
+        }
     }
     
     /**
@@ -223,11 +251,15 @@ namespace smtrat
      */
     Formula* Driver::booleanBinding( const class location& _loc, const string& _varName, Formula* _formula )
     {
-        Formula* result = new Formula( IFF );
-        result->addSubformula( new Formula( addBooleanVariable( _loc, _varName, true ) ) );
-        result->addSubformula( _formula );
+        assert( _formula->getType() == smtrat::AND && _formula->size() == 2 );
         mVariableStack.top().push_back( pair< string, unsigned >( _varName, 0 ) );
-        return result;
+        string varName = addBooleanVariable( _loc, _varName, true );
+        Formula* notBindingBool = new Formula( NOT );
+        notBindingBool->addSubformula( new Formula( varName ) );
+        Formula* posCase = _formula->pruneFront();
+        Formula* negCase = _formula->pruneFront();
+        delete _formula;
+        return mkIff( posCase, new Formula( varName ), negCase, notBindingBool, false );
     }
     
     /**
@@ -311,6 +343,7 @@ namespace smtrat
         mTheoryVariables.erase( _varName );
         mLexer->mTheoryVariables.erase( _varName );
         mTheoryBindings.erase( _varName );
+        mTheoryIteBindings.erase( _varName );
     }
 
     /**
@@ -355,39 +388,268 @@ namespace smtrat
     Formula* Driver::mkConstraint( const ExVarsPair& _lhs, const ExVarsPair& _rhs, unsigned _rel )
     {
         symtab vars = symtab();
-        for( auto iter = _lhs.second.begin(); iter != _lhs.second.end(); ++iter ) vars.insert( (*iter)->second );
-        for( auto iter = _rhs.second.begin(); iter != _rhs.second.end(); ++iter ) vars.insert( (*iter)->second );
-        Constraint_Relation rel = (Constraint_Relation) _rel;
-        if( !mInnerConstraintBindings.empty() )
+        for( auto iter = _lhs.second.begin(); iter != _lhs.second.end(); ++iter )
         {
-            Formula* result = new Formula( AND );
-            while( !mInnerConstraintBindings.empty() )
+            vars.insert( (*iter)->second );
+            auto bindingVars = mTheoryIteBindings.find( (*iter)->first );
+            if( bindingVars != mTheoryIteBindings.end() )
             {
-                result->addSubformula( mInnerConstraintBindings.back() );
-                mInnerConstraintBindings.pop_back();
+                mInnerConstraintBindings.push_back( new Formula( bindingVars->second ) );
             }
-            result->addSubformula( Formula::newConstraint( _lhs.first-_rhs.first, rel, vars ) );
+        }
+        for( auto iter = _rhs.second.begin(); iter != _rhs.second.end(); ++iter )
+        {
+            vars.insert( (*iter)->second );
+            auto bindingVars = mTheoryIteBindings.find( (*iter)->first );
+            if( bindingVars != mTheoryIteBindings.end() )
+            {
+                mInnerConstraintBindings.push_back( new Formula( bindingVars->second ) );
+            }
+        }
+        if( mTwoFormulaMode )
+        {
+            Constraint_Relation relA = (Constraint_Relation) _rel;
+            Constraint_Relation relB;
+            switch( relA )
+            {
+                case CR_EQ:
+                {
+                    relB = CR_NEQ;
+                    break;
+                }
+                case CR_NEQ:
+                {
+                    relB = CR_EQ;
+                    break;
+                }
+                case CR_LEQ:
+                {
+                    relB = CR_GREATER;
+                    break;
+                }
+                case CR_GEQ:
+                {
+                    relB = CR_LESS;
+                    break;
+                }
+                case CR_LESS:
+                {
+                    relB = CR_GEQ;
+                    break;
+                }
+                case CR_GREATER:
+                {
+                    relB = CR_LEQ;
+                    break;
+                }
+                default:
+                {
+                    assert( false );
+                    relB = CR_EQ;
+                    break;
+                }
+            }
+            Formula* result = new Formula( AND );
+            if( !mInnerConstraintBindings.empty() )
+            {
+                Formula* resultA = new Formula( AND );
+                Formula* resultB = new Formula( AND );
+                while( !mInnerConstraintBindings.empty() )
+                {
+                    resultA->addSubformula( new Formula( *mInnerConstraintBindings.back() ) );
+                    resultB->addSubformula( mInnerConstraintBindings.back() );
+                    mInnerConstraintBindings.pop_back();
+                }
+                resultA->addSubformula( Formula::newConstraint( _lhs.first-_rhs.first, relA, vars ) );
+                resultB->addSubformula( Formula::newConstraint( _lhs.first-_rhs.first, relB, vars ) );
+                if( mPolarity )
+                {
+                    result->addSubformula( resultA );
+                    result->addSubformula( resultB );
+                }
+                else
+                {
+                    result->addSubformula( resultB );
+                    result->addSubformula( resultA );
+                }
+            }
+            else
+            {
+                if( mPolarity )
+                {
+                    result->addSubformula( new Formula( Formula::newConstraint( _lhs.first-_rhs.first, relA, vars ) ) );
+                    result->addSubformula( new Formula( Formula::newConstraint( _lhs.first-_rhs.first, relB, vars ) ) );
+                }
+                else
+                {
+                    result->addSubformula( new Formula( Formula::newConstraint( _lhs.first-_rhs.first, relB, vars ) ) );
+                    result->addSubformula( new Formula( Formula::newConstraint( _lhs.first-_rhs.first, relA, vars ) ) );
+                }
+            }
             return result;
+        }
+        else 
+        {
+            Constraint_Relation rel = (Constraint_Relation) _rel;
+            if( !mPolarity )
+            {
+                switch( rel )
+                {
+                    case CR_EQ:
+                    {
+                        rel = CR_NEQ;
+                        break;
+                    }
+                    case CR_NEQ:
+                    {
+                        rel = CR_EQ;
+                        break;
+                    }
+                    case CR_LEQ:
+                    {
+                        rel = CR_GREATER;
+                        break;
+                    }
+                    case CR_GEQ:
+                    {
+                        rel = CR_LESS;
+                        break;
+                    }
+                    case CR_LESS:
+                    {
+                        rel = CR_GEQ;
+                        break;
+                    }
+                    case CR_GREATER:
+                    {
+                        rel = CR_LEQ;
+                        break;
+                    }
+                    default:
+                    {
+                        assert( false );
+                        rel = CR_EQ;
+                        break;
+                    }
+                }
+            }
+            if( !mInnerConstraintBindings.empty() )
+            {
+                Formula* result = new Formula( AND );
+                while( !mInnerConstraintBindings.empty() )
+                {
+                    result->addSubformula( mInnerConstraintBindings.back() );
+                    mInnerConstraintBindings.pop_back();
+                }
+                result->addSubformula( Formula::newConstraint( _lhs.first-_rhs.first, rel, vars ) );
+                return result;
+            }
+            else
+            {
+                return new Formula( Formula::newConstraint( _lhs.first-_rhs.first, rel, vars ) );
+            }
+        }
+    }
+
+    /**
+     * 
+     * @return 
+     */
+    Formula* Driver::mkTrue()
+    {
+        if( mTwoFormulaMode )
+        {
+            Formula* result = new Formula( smtrat::AND );
+            if( mPolarity )
+            {
+                result->addSubformula( new Formula( smtrat::TTRUE ) );
+                result->addSubformula( new Formula( smtrat::FFALSE ) );
+            }
+            else
+            {
+                result->addSubformula( new Formula( smtrat::FFALSE ) );
+                result->addSubformula( new Formula( smtrat::TTRUE ) );
+            }
+            return result;
+        }
+        else if( mPolarity )
+        {
+            return new Formula( smtrat::TTRUE );
         }
         else
         {
-            return new Formula( Formula::newConstraint( _lhs.first-_rhs.first, rel, vars ) );
+            return new Formula( smtrat::FFALSE );
         }
     }
     
     /**
      * 
-     * @param _type
-     * @param _subformula
      * @return 
      */
-    Formula* Driver::mkFormula( unsigned _type, Formula* _subformula )
+    Formula* Driver::mkFalse()
     {
-        Formula* result = new Formula( (smtrat::Type) _type );
-		result->addSubformula( _subformula );
-        return result;
+        if( mTwoFormulaMode )
+        {
+            Formula* result = new Formula( smtrat::AND );
+            if( mPolarity )
+            {
+                result->addSubformula( new Formula( smtrat::FFALSE ) );
+                result->addSubformula( new Formula( smtrat::TTRUE ) );
+            }
+            else
+            {
+                result->addSubformula( new Formula( smtrat::TTRUE ) );
+                result->addSubformula( new Formula( smtrat::FFALSE ) );
+            }
+            return result;
+        }
+        else if( mPolarity )
+        {
+            return new Formula( smtrat::FFALSE );
+        }
+        else
+        {
+            return new Formula( smtrat::TTRUE );
+        }
     }
-
+    
+    /**
+     * 
+     * @param _varName
+     * @return 
+     */
+    Formula* Driver::mkBoolean( const class location& _loc, const string& _varName )
+    {
+        if( mTwoFormulaMode )
+        {
+            Formula* result = new Formula( smtrat::AND );
+            string varName = getBooleanVariable( _loc, _varName );
+            if( mPolarity )
+            {
+                result->addSubformula( new Formula( varName ) );
+                result->addSubformula( new Formula( smtrat::NOT ) );
+                result->back()->addSubformula( new Formula( varName ) );
+            }
+            else
+            {
+                result->addSubformula( new Formula( smtrat::NOT ) );
+                result->back()->addSubformula( new Formula( varName ) );
+                result->addSubformula( new Formula( varName ) );
+            }
+            return result;
+        }
+        else if( mPolarity )
+        {
+            return new Formula( getBooleanVariable( _loc, _varName ) );
+        }
+        else
+        {
+            Formula* result = new Formula( smtrat::NOT );
+            result->addSubformula( new Formula( getBooleanVariable( _loc, _varName ) ) );
+            return result;
+        }
+    }
+    
     /**
      * 
      * @param _type
@@ -397,10 +659,53 @@ namespace smtrat
      */
     Formula* Driver::mkFormula( unsigned _type, Formula* _subformulaA, Formula* _subformulaB )
     {
-        Formula* result = new Formula( (smtrat::Type) _type );
-		result->addSubformula( _subformulaA );
-		result->addSubformula( _subformulaB );
-        return result;
+        smtrat::Type type = (smtrat::Type) _type;
+        assert( type != smtrat::IMPLIES );
+        if( type == smtrat::IFF || type == smtrat::XOR )
+        {
+            assert( _subformulaA->getType() == smtrat::AND && _subformulaA->size() == 2 );
+            assert( _subformulaB->getType() == smtrat::AND && _subformulaB->size() == 2 );
+            Formula* caseA = _subformulaA->pruneFront();
+            Formula* caseB = (type == smtrat::IFF ? _subformulaB->pruneFront() : _subformulaB->pruneBack());
+            Formula* notCaseA = _subformulaA->pruneFront();
+            Formula* notCaseB = _subformulaB->pruneFront();
+            Formula* result = mkIff( caseA, caseB, notCaseA, notCaseB, mTwoFormulaMode );
+            delete _subformulaA;
+            delete _subformulaB;
+            return result;
+        }
+        else if( mTwoFormulaMode )
+        {
+            Formula* result = new Formula( smtrat::AND );
+            Formula* resultA = new Formula( type );
+            assert( _subformulaA->getType() == smtrat::AND && _subformulaA->size() == 2 );
+            assert( _subformulaB->getType() == smtrat::AND && _subformulaB->size() == 2 );
+            resultA->addSubformula( _subformulaA->pruneFront() );
+            resultA->addSubformula( _subformulaB->pruneFront() );
+            Formula* resultB = new Formula( type == smtrat::AND ? smtrat::OR : smtrat::AND );
+            resultB->addSubformula( _subformulaA->pruneFront() );
+            resultB->addSubformula( _subformulaB->pruneFront() );
+            if( mPolarity )
+            {
+                result->addSubformula( resultA );
+                result->addSubformula( resultB );
+            }
+            else
+            {
+                result->addSubformula( resultB );
+                result->addSubformula( resultA );
+            }
+            delete _subformulaA;
+            delete _subformulaB;
+            return result;
+        }
+        else
+        {
+            Formula* result = new Formula( type );
+            result->addSubformula( _subformulaA );
+            result->addSubformula( _subformulaB );
+            return result;
+        }
     }
 
     /**
@@ -411,15 +716,115 @@ namespace smtrat
      */
     Formula* Driver::mkFormula( unsigned _type, vector< Formula* >& _subformulas )
     {
-        Formula* result = new Formula( (smtrat::Type) _type );
-        while( !_subformulas.empty() )
+        smtrat::Type type = (smtrat::Type) _type;
+        assert( type == smtrat::AND || type == smtrat::OR );
+        if( mTwoFormulaMode )
         {
-            result->addSubformula( _subformulas.back() );
-            _subformulas.pop_back();
+            Formula* result = new Formula( smtrat::AND );
+            Formula* resultA = new Formula( type );
+            Formula* resultB = new Formula( type == smtrat::AND ? smtrat::OR : smtrat::AND );
+            while( !_subformulas.empty() )
+            {
+                Formula* tmpFormula = _subformulas.front();
+                assert( tmpFormula->getType() == smtrat::AND && tmpFormula->size() == 2 );
+                _subformulas.erase( _subformulas.begin() );
+                resultA->addSubformula( tmpFormula->pruneFront() );
+                resultB->addSubformula( tmpFormula->pruneFront() );
+                delete tmpFormula;
+            }
+            if( mPolarity )
+            {
+                result->addSubformula( resultA );
+                result->addSubformula( resultB );
+            }
+            else
+            {
+                result->addSubformula( resultB );
+                result->addSubformula( resultA );
+            }
+            return result;
         }
-        return result;
+        else
+        {
+            Formula* result = new Formula( type );
+            while( !_subformulas.empty() )
+            {
+                result->addSubformula( _subformulas.back() );
+                _subformulas.pop_back();
+            }
+            return result;
+        }
     }
-
+    
+    /**
+     * 
+     * @param _formulaA
+     * @param _formulaB
+     * @param _notFormulaA
+     * @param _notFormulaB
+     * @return 
+     */
+    Formula* Driver::mkIff( Formula* _formulaA, Formula* _formulaB, Formula* _notFormulaA, Formula* _notFormulaB, bool _withNegation ) const
+    {
+        Formula* h_i1  = new Formula( Formula::newAuxiliaryBooleanVariable() );
+        Formula* h_i2  = new Formula( Formula::newAuxiliaryBooleanVariable() );
+        Formula* result = new Formula( AND );
+        // not h_1 or f_1
+        Formula* caseA = new Formula( OR );
+        caseA->addSubformula( new Formula( NOT ) );
+        caseA->back()->addSubformula( new Formula( *h_i1 ) );
+        caseA->addSubformula( _formulaA );
+        result->addSubformula( caseA );
+        // not h_1 or f_2
+        Formula* caseB = new Formula( OR );
+        caseB->addSubformula( new Formula( NOT ) );
+        caseB->back()->addSubformula( new Formula( *h_i1 ) );
+        caseB->addSubformula( _formulaB );
+        result->addSubformula( caseB );
+        // not h_2 or not f_1
+        Formula* caseC = new Formula( OR );
+        caseC->addSubformula( new Formula( NOT ) );
+        caseC->back()->addSubformula( new Formula( *h_i2 ) );
+        caseC->addSubformula( _notFormulaA );
+        result->addSubformula( caseC );
+        // not h_2 or not f_2
+        Formula* caseD = new Formula( OR );
+        caseD->addSubformula( new Formula( NOT ) );
+        caseD->back()->addSubformula( new Formula( *h_i2 ) );
+        caseD->addSubformula( _notFormulaB );
+        result->addSubformula( caseD );
+        // h_1 or h_2
+        Formula* cases = new Formula( OR );
+        cases->addSubformula( h_i1 );
+        cases->addSubformula( h_i2 );
+        result->addSubformula( cases );    
+        if( _withNegation )
+        {
+            Formula* results = new Formula( AND );
+            // not h_1 and not h_2
+            Formula* negatedCases = new Formula( AND );
+            negatedCases->addSubformula( new Formula( NOT ) );
+            negatedCases->back()->addSubformula( new Formula( *h_i1 ) );
+            negatedCases->addSubformula( new Formula( NOT ) );
+            negatedCases->back()->addSubformula( new Formula( *h_i2 ) );
+            if( mPolarity )
+            {
+                results->addSubformula( result );
+                results->addSubformula( negatedCases );
+            }
+            else
+            {
+                results->addSubformula( negatedCases );
+                results->addSubformula( result );
+            }
+            return results;
+        }
+        else
+        {
+            return result;
+        }
+    }
+    
     /**
      *
      * @param _condition
@@ -429,31 +834,29 @@ namespace smtrat
      */
     Formula* Driver::mkIteInFormula( Formula* _condition, Formula* _then, Formula* _else )
     {
+        assert( _condition->getType() == smtrat::AND && _condition->size() == 2 );
+        assert( _condition->getType() == smtrat::AND && _condition->size() == 2 );
         Formula* result = new Formula( AND );
-        string auxBoolA = Formula::newAuxiliaryBooleanVariable();
-        string auxBoolB = Formula::newAuxiliaryBooleanVariable();
-        // Add: (iff auxBoolB _condition)
-        Formula* formulaIffA = new Formula( IFF );
-        formulaIffA->addSubformula( new Formula( auxBoolB ) );
-        formulaIffA->addSubformula( _condition );
-        result->addSubformula( formulaIffA );
-        // Add: (or (not auxBoolB) _then)
+        string auxBool = Formula::newAuxiliaryBooleanVariable();
+        // Add: (iff auxBool _condition)
+        Formula* notAuxBool = new Formula( NOT );
+        notAuxBool->addSubformula( new Formula( auxBool ) );
+        Formula* posCase = _condition->pruneFront();
+        Formula* negCase = _condition->pruneFront();
+        Formula* formulaIff = mkIff( new Formula( auxBool ), posCase, notAuxBool, negCase, false );
+        delete _condition;
+        result->addSubformula( formulaIff );
+        // Add: (or (not auxBool) _then)
         Formula* formulaNotB = new Formula( NOT );
-        formulaNotB->addSubformula( new Formula( auxBoolB ) );
+        formulaNotB->addSubformula( new Formula( auxBool ) );
         Formula* formulaOrB = new Formula( OR );
         formulaOrB->addSubformula( formulaNotB );
-        Formula* formulaIffB = new Formula( IFF );
-        formulaIffB->addSubformula( new Formula( auxBoolA ) );
-        formulaIffB->addSubformula( _then );
-        formulaOrB->addSubformula( formulaIffB );
+        formulaOrB->addSubformula( _then );
         result->addSubformula( formulaOrB );
-        // Add: (or auxBoolB _else)
+        // Add: (or auxBool _else)
         Formula* formulaOrC = new Formula( OR );
-        formulaOrC->addSubformula( new Formula( auxBoolB ) );
-        Formula* formulaIffC = new Formula( IFF );
-        formulaIffC->addSubformula( new Formula( auxBoolA ) );
-        formulaIffC->addSubformula( _else );
-        formulaOrC->addSubformula( formulaIffC );
+        formulaOrC->addSubformula( new Formula( auxBool ) );
+        formulaOrC->addSubformula( _else );
         result->addSubformula( formulaOrC );
         return result;
     }
@@ -474,23 +877,35 @@ namespace smtrat
         Formula* constraintA = mkConstraint( *lhs, _then, CR_EQ );
         Formula* constraintB = mkConstraint( *lhs, _else, CR_EQ );
         delete lhs;
+        Formula* notTmp = new Formula( NOT );
+        string dependencyBool = addBooleanVariable( _loc, "", true ); 
+        notTmp->addSubformula( new Formula( dependencyBool ) );
+        Formula* innerConstraintBinding = new Formula( AND );
         // Add to inner constraint bindings:  (or (not conditionBool) (= auxRealVar $4))
         Formula* formulaNot = new Formula( NOT );
         formulaNot->addSubformula( new Formula( conditionBool ) );
         Formula* formulaOrA = new Formula( OR );
         formulaOrA->addSubformula( formulaNot );
         formulaOrA->addSubformula( constraintA );
-        mInnerConstraintBindings.push_back( formulaOrA );
+        innerConstraintBinding->addSubformula( formulaOrA );
         // Add to inner constraint bindings:  (or conditionBool (= auxRealVar $5))
         Formula* formulaOrB = new Formula( OR );
         formulaOrB->addSubformula( new Formula( conditionBool ) );
         formulaOrB->addSubformula( constraintB );
-        mInnerConstraintBindings.push_back( formulaOrB );
+        innerConstraintBinding->addSubformula( formulaOrB );
         // Add to inner constraint bindings:  (iff conditionBool $3)
-        Formula* formulaIff = new Formula( IFF );
-        formulaIff->addSubformula( new Formula( conditionBool ) );
-        formulaIff->addSubformula( _condition );
-        mInnerConstraintBindings.push_back( formulaIff );
+        Formula* notAuxBool = new Formula( NOT );
+        notAuxBool->addSubformula( new Formula( conditionBool ) );
+        Formula* caseB = _condition->pruneFront();
+        Formula* caseBNeg = _condition->pruneFront();
+        delete _condition;
+        Formula* formulaIff = mkIff( new Formula( conditionBool ), caseB, notAuxBool, caseBNeg, false );
+        innerConstraintBinding->addSubformula( formulaIff );
+        Formula* result = new Formula( OR );
+        result->addSubformula( notTmp );
+        result->addSubformula( innerConstraintBinding );
+        mInnerConstraintBindings.push_back( result );
+        mTheoryIteBindings[auxRealVar->first] = dependencyBool;
         return new string( auxRealVar->first );
     }
 
