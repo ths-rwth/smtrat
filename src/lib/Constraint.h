@@ -48,9 +48,9 @@
 #include <sstream>
 #include <assert.h>
 #include <mutex>
-#include <ginacra/utilities.h>
-#include <ginacra/ginacra.h>
 #include "config.h"
+
+#include "carl/core/MultivariatePolynomial.h"
 
 namespace smtrat
 {

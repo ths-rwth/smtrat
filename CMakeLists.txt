@@ -94,9 +94,7 @@ set( libraries pthread )
 # GiNaC and GiNaCRA are necessary
 # TODO: add support for version number
 find_package( carl )
-find_package( GiNaC REQUIRED )
-find_package( GiNaCRA REQUIRED )
-set( libraries ${libraries} ${GINACRA_LIBRARY} ${GINAC_LIBRARY} )
+set( libraries ${libraries} ${carl_LIBRARY} )
 
 #notice that GiNacra might use log4cplus, but we cannot currently support that as Ginacra does not export this knowledge.
 include( FindCLN REQUIRED )

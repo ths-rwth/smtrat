@@ -11,7 +11,8 @@
 # Version: 2013-03-31                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-include_directories( ${GINACRA_INCLUDE_DIR} )
+include_directories( ${GINACRA_INCLUDE_DIR} ${carl_INCLUDE_DIR} )
+message(${carl_INCLUDE_DIR})
 if(ReallyNull_FOUND)
     include_directories( ${ReallyNull_INCLUDE_DIR} )
 endif()
@@ -130,7 +131,7 @@ if(${STATICLIB_SWITCH} STREQUAL "ON")
   set_target_properties( lib_${PROJECT_NAME} PROPERTIES LINK_SEARCH_END_STATIC TRUE )
   set_target_properties( lib_${PROJECT_NAME} PROPERTIES LINK_SEARCH_START_STATIC TRUE )
 endif()
-target_link_libraries( lib_${PROJECT_NAME} ${libraries} ) # libraries definied in top-level CMakeLists.txt
+target_link_libraries( lib_${PROJECT_NAME} carl ${libraries} ) # libraries definied in top-level CMakeLists.txt
 
 
 # Install destination and permissions for the library

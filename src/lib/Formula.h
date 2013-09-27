@@ -50,6 +50,7 @@ namespace smtrat
 
     class Formula
     {
+		using std::string;
         private:
 
             /**
