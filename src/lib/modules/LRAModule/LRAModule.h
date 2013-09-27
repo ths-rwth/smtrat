@@ -155,6 +155,7 @@ namespace smtrat
             bool gomory_cut();
             bool cuts_from_proofs();
             bool branch_and_bound();
+            bool assignmentCorrect() const;
     };
 
 }    // namespace smtrat

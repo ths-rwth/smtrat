@@ -2276,6 +2276,7 @@ namespace smtrat
         template<class T>
         void Tableau<T>::addColumns(unsigned columnA_index,unsigned columnB_index,T multiple)
         {            
+            cout << __func__ << "( " << columnA_index << ", " << columnB_index << ", " << multiple << " )" << endl;
             Iterator columnA_iterator = Iterator(mColumns.at(columnA_index).mStartEntry, mpEntries);
             Iterator columnB_iterator = Iterator(mColumns.at(columnB_index).mStartEntry, mpEntries);
                 
@@ -2540,6 +2541,7 @@ namespace smtrat
         return result;    
         }
         
+        #define LRA_DEBUG_HNF 
         /**
          * Calculate the Hermite normal form of the calling Tableau. 
          * 
@@ -2672,10 +2674,15 @@ namespace smtrat
                         }    
                     }  
                     T floor_value = T( cln::floor1( cln::the<cln::cl_RA>( elim_content.toCLN() / added_content.toCLN() ) ) );
-                    cout << elim_pos << endl;
-                    cout << added_pos << endl;
+                    cout << "floor_value = " << floor_value << endl;
+                    cout << "added_content = " << added_content << endl;
+                    cout << "elim_content = " << elim_content << endl;
+                    cout << "T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()) = " << T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()) << endl;
                     addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
+                    #ifdef LRA_DEBUG_HNF
+                    cout << "Add " << (added_pos+1) << ". column to " << (elim_pos+1) << ". column:" << endl;
                     print();
+                    #endif
                     number_of_entries = mRows.at(i).mSize; 
                     first_loop = false;
                     if(mod(( cln::the<cln::cl_RA>( elim_content.toCLN() )  ) , cln::the<cln::cl_RA>( added_content.toCLN() ) ) == 0)
