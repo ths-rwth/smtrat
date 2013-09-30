@@ -220,10 +220,10 @@ form:
 	|	OB xorOp form form CB         { dv.restoreTwoFormulaMode(); $$ = dv.mkFormula( smtrat::XOR, $3, $4 ); }
 	|	OB naryOp formlist CB         { $$ = dv.mkFormula( $2, *$3 ); delete $3; }
     |   OB let OB bindlist CB form CB { $$ = dv.appendBindings( *$4, $6 ); delete $4; dv.popVariableStack(); }
-    |   OB iteOp cond form form CB    { $$ = dv.mkIteInFormula( $3, $4, $5 ); dv.setPolarity( $2 ); dv.restoreTwoFormulaMode(); }
+    |   OB iteOp cond form form CB    { $$ = dv.mkIteInFormula( $3, $4, $5 ); dv.setPolarity( $2 ); }
 
 cond:
-        form { $$ = $1; dv.restoreTwoFormulaMode(); dv.setTwoFormulaMode( false ); }
+        form { $$ = $1; dv.restoreTwoFormulaMode(); }
 
 formlist:
 		form          { $$ = new vector< Formula* >( 1, $1 ); }
@@ -276,7 +276,7 @@ poly:
                                      $$ = new PolyVarsPair( ex( *num ), TheoryVarVec() ); delete num; }
     | 	NUM                        { $$ = new PolyVarsPair( ex( numeric( $1->c_str() ) ), TheoryVarVec() ); delete $1; }
     |  	polyOp                     { $$ = $1; }
-    |   OB iteOp cond poly poly CB { $$ = dv.mkPolynomial( yyloc, *dv.mkIteInExpr( yyloc, $3, *$4, *$5 ) ); dv.setPolarity( $2 ); dv.restoreTwoFormulaMode(); }
+    |   OB iteOp cond poly poly CB { $$ = dv.mkPolynomial( yyloc, *dv.mkIteInExpr( yyloc, $3, *$4, *$5 ) ); dv.setPolarity( $2 ); }
     
 iteOp:
 		ITE { $$ = dv.polarity(); dv.setPolarity( true ); dv.setTwoFormulaMode( true ); }
