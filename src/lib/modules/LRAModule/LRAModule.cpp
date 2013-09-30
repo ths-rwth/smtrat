@@ -409,7 +409,6 @@ namespace smtrat
                             #endif
                             CONSTRAINT_UNLOCK
                             assert( assignmentCorrect() );
-                            printRationalModel();
                             return foundAnswer( True );
                         }
                         // Otherwise, resolve the notequal-constraints (create the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
