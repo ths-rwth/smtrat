@@ -60,8 +60,7 @@ namespace smtrat
         mMinMonomeDegree( 0 ),
         mRelation( CR_EQ ),
         mLhs( 0 ),
-        mMultiRootLessLhs( 0 ),
-        mFactorization( 0 ),
+        mFactorization( Factorization( 1, Polynomial( 0 ) )  ),
         mpCoefficients( new Coefficients() ),
         mVariables(),
         mVarInfoMap()
@@ -69,7 +68,7 @@ namespace smtrat
         mFirstHash = mLhs.gethash();
     }
 
-    Constraint::Constraint( const GiNaC::ex& _lhs, const Constraint_Relation _cr, const symtab& _variables, unsigned _id ):
+    Constraint::Constraint( const Polynomial& _lhs, const Constraint_Relation _cr, const symtab& _variables, unsigned _id ):
         mID( _id ),
         mFirstHash( _lhs.gethash() ),
         mSecondHash( _cr ),
@@ -83,8 +82,7 @@ namespace smtrat
         mMinMonomeDegree( 0 ),
         mRelation( _cr ),
         mLhs( _lhs ),
-        mMultiRootLessLhs( 0 ),
-        mFactorization( 0 ),
+        mFactorization( Factorization( 1, _lhs ) ),
         mpCoefficients( new Coefficients() ),
         mVariables(),
         mVarInfoMap()
@@ -116,7 +114,6 @@ namespace smtrat
         mMinMonomeDegree( _constraint.mMinMonomeDegree ),
         mRelation( _constraint.relation() ),
         mLhs( _constraint.mLhs ),
-        mMultiRootLessLhs( _constraint.mMultiRootLessLhs ),
         mFactorization( _constraint.mFactorization ),
         mpCoefficients( new Coefficients( *_constraint.mpCoefficients ) ),
         mVariables( _constraint.variables() ),
@@ -286,14 +283,8 @@ namespace smtrat
      */
     unsigned Constraint::consistentWith( const GiNaCRA::evaldoubleintervalmap& _solutionInterval ) const
     {
-//        cout << *this << " consistent with" << endl;
-//        for( auto iter = _solutionInterval.begin(); iter != _solutionInterval.end(); ++iter )
-//        {
-//            cout << "   " << ex( iter->first ) << " in " << iter->second << endl;
-//        }
         if( variables().empty() )
         {
-//            cout << (evaluate( ex_to<numeric>( mLhs ), relation() ) ? 1 : 0) << endl;
             return evaluate( ex_to<numeric>( mLhs ), relation() ) ? 1 : 0;
         }
         else
@@ -301,7 +292,6 @@ namespace smtrat
             GiNaCRA::DoubleInterval solutionSpace = GiNaCRA::DoubleInterval::evaluate( mLhs, _solutionInterval );
             if( solutionSpace.empty() )
             {
-//                cout << 2 << endl;
                 return 2;
             }
             switch( relation() )
@@ -310,12 +300,10 @@ namespace smtrat
                 {
                     if( solutionSpace.diameter() == 0 && solutionSpace.left() == 0 )
                     {
-//                        cout << 1 << endl;
                         return 1;
                     }
                     else if( !solutionSpace.contains( 0 ) )
                     {
-//                        cout << 0 << endl;
                         return 0;
                     }
                     break;
@@ -324,7 +312,6 @@ namespace smtrat
                 {
                     if( !solutionSpace.contains( 0 ) )
                     {
-//                        cout << 1 << endl;
                         return 1;
                     }
                     break;
@@ -335,7 +322,6 @@ namespace smtrat
                     {
                         if( solutionSpace.right() < 0 )
                         {
-//                            cout << 1 << endl;
                             return 1;
                         }
                         else if( solutionSpace.right() == 0 && solutionSpace.rightType() == GiNaCRA::DoubleInterval::STRICT_BOUND ) return 1;
@@ -344,7 +330,6 @@ namespace smtrat
                     {
                         if( solutionSpace.left() >= 0 )
                         {
-//                            cout << 0 << endl;
                             return 0;
                         }
                     }
@@ -356,12 +341,10 @@ namespace smtrat
                     {
                         if( solutionSpace.left() > 0 )
                         {
-//                            cout << 1 << endl;
                             return 1;
                         }
                         else if( solutionSpace.left() == 0 && solutionSpace.leftType() == GiNaCRA::DoubleInterval::STRICT_BOUND )
                         {
-//                            cout << 1 << endl;
                             return 1;
                         }
                     }
@@ -369,7 +352,6 @@ namespace smtrat
                     {
                         if( solutionSpace.right() <= 0 )
                         {
-//                            cout << 0 << endl;
                             return 0;
                         }
                     }
@@ -381,7 +363,6 @@ namespace smtrat
                     {
                         if( solutionSpace.right() <= 0 )
                         {
-//                            cout << 1 << endl;
                             return 1;
                         }
                     }
@@ -389,12 +370,10 @@ namespace smtrat
                     {
                         if( solutionSpace.left() > 0 )
                         {
-//                            cout << 0 << endl;
                             return 0;
                         }
                         else if( solutionSpace.left() == 0 && solutionSpace.leftType() == GiNaCRA::DoubleInterval::STRICT_BOUND )
                         {
-//                            cout << 0 << endl;
                             return 0;
                         }
                     }
@@ -406,7 +385,6 @@ namespace smtrat
                     {
                         if( solutionSpace.left() >= 0 )
                         {
-//                            cout << 1 << endl;
                             return 1;
                         }
                     }
@@ -414,12 +392,10 @@ namespace smtrat
                     {
                         if( solutionSpace.right() < 0 )
                         {
-//                            cout << 0 << endl;
                             return 0;
                         }
                         else if( solutionSpace.right() == 0 && solutionSpace.rightType() == GiNaCRA::DoubleInterval::STRICT_BOUND )
                         {
-//                            cout << 0 << endl;
                             return 0;
                         }
                     }
@@ -431,7 +407,6 @@ namespace smtrat
                     return 0;
                 }
             }
-//            cout << 2 << endl;
             return 2;
         }
     }
@@ -447,7 +422,7 @@ namespace smtrat
      */
     unsigned Constraint::satisfiedBy( exmap& _assignment ) const
     {
-        ex tmp = mLhs.subs( _assignment );
+        Polynomial tmp = mLhs.subs( _assignment );
         if( is_exactly_a<numeric>( tmp ) )
         {
             return evaluate( ex_to<numeric>( tmp ), relation() ) ? 1 : 0;
@@ -498,7 +473,7 @@ namespace smtrat
      * @param _degree The according degree of the variable for which to calculate the coefficient.
      * @return The ith coefficient of the given variable, where i is the given degree.
      */
-    ex Constraint::coefficient( const ex& _variable, int _degree ) const
+    Polynomial Constraint::coefficient( const Polynomial& _variable, int _degree ) const
     {
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         VarDegree vd = VarDegree( _variable, _degree );
@@ -510,7 +485,7 @@ namespace smtrat
         else
         {
             assert( _degree > (signed) maxDegree( _variable ) );
-            return ex( 0 );
+            return Polynomial( 0 );
         }
         #else
         VarDegree vd = VarDegree( _variable, _degree );
@@ -521,7 +496,7 @@ namespace smtrat
         }
         else
         {
-            ex coeff = mpCoefficients->insert( pair< VarDegree, ex >( vd, mLhs.coeff( _variable, _degree ) ) ).first->second;
+            Polynomial coeff = mpCoefficients->insert( pair< VarDegree, Polynomial >( vd, mLhs.coeff( _variable, _degree ) ) ).first->second;
             return coeff;
         }
         #endif
@@ -535,7 +510,7 @@ namespace smtrat
         signed result = 0;
         for( symtab::const_iterator var = variables().begin(); var != variables().end(); ++var )
         {
-            signed d = mLhs.degree( ex( var->second ) );
+            signed d = mLhs.degree( Polynomial( var->second ) );
             if( d > result )
                 result = d;
         }
@@ -561,7 +536,7 @@ namespace smtrat
             // Find a1 and an and calculate max({a2, .. ,an-1}):
             for( auto summand = mLhs.begin(); summand != mLhs.end(); ++summand )
             {
-                const ex& summandEx = *summand;
+                const Polynomial& summandEx = *summand;
                 if( is_exactly_a<mul>( summandEx ) )
                 {
                     const ex& factor = *--summandEx.end();
@@ -1296,26 +1271,11 @@ namespace smtrat
      */
     void Constraint::init()
     {
-        if( mVariables.size() == 1 )
-        {
-            ex derivate            = mLhs.diff( ex_to<symbol>( mVariables.begin()->second ), 1 );
-            ex gcdOfLhsAndDerivate = gcd( mLhs, derivate );
-            normalize( gcdOfLhsAndDerivate );
-            ex quotient;
-            if( gcdOfLhsAndDerivate != 0 && divide( mLhs, gcdOfLhsAndDerivate, quotient ) )
-            {
-                mMultiRootLessLhs = quotient;
-            }
-        }
         #ifdef SMTRAT_STRAT_Factorization
         if( mNumMonomials <= MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION && mVariables.size() <= MAX_DIMENSION_FOR_FACTORIZATION
             && mMaxMonomeDegree <= MAX_DEGREE_FOR_FACTORIZATION && mMaxMonomeDegree >= MIN_DEGREE_FOR_FACTORIZATION )
         {
-            ex factorization = factor( mLhs );
-            if( is_exactly_a<mul>( factorization ) && !is_exactly_a<mul>( mLhs ) )
-            {
-                mFactorization = factorization;
-            }
+            mFactorization = factor( mLhs );
         }
         #endif
         #ifdef SMTRAT_STRAT_PARALLEL_MODE

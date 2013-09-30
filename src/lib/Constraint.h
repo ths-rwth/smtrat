@@ -39,8 +39,6 @@
 //#define VS_USE_GINAC_NORMAL
 
 
-#include <ginac/ginac.h>
-#include <ginac/flags.h>
 #include <vector>
 #include <iostream>
 #include <cstring>
@@ -49,7 +47,6 @@
 #include <assert.h>
 #include <mutex>
 #include "config.h"
-
 #include "carl/core/MultivariatePolynomial.h"
 
 namespace smtrat
@@ -58,6 +55,10 @@ namespace smtrat
     // Type and object definitions
     //
 
+    typedef cln::cl_RA Rational;
+    typedef carl::MultivariatePolynomial<Rational> Polynomial;
+    typedef std::vector<Polynomial> Factorization;
+    
     enum Constraint_Relation
     {
         CR_EQ = 0, CR_NEQ = 1, CR_LESS = 2, CR_GREATER = 3, CR_LEQ = 4, CR_GEQ = 5
@@ -68,22 +69,9 @@ namespace smtrat
     bool constraintRelationIsStrict( Constraint_Relation rel );
     std::string relationToString( const Constraint_Relation rel );
 
-    struct strCmp
-    {
-        bool operator ()( const std::string& _stringA, const std::string& _stringB ) const
-        {
-            return _stringA.compare( _stringB ) < 0;
-        }
-    };
-
-    struct VarInfo
-    {
-        unsigned maxDegree;
-        unsigned minDegree;
-        unsigned occurences;
-    };
-
-    typedef std::map< const GiNaC::ex, VarInfo, GiNaC::ex_is_less > VarInfoMap;
+    typedef carl::VariablesInformation VarInfoMap;
+    
+    typedef std::set<carl::Variable> Variables;
 
     typedef std::pair< const GiNaC::ex, signed > VarDegree;
 
@@ -130,13 +118,11 @@ namespace smtrat
             unsigned             mMaxMonomeDegree;
             unsigned             mMinMonomeDegree;
             Constraint_Relation  mRelation;
-            GiNaC::ex            mLhs;
-            GiNaC::ex            mMultiRootLessLhs;
-            GiNaC::ex            mFactorization;
+            Polynomial           mLhs;
+            Factorization        mFactorization;
             Coefficients*        mpCoefficients;
             mutable std::mutex   mMutexCoefficients;
-            GiNaC::numeric       mConstantPart;
-            GiNaC::symtab        mVariables;
+            Variables            mVariables;
             VarInfoMap           mVarInfoMap;
 
         public:
@@ -147,7 +133,7 @@ namespace smtrat
              * Constructors:
              */
             Constraint();
-            Constraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab&, unsigned = 0 );
+            Constraint( const Polynomial&, const Constraint_Relation, unsigned = 0 );
             Constraint( const Constraint&, bool = false );
 
             /*
@@ -158,12 +144,12 @@ namespace smtrat
             /*
              * Methods:
              */
-            const GiNaC::ex& lhs() const
+            const Polynomial& lhs() const
             {
                 return mLhs;
             }
 
-            const GiNaC::symtab& variables() const
+            const Variables& variables() const
             {
                 return mVariables;
             }
@@ -193,21 +179,14 @@ namespace smtrat
                 return mSecondHash;
             }
 
-            const GiNaC::ex& multiRootLessLhs() const
-            {
-                if( mMultiRootLessLhs != 0 ) return mMultiRootLessLhs;
-                else return mLhs;
-            }
-
             bool hasFactorization() const
             {
-                return (mFactorization != 0);
+                return (mFactorization.size() > 1);
             }
 
-            const GiNaC::ex& factorization() const
+            const Factorization& factorization() const
             {
-                if( mFactorization != 0 ) return mFactorization;
-                else return mLhs;
+                return mFactorization;
             }
 
             bool containsIntegerValuedVariable() const
@@ -235,28 +214,17 @@ namespace smtrat
                 return mMaxMonomeDegree;
             }
 
-            const GiNaC::numeric& constantPart() const
+            const Rational& constantPart() const
             {
                 return mConstantPart;
             }
 
-            static void normalize( GiNaC::ex& _exp )
-            {
-                _exp = _exp.expand();
-                GiNaC::numeric commonDenom = GiNaC::mdenom( _exp );
-                if( commonDenom != 1 )
-                {
-                    _exp *= commonDenom;
-                    _exp = _exp.expand();
-                }
-            }
-
-            unsigned maxDegree( const ex& _variable ) const
+            unsigned maxDegree( const Variable& _variable ) const
             {
                 VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
                 if( varInfo != mVarInfoMap.end() )
                 {
-                    return varInfo->second.maxDegree;
+                    return varInfo->getVarInfo()->maxDegree;
                 }
                 else
                 {
@@ -264,12 +232,12 @@ namespace smtrat
                 }
             }
 
-            unsigned minDegree( const ex& _variable ) const
+            unsigned minDegree( const Variable& _variable ) const
             {
                 VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
                 if( varInfo != mVarInfoMap.end() )
                 {
-                    return varInfo->second.minDegree;
+                    return varInfo->getVarInfo()->minDegree;
                 }
                 else
                 {
@@ -277,12 +245,12 @@ namespace smtrat
                 }
             }
 
-            unsigned occurences( const ex& _variable ) const
+            unsigned occurences( const Variable& _variable ) const
             {
                 VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
                 if( varInfo != mVarInfoMap.end() )
                 {
-                    return varInfo->second.occurences;
+                    return varInfo->getVarInfo()->occurence;
                 }
                 else
                 {
