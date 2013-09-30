@@ -761,7 +761,8 @@ namespace smtrat
                 if( value( add_tmp[1] ) != l_Undef )
                 {
                     int lev = level( add_tmp );
-                    cancelUntil( lev > 0 ? lev-1 : 0 );
+                    cancelUntil( lev );
+//                    cancelUntil( lev > 0 ? lev-1 : 0 );
                 }
             }
             attachClause( cr );
@@ -1089,9 +1090,9 @@ FindSecond:
                         cout << "### " << endl;
                         cout << "### Check the constraints: ";
                     }
+                    ++numberOfTheoryCalls;
                     #endif
                     #ifdef SATMODULE_WITH_CALL_NUMBER
-                    ++numberOfTheoryCalls;
                     #ifdef DEBUG_SATMODULE
                     if( numberOfTheoryCalls >= debugFromCall-1 )
                     {
@@ -1150,6 +1151,12 @@ FindSecond:
                         }
                         case Unknown:
                         {
+                            #ifdef DEBUG_SATMODULE
+                            if( numberOfTheoryCalls >= debugFromCall )
+                            {
+                                cout << "### Result: Unknown!" << endl;
+                            }
+                            #endif
                             #ifdef SAT_MODULE_THEORY_PROPAGATION
                             //Theory propagation.
                             deductionsLearned = processLemmas();
@@ -1871,6 +1878,7 @@ NextClause:
                 #endif
                 #ifdef DEBUG_SATMODULE
                 (*backend)->printInfeasibleSubsets();
+                (*backend)->printReceivedFormula();
                 #endif
                 // Add the according literals to the conflict clause.
                 bool betterConflict = false;
@@ -1917,6 +1925,7 @@ NextClause:
         if( conflictClause != CRef_Undef && lowestLevel >= decisionLevel()+1 )
             Module::storeAssumptionsToCheck( *mpManager );
         assert( conflictClause == CRef_Undef || lowestLevel < decisionLevel()+1 );
+        cancelUntil(lowestLevel);
         return conflictClause;
     }
 

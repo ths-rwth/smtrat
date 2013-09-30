@@ -36,7 +36,7 @@
 using namespace GiNaC;
 using namespace std;
 
-#define ICPMODULE_DEBUG
+//#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
 
 
@@ -269,7 +269,12 @@ namespace smtrat
                     #endif
                     #endif
                     // try to insert new icpVariable - if already existing, only a candidate is added, else a new icpVariable is created.
-                    icp::IcpVariable* icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), !( (*candidateIt)->lhs() == ex_to<symbol>((*varIt).second) ) , *candidateIt);
+                    bool original = !( (*candidateIt)->lhs() == ex_to<symbol>((*varIt).second) );
+                    icp::IcpVariable* icpVar = NULL;
+                    if( original )
+                        icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), original , *candidateIt, icp::getOriginalLraVar((*varIt).second,mLRA));
+                    else
+                        icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), original , *candidateIt);
                     std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*varIt).second).get_name(), icpVar));
                     if (!added.second)
                     {
@@ -312,7 +317,7 @@ namespace smtrat
         else //if ( (*_formula)->constraint().variables().size() > 1 )
         {
             const Constraint* replacementPtr = NULL;
-            // find replacement
+            // lookup corresponding linearization - in case the constraint is already linear, mReplacements holds the constraint as the linearized one
             for ( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
             {
                 if ( (*replacementIt).second == (*_formula)->pConstraint() )
@@ -325,7 +330,7 @@ namespace smtrat
             const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(replacementPtr);
             assert(slackvariable != NULL);
 
-            //look up if contraction candidates already exist - if, then add origins
+            // lookup if contraction candidates already exist - if so, add origins
             bool alreadyExisting = (mLinearConstraints.find(slackvariable) != mLinearConstraints.end());
             if (alreadyExisting)
             {
@@ -390,24 +395,40 @@ namespace smtrat
                    
                     // try to add icpVariable - if already existing, only add the created candidate, else create new icpVariable
                     const std::string name = (*variableIt).first;
-                    icp::IcpVariable* icpVar = new icp::IcpVariable(ex_to<symbol>((*variableIt).second), ( name != newReal.first ), newCandidate, slackvariable );
+                    bool original = name != newReal.first;
+                    icp::IcpVariable* icpVar = NULL;
+                    if( original )
+                        icpVar = new icp::IcpVariable(ex_to<symbol>((*variableIt).second), original, newCandidate, icp::getOriginalLraVar((*variableIt).second,mLRA) );
+                    else
+                        icpVar = new icp::IcpVariable(ex_to<symbol>((*variableIt).second), original, newCandidate, slackvariable );
                     std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*variableIt).second).get_name(), icpVar));
                     if(!added.second)
                     {
                         (*added.first).second->addCandidate(newCandidate);
-                        (*added.first).second->setLraVar(slackvariable);
+                        if ((*added.first).second->isOriginal())
+                                (*added.first).second->setLraVar(icp::getOriginalLraVar((*variableIt).second,mLRA));
+                            else
+                                (*added.first).second->setLraVar(slackvariable);
                         delete icpVar;
                     }
                    
                     // update affectedCandidates
                     for ( auto varIt = variables.begin(); varIt != variables.end(); ++varIt )
                     {
-                        icp::IcpVariable* icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), (*_formula)->pConstraint()->hasVariable((*varIt).first), newCandidate, slackvariable );
+                        original = (*_formula)->pConstraint()->hasVariable((*varIt).first);
+                        icp::IcpVariable* icpVar = NULL;
+                        if( original )
+                            icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), original, newCandidate, icp::getOriginalLraVar((*varIt).second,mLRA) );
+                        else
+                            icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), original, newCandidate, slackvariable );      
                         std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*varIt).second).get_name(), icpVar));
                         if(!added.second)
                         {
                             (*added.first).second->addCandidate(newCandidate);
-                            (*added.first).second->setLraVar(slackvariable);
+                            if ((*added.first).second->isOriginal())
+                                (*added.first).second->setLraVar(icp::getOriginalLraVar((*varIt).second,mLRA));
+                            else
+                                (*added.first).second->setLraVar(slackvariable);
                             delete icpVar;
                         }
                         #ifdef ICPMODULE_DEBUG
@@ -848,25 +869,7 @@ namespace smtrat
                     assert(mVariables.count((*variablesIt).first) > 0);
                     icpVariables.insert( (*(mVariables.find((*variablesIt).first))).second );
                 }
-                
                 std::set<const Formula*> box = variableReasonHull(icpVariables);
-                
-//                std::set<const Formula*> box;
-//                for( auto variableIt = mVariables.begin(); variableIt != mVariables.end(); ++variableIt )
-//                {
-//                    if( (*variableIt).second->isOriginal() )
-//                    {
-//                        std::set<const Formula*> tmp = (*variableIt).second->lraVar()->getDefiningOrigins();
-//                        box.insert(tmp.begin(),tmp.end());
-//                        cout << "Get origins." << endl;
-//                        for(auto tmpIt = tmp.begin(); tmpIt != tmp.end(); ++tmpIt)
-//                        {
-//                            (*tmpIt)->print();
-//                        }
-//                    }
-//                }
-                
-                
                 mBoxStorage.push(box);
 //                cout << "ADD TO BOX!" << endl;
                 #endif
@@ -1450,7 +1453,7 @@ namespace smtrat
                     if( is_exactly_a<mul>(*summand) )
                     {
                         numeric coefficient = 1;
-                        if( is_exactly_a<numeric>( *(--(*summand).end())) )
+                        if( is_exactly_a<numeric>( *(--(*summand).end()) ) )
                             coefficient = ex_to<numeric>( *(--(*summand).end()) );
 
 //                        cout << "Coefficient: " << coefficient << endl;
@@ -2041,7 +2044,7 @@ namespace smtrat
         }
         if ( found )
         {
-            cout << "Attempt to split in " << variable << endl;
+//            cout << "Attempt to split in " << variable << endl;
             #ifdef RAISESPLITTOSATSOLVER
             // Create deductions
             Formula* deduction = new Formula( AND );
@@ -2049,8 +2052,8 @@ namespace smtrat
             // create prequesites: ((B' AND CCs) -> h_b)
             Formula* contraction = new Formula( OR );
             ConstraintSet contractions = mHistoryActual->appliedConstraints();
-            cout << "Size applied constraints: " << contractions.size() << endl;
-            cout << "Size of Box-Storage: " << mBoxStorage.size() << endl;
+//            cout << "Size applied constraints: " << contractions.size() << endl;
+//            cout << "Size of Box-Storage: " << mBoxStorage.size() << endl;
             assert( mBoxStorage.size() == 1 );
             std::set<const Formula*> box = mBoxStorage.front();
             mBoxStorage.pop();
@@ -2108,7 +2111,7 @@ namespace smtrat
                 }
             }
 
-            // create split: (not h_b OR x < b OR x>= b)
+            // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             numeric bound  = GiNaC::rationalize( mIntervals.at(variable).midpoint() );
             GiNaC::ex BoundEx = variable - bound;
             GiNaC::symtab variables;
@@ -2116,20 +2119,32 @@ namespace smtrat
             const Constraint* left = Formula::newConstraint(BoundEx, CR_LESS, variables);
             const Constraint* right = Formula::newConstraint(BoundEx, CR_GEQ, variables);
             Formula* split = new Formula( OR );
+            
             Formula* less = new Formula( left );
+            Formula* less2 = new Formula( *less );
             Formula* geq = new Formula( right );
+            Formula* geq2 = new Formula( *geq );
             Formula* nless = new Formula( NOT );
             Formula* ngeq = new Formula( NOT );
-            nless->addSubformula(less);
-            ngeq->addSubformula(geq);
+            nless->addSubformula(less2);
+            ngeq->addSubformula(geq2);
+            
+            Formula* xorLeft = new Formula( AND );
+            xorLeft->addSubformula(less);
+            xorLeft->addSubformula(ngeq);
+            
+            Formula* xorRight = new Formula( AND );
+            xorRight->addSubformula(nless);
+            xorRight->addSubformula(geq);
+            
             Formula* negContraction = new Formula( NOT );
             negContraction->addSubformula(contractedBoxCopy2);
             split->addSubformula(negContraction);
-            split->addSubformula( nless );
-            split->addSubformula( ngeq );
+            split->addSubformula( xorLeft );
+            split->addSubformula( xorRight );
             deduction->addSubformula( split );
 
-            deduction->print();
+//            deduction->print();
             
             addDeduction( deduction );
             result.first = true;
@@ -2814,8 +2829,6 @@ namespace smtrat
         assert(mHistoryActual->isRight() && !mHistoryActual->isLeft());
         if (mHistoryActual->parent() != NULL && mHistoryActual->isRight() )
             mHistoryActual->parent()->removeLeftChild();
-        
-        mHistoryActual->print();
     }
     
     
@@ -2979,7 +2992,7 @@ namespace smtrat
             std::set<const Formula*> definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
             for( auto formulaIt = definingOrigins.begin(); formulaIt != definingOrigins.end(); ++formulaIt )
             {
-                cout << "Defining origin: " << **formulaIt << " FOR " << *(*variableIt) << endl;
+//                cout << "Defining origin: " << **formulaIt << " FOR " << *(*variableIt) << endl;
                 bool hasAdditionalVariables = false;
                 for( GiNaC::symtab::const_iterator varIt = mpReceivedFormula->realValuedVars().begin(); varIt != mpReceivedFormula->realValuedVars().end(); ++varIt )
                 {
@@ -2991,19 +3004,19 @@ namespace smtrat
                 }
                 if( hasAdditionalVariables)
                 {
-                    cout << "Addidional variables." << endl;
+//                    cout << "Addidional variables." << endl;
                     for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
                     {
                         if( icp::isBoundIn((*variableIt)->var(), (*receivedFormulaIt)->pConstraint()) )
                         {
                             reasons.insert(*receivedFormulaIt);
-                            cout << "Also add: " << **receivedFormulaIt << endl;
+//                            cout << "Also add: " << **receivedFormulaIt << endl;
                         }
                     }
                 }
                 else
                 {
-                    cout << "No additional variables." << endl;
+//                    cout << "No additional variables." << endl;
                     for( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
                     {
                         if( (*replacementIt).first == (*formulaIt)->pConstraint() )
@@ -3118,7 +3131,6 @@ namespace smtrat
         if( _deduction->getType() == REALCONSTRAINT )
         {
             ex lhs = _deduction->constraint().lhs();
-            cout << "Transform: " << _deduction->constraint() << endl;
             GiNaC::symtab variables = _deduction->constraint().variables();
             GiNaC::symtab newVariables;
             // create symtab for variables for the new constraint
@@ -3141,10 +3153,8 @@ namespace smtrat
                     newVariables[(*symbolIt).first] = (*symbolIt).second;
             }
             lhs = lhs.subs(mSubstitutions);
-            cout << "LHS after substitution: " << lhs << endl;
             const Constraint* constraint = Formula::newConstraint(lhs, _deduction->constraint().relation(), newVariables);
             // TODO
-            cout << *constraint << endl;
             Formula* newRealDeduction = new Formula(constraint);
             mCreatedDeductions.insert(newRealDeduction);
             return newRealDeduction;

@@ -5,6 +5,8 @@
  * Created on June 19, 2013, 4:06 PM
  */
 
+#include <map>
+
 #include "utils.h"
 
 using namespace GiNaC;
@@ -201,6 +203,18 @@ namespace smtrat
                     return true;
             }
             return false;
+        }
+        
+        const smtrat::lra::Variable<smtrat::lra::Numeric>* getOriginalLraVar ( const ex& _var, LRAModule& _lra )
+        {
+            LRAModule::ExVariableMap originalVars = _lra.originalVariables();
+            const ex* tmp = &_var;
+            LRAModule::ExVariableMap::iterator target = originalVars.find(tmp);
+            assert(target != originalVars.end());
+            if( target != originalVars.end() )
+                return (*target).second;
+            else
+                return NULL;
         }
     }
 }

@@ -252,10 +252,8 @@ namespace smtrat
                     ConstraintSet appliedConstraints;
                     for( std::set<const ContractionCandidate*>::iterator candidateIt = mAppliedContractions.begin(); candidateIt != mAppliedContractions.end(); ++candidateIt )
                     {
-                        cout << "Size: " << (*candidateIt)->origin().size() << endl;
                         for( std::set<const Formula*,ContractionCandidate::originComp>::iterator originIt = (*candidateIt)->origin().begin(); originIt != (*candidateIt)->origin().end(); ++originIt )
                         {
-                            cout << (*originIt)->constraint() << endl;
                             appliedConstraints.insert((*originIt)->pConstraint());
                         }
                     }
