@@ -843,7 +843,7 @@ namespace smtrat
         notAuxBool->addSubformula( new Formula( auxBool ) );
         Formula* posCase = _condition->pruneFront();
         Formula* negCase = _condition->pruneFront();
-        Formula* formulaIff = mkIff( new Formula( auxBool ), posCase, notAuxBool, negCase, false );
+        Formula* formulaIff = mkIff( new Formula( auxBool ), posCase, notAuxBool, negCase, mTwoFormulaMode );
         delete _condition;
         result->addSubformula( formulaIff );
         // Add: (or (not auxBool) _then)
@@ -858,7 +858,38 @@ namespace smtrat
         formulaOrC->addSubformula( new Formula( auxBool ) );
         formulaOrC->addSubformula( _else );
         result->addSubformula( formulaOrC );
-        return result;
+        if( mTwoFormulaMode )
+        {
+            Formula* results = new Formula( AND );
+            Formula* resultB = new Formula( AND );
+            // Add: (or (not auxBool) _then)
+            Formula* formulaNotBB = new Formula( NOT );
+            formulaNotBB->addSubformula( new Formula( auxBool ) );
+            Formula* formulaOrBB = new Formula( OR );
+            formulaOrBB->addSubformula( formulaNotBB );
+            formulaOrBB->addSubformula( new Formula( *_then ) );
+            resultB->addSubformula( formulaOrBB );
+            // Add: (or auxBool _else)
+            Formula* formulaOrBC = new Formula( OR );
+            formulaOrBC->addSubformula( new Formula( auxBool ) );
+            formulaOrBC->addSubformula( new Formula( *_else ) );
+            resultB->addSubformula( formulaOrBC );
+            if( mPolarity )
+            {
+                results->addSubformula( result );
+                results->addSubformula( resultB );
+            }
+            else
+            {
+                results->addSubformula( resultB );
+                results->addSubformula( result );
+            }
+            return results;
+        }
+        else
+        {
+            return result;
+        }
     }
 
     /**
@@ -871,6 +902,7 @@ namespace smtrat
      */
     string* Driver::mkIteInExpr( const class location& _loc, Formula* _condition, ExVarsPair& _then, ExVarsPair& _else )
     {
+        setTwoFormulaMode( false );
         TheoryVarMap::const_iterator auxRealVar = addTheoryVariable( _loc, "Real", "", true );
         string conditionBool = addBooleanVariable( _loc, "", true );
         ExVarsPair* lhs = mkPolynomial( _loc, auxRealVar );
@@ -906,6 +938,7 @@ namespace smtrat
         result->addSubformula( innerConstraintBinding );
         mInnerConstraintBindings.push_back( result );
         mTheoryIteBindings[auxRealVar->first] = dependencyBool;
+        restoreTwoFormulaMode();
         return new string( auxRealVar->first );
     }
 
