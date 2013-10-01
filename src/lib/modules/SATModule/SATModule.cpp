@@ -762,9 +762,10 @@ namespace smtrat
             arrangeForWatches( cr );
             if( _type == DEDUCTED_CLAUSE )
             {
-                if( value( add_tmp[1] ) != l_Undef )
+                Clause& c = ca[cr];
+                if( value( c[1] ) != l_Undef )
                 {
-                    int lev = level( var( add_tmp[1] ) );
+                    int lev = level( var( c[1] ) );
                     cancelUntil( lev );
                 }
             }
@@ -2221,7 +2222,7 @@ NextClause:
      * @param _out
      * @param _init
      */
-    void SATModule::printClause( const vec<Lit>& _clause, ostream& _out, const string& _init ) const
+    void SATModule::printClause( const vec<Lit>& _clause, bool _withAssignment, ostream& _out, const string& _init ) const
     {
         cout << _init;
         for( int pos = 0; pos < _clause.size(); ++pos )
@@ -2232,6 +2233,8 @@ NextClause:
                 cout << "-";
             }
             cout << var( _clause[pos] );
+            if( _withAssignment )
+                cout << "(" << (value( _clause[pos] ) == l_True ? "true" : (value( _clause[pos] ) == l_False ? "false" : "undef")) << "@" << level( var( _clause[pos] ) ) << ")";
         }
         cout << endl;
     }
