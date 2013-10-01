@@ -763,7 +763,7 @@ namespace smtrat
             if( _type == DEDUCTED_CLAUSE )
             {
                 Clause& c = ca[cr];
-                if( value( c[1] ) != l_Undef )
+                if( value( c[1] ) == l_False )
                 {
                     int lev = level( var( c[1] ) );
                     cancelUntil( lev );
@@ -1003,8 +1003,8 @@ FindSecond:
             qhead = trail_lim[level];
             trail.shrink( trail.size() - trail_lim[level] );
             trail_lim.shrink( trail_lim.size() - level );
+            ok = true;
         }
-        ok = true;
     }
 
     //=================================================================================================
@@ -1240,7 +1240,7 @@ FindSecond:
                 {
                     if( madeTheoryCall )
                     {
-                        printClause( learnt_clause, cout, "### Asserting clause: " );
+                        printClause( learnt_clause, true, cout, "### Asserting clause: " );
                         cout << "### Backtrack to level " << backtrack_level << endl;
                         cout << "###" << endl;
                     }
@@ -1881,7 +1881,6 @@ NextClause:
                 #endif
                 #ifdef DEBUG_SATMODULE
                 (*backend)->printInfeasibleSubsets();
-                (*backend)->printReceivedFormula();
                 #endif
                 // Add the according literals to the conflict clause.
                 bool betterConflict = false;
