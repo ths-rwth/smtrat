@@ -204,7 +204,12 @@ namespace smtrat
         {
             if( iter->second != CRef_Undef )
             {
-                cancelUntil( level( iter->second ) );
+                Clause& c = ca[iter->second];
+                if( value( c[1] ) != l_Undef )
+                {
+                    int lev = level( var( c[1] ) );
+                    cancelUntil( lev );
+                }
                 removeClause( iter->second );
             }
         }
@@ -731,7 +736,6 @@ namespace smtrat
             if( value( add_tmp[0] ) == l_Undef )
             {
                 uncheckedEnqueue( add_tmp[0] );
-//                ok = ok && (propagate() == CRef_Undef);
             }
             else
             {
@@ -760,9 +764,8 @@ namespace smtrat
             {
                 if( value( add_tmp[1] ) != l_Undef )
                 {
-                    int lev = level( add_tmp );
+                    int lev = level( var( add_tmp[1] ) );
                     cancelUntil( lev );
-//                    cancelUntil( lev > 0 ? lev-1 : 0 );
                 }
             }
             attachClause( cr );
@@ -773,7 +776,6 @@ namespace smtrat
                 if( value( c[0] ) == l_Undef && value( c[1] ) == l_False )
                 {
                     uncheckedEnqueue( c[0], cr );
-//                    ok = ok && (propagate() == CRef_Undef);
                 }
             }
         }
