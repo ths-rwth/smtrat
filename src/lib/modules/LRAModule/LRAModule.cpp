@@ -1564,7 +1564,7 @@ namespace smtrat
                 {
                     if(dc_Tableau.columns().at(j).mName->position() == *pos )
                     {                                                                                    
-                        assert( pos != non_basic_vars_positions.end() );
+                        //assert( pos != non_basic_vars_positions.end() );
                         non_basic_vars.push_back( dc_Tableau.columns().at(j).mName );
                         ++pos;                                            
                     }
@@ -1608,9 +1608,8 @@ namespace smtrat
                 vector<lra::Numeric> coefficients2 = vector<lra::Numeric>();
                 vector<bool> non_basics_proof = vector<bool>();
                 vector< lra::Variable<lra::Numeric>* > non_basic_vars2 = vector< lra::Variable<lra::Numeric>* >();
-                lra::Numeric upper_bound;
-                lra::Numeric lower_bound;
-                creatable = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, lcm_rows.at(i), coefficients2, non_basics_proof, cut, diagonals, dc_positions, upper_bound, lower_bound );
+                Bound<Numeric>* upper_lower_bound;
+                creatable = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, lcm_rows.at(i), coefficients2, non_basics_proof, cut, diagonals, dc_positions, upper_lower_bound );
                 ex* pcut = new ex(cut);
                 #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                 cout << "Proof of unsatisfiability:  " << *pcut << " = 0" << endl;
@@ -1632,7 +1631,7 @@ namespace smtrat
                     mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
                     #else
                     auto var = mTableau.newBasicVariable( pcut, non_basic_vars2, coefficients2 );
-                    cout << "After adding proof for unsatisfiability:" << endl;
+                    cout << "After adding proof of unsatisfiability:" << endl;
                     var->print();
                     var->printAllBounds();
                     mTableau.print();

@@ -425,7 +425,7 @@ namespace smtrat
                 T Scalar_Product( Tableau<T>&, Tableau<T>&, unsigned, unsigned, T, std::vector<unsigned>&, std::vector<unsigned>& );
                 void calculate_hermite_normalform( std::vector<unsigned>& );
                 void invert_HNF_Matrix( std::vector<unsigned> );
-                bool create_cut_from_proof( Tableau<T>&, Tableau<T>&, unsigned&, T&, std::vector<T>&, std::vector<bool>&, ex&, std::vector<unsigned>&, std::vector<unsigned>&, T&, T& );
+                bool create_cut_from_proof( Tableau<T>&, Tableau<T>&, unsigned&, T&, std::vector<T>&, std::vector<bool>&, ex&, std::vector<unsigned>&, std::vector<unsigned>&, Bound<T>*&);
                 #endif
                 #ifdef LRA_GOMORY_CUTS
                 const smtrat::Constraint* gomoryCut( const T&, unsigned, std::vector<const smtrat::Constraint*>& );
@@ -2254,7 +2254,6 @@ namespace smtrat
             Iterator column_iterator = Iterator(mColumns.at(column_index).mStartEntry, mpEntries);   
             while(true)
             {
-                const T content = (*mpEntries)[column_iterator.entryID()].content();
                 (*mpEntries)[column_iterator.entryID()].rContent() = (-1)*(((*mpEntries)[column_iterator.entryID()].rContent()).toGinacNumeric());
                 if(!column_iterator.columnBegin())
                 {
@@ -2678,7 +2677,7 @@ namespace smtrat
                     cout << "added_content = " << added_content << endl;
                     cout << "elim_content = " << elim_content << endl;
                     cout << "T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()) = " << T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()) << endl;
-                    addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()));
+                    addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()));
                     #ifdef LRA_DEBUG_HNF
                     cout << "Add " << (added_pos+1) << ". column to " << (elim_pos+1) << ". column:" << endl;
                     print();
@@ -2710,7 +2709,6 @@ namespace smtrat
                              elim_pos = added_pos;
                          }         
                     }
-                elim_content += T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric());        
                 }
                 if(first_loop)
                 {
@@ -2839,7 +2837,7 @@ namespace smtrat
          *         false,   otherwise   
          */        
         template<class T>
-        bool Tableau<T>::create_cut_from_proof(Tableau<T>& Inverted_Tableau, Tableau<T>& DC_Tableau, unsigned& row_index, T& lcm,std::vector<T>& coefficients,std::vector<bool>& non_basics_proof,ex& cut,std::vector<unsigned>& diagonals,std::vector<unsigned>& dc_positions, T& upper, T& lower)
+        bool Tableau<T>::create_cut_from_proof(Tableau<T>& Inverted_Tableau, Tableau<T>& DC_Tableau, unsigned& row_index, T& lcm,std::vector<T>& coefficients,std::vector<bool>& non_basics_proof,ex& cut,std::vector<unsigned>& diagonals,std::vector<unsigned>& dc_positions, Bound<T>*& upper_lower)
         {
             Value<T> result = T(0);
             Iterator row_iterator = Iterator(mRows.at(row_index).mStartEntry,mpEntries); 
