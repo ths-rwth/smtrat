@@ -33,9 +33,9 @@
 //#define ICP_BOXLOG
 #define BOXMANAGEMENT
 #define RAISESPLITTOSATSOLVER
-//#ifdef SMTRAT_DEVOPTION_Validation
-//#define SMTRAT_DEVOPTION_VALIDATION_ICP
-//#endif
+#ifdef SMTRAT_DEVOPTION_Validation
+#define SMTRAT_DEVOPTION_VALIDATION_ICP
+#endif
 
 
 #include "../../Module.h"
