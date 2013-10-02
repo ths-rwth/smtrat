@@ -237,6 +237,7 @@ namespace smtrat
             boundInfo->updated = 0;
             boundInfo->position = _position;
             boundInfo->neqRepresentation = NULL;
+            boundInfo->exists = false;
             const Bound<T>* newBound = new Bound<T>( _val, this, Bound<T>::UPPER, _constraint, boundInfo, _deduced );
             std::pair<class Bound<T>::BoundSet::iterator, bool> result = mUpperbounds.insert( newBound );
             if( !result.second )
@@ -248,17 +249,22 @@ namespace smtrat
             {
                 const Bound<T>* nextStrongerBound = NULL;
                 const Bound<T>* nextWeakerBound = NULL;
-                if( result.first != mUpperbounds.begin() )
+                auto iter = result.first;
+                while( iter != mUpperbounds.begin() )
                 {
-                    nextStrongerBound = *(--result.first);
-                    ++result.first;
+                    --iter;
+                    if( (*iter)->pInfo()->exists )
+                    {
+                        nextStrongerBound = *iter;
+                        break;
+                    }
                 }
                 if( result.first != mUpperbounds.end() )
                 {
                     ++result.first;
                     while( result.first != mUpperbounds.end() )
                     {
-                        if( (*result.first)->type() != Bound<T>::EQUAL )
+                        if( (*result.first)->pInfo()->exists && (*result.first)->type() != Bound<T>::EQUAL )
                         {
                             nextWeakerBound = *result.first;
                             break;
@@ -293,16 +299,21 @@ namespace smtrat
             {
                 const Bound<T>* nextStrongerBound = NULL;
                 const Bound<T>* nextWeakerBound = NULL;
-                ++result.first;
-                if( result.first != mLowerbounds.end() )
+                auto iter = result.first;
+                ++iter;
+                while( iter != mLowerbounds.end() )
                 {
-                    nextStrongerBound = *result.first;
+                    if( (*iter)->pInfo()->exists )
+                    {
+                        nextStrongerBound = *iter;
+                        break;
+                    }
+                    ++iter;
                 }
-                --result.first;
                 while( result.first != mLowerbounds.begin() )
                 {
                     --result.first;
-                    if( (*result.first)->type() != Bound<T>::EQUAL )
+                    if( (*result.first)->pInfo()->exists && (*result.first)->type() != Bound<T>::EQUAL )
                     {
                         nextWeakerBound = *result.first;
                         break;
@@ -324,6 +335,7 @@ namespace smtrat
             boundInfo->updated = 0;
             boundInfo->position = _position;
             boundInfo->neqRepresentation = NULL;
+            boundInfo->exists = false;
             const Bound<T>* newBound = new Bound<T>( _val, this, Bound<T>::EQUAL, _constraint, boundInfo );
             std::pair<class Bound<T>::BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
             if( !result.second )
@@ -337,7 +349,7 @@ namespace smtrat
                 while( result.first != mLowerbounds.begin() )
                 {
                     --result.first;
-                    if( (*result.first)->type() != Bound<T>::EQUAL )
+                    if( (*result.first)->pInfo()->exists && (*result.first)->type() != Bound<T>::EQUAL )
                     {
                         nextWeakerLowerBound = *result.first;
                         break;
@@ -348,7 +360,7 @@ namespace smtrat
                 const Bound<T>* nextWeakerUpperBound = NULL;
                 while( result.first != mUpperbounds.end() )
                 {
-                    if( (*result.first)->type() != Bound<T>::EQUAL )
+                    if( (*result.first)->pInfo()->exists && (*result.first)->type() != Bound<T>::EQUAL )
                     {
                         nextWeakerUpperBound = *result.first;
                         break;

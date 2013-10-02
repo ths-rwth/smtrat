@@ -765,8 +765,13 @@ namespace smtrat
                 Clause& c = ca[cr];
                 if( value( c[1] ) == l_False )
                 {
+//                    cout << "Add deducted clause:" << endl;
+//                    printClause( cr, true );
                     int lev = level( var( c[1] ) );
                     cancelUntil( lev );
+                    arrangeForWatches( cr );
+//                    printClause( cr, true );
+//                    cout << endl;
                 }
             }
             attachClause( cr );

@@ -65,6 +65,7 @@ namespace smtrat
                 int                       updated;
                 smtrat::Formula::iterator position;
                 const smtrat::Constraint* neqRepresentation;
+                bool                      exists;
             };
 
             private:
@@ -161,6 +162,11 @@ namespace smtrat
                     {
                         mpInfo->neqRepresentation = _constraint;
                     }
+                }
+                
+                void boundExists() const
+                {
+                    mpInfo->exists = true;
                 }
 
                 std::vector<std::set< const smtrat::Formula* > >* const pOrigins() const

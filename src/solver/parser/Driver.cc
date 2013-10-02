@@ -843,7 +843,7 @@ namespace smtrat
         notAuxBool->addSubformula( new Formula( auxBool ) );
         Formula* posCase = _condition->pruneFront();
         Formula* negCase = _condition->pruneFront();
-        Formula* formulaIff = mkIff( new Formula( auxBool ), posCase, notAuxBool, negCase, mTwoFormulaMode );
+        Formula* formulaIff = mkIff( new Formula( auxBool ), posCase, notAuxBool, negCase, false );
         delete _condition;
         result->addSubformula( formulaIff );
         // Add: (or (not auxBool) _then)
@@ -851,28 +851,45 @@ namespace smtrat
         formulaNotB->addSubformula( new Formula( auxBool ) );
         Formula* formulaOrB = new Formula( OR );
         formulaOrB->addSubformula( formulaNotB );
-        formulaOrB->addSubformula( _then );
+        if( mTwoFormulaMode )
+        {
+            formulaOrB->addSubformula( _then->pruneFront() );
+        }
+        else
+        {
+            formulaOrB->addSubformula( _then );
+        }
         result->addSubformula( formulaOrB );
         // Add: (or auxBool _else)
         Formula* formulaOrC = new Formula( OR );
         formulaOrC->addSubformula( new Formula( auxBool ) );
-        formulaOrC->addSubformula( _else );
+        if( mTwoFormulaMode )
+        {
+            formulaOrC->addSubformula( _else->pruneFront() );
+        }
+        else
+        {
+            formulaOrC->addSubformula( _else );
+        }
         result->addSubformula( formulaOrC );
         if( mTwoFormulaMode )
         {
             Formula* results = new Formula( AND );
             Formula* resultB = new Formula( AND );
-            // Add: (or (not auxBool) _then)
+            resultB->addSubformula( new Formula( *formulaIff ) );
+            // Add: (or (not auxBool) (not _then))
             Formula* formulaNotBB = new Formula( NOT );
             formulaNotBB->addSubformula( new Formula( auxBool ) );
             Formula* formulaOrBB = new Formula( OR );
             formulaOrBB->addSubformula( formulaNotBB );
-            formulaOrBB->addSubformula( new Formula( *_then ) );
+            formulaOrBB->addSubformula( _else->pruneFront() );
+            delete _else;
             resultB->addSubformula( formulaOrBB );
-            // Add: (or auxBool _else)
+            // Add: (or auxBool (not _else))
             Formula* formulaOrBC = new Formula( OR );
             formulaOrBC->addSubformula( new Formula( auxBool ) );
-            formulaOrBC->addSubformula( new Formula( *_else ) );
+            formulaOrBC->addSubformula( _then->pruneFront() );
+            delete _then;
             resultB->addSubformula( formulaOrBC );
             if( mPolarity )
             {
