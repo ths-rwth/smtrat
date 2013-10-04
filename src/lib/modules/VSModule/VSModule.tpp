@@ -662,7 +662,15 @@ namespace smtrat
         cout << "Factorization of constraint is  " << constraint->factorization() << endl;
         #endif
         symbol sym;
-        if( !constraint->variable( _eliminationVar, sym ) ) return;
+        if( !constraint->variable( _eliminationVar, sym ) )
+        {
+            cout << "Variables:" << endl;
+            for( auto va = constraint->variables().begin(); va != constraint->variables().end(); ++va )
+            {
+                cout << "   " << va->first << endl;
+            }
+            assert( false );
+        }
         bool generatedTestCandidateBeingASolution = false;
         unsigned numberOfAddedChildren = 0;
         ConditionSet oConditions = ConditionSet();
@@ -685,6 +693,7 @@ namespace smtrat
             if( relation == CR_EQ || relation == CR_LEQ || relation == CR_GEQ )
                 subType = ST_NORMAL;
             vector< ex > factors = vector< ex >();
+            ConstraintSet sideConditions = ConstraintSet();
             if( Settings::elimination_with_factorization && constraint->hasFactorization() )
             {
                 for( auto iter = constraint->factorization().begin(); iter != constraint->factorization().end(); ++iter )
@@ -695,6 +704,15 @@ namespace smtrat
                             factors.push_back( *iter->begin() );
                         else
                             factors.push_back( *iter );
+                    }
+                    else
+                    {
+                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( *iter, CR_NEQ, vars );
+                        if( cons != Formula::constraintPool().consistentConstraint() )
+                        {
+                            assert( cons != Formula::constraintPool().inconsistentConstraint() );
+                            sideConditions.insert( cons );
+                        }
                     }
                 }
             }
@@ -727,11 +745,11 @@ namespace smtrat
                         if( cons == Formula::constraintPool().inconsistentConstraint() )
                         {
                             if( relation == CR_EQ )
-                                generatedTestCandidateBeingASolution = true;
+                                generatedTestCandidateBeingASolution = sideConditions.empty();
                         }
                         else
                         {
-                            ConstraintSet sideCond = ConstraintSet();
+                            ConstraintSet sideCond = sideConditions;
                             if( cons != Formula::constraintPool().consistentConstraint() )
                                 sideCond.insert( cons );
                             SqrtEx sqEx = SqrtEx( -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, vars );
@@ -765,7 +783,7 @@ namespace smtrat
                             const smtrat::Constraint* cons12 = smtrat::Formula::newConstraint( coeffs.at( 1 ), CR_NEQ, vars );
                             if( cons12 != Formula::constraintPool().inconsistentConstraint() )
                             {
-                                ConstraintSet sideCond = ConstraintSet();
+                                ConstraintSet sideCond = sideConditions;
                                 if( cons11 != Formula::constraintPool().consistentConstraint() )
                                     sideCond.insert( cons11 );
                                 if( cons12 != Formula::constraintPool().consistentConstraint() )
@@ -796,7 +814,7 @@ namespace smtrat
                             const smtrat::Constraint* cons22 = smtrat::Formula::newConstraint( radicand, CR_GEQ, vars );
                             if( cons22 != Formula::constraintPool().inconsistentConstraint() )
                             {
-                                ConstraintSet sideCond = ConstraintSet();
+                                ConstraintSet sideCond = sideConditions;
                                 if( cons21 != Formula::constraintPool().consistentConstraint() )
                                     sideCond.insert( cons21 );
                                 if( cons22 != Formula::constraintPool().consistentConstraint() )
@@ -827,7 +845,7 @@ namespace smtrat
                             const smtrat::Constraint* cons32 = smtrat::Formula::newConstraint( radicand, CR_GEQ, vars );
                             if( cons32 != Formula::constraintPool().inconsistentConstraint() )
                             {
-                                ConstraintSet sideCond = ConstraintSet();
+                                ConstraintSet sideCond = sideConditions;
                                 if( cons31 != Formula::constraintPool().consistentConstraint() )
                                     sideCond.insert( cons31 );
                                 if( cons32 != Formula::constraintPool().consistentConstraint() )
@@ -852,7 +870,7 @@ namespace smtrat
                             }
                         }
                         if( !constraintHasZeros && relation == CR_EQ )
-                            generatedTestCandidateBeingASolution = true;
+                            generatedTestCandidateBeingASolution = sideConditions.empty();
                         break;
                     }
                     //degree > 2 (> 3)

@@ -154,17 +154,12 @@ namespace smtrat
      *
      * @param _varName  The name of the variable.
      *
-     * @return  true    , if the given variable occurs in the constraint;
-     *          false   , otherwise.
+     * @return  true, if the given variable occurs in the constraint;
+     *          false, otherwise.
      */
     bool Constraint::hasVariable( const std::string& _varName ) const
     {
-        for( symtab::const_iterator var = variables().begin(); var != variables().end(); ++var )
-        {
-            if( var->first == _varName )
-                return true;
-        }
-        return false;
+        return (variables().find( _varName ) == variables().end());
     }
 
     /**

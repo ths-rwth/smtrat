@@ -830,9 +830,7 @@ namespace vs
         else
         {
             *mpIndex = _index;
-            // Does the condition contain the variable we can generate test candidates for.
-            for( auto cond = rConditions().begin(); cond != conditions().end(); ++cond )
-                (**cond).rFlag() = ((**cond).constraint().variables().find( index() ) == (**cond).constraint().variables().end());
+            initConditionFlags();
         }
     }
 
@@ -1211,8 +1209,7 @@ namespace vs
     void State::initConditionFlags()
     {
         for( ConditionList::iterator cond = rConditions().begin(); cond != conditions().end(); ++cond )
-            if( (**cond).constraint().hasVariable( index() ) )
-                (**cond).rFlag() = false;
+            (**cond).rFlag() = (**cond).constraint().hasVariable( index() );
     }
 
     /**
@@ -1478,7 +1475,7 @@ namespace vs
                                 {
                                     originsToRemove.insert( *condB );
                                     (*condB)->rRecentlyAdded() = true;
-                                    (*condB)->rFlag() = false;
+                                    (*condB)->rFlag() = (*condB)->constraint().hasVariable( index() );
                                 }
                             }
                         }
@@ -1564,7 +1561,7 @@ namespace vs
                             {
                                 originsToRemove.insert( *condB );
                                 (*condB)->rRecentlyAdded() = true;
-                                (*condB)->rFlag() = false;
+                                (*condB)->rFlag() = (*condB)->constraint().hasVariable( index() );
                             }
                         }
                     }
