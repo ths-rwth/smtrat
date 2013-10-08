@@ -50,6 +50,7 @@
 #include "ValidationSettings.h"
 #include "ThreadPool.h"
 #include "config.h"
+#include "modules/VSModule/SqrtEx.h"
 
 
 namespace smtrat
@@ -85,7 +86,7 @@ namespace smtrat
                 Variable_Domain domain;
                 union
                 {
-                    ex*  theoryValue;
+                    vs::SqrtEx* theoryValue;
                     bool booleanValue;
                 };
             } Assignment;
@@ -323,7 +324,7 @@ namespace smtrat
                     Assignment* assToDel = mModel.begin()->second;
                     if( assToDel->domain != BOOLEAN_DOMAIN )
                     {
-                        ex* exToDel = assToDel->theoryValue;
+                        vs::SqrtEx* exToDel = assToDel->theoryValue;
                         delete assToDel;
                         delete exToDel;
                     }
@@ -343,20 +344,11 @@ namespace smtrat
             {
                 if( _assignment->domain != BOOLEAN_DOMAIN )
                 {
-                    std::string extName = Formula::constraintPool().externalName( _varName );
-                    if( extName.substr( 0, Formula::constraintPool().externalVarNamePrefix().size() ) != Formula::constraintPool().externalVarNamePrefix() )
-                    {
-                        return mModel.insert( pair< const string, Assignment* >( _varName, _assignment ) ).second;
-                    }
-                    return false;
+                    return mModel.insert( std::pair< const std::string, Assignment* >( _varName, _assignment ) ).second;
                 }
                 else
                 {
-                    if( _varName.substr( 0, Formula::constraintPool().externalVarNamePrefix().size() ) != Formula::constraintPool().externalVarNamePrefix() )
-                    {
-                        return mModel.insert( pair< const string, Assignment* >( _varName, _assignment ) ).second;
-                    }
-                    return false;
+                    return mModel.insert( std::pair< const std::string, Assignment* >( _varName, _assignment ) ).second;
                 }
             }
             
@@ -366,7 +358,7 @@ namespace smtrat
                 mPassedformulaOrigins[_formula] = _origins;
             }
 
-            void addOrigin( const Formula* const _formula, set< const Formula* >& _origin )
+            void addOrigin( const Formula* const _formula, std::set< const Formula* >& _origin )
             {
                 assert( mPassedformulaOrigins.find( _formula ) != mPassedformulaOrigins.end() );
                 mPassedformulaOrigins[_formula].push_back( _origin );

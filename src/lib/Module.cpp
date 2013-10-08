@@ -741,7 +741,7 @@ namespace smtrat
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and";
         for( auto constraint = _constraints.begin(); constraint != _constraints.end(); ++constraint )
-            assumption += " " + (*constraint)->smtlibString();
+            assumption += " " + (*constraint)->toString( 0, true );
         assumption += " " + _moduleName;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
@@ -770,11 +770,11 @@ namespace smtrat
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all real-valued variables.
-                GiNaC::symtab allVariables = Formula::constraintPool().realVariables();
+                Variables allVariables = Formula::constraintPool().arithmeticVariables();
                 for( auto var = allVariables.begin(); var != allVariables.end(); ++var )
-                    smtlibFile << "(declare-fun " << var->first << " () Real)\n";
+                    smtlibFile << "(declare-fun " << *var << " () Real)\n";
                 // Add all Boolean variables.
-                set<string> allBooleans = Formula::constraintPool().booleanVariables();
+                vector<string> allBooleans = Formula::constraintPool().booleanVariables();
                 for( auto var = allBooleans.begin(); var != allBooleans.end(); ++var )
                     smtlibFile << "(declare-fun " << *var << " () Bool)\n";
                 // Add module name variables.
@@ -819,9 +819,9 @@ namespace smtrat
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all real-valued variables.
-                GiNaC::symtab allVars = Formula::constraintPool().realVariables();
-                for( GiNaC::symtab::const_iterator var = allVars.begin(); var != allVars.end(); ++var )
-                    smtlibFile << "(declare-fun " << var->first << " () Real)\n";
+                Variables allVars = Formula::constraintPool().arithmeticVariables();
+                for( auto var = allVars.begin(); var != allVars.end(); ++var )
+                    smtlibFile << "(declare-fun " << *var << " () Real)\n";
                 string assumption = "";
                 assumption += "(set-info :status sat)\n";
                 assumption += "(assert (and ";

@@ -45,8 +45,6 @@ namespace smtrat
         mActivity( 0 ),
         mDifficulty(0),
         mType( TTRUE ),
-        mRealValuedVars(),
-        mBooleanVars(),
         mpConstraint( mpConstraintPool->consistentConstraint() ),
         mpFather( NULL ),
         mPropositions()
@@ -58,8 +56,6 @@ namespace smtrat
         mActivity( 0 ),
         mDifficulty( 0 ),
         mType( _type ),
-        mRealValuedVars(),
-        mBooleanVars(),
         mpFather( NULL ),
         mPropositions()
     {
@@ -77,19 +73,17 @@ namespace smtrat
         }
     }
 
-    Formula::Formula( const string& _id ):
+    Formula::Formula( const string* _id ):
         mDeducted( false ),
         mPropositionsUptodate( false ),
         mActivity( 0 ),
         mDifficulty( 0 ),
         mType( BOOL ),
-        mRealValuedVars(),
-        mBooleanVars(),
-        mpIdentifier( new string( _id )),
+        mpIdentifier( _id ),
         mpFather( NULL ),
         mPropositions()
     {
-        mBooleanVars.insert( _id );
+        assert( constraintPool().hasBoolean( _id ) );
     }
 
     Formula::Formula( const Constraint* _constraint ):
@@ -97,7 +91,6 @@ namespace smtrat
         mPropositionsUptodate( false ),
         mActivity( 0 ),
         mDifficulty( 0 ),
-        mBooleanVars(),
         mpFather( NULL ),
         mPropositions()
     {
@@ -113,7 +106,6 @@ namespace smtrat
                 break;
             case 2: 
                 mType = REALCONSTRAINT;
-                mRealValuedVars = _constraint->variables();
                 mpConstraint = _constraint;
                 break;
             default:
@@ -127,8 +119,6 @@ namespace smtrat
         mActivity( _formula.mActivity ),
         mDifficulty( _formula.mDifficulty ),
         mType( _formula.getType() ),
-        mRealValuedVars( _formula.realValuedVars() ),
-        mBooleanVars( _formula.booleanVars() ),
         mpFather( NULL ),
         mPropositions(_formula.mPropositionsUptodate ? _formula.proposition(): Condition())
     {
@@ -154,11 +144,7 @@ namespace smtrat
 
     Formula::~Formula()
     {
-        if( mType == BOOL )
-        {
-            delete mpIdentifier;
-        }
-        else if( mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE )
+        if( mType != REALCONSTRAINT && mType != TTRUE && mType != FFALSE )
         {
             while( !mpSubformulas->empty() )
             {
@@ -336,19 +322,9 @@ namespace smtrat
         assert( isBooleanCombination() );
         assert( mType != NOT || mpSubformulas->empty() );
         _formula->setFather( this );
-
-        /*
-         * Add the variables of the formula to add to this formula.
-         */
-        mRealValuedVars.insert( _formula->realValuedVars().begin(), _formula->realValuedVars().end() );
-        mBooleanVars.insert( _formula->booleanVars().begin(), _formula->booleanVars().end() );
-
-        /*
-         * Add the formula.
-         */
+        // Add the formula.
         mpSubformulas->push_back( _formula );
-
-        //Adapt the conditions, if they are up to date. (In this case very cheap)
+        // Adapt the conditions, if they are up to date. (In this case very cheap)
         if( mPropositionsUptodate )
         {
             Condition condOfSubformula = _formula->getPropositions();
@@ -396,35 +372,6 @@ namespace smtrat
 
     /**
      *
-     * @param _constraint
-     */
-    void Formula::addSubformula( const Constraint* _constraint )
-    {
-        assert( isBooleanCombination() );
-        assert( mType != NOT || mpSubformulas->empty() );
-
-        /*
-         * Add the variables of the formula to add to this formula.
-         */
-        mRealValuedVars.insert( _constraint->variables().begin(), _constraint->variables().end() );
-
-        /*
-         * Add the formula consisting of this constraint.
-         */
-        Formula* form = new Formula( _constraint );
-        form->setFather( this );
-        mpSubformulas->push_back( form );
-
-        //Adapt the conditions.
-        if( mPropositionsUptodate )
-        {
-            mPropositions &= (form->getPropositions() | ~STRONG_CONDITIONS);
-            mPropositions |= (form->getPropositions() & WEAK_CONDITIONS);
-        }
-    }
-
-    /**
-     *
      * @param _subformula
      * @return
      */
@@ -435,14 +382,7 @@ namespace smtrat
         Formula* pSubFormula = *_toReplace;
         Formula::iterator result = mpSubformulas->erase( _toReplace );
         delete pSubFormula;
-
         _replacement->setFather( this );
-        /*
-         * Add the variables of the formula to add to this formula.
-         */
-        mRealValuedVars.insert( _replacement->realValuedVars().begin(), _replacement->realValuedVars().end() );
-        mBooleanVars.insert( _replacement->booleanVars().begin(), _replacement->booleanVars().end() );
-
         result = mpSubformulas->insert( result, _replacement );
         mPropositionsUptodate = false;
         return result;
@@ -579,7 +519,7 @@ namespace smtrat
      */
     void Formula::addConstraintPropositions( const Constraint& _constraint )
     {
-        switch( _constraint.maxMonomeDegree() )
+        switch( _constraint.lhs().highestDegree() )
         {
             case 0:
             {
@@ -620,32 +560,32 @@ namespace smtrat
         }
         switch( _constraint.relation() )
         {
-            case CR_EQ:
+            case Constraint::EQ:
             {
                 mPropositions |= PROP_CONTAINS_EQUATION;
                 break;
             }
-            case CR_NEQ:
+            case Constraint::NEQ:
             {
                 mPropositions |= PROP_CONTAINS_STRICT_INEQUALITY;
                 break;
             }
-            case CR_LEQ:
+            case Constraint::LEQ:
             {
                 mPropositions |= PROP_CONTAINS_INEQUALITY;
                 break;
             }
-            case CR_GEQ:
+            case Constraint::GEQ:
             {
                 mPropositions |= PROP_CONTAINS_INEQUALITY;
                 break;
             }
-            case CR_LESS:
+            case Constraint::LESS:
             {
                 mPropositions |= PROP_CONTAINS_STRICT_INEQUALITY;
                 break;
             }
-            case CR_GREATER:
+            case Constraint::GREATER:
             {
                 mPropositions |= PROP_CONTAINS_STRICT_INEQUALITY;
                 break;
@@ -654,11 +594,11 @@ namespace smtrat
             {
             }
         }
-        if( _constraint.containsIntegerValuedVariable() )
+        if( _constraint.hasIntegerValuedVariable() )
         {
             mPropositions |= PROP_CONTAINS_INTEGER_VALUED_VARS;
         }
-        if( _constraint.containsRealValuedVariable() )
+        if( _constraint.hasRealValuedVariable() )
         {
             mPropositions |= PROP_CONTAINS_REAL_VALUED_VARS;
         }
@@ -726,11 +666,11 @@ namespace smtrat
                 {
                     #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
                     const Constraint* constraint = currentFormula->pConstraint();
-                    if( constraint->relation() == CR_LEQ )
+                    if( constraint->relation() == Constraint::LEQ )
                     {
                         Formula* newFormula = new Formula( OR );
-                        newFormula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() ) ) );
-                        newFormula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
+                        newFormula->addSubformula( Formula::newConstraint( constraint->lhs(), Constraint::LESS ) );
+                        newFormula->addSubformula( Formula::newConstraint( constraint->lhs(), Constraint::EQ ) );
                         delete currentFormula;
                         subformulasToTransform.push_back( newFormula );
                     }
@@ -831,11 +771,11 @@ namespace smtrat
                             {
                                 #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
                                 const Constraint* constraint = currentSubformula->pConstraint();
-                                if( constraint->relation() == CR_LEQ )
+                                if( constraint->relation() == Constraint::LEQ )
                                 {
                                     Formula* newFormula = new Formula( OR );
-                                    newFormula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() ) ) );
-                                    newFormula->addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
+                                    newFormula->addSubformula( Formula::newConstraint( constraint->lhs(), Constraint::LESS ) );
+                                    newFormula->addSubformula( Formula::newConstraint( constraint->lhs(), Constraint::EQ ) );
                                     delete currentSubformula;
                                     phis.push_back( newFormula );
                                 }
@@ -1167,37 +1107,37 @@ namespace smtrat
                     _formula.pop_back();
                     switch( constraint->relation() )
                     {
-                        case CR_EQ:
+                        case Constraint::EQ:
                         {
                             #ifdef REMOVE_UNEQUAL_IN_CNF_TRANSFORMATION
                             _formula.copyAndDelete( new Formula( OR ));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() )));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            _formula.addSubformula( new Formula( Formula::newConstraint( constraint->lhs(), Constraint::LESS )));
+                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), Constraint::LESS )));
                             #else
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), CR_NEQ, constraint->variables() )));
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), Constraint::NEQ )));
                             #endif
                             return true;
                         }
-                        case CR_LEQ:
+                        case Constraint::LEQ:
                         {
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), Constraint::LESS )));
                             return false;
                         }
-                        case CR_LESS:
+                        case Constraint::LESS:
                         {
                             #ifdef REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION
                             _formula.copyAndDelete( new Formula( OR ));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LESS, constraint->variables() )));
-                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), CR_EQ, constraint->variables() )));
+                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), Constraint::LESS )));
+                            _formula.addSubformula( new Formula( Formula::newConstraint( -constraint->lhs(), Constraint::EQ )));
                             return true;
                             #else
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), CR_LEQ, constraint->variables() )));
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( -constraint->lhs(), Constraint::LEQ )));
                             return false;
                             #endif
                         }
-                        case CR_NEQ:
+                        case Constraint::NEQ:
                         {
-                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), CR_EQ, constraint->variables() )));
+                            _formula.copyAndDelete( new Formula( Formula::newConstraint( constraint->lhs(), Constraint::EQ )));
                             return false;
                         }
                         default:
@@ -1385,7 +1325,7 @@ namespace smtrat
                 _out << _init;
                 if( _smtlib )
                 {
-                    _out << mpConstraint->smtlibString();
+                    _out << mpConstraint->toString( 0, true );
                 }
                 else
                 {
@@ -1517,7 +1457,7 @@ namespace smtrat
                 }
                 else
                 {
-                    result += mpConstraint->smtlibString( _resolveUnequal );
+                    result += mpConstraint->toString( 0, true, _resolveUnequal );
                 }
                 break;
             }
@@ -1610,25 +1550,31 @@ namespace smtrat
      */
     std::string Formula::variableListToString( std::string seperator, const unordered_map<string, string>& variableIds ) const
     {
-        GiNaC::symtab::const_iterator                   i = mRealValuedVars.begin();
-        std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin();
-        string                                     result = "";
-        if( i != mRealValuedVars.end() )
+        Variables realVars = Variables();
+        realValuedVars( realVars );
+        set<string> boolVars = set<string>();
+        booleanVars( boolVars );
+        auto i = realVars.begin();
+        auto j = boolVars.begin();
+        string result = "";
+        if( i != realVars.end() )
         {
-            unordered_map<string, string>::const_iterator vId = variableIds.find(i->first);
-            result += vId == variableIds.end() ? i->first : vId->second;
-            for( ++i; i != mRealValuedVars.end(); ++i )
+            std::stringstream sstream;
+            sstream << *i;
+            unordered_map<string, string>::const_iterator vId = variableIds.find( sstream.str() );
+            result += vId == variableIds.end() ? sstream.str() : vId->second;
+            for( ++i; i != realVars.end(); ++i )
             {
                 result += seperator;
-                vId = variableIds.find(i->first);
-                result += vId == variableIds.end() ? i->first : vId->second;
+                vId = variableIds.find(sstream.str());
+                result += vId == variableIds.end() ? sstream.str() : vId->second;
             }
         }
-        else if( j != mBooleanVars.end() )
+        else if( j != boolVars.end() )
         {
             unordered_map<string, string>::const_iterator vId = variableIds.find(*j);
             result += vId == variableIds.end() ? *j : vId->second;
-            for( ++j; j != mBooleanVars.end(); ++j )
+            for( ++j; j != boolVars.end(); ++j )
             {
                 result += seperator;
                 vId = variableIds.find(*j);
@@ -1683,7 +1629,9 @@ namespace smtrat
                     result += variableListToString( "," );
                     result += "}, (";
                     // Make pseudo Booleans.
-                    for( std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin(); j != mBooleanVars.end(); ++j )
+                    set<string> boolVars = set<string>();
+                    booleanVars( boolVars );
+                    for( auto j = boolVars.begin(); j != boolVars.end(); ++j )
                     {
                         result += "(" + *j + " = 0 or " + *j + " = 1) and ";
                     }
@@ -1703,137 +1651,6 @@ namespace smtrat
                 if( withVariables )
                     result += " ) )";
                 result += " )";
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Generates a string displaying the formula as a QEPCAD formula.
-     * @param withVariables if true, variables are quantified, otherwise not
-     * @param variableIds maps original variable ids to unique indexed variable ids only consisting of letters and numbers
-     * @return
-     */
-    string Formula::toQepcadFormat( bool withVariables, const unordered_map<string, string>& variableIds ) const
-    {
-        string result = "";
-        string oper = Formula::FormulaTypeToString( mType );
-        if( mType == AND )
-            oper = "/\\";
-        if( mType == OR )
-            oper = "\\/";
-        switch( mType )
-        {
-            // unary cases
-            case TTRUE:
-            {
-                result += " " + oper + " ";
-                break;
-            }
-            case FFALSE:
-            {
-                result += " " + oper + " ";
-                break;
-            }
-            case NOT:
-            {
-                result += " ~[ " + (*mpSubformulas->begin())->toQepcadFormat( withVariables, variableIds ) + " ]";
-                break;
-            }
-            case REALCONSTRAINT:
-            {
-                string constraintStr = "";
-                // replace all variable ids
-//                GiNaC::exmap symbolMapping;
-                GiNaC::ex lhsAfterReplacing = constraint().lhs();
-                GiNaC::symtab realVars = mpConstraintPool->realVariables();
-                for( unordered_map<string, string>::const_iterator vId = variableIds.begin(); vId != variableIds.end(); ++vId )
-                {
-                    GiNaC::symtab::const_iterator realVar = realVars.find( vId->first );
-                    if( realVar != realVars.end() )
-                    {
-//                        cout << "var: " << realVar->second << endl;
-                        lhsAfterReplacing = lhsAfterReplacing.subs( realVar->second == GiNaC::symbol( vId->second ) );
-                    }
-//                    symbolMapping[ realVar->second ] = GiNaC::symbol( vId->second );
-                }
-//                GiNaC::ex lhsAfterReplacing = constraint().lhs().subs( symbolMapping );
-                ostringstream sstream;
-                sstream << lhsAfterReplacing;
-//                cout << constraint().lhs() << " -> " << lhsAfterReplacing << endl;
-                constraintStr += sstream.str();
-                // replace all *
-                size_t pos = constraintStr.find( "*" );
-                while( pos != constraintStr.npos )
-                {
-                    constraintStr.replace( pos, 1, " " ); // @TODO: dangerous substitution
-                    pos = constraintStr.find( "*", pos );
-                }
-                // print the relation symbol and right-hand side
-                // @TODO: adapt relation symbol
-                switch( constraint().relation() )
-                {
-                    case CR_EQ:
-                        constraintStr += "  = ";
-                        break;
-                    case CR_NEQ:
-                        constraintStr += " != ";
-                        break;
-                    case CR_LESS:
-                        constraintStr += "  < ";
-                        break;
-                    case CR_GREATER:
-                        constraintStr += "  > ";
-                        break;
-                    case CR_LEQ:
-                        constraintStr += " <= ";
-                        break;
-                    case CR_GEQ:
-                        constraintStr += " >= ";
-                        break;
-                    default:
-                        constraintStr += "  ~ ";
-                }
-                constraintStr += "0";
-
-                result += constraintStr;
-                break;
-            }
-            case BOOL:
-            {
-                unordered_map<string, string>::const_iterator vId = variableIds.find( *mpIdentifier );
-                cout << "BoolId: " << *mpIdentifier << endl;
-                assert( vId != variableIds.end() );
-                result += vId->second + " = 1";
-                break;
-            }
-            default:
-            {
-                // recursive print of the subformulas
-                if( withVariables )
-                { // add the variables
-                    result += "(";
-                    result += variableListToString( ",", variableIds ) + ")\n0\n(E " + variableListToString( ") (E ", variableIds ) + ") [";
-                    // Make pseudo Booleans.
-                    for( std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin(); j != mBooleanVars.end(); ++j )
-                    {
-                        result += "[" + *j + " = 0 \\/ " + *j + " = 1] /\\ ";
-                    }
-                }
-                else
-                    result += "[";
-                std::list<Formula*>::const_iterator it = mpSubformulas->begin();
-                // do not quantify variables again.
-                result += (*it)->toQepcadFormat( false, variableIds );
-                for( ++it; it != mpSubformulas->end(); ++it )
-                {
-                    // do not quantify variables again.
-                    result += " " + oper + " " + (*it)->toQepcadFormat( false, variableIds );
-                }
-                if( withVariables )
-                    result += " ].";
-                else
-                    result += "]";
             }
         }
         return result;

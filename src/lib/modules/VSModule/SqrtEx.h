@@ -24,136 +24,96 @@
  * Class to create a square root expression object.
  * @author Florian Corzilius
  * @since 2011-05-26
- * @version 2011-12-05
+ * @version 2013-10-07
  */
 
 #ifndef SMTRAT_VS_SQRTEX_H
 #define SMTRAT_VS_SQRTEX_H
-//#define VS_USE_GINAC_EXPAND
-//#define VS_USE_GINAC_NORMAL
 
-#include <ginac/ginac.h>
-#include <ginac/flags.h>
 #include <iostream>
 #include <assert.h>
+#include "../../Common.h"
 
 namespace vs
 {
     class SqrtEx
     {
         private:
-            /**
-             * Attributes:
-             */
-            GiNaC::ex* mpConstantPart;
-            GiNaC::ex* mpFactor;
-            GiNaC::ex* mpDenominator;
-            GiNaC::ex* mpRadicand;
-            GiNaC::ex* mpAsExpression;
-            GiNaC::symtab mVariables;
+            // Members:
+            smtrat::Polynomial mConstantPart;
+            smtrat::Polynomial mFactor;
+            smtrat::Polynomial mDenominator;
+            smtrat::Polynomial mRadicand;
 
         public:
-            /**
-             * Constructors:
-             */
+            // Constructors:
             SqrtEx();
-            SqrtEx( const GiNaC::ex&, const GiNaC::symtab& );
-            SqrtEx( const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::symtab& );
+            SqrtEx( const smtrat::Polynomial& );
+            SqrtEx( const smtrat::Polynomial&, const smtrat::Polynomial&, const smtrat::Polynomial&, const smtrat::Polynomial& );
             SqrtEx( const SqrtEx& );
 
-            /**
-             * Destructor:
-             */
+            // Destructor:
             ~SqrtEx();
 
-            /**
-             * Methods:
-             */
-            const GiNaC::ex& constantPart() const
+            // Methods:
+            const smtrat::Polynomial& constantPart() const
             {
-                return *mpConstantPart;
+                return mConstantPart;
             }
 
-            GiNaC::ex& rConstantPart()
+            smtrat::Polynomial& rConstantPart()
             {
-                return *mpConstantPart;
+                return mConstantPart;
             }
 
-            const GiNaC::ex& factor() const
+            const smtrat::Polynomial& factor() const
             {
-                return *mpFactor;
+                return mFactor;
             }
 
-            GiNaC::ex& rFactor()
+            smtrat::Polynomial& rFactor()
             {
-                return *mpFactor;
+                return mFactor;
             }
 
-            const GiNaC::ex& radicand() const
+            const smtrat::Polynomial& radicand() const
             {
-                return *mpRadicand;
+                return mRadicand;
             }
 
-            GiNaC::ex& rRadicand()
+            smtrat::Polynomial& rRadicand()
             {
-                return *mpRadicand;
+                return mRadicand;
             }
 
-            const GiNaC::ex& denominator() const
+            const smtrat::Polynomial& denominator() const
             {
-                return *mpDenominator;
+                return mDenominator;
             }
 
-            GiNaC::ex& rDenominator()
+            smtrat::Polynomial& rDenominator()
             {
-                return *mpDenominator;
-            }
-
-            GiNaC::ex& asExpression() const
-            {
-                return *mpAsExpression;
-            }
-
-            const GiNaC::symtab& variables() const
-            {
-                return mVariables;
+                return mDenominator;
             }
 
             bool hasSqrt() const
             {
-                return *mpFactor != 0;
+                return mFactor != smtrat::Polynomial( smtrat::Rational( 0 ) );
             }
-
-            static void normalize( GiNaC::ex& _exp )
-            {
-                #ifdef VS_USE_GINAC_NORMAL
-                #ifdef VS_USE_GINAC_EXPAND
-                _exp = _exp.expand().normal();
-                #else
-                _exp = _exp.normal();
-                #endif
-                #else
-                #ifdef VS_USE_GINAC_EXPAND
-                _exp = _exp.expand();
-                #endif
-                #endif
-            }
-
-            // Data access methods (read only).
-            bool hasVariable( const std::string& ) const;
 
             // Operators.
             bool operator ==( const SqrtEx& ) const;
             SqrtEx& operator = ( const SqrtEx& );
-            SqrtEx& operator = ( const GiNaC::ex& );
+            SqrtEx& operator = ( const smtrat::Polynomial& );
             friend SqrtEx operator +( const SqrtEx&, const SqrtEx& );
             friend SqrtEx operator -( const SqrtEx&, const SqrtEx& );
             friend SqrtEx operator *( const SqrtEx&, const SqrtEx& );
             friend SqrtEx operator /( const SqrtEx&, const SqrtEx& );
+            std::string toString( bool = false ) const;
             friend std::ostream& operator <<( std::ostream&, const SqrtEx& );
-            
-            static void simplify( GiNaC::ex&, const GiNaC::ex& );
-            static SqrtEx subBySqrtEx( const GiNaC::ex&, const GiNaC::ex&, const SqrtEx&, const GiNaC::symtab& );
+            static SqrtEx subBySqrtEx( const smtrat::Polynomial&, const carl::Variable&, const SqrtEx& );
+        private:
+            void normalize();
     };
 }    // end namspace vs
 

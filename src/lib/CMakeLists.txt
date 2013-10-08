@@ -41,6 +41,7 @@ set(lib_core_headers
     StrategyGraph.h
     ModuleFactory.h
     ModuleType.h
+    Common.h
     Constraint.h
     ConstraintPool.h
 	RuntimeSettings.h

@@ -27,6 +27,7 @@
  * @version 2013-06-20
  */
 #include "Constraint.h"
+#include "modules/VSModule/SqrtEx.h"
 #include <unordered_set>
 #include <mutex>
 
@@ -39,9 +40,9 @@ namespace smtrat
     {
         bool operator ()( const Constraint* const _constraintA, const Constraint* const _constraintB ) const
         {
-            if( _constraintA->secondHash() == _constraintB->secondHash() )
+            if( _constraintA->relation() == _constraintB->relation() )
             {
-                return _constraintA->lhs().is_equal( _constraintB->lhs() );
+                return _constraintA->lhs() == _constraintB->lhs();
             }
             return false;
         }
@@ -51,7 +52,7 @@ namespace smtrat
     {
         size_t operator ()( const Constraint* const _constraint ) const
         {
-            return _constraint->firstHash() * 6 + _constraint->secondHash();
+            return _constraint->hash();
         }
     };
 
@@ -86,32 +87,25 @@ namespace smtrat
             mutable std::mutex mMutexBooleanVariables;
             /// Mutex to avoid multiple access to the variable domain map
             mutable std::mutex mMutexDomain;
-            /// The internal prefix for a real valued variable.
-            const std::string mInternalRealVarNamePrefix;
-            /// The internal prefix for a integer valued variable.
-            const std::string mInternalIntVarNamePrefix;
             /// The external prefix for a variable.
             std::string mExternalVarNamePrefix;
-            /// The map of internal variable names to external variable names.
-            std::map< std::string, std::string > mInternalToExternalVarNames;
             /// The map of external variable names to internal variable names.
-            std::map< std::string, std::string > mExternalToInternalVarNames;
-            /// The symbol table containing the variables of all constraints.
-            GiNaC::symtab mArithmeticVariables;
+            std::map< std::string, carl::Variable > mExternalNamesToVariables;
             /// The collection of Boolean variables in use.
-            std::set<std::string> mBooleanVariables;
+            std::vector<const std::string*> mBooleanVariables;
             /// The constraint pool.
             fastConstraintSet mConstraints;
             /// The domain of the variables occurring in the constraints.
-            std::map< GiNaC::ex, Variable_Domain, GiNaC::ex_is_less > mDomain;
+            std::map< carl::Variable, Variable_Domain > mDomain;
             /// All external variable names which have been created during parsing.
             std::vector< std::string > mParsedVarNames;
+            ///
+            carl::VariablePool& mVariablePool;
 
             // Methods:
             static std::string prefixToInfix( const std::string& );
-            bool hasNoOtherVariables( const GiNaC::ex& ) const;
-            Constraint* createNormalizedBound( const GiNaC::symbol&, const Constraint_Relation, const GiNaC::numeric& ) const;
-            Constraint* createNormalizedConstraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& ) const;
+            Constraint* createNormalizedBound( const carl::Variable&, const Constraint::Relation, const Rational& ) const;
+            Constraint* createNormalizedConstraint( const Polynomial&, const Constraint::Relation ) const;
             const Constraint* addConstraintToPool( Constraint* );
 
         public:
@@ -144,27 +138,38 @@ namespace smtrat
             }
 
             /**
-             * Returns all constructed arithmetic variables. Note, that it does not
-             * return the reference to the member, but a copy of it instead. This is
-             * due to mutual exclusion.
-             *
-             * @return All constructed arithmetic variables.
-             */
-            GiNaC::symtab realVariables() const
-            {
-                return mArithmeticVariables;
-            }
-
-            /**
              * Returns all constructed Boolean variables. Note, that it does not
              * return the reference to the member, but a copy of it instead. This is
-             * due to mutual exclusion.
+             * due to mutual exclusion and an expensive operation which should only
+             * used for debugging or outputting purposes.
              *
              * @return All constructed Boolean variables.
              */
-            std::set<std::string> booleanVariables() const
+            std::vector<std::string> booleanVariables() const
             {
-                return mBooleanVariables;
+                std::vector<std::string> result = std::vector<std::string>(mBooleanVariables.size());
+                for( auto bvar = mBooleanVariables.begin(); bvar != mBooleanVariables.end(); ++bvar )
+                {
+                    result.push_back( **bvar );
+                }
+                return result;
+            }
+            
+            /**
+             * Returns all constructed arithmetic variables. This method constructs a new
+             * container of the demanded variables due to mutual exclusion which forms an
+             * expensive operation and should only used for debugging or outputting purposes.
+             *
+             * @return All constructed arithmetic variables.
+             */
+            Variables arithmeticVariables() const
+            {
+                Variables result = Variables();
+                for( auto nameVarPair = mExternalNamesToVariables.begin(); nameVarPair != mExternalNamesToVariables.end(); ++nameVarPair )
+                {
+                    result.insert( nameVarPair->second );
+                }
+                return result;
             }
             
             const Constraint* consistentConstraint() const
@@ -177,7 +182,7 @@ namespace smtrat
                 return mInconsistentConstraint;
             }
 
-            Variable_Domain domain( const GiNaC::ex& _variable ) const
+            Variable_Domain domain( const carl::Variable& _variable ) const
             {
                 std::lock_guard<std::mutex> lock( mMutexDomain );
                 auto iter = mDomain.find( _variable );
@@ -208,25 +213,45 @@ namespace smtrat
             {
                 return mExternalVarNamePrefix;
             }
-
+    
+            std::string externalName( const carl::Variable& _var ) const
+            {
+                return mVariablePool.getName( _var );
+            }
+            
+            /**
+             * Gets the variable by its name. Note that this is expensive and should only be used
+             * for outputting reasons. In the actual implementations you should store the variables instead.
+             * @param _varName The name of the variable to search for.
+             * @return The found variable.
+             */
+            carl::Variable getArithmeticVariableByName( const std::string& _varName ) const
+            {
+                for( auto nameVarPair = mExternalNamesToVariables.begin(); nameVarPair != mExternalNamesToVariables.end(); ++nameVarPair )
+                {
+                    if( mVariablePool.getVariableName( nameVarPair->second, false ) == _varName )
+                    {
+                        return nameVarPair->second;
+                    }
+                }
+                assert( false );
+                return mExternalNamesToVariables.begin()->second;
+            }
+            
             void clear();
-            unsigned maxLenghtOfVarName() const;
-            const Constraint* newBound( const GiNaC::symbol&, const Constraint_Relation, const GiNaC::numeric& );
-            const Constraint* newConstraint( const GiNaC::ex&, const Constraint_Relation, const GiNaC::symtab& );
-            std::pair<std::string,GiNaC::ex> newArithmeticVariable( const std::string&, Variable_Domain, bool = false );
-            std::pair<std::string,GiNaC::ex> newAuxiliaryIntVariable(  const std::string& = "h_i" );
-            std::pair<std::string,GiNaC::ex> newAuxiliaryRealVariable(  const std::string& = "h_r" );
+            const Constraint* newBound( const carl::Variable&, const Constraint::Relation, const Rational& );
+            const Constraint* newConstraint( const Polynomial&, const Constraint::Relation );
+            carl::Variable newArithmeticVariable( const std::string&, carl::VariableType, bool = false );
+            carl::Variable newAuxiliaryIntVariable( const std::string& = "h_i" );
+            carl::Variable newAuxiliaryRealVariable( const std::string& = "h_r" );
+            bool hasBoolean( const std::string* ) const;
             void newBooleanVariable( const std::string&, bool = false );
-            std::string newAuxiliaryBooleanVariable( const std::string& = "h_b" );
+            std::string* newAuxiliaryBooleanVariable( const std::string& = "h_b" );
             void initExternalPrefix();
             int maxDegree() const;
             unsigned nrNonLinearConstraints() const;
             std::string replaceInternalByExternalVariables( const std::string& );
-            std::string externalName( const std::string& ) const;
-            std::string internalName( const std::string& ) const;
-            std::string stringOf( const GiNaC::ex& ) const;
             void print( std::ostream& = std::cout ) const;
-            void printVariables( std::ostream& = std::cout ) const;
     };
 }    // namespace smtrat
 

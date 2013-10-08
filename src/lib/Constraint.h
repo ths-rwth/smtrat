@@ -18,8 +18,6 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * Constraint.h
  * @author Florian Corzilius
@@ -35,65 +33,17 @@
 
 //#define SMTRAT_TS_CONSTRAINT_SIMPLIFIER
 //#define NDEBUG
-#define VS_USE_GINAC_EXPAND
-//#define VS_USE_GINAC_NORMAL
 
-
-#include <vector>
 #include <iostream>
 #include <cstring>
-#include <string.h>
 #include <sstream>
 #include <assert.h>
 #include <mutex>
+#include "Common.h"
 #include "config.h"
-#include "carl/core/MultivariatePolynomial.h"
 
 namespace smtrat
 {
-    //
-    // Type and object definitions
-    //
-
-    typedef cln::cl_RA Rational;
-    typedef carl::MultivariatePolynomial<Rational> Polynomial;
-    typedef std::vector<Polynomial> Factorization;
-    
-    enum Constraint_Relation
-    {
-        CR_EQ = 0, CR_NEQ = 1, CR_LESS = 2, CR_GREATER = 3, CR_LEQ = 4, CR_GEQ = 5
-    };
-
-    enum Variable_Domain { BOOLEAN_DOMAIN = 0, REAL_DOMAIN = 1, INTEGER_DOMAIN = 2 };
-
-    bool constraintRelationIsStrict( Constraint_Relation rel );
-    std::string relationToString( const Constraint_Relation rel );
-
-    typedef carl::VariablesInformation VarInfoMap;
-    
-    typedef std::set<carl::Variable> Variables;
-
-    typedef std::pair< const GiNaC::ex, signed > VarDegree;
-
-    struct varDegreeCmp
-    {
-        bool operator ()( const VarDegree& varDegreeA, const VarDegree& varDegreeB ) const
-        {
-            signed result = varDegreeA.first.compare( varDegreeB.first );
-            if( result < 0 )
-            {
-                return true;
-            }
-            else if ( result == 0 )
-            {
-                return varDegreeA.second < varDegreeB.second;
-            }
-            return false;
-        }
-    };
-
-    typedef std::map< VarDegree, const GiNaC::ex, varDegreeCmp > Coefficients;
-
     /**
      * Class to create a constraint object.
      * @author Florian Corzilius
@@ -102,48 +52,40 @@ namespace smtrat
      */
     class Constraint
     {
+        friend class ConstraintPool;
+        
+        public:
+            enum Relation { EQ = 0, NEQ = 1, LESS = 2, GREATER = 3, LEQ = 4, GEQ = 5 };
+
         private:
-            /*
-             * Attributes:
-             */
+            // Attributes.
             unsigned             mID;
             unsigned             mFirstHash;
             unsigned             mSecondHash;
+            unsigned             mHash;
             bool                 mIsNeverPositive;
             bool                 mIsNeverNegative;
             bool                 mIsNeverZero;
-            bool                 mContainsRealValuedVariables;
-            bool                 mContainsIntegerValuedVariables;
-            unsigned             mNumMonomials;
-            unsigned             mMaxMonomeDegree;
-            unsigned             mMinMonomeDegree;
-            Constraint_Relation  mRelation;
+            Relation             mRelation;
             Polynomial           mLhs;
             Factorization        mFactorization;
-            Coefficients*        mpCoefficients;
             mutable std::mutex   mMutexCoefficients;
             Variables            mVariables;
-            VarInfoMap           mVarInfoMap;
+            mutable VarInfoMap   mVarInfoMap;
 
+            // Constructors.
+            Constraint();
+            Constraint( const Polynomial&, const Relation, unsigned = 0 );
+            Constraint( const Constraint&, bool = false );
+
+            // Destructor.
+            ~Constraint();
+            
         public:
 
             static std::recursive_mutex mMutex;
 
-            /*
-             * Constructors:
-             */
-            Constraint();
-            Constraint( const Polynomial&, const Constraint_Relation, unsigned = 0 );
-            Constraint( const Constraint&, bool = false );
-
-            /*
-             * Destructor:
-             */
-            ~Constraint();
-
-            /*
-             * Methods:
-             */
+            // Methods.
             const Polynomial& lhs() const
             {
                 return mLhs;
@@ -154,7 +96,7 @@ namespace smtrat
                 return mVariables;
             }
 
-            Constraint_Relation relation() const
+            Relation relation() const
             {
                 return mRelation;
             }
@@ -179,6 +121,11 @@ namespace smtrat
                 return mSecondHash;
             }
 
+            unsigned hash() const
+            {
+                return mHash;
+            }
+
             bool hasFactorization() const
             {
                 return (mFactorization.size() > 1);
@@ -189,135 +136,91 @@ namespace smtrat
                 return mFactorization;
             }
 
-            bool containsIntegerValuedVariable() const
+            Rational constantPart() const
             {
-                return mContainsIntegerValuedVariables;
-            }
-
-            bool containsRealValuedVariable() const
-            {
-                return mContainsRealValuedVariables;
-            }
-
-            unsigned numMonomials() const
-            {
-                return mNumMonomials;
-            }
-
-            unsigned minMonomeDegree() const
-            {
-                return mMinMonomeDegree;
-            }
-
-            unsigned maxMonomeDegree() const
-            {
-                return mMaxMonomeDegree;
-            }
-
-            const Rational& constantPart() const
-            {
-                return mConstantPart;
-            }
-
-            unsigned maxDegree( const Variable& _variable ) const
-            {
-                VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
-                if( varInfo != mVarInfoMap.end() )
-                {
-                    return varInfo->getVarInfo()->maxDegree;
-                }
+                if( mLhs.hasConstantTerm() )
+                    return mLhs.trailingTerm()->coeff();
                 else
+                    return Rational( 0 );
+            }
+
+            unsigned maxDegree( const carl::Variable& _variable ) const
+            {
+                return mVarInfoMap.getVarInfo( _variable )->maxDegree();
+            }
+
+            unsigned minDegree( const carl::Variable& _variable ) const
+            {
+                return mVarInfoMap.getVarInfo( _variable )->minDegree();
+            }
+
+            unsigned occurences( const carl::Variable& _variable ) const
+            {
+                return mVarInfoMap.getVarInfo( _variable )->occurence();
+            }
+
+            bool constraintRelationIsStrict( Relation rel ) const
+            {
+                return (rel == NEQ || rel == LESS || rel == GREATER);
+            }
+            
+            /**
+             * Checks if the given variable occurs in the constraint.
+             * @param _var  The variable to check for.
+             * @return true, if the given variable occurs in the constraint;
+             *          false, otherwise.
+             */
+            bool hasVariable( const carl::Variable& _var ) const
+            {
+                return mVariables.find( _var ) != mVariables.end();
+            }
+            
+            /**
+             * Checks if this constraints contains an integer valued variable.
+             * @return true, if it does;
+             *          false, otherwise.
+             */
+            bool hasIntegerValuedVariable() const
+            {
+                for( auto var = mVariables.begin(); var != mVariables.end(); ++var )
                 {
-                    return 0;
+                    if( var->getType() == carl::VariableType::VT_INT )
+                        return true;
                 }
+                return false;
             }
-
-            unsigned minDegree( const Variable& _variable ) const
+            
+            /**
+             * Checks if this constraints contains an real valued variable.
+             * @return true, if it does;
+             *          false, otherwise.
+             */
+            bool hasRealValuedVariable() const
             {
-                VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
-                if( varInfo != mVarInfoMap.end() )
+                for( auto var = mVariables.begin(); var != mVariables.end(); ++var )
                 {
-                    return varInfo->getVarInfo()->minDegree;
+                    if( var->getType() == carl::VariableType::VT_REAL )
+                        return true;
                 }
-                else
-                {
-                    return 0;
-                }
+                return false;
             }
 
-            unsigned occurences( const Variable& _variable ) const
-            {
-                VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
-                if( varInfo != mVarInfoMap.end() )
-                {
-                    return varInfo->getVarInfo()->occurence;
-                }
-                else
-                {
-                    return 0;
-                }
-            }
-
-            const VarInfo varInfo( const ex& _variable ) const
-            {
-                VarInfoMap::const_iterator varInfo = mVarInfoMap.find( _variable );
-                assert( varInfo != mVarInfoMap.end() ); // variable not in constraint.
-                return varInfo->second;
-            }
-
-            bool constraintRelationIsStrict( Constraint_Relation rel ) const
-            {
-                return (rel == CR_NEQ || rel == CR_LESS || rel == CR_GREATER);
-            }
-
-            unsigned maxDegree() const
-            {
-                return mMaxMonomeDegree;
-            }
-
-            bool isLinear() const
-            {
-                return mMaxMonomeDegree < 2;
-            }
-
-            // Data access methods (read only).
-            bool variable( const std::string&, GiNaC::symbol& ) const;
-            bool hasVariable( const std::string& ) const;
-            static bool evaluate( const numeric&, Constraint_Relation );
+            static bool evaluate( const Rational&, Relation );
             unsigned isConsistent() const;
-            unsigned consistentWith( const GiNaCRA::evaldoubleintervalmap& ) const;
-            unsigned satisfiedBy( GiNaC::exmap& ) const;
-            bool hasFinitelyManySolutionsIn( const std::string& ) const;
-            GiNaC::ex coefficient( const GiNaC::ex&, int ) const;
-            signed highestDegree() const;
-            std::pair<GiNaC::numeric, GiNaC::numeric> cauchyBounds() const;
-            std::map<const std::string, GiNaC::numeric, strCmp> linearAndConstantCoefficients() const;
-            static int exCompare( const GiNaC::ex&, const GiNaC::symtab&, const GiNaC::ex&, const GiNaC::symtab& );
-
-            // Operators.
+            unsigned consistentWith( const EvalDoubleIntervalMap& ) const;
+            unsigned satisfiedBy( std::map<carl::Variable,Rational>& ) const;
             bool operator <( const Constraint& ) const;
             bool operator ==( const Constraint& ) const;
             friend std::ostream& operator <<( std::ostream&, const Constraint& );
-
-            // Manipulating methods.
-            static bool containsNumeric( const GiNaC::ex& );
-            static bool containsNumeric( const GiNaC::ex&, GiNaC::const_iterator );
-            static GiNaC::ex normalizeA( const GiNaC::ex& );
-            void setBoundProperties( const GiNaC::symbol&, const GiNaC::numeric& );
+            Polynomial coefficient( const carl::Variable&, unsigned ) const;
             void collectProperties();
             Constraint* simplify();
             void init();
-
-            // Printing methods.
-            std::string toString( unsigned = 0 ) const;
-            void print( std::ostream& _out = std::cout ) const;
-            void print2( std::ostream& _out = std::cout ) const;
-            void printInPrefix( std::ostream& _out = std::cout ) const;
-            const std::string prefixStringOf( const GiNaC::ex& ) const;
+            std::string toString( unsigned = 0, bool = true, bool = true ) const;
+            void print( std::ostream& _out = std::cout, const std::string = "", bool = false ) const;
             void printProperties( std::ostream& = std::cout ) const;
-            std::string smtlibString( bool = true ) const;
-
-            //
+            static bool relationIsStrict( Relation rel );
+            static std::string relationToString( const Relation rel );
             static signed compare( const Constraint*, const Constraint* );
             static const Constraint* mergeConstraints( const Constraint*, const Constraint* );
             static bool combineConstraints( const Constraint*, const Constraint*, const Constraint* );

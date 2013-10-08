@@ -149,30 +149,11 @@ namespace smtrat
                 }
                 else
                 {
-                    _out << "(" <<  Formula::constraintPool().externalName( ass->first ) << " ";
-                    _out << Formula::constraintPool().stringOf( *ass->second->theoryValue ) << ")" << endl;
+                    _out << "(" <<  Formula::constraintPool().getArithmeticVariableByName( ass->first ) << " ";
+                    _out << ass->second->theoryValue->toString( true ) << ")" << endl;
                 }
             }
             _out << ")" << endl;
-        }
-    }
-    
-    /**
-     * Prints the assignment of the given variable, if it has one.
-     * @param _varName Internal variable name.
-     * @param _out The stream to print on.
-     */
-    void Manager::printValue( const string& _varName, ostream& _out ) const
-    {
-        auto ass = mpPrimaryBackend->model().find( _varName );
-        if( ass->second->domain == BOOLEAN_DOMAIN )
-        {
-            _out << "(" << _varName << " " << (ass->second->booleanValue ? "true" : "false") << ")";
-        }
-        else
-        {
-            _out << "(" << Formula::constraintPool().externalName( _varName );
-            _out << " " << Formula::constraintPool().stringOf( *ass->second->theoryValue ) << ")";
         }
     }
     

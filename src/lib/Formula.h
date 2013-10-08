@@ -50,7 +50,6 @@ namespace smtrat
 
     class Formula
     {
-		using std::string;
         private:
 
             /**
@@ -67,10 +66,6 @@ namespace smtrat
             double mDifficulty;
             /// The type of this formula.
             Type mType;
-            /// All real valued variables used within this formula (and its sub formulas).
-            GiNaC::symtab mRealValuedVars;
-            /// All Boolean variables used within this formula (and its sub formulas).
-            std::set< std::string > mBooleanVars;
 
             /// The content of this formula.
             union
@@ -95,7 +90,7 @@ namespace smtrat
              */
             Formula();
             Formula( const Type );
-            Formula( const std::string& );
+            Formula( const std::string* );
             Formula( const Constraint* _constraint );
             Formula( const Formula& );
 
@@ -215,29 +210,60 @@ namespace smtrat
                 return mPropositions;
             }
 
-            unsigned numberOfRealVariables() const
+            void realValuedVars( Variables& _realVars ) const
             {
-                return mRealValuedVars.size();
+                if( mType == REALCONSTRAINT )
+                {
+                    for( auto var = mpConstraint->variables().begin(); var != mpConstraint->variables().end(); ++var )
+                        if( var->getType() == carl::VariableType::VT_REAL )
+                            _realVars.insert( *var );
+                }
+                else if( isBooleanCombination() )
+                {
+                    for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
+                        (*subformula)->realValuedVars( _realVars );
+                }
+            }
+            
+            void integerValuedVars( Variables& _intVars ) const
+            {
+                if( mType == REALCONSTRAINT )
+                {
+                    for( auto var = mpConstraint->variables().begin(); var != mpConstraint->variables().end(); ++var )
+                        if( var->getType() == carl::VariableType::VT_INT )
+                            _intVars.insert( *var );
+                }
+                else if( isBooleanCombination() )
+                {
+                    for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
+                        (*subformula)->integerValuedVars( _intVars );
+                }
+            }
+            
+            void arithmeticVars( Variables& _arithmeticVars ) const
+            {
+                if( mType == REALCONSTRAINT )
+                {
+                    _arithmeticVars.insert( mpConstraint->variables().begin(), mpConstraint->variables().end() );
+                }
+                else if( isBooleanCombination() )
+                {
+                    for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
+                        (*subformula)->arithmeticVars( _arithmeticVars );
+                }
             }
 
-            const GiNaC::symtab& realValuedVars() const
+            void booleanVars( std::set< std::string >& _booleanVars ) const
             {
-                return mRealValuedVars;
-            }
-
-            GiNaC::symtab& rRealValuedVars()
-            {
-                return mRealValuedVars;
-            }
-
-            unsigned numberOfBooleanVariables() const
-            {
-                return mBooleanVars.size();
-            }
-
-            const std::set< std::string >& booleanVars() const
-            {
-                return mBooleanVars;
+                if( mType == BOOL )
+                {
+                    _booleanVars.insert( *mpIdentifier );
+                }
+                else if( isBooleanCombination() )
+                {
+                    for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
+                        (*subformula)->booleanVars( _booleanVars );
+                }
             }
 
             std::list<Formula*>* const pSubformulas()
@@ -439,22 +465,22 @@ namespace smtrat
                 mpFather = NULL;
             }
 
-            static const Constraint* newBound( const GiNaC::symbol& _var, const Constraint_Relation _rel, const GiNaC::numeric& _bound )
+            static const Constraint* newBound( const carl::Variable& _var, const Constraint::Relation _rel, const Rational& _bound )
             {
                 return mpConstraintPool->newBound( _var, _rel, _bound );
             }
 
-            static const Constraint* newConstraint( const GiNaC::ex& _lhs, const Constraint_Relation _rel, const GiNaC::symtab& _variables )
+            static const Constraint* newConstraint( const Polynomial& _lhs, const Constraint::Relation _rel )
             {
-                return mpConstraintPool->newConstraint( _lhs, _rel, _variables );
+                return mpConstraintPool->newConstraint( _lhs, _rel );
             }
 
-            static std::pair< std::string, GiNaC::ex > newRealVariable( const std::string& _name )
+            static carl::Variable newRealVariable( const std::string& _name )
             {
-                return mpConstraintPool->newArithmeticVariable( _name, REAL_DOMAIN );
+                return mpConstraintPool->newArithmeticVariable( _name, carl::VariableType::VT_REAL );
             }
 
-            static std::pair< std::string, GiNaC::ex> newArithmeticVariable( const std::string& _name, Variable_Domain _domain )
+            static carl::Variable newArithmeticVariable( const std::string& _name, carl::VariableType _domain )
             {
                 return mpConstraintPool->newArithmeticVariable( _name, _domain );
             }
@@ -474,7 +500,7 @@ namespace smtrat
              *
              * @return The fresh real variable.
              */
-            static std::pair< std::string, GiNaC::ex > newAuxiliaryRealVariable()
+            static carl::Variable newAuxiliaryRealVariable()
             {
                 return mpConstraintPool->newAuxiliaryRealVariable();
             }
@@ -486,7 +512,7 @@ namespace smtrat
              * 
              * @return The fresh real variable.
              */
-            static std::pair< std::string, GiNaC::ex > newAuxiliaryRealVariable( const std::string& _varName )
+            static carl::Variable newAuxiliaryRealVariable( const std::string& _varName )
             {
                 return mpConstraintPool->newAuxiliaryRealVariable( _varName );
             }
@@ -496,14 +522,9 @@ namespace smtrat
              *
              * @return The identifier of a fresh Boolean variable.
              */
-            static std::string newAuxiliaryBooleanVariable()
+            static std::string* newAuxiliaryBooleanVariable()
             {
                 return mpConstraintPool->newAuxiliaryBooleanVariable();
-            }
-
-            static Variable_Domain domain( const GiNaC::ex& _variable )
-            {
-                return mpConstraintPool->domain( _variable );
             }
 
             bool isAtom() const
@@ -575,11 +596,28 @@ namespace smtrat
                 }
                 return (iter == _formulas.end());
             }
+            
+            /**
+             * Adds a constraint as sub-formula to this formula.
+             * @param _constraint The constraint to add.
+             */
+            void addSubformula( const Constraint* _constraint )
+            {
+                addSubformula( new Formula( _constraint ) );
+            }
+
+            /**
+             * Adds a Boolean variable as sub-formula to this formula.
+             * @param _boolean The name of the Boolean variable to add.
+             */
+            void addSubformula( const std::string* _boolean )
+            {
+                addSubformula( new Formula( _boolean ) );
+            }
 
             Condition getPropositions();
             void setFather( Formula* );
             void addSubformula( Formula* );
-            void addSubformula( const Constraint* );
             iterator replace( iterator, Formula* );
             void pop_back();
             void pop_front();
@@ -600,9 +638,8 @@ namespace smtrat
             static bool resolveNegation( Formula&, bool = true );
             static std::string FormulaTypeToString( Type type);
 
-            std::string variableListToString(std::string seperator = ",", const std::unordered_map<string, string>& variableIds = std::unordered_map<string, string>()) const;
+            std::string variableListToString(std::string seperator = ",", const std::unordered_map<std::string, std::string>& variableIds = std::unordered_map<std::string, std::string>()) const;
             std::string toRedlogFormat(bool withVariables = true) const;
-            std::string toQepcadFormat(bool withVariables, const std::unordered_map<string, string>& variableIds) const;
 
         private:
 

@@ -238,7 +238,6 @@ namespace smtrat
             }
             
             void printAssignment( std::ostream& ) const;
-            void printValue( const std::string&, std::ostream& ) const;
             void printAssertions( std::ostream& ) const;
             void printInfeasibleSubset( std::ostream& ) const;
             
