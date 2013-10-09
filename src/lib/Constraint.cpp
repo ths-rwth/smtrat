@@ -29,8 +29,6 @@
  * @version 2013-03-27
  */
 
-#include <src/carl/core/VariablesInformation.h>
-
 #include "Constraint.h"
 #include "ConstraintPool.h"
 #include "Formula.h"
@@ -377,8 +375,13 @@ namespace smtrat
     Polynomial Constraint::coefficient( const carl::Variable& _var, unsigned _degree ) const
     {
         Polynomial result;
-//        mVarInfoMap.getVarInfo( _var )->updateCoeff( _degree, result );
-        mLhs.
+        const map<unsigned, Polynomial>& coeffs = mVarInfoMap.getVarInfo( _var )->coeffs();
+        auto expCoeffPair = coeffs.find( _degree );
+        if( expCoeffPair != coeffs.end() )
+        {
+            return expCoeffPair->second;
+        }
+        return Polynomial( Rational( 0 ) );
     }
 
     /**
@@ -539,7 +542,7 @@ namespace smtrat
      */
     void Constraint::init()
     {
-        mLhs.getVarInfo( mVarInfoMap );
+        mVarInfoMap( mLhs.getVarInfo<false>() );
         #ifdef SMTRAT_STRAT_Factorization
         if( mNumMonomials <= MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION && mVariables.size() <= MAX_DIMENSION_FOR_FACTORIZATION
             && mMaxMonomeDegree <= MAX_DEGREE_FOR_FACTORIZATION && mMaxMonomeDegree >= MIN_DEGREE_FOR_FACTORIZATION )
@@ -639,7 +642,7 @@ namespace smtrat
             default:
                 result += "~";
         }
-        result += (infix ? "0" : (mLhs.toString( true, _friendlyVarNames ) + " 0)"));
+        result += (_infix ? "0" : (mLhs.toString( true, _friendlyVarNames ) + " 0)"));
         return result;
     }
 
@@ -660,7 +663,7 @@ namespace smtrat
         _out << "   The maximal degree:      " << mLhs.highestDegree() << endl;
         _out << "   The constant part:       " << constantPart() << endl;
         _out << "   Variables:" << endl;
-        for( auto var = mVariables.begin(); var != mVarInfoMap.end(); ++var )
+        for( auto var = mVariables.begin(); var != mVariables.end(); ++var )
         {
             auto varInfo = mVarInfoMap.getVarInfo( *var );
             _out << "        " << varToString( *var, _friendlyVarNames ) << " has " << varInfo->occurence() << " occurences." << endl;
@@ -668,694 +671,657 @@ namespace smtrat
             _out << "        " << varToString( *var, _friendlyVarNames ) << " has the minimal degree of " << varInfo->minDegree() << "." << endl;
         }
     }
+    
+    static const signed A_IFF_B = 2;
+    static const signed A_IMPLIES_B = 1;
+    static const signed B_IMPLIES_A = -1;
+    static const signed NOT__A_AND_B = -2;
+    static const signed A_AND_B__IFF_C = -3;
+    static const signed A_XOR_B = -4;
 
     /**
-     * Compares this constraint with the given constraint.
+     * Compares _constraintA with _constraintB.
      *
-     * @return  2,  if it is easy to decide that this constraint and the given constraint have the same solutions.(are equal)
-     *          1,  if it is easy to decide that the given constraint includes all solutions of this constraint;
-     *          -1, if it is easy to decide that this constraint includes all solutions of the given constraint;
-     *          -2, if it is easy to decide that this constraint has no solution common with the given constraint;
-     *          -3, if it is easy to decide that this constraint and the given constraint can be intersected;
-     *          -4, if it is easy to decide that this constraint is the inverse of the given constraint;
-     *          0,  otherwise.
+     * @return  2, if it is easy to decide that _constraintA and _constraintB have the same solutions. _constraintA = _constraintB
+     *           1, if it is easy to decide that _constraintB includes all solutions of _constraintA;   _constraintA -> _constraintB
+     *          -1, if it is easy to decide that _constraintA includes all solutions of _constraintB;   _constraintB -> _constraintA
+     *          -2, if it is easy to decide that _constraintA has no solution common with _constraintB; not(_constraintA and _constraintB)
+     *          -3, if it is easy to decide that _constraintA and _constraintB can be intersected;      _constraintA and _constraintB = _constraintC
+     *          -4, if it is easy to decide that _constraintA is the inverse of _constraintB;           _constraintA xor _constraintB
+     *           0, otherwise.
      */
     signed Constraint::compare( const Constraint* _constraintA, const Constraint* _constraintB )
     {
-        if( _constraintA->variables().empty() || _constraintB->variables().empty() ) return 0;
-        auto var1 = _constraintA->variables().begin();
-        auto var2 = _constraintB->variables().begin();
-        while( var1 != _constraintA->variables().end() && var2 != _constraintB->variables().end() )
+        /*
+         * Check whether it holds that 
+         * 
+         *                      _constraintA  =  a_1*m_1+...+a_k*m_k + c ~ 0
+         * and 
+         *                      _constraintB  =  b_1*m_1+...+b_k*m_k + d ~ 0, 
+         * 
+         * where a_1,..., a_k, b_1,..., b_k, c, d are rational coefficients, 
+         *       m_1,..., m_k are non-constant monomials and 
+         *       exists a rational g such that 
+         * 
+         *                   a_i = g * b_i for all 1<=i<=k 
+         *              or   b_i = g * a_i for all 1<=i<=k 
+         */
+        auto termA = _constraintA->lhs().begin();
+        auto termB = _constraintB->lhs().begin();
+        assert( !termA->isZero() )
+        Rational g;
+        Rational termAcoeffAbs = cln::abs( termA->coeff() );
+        Rational termBcoeffAbs = cln::abs( termB->coeff() );
+        bool termACoeffGreater = termAcoeffAbs > termBcoeffAbs; 
+        bool termBCoeffGreater = termAcoeffAbs < termBcoeffAbs;
+        if( termACoeffGreater )
+            g = cln::div( termA->coeff(), termB->coeff() );
+        else if( termBCoeffGreater )
+            g = cln::div( termB->coeff(), termA->coeff() );
+        else if( termA->coeff() == termB->coeff() )
+            g = Rational( 1 );
+        else
         {
-            if( *var1 == *var2 )
-            {
-                var1++;
-                var2++;
-            }
-            else
-            {
-                break;
-            }
+            g = Rational( -1 );
+            termBCoeffGreater = true;
         }
-        if( var1 == _constraintA->variables().end() && var2 == _constraintB->variables().end() )
+        Rational c = 0;
+        Rational d = 0;
+        ++termA;
+        ++termB;
+        while( termA != _constraintA->lhs().end() && termB != _constraintB->lhs().end() )
         {
-            ex leadingVar = ex( _constraintA->variables().begin()->second );
-            ex lcoeffA = ex( _constraintA->coefficient( leadingVar, _constraintA->maxDegree( leadingVar ) ) );
-            ex lcoeffB = ex( _constraintB->coefficient( leadingVar, _constraintB->maxDegree( leadingVar ) ) );
-            ex lhsA    = ex( _constraintA->mLhs );
-            ex lhsB    = ex( _constraintB->mLhs );
-            if( lcoeffA.info( info_flags::rational ) && lcoeffB.info( info_flags::rational ) )
+            if( termA->isConstant() || termB->isConstant() )
             {
-                if( lcoeffB.info( info_flags::positive ) )
+                if( termA->isConstant() )
                 {
-                    lhsA = lhsA * lcoeffB;
+                    c = (termBCoeffGreater ? termA->coeff() * g : termA->coeff());
+                    ++termA;
                 }
-                else
+                if( termB->isConstant() )
                 {
-                    lhsA = lhsA * (-1) * lcoeffB;
+                    d = (termACoeffGreater ? termB->coeff() * g : termB->coeff());
+                    ++termB;
                 }
-                if( lcoeffA.info( info_flags::positive ) )
-                {
-                    lhsB = lhsB * lcoeffA;
-                }
-                else
-                {
-                    lhsB = lhsB * (-1) * lcoeffA;
-                }
+                assert( termA == _constraintA->lhs().end() && termB == _constraintB->lhs().end() )
             }
-            else if( lcoeffA.info( info_flags::rational ) || lcoeffB.info( info_flags::rational ) )
+            else if( *termA->monomial() != *termB->monomial() )
             {
                 return 0;
             }
-            switch( _constraintB->relation() )
+            else if( termACoeffGreater )
             {
-                case EQ:
+                if( termA->coeff() != g * termB->coeff() )
                 {
-                    switch( _constraintA->relation() )
-                    {
-                        case EQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                                return 2;
-                            if( result1.info( info_flags::rational ) )
-                                return -2;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return 2;
-                            if( result2.info( info_flags::rational ) )
-                                return -2;
-                            return 0;
-                        }
-                        case NEQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                                return -4;
-                            if( result1.info( info_flags::rational ) )
-                                return -1;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return -4;
-                            if( result2.info( info_flags::rational ) )
-                                return -1;
-                            return 0;
-                        }
-                        case LESS:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1.info( info_flags::negative ) )
-                                return -1;
-                            if( result1.info( info_flags::nonnegative ) )
-                                return -2;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2.info( info_flags::negative ) )
-                                return -1;
-                            if( result2.info( info_flags::nonnegative ) )
-                                return -2;
-                            return 0;
-                        }
-                        case GREATER:
-                        {
-                            ex result1 = -1 * (lhsA - lhsB);
-                            normalize( result1 );
-                            if( result1.info( info_flags::negative ) )
-                                return -1;
-                            if( result1.info( info_flags::nonnegative ) )
-                                return -2;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return -2;
-                            if( result2.info( info_flags::negative ) )
-                                return -2;
-                            if( result2.info( info_flags::positive ) )
-                                return -1;
-                            return 0;
-                        }
-                        case LEQ:
-                        {
-                            ex result1 = -1 * (lhsA - lhsB);
-                            normalize( result1 );
-                            if( result1.info( info_flags::nonnegative ) )
-                                return -1;
-                            if( result1.info( info_flags::negative ) )
-                                return -2;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return -1;
-                            if( result2.info( info_flags::negative ) )
-                                return -1;
-                            if( result2.info( info_flags::positive ) )
-                                return -2;
-                            return 0;
-                        }
-                        case GEQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1.info( info_flags::nonnegative ) )
-                                return -1;
-                            if( result1.info( info_flags::negative ) )
-                                return -2;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2.info( info_flags::negative ) )
-                                return -2;
-                            if( result2.info( info_flags::nonnegative ) )
-                                return -1;
-                            return 0;
-                        }
-                        default:
-                            return false;
-                    }
+                    return 0;
                 }
-                case NEQ:
+            }
+            else if( termBCoeffGreater )
+            {
+                if( g * termA->coeff() != termB->coeff() )
                 {
-                    switch( _constraintA->relation() )
-                    {
-                        case EQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                                return -4;
-                            if( result1.info( info_flags::rational ) )
-                                return 1;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return -4;
-                            if( result2.info( info_flags::rational ) )
-                                return 1;
-                            return 0;
-                        }
-                        case NEQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                                return 2;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return 2;
-                            return 0;
-                        }
-                        case LESS:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1.info( info_flags::nonnegative ) )
-                                return 1;
-                            ex result2 = -1 * (lhsA + lhsB);
-                            normalize( result2 );
-                            if( result2.info( info_flags::nonnegative ) )
-                                return 1;
-                            return 0;
-                        }
-                        case GREATER:
-                        {
-                            ex result1 = -1 * (lhsA - lhsB);
-                            normalize( result1 );
-                            if( result1.info( info_flags::nonnegative ) )
-                                return 1;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2.info( info_flags::nonnegative ) )
-                                return 1;
-                            return 0;
-                        }
-                        case LEQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                                return -3;
-                            if( result1.info( info_flags::positive ) )
-                                return 1;
-                            ex result2 = -1 * (lhsA + lhsB);
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return -3;
-                            if( result2.info( info_flags::positive ) )
-                                return 1;
-                            return 0;
-                        }
-                        case GEQ:
-                        {
-                            ex result1 = -1 * (lhsA - lhsB);
-                            normalize( result1 );
-                            if( result1 == 0 )
-                                return -3;
-                            if( result1.info( info_flags::positive ) )
-                                return 1;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return -3;
-                            if( result2.info( info_flags::positive ) )
-                                return 1;
-                            return 0;
-                        }
-                        default:
-                            return 0;
-                    }
+                    return 0;
                 }
-                case LESS:
-                {
-                    switch( _constraintA->relation() )
-                    {
-                        case EQ:
-                        {
-                            ex result1 = -1 * (lhsA - lhsB);
-                            normalize( result1 );
-                            if( result1.info( info_flags::negative ) )
-                                return 1;
-                            if( result1.info( info_flags::nonnegative ) )
-                                return -2;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2.info( info_flags::negative ) )
-                                return 1;
-                            if( result2.info( info_flags::nonnegative ) )
-                                return -2;
-                            return 0;
-                        }
-                        case NEQ:
-                        {
-                            ex result1 = -1 * (lhsA - lhsB);
-                            normalize( result1 );
-                            if( result1.info( info_flags::nonnegative ) )
-                                return -1;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2.info( info_flags::nonnegative ) )
-                                return -1;
-                            return 0;
-                        }
-                        case LESS:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                                return 2;
-                            if( result1.info( info_flags::negative ) )
-                                return -1;
-                            if( result1.info( info_flags::positive ) )
-                                return 1;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2.info( info_flags::nonnegative ) )
-                                return -2;
-                            return 0;
-                        }
-                        case GREATER:
-                        {
-                            ex result1 = -1 * (lhsA - lhsB);
-                            normalize( result1 );
-                            if( result1.info( info_flags::nonnegative ) )
-                                return -2;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return 2;
-                            if( result2.info( info_flags::positive ) )
-                                return -1;
-                            if( result2.info( info_flags::negative ) )
-                                return 1;
-                            return 0;
-                        }
-                        case LEQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1.info( info_flags::positive ) )
-                                return 1;
-                            if( result1.info( info_flags::rational ) )
-                                return -1;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2.info( info_flags::positive ) )
-                                return -2;
-                            if( result2 == 0 )
-                                return -4;
-                            return 0;
-                        }
-                        case GEQ:
-                        {
-                            ex result1 = -1 * (lhsA - lhsB);
-                            normalize( result1 );
-                            if( result1.info( info_flags::positive ) )
-                                return -2;
-                            if( result1 == 0 )
-                                return -4;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2.info( info_flags::nonnegative ) )
-                                return -1;
-                            if( result2.info( info_flags::negative ) )
-                                return 1;
-                            return 0;
-                        }
-                        default:
-                            return 0;
-                    }
-                }
-                case GREATER:
-                {
-                    switch( _constraintA->relation() )
-                    {
-                        case EQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1.info( info_flags::negative ) )
-                                return 1;
-                            if( result1.info( info_flags::nonnegative ) )
-                                return -2;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return -2;
-                            if( result2.info( info_flags::negative ) )
-                                return -2;
-                            if( result2.info( info_flags::positive ) )
-                                return 1;
-                            return 0;
-                        }
-                        case NEQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1.info( info_flags::nonnegative ) )
-                                return -1;
-                            ex result2 = -1 * (lhsA + lhsB);
-                            normalize( result2 );
-                            if( result2.info( info_flags::nonnegative ) )
-                                return -1;
-                            return 0;
-                        }
-                        case LESS:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1.info( info_flags::nonnegative ) )
-                                return -2;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return 2;
-                            if( result2.info( info_flags::positive ) )
-                                return 1;
-                            if( result2.info( info_flags::negative ) )
-                                return -1;
-                            return 0;
-                        }
-                        case GREATER:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                                return 2;
-                            if( result1.info( info_flags::negative ) )
-                                return 1;
-                            if( result1.info( info_flags::positive ) )
-                                return -1;
-                            ex result2 = -1 * (lhsA + lhsB);
-                            normalize( result2 );
-                            if( result2.info( info_flags::nonnegative ) )
-                                return -2;
-                            return 0;
-                        }
-                        case LEQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1.info( info_flags::positive ) )
-                                return -2;
-                            if( result1 == 0 )
-                                return -4;
-                            ex result2 = -1 * (lhsA + lhsB);
-                            normalize( result2 );
-                            if( result2.info( info_flags::nonnegative ) )
-                                return -1;
-                            if( result2.info( info_flags::negative ) )
-                                return 1;
-                            return 0;
-                        }
-                        case GEQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1.info( info_flags::negative ) )
-                                return 1;
-                            if( result1.info( info_flags::rational ) )
-                                return -1;
-                            ex result2 = -1 * (lhsA + lhsB);
-                            normalize( result2 );
-                            if( result2.info( info_flags::positive ) )
-                                return -2;
-                            if( result2 == 0 )
-                                return -4;
-                            return 0;
-                        }
-                        default:
-                            return 0;
-                    }
-                }
+            }
+            else if( termA->coeff() != g * termB->coeff() )
+            {
+                return 0;
+            }
+            ++termA;
+            ++termB;
+        }
+        Relation relA = _constraintA->relation();
+        Relation relB = _constraintB->relation();
+        if( g < 0 )
+        {
+            switch( (termACoeffGreater ? relA : relB ) )
+            {
                 case LEQ:
                 {
-                    switch( _constraintA->relation() )
-                    {
-                        case EQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1.info( info_flags::nonnegative ) )
-                                return 1;
-                            if( result1.info( info_flags::negative ) )
-                                return -2;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return 1;
-                            if( result2.info( info_flags::negative ) )
-                                return 1;
-                            if( result2.info( info_flags::positive ) )
-                                return -2;
-                            return 0;
-                        }
-                        case NEQ:
-                        {
-                            ex result1 = -1 * (lhsA - lhsB);
-                            normalize( result1 );
-                            if( result1 == 0 )
-                                return -3;
-                            if( result1.info( info_flags::positive ) )
-                                return -1;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return -3;
-                            if( result2.info( info_flags::positive ) )
-                                return -1;
-                            return 0;
-                        }
-                        case LESS:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1.info( info_flags::negative ) )
-                                return -1;
-                            if( result1.info( info_flags::rational ) )
-                                return 1;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2.info( info_flags::positive ) )
-                                return -2;
-                            if( result2 == 0 )
-                                return -4;
-                            return 0;
-                        }
-                        case GREATER:
-                        {
-                            ex result1 = -1 * (lhsA - lhsB);
-                            normalize( result1 );
-                            if( result1.info( info_flags::positive ) )
-                                return -2;
-                            if( result1 == 0 )
-                                return -4;
-                            ex result2 = -1 * (lhsA + lhsB);
-                            normalize( result2 );
-                            if( result2.info( info_flags::nonnegative ) )
-                                return 1;
-                            if( result2.info( info_flags::negative ) )
-                                return -1;
-                            return 0;
-                        }
-                        case LEQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                                return 2;
-                            if( result1.info( info_flags::negative ) )
-                                return -1;
-                            if( result1.info( info_flags::positive ) )
-                                return 1;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return -3;
-                            if( result2.info( info_flags::positive ) )
-                                return -2;
-                            return 0;
-                        }
-                        case GEQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                                return -3;
-                            if( result1.info( info_flags::negative ) )
-                                return -2;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return 2;
-                            if( result2.info( info_flags::positive ) )
-                                return -1;
-                            if( result2.info( info_flags::negative ) )
-                                return 1;
-                            return 0;
-                        }
-                        default:
-                            return 0;
-                    }
+                    if( termACoeffGreater )
+                        relA = GEQ;
+                    else
+                        relB = GEQ;
+                    break;
                 }
                 case GEQ:
                 {
-                    switch( _constraintA->relation() )
-                    {
-                        case EQ:
-                        {
-                            ex result1 = -1 * (lhsA - lhsB);
-                            normalize( result1 );
-                            if( result1.info( info_flags::nonnegative ) )
-                                return 1;
-                            if( result1.info( info_flags::negative ) )
-                                return -2;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2.info( info_flags::negative ) )
-                                return -2;
-                            if( result2.info( info_flags::nonnegative ) )
-                                return 1;
-                            return 0;
-                        }
-                        case NEQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                                return -3;
-                            if( result1.info( info_flags::positive ) )
-                                return -1;
-                            ex result2 = -1 * (lhsA + lhsB);
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return -3;
-                            if( result2.info( info_flags::positive ) )
-                                return -1;
-                            return 0;
-                        }
-                        case LESS:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1.info( info_flags::positive ) )
-                                return -2;
-                            if( result1 == 0 )
-                                return -4;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2.info( info_flags::nonnegative ) )
-                                return 1;
-                            if( result2.info( info_flags::negative ) )
-                                return -1;
-                            return 0;
-                        }
-                        case GREATER:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1.info( info_flags::positive ) )
-                                return -1;
-                            if( result1.info( info_flags::rational ) )
-                                return 1;
-                            ex result2 = -1 * (lhsA + lhsB);
-                            normalize( result2 );
-                            if( result2.info( info_flags::positive ) )
-                                return -2;
-                            if( result2 == 0 )
-                                return -4;
-                            return 0;
-                        }
-                        case LEQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                                return -3;
-                            if( result1.info( info_flags::positive ) )
-                                return -2;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return 2;
-                            if( result2.info( info_flags::positive ) )
-                                return 1;
-                            if( result2.info( info_flags::negative ) )
-                                return -1;
-                            return 0;
-                        }
-                        case GEQ:
-                        {
-                            ex result1 = lhsA - lhsB;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                                return 2;
-                            if( result1.info( info_flags::negative ) )
-                                return 1;
-                            if( result1.info( info_flags::positive ) )
-                                return -1;
-                            ex result2 = lhsA + lhsB;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                                return -3;
-                            if( result2.info( info_flags::negative ) )
-                                return -2;
-                            return 0;
-                        }
-                        default:
-                            return 0;
-                    }
+                    if( termACoeffGreater )
+                        relA = LEQ;
+                    else
+                        relB = LEQ;
+                    break;
                 }
-                default:
-                    return 0;
+                case LESS:
+                {
+                    if( termACoeffGreater )
+                        relA = GREATER;
+                    else
+                        relB = GREATER;
+                    break;
+                }
+                case GREATER:
+                {
+                    if( termACoeffGreater )
+                        relA = LESS;
+                    else
+                        relB = LESS;
+                    break;
+                }
             }
         }
-        else
+        switch( relB )
         {
-            return 0;
+            case EQ:
+            {
+                switch( relA )
+                {
+                    case EQ: // p+c=0  and  p+d=0
+                    {
+                        if( c == d )
+                            return A_IFF_B;
+                        else
+                            return NOT__A_AND_B;
+                    }
+                    case NEQ: // p+c!=0  and  p+d=0
+                    {
+                        if( c == d )
+                            return A_XOR_B;
+                        else
+                            return B_IMPLIES_A;
+                    }
+                    case LESS: // p+c<0  and  p+d=0
+                    {
+                        if( c < d )
+                            return B_IMPLIES_A;
+                        else
+                            return NOT__A_AND_B;
+                    }
+                    case GREATER: // p+c>0  and  p+d=0
+                    {
+                        if( c > d )
+                            return B_IMPLIES_A;
+                        else
+                            return NOT__A_AND_B;
+                    }
+                    case LEQ: // p+c<=0  and  p+d=0
+                    {
+                        if( c <= d )
+                            return B_IMPLIES_A;
+                        else
+                            return NOT__A_AND_B;
+                    }
+                    case GEQ: // p+c>=0  and  p+d=0
+                    {
+                        if( c >= d )
+                            return B_IMPLIES_A;
+                        else
+                            return NOT__A_AND_B;
+                    }
+                    default:
+                        return false;
+                }
+            }
+            case NEQ:
+            {
+                switch( relA )
+                {
+                    case EQ: // p+c=0  and  p+d!=0
+                    {
+                        if( c == d )
+                            return A_XOR_B;
+                        else
+                            return A_IMPLIES_B;
+                    }
+                    case NEQ: // p+c!=0  and  p+d!=0
+                    {
+                        if( c == d )
+                            return A_IFF_B;
+                        else
+                            return 0;
+                    }
+                    case LESS: // p+c<0  and  p+d!=0
+                    {
+                        if( c >= d )
+                            return A_IMPLIES_B;
+                        else
+                            return 0;
+                    }
+                    case GREATER: // p+c>0  and  p+d!=0
+                    {
+                        if( c <= d )
+                            return A_IMPLIES_B;
+                        else
+                            return 0;
+                    }
+                    case LEQ: // p+c<=0  and  p+d!=0
+                    {
+                        if( c > d )
+                            return A_IMPLIES_B;
+                        else if( c == d )
+                            return A_AND_B__IFF_C;
+                        else
+                            return 0;
+                    }
+                    case GEQ: // p+c>=0  and  p+d!=0
+                    {
+                        if( c < d )
+                            return A_IMPLIES_B;
+                        else if( c == d )
+                            return A_AND_B__IFF_C;
+                        else
+                            return 0;
+                    }
+                    default:
+                        return 0;
+                }
+            }
+            case LESS:
+            {
+                switch( relA )
+                {
+                    case EQ: // p+c=0  and  p+d<0
+                    {
+                        if( c > d )
+                            return A_IMPLIES_B;
+                        else
+                            return NOT__A_AND_B;
+                    }
+                    case NEQ: // p+c!=0  and  p+d<0
+                    {
+                        if( c <= d )
+                            return B_IMPLIES_A;
+                        else
+                            return 0;
+                    }
+                    case LESS: // p+c<0  and  p+d<0
+                    {
+                        if( c == d )
+                            return A_IFF_B;
+                        else if(  )
+                            return B_IMPLIES_A;
+                        if( result1.info( info_flags::positive ) )
+                            return A_IMPLIES_B;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2.info( info_flags::nonnegative ) )
+                            return NOT__A_AND_B;
+                        return 0;
+                    }
+                    case GREATER: // p+c>0  and  p+d<0
+                    {
+                        ex result1 = -1 * (lhsA - lhsB);
+                        normalize( result1 );
+                        if( result1.info( info_flags::nonnegative ) )
+                            return NOT__A_AND_B;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2 == 0 )
+                            return A_IFF_B;
+                        if( result2.info( info_flags::positive ) )
+                            return B_IMPLIES_A;
+                        if( result2.info( info_flags::negative ) )
+                            return A_IMPLIES_B;
+                        return 0;
+                    }
+                    case LEQ: // p+c<=0  and  p+d<0
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1.info( info_flags::positive ) )
+                            return A_IMPLIES_B;
+                        if( result1.info( info_flags::rational ) )
+                            return B_IMPLIES_A;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2.info( info_flags::positive ) )
+                            return NOT__A_AND_B;
+                        if( result2 == 0 )
+                            return A_XOR_B;
+                        return 0;
+                    }
+                    case GEQ: // p+c>=0  and  p+d<0
+                    {
+                        ex result1 = -1 * (lhsA - lhsB);
+                        normalize( result1 );
+                        if( result1.info( info_flags::positive ) )
+                            return NOT__A_AND_B;
+                        if( result1 == 0 )
+                            return A_XOR_B;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2.info( info_flags::nonnegative ) )
+                            return B_IMPLIES_A;
+                        if( result2.info( info_flags::negative ) )
+                            return A_IMPLIES_B;
+                        return 0;
+                    }
+                    default:
+                        return 0;
+                }
+            }
+            case GREATER:
+            {
+                switch( relA )
+                {
+                    case EQ:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1.info( info_flags::negative ) )
+                            return A_IMPLIES_B;
+                        if( result1.info( info_flags::nonnegative ) )
+                            return NOT__A_AND_B;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2 == 0 )
+                            return NOT__A_AND_B;
+                        if( result2.info( info_flags::negative ) )
+                            return NOT__A_AND_B;
+                        if( result2.info( info_flags::positive ) )
+                            return A_IMPLIES_B;
+                        return 0;
+                    }
+                    case NEQ:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1.info( info_flags::nonnegative ) )
+                            return B_IMPLIES_A;
+                        ex result2 = -1 * (lhsA + lhsB);
+                        normalize( result2 );
+                        if( result2.info( info_flags::nonnegative ) )
+                            return B_IMPLIES_A;
+                        return 0;
+                    }
+                    case LESS:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1.info( info_flags::nonnegative ) )
+                            return NOT__A_AND_B;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2 == 0 )
+                            return A_IFF_B;
+                        if( result2.info( info_flags::positive ) )
+                            return A_IMPLIES_B;
+                        if( result2.info( info_flags::negative ) )
+                            return B_IMPLIES_A;
+                        return 0;
+                    }
+                    case GREATER:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1 == 0 )
+                            return A_IFF_B;
+                        if( result1.info( info_flags::negative ) )
+                            return A_IMPLIES_B;
+                        if( result1.info( info_flags::positive ) )
+                            return B_IMPLIES_A;
+                        ex result2 = -1 * (lhsA + lhsB);
+                        normalize( result2 );
+                        if( result2.info( info_flags::nonnegative ) )
+                            return NOT__A_AND_B;
+                        return 0;
+                    }
+                    case LEQ:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1.info( info_flags::positive ) )
+                            return NOT__A_AND_B;
+                        if( result1 == 0 )
+                            return A_XOR_B;
+                        ex result2 = -1 * (lhsA + lhsB);
+                        normalize( result2 );
+                        if( result2.info( info_flags::nonnegative ) )
+                            return B_IMPLIES_A;
+                        if( result2.info( info_flags::negative ) )
+                            return A_IMPLIES_B;
+                        return 0;
+                    }
+                    case GEQ:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1.info( info_flags::negative ) )
+                            return A_IMPLIES_B;
+                        if( result1.info( info_flags::rational ) )
+                            return B_IMPLIES_A;
+                        ex result2 = -1 * (lhsA + lhsB);
+                        normalize( result2 );
+                        if( result2.info( info_flags::positive ) )
+                            return NOT__A_AND_B;
+                        if( result2 == 0 )
+                            return A_XOR_B;
+                        return 0;
+                    }
+                    default:
+                        return 0;
+                }
+            }
+            case LEQ:
+            {
+                switch( relA )
+                {
+                    case EQ:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1.info( info_flags::nonnegative ) )
+                            return A_IMPLIES_B;
+                        if( result1.info( info_flags::negative ) )
+                            return NOT__A_AND_B;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2 == 0 )
+                            return A_IMPLIES_B;
+                        if( result2.info( info_flags::negative ) )
+                            return A_IMPLIES_B;
+                        if( result2.info( info_flags::positive ) )
+                            return NOT__A_AND_B;
+                        return 0;
+                    }
+                    case NEQ:
+                    {
+                        ex result1 = -1 * (lhsA - lhsB);
+                        normalize( result1 );
+                        if( result1 == 0 )
+                            return A_AND_B__IFF_C;
+                        if( result1.info( info_flags::positive ) )
+                            return B_IMPLIES_A;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2 == 0 )
+                            return A_AND_B__IFF_C;
+                        if( result2.info( info_flags::positive ) )
+                            return B_IMPLIES_A;
+                        return 0;
+                    }
+                    case LESS:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1.info( info_flags::negative ) )
+                            return B_IMPLIES_A;
+                        if( result1.info( info_flags::rational ) )
+                            return A_IMPLIES_B;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2.info( info_flags::positive ) )
+                            return NOT__A_AND_B;
+                        if( result2 == 0 )
+                            return A_XOR_B;
+                        return 0;
+                    }
+                    case GREATER:
+                    {
+                        ex result1 = -1 * (lhsA - lhsB);
+                        normalize( result1 );
+                        if( result1.info( info_flags::positive ) )
+                            return NOT__A_AND_B;
+                        if( result1 == 0 )
+                            return A_XOR_B;
+                        ex result2 = -1 * (lhsA + lhsB);
+                        normalize( result2 );
+                        if( result2.info( info_flags::nonnegative ) )
+                            return A_IMPLIES_B;
+                        if( result2.info( info_flags::negative ) )
+                            return B_IMPLIES_A;
+                        return 0;
+                    }
+                    case LEQ:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1 == 0 )
+                            return A_IFF_B;
+                        if( result1.info( info_flags::negative ) )
+                            return B_IMPLIES_A;
+                        if( result1.info( info_flags::positive ) )
+                            return A_IMPLIES_B;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2 == 0 )
+                            return A_AND_B__IFF_C;
+                        if( result2.info( info_flags::positive ) )
+                            return NOT__A_AND_B;
+                        return 0;
+                    }
+                    case GEQ:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1 == 0 )
+                            return A_AND_B__IFF_C;
+                        if( result1.info( info_flags::negative ) )
+                            return NOT__A_AND_B;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2 == 0 )
+                            return A_IFF_B;
+                        if( result2.info( info_flags::positive ) )
+                            return B_IMPLIES_A;
+                        if( result2.info( info_flags::negative ) )
+                            return A_IMPLIES_B;
+                        return 0;
+                    }
+                    default:
+                        return 0;
+                }
+            }
+            case GEQ:
+            {
+                switch( relA )
+                {
+                    case EQ:
+                    {
+                        ex result1 = -1 * (lhsA - lhsB);
+                        normalize( result1 );
+                        if( result1.info( info_flags::nonnegative ) )
+                            return A_IMPLIES_B;
+                        if( result1.info( info_flags::negative ) )
+                            return NOT__A_AND_B;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2.info( info_flags::negative ) )
+                            return NOT__A_AND_B;
+                        if( result2.info( info_flags::nonnegative ) )
+                            return A_IMPLIES_B;
+                        return 0;
+                    }
+                    case NEQ:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1 == 0 )
+                            return A_AND_B__IFF_C;
+                        if( result1.info( info_flags::positive ) )
+                            return B_IMPLIES_A;
+                        ex result2 = -1 * (lhsA + lhsB);
+                        normalize( result2 );
+                        if( result2 == 0 )
+                            return A_AND_B__IFF_C;
+                        if( result2.info( info_flags::positive ) )
+                            return B_IMPLIES_A;
+                        return 0;
+                    }
+                    case LESS:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1.info( info_flags::positive ) )
+                            return NOT__A_AND_B;
+                        if( result1 == 0 )
+                            return A_XOR_B;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2.info( info_flags::nonnegative ) )
+                            return A_IMPLIES_B;
+                        if( result2.info( info_flags::negative ) )
+                            return B_IMPLIES_A;
+                        return 0;
+                    }
+                    case GREATER:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1.info( info_flags::positive ) )
+                            return B_IMPLIES_A;
+                        if( result1.info( info_flags::rational ) )
+                            return A_IMPLIES_B;
+                        ex result2 = -1 * (lhsA + lhsB);
+                        normalize( result2 );
+                        if( result2.info( info_flags::positive ) )
+                            return NOT__A_AND_B;
+                        if( result2 == 0 )
+                            return A_XOR_B;
+                        return 0;
+                    }
+                    case LEQ:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1 == 0 )
+                            return A_AND_B__IFF_C;
+                        if( result1.info( info_flags::positive ) )
+                            return NOT__A_AND_B;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2 == 0 )
+                            return A_IFF_B;
+                        if( result2.info( info_flags::positive ) )
+                            return A_IMPLIES_B;
+                        if( result2.info( info_flags::negative ) )
+                            return B_IMPLIES_A;
+                        return 0;
+                    }
+                    case GEQ:
+                    {
+                        ex result1 = lhsA - lhsB;
+                        normalize( result1 );
+                        if( result1 == 0 )
+                            return A_IFF_B;
+                        if( result1.info( info_flags::negative ) )
+                            return A_IMPLIES_B;
+                        if( result1.info( info_flags::positive ) )
+                            return B_IMPLIES_A;
+                        ex result2 = lhsA + lhsB;
+                        normalize( result2 );
+                        if( result2 == 0 )
+                            return A_AND_B__IFF_C;
+                        if( result2.info( info_flags::negative ) )
+                            return NOT__A_AND_B;
+                        return 0;
+                    }
+                    default:
+                        return 0;
+                }
+            }
+            default:
+                return 0;
         }
     }
 

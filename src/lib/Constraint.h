@@ -218,7 +218,7 @@ namespace smtrat
             void init();
             std::string toString( unsigned = 0, bool = true, bool = true ) const;
             void print( std::ostream& _out = std::cout, const std::string = "", bool = false ) const;
-            void printProperties( std::ostream& = std::cout ) const;
+            void printProperties( std::ostream& = std::cout, bool = true ) const;
             static bool relationIsStrict( Relation rel );
             static std::string relationToString( const Relation rel );
             static signed compare( const Constraint*, const Constraint* );
