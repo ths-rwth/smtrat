@@ -418,7 +418,10 @@ namespace smtrat
                         original = (*_formula)->pConstraint()->hasVariable((*varIt).first);
                         icp::IcpVariable* icpVar = NULL;
                         if( original )
+                        {
+                            cout << "Original: " << (*varIt).first << endl;
                             icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), original, newCandidate, icp::getOriginalLraVar((*varIt).second,mLRA) );
+                        }
                         else
                             icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), original, newCandidate, slackvariable );      
                         std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*varIt).second).get_name(), icpVar));
@@ -1752,6 +1755,97 @@ namespace smtrat
             }
             mHistoryActual->addContraction(_selection, variables);
             GiNaCRA::DoubleInterval originalInterval = mIntervals.at(variable);
+            #ifdef RAISESPLITTOSATSOLVER
+            // Create deductions
+            // create prequesites: ((B' AND CCs) -> h_b)
+            Formula* premise = new Formula( OR );
+            ConstraintSet premises = mHistoryActual->appliedConstraints();
+            assert( mBoxStorage.size() == 1 );
+            std::set<const Formula*> box = mBoxStorage.front();
+            mBoxStorage.pop();
+            for( auto constraintIt = premises.begin(); constraintIt != premises.end(); ++constraintIt )
+            {
+                Formula* negation = new Formula( NOT );
+                Formula* constraint = new Formula( *constraintIt );
+                negation->addSubformula( constraint );
+                premise->addSubformula( negation );
+            }
+            for( auto formulaIt = box.begin(); formulaIt != box.end(); ++formulaIt )
+            {
+                Formula* negation = new Formula( NOT );
+                Formula* constraint = new Formula( **formulaIt );
+                negation->addSubformula( constraint );
+                premise->addSubformula( negation );
+            }
+            
+            GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
+            ConstraintSet relevantBoundaries;
+            for( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
+            {
+                if( originalRealVariables.find( (*constraintIt).first.get_name() ) != originalRealVariables.end() )
+                {
+                    std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*constraintIt).first, (*constraintIt).second);
+                    if( boundaries.first != NULL )
+                        relevantBoundaries.insert(boundaries.first);
+                    if( boundaries.second != NULL )
+                        relevantBoundaries.insert(boundaries.second);
+                }
+            }
+            
+//            cout << "RelevantBoundaries.Size: " << relevantBoundaries.size() << endl;
+            
+            for( auto receivedIt = mpReceivedFormula->begin(); receivedIt != mpReceivedFormula->end(); ++receivedIt )
+            {
+                ConstraintSet::iterator target = relevantBoundaries.find((*receivedIt)->pConstraint());
+                if(  target != relevantBoundaries.end() )
+                    relevantBoundaries.erase(target);
+            }
+
+            for( auto constraintIt = relevantBoundaries.begin(); constraintIt != relevantBoundaries.end(); ++constraintIt )
+            {
+//                Formula* impliedBound = new Formula( OR );
+//                Formula* constraintToFormula = new Formula( *constraintIt );
+//                Formula* premiseCopy = new Formula( *premise );
+//                Formula* negatedPremise = new Formula( NOT );
+//                negatedPremise->addSubformula(premiseCopy);
+//                impliedBound->addSubformula(negatedPremise);
+//                impliedBound->addSubformula(constraintToFormula);
+//                addDeduction( impliedBound );
+//                impliedBound->print();
+                Formula* constraintToFormula = new Formula( *constraintIt );
+                Formula* premiseCopy = new Formula( *premise );
+                premiseCopy->addSubformula(constraintToFormula);
+                addDeduction( premiseCopy );
+                premiseCopy->print();
+            }
+
+            // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
+            std::pair<const Constraint*, const Constraint*> leftPair = icp::intervalToConstraint(variable,resultA);
+            std::pair<const Constraint*, const Constraint*> rightPair = icp::intervalToConstraint(variable,resultB);
+            const Constraint* left = leftPair.first != NULL ? leftPair.first : leftPair.second;
+            const Constraint* right = rightPair.first != NULL ? rightPair.first : rightPair.second;
+            
+            Formula* less = new Formula( left );
+            Formula* less2 = new Formula( *less );
+            Formula* geq = new Formula( right );
+            Formula* geq2 = new Formula( *geq );
+            Formula* nless = new Formula( NOT );
+            Formula* ngeq = new Formula( NOT );
+            nless->addSubformula(less2);
+            ngeq->addSubformula(geq2);
+            
+            premise->addSubformula(less);
+            premise->addSubformula(geq);
+            addDeduction(premise);
+            premise->print();
+            
+            Formula* excludeBothSplits = new Formula( OR );
+            excludeBothSplits->addSubformula(nless);
+            excludeBothSplits->addSubformula(ngeq);
+            
+            addDeduction(excludeBothSplits);
+            excludeBothSplits->print();
+            #else
             // set intervals and update historytree
             GiNaCRA::evaldoubleintervalmap tmpRight = GiNaCRA::evaldoubleintervalmap();
             for ( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
@@ -1817,6 +1911,7 @@ namespace smtrat
             #endif
             // update mIntervals - usually this happens when changing to a different box, but in this case it has to be done manually, otherwise mIntervals is not affected.
             mIntervals[variable] = originalInterval.intersect(resultB);
+            #endif
             // TODO: Shouldn't it be the average of both contractions?
             _relativeContraction = (originalDiameter - originalInterval.intersect(resultB).diameter()) / originalInterval.diameter();
         }
@@ -2117,7 +2212,7 @@ namespace smtrat
                 Formula* premiseCopy = new Formula( *premise );
                 premiseCopy->addSubformula(constraintToFormula);
                 addDeduction( premiseCopy );
-//                premiseCopy->print();
+                premiseCopy->print();
             }
 
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
@@ -2140,14 +2235,14 @@ namespace smtrat
             premise->addSubformula(less);
             premise->addSubformula(geq);
             addDeduction(premise);
-//            premise->print();
+            premise->print();
             
             Formula* excludeBothSplits = new Formula( OR );
             excludeBothSplits->addSubformula(nless);
             excludeBothSplits->addSubformula(ngeq);
             
             addDeduction(excludeBothSplits);
-//            excludeBothSplits->print();
+            excludeBothSplits->print();
 //            split->addSubformula( xorLeft );
 //            split->addSubformula( xorRight );
 //            addDeduction( split );
