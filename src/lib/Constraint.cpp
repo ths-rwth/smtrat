@@ -159,7 +159,7 @@ namespace smtrat
      */
     bool Constraint::hasVariable( const std::string& _varName ) const
     {
-        return (variables().find( _varName ) == variables().end());
+        return (variables().find( _varName ) != variables().end());
     }
 
     /**
