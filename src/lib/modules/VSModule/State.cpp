@@ -825,13 +825,8 @@ namespace vs
      */
     void State::setIndex( const string& _index )
     {
-        if( _index.compare( "0" ) == 0 || _index.compare( "" ) == 0 )
-            *mpIndex = _index;
-        else
-        {
-            *mpIndex = _index;
-            initConditionFlags();
-        }
+        *mpIndex = _index;
+        initConditionFlags();
     }
 
     /**
@@ -1209,7 +1204,7 @@ namespace vs
     void State::initConditionFlags()
     {
         for( ConditionList::iterator cond = rConditions().begin(); cond != conditions().end(); ++cond )
-            (**cond).rFlag() = (**cond).constraint().hasVariable( index() );
+            (**cond).rFlag() = !(**cond).constraint().hasVariable( index() );
     }
 
     /**
