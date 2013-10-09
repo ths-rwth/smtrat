@@ -485,7 +485,7 @@ namespace smtrat
                 return mpConstraintPool->newArithmeticVariable( _name, _domain );
             }
 
-            static void newBooleanVariable( const std::string& _name )
+            static void newBooleanVariable( const std::string* _name )
             {
                 mpConstraintPool->newBooleanVariable( _name );
             }

@@ -27,8 +27,6 @@
  * @version 2013-06-20
  */
 
-#include <src/carl/core/Variable.h>
-
 #include "ConstraintPool.h"
 
 using namespace std;
@@ -47,8 +45,8 @@ namespace smtrat
         mAuxiliaryRealVarCounter( 0 ),
         mAuxiliaryIntVarCounter( 0 ),
         mArithmeticVarCounter( 0 ),
-        mConsistentConstraint( new Constraint( 0, Constraint::EQ, 1 ) ),
-        mInconsistentConstraint( new Constraint( 0, Constraint::LESS, 2 ) ),
+        mConsistentConstraint( new Constraint( Polynomial( Rational( 0 ) ), Constraint::EQ, 1 ) ),
+        mInconsistentConstraint( new Constraint( Polynomial( Rational( 0 ) ), Constraint::LESS, 2 ) ),
         mExternalVarNamePrefix( "_" ),
         mExternalNamesToVariables(),
         mBooleanVariables(),
@@ -101,7 +99,7 @@ namespace smtrat
         mAuxiliaryIntVarCounter = 0;
         while( !mBooleanVariables.empty() )
         {
-            string* toDelete = mBooleanVariables.back();
+            const string* toDelete = mBooleanVariables.back();
             mBooleanVariables.pop_back();
             delete toDelete;
         }
@@ -158,10 +156,10 @@ namespace smtrat
         CONSTRAINT_LOCK_GUARD
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
-        Constraint* constraint = createNormalizedConstraint( _lhs, _rel, _variables );
+        Constraint* constraint = createNormalizedConstraint( _lhs, _rel );
         if( constraint->variables().empty() )
         {
-            bool constraintConsistent = Constraint::evaluate( ex_to<numeric>( constraint->lhs() ), constraint->relation() );
+            bool constraintConsistent = Constraint::evaluate( constraint->constantPart(), constraint->relation() );
             delete constraint;
             return ( constraintConsistent ? mConsistentConstraint : mInconsistentConstraint );
         }
@@ -186,7 +184,7 @@ namespace smtrat
         lock_guard<mutex> lock( mMutexArithmeticVariables );
         // Create the arithmetic variable
         carl::Variable var = mVariablePool.getFreshVariable( _domain );
-        mExternalNamesToVariables[_name] = mVariablePool.getVariableName( var );
+        mExternalNamesToVariables[_name] = var;
         mVariablePool.setVariableName( var, _name );
         return var;
     }
@@ -198,7 +196,7 @@ namespace smtrat
      * 
      * @return A pair of the internal name of the variable and the a variable as an expression.
      */
-    pair<string,ex> ConstraintPool::newAuxiliaryRealVariable( const std::string& _externalPrefix )
+    carl::Variable ConstraintPool::newAuxiliaryRealVariable( const std::string& _externalPrefix )
     {
         stringstream out;
         out << mExternalVarNamePrefix << _externalPrefix << "_" << mAuxiliaryRealVarCounter++;
@@ -212,7 +210,7 @@ namespace smtrat
      * 
      * @return A pair of the internal name of the variable and the a variable as an expression.
      */
-    pair<string,ex> ConstraintPool::newAuxiliaryIntVariable( const std::string& _externalPrefix )
+    carl::Variable ConstraintPool::newAuxiliaryIntVariable( const std::string& _externalPrefix )
     {
         stringstream out;
         out << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryIntVarCounter++;
@@ -303,7 +301,7 @@ namespace smtrat
         for( fcs_const_iterator constraint = mConstraints.begin();
              constraint != mConstraints.end(); ++constraint )
         {
-            int maxdeg = (*constraint)->maxDegree();
+            int maxdeg = (*constraint)->lhs().highestDegree();
             if(maxdeg > result) result = maxdeg;
         }
         return result;
@@ -322,7 +320,7 @@ namespace smtrat
         for( fcs_const_iterator constraint = mConstraints.begin();
              constraint != mConstraints.end(); ++constraint )
         {
-            if(!(*constraint)->isLinear()) ++nonlinear;
+            if(!(*constraint)->lhs().isLinear()) ++nonlinear;
         }
         return nonlinear;
     }
@@ -376,22 +374,22 @@ namespace smtrat
         if( _rel == Constraint::GREATER )
         {
             Polynomial lhs = -_lhs.coprimeCoefficients();
-            assert( (_lhs.begin()->coeff() < 0) == (_lhs.coprimeCoefficients().begin()->coeff() < 0) );
+            assert( (_lhs.trailingTerm()->coeff() < 0) == (_lhs.coprimeCoefficients().trailingTerm()->coeff() < 0) );
             return new Constraint( lhs, Constraint::LESS, mIdAllocator );
         }
         else if( _rel == Constraint::GEQ )
         {
             Polynomial lhs = -_lhs.coprimeCoefficients();
-            assert( (_lhs.begin()->coeff() < 0) == (_lhs.coprimeCoefficients().begin()->coeff() < 0) );
+            assert( (_lhs.trailingTerm()->coeff() < 0) == (_lhs.coprimeCoefficients().trailingTerm()->coeff() < 0) );
             return new Constraint( lhs, Constraint::LEQ, mIdAllocator );
         }
         else
         {
-            assert( (_lhs.begin()->coeff() < 0) == (_lhs.coprimeCoefficients().begin()->coeff() < 0) );
-            ex lhs = _lhs.coprimeCoefficients();
+            assert( (_lhs.trailingTerm()->coeff() < 0) == (_lhs.coprimeCoefficients().trailingTerm()->coeff() < 0) );
+            Polynomial lhs = _lhs.coprimeCoefficients();
             if( _rel == Constraint::EQ || _rel == Constraint::NEQ ) 
             {
-                if( lhs.begin()->coeff() < 0 ) lhs = -lhs;
+                if( lhs.trailingTerm()->coeff() < 0 ) lhs = -lhs;
             }
             return new Constraint( lhs, _rel, mIdAllocator );
         }

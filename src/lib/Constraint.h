@@ -222,8 +222,6 @@ namespace smtrat
             static bool relationIsStrict( Relation rel );
             static std::string relationToString( const Relation rel );
             static signed compare( const Constraint*, const Constraint* );
-            static const Constraint* mergeConstraints( const Constraint*, const Constraint* );
-            static bool combineConstraints( const Constraint*, const Constraint*, const Constraint* );
     };
 
     typedef std::vector<const Constraint*>                                vec_const_pConstraint;

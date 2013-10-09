@@ -225,11 +225,11 @@ namespace smtrat
              * @param _varName The name of the variable to search for.
              * @return The found variable.
              */
-            carl::Variable getArithmeticVariableByName( const std::string& _varName ) const
+            carl::Variable getArithmeticVariableByName( const std::string& _varName, bool _byFriendlyName = false ) const
             {
                 for( auto nameVarPair = mExternalNamesToVariables.begin(); nameVarPair != mExternalNamesToVariables.end(); ++nameVarPair )
                 {
-                    if( mVariablePool.getVariableName( nameVarPair->second, false ) == _varName )
+                    if( mVariablePool.getVariableName( nameVarPair->second, _byFriendlyName ) == _varName )
                     {
                         return nameVarPair->second;
                     }
@@ -245,7 +245,7 @@ namespace smtrat
             carl::Variable newAuxiliaryIntVariable( const std::string& = "h_i" );
             carl::Variable newAuxiliaryRealVariable( const std::string& = "h_r" );
             bool hasBoolean( const std::string* ) const;
-            void newBooleanVariable( const std::string&, bool = false );
+            void newBooleanVariable( const std::string*, bool = false );
             std::string* newAuxiliaryBooleanVariable( const std::string& = "h_b" );
             void initExternalPrefix();
             int maxDegree() const;

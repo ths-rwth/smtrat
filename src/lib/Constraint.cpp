@@ -542,7 +542,7 @@ namespace smtrat
      */
     void Constraint::init()
     {
-        mVarInfoMap( mLhs.getVarInfo<false>() );
+//        mVarInfoMap( mLhs.getVarInfo<false>() ); //TODO: implement this line
         #ifdef SMTRAT_STRAT_Factorization
         if( mNumMonomials <= MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION && mVariables.size() <= MAX_DIMENSION_FOR_FACTORIZATION
             && mMaxMonomeDegree <= MAX_DEGREE_FOR_FACTORIZATION && mMaxMonomeDegree >= MIN_DEGREE_FOR_FACTORIZATION )
@@ -708,18 +708,15 @@ namespace smtrat
          */
         auto termA = _constraintA->lhs().begin();
         auto termB = _constraintB->lhs().begin();
-        assert( !termA->isZero() )
+        assert( !(*termA)->isZero() );
         Rational g;
-        Rational termAcoeffAbs = cln::abs( termA->coeff() );
-        Rational termBcoeffAbs = cln::abs( termB->coeff() );
+        Rational termAcoeffAbs = cln::abs( (*termA)->coeff() );
+        Rational termBcoeffAbs = cln::abs( (*termB)->coeff() );
         bool termACoeffGreater = termAcoeffAbs > termBcoeffAbs; 
         bool termBCoeffGreater = termAcoeffAbs < termBcoeffAbs;
-        if( termACoeffGreater )
-            g = cln::div( termA->coeff(), termB->coeff() );
-        else if( termBCoeffGreater )
-            g = cln::div( termB->coeff(), termA->coeff() );
-        else if( termA->coeff() == termB->coeff() )
-            g = Rational( 1 );
+        if( termACoeffGreater ) g = (*termA)->coeff()/(*termB)->coeff();
+        else if( termBCoeffGreater ) g = (*termB)->coeff()/(*termA)->coeff();
+        else if( (*termA)->coeff() == (*termB)->coeff() ) g = Rational( 1 );
         else
         {
             g = Rational( -1 );
@@ -731,42 +728,30 @@ namespace smtrat
         ++termB;
         while( termA != _constraintA->lhs().end() && termB != _constraintB->lhs().end() )
         {
-            if( termA->isConstant() || termB->isConstant() )
+            if( (*termA)->isConstant() || (*termB)->isConstant() )
             {
-                if( termA->isConstant() )
+                if( (*termA)->isConstant() )
                 {
-                    c = (termBCoeffGreater ? termA->coeff() * g : termA->coeff());
+                    c = (termBCoeffGreater ? (*termA)->coeff() * g : (*termA)->coeff());
                     ++termA;
                 }
-                if( termB->isConstant() )
+                if( (*termB)->isConstant() )
                 {
-                    d = (termACoeffGreater ? termB->coeff() * g : termB->coeff());
+                    d = (termACoeffGreater ? (*termB)->coeff() * g : (*termB)->coeff());
                     ++termB;
                 }
-                assert( termA == _constraintA->lhs().end() && termB == _constraintB->lhs().end() )
+                assert( termA == _constraintA->lhs().end() && termB == _constraintB->lhs().end() );
             }
-            else if( *termA->monomial() != *termB->monomial() )
-            {
-                return 0;
-            }
+            else if( *(*termA)->monomial() != *(*termB)->monomial() ) return 0;
             else if( termACoeffGreater )
             {
-                if( termA->coeff() != g * termB->coeff() )
-                {
-                    return 0;
-                }
+                if( (*termA)->coeff() != g * (*termB)->coeff() ) return 0;
             }
             else if( termBCoeffGreater )
             {
-                if( g * termA->coeff() != termB->coeff() )
-                {
-                    return 0;
-                }
+                if( g * (*termA)->coeff() != (*termB)->coeff() ) return 0;
             }
-            else if( termA->coeff() != g * termB->coeff() )
-            {
-                return 0;
-            }
+            else if( (*termA)->coeff() != g * (*termB)->coeff() ) return 0;
             ++termA;
             ++termB;
         }
@@ -777,327 +762,127 @@ namespace smtrat
             switch( (termACoeffGreater ? relA : relB ) )
             {
                 case LEQ:
-                {
-                    if( termACoeffGreater )
-                        relA = GEQ;
-                    else
-                        relB = GEQ;
+                    if( termACoeffGreater ) relA = GEQ; 
+                    else relB = GEQ;
                     break;
-                }
                 case GEQ:
-                {
-                    if( termACoeffGreater )
-                        relA = LEQ;
-                    else
-                        relB = LEQ;
+                    if( termACoeffGreater ) relA = LEQ; 
+                    else relB = LEQ;
                     break;
-                }
                 case LESS:
-                {
-                    if( termACoeffGreater )
-                        relA = GREATER;
-                    else
-                        relB = GREATER;
+                    if( termACoeffGreater ) relA = GREATER;
+                    else relB = GREATER;
                     break;
-                }
                 case GREATER:
-                {
-                    if( termACoeffGreater )
-                        relA = LESS;
-                    else
-                        relB = LESS;
+                    if( termACoeffGreater )  relA = LESS;
+                    else relB = LESS;
                     break;
-                }
+                default:
+                    break;
             }
         }
         switch( relB )
         {
             case EQ:
-            {
                 switch( relA )
                 {
                     case EQ: // p+c=0  and  p+d=0
-                    {
-                        if( c == d )
-                            return A_IFF_B;
-                        else
-                            return NOT__A_AND_B;
-                    }
+                        if( c == d ) return A_IFF_B; 
+                        else return NOT__A_AND_B;
                     case NEQ: // p+c!=0  and  p+d=0
-                    {
-                        if( c == d )
-                            return A_XOR_B;
-                        else
-                            return B_IMPLIES_A;
-                    }
+                        if( c == d ) return A_XOR_B;
+                        else return B_IMPLIES_A;
                     case LESS: // p+c<0  and  p+d=0
-                    {
-                        if( c < d )
-                            return B_IMPLIES_A;
-                        else
-                            return NOT__A_AND_B;
-                    }
+                        if( c < d ) return B_IMPLIES_A;
+                        else return NOT__A_AND_B;
                     case GREATER: // p+c>0  and  p+d=0
-                    {
-                        if( c > d )
-                            return B_IMPLIES_A;
-                        else
-                            return NOT__A_AND_B;
-                    }
+                        if( c > d ) return B_IMPLIES_A;
+                        else return NOT__A_AND_B;
                     case LEQ: // p+c<=0  and  p+d=0
-                    {
-                        if( c <= d )
-                            return B_IMPLIES_A;
-                        else
-                            return NOT__A_AND_B;
-                    }
+                        if( c <= d ) return B_IMPLIES_A;
+                        else return NOT__A_AND_B;
                     case GEQ: // p+c>=0  and  p+d=0
-                    {
-                        if( c >= d )
-                            return B_IMPLIES_A;
-                        else
-                            return NOT__A_AND_B;
-                    }
+                        if( c >= d ) return B_IMPLIES_A;
+                        else return NOT__A_AND_B;
                     default:
                         return false;
                 }
-            }
             case NEQ:
-            {
                 switch( relA )
                 {
                     case EQ: // p+c=0  and  p+d!=0
-                    {
-                        if( c == d )
-                            return A_XOR_B;
-                        else
-                            return A_IMPLIES_B;
-                    }
+                        if( c == d ) return A_XOR_B;
+                        else return A_IMPLIES_B;
                     case NEQ: // p+c!=0  and  p+d!=0
-                    {
-                        if( c == d )
-                            return A_IFF_B;
-                        else
-                            return 0;
-                    }
+                        if( c == d ) return A_IFF_B;
+                        else return 0;
                     case LESS: // p+c<0  and  p+d!=0
-                    {
-                        if( c >= d )
-                            return A_IMPLIES_B;
-                        else
-                            return 0;
-                    }
+                        if( c >= d ) return A_IMPLIES_B;
+                        else return 0;
                     case GREATER: // p+c>0  and  p+d!=0
-                    {
-                        if( c <= d )
-                            return A_IMPLIES_B;
-                        else
-                            return 0;
-                    }
+                        if( c <= d ) return A_IMPLIES_B;
+                        else return 0;
                     case LEQ: // p+c<=0  and  p+d!=0
-                    {
-                        if( c > d )
-                            return A_IMPLIES_B;
-                        else if( c == d )
-                            return A_AND_B__IFF_C;
-                        else
-                            return 0;
-                    }
+                        if( c > d ) return A_IMPLIES_B;
+                        else if( c == d ) return A_AND_B__IFF_C;
+                        else return 0;
                     case GEQ: // p+c>=0  and  p+d!=0
-                    {
-                        if( c < d )
-                            return A_IMPLIES_B;
-                        else if( c == d )
-                            return A_AND_B__IFF_C;
-                        else
-                            return 0;
-                    }
+                        if( c < d ) return A_IMPLIES_B;
+                        else if( c == d ) return A_AND_B__IFF_C;
+                        else return 0;
                     default:
                         return 0;
                 }
-            }
             case LESS:
-            {
                 switch( relA )
                 {
                     case EQ: // p+c=0  and  p+d<0
-                    {
-                        if( c > d )
-                            return A_IMPLIES_B;
-                        else
-                            return NOT__A_AND_B;
-                    }
+                        if( c > d ) return A_IMPLIES_B;
+                        else return NOT__A_AND_B;
                     case NEQ: // p+c!=0  and  p+d<0
-                    {
-                        if( c <= d )
-                            return B_IMPLIES_A;
-                        else
-                            return 0;
-                    }
+                        if( c <= d ) return B_IMPLIES_A;
+                        else return 0;
                     case LESS: // p+c<0  and  p+d<0
-                    {
-                        if( c == d )
-                            return A_IFF_B;
-                        else if(  )
-                            return B_IMPLIES_A;
-                        if( result1.info( info_flags::positive ) )
-                            return A_IMPLIES_B;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2.info( info_flags::nonnegative ) )
-                            return NOT__A_AND_B;
-                        return 0;
-                    }
+                        if( c == d ) return A_IFF_B;
+                        else if( c < d ) return B_IMPLIES_A;
+                        else return A_IMPLIES_B;
                     case GREATER: // p+c>0  and  p+d<0
-                    {
-                        ex result1 = -1 * (lhsA - lhsB);
-                        normalize( result1 );
-                        if( result1.info( info_flags::nonnegative ) )
-                            return NOT__A_AND_B;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2 == 0 )
-                            return A_IFF_B;
-                        if( result2.info( info_flags::positive ) )
-                            return B_IMPLIES_A;
-                        if( result2.info( info_flags::negative ) )
-                            return A_IMPLIES_B;
-                        return 0;
-                    }
+                        if( c <= d ) return NOT__A_AND_B;
+                        else return 0;
                     case LEQ: // p+c<=0  and  p+d<0
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1.info( info_flags::positive ) )
-                            return A_IMPLIES_B;
-                        if( result1.info( info_flags::rational ) )
-                            return B_IMPLIES_A;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2.info( info_flags::positive ) )
-                            return NOT__A_AND_B;
-                        if( result2 == 0 )
-                            return A_XOR_B;
-                        return 0;
-                    }
+                        if( c > d ) return A_IMPLIES_B;
+                        else return B_IMPLIES_A;
                     case GEQ: // p+c>=0  and  p+d<0
-                    {
-                        ex result1 = -1 * (lhsA - lhsB);
-                        normalize( result1 );
-                        if( result1.info( info_flags::positive ) )
-                            return NOT__A_AND_B;
-                        if( result1 == 0 )
-                            return A_XOR_B;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2.info( info_flags::nonnegative ) )
-                            return B_IMPLIES_A;
-                        if( result2.info( info_flags::negative ) )
-                            return A_IMPLIES_B;
-                        return 0;
-                    }
+                        if( c < d ) return NOT__A_AND_B;
+                        else if( c == d ) return A_XOR_B;
+                        else return 0;
                     default:
                         return 0;
                 }
-            }
             case GREATER:
             {
                 switch( relA )
                 {
-                    case EQ:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1.info( info_flags::negative ) )
-                            return A_IMPLIES_B;
-                        if( result1.info( info_flags::nonnegative ) )
-                            return NOT__A_AND_B;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2 == 0 )
-                            return NOT__A_AND_B;
-                        if( result2.info( info_flags::negative ) )
-                            return NOT__A_AND_B;
-                        if( result2.info( info_flags::positive ) )
-                            return A_IMPLIES_B;
-                        return 0;
-                    }
-                    case NEQ:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1.info( info_flags::nonnegative ) )
-                            return B_IMPLIES_A;
-                        ex result2 = -1 * (lhsA + lhsB);
-                        normalize( result2 );
-                        if( result2.info( info_flags::nonnegative ) )
-                            return B_IMPLIES_A;
-                        return 0;
-                    }
-                    case LESS:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1.info( info_flags::nonnegative ) )
-                            return NOT__A_AND_B;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2 == 0 )
-                            return A_IFF_B;
-                        if( result2.info( info_flags::positive ) )
-                            return A_IMPLIES_B;
-                        if( result2.info( info_flags::negative ) )
-                            return B_IMPLIES_A;
-                        return 0;
-                    }
-                    case GREATER:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1 == 0 )
-                            return A_IFF_B;
-                        if( result1.info( info_flags::negative ) )
-                            return A_IMPLIES_B;
-                        if( result1.info( info_flags::positive ) )
-                            return B_IMPLIES_A;
-                        ex result2 = -1 * (lhsA + lhsB);
-                        normalize( result2 );
-                        if( result2.info( info_flags::nonnegative ) )
-                            return NOT__A_AND_B;
-                        return 0;
-                    }
-                    case LEQ:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1.info( info_flags::positive ) )
-                            return NOT__A_AND_B;
-                        if( result1 == 0 )
-                            return A_XOR_B;
-                        ex result2 = -1 * (lhsA + lhsB);
-                        normalize( result2 );
-                        if( result2.info( info_flags::nonnegative ) )
-                            return B_IMPLIES_A;
-                        if( result2.info( info_flags::negative ) )
-                            return A_IMPLIES_B;
-                        return 0;
-                    }
-                    case GEQ:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1.info( info_flags::negative ) )
-                            return A_IMPLIES_B;
-                        if( result1.info( info_flags::rational ) )
-                            return B_IMPLIES_A;
-                        ex result2 = -1 * (lhsA + lhsB);
-                        normalize( result2 );
-                        if( result2.info( info_flags::positive ) )
-                            return NOT__A_AND_B;
-                        if( result2 == 0 )
-                            return A_XOR_B;
-                        return 0;
-                    }
+                    case EQ: // p+c=0  and  p+d>0
+                        if( c < d ) return A_IMPLIES_B;
+                        else return NOT__A_AND_B;
+                    case NEQ: // p+c!=0  and  p+d>0
+                        if( c >= d ) return B_IMPLIES_A;
+                        else return 0;
+                    case LESS: // p+c<0  and  p+d>0
+                        if( c >= d ) return NOT__A_AND_B;
+                        else return 0;
+                    case GREATER: // p+c>0  and  p+d>0
+                        if( c == d ) return A_IFF_B;
+                        else if( c > d ) return B_IMPLIES_A;
+                        else return A_IMPLIES_B;
+                    case LEQ: // p+c<=0  and  p+d>0
+                        if( c > d ) return NOT__A_AND_B;
+                        else if( c == d ) return A_XOR_B;
+                        else return 0;
+                    case GEQ: // p+c>=0  and  p+d>0
+                        if( c > d ) return B_IMPLIES_A;
+                        else return A_IMPLIES_B;
                     default:
                         return 0;
                 }
@@ -1106,108 +891,28 @@ namespace smtrat
             {
                 switch( relA )
                 {
-                    case EQ:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1.info( info_flags::nonnegative ) )
-                            return A_IMPLIES_B;
-                        if( result1.info( info_flags::negative ) )
-                            return NOT__A_AND_B;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2 == 0 )
-                            return A_IMPLIES_B;
-                        if( result2.info( info_flags::negative ) )
-                            return A_IMPLIES_B;
-                        if( result2.info( info_flags::positive ) )
-                            return NOT__A_AND_B;
-                        return 0;
-                    }
-                    case NEQ:
-                    {
-                        ex result1 = -1 * (lhsA - lhsB);
-                        normalize( result1 );
-                        if( result1 == 0 )
-                            return A_AND_B__IFF_C;
-                        if( result1.info( info_flags::positive ) )
-                            return B_IMPLIES_A;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2 == 0 )
-                            return A_AND_B__IFF_C;
-                        if( result2.info( info_flags::positive ) )
-                            return B_IMPLIES_A;
-                        return 0;
-                    }
-                    case LESS:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1.info( info_flags::negative ) )
-                            return B_IMPLIES_A;
-                        if( result1.info( info_flags::rational ) )
-                            return A_IMPLIES_B;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2.info( info_flags::positive ) )
-                            return NOT__A_AND_B;
-                        if( result2 == 0 )
-                            return A_XOR_B;
-                        return 0;
-                    }
-                    case GREATER:
-                    {
-                        ex result1 = -1 * (lhsA - lhsB);
-                        normalize( result1 );
-                        if( result1.info( info_flags::positive ) )
-                            return NOT__A_AND_B;
-                        if( result1 == 0 )
-                            return A_XOR_B;
-                        ex result2 = -1 * (lhsA + lhsB);
-                        normalize( result2 );
-                        if( result2.info( info_flags::nonnegative ) )
-                            return A_IMPLIES_B;
-                        if( result2.info( info_flags::negative ) )
-                            return B_IMPLIES_A;
-                        return 0;
-                    }
-                    case LEQ:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1 == 0 )
-                            return A_IFF_B;
-                        if( result1.info( info_flags::negative ) )
-                            return B_IMPLIES_A;
-                        if( result1.info( info_flags::positive ) )
-                            return A_IMPLIES_B;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2 == 0 )
-                            return A_AND_B__IFF_C;
-                        if( result2.info( info_flags::positive ) )
-                            return NOT__A_AND_B;
-                        return 0;
-                    }
-                    case GEQ:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1 == 0 )
-                            return A_AND_B__IFF_C;
-                        if( result1.info( info_flags::negative ) )
-                            return NOT__A_AND_B;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2 == 0 )
-                            return A_IFF_B;
-                        if( result2.info( info_flags::positive ) )
-                            return B_IMPLIES_A;
-                        if( result2.info( info_flags::negative ) )
-                            return A_IMPLIES_B;
-                        return 0;
-                    }
+                    case EQ: // p+c=0  and  p+d<=0
+                        if( c >= d ) return A_IMPLIES_B;
+                        else return NOT__A_AND_B;
+                    case NEQ: // p+c!=0  and  p+d<=0
+                        if( c < d ) return B_IMPLIES_A;
+                        else if( c == d ) return A_AND_B__IFF_C;
+                        else return 0;
+                    case LESS: // p+c<0  and  p+d<=0
+                        if( c < d ) return B_IMPLIES_A;
+                        else return A_IMPLIES_B;
+                    case GREATER: // p+c>0  and  p+d<=0
+                        if( c > d ) return NOT__A_AND_B;
+                        else if( c == d ) return A_XOR_B;
+                        else return 0;
+                    case LEQ: // p+c<=0  and  p+d<=0
+                        if( c == d ) return A_IFF_B;
+                        else if( c < d ) return B_IMPLIES_A;
+                        else return A_IMPLIES_B;
+                    case GEQ: // p+c>=0  and  p+d<=0
+                        if( c < d ) return NOT__A_AND_B;
+                        else if( c == d ) return A_AND_B__IFF_C;
+                        else return 0;
                     default:
                         return 0;
                 }
@@ -1216,1295 +921,34 @@ namespace smtrat
             {
                 switch( relA )
                 {
-                    case EQ:
-                    {
-                        ex result1 = -1 * (lhsA - lhsB);
-                        normalize( result1 );
-                        if( result1.info( info_flags::nonnegative ) )
-                            return A_IMPLIES_B;
-                        if( result1.info( info_flags::negative ) )
-                            return NOT__A_AND_B;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2.info( info_flags::negative ) )
-                            return NOT__A_AND_B;
-                        if( result2.info( info_flags::nonnegative ) )
-                            return A_IMPLIES_B;
-                        return 0;
-                    }
-                    case NEQ:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1 == 0 )
-                            return A_AND_B__IFF_C;
-                        if( result1.info( info_flags::positive ) )
-                            return B_IMPLIES_A;
-                        ex result2 = -1 * (lhsA + lhsB);
-                        normalize( result2 );
-                        if( result2 == 0 )
-                            return A_AND_B__IFF_C;
-                        if( result2.info( info_flags::positive ) )
-                            return B_IMPLIES_A;
-                        return 0;
-                    }
-                    case LESS:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1.info( info_flags::positive ) )
-                            return NOT__A_AND_B;
-                        if( result1 == 0 )
-                            return A_XOR_B;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2.info( info_flags::nonnegative ) )
-                            return A_IMPLIES_B;
-                        if( result2.info( info_flags::negative ) )
-                            return B_IMPLIES_A;
-                        return 0;
-                    }
-                    case GREATER:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1.info( info_flags::positive ) )
-                            return B_IMPLIES_A;
-                        if( result1.info( info_flags::rational ) )
-                            return A_IMPLIES_B;
-                        ex result2 = -1 * (lhsA + lhsB);
-                        normalize( result2 );
-                        if( result2.info( info_flags::positive ) )
-                            return NOT__A_AND_B;
-                        if( result2 == 0 )
-                            return A_XOR_B;
-                        return 0;
-                    }
-                    case LEQ:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1 == 0 )
-                            return A_AND_B__IFF_C;
-                        if( result1.info( info_flags::positive ) )
-                            return NOT__A_AND_B;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2 == 0 )
-                            return A_IFF_B;
-                        if( result2.info( info_flags::positive ) )
-                            return A_IMPLIES_B;
-                        if( result2.info( info_flags::negative ) )
-                            return B_IMPLIES_A;
-                        return 0;
-                    }
-                    case GEQ:
-                    {
-                        ex result1 = lhsA - lhsB;
-                        normalize( result1 );
-                        if( result1 == 0 )
-                            return A_IFF_B;
-                        if( result1.info( info_flags::negative ) )
-                            return A_IMPLIES_B;
-                        if( result1.info( info_flags::positive ) )
-                            return B_IMPLIES_A;
-                        ex result2 = lhsA + lhsB;
-                        normalize( result2 );
-                        if( result2 == 0 )
-                            return A_AND_B__IFF_C;
-                        if( result2.info( info_flags::negative ) )
-                            return NOT__A_AND_B;
-                        return 0;
-                    }
+                    case EQ: // p+c=0  and  p+d>=0
+                        if( c <= d ) return A_IMPLIES_B;
+                        else return NOT__A_AND_B;
+                    case NEQ: // p+c!=0  and  p+d>=0
+                        if( c > d ) return B_IMPLIES_A;
+                        else if( c == d ) return A_AND_B__IFF_C;
+                        else return 0;
+                    case LESS: // p+c<0  and  p+d>=0
+                        if( c > d ) return NOT__A_AND_B;
+                        else if( c == d ) return A_XOR_B;
+                        else return 0;
+                    case GREATER: // p+c>0  and  p+d>=0
+                        if( c < d ) return B_IMPLIES_A;
+                        else return A_IMPLIES_B;
+                    case LEQ: // p+c<=0  and  p+d>=0
+                        if( c > d ) return NOT__A_AND_B;
+                        else if( c == d ) return A_AND_B__IFF_C;
+                        else return 0;
+                    case GEQ: // p+c>=0  and  p+d>=0
+                        if( c == d ) return A_IFF_B;
+                        else if( c < d ) return A_IMPLIES_B;
+                        else return B_IMPLIES_A;
                     default:
                         return 0;
                 }
             }
             default:
                 return 0;
-        }
-    }
-
-    /**
-     * Merges the two given constraints. The first constraint will be changed accordingly
-     * if possible. (Assumption: This constraint OR the given constraint have to hold.)
-     *
-     * @param _constraintA  The first constraint to merge.
-     * @param _constraintB  The second constraint to merge.
-     *
-     * @return
-     */
-    const Constraint* Constraint::mergeConstraints( const Constraint* _constraintA, const Constraint* _constraintB )
-    {
-        symtab::const_iterator var1 = _constraintA->variables().begin();
-        symtab::const_iterator var2 = _constraintB->variables().begin();
-        while( var1 != _constraintA->variables().end() && var2 != _constraintB->variables().end() )
-        {
-            if( strcmp( var1->first.c_str(), var2->first.c_str() ) == 0 )
-            {
-                var1++;
-                var2++;
-            }
-            else
-            {
-                break;
-            }
-        }
-        if( var1 == _constraintA->variables().end() && var2 == _constraintB->variables().end() )
-        {
-            switch( _constraintA->relation() )
-            {
-                case EQ:
-                {
-                    switch( _constraintB->relation() )
-                    {
-                        case EQ:
-                        {
-                            return NULL;
-                        }
-                        case NEQ:
-                        {
-                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                return Formula::newConstraint( 0, EQ, symtab() );
-                            }
-                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                            {
-                                return Formula::newConstraint( 0, EQ, symtab() );
-                            }
-                            return NULL;
-                        }
-                        case LESS:
-                        {
-                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                return Formula::newConstraint( _constraintA->mLhs, LEQ, _constraintA->variables() );
-                            }
-                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                            {
-                                return Formula::newConstraint( _constraintA->mLhs, GEQ, _constraintA->variables() );
-                            }
-                            return NULL;
-                        }
-                        case GREATER:
-                        {
-                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                return Formula::newConstraint( _constraintA->mLhs, GEQ, _constraintA->variables() );
-                            }
-                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                            {
-                                return Formula::newConstraint( _constraintA->mLhs, LEQ, _constraintA->variables() );
-                            }
-                            return NULL;
-                        }
-                        case LEQ:
-                        {
-                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                return Formula::newConstraint( _constraintA->mLhs, LEQ, _constraintA->variables() );
-                            }
-                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                            {
-                                return Formula::newConstraint( _constraintA->mLhs, GEQ, _constraintA->variables() );
-                            }
-                            return NULL;
-                        }
-                        case GEQ:
-                        {
-                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                return Formula::newConstraint( _constraintA->mLhs, GEQ, _constraintA->variables() );
-                            }
-                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                            {
-                                return Formula::newConstraint( _constraintA->mLhs, LEQ, _constraintA->variables() );
-                            }
-                            return NULL;
-                        }
-                        default:
-                            return NULL;
-                    }
-                }
-                case NEQ:
-                {
-                    switch( _constraintB->relation() )
-                    {
-                        case EQ:
-                        {
-                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                return Formula::newConstraint( 0, EQ, symtab() );
-                            }
-                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                            {
-                                return Formula::newConstraint( 0, EQ, symtab() );
-                            }
-                            return NULL;
-                        }
-                        case NEQ:
-                        {
-                            return NULL;
-                        }
-                        case LESS:
-                        {
-                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                return _constraintA;
-                            }
-                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                            {
-                                return _constraintA;
-                            }
-                            return NULL;
-                        }
-                        case GREATER:
-                        {
-                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                return _constraintA;
-                            }
-                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                            {
-                                return _constraintA;
-                            }
-                            return NULL;
-                        }
-                        case LEQ:
-                        {
-                            return NULL;
-                        }
-                        case GEQ:
-                        {
-                            return NULL;
-                        }
-                        default:
-                            return NULL;
-                    }
-                }
-                case LESS:
-                {
-                    switch( _constraintB->relation() )
-                    {
-                        case EQ:
-                        {
-                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                return Formula::newConstraint( _constraintB->mLhs, LEQ, _constraintB->variables() );
-                            }
-                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                            {
-                                return Formula::newConstraint( _constraintB->mLhs, GEQ, _constraintB->variables() );
-                            }
-                            return NULL;
-                        }
-                        case NEQ:
-                        {
-                            return NULL;
-                        }
-                        case LESS:
-                        {
-                            return NULL;
-                        }
-                        case GREATER:
-                        {
-                            return NULL;
-                        }
-                        case LEQ:
-                        {
-                            return NULL;
-                        }
-                        case GEQ:
-                        {
-                            return NULL;
-                        }
-                        default:
-                            return NULL;
-                    }
-                }
-                case GREATER:
-                {
-                    switch( _constraintB->relation() )
-                    {
-                        case EQ:
-                        {
-                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                return Formula::newConstraint( _constraintB->mLhs, GEQ, _constraintB->variables() );
-                            }
-                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                            {
-                                return Formula::newConstraint( _constraintB->mLhs, LEQ, _constraintB->variables() );
-                            }
-                            return NULL;
-                        }
-                        case NEQ:
-                        {
-                            return NULL;
-                        }
-                        case LESS:
-                        {
-                            return NULL;
-                        }
-                        case GREATER:
-                        {
-                            return NULL;
-                        }
-                        case LEQ:
-                        {
-                            return NULL;
-                        }
-                        case GEQ:
-                        {
-                            return NULL;
-                        }
-                        default:
-                            return NULL;
-                    }
-                }
-                case LEQ:
-                {
-                    switch( _constraintB->relation() )
-                    {
-                        case EQ:
-                        {
-                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                return _constraintA;
-                            }
-                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                            {
-                                return Formula::newConstraint( _constraintB->mLhs, GEQ, _constraintB->variables() );
-                            }
-                            return NULL;
-                        }
-                        case NEQ:
-                        {
-                            return NULL;
-                        }
-                        case LESS:
-                        {
-                            return NULL;
-                        }
-                        case GREATER:
-                        {
-                            return NULL;
-                        }
-                        case LEQ:
-                        {
-                            return NULL;
-                        }
-                        case GEQ:
-                        {
-                            return NULL;
-                        }
-                        default:
-                            return NULL;
-                    }
-                }
-                case GEQ:
-                {
-                    switch( _constraintB->relation() )
-                    {
-                        case EQ:
-                        {
-                            ex result1 = _constraintA->mLhs - _constraintB->mLhs;
-                            normalize( result1 );
-                            if( result1 == 0 )
-                            {
-                                return _constraintA;
-                            }
-                            ex result2 = _constraintA->mLhs + _constraintB->mLhs;
-                            normalize( result2 );
-                            if( result2 == 0 )
-                            {
-                                return Formula::newConstraint( _constraintB->mLhs, LEQ, _constraintB->variables() );
-                            }
-                            return NULL;
-                        }
-                        case NEQ:
-                        {
-                            return NULL;
-                        }
-                        case LESS:
-                        {
-                            return NULL;
-                        }
-                        case GREATER:
-                        {
-                            return NULL;
-                        }
-                        case LEQ:
-                        {
-                            return NULL;
-                        }
-                        case GEQ:
-                        {
-                            return NULL;
-                        }
-                        default:
-                            return NULL;
-                    }
-                }
-                default:
-                    return NULL;
-            }
-        }
-        else
-        {
-            return NULL;
-        }
-    }
-
-    /**
-     * Checks for redundant constraint order.
-     *
-     * @param _constraintA  The first constraint to merge.
-     * @param _constraintB  The second constraint to merge.
-     * @param _conjconstraint The third constraint to merge.
-     *
-     *
-     * @return  true,   if (( _constraintA or _constraintB ) and _conditionconstraint) is a tautology:
-     *
-     *                  p>c  or p<=d     and c<=d
-     *                  p>=c or p<=d     and c<=d
-     *                  p>c  or p<d      and c<d
-     *                  p=c  or p!=d     and c=d
-     *                  p<c  or p!=d     and c>d
-     *                  p>c  or p!=d     and c<d
-     *                  p<=c or p!=d     and c>=d
-     *                  p>=c or p!=d     and c<=d
-     *
-     *          false,  otherwise.
-     */
-    bool Constraint::combineConstraints( const Constraint* _constraintA, const Constraint* _constraintB, const Constraint* _conditionconstraint )
-    {
-        symtab::const_iterator var1 = _constraintA->variables().begin();
-        symtab::const_iterator var2 = _constraintB->variables().begin();
-        symtab::const_iterator var3 = _conditionconstraint->variables().begin();
-        // Checks if the three constraints are paarwise different from each other
-        while( var1 != _constraintA->variables().end() && var2 != _constraintB->variables().end() )
-        {
-            if( strcmp( var1->first.c_str(), var2->first.c_str() ) == 0 )
-            {
-                var1++;
-                var2++;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        var1 = _constraintA->variables().begin();
-        var2 = _constraintB->variables().begin();
-        while( var1 != _constraintA->variables().end() && var3 != _conditionconstraint->variables().end() )
-        {
-            if( strcmp( var1->first.c_str(), var3->first.c_str() ) == 0 )
-            {
-                var1++;
-                var3++;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        var1 = _constraintA->variables().begin();
-        var3 = _conditionconstraint->variables().begin();
-        while( var2 != _constraintB->variables().end() && var3 != _conditionconstraint->variables().end() )
-        {
-            if( strcmp( var2->first.c_str(), var3->first.c_str() ) == 0 )
-            {
-                var2++;
-                var3++;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        // If all constraints are different check if disjunction is redundant
-        switch( _constraintA->relation() )
-        {
-            case EQ:
-            {
-                if( _constraintB->relation() == NEQ )
-                {
-                    if( _conditionconstraint->relation() == EQ )
-                    {
-                        // Case: ( p = c or p != d ) and c = d
-                        ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                        normalize( result );
-                        if( result == 0 )
-                            return true;
-                        result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                        normalize( result );
-                        if( result == 0 )
-                            return true;
-                        result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                        normalize( result );
-                        if( result == 0 )
-                            return true;
-                        result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                        normalize( result );
-                        if( result == 0 )
-                            return true;
-                    }
-                }
-                return false;
-            }
-            case NEQ:
-            {
-                switch( _constraintB->relation() )
-                {
-                    case EQ:
-                    {
-                        if( _conditionconstraint->relation() == EQ )
-                        {
-                            // Case: ( p != c or p = d ) and c = d
-                            ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                            normalize( result );
-                            if( result == 0 )
-                                return true;
-                            result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                            normalize( result );
-                            if( result == 0 )
-                                return true;
-                            result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                            normalize( result );
-                            if( result == 0 )
-                                return true;
-                            result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                            normalize( result );
-                            if( result == 0 )
-                                return true;
-                        }
-                        return false;
-                    }
-                    case LESS:
-                    {
-                        // Case: ( p != d or p < c ) and c > d
-                        // or      ( p != d or p < c ) and c < d
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LESS:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GREATER:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case GREATER:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LESS:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GREATER:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case LEQ:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case GEQ:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case LESS:
-            {
-                switch( _constraintB->relation() )
-                {
-                    case NEQ:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LESS:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GREATER:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case LESS:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LESS:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GREATER:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case GREATER:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LESS:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GREATER:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case LEQ:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case GEQ:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case GREATER:
-            {
-                switch( _constraintB->relation() )
-                {
-                    case NEQ:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LESS:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GREATER:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case LESS:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LESS:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GREATER:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case GREATER:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LESS:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GREATER:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case LEQ:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case GEQ:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case LEQ:
-            {
-                switch( _constraintB->relation() )
-                {
-                    case NEQ:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case LESS:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case GREATER:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case LEQ:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case GEQ:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    default:
-                        return false;
-                }
-            }
-            case GEQ:
-            {
-                switch( _constraintB->relation() )
-                {
-                    case NEQ:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case LESS:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case GREATER:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case LEQ:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs - _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    case GEQ:
-                    {
-                        switch( _conditionconstraint->relation() )
-                        {
-                            case LEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs + _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            case GEQ:
-                            {
-                                ex result = _constraintA->mLhs + _constraintB->mLhs - _conditionconstraint->mLhs;
-                                normalize( result );
-                                if( result == 0 )
-                                    return true;
-                                return false;
-                            }
-                            default:
-                                return false;
-                        }
-                    }
-                    default:
-                        return false;
-                }
-            }
-            default:
-                return false;
         }
     }
 }    // namespace smtrat
