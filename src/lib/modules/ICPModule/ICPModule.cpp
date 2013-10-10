@@ -36,7 +36,7 @@
 using namespace GiNaC;
 using namespace std;
 
-#define ICPMODULE_DEBUG
+//#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
 
 
@@ -73,7 +73,8 @@ namespace smtrat
         #endif
         mIsIcpInitialized(false),
         mCurrentId(1),
-        mIsBackendCalled(false)
+        mIsBackendCalled(false),
+        mCountBackendCalls(0)
     {
         #ifdef ICP_BOXLOG
         icpLog.open ("icpLog.txt", ios::out | ios::trunc );
@@ -419,7 +420,7 @@ namespace smtrat
                         icp::IcpVariable* icpVar = NULL;
                         if( original )
                         {
-                            cout << "Original: " << (*varIt).first << endl;
+//                            cout << "Original: " << (*varIt).first << endl;
                             icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), original, newCandidate, icp::getOriginalLraVar((*varIt).second,mLRA) );
                         }
                         else
@@ -781,6 +782,7 @@ namespace smtrat
         {
             // remap infeasible subsets to original constraints
             remapAndSetLraInfeasibleSubsets();
+            cout << "LRA: " << lraAnswer << endl;
             return foundAnswer(lraAnswer);
         }
         else if ( lraAnswer == Unknown)
@@ -788,6 +790,7 @@ namespace smtrat
             #ifdef ICPMODULE_DEBUG
             mLRA.printReceivedFormula();
             #endif
+            cout << "LRA: " << lraAnswer << endl;
             return foundAnswer(lraAnswer);
         }
         else if ( !mActiveNonlinearConstraints.empty() ) // lraAnswer == True
@@ -844,7 +847,11 @@ namespace smtrat
             #endif
         }
         else if ( mActiveNonlinearConstraints.empty() ) // lraAnswer == True, but no nonlinear constraints -> nothing to do
+        {
+            cout << "LRA: " << lraAnswer << endl;
             return foundAnswer(lraAnswer);
+        }
+            
 
         bool boxFeasible = true;
         bool invalidBox = false;
@@ -853,6 +860,9 @@ namespace smtrat
         icpLog << "startTheoryCall";
         writeBox();
         #endif
+        
+        printIntervals(true);
+        cout << "---------------------------------------------" << endl;
         
         do //while BoxFeasible
         {
@@ -1077,7 +1087,7 @@ namespace smtrat
                     #ifdef ICPMODULE_DEBUG
                     cout << "Return unknown, raise deductions for split." << endl;
                     #endif
-                    
+                    cout << "Return unknown, raise deductions for split." << endl;
                     return foundAnswer(Unknown);
                     #endif
                     invalidBox = false;
@@ -1132,7 +1142,8 @@ namespace smtrat
                         
                         mInfeasibleSubsets.clear();
                         mInfeasibleSubsets.push_back(collectReasons(mHistoryRoot));
-                        printInfeasibleSubsets();
+//                        printInfeasibleSubsets();
+                        cout << "False" << endl;
                         return foundAnswer(False);
                     }
                     #else
@@ -1163,6 +1174,8 @@ namespace smtrat
                         icpLog << "backend";
                         writeBox();
                         #endif
+                        cout << "\r";
+                        cout << ++mCountBackendCalls;
                         Answer a = runBackends();
                         mIsBackendCalled = true;
                         #ifdef ICPMODULE_DEBUG
@@ -1256,7 +1269,8 @@ namespace smtrat
                                     // no new Box to select -> finished
                                     mInfeasibleSubsets.clear();
                                     mInfeasibleSubsets.push_back(collectReasons(mHistoryRoot));
-                                    printInfeasibleSubsets();
+//                                    printInfeasibleSubsets();
+                                    cout << "False" << endl;
                                     return foundAnswer(False);
                                 }
                                 #else
@@ -1270,7 +1284,8 @@ namespace smtrat
                                 mHistoryActual->propagateStateInfeasibleVariables();
                                 mInfeasibleSubsets.clear();
                                 mInfeasibleSubsets.push_back(collectReasons(mHistoryRoot));
-                                printInfeasibleSubsets();
+//                                printInfeasibleSubsets();
+                                cout << "False" << endl;
                                 return foundAnswer(False);
                             }
                         }
@@ -1278,6 +1293,7 @@ namespace smtrat
                         {
                             mHistoryActual->propagateStateInfeasibleConstraints();
                             mHistoryActual->propagateStateInfeasibleVariables();
+                            cout << "Backend: " << a << endl;
                             return foundAnswer(a);
                         }
                     }
@@ -1307,7 +1323,8 @@ namespace smtrat
                             mHistoryActual->propagateStateInfeasibleVariables();
                             mInfeasibleSubsets.clear();
                             mInfeasibleSubsets.push_back(collectReasons(mHistoryRoot));
-                            printInfeasibleSubsets();
+//                            printInfeasibleSubsets();
+                            cout << "False" << endl;
                             return foundAnswer(False);
                         }
                         #else
@@ -1340,18 +1357,18 @@ namespace smtrat
                 {
                     assert(mVariables.find(mLastCandidate->derivationVar().get_name()) != mVariables.end());
                     mHistoryActual->addInfeasibleVariable(mVariables.at(mLastCandidate->derivationVar().get_name()));
-                    mHistoryActual->print();
-                    mHistoryActual->printReasons();
-                    mHistoryActual->printVariableReasons();
+//                    mHistoryActual->print();
+//                    mHistoryActual->printReasons();
+//                    mHistoryActual->printVariableReasons();
                     if (mHistoryActual->rReasons().find(mLastCandidate->derivationVar().get_name()) != mHistoryActual->rReasons().end())
                     {
                         for( auto constraintIt = mHistoryActual->rReasons().at(mLastCandidate->derivationVar().get_name()).begin(); constraintIt != mHistoryActual->rReasons().at(mLastCandidate->derivationVar().get_name()).end(); ++constraintIt )
                             mHistoryActual->addInfeasibleConstraint(*constraintIt);
                     }
                 }
-                mHistoryActual->print();
-                mHistoryActual->printReasons();
-                mHistoryActual->printVariableReasons();
+//                mHistoryActual->print();
+//                mHistoryActual->printReasons();
+//                mHistoryActual->printVariableReasons();
                 mLastCandidate = NULL;
                 icp::HistoryNode* newBox = chooseBox( mHistoryActual );
                 if ( newBox != NULL )
@@ -1369,7 +1386,8 @@ namespace smtrat
                     mHistoryActual->propagateStateInfeasibleVariables();
                     mInfeasibleSubsets.clear();
                     mInfeasibleSubsets.push_back(collectReasons(mHistoryRoot));
-                    printInfeasibleSubsets();
+//                    printInfeasibleSubsets();
+                    cout << "False" << endl;
                     return foundAnswer(False);
                 }
                 #else
@@ -1758,72 +1776,21 @@ namespace smtrat
             #ifdef RAISESPLITTOSATSOLVER
             // Create deductions
             // create prequesites: ((B' AND CCs) -> h_b)
-            Formula* premise = new Formula( OR );
-            ConstraintSet premises = mHistoryActual->appliedConstraints();
-            assert( mBoxStorage.size() == 1 );
-            std::set<const Formula*> box = mBoxStorage.front();
-            mBoxStorage.pop();
-            for( auto constraintIt = premises.begin(); constraintIt != premises.end(); ++constraintIt )
-            {
-                Formula* negation = new Formula( NOT );
-                Formula* constraint = new Formula( *constraintIt );
-                negation->addSubformula( constraint );
-                premise->addSubformula( negation );
-            }
-            for( auto formulaIt = box.begin(); formulaIt != box.end(); ++formulaIt )
-            {
-                Formula* negation = new Formula( NOT );
-                Formula* constraint = new Formula( **formulaIt );
-                negation->addSubformula( constraint );
-                premise->addSubformula( negation );
-            }
-            
-            GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
-            ConstraintSet relevantBoundaries;
-            for( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
-            {
-                if( originalRealVariables.find( (*constraintIt).first.get_name() ) != originalRealVariables.end() )
-                {
-                    std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*constraintIt).first, (*constraintIt).second);
-                    if( boundaries.first != NULL )
-                        relevantBoundaries.insert(boundaries.first);
-                    if( boundaries.second != NULL )
-                        relevantBoundaries.insert(boundaries.second);
-                }
-            }
-            
-//            cout << "RelevantBoundaries.Size: " << relevantBoundaries.size() << endl;
-            
-            for( auto receivedIt = mpReceivedFormula->begin(); receivedIt != mpReceivedFormula->end(); ++receivedIt )
-            {
-                ConstraintSet::iterator target = relevantBoundaries.find((*receivedIt)->pConstraint());
-                if(  target != relevantBoundaries.end() )
-                    relevantBoundaries.erase(target);
-            }
-
-            for( auto constraintIt = relevantBoundaries.begin(); constraintIt != relevantBoundaries.end(); ++constraintIt )
-            {
-//                Formula* impliedBound = new Formula( OR );
-//                Formula* constraintToFormula = new Formula( *constraintIt );
-//                Formula* premiseCopy = new Formula( *premise );
-//                Formula* negatedPremise = new Formula( NOT );
-//                negatedPremise->addSubformula(premiseCopy);
-//                impliedBound->addSubformula(negatedPremise);
-//                impliedBound->addSubformula(constraintToFormula);
-//                addDeduction( impliedBound );
-//                impliedBound->print();
-                Formula* constraintToFormula = new Formula( *constraintIt );
-                Formula* premiseCopy = new Formula( *premise );
-                premiseCopy->addSubformula(constraintToFormula);
-                addDeduction( premiseCopy );
-                premiseCopy->print();
-            }
+            Formula* contractionPremise = createPremiseDeduction();
+            Formula* splitPremise = new Formula( *contractionPremise );
+            Formula* newBox = createContractionDeduction();
+            contractionPremise->addSubformula(newBox);
+            addDeduction(contractionPremise);
+            contractionPremise->print();
 
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             std::pair<const Constraint*, const Constraint*> leftPair = icp::intervalToConstraint(variable,resultA);
             std::pair<const Constraint*, const Constraint*> rightPair = icp::intervalToConstraint(variable,resultB);
             const Constraint* left = leftPair.first != NULL ? leftPair.first : leftPair.second;
             const Constraint* right = rightPair.first != NULL ? rightPair.first : rightPair.second;
+            
+            assert(left != NULL);
+            assert(right != NULL);
             
             Formula* less = new Formula( left );
             Formula* less2 = new Formula( *less );
@@ -1834,10 +1801,11 @@ namespace smtrat
             nless->addSubformula(less2);
             ngeq->addSubformula(geq2);
             
-            premise->addSubformula(less);
-            premise->addSubformula(geq);
-            addDeduction(premise);
-            premise->print();
+            splitPremise->addSubformula(less);
+            splitPremise->addSubformula(geq);
+            addDeduction(splitPremise);
+            cout << "Premise: " << endl;
+            splitPremise->print();
             
             Formula* excludeBothSplits = new Formula( OR );
             excludeBothSplits->addSubformula(nless);
@@ -2071,6 +2039,66 @@ namespace smtrat
     }
     
     
+    Formula* ICPModule::createPremiseDeduction()
+    {
+        Formula* premise = new Formula( OR );
+        ConstraintSet premises = mHistoryActual->appliedConstraints();
+        assert( mBoxStorage.size() == 1 );
+        std::set<const Formula*> box = mBoxStorage.front();
+        mBoxStorage.pop();
+        for( auto constraintIt = premises.begin(); constraintIt != premises.end(); ++constraintIt )
+        {
+            Formula* negation = new Formula( NOT );
+            Formula* constraint = new Formula( *constraintIt );
+            negation->addSubformula( constraint );
+            premise->addSubformula( negation );
+        }
+        for( auto formulaIt = box.begin(); formulaIt != box.end(); ++formulaIt )
+        {
+            Formula* negation = new Formula( NOT );
+            Formula* constraint = new Formula( **formulaIt );
+            negation->addSubformula( constraint );
+            premise->addSubformula( negation );
+        }
+        return premise;
+    }
+    
+    Formula* ICPModule::createContractionDeduction()
+    {
+        GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
+        ConstraintSet relevantBoundaries;
+        for( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
+        {
+            if( originalRealVariables.find( (*constraintIt).first.get_name() ) != originalRealVariables.end() )
+            {
+                std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*constraintIt).first, (*constraintIt).second);
+                if( boundaries.first != NULL )
+                    relevantBoundaries.insert(boundaries.first);
+                if( boundaries.second != NULL )
+                    relevantBoundaries.insert(boundaries.second);
+            }
+        }
+//        // Add only changed bounds.
+//        for( auto receivedIt = mpReceivedFormula->begin(); receivedIt != mpReceivedFormula->end(); ++receivedIt )
+//        {
+//            ConstraintSet::iterator target = relevantBoundaries.find((*receivedIt)->pConstraint());
+//            if(  target != relevantBoundaries.end() )
+//                relevantBoundaries.erase(target);
+//        }
+        Formula* newBox = new Formula( AND );
+        for( auto constraintIt = relevantBoundaries.begin(); constraintIt != relevantBoundaries.end(); ++constraintIt )
+        {
+            Formula* constraintToFormula = new Formula( *constraintIt );
+//            Formula* premiseCopy = new Formula( *premise );
+//            premiseCopy->addSubformula(constraintToFormula);
+            newBox->addSubformula(constraintToFormula);
+//            addDeduction( premiseCopy );
+//            premiseCopy->print();
+        }
+        return newBox;
+    }
+    
+    
     std::pair<bool,symbol> ICPModule::checkAndPerformSplit( const double& _targetDiameter )
     {
         std::pair<bool,symbol> result;
@@ -2150,70 +2178,13 @@ namespace smtrat
         if ( found )
         {
             #ifdef RAISESPLITTOSATSOLVER
-            // Create deductions
-
             // create prequesites: ((B' AND CCs) -> h_b)
-            Formula* premise = new Formula( OR );
-            ConstraintSet premises = mHistoryActual->appliedConstraints();
-            assert( mBoxStorage.size() == 1 );
-            std::set<const Formula*> box = mBoxStorage.front();
-            mBoxStorage.pop();
-            for( auto constraintIt = premises.begin(); constraintIt != premises.end(); ++constraintIt )
-            {
-                Formula* negation = new Formula( NOT );
-                Formula* constraint = new Formula( *constraintIt );
-                negation->addSubformula( constraint );
-                premise->addSubformula( negation );
-            }
-            for( auto formulaIt = box.begin(); formulaIt != box.end(); ++formulaIt )
-            {
-                Formula* negation = new Formula( NOT );
-                Formula* constraint = new Formula( **formulaIt );
-                negation->addSubformula( constraint );
-                premise->addSubformula( negation );
-            }
-            
-            GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
-            ConstraintSet relevantBoundaries;
-            for( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
-            {
-                if( originalRealVariables.find( (*constraintIt).first.get_name() ) != originalRealVariables.end() )
-                {
-                    std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*constraintIt).first, (*constraintIt).second);
-                    if( boundaries.first != NULL )
-                        relevantBoundaries.insert(boundaries.first);
-                    if( boundaries.second != NULL )
-                        relevantBoundaries.insert(boundaries.second);
-                }
-            }
-            
-//            cout << "RelevantBoundaries.Size: " << relevantBoundaries.size() << endl;
-            
-            for( auto receivedIt = mpReceivedFormula->begin(); receivedIt != mpReceivedFormula->end(); ++receivedIt )
-            {
-                ConstraintSet::iterator target = relevantBoundaries.find((*receivedIt)->pConstraint());
-                if(  target != relevantBoundaries.end() )
-                    relevantBoundaries.erase(target);
-            }
-
-            for( auto constraintIt = relevantBoundaries.begin(); constraintIt != relevantBoundaries.end(); ++constraintIt )
-            {
-//                Formula* impliedBound = new Formula( OR );
-//                Formula* constraintToFormula = new Formula( *constraintIt );
-//                Formula* premiseCopy = new Formula( *premise );
-//                Formula* negatedPremise = new Formula( NOT );
-//                negatedPremise->addSubformula(premiseCopy);
-//                impliedBound->addSubformula(negatedPremise);
-//                impliedBound->addSubformula(constraintToFormula);
-//                addDeduction( impliedBound );
-//                impliedBound->print();
-                
-                Formula* constraintToFormula = new Formula( *constraintIt );
-                Formula* premiseCopy = new Formula( *premise );
-                premiseCopy->addSubformula(constraintToFormula);
-                addDeduction( premiseCopy );
-                premiseCopy->print();
-            }
+            Formula* splitPremise = createPremiseDeduction();
+            Formula* contractionPremise = new Formula( *splitPremise );
+            Formula* newBox = createContractionDeduction();
+            contractionPremise->addSubformula(newBox);
+            addDeduction(contractionPremise);
+            contractionPremise->print();
 
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             numeric bound  = GiNaC::rationalize( mIntervals.at(variable).midpoint() );
@@ -2223,33 +2194,25 @@ namespace smtrat
             const Constraint* left = Formula::newConstraint(BoundEx, CR_LESS, variables);
             const Constraint* right = Formula::newConstraint(BoundEx, CR_GEQ, variables);
             
-            Formula* less = new Formula( left );
-            Formula* less2 = new Formula( *less );
-            Formula* geq = new Formula( right );
-            Formula* geq2 = new Formula( *geq );
-            Formula* nless = new Formula( NOT );
-            Formula* ngeq = new Formula( NOT );
-            nless->addSubformula(less2);
-            ngeq->addSubformula(geq2);
+            assert( right->relation() == CR_LEQ );
+            assert( left->relation() == CR_LESS );
             
-            premise->addSubformula(less);
-            premise->addSubformula(geq);
-            addDeduction(premise);
-            premise->print();
+            splitPremise->addSubformula(left);
+            splitPremise->addSubformula(right);
+            addDeduction(splitPremise);
+            splitPremise->print();
             
             Formula* excludeBothSplits = new Formula( OR );
-            excludeBothSplits->addSubformula(nless);
-            excludeBothSplits->addSubformula(ngeq);
+            Formula* nleft = new Formula( NOT );
+            nleft->addSubformula(left);
+            Formula* nright = new Formula( NOT );
+            nright->addSubformula(right);
+            excludeBothSplits->addSubformula(nleft);
+            excludeBothSplits->addSubformula(nright);
             
             addDeduction(excludeBothSplits);
             excludeBothSplits->print();
-//            split->addSubformula( xorLeft );
-//            split->addSubformula( xorRight );
-//            addDeduction( split );
-
-//            deduction->print();
             
-//            addDeduction( deduction );
             result.first = true;
             result.second = variable;
             return result;
@@ -3095,7 +3058,7 @@ namespace smtrat
             std::set<const Formula*> definingOrigins = (*variableIt)->lraVar()->getDefiningOrigins();
             for( auto formulaIt = definingOrigins.begin(); formulaIt != definingOrigins.end(); ++formulaIt )
             {
-                cout << "Defining origin: " << **formulaIt << " FOR " << *(*variableIt) << endl;
+//                cout << "Defining origin: " << **formulaIt << " FOR " << *(*variableIt) << endl;
                 bool hasAdditionalVariables = false;
                 for( GiNaC::symtab::const_iterator varIt = mpReceivedFormula->realValuedVars().begin(); varIt != mpReceivedFormula->realValuedVars().end(); ++varIt )
                 {
@@ -3107,19 +3070,19 @@ namespace smtrat
                 }
                 if( hasAdditionalVariables)
                 {
-                    cout << "Addidional variables." << endl;
+//                    cout << "Addidional variables." << endl;
                     for( auto receivedFormulaIt = mpReceivedFormula->begin(); receivedFormulaIt != mpReceivedFormula->end(); ++receivedFormulaIt )
                     {
                         if( icp::isBoundIn((*variableIt)->var(), (*receivedFormulaIt)->pConstraint()) )
                         {
                             reasons.insert(*receivedFormulaIt);
-                            cout << "Also add: " << **receivedFormulaIt << endl;
+//                            cout << "Also add: " << **receivedFormulaIt << endl;
                         }
                     }
                 }
                 else
                 {
-                    cout << "No additional variables." << endl;
+//                    cout << "No additional variables." << endl;
                     for( auto replacementIt = mReplacements.begin(); replacementIt != mReplacements.end(); ++replacementIt )
                     {
                         if( (*replacementIt).first == (*formulaIt)->pConstraint() )
@@ -3165,7 +3128,7 @@ namespace smtrat
         icp::set_icpVariable variables = _node->rStateInfeasibleVariables();
         for( auto varIt = variables.begin(); varIt != variables.end(); ++varIt )
         {
-            cout << "Collect Hull for " << (*varIt)->var().get_name() << endl;
+//            cout << "Collect Hull for " << (*varIt)->var().get_name() << endl;
             _node->variableHull((*varIt)->var().get_name(), variables);
         }
         std::set<const Formula*> reasons = variableReasonHull(variables);
@@ -3475,12 +3438,15 @@ namespace smtrat
     }
 
     
-    void ICPModule::printIntervals()
+    void ICPModule::printIntervals( bool _original )
     {
         for ( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
         {
-            cout << (*constraintIt).first << " \t -> ";
-            (*constraintIt).second.dbgprint();
+            if( !_original || mVariables.at((*constraintIt).first.get_name())->isOriginal())
+            {
+                cout << (*constraintIt).first << " \t -> ";
+                (*constraintIt).second.dbgprint();
+            }
         }
     }
 } // namespace smtrat

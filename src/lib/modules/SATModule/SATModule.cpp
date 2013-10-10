@@ -1053,6 +1053,7 @@ FindSecond:
         starts++;
         #ifdef SATMODULE_WITH_CALL_NUMBER
         #ifndef DEBUG_SATMODULE
+        unsigned numberOfTheoryCalls = 0;
         cout << endl << "Number of theory calls:" << endl << endl;
         #endif
         #endif
@@ -1106,6 +1107,8 @@ FindSecond:
                     {
                         cout << "#" << numberOfTheoryCalls << "  ";
                     }
+                    #else
+                    ++numberOfTheoryCalls;
                     #endif
                     #endif
                     #ifdef DEBUG_SATMODULE
