@@ -183,10 +183,10 @@ namespace smtrat
         else if( !mExternalPrefixInitialized ) initExternalPrefix();
         lock_guard<mutex> lock( mMutexArithmeticVariables );
         // Create the arithmetic variable
-        carl::Variable var = mVariablePool.getFreshVariable( _domain );
-        mExternalNamesToVariables[_name] = var;
-        mVariablePool.setVariableName( var, _name );
-        return var;
+        auto iterBoolPair = mExternalNamesToVariables.insert( pair<string,carl::Variable>( _name, mVariablePool.getFreshVariable( _domain ) ) );
+        assert( iterBoolPair.second );
+        mVariablePool.setVariableName( iterBoolPair.first->second, _name );
+        return iterBoolPair.first->second;
     }
 
     /**

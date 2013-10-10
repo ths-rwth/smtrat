@@ -149,14 +149,13 @@ namespace vs
         return true;
     }
     void simplify( DisjunctionOfConstraintConjunctions& );
-    void simplify( DisjunctionOfConstraintConjunctions&, GiNaC::symtab&, const GiNaCRA::evaldoubleintervalmap& );
+    void simplify( DisjunctionOfConstraintConjunctions&, smtrat::Variables&, const smtrat::EvalDoubleIntervalMap& );
     bool splitProducts( DisjunctionOfConstraintConjunctions&, bool = false );
     bool splitProducts( const ConstraintVector&, DisjunctionOfConstraintConjunctions&, bool = false );
     DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint*, bool = false );
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::Constraint* );
     void getOddBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& );
     void getEvenBitStrings( unsigned, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& );
-    GiNaC::ex simplify( const GiNaC::ex&, const GiNaC::symtab& );
     void print( DisjunctionOfConstraintConjunctions& );
 }    // end namspace vs
 
