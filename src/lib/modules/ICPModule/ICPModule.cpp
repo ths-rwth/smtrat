@@ -1687,7 +1687,7 @@ namespace smtrat
     }
     
     
-    void ICPModule::updateRelevantCandidates(symbol _var, double _relativeContraction )
+    void ICPModule::updateRelevantCandidates(const symbol& _var, double _relativeContraction )
     {
         // update all candidates which contract in the dimension in which the split has happened
         std::set<icp::ContractionCandidate*> updatedCandidates;
@@ -1777,11 +1777,19 @@ namespace smtrat
             // Create deductions
             // create prequesites: ((B' AND CCs) -> h_b)
             Formula* contractionPremise = createPremiseDeduction();
-            Formula* splitPremise = new Formula( *contractionPremise );
+//            Formula* splitPremise = new Formula( *contractionPremise );
+            Formula* splitPremise = new Formula( OR );
             Formula* newBox = createContractionDeduction();
-            contractionPremise->addSubformula(newBox);
-            addDeduction(contractionPremise);
-            contractionPremise->print();
+            if( newBox != NULL )
+            {
+                contractionPremise->addSubformula(newBox);
+                addDeduction(contractionPremise);
+                contractionPremise->print();
+            }
+            else
+            {
+                delete contractionPremise;
+            }
 
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             std::pair<const Constraint*, const Constraint*> leftPair = icp::intervalToConstraint(variable,resultA);
@@ -1920,7 +1928,7 @@ namespace smtrat
     }
     
     
-    void ICPModule::tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, GiNaCRA::evaldoubleintervalmap _intervals )
+    void ICPModule::tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, GiNaCRA::evaldoubleintervalmap& _intervals )
     {
         GiNaCRA::DoubleInterval resultA = GiNaCRA::DoubleInterval();
         GiNaCRA::DoubleInterval resultB = GiNaCRA::DoubleInterval();
@@ -2065,41 +2073,60 @@ namespace smtrat
     
     Formula* ICPModule::createContractionDeduction()
     {
-        GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
-        ConstraintSet relevantBoundaries;
-        for( auto constraintIt = mIntervals.begin(); constraintIt != mIntervals.end(); ++constraintIt )
+        // check if any bounds have been updated
+        bool changed = false;
+        for( auto variableIt = mVariables.begin(); variableIt != mVariables.end(); ++variableIt )
         {
-            if( originalRealVariables.find( (*constraintIt).first.get_name() ) != originalRealVariables.end() )
+            if( (*variableIt).second->isOriginal() && (*variableIt).second->isExternalUpdated() )
             {
-                std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*constraintIt).first, (*constraintIt).second);
-                if( boundaries.first != NULL )
-                    relevantBoundaries.insert(boundaries.first);
-                if( boundaries.second != NULL )
-                    relevantBoundaries.insert(boundaries.second);
+                changed = true;
+                break;
             }
         }
-//        // Add only changed bounds.
-//        for( auto receivedIt = mpReceivedFormula->begin(); receivedIt != mpReceivedFormula->end(); ++receivedIt )
-//        {
-//            ConstraintSet::iterator target = relevantBoundaries.find((*receivedIt)->pConstraint());
-//            if(  target != relevantBoundaries.end() )
-//                relevantBoundaries.erase(target);
-//        }
-        Formula* newBox = new Formula( AND );
-        for( auto constraintIt = relevantBoundaries.begin(); constraintIt != relevantBoundaries.end(); ++constraintIt )
+        
+        if( changed )
         {
-            Formula* constraintToFormula = new Formula( *constraintIt );
-//            Formula* premiseCopy = new Formula( *premise );
-//            premiseCopy->addSubformula(constraintToFormula);
-            newBox->addSubformula(constraintToFormula);
-//            addDeduction( premiseCopy );
-//            premiseCopy->print();
+            GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
+            ConstraintSet relevantBoundaries;
+            for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
+            {
+                if( originalRealVariables.find( (*intervalIt).first.get_name() ) != originalRealVariables.end() )
+                {
+                    std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*intervalIt).first, (*intervalIt).second);
+                    if( boundaries.first != NULL )
+                        relevantBoundaries.insert(boundaries.first);
+                    if( boundaries.second != NULL )
+                        relevantBoundaries.insert(boundaries.second);
+                }
+            }
+    //        // Watch for changed bounds.
+    //        bool changed = false;
+    //        printReceivedFormula();
+    //        for( auto receivedIt = mpReceivedFormula->begin(); receivedIt != mpReceivedFormula->end(); ++receivedIt )
+    //        {
+    //            ConstraintSet::iterator target = relevantBoundaries.find((*receivedIt)->pConstraint());
+    //            if(  target == relevantBoundaries.end() && icp::isBound((*receivedIt)->pConstraint()) )
+    //            {
+    //                cout << "Changed bound: " << *(*receivedIt)->pConstraint() << endl;
+    //                changed = true;
+    //            }
+    //        }
+            Formula* newBox = new Formula( AND );
+            for( auto constraintIt = relevantBoundaries.begin(); constraintIt != relevantBoundaries.end(); ++constraintIt )
+            {
+                Formula* constraintToFormula = new Formula( *constraintIt );
+                newBox->addSubformula(constraintToFormula);
+            }
+            return newBox;
         }
-        return newBox;
+        else
+        {
+            return NULL;
+        }
     }
     
     
-    std::pair<bool,symbol> ICPModule::checkAndPerformSplit( const double& _targetDiameter )
+    std::pair<bool,symbol> ICPModule::checkAndPerformSplit( double _targetDiameter )
     {
         std::pair<bool,symbol> result;
         result.first = false;
@@ -2179,12 +2206,20 @@ namespace smtrat
         {
             #ifdef RAISESPLITTOSATSOLVER
             // create prequesites: ((B' AND CCs) -> h_b)
-            Formula* splitPremise = createPremiseDeduction();
-            Formula* contractionPremise = new Formula( *splitPremise );
+//            Formula* splitPremise = createPremiseDeduction();
+            Formula* splitPremise = new Formula( OR );
+            Formula* contractionPremise = createPremiseDeduction();
             Formula* newBox = createContractionDeduction();
-            contractionPremise->addSubformula(newBox);
-            addDeduction(contractionPremise);
-            contractionPremise->print();
+            if( newBox != NULL)
+            {
+                contractionPremise->addSubformula(newBox);
+                addDeduction(contractionPremise);
+                contractionPremise->print();
+            }
+            else
+            {
+                delete contractionPremise;
+            }
 
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             numeric bound  = GiNaC::rationalize( mIntervals.at(variable).midpoint() );
