@@ -309,6 +309,8 @@ namespace smtrat
             bool simplify();
             // Learns a clause.
             bool addClause( Minisat::vec<Minisat::Lit>&, unsigned = 0 );
+            // Checks the correctness of the watches in a clause
+            bool watchesCorrect( const Minisat::Clause& ) const;
             // Finds the best two candidates for watching
             void arrangeForWatches( Minisat::CRef );
             // FALSE means solver is in a conflicting state
