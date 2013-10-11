@@ -1327,7 +1327,6 @@ SetWatches:
             #ifdef SAT_MODULE_THEORY_PROPAGATION
             if( deductionsLearned )
             {
-                cout << "deductionsLearned" << endl;
                 CONSTRAINT_UNLOCK
                 continue;
             }
