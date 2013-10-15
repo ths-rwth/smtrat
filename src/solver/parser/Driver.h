@@ -80,6 +80,8 @@ namespace smtrat
             ///
             bool mTwoFormulaMode;
             ///
+            std::stack<bool> mPolarityHist;
+            ///
             std::stack<bool> mTwoFormulaModeHist;
             /// Number of checks (only one check permitted if the status flag is set to true or false)
             unsigned mNumOfChecks;
@@ -132,7 +134,7 @@ namespace smtrat
             ///
             std::stack< std::vector< std::pair< std::string, unsigned > > > mVariableStack;
             ///
-            std::vector< smtrat::Formula* > mInnerConstraintBindings;
+            std::unordered_map< std::string, smtrat::Formula* > mInnerConstraintBindings;
 
         public:
             // Constructor and destructor.
@@ -242,7 +244,14 @@ namespace smtrat
             
             void setPolarity( bool _pol )
             {
+                mPolarityHist.push( mPolarity );
                 mPolarity = _pol;
+            }
+            
+            void restorePolarity()
+            {
+                mPolarity = mPolarityHist.top();
+                mPolarityHist.pop();
             }
             
             void check()

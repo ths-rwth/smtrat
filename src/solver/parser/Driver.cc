@@ -52,6 +52,7 @@ namespace smtrat
         mLastInstructionFailed( false ),
         mPolarity( true ),
         mTwoFormulaMode( false ),
+        mPolarityHist(),
         mTwoFormulaModeHist(),
         mNumOfChecks( 0 ),
         mInfos(),
@@ -76,6 +77,7 @@ namespace smtrat
     Driver::~Driver()
     {
         assert( mInstructionQueue.empty() );
+        assert( mInnerConstraintBindings.empty() );
         if( mRegularOutputReadBuffer != NULL )
             delete mRegularOutputReadBuffer;
         if( mDiagnosticOutputReadBuffer != NULL )
@@ -218,12 +220,12 @@ namespace smtrat
             error( _loc, "Multiple definition of real variable " + _varName );
         mVariableStack.top().push_back( pair< string, unsigned >( _varName, 1 ) );
         pLexer()->mTheoryVariables.insert( _varName );
-        if( !mInnerConstraintBindings.empty()  )
+        if( !mInnerConstraintBindings.empty() )
         {
             if( mInnerConstraintBindings.size() == 1 )
             {
-                Formula* result = mInnerConstraintBindings.back();
-                mInnerConstraintBindings.pop_back();
+                Formula* result = mInnerConstraintBindings.begin()->second;
+                mInnerConstraintBindings.erase( mInnerConstraintBindings.begin() );
                 return result;
             }
             else
@@ -231,8 +233,8 @@ namespace smtrat
                 Formula* result = new Formula( AND );
                 while( !mInnerConstraintBindings.empty() )
                 {
-                    result->addSubformula( mInnerConstraintBindings.back() );
-                    mInnerConstraintBindings.pop_back();
+                    result->addSubformula( mInnerConstraintBindings.begin()->second );
+                    mInnerConstraintBindings.erase( mInnerConstraintBindings.begin() );
                 }
                 return result;
             }
@@ -389,23 +391,9 @@ namespace smtrat
     {
         symtab vars = symtab();
         for( auto iter = _lhs.second.begin(); iter != _lhs.second.end(); ++iter )
-        {
             vars.insert( (*iter)->second );
-            auto bindingVars = mTheoryIteBindings.find( (*iter)->first );
-            if( bindingVars != mTheoryIteBindings.end() )
-            {
-                mInnerConstraintBindings.push_back( new Formula( bindingVars->second ) );
-            }
-        }
         for( auto iter = _rhs.second.begin(); iter != _rhs.second.end(); ++iter )
-        {
             vars.insert( (*iter)->second );
-            auto bindingVars = mTheoryIteBindings.find( (*iter)->first );
-            if( bindingVars != mTheoryIteBindings.end() )
-            {
-                mInnerConstraintBindings.push_back( new Formula( bindingVars->second ) );
-            }
-        }
         if( mTwoFormulaMode )
         {
             Constraint_Relation relA = (Constraint_Relation) _rel;
@@ -450,15 +438,30 @@ namespace smtrat
                 }
             }
             Formula* result = new Formula( AND );
-            if( !mInnerConstraintBindings.empty() )
+            std::vector< Formula* > varBindings = std::vector< Formula* >();
+            for( auto iter = vars.begin(); iter != vars.end(); ++iter )
+            {
+                auto bindingVars = mTheoryIteBindings.find( iter->first );
+                if( bindingVars != mTheoryIteBindings.end() )
+                {
+                    varBindings.push_back( new Formula( bindingVars->second ) );
+                }
+                auto icBind = mInnerConstraintBindings.find( iter->first );
+                if( icBind != mInnerConstraintBindings.end() )
+                {
+                    varBindings.push_back( icBind->second );
+                    mInnerConstraintBindings.erase( icBind );
+                }
+            }
+            if( !varBindings.empty() )
             {
                 Formula* resultA = new Formula( AND );
                 Formula* resultB = new Formula( AND );
-                while( !mInnerConstraintBindings.empty() )
+                while( !varBindings.empty() )
                 {
-                    resultA->addSubformula( new Formula( *mInnerConstraintBindings.back() ) );
-                    resultB->addSubformula( mInnerConstraintBindings.back() );
-                    mInnerConstraintBindings.pop_back();
+                    resultA->addSubformula( new Formula( *varBindings.back() ) );
+                    resultB->addSubformula( varBindings.back() );
+                    varBindings.pop_back();
                 }
                 resultA->addSubformula( Formula::newConstraint( _lhs.first-_rhs.first, relA, vars ) );
                 resultB->addSubformula( Formula::newConstraint( _lhs.first-_rhs.first, relB, vars ) );
@@ -477,13 +480,13 @@ namespace smtrat
             {
                 if( mPolarity )
                 {
-                    result->addSubformula( new Formula( Formula::newConstraint( _lhs.first-_rhs.first, relA, vars ) ) );
-                    result->addSubformula( new Formula( Formula::newConstraint( _lhs.first-_rhs.first, relB, vars ) ) );
+                    result->addSubformula( Formula::newConstraint( _lhs.first-_rhs.first, relA, vars ) );
+                    result->addSubformula( Formula::newConstraint( _lhs.first-_rhs.first, relB, vars ) );
                 }
                 else
                 {
-                    result->addSubformula( new Formula( Formula::newConstraint( _lhs.first-_rhs.first, relB, vars ) ) );
-                    result->addSubformula( new Formula( Formula::newConstraint( _lhs.first-_rhs.first, relA, vars ) ) );
+                    result->addSubformula( Formula::newConstraint( _lhs.first-_rhs.first, relB, vars ) );
+                    result->addSubformula( Formula::newConstraint( _lhs.first-_rhs.first, relA, vars ) );
                 }
             }
             return result;
@@ -533,13 +536,28 @@ namespace smtrat
                     }
                 }
             }
-            if( !mInnerConstraintBindings.empty() )
+            std::vector< Formula* > varBindings = std::vector< Formula* >();
+            for( auto iter = vars.begin(); iter != vars.end(); ++iter )
+            {
+                auto bindingVars = mTheoryIteBindings.find( iter->first );
+                if( bindingVars != mTheoryIteBindings.end() )
+                {
+                    varBindings.push_back( new Formula( bindingVars->second ) );
+                }
+                auto icBind = mInnerConstraintBindings.find( iter->first );
+                if( icBind != mInnerConstraintBindings.end() )
+                {
+                    varBindings.push_back( icBind->second );
+                    mInnerConstraintBindings.erase( icBind );
+                }
+            }
+            if( !varBindings.empty() )
             {
                 Formula* result = new Formula( AND );
-                while( !mInnerConstraintBindings.empty() )
+                while( !varBindings.empty() )
                 {
-                    result->addSubformula( mInnerConstraintBindings.back() );
-                    mInnerConstraintBindings.pop_back();
+                    result->addSubformula( varBindings.back() );
+                    varBindings.pop_back();
                 }
                 result->addSubformula( Formula::newConstraint( _lhs.first-_rhs.first, rel, vars ) );
                 return result;
@@ -882,25 +900,17 @@ namespace smtrat
             formulaNotBB->addSubformula( new Formula( auxBool ) );
             Formula* formulaOrBB = new Formula( OR );
             formulaOrBB->addSubformula( formulaNotBB );
-            formulaOrBB->addSubformula( _else->pruneFront() );
-            delete _else;
+            formulaOrBB->addSubformula( _then->pruneFront() );
+            delete _then;
             resultB->addSubformula( formulaOrBB );
             // Add: (or auxBool (not _else))
             Formula* formulaOrBC = new Formula( OR );
             formulaOrBC->addSubformula( new Formula( auxBool ) );
-            formulaOrBC->addSubformula( _then->pruneFront() );
-            delete _then;
+            formulaOrBC->addSubformula( _else->pruneFront() );
+            delete _else;
             resultB->addSubformula( formulaOrBC );
-            if( mPolarity )
-            {
-                results->addSubformula( result );
-                results->addSubformula( resultB );
-            }
-            else
-            {
-                results->addSubformula( resultB );
-                results->addSubformula( result );
-            }
+            results->addSubformula( result );
+            results->addSubformula( resultB );
             return results;
         }
         else
@@ -953,7 +963,7 @@ namespace smtrat
         Formula* result = new Formula( OR );
         result->addSubformula( notTmp );
         result->addSubformula( innerConstraintBinding );
-        mInnerConstraintBindings.push_back( result );
+        mInnerConstraintBindings.insert( pair< string, Formula* >( auxRealVar->first, result ) );
         mTheoryIteBindings[auxRealVar->first] = dependencyBool;
         restoreTwoFormulaMode();
         return new string( auxRealVar->first );
