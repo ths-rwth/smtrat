@@ -217,7 +217,7 @@ namespace smtrat
              * Update all affected candidates and reinsert them into icpRelevantCandidates
              * @param _var
              */
-            void updateRelevantCandidates(symbol _var, double _relativeContraction );
+            void updateRelevantCandidates(const symbol& _var, double _relativeContraction );
             
             /**
              * Method to determine the next combination of variable and constraint to be contracted
@@ -240,7 +240,7 @@ namespace smtrat
              * @param _relativeContraction
              * @param _intervals
              */
-            void tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, GiNaCRA::evaldoubleintervalmap _intervals );
+            void tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, GiNaCRA::evaldoubleintervalmap& _intervals );
             
             /**
              * Selects the next splitting direction according to different heuristics.
@@ -259,7 +259,7 @@ namespace smtrat
              * @param _targetDiameter
              * @return if a split has happened and in which dimension.
              */
-            std::pair<bool,symbol> checkAndPerformSplit( const double& _targetDiameter );
+            std::pair<bool,symbol> checkAndPerformSplit( double _targetDiameter );
             
             /**
              * Creates constraints from the given interval and adds them to the
