@@ -18,6 +18,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src
 					 ${CMAKE_BINARY_DIR}/src/solver
 					 ${CMAKE_BINARY_DIR}/src/solver/parser
 					${GINACRA_INCLUDE_DIR}
+                    ${carl_INCLUDE_DIR}
  )
 
 #TODO: we only link against the library, which is copied to the binary root dir. We should somehow save that in a variable.
@@ -60,6 +61,7 @@ add_dependencies( smtratSolver
 )
 target_link_libraries( smtratSolver
 						lib_${PROJECT_NAME} # smtrat library
+                        carl # arithmetic library
 						${libraries} # libraries definied in top-level CMakeLists.txt
 )
 set_target_properties( smtratSolver PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
@@ -79,7 +81,7 @@ add_library( smtlibParser
 )
 
 # add linking libraries. This is an over-approximation.
-target_link_libraries( smtlibParser ${libraries})
+target_link_libraries( smtlibParser carl ${libraries})
 
 if(${STATICLIB_SWITCH} STREQUAL "ON")
   set_target_properties( smtlibParser PROPERTIES LINK_SEARCH_START_STATIC TRUE )
