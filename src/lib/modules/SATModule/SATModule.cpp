@@ -204,7 +204,12 @@ namespace smtrat
         {
             if( iter->second != CRef_Undef )
             {
-                cancelUntil( level( iter->second ) );
+                Clause& c = ca[iter->second];
+                if( value( c[1] ) != l_Undef )
+                {
+                    int lev = level( var( c[1] ) );
+                    cancelUntil( lev );
+                }
                 removeClause( iter->second );
             }
         }
@@ -731,7 +736,6 @@ namespace smtrat
             if( value( add_tmp[0] ) == l_Undef )
             {
                 uncheckedEnqueue( add_tmp[0] );
-//                ok = ok && (propagate() == CRef_Undef);
             }
             else
             {
@@ -758,10 +762,16 @@ namespace smtrat
             arrangeForWatches( cr );
             if( _type == DEDUCTED_CLAUSE )
             {
-                if( value( add_tmp[1] ) != l_Undef )
+                Clause& c = ca[cr];
+                if( value( c[1] ) == l_False )
                 {
-                    int lev = level( add_tmp );
-                    cancelUntil( lev > 0 ? lev-1 : 0 );
+//                    cout << "Add deducted clause:" << endl;
+//                    printClause( cr, true );
+                    int lev = level( var( c[1] ) );
+                    cancelUntil( lev );
+                    arrangeForWatches( cr );
+//                    printClause( cr, true );
+//                    cout << endl;
                 }
             }
             attachClause( cr );
@@ -772,17 +782,69 @@ namespace smtrat
                 if( value( c[0] ) == l_Undef && value( c[1] ) == l_False )
                 {
                     uncheckedEnqueue( c[0], cr );
-//                    ok = ok && (propagate() == CRef_Undef);
                 }
             }
         }
         return true;
     }
 
+    bool SATModule::watchesCorrect( const Clause& _clause ) const
+    {
+        if( _clause.size() == 1 )
+            return true;
+        if( value( _clause[0] ) == l_Undef && value( _clause[1] ) == l_Undef )
+             return true;
+        else 
+        {
+            if( value( _clause[0] ) == l_False )
+            {
+                for( int i = 1; i < _clause.size(); ++i )
+                {
+                    if( value( _clause[i] ) != l_False )
+                        return false;
+                    if( level( var( _clause[i] ) ) > level( var( _clause[0] ) ) )
+                        return false;
+                }
+            }
+            else if( value( _clause[0] ) == l_True )
+            {
+                for( int i = 1; i < _clause.size(); ++i )
+                {
+                    if( value( _clause[i] ) == l_Undef )
+                        return false;
+                    else if( value( _clause[i] ) == l_True && level( var( _clause[i] ) ) > level( var( _clause[0] ) ) )
+                        return false;
+                }
+            }    
+            if( value( _clause[1] ) == l_False )
+            {
+                for( int i = 2; i < _clause.size(); ++i )
+                {
+                    if( value( _clause[i] ) != l_False )
+                        return false;
+                    if( level( var( _clause[i] ) ) > level( var( _clause[1] ) ) )
+                        return false;
+                }
+            }
+            else if( value( _clause[1] ) == l_True )
+            {
+                for( int i = 2; i < _clause.size(); ++i )
+                {
+                    if( value( _clause[i] ) == l_Undef )
+                        return false;
+                    else if( value( _clause[i] ) == l_True && level( var( _clause[i] ) ) > level( var( _clause[1] ) ) )
+                        return false;
+                }
+            }
+            return true;
+        }
+    }
+    
     /**
      * Moves two literals which are not assigned to false to the beginning of the clause.
      * If only one literal is not assigned to false, it is moved to the beginning.
      * If all literals are false, the first literal is one of the literals with the highest decision level.
+     * If all literals are false but the first one, the second literal has the highest decision level.
      *
      * @param _clause The clause in which the literals shall be reordered.
      */
@@ -790,10 +852,15 @@ namespace smtrat
     {
         Clause& clause = ca[_clauseRef];
         assert( clause.size() > 1 );
-        if( clause.size() < 3 ) return;
-        int highestLevel = -1;
+        if( clause.size() < 2 )
+        {
+            assert( watchesCorrect( clause ) );
+            return;
+        }
         int l1 = -1;
         int l2 = -1;
+        int levelL1 = -1;
+        int levelL2 = -1;
         int i = 0;
         // Search for a literal which is not assigned or assigned to true.
         for( ; i < clause.size(); ++i )
@@ -801,43 +868,103 @@ namespace smtrat
             lbool lb = value( clause[i] );
             if( lb == l_Undef )
             {
+                l2 = l1;
                 l1 = i;
-                goto FindSecond;
+                levelL2 = levelL1;
+                levelL1 = level( var( clause[i] ) );
+                goto FirstUndefSecondFalse;
             }
             else if( lb == l_True )
             {
-                l1 = i;
-                break;
-            }
-            else if( level( var( clause[i] ) ) > highestLevel )
-            {
-                l1 = i;
-                highestLevel = level( var( clause[i] ) );
-            }
-        }
-        ++i;
-        // If a literal being assigned to true has been found, go on 
-        // searching for a not assigned literal. 
-        for( ; i < clause.size(); ++i )
-        {
-            lbool lb = value( clause[i] );
-            if( lb == l_Undef )
-            {
-                // If one is found, set it as the first literal and 
-                // the one assigned to true as second literal.
                 l2 = l1;
                 l1 = i;
-                break;
+                levelL2 = levelL1;
+                levelL1 = level( var( clause[i] ) );
+                goto FirstTrue;
             }
-            else if( l2 < 0 && lb == l_True )
+            else if( level( var( clause[i] ) ) > levelL1 )
             {
-                // If there is another literal assigned to true, take
-                // it second literal as long as there has not been found
-                // an unassigned literal.
+                l2 = l1;
+                l1 = i;
+                levelL2 = levelL1;
+                levelL1 = level( var( clause[i] ) );
+            }
+            else if( level( var( clause[i] ) ) > levelL2 )
+            {
                 l2 = i;
+                levelL2 = level( var( clause[i] ) );
             }
         }
-FindSecond:
+        goto SetWatches;
+FirstTrue:
+        // If we have already found a literal which is assigned to true.
+        ++i;
+        for( ; i < clause.size(); ++i )
+        {
+            lbool lb = value( clause[i] );
+            if( lb == l_Undef )
+            {
+                l2 = l1;
+                l1 = i;
+                levelL2 = levelL1;
+                levelL1 = level( var( clause[i] ) );
+                goto FirstUndefSecondTrue;
+            }
+            else if( lb == l_True )
+            {
+                if( level( var( clause[i] ) ) > levelL1 )
+                {
+                    l2 = l1;
+                    l1 = i;
+                    levelL2 = levelL1;
+                    levelL1 = level( var( clause[i] ) );
+                }
+                else
+                {
+                    l2 = i;
+                    levelL2 = level( var( clause[i] ) );
+                }
+                goto BothTrue;
+            }
+            else if( level( var( clause[i] ) ) > levelL2 )
+            {
+                l2 = i;
+                levelL2 = level( var( clause[i] ) );
+            }
+        }
+        goto SetWatches;
+BothTrue:
+        // If we have already found two literals which are assigned to true.
+        ++i;
+        for( ; i < clause.size(); ++i )
+        {
+            lbool lb = value( clause[i] );
+            if( lb == l_Undef )
+            {
+                l2 = l1;
+                l1 = i;
+                levelL2 = levelL1;
+                levelL1 = level( var( clause[i] ) );
+                goto FirstUndefSecondTrue;
+            }
+            else if( lb == l_True )
+            {
+                if( level( var( clause[i] ) ) > levelL1 )
+                {
+                    l2 = l1;
+                    l1 = i;
+                    levelL2 = levelL1;
+                    levelL1 = level( var( clause[i] ) );
+                }
+                else if( level( var( clause[i] ) ) > levelL2 )
+                {
+                    l2 = i;
+                    levelL2 = level( var( clause[i] ) );
+                }
+            }
+        }
+        goto SetWatches;
+FirstUndefSecondFalse:
         ++i;
         for( ; i < clause.size(); ++i )
         {
@@ -845,21 +972,42 @@ FindSecond:
             if( lb == l_Undef )
             {
                 l2 = i;
-                break;
+                goto SetWatches;
             }
-            else if( l2 < 0 && lb == l_True )
+            else if( lb == l_True )
             {
                 l2 = i;
+                levelL2 = level( var( clause[i] ) );
+                goto FirstUndefSecondTrue;
+            }
+            else if( level( var( clause[i] ) ) > levelL2 )
+            {
+                l2 = i;
+                levelL2 = level( var( clause[i] ) );
             }
         }
-        if( l1 < 0 )
+        goto SetWatches;
+FirstUndefSecondTrue:
+        ++i;
+        for( ; i < clause.size(); ++i )
         {
-            return;
+            lbool lb = value( clause[i] );
+            if( lb == l_Undef )
+            {
+                l2 = i;
+                goto SetWatches;
+            }
+            else if( lb == l_True )
+            {
+                if( level( var( clause[i] ) ) > levelL2 )
+                {
+                    l2 = i;
+                    levelL2 = level( var( clause[i] ) );
+                }
+            }
         }
-        else if( l2 < 0 )
-        {
-            l2 = l1 != 1 ? 1 : 0;
-        }
+SetWatches:
+        assert( l1 >= 0 && l2 >= 0 );
         Lit first = clause[l1];
         Lit second = clause[l2];
         if( l1 != 0 )
@@ -873,6 +1021,7 @@ FindSecond:
             clause[l2] = clause[1];
             clause[1] = second;
         }
+        assert( watchesCorrect( clause ) );
     }
 
     /**
@@ -999,8 +1148,8 @@ FindSecond:
             qhead = trail_lim[level];
             trail.shrink( trail.size() - trail_lim[level] );
             trail_lim.shrink( trail_lim.size() - level );
+            ok = true;
         }
-        ok = true;
     }
 
     //=================================================================================================
@@ -1034,7 +1183,7 @@ FindSecond:
         cout << "###" << endl;
         printBooleanVarMap( cout, "###" );
         cout << "###" << endl;
-        unsigned debugFromCall = 1;
+        unsigned debugFromCall = 1; // choose it > 0
         unsigned numberOfTheoryCalls = 0;
         #endif
         assert( ok );
@@ -1044,6 +1193,7 @@ FindSecond:
         starts++;
         #ifdef SATMODULE_WITH_CALL_NUMBER
         #ifndef DEBUG_SATMODULE
+        unsigned numberOfTheoryCalls = 0;
         cout << endl << "Number of theory calls:" << endl << endl;
         #endif
         #endif
@@ -1089,14 +1239,16 @@ FindSecond:
                         cout << "### " << endl;
                         cout << "### Check the constraints: ";
                     }
+                    ++numberOfTheoryCalls;
                     #endif
                     #ifdef SATMODULE_WITH_CALL_NUMBER
-                    ++numberOfTheoryCalls;
                     #ifdef DEBUG_SATMODULE
                     if( numberOfTheoryCalls >= debugFromCall-1 )
                     {
                         cout << "#" << numberOfTheoryCalls << "  ";
                     }
+                    #else
+                    ++numberOfTheoryCalls;
                     #endif
                     #endif
                     #ifdef DEBUG_SATMODULE
@@ -1150,6 +1302,12 @@ FindSecond:
                         }
                         case Unknown:
                         {
+                            #ifdef DEBUG_SATMODULE
+                            if( numberOfTheoryCalls >= debugFromCall )
+                            {
+                                cout << "### Result: Unknown!" << endl;
+                            }
+                            #endif
                             #ifdef SAT_MODULE_THEORY_PROPAGATION
                             //Theory propagation.
                             deductionsLearned = processLemmas();
@@ -1220,6 +1378,10 @@ FindSecond:
                         cout << "### Conflict clause: ";
                         printClause( confl, cout );
                     }
+                    else
+                    {
+                        cout << "### SAT conflict!" << endl;
+                    }
                 }
                 #endif
 
@@ -1230,7 +1392,7 @@ FindSecond:
                 {
                     if( madeTheoryCall )
                     {
-                        printClause( learnt_clause, cout, "### Asserting clause: " );
+                        printClause( learnt_clause, true, cout, "### Asserting clause: " );
                         cout << "### Backtrack to level " << backtrack_level << endl;
                         cout << "###" << endl;
                     }
@@ -1294,7 +1456,6 @@ FindSecond:
             else
             {
                 // NO CONFLICT
-
                 // TODO: Consider cleaning the learned clauses and restarts.
 #ifdef SAT_WITH_RESTARTS
                 if( nof_conflicts >= 0 && (conflictC >= nof_conflicts ||!withinBudget()) )
@@ -1917,6 +2078,7 @@ NextClause:
         if( conflictClause != CRef_Undef && lowestLevel >= decisionLevel()+1 )
             Module::storeAssumptionsToCheck( *mpManager );
         assert( conflictClause == CRef_Undef || lowestLevel < decisionLevel()+1 );
+        cancelUntil(lowestLevel);
         return conflictClause;
     }
 
@@ -2171,12 +2333,14 @@ NextClause:
     {
         for( int i = 0; i < c.size(); i++ )
         {
-            signed tmp = (sign( c[i] ) ? -1 : 1) * var( c[i] );
-            _out << setw( 6 ) << tmp;
+            stringstream s;
+            s << var( c[i] );
+            string result = (sign( c[i] ) ? "-" : "") + s.str();
+            _out << setw( 6 ) << result;
         }
 
         if( satisfied( c ) )
-            cout << "      ok";
+            _out << "      ok";
     }
 
     void SATModule::printClause( CRef _clause, bool _withAssignment, ostream& _out, const string& _init ) const
@@ -2210,7 +2374,7 @@ NextClause:
      * @param _out
      * @param _init
      */
-    void SATModule::printClause( const vec<Lit>& _clause, ostream& _out, const string& _init ) const
+    void SATModule::printClause( const vec<Lit>& _clause, bool _withAssignment, ostream& _out, const string& _init ) const
     {
         cout << _init;
         for( int pos = 0; pos < _clause.size(); ++pos )
@@ -2221,6 +2385,8 @@ NextClause:
                 cout << "-";
             }
             cout << var( _clause[pos] );
+            if( _withAssignment )
+                cout << "(" << (value( _clause[pos] ) == l_True ? "true" : (value( _clause[pos] ) == l_False ? "false" : "undef")) << "@" << level( var( _clause[pos] ) ) << ")";
         }
         cout << endl;
     }
