@@ -1779,16 +1779,18 @@ namespace smtrat
             Formula* contractionPremise = createPremiseDeduction();
 //            Formula* splitPremise = new Formula( *contractionPremise );
             Formula* splitPremise = new Formula( OR );
-            Formula* newBox = createContractionDeduction();
-            if( newBox != NULL )
+            set<Formula*> newBox = createContractionDeduction();
+            if( !newBox.empty())
             {
-                contractionPremise->addSubformula(newBox);
-                addDeduction(contractionPremise);
-                contractionPremise->print();
+                for( auto formulaIt = newBox.begin(); formulaIt != newBox.end(); ++formulaIt )
+                {
+                    addDeduction(*formulaIt);
+                    (*formulaIt)->print();
+                }
             }
             else
             {
-                delete contractionPremise;
+                newBox.clear();
             }
 
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
@@ -2071,58 +2073,38 @@ namespace smtrat
         return premise;
     }
     
-    Formula* ICPModule::createContractionDeduction()
+    set<Formula*> ICPModule::createContractionDeduction()
     {
         // check if any bounds have been updated
         bool changed = false;
+        set<Formula*> boundaryDeductions;
         for( auto variableIt = mVariables.begin(); variableIt != mVariables.end(); ++variableIt )
         {
             if( (*variableIt).second->isOriginal() && (*variableIt).second->isExternalUpdated() )
             {
                 changed = true;
-                break;
-            }
-        }
-        
-        if( changed )
-        {
-            GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
-            ConstraintSet relevantBoundaries;
-            for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
-            {
-                if( originalRealVariables.find( (*intervalIt).first.get_name() ) != originalRealVariables.end() )
+                Formula* boundaryDeduction = new Formula( OR );
+                ConstraintSet reasons = mHistoryActual->reasons((*variableIt).second->var());
+                if( reasons.empty())
                 {
-                    std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*intervalIt).first, (*intervalIt).second);
-                    if( boundaries.first != NULL )
-                        relevantBoundaries.insert(boundaries.first);
-                    if( boundaries.second != NULL )
-                        relevantBoundaries.insert(boundaries.second);
+                    break;
                 }
+                for( auto reasonIt = reasons.begin(); reasonIt != reasons.end(); ++reasonIt )
+                {
+                    Formula* reasonFormula = new Formula( *reasonIt );
+                    Formula* negation = new Formula( NOT );
+                    negation->addSubformula(*reasonIt);
+                    boundaryDeduction->addSubformula(negation);
+                }
+                std::pair<const Constraint*, const Constraint*> boundaries = icp::intervalToConstraint((*variableIt).second->var(), mIntervals.at((*variableIt).second->var()));
+                if( boundaries.first != NULL )
+                    boundaryDeduction->addSubformula(boundaries.first);
+                if( boundaries.second != NULL )
+                    boundaryDeduction->addSubformula(boundaries.second);
+                boundaryDeductions.insert(boundaryDeduction);
             }
-    //        // Watch for changed bounds.
-    //        bool changed = false;
-    //        printReceivedFormula();
-    //        for( auto receivedIt = mpReceivedFormula->begin(); receivedIt != mpReceivedFormula->end(); ++receivedIt )
-    //        {
-    //            ConstraintSet::iterator target = relevantBoundaries.find((*receivedIt)->pConstraint());
-    //            if(  target == relevantBoundaries.end() && icp::isBound((*receivedIt)->pConstraint()) )
-    //            {
-    //                cout << "Changed bound: " << *(*receivedIt)->pConstraint() << endl;
-    //                changed = true;
-    //            }
-    //        }
-            Formula* newBox = new Formula( AND );
-            for( auto constraintIt = relevantBoundaries.begin(); constraintIt != relevantBoundaries.end(); ++constraintIt )
-            {
-                Formula* constraintToFormula = new Formula( *constraintIt );
-                newBox->addSubformula(constraintToFormula);
-            }
-            return newBox;
         }
-        else
-        {
-            return NULL;
-        }
+        return boundaryDeductions;
     }
     
     
@@ -2209,16 +2191,21 @@ namespace smtrat
 //            Formula* splitPremise = createPremiseDeduction();
             Formula* splitPremise = new Formula( OR );
             Formula* contractionPremise = createPremiseDeduction();
-            Formula* newBox = createContractionDeduction();
-            if( newBox != NULL)
+            set<Formula*> newBox = createContractionDeduction();
+            if( !newBox.empty())
             {
-                contractionPremise->addSubformula(newBox);
-                addDeduction(contractionPremise);
-                contractionPremise->print();
+                for( auto formulaIt = newBox.begin(); formulaIt != newBox.end(); ++formulaIt )
+                {
+                    addDeduction(*formulaIt);
+                    (*formulaIt)->print();
+                }
+//                contractionPremise->addSubformula(newBox);
+//                addDeduction(contractionPremise);
+//                contractionPremise->print();
             }
             else
             {
-                delete contractionPremise;
+                newBox.clear();
             }
 
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )

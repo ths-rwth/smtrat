@@ -251,7 +251,7 @@ namespace smtrat
             
             Formula* createPremiseDeduction();
             
-            Formula* createContractionDeduction();
+            set<Formula*> createContractionDeduction();
             
             /**
              * Checks if there is a need for a split and manages the splitting and branching in the

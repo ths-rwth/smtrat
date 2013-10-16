@@ -362,9 +362,13 @@ namespace smtrat
                     return mReasons;
                 }
 
-                ConstraintSet& reasons( const symbol _variable )
+                ConstraintSet reasons( const symbol _variable )
                 {
-                    assert( mReasons.find( _variable.get_name() ) != mReasons.end() );
+                    std::map<string, ConstraintSet>::iterator reasonsIt= mReasons.find( _variable.get_name() );
+                    if( reasonsIt == mReasons.end() )
+                    {
+                        return ConstraintSet();
+                    }
                     return mReasons.at( _variable.get_name() );
                 }
 
