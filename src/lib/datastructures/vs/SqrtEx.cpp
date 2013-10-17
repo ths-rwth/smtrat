@@ -35,29 +35,29 @@ namespace vs
      * Constructors:
      */
     SqrtEx::SqrtEx():
-        mConstantPart( 0 ),
-        mFactor( 0 ),
-        mDenominator( 1 ),
-        mRadicand( new ex( 0 ) )
+        mConstantPart( smtrat::ZERO_RATIONAL ),
+        mFactor( smtrat::ZERO_RATIONAL ),
+        mDenominator( smtrat::ONE_RATIONAL ),
+        mRadicand( smtrat::ZERO_RATIONAL )
     {}
 
-    SqrtEx::SqrtEx( const smtrat::Polynomial& _ex ):
-        mConstantPart( _ex ),
-        mFactor( 0 ),
-        mDenominator( 1 ),
-        mRadicand( 0 )
+    SqrtEx::SqrtEx( const smtrat::Polynomial& _poly ):
+        mConstantPart( _poly ),
+        mFactor( smtrat::ZERO_RATIONAL ),
+        mDenominator( smtrat::ONE_RATIONAL ),
+        mRadicand( smtrat::ZERO_RATIONAL )
     {
         normalize();
     }
 
     SqrtEx::SqrtEx( const smtrat::Polynomial& _constantPart, const smtrat::Polynomial& _factor, const smtrat::Polynomial& _denominator, const smtrat::Polynomial& _radicand ):
         mConstantPart( _constantPart ),
-        mFactor( (_radicand == 0 ? 0 : _factor ) ),
-        mDenominator( ((mFactor == 0 && _constantPart == 0) ? 1 : _denominator ) ),
-        mRadicand( _factor == 0 ? 0 : _radicand )
+        mFactor( _radicand == smtrat::ZERO_POLYNOMIAL ? smtrat::ZERO_POLYNOMIAL : _factor ),
+        mDenominator( ((mFactor == smtrat::ZERO_POLYNOMIAL) && (_constantPart == smtrat::ZERO_POLYNOMIAL)) ? smtrat::ONE_POLYNOMIAL : _denominator ),
+        mRadicand( ( _factor == smtrat::ZERO_POLYNOMIAL ) ? smtrat::ZERO_POLYNOMIAL : _radicand )
     {
-        assert( _denominator != 0 );
-        assert( !_radicand.isConstant() || _radicand >= 0 );
+        assert( _denominator != smtrat::ZERO_POLYNOMIAL );
+        assert( !_radicand.isConstant() || smtrat::ZERO_RATIONAL <= _radicand.trailingTerm()->coeff() );
         normalize();
     }
 
@@ -80,6 +80,7 @@ namespace vs
      */
     void SqrtEx::normalize()
     {
+        //TODO: implement this method
     }
     
     /**
@@ -108,8 +109,8 @@ namespace vs
             mConstantPart = _sqrtEx.constantPart();
             mFactor       = _sqrtEx.factor();
             mDenominator  = _sqrtEx.denominator();
-            if( factor() == 0 )
-                mRadicand = 0;
+            if( factor() == smtrat::ZERO_POLYNOMIAL )
+                mRadicand = smtrat::ZERO_POLYNOMIAL;
             else
                 mRadicand = _sqrtEx.radicand();
         }
@@ -123,9 +124,9 @@ namespace vs
     SqrtEx& SqrtEx::operator = ( const smtrat::Polynomial& _poly )
     {
         mConstantPart = _poly;
-        mFactor       = 0;
-        mDenominator  = 1;
-        mRadicand     = 0;
+        mFactor       = smtrat::ZERO_POLYNOMIAL;
+        mDenominator  = smtrat::ONE_POLYNOMIAL;
+        mRadicand     = smtrat::ZERO_POLYNOMIAL;
         return *this;
     }
 
@@ -167,7 +168,7 @@ namespace vs
         assert( !_sqrtEx1.hasSqrt() || !_sqrtEx2.hasSqrt() || _sqrtEx1.radicand() == _sqrtEx2.radicand() );
         SqrtEx result = SqrtEx( _sqrtEx2.constantPart() * _sqrtEx1.constantPart() + _sqrtEx2.factor() * _sqrtEx1.factor() * _sqrtEx1.radicand(),
                          _sqrtEx2.constantPart() * _sqrtEx1.factor() + _sqrtEx2.factor() * _sqrtEx1.constantPart(),
-                         _sqrtEx1.denominator() * _sqrtEx2.denominator(), _sqrtEx1.radicand(), vars );
+                         _sqrtEx1.denominator() * _sqrtEx2.denominator(), _sqrtEx1.radicand() );
         return result;
     }
 
@@ -190,34 +191,34 @@ namespace vs
      *         in infix notation (true) or prefix notation (false).
      * @return 
      */
-    string SqrtEx::toString( bool _infix ) const
+    string SqrtEx::toString( bool _infix, bool _friendlyNames ) const
     {
         if( _infix )
         {
             string result = "((";
-            result += mConstantPart.toString( true );
+            result += mConstantPart.toString( true, _friendlyNames );
             result +=  ")+(";
-            result +=  mFactor.toString( true );
+            result +=  mFactor.toString( true, _friendlyNames );
             result +=  ")*";
             result +=  "sqrt(";
-            result +=  mRadicand.toString( true );
+            result +=  mRadicand.toString( true, _friendlyNames );
             result +=  "))";
             result +=  "/(";
-            result +=  mDenominator.toString( true );
+            result +=  mDenominator.toString( true, _friendlyNames );
             result +=  ")";
             return result;
         }
         else
         {
             string result = "(/ (+";
-            result += mConstantPart.toString( false );
+            result += mConstantPart.toString( false, _friendlyNames );
             result +=  " (*";
-            result +=  mFactor.toString( false );
+            result +=  mFactor.toString( false, _friendlyNames );
             result +=  " ";
             result +=  "(sqrt ";
-            result +=  mRadicand.toString( false );
+            result +=  mRadicand.toString( false, _friendlyNames );
             result +=  "))) ";
-            result +=  mDenominator.toString( false );
+            result +=  mDenominator.toString( false, _friendlyNames );
             result +=  ")";
             return result;
         }
@@ -256,8 +257,8 @@ namespace vs
          *      ----------------------------------------------
          *                           s^n
          */
-        carl::VariableInformation<true,smtrat::Polynomial> varInfo = _poly.getVarInfo( _var );
-        unsigned n = varInfo.maxDegree();
+//        carl::VariableInformation<true,smtrat::Polynomial> varInfo = _poly.getVarInfo( _var ); //TODO: implement this line
+        unsigned n = 0; // varInfo.maxDegree(); //TODO: implement this line
         if( n == 0 )
         {
             SqrtEx result = SqrtEx( _poly );
@@ -266,25 +267,25 @@ namespace vs
         // Calculate the s^k:   (0<=k<=n)
         vector<smtrat::Polynomial> sk = vector<smtrat::Polynomial>( n + 1 );
         sk[0] = smtrat::Polynomial( 1 );
-        for( signed i = 1; i <= n; ++i )
+        for( unsigned i = 1; i <= n; ++i )
             sk[i] = sk[i - 1] * _subTerm.denominator();
         // Calculate the constant part and factor of the square root of (q+r*sqrt{t})^k:   (1<=k<=n)
         vector<smtrat::Polynomial> qk = vector<smtrat::Polynomial>( n );
         vector<smtrat::Polynomial> rk = vector<smtrat::Polynomial>( n );
-        qk[0] = ex( _subTerm.constantPart() );
-        rk[0] = ex( _subTerm.factor() );
-        for( signed i = 1; i < n; ++i )
+        qk[0] = smtrat::Polynomial( _subTerm.constantPart() );
+        rk[0] = smtrat::Polynomial( _subTerm.factor() );
+        for( unsigned i = 1; i < n; ++i )
         {
             qk[i] = _subTerm.constantPart() * qk[i - 1] + _subTerm.factor() * rk[i - 1] * _subTerm.radicand();
             rk[i] = _subTerm.constantPart() * rk[i - 1] + _subTerm.factor() * qk[i - 1];
         }
         // Calculate the result:
-        smtrat::Polynomial resConstantPart = sk[n] * varInfo.coeffs( 0 );
-        smtrat::Polynomial resFactor       = 0;
-        for( signed i = 1; i <= n; ++i )
+        smtrat::Polynomial resConstantPart = sk[n]; // * varInfo.coeffs( 0 ); //TODO: implement this line
+        smtrat::Polynomial resFactor       = smtrat::ZERO_POLYNOMIAL;
+        for( unsigned i = 1; i <= n; ++i )
         {
-            resConstantPart += varInfo.coeffs( i ) * qk[i - 1] * sk[n - i];
-            resFactor       += varInfo.coeffs( i ) * rk[i - 1] * sk[n - i];
+//            resConstantPart += varInfo.coeffs( i ) * qk[i - 1] * sk[n - i]; //TODO: implement this line
+//            resFactor       += varInfo.coeffs( i ) * rk[i - 1] * sk[n - i]; //TODO: implement this line
         }
         SqrtEx result = SqrtEx( resConstantPart, resFactor, sk[n], _subTerm.radicand() );
         return result;

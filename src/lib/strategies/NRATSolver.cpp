@@ -28,9 +28,6 @@
 #include "NRATSolver.h"
 #include "config.h"
 
-#include <ginacra/settings.h>
-
-
 namespace smtrat
 {
 
@@ -43,7 +40,7 @@ namespace smtrat
         #else
         position = addBackendIntoStrategyGraph( position, MT_CNFerModule );
         #endif
-        position = addBackendIntoStrategyGraph( position, MT_SATModule );
+//        position = addBackendIntoStrategyGraph( position, MT_SATModule );
 //        #ifdef SMTRAT_ENABLE_ReduceModule
 //        position = addBackendIntoStrategyGraph( position, MT_ReduceModule );
 //        #else

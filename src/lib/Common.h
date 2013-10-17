@@ -48,6 +48,12 @@ namespace smtrat
     
     enum Variable_Domain { BOOLEAN_DOMAIN = 0, REAL_DOMAIN = 1, INTEGER_DOMAIN = 2 };
     
+    static const Rational ZERO_RATIONAL = Rational( 0 );
+    static const Rational ONE_RATIONAL = Rational( 1 );
+    
+    static const Polynomial ZERO_POLYNOMIAL = Polynomial( ZERO_RATIONAL );
+    static const Polynomial ONE_POLYNOMIAL = Polynomial( ONE_RATIONAL );
+    
 }    // namespace smtrat
 
 

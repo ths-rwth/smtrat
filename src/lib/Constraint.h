@@ -216,8 +216,7 @@ namespace smtrat
             void collectProperties();
             Constraint* simplify();
             void init();
-            std::string toString( unsigned = 0, bool = true, bool = true ) const;
-            void print( std::ostream& _out = std::cout, const std::string = "", bool = false ) const;
+            std::string toString( unsigned _unequalSwitch = 0, bool _infix = true, bool _friendlyVarNames = true ) const;
             void printProperties( std::ostream& = std::cout, bool = true ) const;
             static bool relationIsStrict( Relation rel );
             static std::string relationToString( const Relation rel );

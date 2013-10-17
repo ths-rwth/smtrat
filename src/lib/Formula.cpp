@@ -1278,108 +1278,6 @@ namespace smtrat
      *
      * @param _out
      * @param _init
-     * @param _onOneLine
-     */
-    void Formula::print( ostream& _out, const string _init, bool _smtlib, bool _onOneLine ) const
-    {
-        string oper = "";
-        switch( mType )
-        {
-            case AND:
-            {
-                oper = "and";
-                break;
-            }
-            case OR:
-            {
-                oper = "or";
-                break;
-            }
-            case NOT:
-            {
-                oper = "not";
-                break;
-            }
-            case IFF:
-            {
-                oper = "=";
-                break;
-            }
-            case XOR:
-            {
-                oper = "xor";
-                break;
-            }
-            case IMPLIES:
-            {
-                oper = "=>";
-                break;
-            }
-            case BOOL:
-            {
-                _out << _init << *mpIdentifier;
-                break;
-            }
-            case REALCONSTRAINT:
-            {
-                _out << _init;
-                if( _smtlib )
-                {
-                    _out << mpConstraint->toString( 0, true );
-                }
-                else
-                {
-                    mpConstraint->print( _out );
-                    _out << " (" << mDifficulty << ":" << mActivity << ")";
-                }
-                break;
-            }
-            case TTRUE:
-            {
-                _out << _init << "true";
-                break;
-            }
-            case FFALSE:
-            {
-                _out << _init << "false";
-                break;
-            }
-            default:
-            {
-                _out << _init << "undefined";
-            }
-        }
-        if( !oper.empty() )
-        {
-            _out << _init << "(" << oper;
-            if( !_onOneLine )
-            {
-                _out << endl;
-            }
-            std::list<Formula*>::const_iterator subFormula = mpSubformulas->begin();
-            while( subFormula != mpSubformulas->end() )
-            {
-                assert( (*subFormula)->cpFather() == this );
-                if( _onOneLine )
-                {
-                    _out << " ";
-                    (*subFormula)->print( _out, "", _smtlib, _onOneLine );
-                }
-                else
-                {
-                    (*subFormula)->print( _out, _init + "   ", _smtlib, _onOneLine );
-                    _out << endl;
-                }
-                ++subFormula;
-            }
-            _out << _init << ")";
-        }
-    }
-
-    /**
-     *
-     * @param _out
-     * @param _init
      */
     void Formula::printProposition( ostream& _out, const string _init ) const
     {
@@ -1400,8 +1298,7 @@ namespace smtrat
      */
     ostream& operator <<( ostream& _ostream, const Formula& _formula )
     {
-        _formula.print( _ostream, "", true );
-        return _ostream;
+        return (_ostream << _formula.toString( false, 0, "", true, false, true ));
     }
 
     /**
@@ -1409,79 +1306,68 @@ namespace smtrat
      * @param _infix
      * @return
      */
-    string Formula::toString( bool _infix, bool _resolveUnequal ) const
+    string Formula::toString( bool _withActivity, unsigned _resolveUnequal, const string _init, bool _oneline, bool _infix, bool _friendlyNames ) const
     {
-        string result = "";
-        switch( mType )
+        string activity = "";
+        if( _withActivity )
         {
-            case AND:
+            stringstream s;
+            s << " [" << mDifficulty << ":" << mActivity << "]";
+            activity += s.str();
+        }
+        if( mType == BOOL )
+            return (_init + *mpIdentifier + activity);
+        else if( mType == REALCONSTRAINT )
+        {
+            return (_init + mpConstraint->toString( _resolveUnequal, _infix, _friendlyNames ) + activity);
+        }
+        else if( isAtom() )
+        {
+            return (_init + FormulaTypeToString( mType ) + activity);
+        }
+        else if( mType == NOT )
+        {
+            string result = _init;
+            if( _infix )
             {
-                result += "(and";
-                break;
+                result += "not(";
+                if( !_oneline ) result += "\n";
             }
-            case OR:
-            {
-                result += "(or";
-                break;
-            }
-            case NOT:
+            else
             {
                 result += "(not";
-                break;
+                result += (_oneline ? " " : "\n");
             }
-            case IFF:
-            {
-                result += "(=";
-                break;
-            }
-            case XOR:
-            {
-                result += "(xor";
-                break;
-            }
-            case IMPLIES:
-            {
-                result += "(=>";
-                break;
-            }
-            case BOOL:
-            {
-                result += *mpIdentifier;
-                break;
-            }
-            case REALCONSTRAINT:
-            {
-                if( _infix )
-                {
-                    result += "( " + mpConstraint->toString() + " )";
-                }
-                else
-                {
-                    result += mpConstraint->toString( 0, true, _resolveUnequal );
-                }
-                break;
-            }
-            case TTRUE:
-            {
-                result += "true";
-                break;
-            }
-            case FFALSE:
-            {
-                result += "false";
-                break;
-            }
-            default:
-            {
-                result += "undefined";
-            }
+            result += (*mpSubformulas->begin())->toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, _infix, _friendlyNames );
+            result += (_oneline ? "" : "\n") + _init + ")";
+            return result;
         }
-        if( isBooleanCombination() )
+        assert( isBooleanCombination() );
+        string stringOfType = FormulaTypeToString( mType );
+        string result = _init + "(";
+        if( _infix )
         {
-            for( std::list<Formula*>::const_iterator subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
-                result += " " + (*subformula)->toString( _infix );
-            result += ")";
+            for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
+            {
+                if( subformula != mpSubformulas->begin() )
+                    result += stringOfType;
+                if( !_oneline ) 
+                    result += "\n";
+                result += (*subformula)->toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, true, _friendlyNames );
+            }
         }
+        else
+        {
+            result += stringOfType;
+            for( auto subformula = mpSubformulas->begin(); subformula != mpSubformulas->end(); ++subformula )
+            {
+                result += (_oneline ? " " : "\n");
+                result += (*subformula)->toString( _withActivity, _resolveUnequal, _oneline ? "" : (_init + "   "), _oneline, false, _friendlyNames );
+            }
+        }
+        result += ")";
+        if( _withActivity )
+            result += activity;
         return result;
     }
 
@@ -1492,55 +1378,27 @@ namespace smtrat
      */
     std::string Formula::FormulaTypeToString( Type type )
     {
-        string oper = "";
         switch( type )
         {
             case AND:
-            {
-                oper = "and";
-                break;
-            }
+                return "and";
             case OR:
-            {
-                oper = "or";
-                break;
-            }
+                return "or";
             case NOT:
-            {
-                oper = "not";
-                break;
-            }
+                return "not";
             case IFF:
-            {
-                oper = "=";
-                break;
-            }
+                return "=";
             case XOR:
-            {
-                oper = "xor";
-                break;
-            }
+                return "xor";
             case IMPLIES:
-            {
-                oper = "=>";
-                break;
-            }
+                return "=>";
             case TTRUE:
-            {
-                oper = "true";
-                break;
-            }
+                return "true";
             case FFALSE:
-            {
-                oper = "false";
-                break;
-            }
+                return "false";
             default:
-            {
-                oper = "";
-            }
+                return "";
         }
-        return oper;
     }
 
     /**

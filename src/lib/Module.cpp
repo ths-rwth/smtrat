@@ -32,6 +32,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <limits.h>
 
 #include "Manager.h"

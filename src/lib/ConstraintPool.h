@@ -27,7 +27,7 @@
  * @version 2013-06-20
  */
 #include "Constraint.h"
-#include "modules/VSModule/SqrtEx.h"
+#include "datastructures/vs/SqrtEx.h"
 #include <unordered_set>
 #include <mutex>
 
@@ -95,8 +95,6 @@ namespace smtrat
             std::vector<const std::string*> mBooleanVariables;
             /// The constraint pool.
             fastConstraintSet mConstraints;
-            /// The domain of the variables occurring in the constraints.
-            std::map< carl::Variable, Variable_Domain > mDomain;
             /// All external variable names which have been created during parsing.
             std::vector< std::string > mParsedVarNames;
             ///
@@ -181,24 +179,16 @@ namespace smtrat
             {
                 return mInconsistentConstraint;
             }
-
-            Variable_Domain domain( const carl::Variable& _variable ) const
-            {
-                std::lock_guard<std::mutex> lock( mMutexDomain );
-                auto iter = mDomain.find( _variable );
-                assert( iter != mDomain.end() );
-                return iter->second;
-            }
             
-            std::string toString( Variable_Domain _varDom ) const
+            std::string toString( carl::VariableType _varDom ) const
             {
                 switch( _varDom )
                 {
-                    case REAL_DOMAIN:
+                    case carl::VT_REAL:
                     {
                         return "Real";
                     }
-                    case INTEGER_DOMAIN:
+                    case carl::VT_INT:
                     {
                         return "Integer";
                     }
@@ -214,9 +204,9 @@ namespace smtrat
                 return mExternalVarNamePrefix;
             }
     
-            std::string externalName( const carl::Variable& _var ) const
+            std::string getVariableName( const carl::Variable& _var, bool _friendlyName ) const
             {
-                return mVariablePool.getName( _var );
+                return mVariablePool.getName( _var, _friendlyName );
             }
             
             /**

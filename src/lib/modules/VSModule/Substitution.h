@@ -32,7 +32,7 @@
 
 #include <ginac/flags.h>
 #include "Condition.h"
-#include "SqrtEx.h"
+#include "../../datastructures/vs/SqrtEx.h"
 
 namespace vs
 {

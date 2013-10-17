@@ -29,10 +29,9 @@
 #ifndef NUMERIC_H
 #define	NUMERIC_H
 
-#include <ginac/ginac.h>
-#include <ginac/flags.h>
 #include <iostream>
 #include <assert.h>
+#include "../../Common.h"
 
 namespace smtrat
 {
@@ -42,29 +41,28 @@ namespace smtrat
         {
         private:
             // Members:
-            GiNaC::numeric* mContent;
+            Rational* mContent;
 
         public:
             // Constructors/Destructor:
             Numeric();
-            Numeric( const GiNaC::numeric& );
+            Numeric( const Rational& );
             Numeric( int );
             Numeric( unsigned int );
             Numeric( long );
             Numeric( unsigned long );
-            Numeric( double );
             Numeric( const char* );
             Numeric( const cln::cl_N& );
             Numeric( const Numeric& );
             ~Numeric();
 
             // Methods:
-            const GiNaC::numeric& content() const
+            const Rational& content() const
             {
                 return *mContent;
             }
 
-            GiNaC::numeric& rContent()
+            Rational& rContent()
             {
                 return *mContent;
             }
@@ -73,7 +71,6 @@ namespace smtrat
             Numeric& operator=( unsigned int );
             Numeric& operator=( long );
             Numeric& operator=( unsigned long );
-            Numeric& operator=( double );
             Numeric& operator=( const char* );
             Numeric& operator=( const Numeric& );
 
@@ -84,11 +81,6 @@ namespace smtrat
             bool operator>( const Numeric& ) const;
             bool operator>=( const Numeric& ) const;
 
-            int toInt() const;
-            long toLong() const;
-            double toDouble() const;
-            cln::cl_N toCLN() const;
-            GiNaC::numeric toGinacNumeric() const;
             Numeric numer() const;
             Numeric denom() const;
 

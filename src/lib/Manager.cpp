@@ -41,10 +41,6 @@
 
 using namespace std;
 
-using GiNaC::ex;
-using GiNaC::numeric;
-using GiNaC::symbol;
-
 namespace smtrat
 {
     // Constructor.
@@ -166,14 +162,13 @@ namespace smtrat
         _out << "(";
         if( mpPassedFormula->size() == 1 )
         {
-            mpPassedFormula->back()->print( _out, "", true, true );
+            _out << *mpPassedFormula->back();
         }
         else
         {
             for( auto subFormula = mpPassedFormula->begin(); subFormula != mpPassedFormula->end(); ++subFormula )
             {
-                (*subFormula)->print( _out, "", true, true );
-                _out << endl;
+                _out << **subFormula << endl;
             }
         }
         _out << ")" << endl;
@@ -191,14 +186,13 @@ namespace smtrat
             set< const Formula* > infSubSet = *mpPrimaryBackend->infeasibleSubsets().begin();
             if( infSubSet.size() == 1 )
             {
-                (*infSubSet.begin())->print( _out, "", true, true );
+                _out << **infSubSet.begin();
             }
             else
             {
                 for( auto subFormula = infSubSet.begin(); subFormula != infSubSet.end(); ++subFormula )
                 {
-                    (*subFormula)->print( _out, "", true, true );
-                    _out << endl;
+                    _out << **subFormula << endl;
                 }
             }
         }

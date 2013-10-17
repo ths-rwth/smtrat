@@ -41,7 +41,6 @@
 #include <set>
 #include <algorithm>
 #include <string>
-#include <ginac/ginac.h>
 #include <chrono>
 #include <atomic>
 
@@ -50,7 +49,7 @@
 #include "ValidationSettings.h"
 #include "ThreadPool.h"
 #include "config.h"
-#include "modules/VSModule/SqrtEx.h"
+#include "datastructures/vs/SqrtEx.h"
 
 
 namespace smtrat

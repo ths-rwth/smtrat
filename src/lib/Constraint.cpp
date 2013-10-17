@@ -620,10 +620,15 @@ namespace smtrat
                 {
                     if( _unequalSwitch == 0 ) // standard case
                         result += "!=";
+                    else if( _unequalSwitch == 1 )
+                    {
+                        string lhsString = mLhs.toString( false, _friendlyVarNames );
+                        return "(or (< " + lhsString + " 0) (> " + lhsString + " 0))";
+                    }
                     else
                     {
-                        string lhsString = mLhs.toString( true, _friendlyVarNames );
-                        return "(or (< " + lhsString + " 0) (> " + lhsString + " 0))";
+                        string lhsString = mLhs.toString( false, _friendlyVarNames );
+                        return "(not (= " + lhsString + " 0))";
                     }
                 }
                 break;
@@ -642,7 +647,7 @@ namespace smtrat
             default:
                 result += "~";
         }
-        result += (_infix ? "0" : (mLhs.toString( true, _friendlyVarNames ) + " 0)"));
+        result += (_infix ? "0" : (" " + mLhs.toString( false, _friendlyVarNames ) + " 0)"));
         return result;
     }
 

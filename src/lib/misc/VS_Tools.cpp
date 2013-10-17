@@ -498,7 +498,7 @@ namespace vs
                 {
                     cout << " and ";
                 }
-                (**cons).print( cout );
+                (*cons)->toString( true, true );
                 cons++;
             }
             cout << ")" << endl;

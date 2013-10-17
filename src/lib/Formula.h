@@ -629,10 +629,9 @@ namespace smtrat
             iterator prune( iterator );
             void clear();
             //void notSolvableBy( ModuleType );
-            void print( std::ostream& = std::cout, const std::string = "", bool = false, bool = false ) const;
             void printProposition( std::ostream& _out = std::cout, const std::string _init = "" ) const;
             friend std::ostream& operator <<( std::ostream&, const Formula& );
-            std::string toString( bool = false, bool = true ) const;
+            std::string toString( bool _withActivity = false, unsigned _resolveUnequal = 0, const std::string _init = "", bool _oneline = true, bool _infix = false, bool _friendlyNames = true ) const; 
             void getConstraints( std::vector<const Constraint*>& ) const;
             static void toCNF( Formula&, bool = true );
             static bool resolveNegation( Formula&, bool = true );

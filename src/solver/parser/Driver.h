@@ -38,7 +38,6 @@
 #include <unordered_map>
 #include <assert.h>
 #include <fstream>
-#include <ginac/ginac.h>
 #include "../../lib/Constraint.h"
 
 namespace smtrat
@@ -47,8 +46,7 @@ namespace smtrat
 
     class Formula;
 
-    typedef std::unordered_map< std::string, std::pair< std::string, GiNaC::ex > > TheoryVarMap;
-    typedef std::pair< GiNaC::ex, std::vector< TheoryVarMap::const_iterator > > ExVarsPair;
+    typedef std::unordered_map< std::string, carl::Variable > TheoryVarMap;
     enum InstructionKey { ASSERT, PUSHBT, POPBT, CHECK, GET_VALUE, GET_ASSIGNMENT, GET_ASSERTS, GET_UNSAT_CORE, GET_PROOF, GET_INFO, SET_INFO, GET_OPTION, SET_OPTION, SET_LOGIC };
     union InstructionValue
     {
@@ -124,17 +122,17 @@ namespace smtrat
             /// stream name (file or input stream) used for error messages.
             std::string* mStreamname;
             ///
-            std::unordered_map< std::string, std::string > mBooleanVariables;
+            std::unordered_map< std::string, std::string* > mBooleanVariables;
             ///
             TheoryVarMap mTheoryVariables;
             ///
-            std::unordered_map< std::string, ExVarsPair > mTheoryBindings;
+            std::unordered_map< std::string, smtrat::Polynomial* > mTheoryBindings;
             ///
-            std::unordered_map< std::string, std::string > mTheoryIteBindings;
+            std::unordered_map< carl::Variable, std::string* > mTheoryIteBindings;
             ///
             std::stack< std::vector< std::pair< std::string, unsigned > > > mVariableStack;
             ///
-            std::unordered_map< std::string, smtrat::Formula* > mInnerConstraintBindings;
+            std::unordered_map< carl::Variable, smtrat::Formula* > mInnerConstraintBindings;
 
         public:
             // Constructor and destructor.
@@ -205,7 +203,7 @@ namespace smtrat
                 return mRegularOutputChannel;
             }
             
-            const std::unordered_map< std::string, std::string >& booleanVariables() const
+            const std::unordered_map< std::string, std::string* >& booleanVariables() const
             {
                  return mBooleanVariables;
             }
@@ -381,25 +379,12 @@ namespace smtrat
                 mVariableStack.pop();
             }
 
-            unsigned type( const std::string& _varName ) const
+            static carl::VariableType getDomain( const std::string& _type )
             {
-                if( mBooleanVariables.find( _varName ) != mBooleanVariables.end() )
-                {
-                    return 0;
-                }
-                else
-                {
-                    assert( mTheoryVariables.find( _varName ) != mTheoryVariables.end() );
-                    return 1;
-                }
-            }
-
-            static Variable_Domain getDomain( const string& _type )
-            {
-                if( _type == "Real" ) return REAL_DOMAIN;
-                if( _type == "Int" ) return INTEGER_DOMAIN;
+                if( _type == "Real" ) return carl::VT_REAL;
+                if( _type == "Int" ) return carl::VT_INT;
                 assert( false );
-                return REAL_DOMAIN;
+                return carl::VT_REAL;
             }
 
             bool parse_stream( std::istream&, const std::string& = "stream input" );
@@ -408,27 +393,26 @@ namespace smtrat
             void error( const class location&, const std::string& );
             void error( const std::string&, bool = false );
             void applySetLogic( const std::string& );
-            void addVariable( const class location&, const std::string&, const std::string& );
-            const std::string addBooleanVariable( const class location&, const std::string& = "", bool = false );
-            smtrat::Formula* addTheoryBinding( const class location&, const std::string&, ExVarsPair* );
-            smtrat::Formula* booleanBinding( const class location&, const std::string&, Formula* );
-            smtrat::Formula* appendBindings( std::vector< smtrat::Formula* >&, smtrat::Formula* );
-            TheoryVarMap::const_iterator addTheoryVariable( const class location&, const std::string&, const std::string& = "", bool = false );
-            const std::string& getBooleanVariable( const class location&, const std::string& );
+            void addVariable( const class location&, std::string*, std::string* );
+            std::string* addBooleanVariable( const class location&, std::string* = NULL, bool = false );
+            smtrat::Formula* addTheoryBinding( const class location&, std::string*, smtrat::Polynomial* );
+            smtrat::Formula* booleanBinding( const class location&, std::string*, Formula* );
+            smtrat::Formula* appendBindings( std::vector< smtrat::Formula* >*, smtrat::Formula* );
+            carl::Variable addTheoryVariable( const class location&, const std::string&, const std::string& = "", bool = false );
+            std::string* getBooleanVariable( const class location&, const std::string& );
             void freeBooleanVariableName( const std::string& );
             void freeTheoryVariableName( const std::string& );
-            ExVarsPair* mkPolynomial( const class location&, std::string& );
-            ExVarsPair* mkPolynomial( const class location&, TheoryVarMap::const_iterator );
-            smtrat::Formula* mkConstraint( const ExVarsPair&, const ExVarsPair&, unsigned );
+            smtrat::Polynomial* mkPolynomial( const class location&, std::string* );
+            smtrat::Formula* mkConstraint( const smtrat::Polynomial*, const smtrat::Polynomial*, unsigned );
             smtrat::Formula* mkTrue();
             smtrat::Formula* mkFalse();
-            smtrat::Formula* mkBoolean( const class location&, const std::string& );
+            smtrat::Formula* mkBoolean( const class location&, std::string* );
             smtrat::Formula* mkFormula( unsigned, smtrat::Formula*, smtrat::Formula* );
-            smtrat::Formula* mkFormula( unsigned, std::vector< smtrat::Formula* >& );
+            smtrat::Formula* mkFormula( unsigned, std::vector< smtrat::Formula* >* );
             smtrat::Formula* mkIff( smtrat::Formula*, smtrat::Formula*, smtrat::Formula*, smtrat::Formula*, bool ) const;
             smtrat::Formula* mkIteInFormula( smtrat::Formula*, smtrat::Formula*, smtrat::Formula* );
-            std::string* mkIteInExpr( const class location&, smtrat::Formula*, ExVarsPair&, ExVarsPair& );
-            GiNaC::numeric* getNumeric( const std::string& ) const;
+            carl::Variable mkIteInExpr( const class location&, smtrat::Formula*, smtrat::Polynomial*, smtrat::Polynomial* );
+            smtrat::Rational getRational( std::string* ) const;
             bool getInstruction( InstructionKey&, InstructionValue& );
             void applySetInfo( const std::string&, const std::string& );
             void applyGetInfo( const std::string& );

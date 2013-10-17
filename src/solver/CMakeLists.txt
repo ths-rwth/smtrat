@@ -17,7 +17,6 @@ include_directories(${CMAKE_SOURCE_DIR}/src
 					 ${CMAKE_SOURCE_DIR}/src/solver/parser
 					 ${CMAKE_BINARY_DIR}/src/solver
 					 ${CMAKE_BINARY_DIR}/src/solver/parser
-					${GINACRA_INCLUDE_DIR}
                     ${carl_INCLUDE_DIR}
  )
 
@@ -81,7 +80,7 @@ add_library( smtlibParser
 )
 
 # add linking libraries. This is an over-approximation.
-target_link_libraries( smtlibParser carl ${libraries})
+target_link_libraries( smtlibParser lib_carl ${libraries})
 
 if(${STATICLIB_SWITCH} STREQUAL "ON")
   set_target_properties( smtlibParser PROPERTIES LINK_SEARCH_START_STATIC TRUE )

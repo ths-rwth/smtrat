@@ -54,18 +54,15 @@
 
 #include <vector>
 #include <unordered_map>
-#include <ginac/ginac.h>
+#include "../../lib/Common.h"
 #include <string>
 #include <unordered_set>
 #include "Parser.tab.hh"
 
 using namespace std;
-using namespace GiNaC;
 
 namespace smtrat
 {
-    typedef vector< unordered_map< string, pair< string, ex > >::const_iterator > TheoryVarVec;
-    typedef pair< ex, TheoryVarVec > PolyVarsPair;
     typedef std::unordered_set<std::string> FastStringSet;
 
     /** Scanner is a derived class to add some extra function to the scanner

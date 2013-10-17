@@ -109,7 +109,7 @@ namespace vs
             friend SqrtEx operator -( const SqrtEx&, const SqrtEx& );
             friend SqrtEx operator *( const SqrtEx&, const SqrtEx& );
             friend SqrtEx operator /( const SqrtEx&, const SqrtEx& );
-            std::string toString( bool = false ) const;
+            std::string toString( bool = false, bool = true ) const;
             friend std::ostream& operator <<( std::ostream&, const SqrtEx& );
             static SqrtEx subBySqrtEx( const smtrat::Polynomial&, const carl::Variable&, const SqrtEx& );
         private:
