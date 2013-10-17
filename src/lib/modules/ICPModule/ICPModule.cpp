@@ -36,7 +36,7 @@
 using namespace GiNaC;
 using namespace std;
 
-//#define ICPMODULE_DEBUG
+#define ICPMODULE_DEBUG
 //#define ICPMODULE_REDUCED_DEBUG
 
 
@@ -1798,21 +1798,25 @@ namespace smtrat
             std::pair<const Constraint*, const Constraint*> rightPair = icp::intervalToConstraint(variable,resultB);
             const Constraint* left = leftPair.first != NULL ? leftPair.first : leftPair.second;
             const Constraint* right = rightPair.first != NULL ? rightPair.first : rightPair.second;
-            
             assert(left != NULL);
             assert(right != NULL);
+            const Constraint* leftGapBoundary = Formula::newConstraint(left->lhs(), left->relation() == CR_GEQ ? CR_LESS : CR_GREATER, left->variables());
+            const Constraint* rightGapBoundary = Formula::newConstraint(right->lhs(), right->relation() == CR_GEQ ? CR_LESS : CR_GREATER, right->variables());
+            Formula* gap = new Formula( AND );
+            gap->addSubformula(leftGapBoundary);
+            gap->addSubformula(rightGapBoundary);
+            Formula* gapCopy = new Formula( *gap );
             
-            Formula* less = new Formula( left );
-            Formula* less2 = new Formula( *less );
-            Formula* geq = new Formula( right );
-            Formula* geq2 = new Formula( *geq );
             Formula* nless = new Formula( NOT );
             Formula* ngeq = new Formula( NOT );
-            nless->addSubformula(less2);
-            ngeq->addSubformula(geq2);
+            nless->addSubformula(left);
+            ngeq->addSubformula(right);
+            Formula* nLessCopy = new Formula( *nless );
+            Formula* nGeqCopy = new Formula( *ngeq );
             
-            splitPremise->addSubformula(less);
-            splitPremise->addSubformula(geq);
+            splitPremise->addSubformula(left);
+            splitPremise->addSubformula(right);
+            splitPremise->addSubformula(gap);
             addDeduction(splitPremise);
             cout << "Premise: " << endl;
             splitPremise->print();
@@ -1820,6 +1824,46 @@ namespace smtrat
             Formula* excludeBothSplits = new Formula( OR );
             excludeBothSplits->addSubformula(nless);
             excludeBothSplits->addSubformula(ngeq);
+            
+            Formula* excludeGapLeft = new Formula( OR );
+            Formula* excludeGapRight = new Formula( OR );
+            Formula* nLeftGapBoundary = new Formula( NOT );
+            Formula* nRightGapBoundary = new Formula( NOT );
+            nLeftGapBoundary->addSubformula(leftGapBoundary);
+            nRightGapBoundary->addSubformula(rightGapBoundary);
+            excludeGapLeft->addSubformula(nLeftGapBoundary);
+            excludeGapLeft->addSubformula(nLessCopy);
+            excludeGapRight->addSubformula(nRightGapBoundary);
+            excludeGapRight->addSubformula(nGeqCopy);
+            
+            ConstraintSet variableReasons = mHistoryActual->reasons(variable);
+            icp::set_icpVariable varreasons = mHistoryActual->variableReasons(variable.get_name());
+            std::set<const Formula*> reasons = variableReasonHull(varreasons);
+            Formula* excludeGap = new Formula( OR );
+            for( auto reasonIt = variableReasons.begin(); reasonIt != variableReasons.end(); ++reasonIt )
+            {
+                Formula* neg = new Formula( NOT );
+                neg->addSubformula(*reasonIt);
+                excludeGap->addSubformula(neg);
+            }
+            for( auto reasonIt = reasons.begin(); reasonIt != reasons.end(); ++reasonIt )
+            {
+                Formula* neg = new Formula( NOT );
+                neg->addSubformula((*reasonIt)->pConstraint());
+                excludeGap->addSubformula(neg);
+            }
+            
+            Formula* nGap = new Formula( NOT );
+            nGap->addSubformula(gapCopy);
+            excludeGap->addSubformula(nGap);
+            
+            addDeduction(excludeGapLeft);
+            excludeGapLeft->print();
+            addDeduction(excludeGapRight);
+            excludeGapRight->print();
+            
+            addDeduction(excludeGap);
+            excludeGap->print();
             
             addDeduction(excludeBothSplits);
             excludeBothSplits->print();
