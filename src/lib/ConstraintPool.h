@@ -234,9 +234,9 @@ namespace smtrat
             carl::Variable newArithmeticVariable( const std::string&, carl::VariableType, bool = false );
             carl::Variable newAuxiliaryIntVariable( const std::string& = "h_i" );
             carl::Variable newAuxiliaryRealVariable( const std::string& = "h_r" );
-            bool hasBoolean( const std::string* ) const;
-            void newBooleanVariable( const std::string*, bool = false );
-            std::string* newAuxiliaryBooleanVariable( const std::string& = "h_b" );
+            bool hasBoolean( const std::string& ) const;
+            const std::string* newBooleanVariable( const std::string&, bool = false );
+            const std::string* newAuxiliaryBooleanVariable( const std::string& = "h_b" );
             void initExternalPrefix();
             int maxDegree() const;
             unsigned nrNonLinearConstraints() const;

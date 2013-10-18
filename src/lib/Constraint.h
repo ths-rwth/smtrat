@@ -218,8 +218,7 @@ namespace smtrat
             void init();
             std::string toString( unsigned _unequalSwitch = 0, bool _infix = true, bool _friendlyVarNames = true ) const;
             void printProperties( std::ostream& = std::cout, bool = true ) const;
-            static bool relationIsStrict( Relation rel );
-            static std::string relationToString( const Relation rel );
+            static Relation invertRelation( const Relation _rel );
             static signed compare( const Constraint*, const Constraint* );
     };
 
@@ -244,6 +243,19 @@ namespace smtrat
 
     typedef std::set< const Constraint*, constraintPointerComp > ConstraintSet;
 }    // namespace smtrat
+
+namespace std
+{
+    template<>
+    class hash<smtrat::Constraint>
+    {
+    public:
+        size_t operator()( const smtrat::Constraint& constraint ) const 
+        {
+            return (hash<smtrat::Polynomial>()( constraint.lhs() ) << 3) ^ constraint.relation();
+        }
+    };
+} // namespace std
 
 #ifdef SMTRAT_STRAT_PARALLEL_MODE
 #define CONSTRAINT_LOCK_GUARD std::lock_guard<std::recursive_mutex> lock( smtrat::Constraint::mMutex );

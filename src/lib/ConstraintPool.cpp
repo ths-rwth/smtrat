@@ -177,6 +177,7 @@ namespace smtrat
      */
     carl::Variable ConstraintPool::newArithmeticVariable( const string& _name, carl::VariableType _domain, bool _parsed )
     {
+        assert( !_name.empty() );
         assert( _domain == carl::VariableType::VT_REAL || _domain == carl::VariableType::VT_INT );
         // Initialize the prefix for the external representation of internally generated (not parsed) variable names
         if( _parsed ) mExternalPrefixInitialized = false;
@@ -222,11 +223,11 @@ namespace smtrat
      * @param _element
      * @return 
      */
-    bool ConstraintPool::hasBoolean( const string* _element ) const
+    bool ConstraintPool::hasBoolean( const string& _element ) const
     {
         for( auto iter = mBooleanVariables.begin(); iter != mBooleanVariables.end(); ++iter )
         {
-            if( **iter == *_element ) return true;
+            if( **iter == _element ) return true;
         }
         return false;
     }
@@ -237,13 +238,15 @@ namespace smtrat
      * @param _name The external name of the variable to construct.
      * @param _parsed A special flag indicating whether this variable is constructed during parsing.
      */
-    void ConstraintPool::newBooleanVariable( const string* _name, bool _parsed )
+    const string* ConstraintPool::newBooleanVariable( const string& _name, bool _parsed )
     {
         lock_guard<mutex> lock( mMutexBooleanVariables );
         assert( !hasBoolean( _name ) );
         if( _parsed ) mExternalPrefixInitialized = false;
         else if( !mExternalPrefixInitialized ) initExternalPrefix();
-        mBooleanVariables.push_back( _name );
+        string* result = new string( _name );
+        mBooleanVariables.push_back( result );
+        return result;
     }
 
     /**
@@ -253,15 +256,13 @@ namespace smtrat
      * 
      * @return The internal name of the variable.
      */
-    string* ConstraintPool::newAuxiliaryBooleanVariable( const std::string& _externalPrefix )
+    const string* ConstraintPool::newAuxiliaryBooleanVariable( const std::string& _externalPrefix )
     {
         stringstream out;
         mMutexBooleanVariables.lock();
         out << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryBoolVarCounter++;
         mMutexBooleanVariables.unlock();
-        string* varName = new string( out.str() );
-        newBooleanVariable( varName );
-        return varName;
+        return newBooleanVariable( out.str() );;
     }
     
     /**

@@ -218,36 +218,26 @@ namespace smtrat
     unsigned Constraint::consistentWith( const EvalDoubleIntervalMap& _solutionInterval ) const
     {
         if( variables().empty() )
-        {
             return evaluate( constantPart(), relation() ) ? 1 : 0;
-        }
         else
         {
             DoubleInterval solutionSpace = carl::IntervalEvaluation::evaluate( mLhs, _solutionInterval );
             if( solutionSpace.empty() )
-            {
                 return 2;
-            }
             switch( relation() )
             {
                 case EQ:
                 {
                     if( solutionSpace.diameter() == 0 && solutionSpace.left() == 0 )
-                    {
                         return 1;
-                    }
                     else if( !solutionSpace.contains( 0 ) )
-                    {
                         return 0;
-                    }
                     break;
                 }
                 case NEQ:
                 {
                     if( !solutionSpace.contains( 0 ) )
-                    {
                         return 1;
-                    }
                     break;
                 }
                 case LESS:
@@ -255,18 +245,12 @@ namespace smtrat
                     if( solutionSpace.rightType() != DoubleInterval::INFINITY_BOUND )
                     {
                         if( solutionSpace.right() < 0 )
-                        {
                             return 1;
-                        }
-                        else if( solutionSpace.right() == 0 && solutionSpace.rightType() == DoubleInterval::STRICT_BOUND ) return 1;
+                        else if( solutionSpace.right() == 0 && solutionSpace.rightType() == DoubleInterval::STRICT_BOUND )
+                            return 1;
                     }
-                    if( solutionSpace.leftType() != DoubleInterval::INFINITY_BOUND )
-                    {
-                        if( solutionSpace.left() >= 0 )
-                        {
-                            return 0;
-                        }
-                    }
+                    if( solutionSpace.leftType() != DoubleInterval::INFINITY_BOUND && solutionSpace.left() >= 0 )
+                        return 0;
                     break;
                 }
                 case GREATER:
@@ -274,64 +258,37 @@ namespace smtrat
                     if( solutionSpace.leftType() != DoubleInterval::INFINITY_BOUND )
                     {
                         if( solutionSpace.left() > 0 )
-                        {
                             return 1;
-                        }
                         else if( solutionSpace.left() == 0 && solutionSpace.leftType() == DoubleInterval::STRICT_BOUND )
-                        {
                             return 1;
-                        }
                     }
-                    if( solutionSpace.rightType() != DoubleInterval::INFINITY_BOUND )
-                    {
-                        if( solutionSpace.right() <= 0 )
-                        {
-                            return 0;
-                        }
-                    }
+                    if( solutionSpace.rightType() != DoubleInterval::INFINITY_BOUND && solutionSpace.right() <= 0 )
+                        return 0;
                     break;
                 }
                 case LEQ:
                 {
-                    if( solutionSpace.rightType() != DoubleInterval::INFINITY_BOUND )
-                    {
-                        if( solutionSpace.right() <= 0 )
-                        {
-                            return 1;
-                        }
-                    }
+                    if( solutionSpace.rightType() != DoubleInterval::INFINITY_BOUND && solutionSpace.right() <= 0)
+                        return 1;
                     if( solutionSpace.leftType() != DoubleInterval::INFINITY_BOUND )
                     {
                         if( solutionSpace.left() > 0 )
-                        {
                             return 0;
-                        }
                         else if( solutionSpace.left() == 0 && solutionSpace.leftType() == DoubleInterval::STRICT_BOUND )
-                        {
                             return 0;
-                        }
                     }
                     break;
                 }
                 case GEQ:
                 {
-                    if( solutionSpace.leftType() != DoubleInterval::INFINITY_BOUND )
-                    {
-                        if( solutionSpace.left() >= 0 )
-                        {
-                            return 1;
-                        }
-                    }
+                    if( solutionSpace.leftType() != DoubleInterval::INFINITY_BOUND && solutionSpace.left() >= 0 )
+                        return 1;
                     if( solutionSpace.rightType() != DoubleInterval::INFINITY_BOUND )
                     {
                         if( solutionSpace.right() < 0 )
-                        {
                             return 0;
-                        }
                         else if( solutionSpace.right() == 0 && solutionSpace.rightType() == DoubleInterval::STRICT_BOUND )
-                        {
                             return 0;
-                        }
                     }
                     break;
                 }
@@ -674,6 +631,33 @@ namespace smtrat
             _out << "        " << varToString( *var, _friendlyVarNames ) << " has " << varInfo->occurence() << " occurences." << endl;
             _out << "        " << varToString( *var, _friendlyVarNames ) << " has the maximal degree of " << varInfo->maxDegree() << "." << endl;
             _out << "        " << varToString( *var, _friendlyVarNames ) << " has the minimal degree of " << varInfo->minDegree() << "." << endl;
+        }
+    }
+    
+    /**
+     * 
+     * @param _rel
+     * @return 
+     */
+    Constraint::Relation Constraint::invertRelation( const Constraint::Relation _rel )
+    {
+        switch( _rel )
+        {
+            case EQ:
+                return NEQ;
+            case NEQ:
+                return EQ;
+            case LEQ:
+                return GREATER;
+            case GEQ:
+                return LESS;
+            case LESS:
+                return GEQ;
+            case GREATER:
+                return LEQ;
+            default:
+                assert( false );
+                return EQ;
         }
     }
     

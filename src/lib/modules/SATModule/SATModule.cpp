@@ -49,8 +49,9 @@
  */
 
 #include "SATModule.h"
+#include <iomanip>
 
-//#define DEBUG_SATMODULE
+#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 //#define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
@@ -557,47 +558,7 @@ namespace smtrat
             #endif
             const Constraint* constraint = NULL;
             if( !_polarity )
-            {
-                Constraint_Relation rel = CR_EQ;
-                switch( _constraint->relation() )
-                {
-                    case CR_EQ:
-                    {
-                        rel = CR_NEQ;
-                        break;
-                    }
-                    case CR_NEQ:
-                    {
-                        rel = CR_EQ;
-                        break;
-                    }
-                    case CR_LEQ:
-                    {
-                        rel = CR_GREATER;
-                        break;
-                    }
-                    case CR_GEQ:
-                    {
-                        rel = CR_LESS;
-                        break;
-                    }
-                    case CR_LESS:
-                    {
-                        rel = CR_GEQ;
-                        break;
-                    }
-                    case CR_GREATER:
-                    {
-                        rel = CR_LEQ;
-                        break;
-                    }
-                    default:
-                    {
-                        assert(false);
-                    }
-                }
-                constraint = Formula::newConstraint( _constraint->lhs(), rel, _constraint->variables() );
-            }
+                constraint = Formula::newConstraint( _constraint->lhs(), Constraint::invertRelation( _constraint->relation() ) );
             else constraint = _constraint;
             constraintAbstraction = newVar( !_preferredToTSolver, true, _activity, new Formula( _constraint ), _origin );
             Lit lit                            = mkLit( constraintAbstraction, !_polarity );
@@ -2475,9 +2436,7 @@ NextClause:
                 {
                     if( assigns[pos] == l_True )
                     {
-                        cout << "   ( ";
-                        mBooleanConstraintMap[pos].formula->print( cout, "", true );
-                        cout << " )";
+                        cout << "   ( " << *mBooleanConstraintMap[pos].formula << " )";
                     }
                 }
                 cout << endl;
@@ -2523,9 +2482,7 @@ NextClause:
             {
                 if( assigns[(unsigned)var(trail[pos])] == l_True )
                 {
-                    cout << "   ( ";
-                    mBooleanConstraintMap[(unsigned)var(trail[pos])].formula->print( cout, "", true );
-                    cout << " )";
+                    cout << "   ( " << *mBooleanConstraintMap[(unsigned)var(trail[pos])].formula << " )";
                     cout << " [" << mBooleanConstraintMap[(unsigned)var(trail[pos])].updateInfo << "]";
                 }
             }

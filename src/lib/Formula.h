@@ -485,9 +485,9 @@ namespace smtrat
                 return mpConstraintPool->newArithmeticVariable( _name, _domain );
             }
 
-            static void newBooleanVariable( const std::string* _name )
+            static const std::string* newBooleanVariable( const std::string& _name )
             {
-                mpConstraintPool->newBooleanVariable( _name );
+                return mpConstraintPool->newBooleanVariable( _name );
             }
 
             static const ConstraintPool& constraintPool()
@@ -522,7 +522,7 @@ namespace smtrat
              *
              * @return The identifier of a fresh Boolean variable.
              */
-            static std::string* newAuxiliaryBooleanVariable()
+            static const std::string* newAuxiliaryBooleanVariable()
             {
                 return mpConstraintPool->newAuxiliaryBooleanVariable();
             }
