@@ -42,8 +42,6 @@
 
 using namespace std;
 using namespace smtrat::lra;
-using namespace GiNaC;
-using namespace GiNaCRA;
 
 namespace smtrat
 {
@@ -60,12 +58,9 @@ namespace smtrat
         mOriginalVars(),
         mSlackVars(),
         mConstraintToBound(),
+        mDelta( Formula::newAuxiliaryRealVariable( "delta_" + to_string( id() ) ) ),
         mBoundCandidatesToPass()
-    {
-        stringstream out;
-        out << "delta_" << id();
-        mDelta = Formula::newAuxiliaryRealVariable( out.str() );
-    }
+    {}
 
     LRAModule::~LRAModule()
     {
@@ -75,17 +70,11 @@ namespace smtrat
             mConstraintToBound.erase( mConstraintToBound.begin() );
             if( toDelete != NULL ) delete toDelete;
         }
-        while( !mOriginalVars.empty() )
-        {
-            const ex* exToDelete = mOriginalVars.begin()->first;
-            mOriginalVars.erase( mOriginalVars.begin() );
-            delete exToDelete;
-        }
         while( !mSlackVars.empty() )
         {
-            const ex* exToDelete = mSlackVars.begin()->first;
+            const Polynomial* toDelete = mSlackVars.begin()->first;
             mSlackVars.erase( mSlackVars.begin() );
-            delete exToDelete;
+            delete toDelete;
         }
     }
 
@@ -103,7 +92,7 @@ namespace smtrat
         cout << "inform about " << *_constraint << endl;
         #endif
         Module::inform( _constraint );
-        if( !_constraint->variables().empty() && _constraint->isLinear() )
+        if( !_constraint->lhs().isConstant() && _constraint->lhs().isLinear() )
         {
             bool elementInserted = mLinearConstraints.insert( _constraint ).second;
             if( elementInserted && mInitialized )
@@ -137,9 +126,9 @@ namespace smtrat
             if( consistency == 2 )
             {
                 mAssignmentFullfilsNonlinearConstraints = false;
-                if( constraint->isLinear() )
+                if( constraint->lhs().isLinear() )
                 {
-                    if( (*_subformula)->constraint().relation() != CR_NEQ )
+                    if( (*_subformula)->constraint().relation() != Constraint::NEQ )
                     {
                         vector< const Bound<Numeric>* >* bounds = mConstraintToBound[constraint];
                         assert( bounds != NULL );
@@ -224,9 +213,9 @@ namespace smtrat
             const Constraint* constraint = (*_subformula)->pConstraint();
             if( constraint->isConsistent() == 2 )
             {
-                if( constraint->isLinear() )
+                if( constraint->lhs().isLinear() )
                 {
-                    if( (*_subformula)->constraint().relation() != CR_NEQ )
+                    if( (*_subformula)->constraint().relation() != Constraint::NEQ )
                     {
                         // Deactivate the bounds regarding the given constraint
                         vector< const Bound<Numeric>* >* bounds = mConstraintToBound[constraint];
@@ -309,7 +298,7 @@ namespace smtrat
                 }
                 else
                 {
-                    ConstraintSet::iterator nonLinearConstraint = mNonlinearConstraints.find( constraint );
+                    auto nonLinearConstraint = mNonlinearConstraints.find( constraint );
                     assert( nonLinearConstraint != mNonlinearConstraints.end() );
                     mNonlinearConstraints.erase( nonLinearConstraint );
                 }
@@ -567,18 +556,18 @@ namespace smtrat
         {
             if( mAssignmentFullfilsNonlinearConstraints )
             {
-                for( ExVariableMap::const_iterator originalVar = mOriginalVars.begin(); originalVar != mOriginalVars.end(); ++originalVar )
+                for( auto originalVar = mOriginalVars.begin(); originalVar != mOriginalVars.end(); ++originalVar )
                 {
-                    ex* value = new ex( originalVar->second->assignment().mainPart().toGinacNumeric() );
+                    Polynomial value = Polynomial( originalVar->second->assignment().mainPart().content() );
                     if( !originalVar->second->assignment().deltaPart().isZero() )
                     {
-                        *value += mDelta.second * originalVar->second->assignment().deltaPart().toGinacNumeric();
+                        value += mDelta * originalVar->second->assignment().deltaPart().content();
                     }
                     Assignment* assignment = new Assignment();
                     assignment->domain = REAL_DOMAIN;
-                    assignment->theoryValue = value;
+                    assignment->theoryValue = new vs::SqrtEx( value );
                     stringstream outA;
-                    outA << *originalVar->first;
+                    outA << originalVar->first;
                     extendModel( outA.str(), assignment );
                 }
             }
@@ -595,21 +584,16 @@ namespace smtrat
      *
      * @return The rational model.
      */
-    exmap LRAModule::getRationalModel() const
+    EvalRationalMap LRAModule::getRationalModel() const
     {
-        exmap result = exmap();
+        EvalRationalMap result = EvalRationalMap();
         if( mInfeasibleSubsets.empty() )
         {
-            /*
-            * Check whether the found satisfying assignment is by coincidence a
-            * satisfying assignment of the non linear constraints
-            */
+            // Check whether the found satisfying assignment is by coincidence a satisfying assignment of the non linear constraints
             Numeric minDelta = -1;
             Numeric curDelta = 0;
             Variable<Numeric>* variable = NULL;
-            /*
-            * For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
-            */
+            // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
             for( auto originalVar = mOriginalVars.begin(); originalVar != mOriginalVars.end(); ++originalVar )
             {
                 variable = originalVar->second;
@@ -617,37 +601,27 @@ namespace smtrat
                 const Bound<Numeric>& inf = variable->infimum();
                 if( !inf.isInfinite() )
                 {
-                    /*
-                    * .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
-                    */
+                    // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
                     if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
                     {
                         curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
                         if( minDelta < 0 || curDelta < minDelta )
-                        {
                             minDelta = curDelta;
-                        }
                     }
                 }
                 const Bound<Numeric>& sup = variable->supremum();
                 if( !sup.isInfinite() )
                 {
-                    /*
-                    * .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
-                    */
+                    // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
                     if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
                     {
                         curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
                         if( minDelta < 0 || curDelta < minDelta )
-                        {
                             minDelta = curDelta;
-                        }
                     }
                 }
             }
-            /*
-            * For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
-            */
+            // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
             for( auto slackVar = mSlackVars.begin(); slackVar != mSlackVars.end(); ++slackVar )
             {
                 variable = slackVar->second;
@@ -655,43 +629,33 @@ namespace smtrat
                 const Bound<Numeric>& inf = variable->infimum();
                 if( !inf.isInfinite() )
                 {
-                    /*
-                    * .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
-                    */
+                    // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
                     if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
                     {
                         curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
                         if( minDelta < 0 || curDelta < minDelta )
-                        {
                             minDelta = curDelta;
-                        }
                     }
                 }
                 const Bound<Numeric>& sup = variable->supremum();
                 if( !sup.isInfinite() )
                 {
-                    /*
-                    * .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
-                    */
+                    // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
                     if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
                     {
                         curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
                         if( minDelta < 0 || curDelta < minDelta )
-                        {
                             minDelta = curDelta;
-                        }
                     }
                 }
             }
 
             curDelta = minDelta < 0 ? 1 : minDelta;
-            /*
-            * Calculate the rational assignment of all original variables.
-            */
+            // Calculate the rational assignment of all original variables.
             for( auto var = mOriginalVars.begin(); var != mOriginalVars.end(); ++var )
             {
-                const Value<Numeric>& value = var->second->assignment();
-                result.insert( pair< ex, ex >( *var->first, ex( (value.mainPart() + value.deltaPart() * curDelta).toGinacNumeric() ) ) );
+                Numeric value = var->second->assignment().mainPart() + var->second->assignment().deltaPart() * curDelta;
+                result.insert( pair< const carl::Variable, Rational >( var->first, value.content() ) );
             }
         }
         return result;
@@ -702,41 +666,41 @@ namespace smtrat
      *
      * @return The bounds of the variables as intervals.
      */
-    evalintervalmap LRAModule::getVariableBounds() const
-    {
-        evalintervalmap result = evalintervalmap();
-        for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
-        {
-            const Variable<Numeric>& var = *iter->second;
-            Interval::BoundType lowerBoundType;
-            numeric lowerBoundValue;
-            Interval::BoundType upperBoundType;
-            numeric upperBoundValue;
-            if( var.infimum().isInfinite() )
-            {
-                lowerBoundType = Interval::INFINITY_BOUND;
-                lowerBoundValue = 0;
-            }
-            else
-            {
-                lowerBoundType = var.infimum().isWeak() ? Interval::WEAK_BOUND : Interval::STRICT_BOUND;
-                lowerBoundValue = var.infimum().limit().mainPart().toGinacNumeric();
-            }
-            if( var.supremum().isInfinite() )
-            {
-                upperBoundType = Interval::INFINITY_BOUND;
-                upperBoundValue = 0;
-            }
-            else
-            {
-                upperBoundType = var.supremum().isWeak() ? Interval::WEAK_BOUND : Interval::STRICT_BOUND;
-                upperBoundValue = var.supremum().limit().mainPart().toGinacNumeric();
-            }
-            Interval interval = Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
-            result.insert( pair< symbol, Interval >( ex_to< symbol >( *iter->first ), interval ) );
-        }
-        return result;
-    }
+//    evalintervalmap LRAModule::getVariableBounds() const
+//    {
+//        evalintervalmap result = evalintervalmap();
+//        for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
+//        {
+//            const Variable<Numeric>& var = *iter->second;
+//            Interval::BoundType lowerBoundType;
+//            numeric lowerBoundValue;
+//            Interval::BoundType upperBoundType;
+//            numeric upperBoundValue;
+//            if( var.infimum().isInfinite() )
+//            {
+//                lowerBoundType = Interval::INFINITY_BOUND;
+//                lowerBoundValue = 0;
+//            }
+//            else
+//            {
+//                lowerBoundType = var.infimum().isWeak() ? Interval::WEAK_BOUND : Interval::STRICT_BOUND;
+//                lowerBoundValue = var.infimum().limit().mainPart().toGinacNumeric();
+//            }
+//            if( var.supremum().isInfinite() )
+//            {
+//                upperBoundType = Interval::INFINITY_BOUND;
+//                upperBoundValue = 0;
+//            }
+//            else
+//            {
+//                upperBoundType = var.supremum().isWeak() ? Interval::WEAK_BOUND : Interval::STRICT_BOUND;
+//                upperBoundValue = var.supremum().limit().mainPart().toGinacNumeric();
+//            }
+//            Interval interval = Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+//            result.insert( pair< symbol, Interval >( ex_to< symbol >( *iter->first ), interval ) );
+//        }
+//        return result;
+//    }
 
     #ifdef LRA_REFINEMENT
     /**
@@ -866,7 +830,7 @@ namespace smtrat
         }
         else
         {
-            exmap assignments = getRationalModel();
+            EvalRationalMap assignments = getRationalModel();
             /*
              * Check whether the assignment satisfies the non linear constraints.
              */
@@ -892,9 +856,9 @@ namespace smtrat
      */
     void LRAModule::splitUnequalConstraint( const Constraint* _unequalConstraint )
     {
-        assert( _unequalConstraint->relation() == CR_NEQ );
-        const Constraint* lessConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_LESS, _unequalConstraint->variables() );
-        const Constraint* greaterConstraint = Formula::newConstraint( _unequalConstraint->lhs(), CR_GREATER, _unequalConstraint->variables() );
+        assert( _unequalConstraint->relation() == Constraint::NEQ );
+        const Constraint* lessConstraint = Formula::newConstraint( _unequalConstraint->lhs(), Constraint::LESS );
+        const Constraint* greaterConstraint = Formula::newConstraint( _unequalConstraint->lhs(), Constraint::GREATER );
         // (not p!=0 or p<0 or p>0)
         Formula* deductionA = new Formula( OR );
         Formula* notConstraint = new Formula( NOT );
@@ -1033,7 +997,7 @@ namespace smtrat
      */
     void LRAModule::setBound( Variable<Numeric>& _var, bool _constraintInverted, const Numeric& _boundValue, const Constraint* _constraint )
     {
-        if( _constraint->relation() == CR_EQ )
+        if( _constraint->relation() == Constraint::EQ )
         {
             // TODO: Take value from an allocator to assure the values are located close to each other in the memory.
             Value<Numeric>* value  = new Value<Numeric>( _boundValue );
@@ -1080,7 +1044,7 @@ namespace smtrat
             findSimpleConflicts( *result.first );
             #endif
         }
-        else if( _constraint->relation() == CR_LEQ )
+        else if( _constraint->relation() == Constraint::LEQ )
         {
             Value<Numeric>* value = new Value<Numeric>( _boundValue );
             pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), _constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), _constraint );
@@ -1110,7 +1074,7 @@ namespace smtrat
             findSimpleConflicts( *result.first );
             #endif
         }
-        else if( _constraint->relation() == CR_GEQ )
+        else if( _constraint->relation() == Constraint::GEQ )
         {
             Value<Numeric>* value = new Value<Numeric>( _boundValue );
             pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), _constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), _constraint );
@@ -1142,23 +1106,23 @@ namespace smtrat
         }
         else
         {
-            if( _constraint->relation() == CR_LESS || _constraint->relation() == CR_NEQ )
+            if( _constraint->relation() == Constraint::LESS || _constraint->relation() == Constraint::NEQ )
             {
                 const Constraint* constraint;
-                if( _constraint->relation() != CR_NEQ )
+                if( _constraint->relation() != Constraint::NEQ )
                 {
                     constraint = _constraint;
                 }
                 else
                 {
-                    constraint = Formula::newConstraint( _constraint->lhs(), CR_LESS, _constraint->variables() );
+                    constraint = Formula::newConstraint( _constraint->lhs(), Constraint::LESS );
                 }
                 Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? 1 : -1) );
                 pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addLowerBound( value, mpPassedFormula->end(), constraint ) : _var.addUpperBound( value, mpPassedFormula->end(), constraint );
                 vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
                 boundVector->push_back( result.first );
                 mConstraintToBound[constraint] = boundVector;
-                if( _constraint->relation() == CR_NEQ )
+                if( _constraint->relation() == Constraint::NEQ )
                 {
                     vector< const Bound<Numeric>* >* boundVectorB = new vector< const Bound<Numeric>* >();
                     boundVectorB->push_back( result.first );
@@ -1178,7 +1142,7 @@ namespace smtrat
                     deduction->addSubformula( _constraint );
                     addDeduction( deduction );
                 }
-                if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != CR_NEQ )
+                if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != Constraint::NEQ )
                 {
                     Formula* deduction = new Formula( OR );
                     deduction->addSubformula( new Formula( NOT ) );
@@ -1191,23 +1155,23 @@ namespace smtrat
                 findSimpleConflicts( *result.first );
                 #endif
             }
-            if( _constraint->relation() == CR_GREATER || _constraint->relation() == CR_NEQ )
+            if( _constraint->relation() == Constraint::GREATER || _constraint->relation() == Constraint::NEQ )
             {
                 const Constraint* constraint;
-                if( _constraint->relation() != CR_NEQ )
+                if( _constraint->relation() != Constraint::NEQ )
                 {
                     constraint = _constraint;
                 }
                 else
                 {
-                    constraint = Formula::newConstraint( _constraint->lhs(), CR_GREATER, _constraint->variables() );
+                    constraint = Formula::newConstraint( _constraint->lhs(), Constraint::GREATER );
                 }
                 Value<Numeric>* value = new Value<Numeric>( _boundValue, (_constraintInverted ? -1 : 1) );
                 pair<const Bound<Numeric>*,pair<const Bound<Numeric>*, const Bound<Numeric>*> > result = _constraintInverted ? _var.addUpperBound( value, mpPassedFormula->end(), constraint ) : _var.addLowerBound( value, mpPassedFormula->end(), constraint );
                 vector< const Bound<Numeric>* >* boundVector = new vector< const Bound<Numeric>* >();
                 boundVector->push_back( result.first );
                 mConstraintToBound[constraint] = boundVector;
-                if( _constraint->relation() == CR_NEQ )
+                if( _constraint->relation() == Constraint::NEQ )
                 {
                     mConstraintToBound[_constraint]->push_back( result.first );
                     result.first->setNeqRepresentation( _constraint );
@@ -1225,7 +1189,7 @@ namespace smtrat
                     deduction->addSubformula( _constraint );
                     addDeduction( deduction );
                 }
-                if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != CR_NEQ )
+                if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != Constraint::NEQ )
                 {
                     Formula* deduction = new Formula( OR );
                     deduction->addSubformula( new Formula( NOT ) );
@@ -1352,100 +1316,71 @@ namespace smtrat
      */
     void LRAModule::initialize( const Constraint* const _pConstraint )
     {
-        map<const string, numeric, strCmp> coeffs = _pConstraint->linearAndConstantCoefficients();
-        assert( coeffs.size() > 1 );
-        
-//        map<const string, numeric, strCmp>::iterator currentCoeff = coeffs.begin();
-//        ex*                                          linearPart   = new ex( _pConstraint->lhs() - currentCoeff->second );
-//        ++currentCoeff;
-//
-//        // divide the linear Part and the constraint by the highest coefficient
-//        numeric highestCoeff = currentCoeff->second;
-//        --currentCoeff;
-//        while( currentCoeff != coeffs.end() )
-//        {
-//            currentCoeff->second /= highestCoeff;
-//            ++currentCoeff;
-//        }
-//        *linearPart /= highestCoeff;
-        
-        map<const string, numeric, strCmp>::iterator currentCoeff = coeffs.begin();
-        
-        if( coeffs.size() == 2 )
+        if( _pConstraint->lhs().nrTerms() == 1 || ( _pConstraint->lhs().nrTerms() == 2 && _pConstraint->lhs().hasConstantTerm() ) )
         {
-            numeric primCoeff = (++coeffs.begin())->second;
-            numeric constantPart = (-coeffs.begin()->second)/primCoeff;
-            // constraint has one variable
-            ex* var = new ex( (*_pConstraint->variables().begin()).second );
-            ExVariableMap::iterator basicIter = mOriginalVars.find( var );
+            carl::Variable var = (*(*_pConstraint->lhs().begin())->monomial())[0].var;
+            Rational primCoeff = (*_pConstraint->lhs().begin())->coeff();
+            Rational constantPart = (-_pConstraint->constantPart())/primCoeff;
+            VarVariableMap::iterator basicIter = mOriginalVars.find( var );
             // constraint not found, add new nonbasic variable
             if( basicIter == mOriginalVars.end() )
             {
-                Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( var );
-                mOriginalVars.insert( pair<const ex*, Variable<Numeric>*>( var, nonBasic ) );
-                setBound( *nonBasic, primCoeff.is_negative(), constantPart, _pConstraint );
+                Polynomial* varPoly = new Polynomial( var );
+                Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( varPoly );
+                mOriginalVars.insert( pair<carl::Variable, Variable<Numeric>*>( var, nonBasic ) );
+                setBound( *nonBasic, (primCoeff < ZERO_RATIONAL), constantPart, _pConstraint );
             }
             else
             {
-                delete var;
                 Variable<Numeric>* nonBasic = basicIter->second;
-                setBound( *nonBasic, primCoeff.is_negative(), constantPart, _pConstraint );
+                setBound( *nonBasic, (primCoeff < ZERO_RATIONAL), constantPart, _pConstraint );
             }
         }
         else
         {
-            ex* linearPart = new ex( _pConstraint->lhs() - currentCoeff->second );
-            ++currentCoeff;
-            numeric highestCoeff = currentCoeff->second;
-            if( highestCoeff.is_negative() )
-            {
-                --currentCoeff;
-                while( currentCoeff != coeffs.end() )
-                {
-                    currentCoeff->second = -currentCoeff->second;
-                    ++currentCoeff;
-                }
-                *linearPart = -(*linearPart);
-            }
+            Rational constantPart( _pConstraint->constantPart() );
+            bool negative = ((*_pConstraint->lhs().begin())->coeff() < ZERO_RATIONAL);
+            Polynomial* linearPart;
+            if( negative )
+                linearPart = new Polynomial( -_pConstraint->lhs() + constantPart );
+            else
+                linearPart = new Polynomial( _pConstraint->lhs() - constantPart );
             ExVariableMap::iterator slackIter = mSlackVars.find( linearPart );
             if( slackIter == mSlackVars.end() )
             {
                 vector< Variable<Numeric>* > nonbasics = vector< Variable<Numeric>* >();
                 vector< Numeric > numCoeffs = vector< Numeric >();
-                symtab::const_iterator varIt   = _pConstraint->variables().begin();
-                map<const string, numeric, strCmp>::iterator coeffIt = coeffs.begin();
-                ++coeffIt;
-                while( varIt != _pConstraint->variables().end() )
+                auto term = _pConstraint->lhs().rbegin();
+                if( (*term)->isConstant() )
+                    ++term;
+                for( ; term != _pConstraint->lhs().rend(); ++term )
                 {
-                    assert( coeffIt != coeffs.end() );
-                    ex* var = new ex( varIt->second );
-                    ExVariableMap::iterator nonBasicIter = mOriginalVars.find( var );
+                    carl::Variable var = (*(*term)->monomial())[0].var;
+                    VarVariableMap::iterator nonBasicIter = mOriginalVars.find( var );
                     if( mOriginalVars.end() == nonBasicIter )
                     {
-                        Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( var );
-                        mOriginalVars.insert( pair<const ex*, Variable<Numeric>*>( var, nonBasic ) );
+                        Polynomial* varPoly = new Polynomial( var );
+                        Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( varPoly );
+                        mOriginalVars.insert( pair<carl::Variable, Variable<Numeric>*>( var, nonBasic ) );
                         nonbasics.push_back( nonBasic );
                     }
                     else
                     {
-                        delete var;
                         nonbasics.push_back( nonBasicIter->second );
                     }
-                    numCoeffs.push_back( Numeric( coeffIt->second ) );
-                    ++varIt;
-                    ++coeffIt;
+                    numCoeffs.push_back( Numeric( (*term)->coeff() ) );
                 }
 
                 Variable<Numeric>* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );
 
-                mSlackVars.insert( pair<const ex*, Variable<Numeric>*>( linearPart, slackVar ) );
-                setBound( *slackVar, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
+                mSlackVars.insert( pair<const Polynomial*, Variable<Numeric>*>( linearPart, slackVar ) );
+                setBound( *slackVar, negative, -constantPart, _pConstraint );
             }
             else
             {
                 delete linearPart;
                 Variable<Numeric>* slackVar = slackIter->second;
-                setBound( *slackVar, highestCoeff.is_negative(), -coeffs.begin()->second, _pConstraint );
+                setBound( *slackVar, negative, -constantPart, _pConstraint );
             }
         }
     }
@@ -1674,37 +1609,37 @@ namespace smtrat
     }
     #endif
     
-    /**
-     * 
-     * @return True, if a branching occurred.
-     *          False, otherwise.
-     */
-    bool LRAModule::branch_and_bound()
-    {
-        exmap _rMap = getRationalModel();
-        exmap::const_iterator map_iterator = _rMap.begin();
-        for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
-        {
-            numeric ass = ex_to<numeric>(map_iterator->second); 
-            if((Formula::domain(*(var->first)) == INTEGER_DOMAIN) && !ass.is_integer())
-            {
-                Formula* deductionA = new Formula(OR);
-                stringstream sstream;
-                sstream << *(var->first);
-                symtab *setOfVar = new symtab();
-                setOfVar->insert(pair< std::string, ex >(sstream.str(),*(var->first)));
-                ass = numeric(cln::floor1(cln::the<cln::cl_RA>(ass.to_cl_N())));
-                const Constraint* lessEqualConstraint = Formula::newConstraint(*(var->first) - ass,CR_LEQ,*setOfVar);
-                const Constraint* biggerEqualConstraint= Formula::newConstraint(*(var->first) - ass - 1,CR_GEQ,*setOfVar);
-                deductionA->addSubformula(lessEqualConstraint);
-                deductionA->addSubformula(biggerEqualConstraint);
-                addDeduction(deductionA);
-                return true;
-            }
-            ++map_iterator;
-        }
-        return false;
-    }
+//    /**
+//     * 
+//     * @return True, if a branching occurred.
+//     *          False, otherwise.
+//     */
+//    bool LRAModule::branch_and_bound()
+//    {
+//        exmap _rMap = getRationalModel();
+//        exmap::const_iterator map_iterator = _rMap.begin();
+//        for(auto var=mOriginalVars.begin();var != mOriginalVars.end() ;++var)
+//        {
+//            numeric ass = ex_to<numeric>(map_iterator->second); 
+//            if((Formula::domain(*(var->first)) == INTEGER_DOMAIN) && !ass.is_integer())
+//            {
+//                Formula* deductionA = new Formula(OR);
+//                stringstream sstream;
+//                sstream << *(var->first);
+//                symtab *setOfVar = new symtab();
+//                setOfVar->insert(pair< std::string, ex >(sstream.str(),*(var->first)));
+//                ass = numeric(cln::floor1(cln::the<cln::cl_RA>(ass.to_cl_N())));
+//                const Constraint* lessEqualConstraint = Formula::newConstraint(*(var->first) - ass,Constraint::LEQ,*setOfVar);
+//                const Constraint* biggerEqualConstraint= Formula::newConstraint(*(var->first) - ass - 1,Constraint::GEQ,*setOfVar);
+//                deductionA->addSubformula(lessEqualConstraint);
+//                deductionA->addSubformula(biggerEqualConstraint);
+//                addDeduction(deductionA);
+//                return true;
+//            }
+//            ++map_iterator;
+//        }
+//        return false;
+//    }
     
     /**
      * 
@@ -1713,22 +1648,22 @@ namespace smtrat
     bool LRAModule::assignmentCorrect() const
     {
         if( solverState() == False ) return true;
-        exmap model = getRationalModel();
-        for( auto ass = model.begin(); ass != model.end(); ++ass )
-        {
-            if( Formula::domain( ass->first ) == INTEGER_DOMAIN  && !ex_to<numeric>(ass->second).is_integer() )
-            {
-                return false;
-            }
-        }
-        for( auto constraint = mpReceivedFormula->begin(); constraint != mpReceivedFormula->end(); ++constraint )
-        {
-            if( (*constraint)->constraint().satisfiedBy( model ) != 1 )
-            {
-                assert( (*constraint)->constraint().satisfiedBy( model ) == 0 );
-                return false;
-            }
-        }
+        EvalRationalMap model = getRationalModel();
+//        for( auto ass = model.begin(); ass != model.end(); ++ass )
+//        {
+//            if( Formula::domain( ass->first ) == INTEGER_DOMAIN  && !ex_to<numeric>(ass->second).is_integer() )
+//            {
+//                return false;
+//            }
+//        }
+//        for( auto constraint = mpReceivedFormula->begin(); constraint != mpReceivedFormula->end(); ++constraint )
+//        {
+//            if( (*constraint)->constraint().satisfiedBy( model ) != 1 )
+//            {
+//                assert( (*constraint)->constraint().satisfiedBy( model ) == 0 );
+//                return false;
+//            }
+//        }
         return true;
     }
 
@@ -1743,7 +1678,7 @@ namespace smtrat
         _out << _init << "Linear constraints:" << endl;
         for( auto iter = mLinearConstraints.begin(); iter != mLinearConstraints.end(); ++iter )
         {
-            _out << _init << "   " << (*iter)->smtlibString() << endl;
+            _out << _init << "   " << (*iter)->toString() << endl;
         }
     }
 
@@ -1758,7 +1693,7 @@ namespace smtrat
         _out << _init << "Nonlinear constraints:" << endl;
         for( auto iter = mNonlinearConstraints.begin(); iter != mNonlinearConstraints.end(); ++iter )
         {
-            _out << _init << "   " << (*iter)->smtlibString() << endl;
+            _out << _init << "   " << (*iter)->toString() << endl;
         }
     }
 
@@ -1774,7 +1709,7 @@ namespace smtrat
         _out << _init << "Original variables:" << endl;
         for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
         {
-            _out << _init << "   " << *iter->first << ":" << endl;
+            _out << _init << "   " << iter->first << ":" << endl;
             _out << _init << "          ";
             iter->second->print( _out );
             _out << endl;
@@ -1813,7 +1748,7 @@ namespace smtrat
         _out << _init << "Mapping of constraints to bounds:" << endl;
         for( auto iter = mConstraintToBound.begin(); iter != mConstraintToBound.end(); ++iter )
         {
-            _out << _init << "   " << iter->first->smtlibString() << endl;
+            _out << _init << "   " << iter->first->toString() << endl;
             for( auto iter2 = iter->second->begin(); iter2 != iter->second->end(); ++iter2 )
             {
                 _out << _init << "        ";
@@ -1848,7 +1783,7 @@ namespace smtrat
      */
     void LRAModule::printRationalModel( ostream& _out, const string _init ) const
     {
-        exmap rmodel = getRationalModel();
+        EvalRationalMap rmodel = getRationalModel();
         _out << _init << "Rational model:" << endl;
         for( auto assign = rmodel.begin(); assign != rmodel.end(); ++assign )
         {

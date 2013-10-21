@@ -83,7 +83,7 @@ namespace smtrat
         mpFather( NULL ),
         mPropositions()
     {
-        assert( constraintPool().hasBoolean( *_id ) );
+        assert( constraintPool().booleanExistsAlready( *_id ) );
     }
 
     Formula::Formula( const Constraint* _constraint ):

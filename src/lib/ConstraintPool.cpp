@@ -33,11 +33,6 @@ using namespace std;
 
 namespace smtrat
 {
-    /**
-     * Constructor of the constraint pool.
-     * 
-     * @param _capacity Expected necessary capacity of the pool.
-     */
     ConstraintPool::ConstraintPool( unsigned _capacity ):
         mExternalPrefixInitialized( true ),
         mIdAllocator( 1 ),
@@ -76,11 +71,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * Resets the constraint pool.
-     * 
-     * Note: Do not use it. It is only made for the Benchmax.
-     */
     void ConstraintPool::clear()
     {
         lock_guard<mutex> lock1( mMutexArithmeticVariables );
@@ -111,46 +101,18 @@ namespace smtrat
         mIdAllocator = 3;
     }
     
-    /**
-     * Constructs a new constraint and adds it to the pool, if it is not yet a member. If it is a
-     * member, this will be returned instead of a new constraint.
-     * 
-     * Note, that the left-hand side of the constraint is simplified and normalized, hence it is
-     * not necessarily equal to the given left-hand side. The same holds for the relation symbol.
-     * However, it is assured that the returned constraint has the same solutions as
-     * the expected one.
-     * 
-     * @param _lhs The left-hand side of the constraint.
-     * @param _rel The relation symbol of the constraint.
-     * @param _variables An over-approximation of the variables which occur on the left-hand side.
-     * @return The constructed constraint.
-     */
     const Constraint* ConstraintPool::newBound( const carl::Variable& _var, const Constraint::Relation _rel, const Rational& _bound )
     {
         CONSTRAINT_LOCK_GUARD
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
         Constraint* constraint = createNormalizedBound( _var, _rel, _bound );
-        pair<fastConstraintSet::iterator, bool> iterBoolPair = mConstraints.insert( constraint );
+        pair<Constraint::FastSet::iterator, bool> iterBoolPair = mConstraints.insert( constraint );
         if( !iterBoolPair.second )
             delete constraint;
         return *iterBoolPair.first;
     }
 
-    /**
-     * Constructs a new constraint and adds it to the pool, if it is not yet a member. If it is a
-     * member, this will be returned instead of a new constraint.
-     * 
-     * Note, that the left-hand side of the constraint is simplified and normalized, hence it is
-     * not necessarily equal to the given left-hand side. The same holds for the relation symbol.
-     * However, it is assured that the returned constraint has the same solutions as
-     * the expected one.
-     * 
-     * @param _lhs The left-hand side of the constraint.
-     * @param _rel The relation symbol of the constraint.
-     * @param _variables An over-approximation of the variables which occur on the left-hand side.
-     * @return The constructed constraint.
-     */
     const Constraint* ConstraintPool::newConstraint( const Polynomial& _lhs, const Constraint::Relation _rel )
     {
         CONSTRAINT_LOCK_GUARD
@@ -168,13 +130,6 @@ namespace smtrat
         return result;
     }
 
-    /**
-     * Creates an arithmetic variable.
-     * @param _name The external name of the variable to construct.
-     * @param _domain The domain of the variable to construct.
-     * @param _parsed A special flag indicating whether this variable is constructed during parsing.
-     * @return A pair of the internal name of the variable and the variable as an expression.
-     */
     carl::Variable ConstraintPool::newArithmeticVariable( const string& _name, carl::VariableType _domain, bool _parsed )
     {
         assert( !_name.empty() );
@@ -189,59 +144,11 @@ namespace smtrat
         mVariablePool.setVariableName( iterBoolPair.first->second, _name );
         return iterBoolPair.first->second;
     }
-
-    /**
-     * Creates an auxiliary real valued variable.
-     * 
-     * @param _externalPrefix The prefix of the external name of the auxiliary variable to construct.
-     * 
-     * @return A pair of the internal name of the variable and the a variable as an expression.
-     */
-    carl::Variable ConstraintPool::newAuxiliaryRealVariable( const std::string& _externalPrefix )
-    {
-        stringstream out;
-        out << mExternalVarNamePrefix << _externalPrefix << "_" << mAuxiliaryRealVarCounter++;
-        return newArithmeticVariable( out.str(), carl::VariableType::VT_REAL );
-    }
-
-    /**
-     * Creates an auxiliary integer valued variable.
-     * 
-     * @param _externalPrefix The prefix of the external name of the auxiliary variable to construct.
-     * 
-     * @return A pair of the internal name of the variable and the a variable as an expression.
-     */
-    carl::Variable ConstraintPool::newAuxiliaryIntVariable( const std::string& _externalPrefix )
-    {
-        stringstream out;
-        out << mExternalVarNamePrefix << _externalPrefix << mAuxiliaryIntVarCounter++;
-        return newArithmeticVariable( out.str(), carl::VariableType::VT_INT );
-    }
-
-    /**
-     * 
-     * @param _element
-     * @return 
-     */
-    bool ConstraintPool::hasBoolean( const string& _element ) const
-    {
-        for( auto iter = mBooleanVariables.begin(); iter != mBooleanVariables.end(); ++iter )
-        {
-            if( **iter == _element ) return true;
-        }
-        return false;
-    }
     
-    /**
-     * Creates a new Boolean variable.
-     * 
-     * @param _name The external name of the variable to construct.
-     * @param _parsed A special flag indicating whether this variable is constructed during parsing.
-     */
     const string* ConstraintPool::newBooleanVariable( const string& _name, bool _parsed )
     {
         lock_guard<mutex> lock( mMutexBooleanVariables );
-        assert( !hasBoolean( _name ) );
+        assert( !booleanExistsAlready( _name ) );
         if( _parsed ) mExternalPrefixInitialized = false;
         else if( !mExternalPrefixInitialized ) initExternalPrefix();
         string* result = new string( _name );
@@ -249,13 +156,6 @@ namespace smtrat
         return result;
     }
 
-    /**
-     * Creates an auxiliary Boolean variable.
-     * 
-     * @param _externalPrefix The prefix of the external name of the auxiliary variable to construct.
-     * 
-     * @return The internal name of the variable.
-     */
     const string* ConstraintPool::newAuxiliaryBooleanVariable( const std::string& _externalPrefix )
     {
         stringstream out;
@@ -265,9 +165,6 @@ namespace smtrat
         return newBooleanVariable( out.str() );;
     }
     
-    /**
-     * Initializes the prefix of the external variable names of internally declared (not parsed) variables.
-     */
     void ConstraintPool::initExternalPrefix()
     {
         bool foundExternalPrefix = false;
@@ -289,55 +186,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * Determines the highest degree occurring in all constraints.
-     *
-     * Note: This method makes the other accesses to the constraint pool waiting.
-     * @return The highest degree occurring in all constraints
-     */
-    int ConstraintPool::maxDegree() const
-    {
-        int result = 0;
-        CONSTRAINT_LOCK_GUARD
-        for( fcs_const_iterator constraint = mConstraints.begin();
-             constraint != mConstraints.end(); ++constraint )
-        {
-            int maxdeg = (*constraint)->lhs().highestDegree();
-            if(maxdeg > result) result = maxdeg;
-        }
-        return result;
-    }
-
-    /**
-     * Determines the number of non-linear constraints in the pool.
-     * 
-     * Note: This method makes the other accesses to the constraint pool waiting.
-     * @return
-     */
-    unsigned ConstraintPool::nrNonLinearConstraints() const
-    {
-        unsigned nonlinear = 0;
-        CONSTRAINT_LOCK_GUARD
-        for( fcs_const_iterator constraint = mConstraints.begin();
-             constraint != mConstraints.end(); ++constraint )
-        {
-            if(!(*constraint)->lhs().isLinear()) ++nonlinear;
-        }
-        return nonlinear;
-    }
-
-    /**
-     * Creates a normalized constraint, which has the same solutions as the constraint consisting of the given
-     * left-hand side and relation symbol.
-     * 
-     * Note, that this method uses the allocator which is locked before calling.
-     *
-     * @param _lhs The left-hand side of the constraint before normalization,
-     * @param _rel The relation symbol of the constraint before normalization,
-     * @param _variables An over-approximation of the variables occurring in the given left-hand side.
-     * 
-     * @return The constructed constraint.
-     */
     Constraint* ConstraintPool::createNormalizedBound( const carl::Variable& _var, const Constraint::Relation _rel, const Rational& _bound ) const
     {
         assert( _rel != Constraint::EQ && _rel != Constraint::NEQ );
@@ -358,18 +206,6 @@ namespace smtrat
         }
     }
     
-    /**
-     * Creates a normalized constraint, which has the same solutions as the constraint consisting of the given
-     * left-hand side and relation symbol.
-     * 
-     * Note, that this method uses the allocator which is locked before calling.
-     *
-     * @param _lhs The left-hand side of the constraint before normalization,
-     * @param _rel The relation symbol of the constraint before normalization,
-     * @param _variables An over-approximation of the variables occurring in the given left-hand side.
-     * 
-     * @return The constructed constraint.
-     */
     Constraint* ConstraintPool::createNormalizedConstraint( const Polynomial& _lhs, const Constraint::Relation _rel ) const
     {
         if( _rel == Constraint::GREATER )
@@ -396,25 +232,13 @@ namespace smtrat
         }
     }
 
-    /**
-     * Adds the given constraint to the pool, if it does not yet occur in there.
-     * 
-     * Note, that this method uses the allocator which is locked before calling.
-     * 
-     * @sideeffect The given constraint will be deleted, if it already occurs in the pool.
-     *
-     * @param _constraint The constraint to add to the pool.
-     * 
-     * @return The given constraint, if it did not yet occur in the pool;
-     *          The equivalent constraint already occurring in the pool.
-     */
     const Constraint* ConstraintPool::addConstraintToPool( Constraint* _constraint )
     {
         unsigned constraintConsistent = _constraint->isConsistent();
         if( constraintConsistent == 2 )
         {
             // Constraint contains variables.
-            pair<fastConstraintSet::iterator, bool> iterBoolPair = mConstraints.insert( _constraint );
+            pair<Constraint::FastSet::const_iterator, bool> iterBoolPair = mConstraints.insert( _constraint );
             if( !iterBoolPair.second )
             {
                 // Constraint has already been generated.
@@ -426,11 +250,11 @@ namespace smtrat
                 if( constraint != NULL )
                 {
                     // Constraint could be simplified.
-                    pair<fastConstraintSet::iterator, bool> iterBoolPairB = mConstraints.insert( constraint );
+                    pair<Constraint::FastSet::const_iterator, bool> iterBoolPairB = mConstraints.insert( constraint );
                     if( !iterBoolPairB.second )
                     {
                         // Simplified version already exists, then set the id of the generated constraint to the id of the simplified one.
-                        _constraint->rId() = (*iterBoolPairB.first)->id();
+                        _constraint->mID = (*iterBoolPairB.first)->id();
                         delete constraint;
                     }
                     else
@@ -458,17 +282,12 @@ namespace smtrat
         }
     }
 
-    /**
-     * Prints all constraints in the constraint pool on the given stream.
-     *
-     * @param _out The stream to print on.
-     */
     void ConstraintPool::print( ostream& _out ) const
     {
         CONSTRAINT_LOCK_GUARD
         _out << "---------------------------------------------------" << endl;
         _out << "Constraint pool:" << endl;
-        for( fcs_const_iterator constraint = mConstraints.begin();
+        for( Constraint::FastSet::const_iterator constraint = mConstraints.begin();
                 constraint != mConstraints.end(); ++constraint )
         {
             _out << "    " << **constraint << endl;

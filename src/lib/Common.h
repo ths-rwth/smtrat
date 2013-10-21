@@ -31,6 +31,8 @@
 #include <vector>
 #include <set>
 #include <string.h>
+#include <unordered_set>
+#include <unordered_map>
 #include "carl/core/MultivariatePolynomial.h"
 #include "carl/interval/DoubleInterval.h"
 #include "carl/interval/IntervalEvaluation.h"
@@ -42,6 +44,8 @@ namespace smtrat
     typedef cln::cl_RA Rational;
     typedef carl::MultivariatePolynomial<Rational> Polynomial;
     typedef std::vector<Polynomial> Factorization;
+    typedef std::map<carl::Variable,Rational> EvalRationalMap;
+//    typedef carl::DoubleInterval::evalintervalmap EvalIntervalMap;
     typedef carl::DoubleInterval::evaldoubleintervalmap EvalDoubleIntervalMap;
     typedef carl::VariablesInformation< true, Polynomial > VarInfoMap;
     typedef std::set<carl::Variable> Variables;
@@ -53,6 +57,28 @@ namespace smtrat
     
     static const Polynomial ZERO_POLYNOMIAL = Polynomial( ZERO_RATIONAL );
     static const Polynomial ONE_POLYNOMIAL = Polynomial( ONE_RATIONAL );
+    
+    struct polynomialPointerEqual
+    {
+        bool operator ()( const Polynomial* const _polynomialA, const Polynomial* const _polynomialB ) const
+        {
+            return (*_polynomialA)==(*_polynomialB);
+        }
+    };
+
+    struct polynomialPointerHash
+    {
+        size_t operator ()( const Polynomial* const _polynomial ) const
+        {
+            return std::hash<Polynomial>()( *_polynomial );
+        }
+    };
+    
+    typedef std::unordered_set<const Polynomial*, polynomialPointerHash, polynomialPointerEqual> PolynomialFastSet;
+    typedef PolynomialFastSet::const_iterator                                                    pfs_const_iterator;
+    
+    template<typename T> 
+    using PolynomialFastPointerMap = std::unordered_map<const Polynomial*, T, polynomialPointerHash, polynomialPointerEqual>;
     
 }    // namespace smtrat
 

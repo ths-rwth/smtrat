@@ -18,8 +18,6 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * Constraint.cpp
  * @author Florian Corzilius
@@ -47,8 +45,7 @@ namespace smtrat
 
     Constraint::Constraint():
         mID( 0 ),
-        mSecondHash( EQ ),
-        mHash( mFirstHash * 6 + mSecondHash ),
+        mHash( ((hash<Polynomial>()( ZERO_POLYNOMIAL ) << 3) ^ EQ) ), 
         mIsNeverPositive( false ),
         mIsNeverNegative( false ),
         mIsNeverZero( false ),
@@ -58,15 +55,12 @@ namespace smtrat
         mVariables(),
         mVarInfoMap()
     {
-        mFirstHash = mLhs.hash();
         mFactorization.push_back( mLhs );
     }
 
     Constraint::Constraint( const Polynomial& _lhs, const Relation _cr, unsigned _id ):
         mID( _id ),
-        mFirstHash( _lhs.hash() ),
-        mSecondHash( _cr ),
-        mHash( mFirstHash * 6 + mSecondHash ),
+        mHash( ( (std::hash<Polynomial>()( _lhs ) << 3) ^ _cr) ),
         mIsNeverPositive( false ),
         mIsNeverNegative( false ),
         mIsNeverZero( false ),
@@ -81,9 +75,7 @@ namespace smtrat
 
     Constraint::Constraint( const Constraint& _constraint, bool _rehash ):
         mID( _constraint.id() ),
-        mFirstHash( _rehash ? _constraint.mLhs.hash() : _constraint.firstHash() ),
-        mSecondHash( _rehash ? _constraint.relation() : _constraint.secondHash() ),
-        mHash( _rehash ? (mFirstHash * 6 + mSecondHash) : _constraint.hash() ),
+        mHash( _rehash ? ( (std::hash<Polynomial>()( _constraint.lhs() ) << 3) ^ _constraint.relation()) : _constraint.getHash() ),
         mIsNeverPositive( _constraint.mIsNeverPositive ),
         mIsNeverNegative( _constraint.mIsNeverNegative ),
         mIsNeverZero( _constraint.mIsNeverZero ),
@@ -97,65 +89,6 @@ namespace smtrat
     Constraint::~Constraint()
     {}
 
-    
-
-    /**
-     * Checks whether the given value satisfies the given relation to zero.
-     * @param _value The value to compare with zero.
-     * @param _relation The relation between the given value and zero.
-     * @return true,  if the given value satisfies the given relation to zero;
-     *          false, otherwise.
-     */
-    bool Constraint::evaluate( const Rational& _value, Relation _relation )
-    {
-        switch( _relation )
-        {
-            case EQ:
-            {
-                if( _value == 0 ) return true;
-                else return false;
-            }
-            case NEQ:
-            {
-                if( _value == 0 ) return false;
-                else return true;
-            }
-            case LESS:
-            {
-                if( _value < 0 ) return true;
-                else return false;
-            }
-            case GREATER:
-            {
-                if( _value > 0 ) return true;
-                else return false;
-            }
-            case LEQ:
-            {
-                if( _value <= 0 ) return true;
-                else return false;
-            }
-            case GEQ:
-            {
-                if( _value >= 0 ) return true;
-                else return false;
-            }
-            default:
-            {
-                cout << "Error in isConsistent: unexpected relation symbol." << endl;
-                return false;
-            }
-        }
-    }
-
-    /**
-     * Checks, whether the constraint is consistent.
-     * It differs between, containing variables, consistent, and inconsistent.
-     *
-     * @return 0, if the constraint is not consistent.
-     *          1, if the constraint is consistent.
-     *          2, if the constraint still contains variables.
-     */
     unsigned Constraint::isConsistent() const
     {
         if( variables().empty() )
@@ -210,11 +143,6 @@ namespace smtrat
         }
     }
     
-    /**
-     * 
-     * @param _solutionInterval
-     * @return 
-     */
     unsigned Constraint::consistentWith( const EvalDoubleIntervalMap& _solutionInterval ) const
     {
         if( variables().empty() )
@@ -302,16 +230,7 @@ namespace smtrat
         }
     }
 
-    /**
-     * Checks whether the given assignment satisfies this constraint.
-     *
-     * @param _assignment The assignment.
-     * @return 1, if the given assignment satisfies this constraint.
-     *         0, if the given assignment contradicts this constraint.
-     *         2, otherwise (possibly not defined for all variables in the constraint,
-     *                       even then it could be possible to obtain the first two results.)
-     */
-    unsigned Constraint::satisfiedBy( std::map<carl::Variable,Rational>& _assignment ) const
+    unsigned Constraint::satisfiedBy( EvalRationalMap& _assignment ) const
     {
         Polynomial tmp = mLhs.substitute( _assignment );
         if( tmp.isConstant() )
@@ -321,14 +240,6 @@ namespace smtrat
         else return 2;
     }
 
-    /**
-     * Calculates the coefficient of the given variable with the given degree. Note, that it only
-     * computes the coefficient once and stores the result.
-     *
-     * @param _variable The variable for which to calculate the coefficient.
-     * @param _degree The according degree of the variable for which to calculate the coefficient.
-     * @return The ith coefficient of the given variable, where i is the given degree.
-     */
     Polynomial Constraint::coefficient( const carl::Variable& _var, unsigned _degree ) const
     {
         Polynomial result;
@@ -341,19 +252,11 @@ namespace smtrat
         return Polynomial( Rational( 0 ) );
     }
 
-    /**
-     *
-     * @param The relation
-     * @return
-     */
     bool constraintRelationIsStrict( Constraint::Relation rel )
     {
         return (rel == Constraint::NEQ || rel == Constraint::LESS || rel == Constraint::GREATER);
     }
     
-    /**
-     * Collects some properties of the constraint. Needs only to be applied once.
-     */
     void Constraint::collectProperties()
     {
         mIsNeverPositive = true;
@@ -365,13 +268,7 @@ namespace smtrat
 //            mIsNeverZero = true;
 //        }
     }
-    
-    /**
-     * Applies some cheap simplifications to the constraints.
-     *
-     * @return The simplified constraints, if simplifications could be applied;
-     *         The constraint itself, otherwise.
-     */
+
     Constraint* Constraint::simplify()
     {
         bool anythingChanged = false;
@@ -494,9 +391,6 @@ namespace smtrat
         }
     }
 
-    /**
-     * Initializes the stored factorization and the left-hand side with no multiple roots, if it is univariate.
-     */
     void Constraint::init()
     {
 //        mVarInfoMap( mLhs.getVarInfo<false>() ); //TODO: implement this line
@@ -509,48 +403,24 @@ namespace smtrat
         #endif
     }
 
-    /**
-     * Compares this constraint with the given constraint.
-     *
-     * @return  true,   if this constraint is LEXOGRAPHICALLY smaller than the given one;
-     *          false,  otherwise.
-     */
-    bool Constraint::operator <( const Constraint& _constraint ) const
+    bool Constraint::operator<( const Constraint& _constraint ) const
     {
         assert( mID > 0 && _constraint.id() > 0 );
         return mID < _constraint.id();
     }
 
-    /**
-     * Compares this constraint with the given constraint.
-     *
-     * @return  true,   if this constraint is equal to the given one;
-     *          false,  otherwise.
-     */
-    bool Constraint::operator ==( const Constraint& _constraint ) const
+    bool Constraint::operator==( const Constraint& _constraint ) const
     {
         assert( mID > 0 && _constraint.id() > 0 );
         return mID == _constraint.id();
     }
 
-    /**
-     * Prints the representation of the given constraints on the given stream.
-     *
-     * @param _ostream The stream to print on.
-     * @param _constraint The constraint to print.
-     * @return The given stream after printing.
-     */
-    ostream& operator <<( ostream& _ostream, const Constraint& _constraint )
+    ostream& operator<<( ostream& _out, const Constraint& _constraint )
     {
-        _ostream << _constraint.toString();
-        return _ostream;
+        _out << _constraint.toString();
+        return _out;
     }
 
-    /**
-     * Gives the string representation of the constraint.
-     *
-     * @return The string representation of the constraint.
-     */
     string Constraint::toString( unsigned _unequalSwitch, bool _infix, bool _friendlyVarNames ) const
     {
         string result = "";
@@ -608,13 +478,6 @@ namespace smtrat
         return result;
     }
 
-
-    
-    /**
-     * Prints the properties of this constraints on the given stream.
-     *
-     * @param _out The stream to print on.
-     */
     void Constraint::printProperties( ostream& _out, bool _friendlyVarNames ) const
     {
         _out << "Properties:" << endl;
@@ -634,11 +497,48 @@ namespace smtrat
         }
     }
     
-    /**
-     * 
-     * @param _rel
-     * @return 
-     */
+    bool Constraint::evaluate( const Rational& _value, Relation _relation )
+    {
+        switch( _relation )
+        {
+            case EQ:
+            {
+                if( _value == 0 ) return true;
+                else return false;
+            }
+            case NEQ:
+            {
+                if( _value == 0 ) return false;
+                else return true;
+            }
+            case LESS:
+            {
+                if( _value < 0 ) return true;
+                else return false;
+            }
+            case GREATER:
+            {
+                if( _value > 0 ) return true;
+                else return false;
+            }
+            case LEQ:
+            {
+                if( _value <= 0 ) return true;
+                else return false;
+            }
+            case GEQ:
+            {
+                if( _value >= 0 ) return true;
+                else return false;
+            }
+            default:
+            {
+                cout << "Error in isConsistent: unexpected relation symbol." << endl;
+                return false;
+            }
+        }
+    }
+    
     Constraint::Relation Constraint::invertRelation( const Constraint::Relation _rel )
     {
         switch( _rel )
@@ -668,17 +568,6 @@ namespace smtrat
     static const signed A_AND_B__IFF_C = -3;
     static const signed A_XOR_B = -4;
 
-    /**
-     * Compares _constraintA with _constraintB.
-     *
-     * @return  2, if it is easy to decide that _constraintA and _constraintB have the same solutions. _constraintA = _constraintB
-     *           1, if it is easy to decide that _constraintB includes all solutions of _constraintA;   _constraintA -> _constraintB
-     *          -1, if it is easy to decide that _constraintA includes all solutions of _constraintB;   _constraintB -> _constraintA
-     *          -2, if it is easy to decide that _constraintA has no solution common with _constraintB; not(_constraintA and _constraintB)
-     *          -3, if it is easy to decide that _constraintA and _constraintB can be intersected;      _constraintA and _constraintB = _constraintC
-     *          -4, if it is easy to decide that _constraintA is the inverse of _constraintB;           _constraintA xor _constraintB
-     *           0, otherwise.
-     */
     signed Constraint::compare( const Constraint* _constraintA, const Constraint* _constraintB )
     {
         /*

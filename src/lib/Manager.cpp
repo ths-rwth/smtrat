@@ -64,7 +64,7 @@ namespace smtrat
     {
         mpModuleFactories = new map<const ModuleType, ModuleFactory*>();
         // inform it about all constraints
-        for( fcs_const_iterator constraint = Formula::constraintPool().begin(); constraint != Formula::constraintPool().end(); ++constraint )
+        for( auto constraint = Formula::constraintPool().begin(); constraint != Formula::constraintPool().end(); ++constraint )
             mpPrimaryBackend->inform( (*constraint) );
     }
 

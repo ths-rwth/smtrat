@@ -24,14 +24,13 @@
  * @author Sebastian Junges
  * @author Ulrich Loup
  * @since 2010-04-26
- * @version 2013-03-27
+ * @version 2013-10-21
  */
 
 
 #ifndef SMTRAT_TS_CONSTRAINT_H
 #define SMTRAT_TS_CONSTRAINT_H
 
-//#define SMTRAT_TS_CONSTRAINT_SIMPLIFIER
 //#define NDEBUG
 
 #include <iostream>
@@ -55,22 +54,65 @@ namespace smtrat
         friend class ConstraintPool;
         
         public:
+            // Type definitions.
             enum Relation { EQ = 0, NEQ = 1, LESS = 2, GREATER = 3, LEQ = 4, GEQ = 5 };
+            struct pointerEqual
+            {
+                bool operator ()( const Constraint* const _constraintA, const Constraint* const _constraintB ) const
+                {
+                    if( _constraintA->relation() == _constraintB->relation() )
+                    {
+                        return _constraintA->lhs() == _constraintB->lhs();
+                    }
+                    return false;
+                }
+            };
+            struct pointerLess
+            {
+                bool operator ()( const Constraint* const pConstraintA, const Constraint* const pConstraintB ) const
+                {
+                    return (*pConstraintA) < (*pConstraintB);
+                }
+            };
+            struct pointerHash
+            {
+                size_t operator ()( const Constraint* const _constraint ) const
+                {
+                    return _constraint->getHash();
+                }
+            };
+            typedef std::vector<const Constraint*>                                   PointerVector;
+            typedef std::set<const Constraint*, pointerLess>                         PointerSet;
+            typedef std::vector<std::set<const Constraint*>>                         PointerSetVector;
+            typedef std::map<const Constraint* const, PointerSetVector>              OriginsMap;
+            typedef std::unordered_set<const Constraint*, pointerHash, pointerEqual> FastSet;
+            template<typename T> 
+            using FastPointerMap = std::unordered_map<const Constraint*, T, pointerHash, pointerEqual>;
+
 
         private:
-            // Attributes.
+            // A unique id.
             unsigned             mID;
-            unsigned             mFirstHash;
-            unsigned             mSecondHash;
+            // The hash value.
             unsigned             mHash;
+            // A flag indicating that the polynomial considered by this constraint cannot be evaluated 
+            // to a positive value by any assignment of its variables to a value of their domains.
             bool                 mIsNeverPositive;
+            // A flag indicating that the polynomial considered by this constraint cannot be evaluated 
+            // to a negative value by any assignment of its variables to a value of their domains.
             bool                 mIsNeverNegative;
+            // A flag indicating that the polynomial considered by this constraint cannot be evaluated 
+            // to zero by any assignment of its variables to a value of their domains.
             bool                 mIsNeverZero;
+            // The relation symbol comparing the polynomial considered by this constraint to zero.
             Relation             mRelation;
+            // The polynomial which is compared by this constraint to zero.
             Polynomial           mLhs;
+            // The factorization of the polynomial considered by this constraint.
             Factorization        mFactorization;
-            mutable std::mutex   mMutexCoefficients;
+            // A container which includes all variables occurring in the polynomial considered by this constraint.
             Variables            mVariables;
+            // A map which stores information about properties of the variables in this constraint.
             mutable VarInfoMap   mVarInfoMap;
 
             // Constructors.
@@ -85,17 +127,26 @@ namespace smtrat
 
             static std::recursive_mutex mMutex;
 
-            // Methods.
+            /**
+             * @return The considered polynomial being the left-hand side of this constraint.
+             *          Hence, the right-hand side of any constraint is always 0.
+             */
             const Polynomial& lhs() const
             {
                 return mLhs;
             }
 
+            /**
+             * @return A container containing all variables occurring in the polynomial of this constraint.
+             */
             const Variables& variables() const
             {
                 return mVariables;
             }
 
+            /**
+             * @return The relation symbol of this constraint.
+             */
             Relation relation() const
             {
                 return mRelation;
@@ -106,36 +157,34 @@ namespace smtrat
                 return mID;
             }
 
-            unsigned& rId()
-            {
-                return mID;
-            }
-
-            unsigned firstHash() const
-            {
-                return mFirstHash;
-            }
-
-            unsigned secondHash() const
-            {
-                return mSecondHash;
-            }
-
-            unsigned hash() const
+            /**
+             * @return A hash value for this constraint.
+             */
+            unsigned getHash() const
             {
                 return mHash;
             }
 
+            /**
+             * @return true, if the polynomial p compared by this constraint has a proper factorization (!=p);
+             *          false, otherwise.
+             */
             bool hasFactorization() const
             {
                 return (mFactorization.size() > 1);
             }
 
+            /**
+             * @return The factorization of the polynomial compared by this constraint.
+             */
             const Factorization& factorization() const
             {
                 return mFactorization;
             }
 
+            /**
+             * @return The constant part of the polynomial compared by this constraint.
+             */
             Rational constantPart() const
             {
                 if( mLhs.hasConstantTerm() )
@@ -144,24 +193,42 @@ namespace smtrat
                     return Rational( 0 );
             }
 
+            /**
+             * @param _variable The variable for which to determine the maximal degree.
+             * @return The maximal degree of the given variable in this constraint. (Monomial-wise)
+             */
             unsigned maxDegree( const carl::Variable& _variable ) const
             {
                 return mVarInfoMap.getVarInfo( _variable )->maxDegree();
             }
 
+            /**
+             * @param _variable The variable for which to determine the minimal degree.
+             * @return The minimal degree of the given variable in this constraint. (Monomial-wise)
+             */
             unsigned minDegree( const carl::Variable& _variable ) const
             {
                 return mVarInfoMap.getVarInfo( _variable )->minDegree();
             }
-
+            
+            /**
+             * @param _variable The variable for which to determine the number of occurrences.
+             * @return The number of occurrences of the given variable in this constraint. (In 
+             *          how many monomials of the left-hand side does the given variable occur?)
+             */
             unsigned occurences( const carl::Variable& _variable ) const
             {
                 return mVarInfoMap.getVarInfo( _variable )->occurence();
             }
 
-            bool constraintRelationIsStrict( Relation rel ) const
+            /**
+             * @param _rel The relation to check whether it is strict.
+             * @return true, if the given relation is strict;
+             *          false, otherwise.
+             */
+            static bool constraintRelationIsStrict( Relation _rel )
             {
-                return (rel == NEQ || rel == LESS || rel == GREATER);
+                return (_rel == NEQ || _rel == LESS || _rel == GREATER);
             }
             
             /**
@@ -204,45 +271,134 @@ namespace smtrat
                 }
                 return false;
             }
-
-            static bool evaluate( const Rational&, Relation );
+            
+            /**
+             * Checks, whether the constraint is consistent.
+             * It differs between, containing variables, consistent, and inconsistent.
+             * @return 0, if the constraint is not consistent.
+             *          1, if the constraint is consistent.
+             *          2, if the constraint still contains variables.
+             */
             unsigned isConsistent() const;
-            unsigned consistentWith( const EvalDoubleIntervalMap& ) const;
-            unsigned satisfiedBy( std::map<carl::Variable,Rational>& ) const;
-            bool operator <( const Constraint& ) const;
-            bool operator ==( const Constraint& ) const;
-            friend std::ostream& operator <<( std::ostream&, const Constraint& );
-            Polynomial coefficient( const carl::Variable&, unsigned ) const;
+            
+            /**
+             * Checks whether this constraint is consistent with the given assignment from 
+             * the its variables to interval domains.
+             * @param _solutionInterval The interval domains of the variables.
+             * @return 1, if this constraint is consistent with the given intervals;
+             *          0, if this constraint is not consistent with the given intervals;
+             *          2, if it cannot be decided whether this constraint is consistent with the given intervals.
+             */
+            unsigned consistentWith( const EvalDoubleIntervalMap& _solutionInterval ) const;
+            
+            /**
+             * Checks whether the given assignment satisfies this constraint.
+             * @param _assignment The assignment.
+             * @return 1, if the given assignment satisfies this constraint.
+             *         0, if the given assignment contradicts this constraint.
+             *         2, otherwise (possibly not defined for all variables in the constraint,
+             *                       even then it could be possible to obtain the first two results.)
+             */
+            unsigned satisfiedBy( EvalRationalMap& _assignment ) const;
+            
+            /**
+             * Compares this constraint with the given constraint.
+             * @return  true,   if this constraint is LEXOGRAPHICALLY smaller than the given one;
+             *          false,  otherwise.
+             */
+            bool operator<( const Constraint& _constraint ) const;
+            
+            /**
+             * Compares this constraint with the given constraint.
+             * @return  true,   if this constraint is equal to the given one;
+             *          false,  otherwise.
+             */
+            bool operator==( const Constraint& _constraint ) const;
+            
+            /**
+             * Prints the representation of the given constraints on the given stream.
+             * @param _ostream The stream to print on.
+             * @param _constraint The constraint to print.
+             * @return The given stream after printing.
+             */
+            friend std::ostream& operator<<( std::ostream& _out, const Constraint& _constraint );
+            
+            /**
+             * Calculates the coefficient of the given variable with the given degree. Note, that it only
+             * computes the coefficient once and stores the result.
+             * @param _variable The variable for which to calculate the coefficient.
+             * @param _degree The according degree of the variable for which to calculate the coefficient.
+             * @return The ith coefficient of the given variable, where i is the given degree.
+             */
+            Polynomial coefficient( const carl::Variable& _var, unsigned _degree ) const;
+            
+            /**
+             * Collects some properties of the constraint. Needs only to be applied once.
+             */
             void collectProperties();
+               
+            /**
+             * Applies some cheap simplifications to the constraints.
+             *
+             * @return The simplified constraints, if simplifications could be applied;
+             *         The constraint itself, otherwise.
+             */
             Constraint* simplify();
+            
+            /**
+             * Initializes the stored factorization and the left-hand side with no multiple roots, if it is univariate.
+             */
             void init();
+            
+            /**
+             * Gives the string representation of this constraint.
+             * @param _unequalSwitch A switch to indicate which kind of unequal should be used (0: "!=", 1: "<>", 2: "/=")
+             * @param _infix An infix string which is printed right before the constraint.
+             * @param _friendlyVarNames A flag that indicates whether to print the variables with their internal representation (false)
+             *                           or with their dedicated names.
+             * @return The string representation of this constraint.
+             */
             std::string toString( unsigned _unequalSwitch = 0, bool _infix = true, bool _friendlyVarNames = true ) const;
-            void printProperties( std::ostream& = std::cout, bool = true ) const;
+            
+            /**
+             * Prints the properties of this constraints on the given stream.
+             * @param _out The stream to print on.
+             * @param _friendlyVarNames A flag that indicates whether to print the variables with their internal representation (false)
+             *                           or with their dedicated names.
+             */
+            void printProperties( std::ostream& _out = std::cout, bool _friendlyVarNames = true ) const;
+            
+            /**
+             * Checks whether the given value satisfies the given relation to zero.
+             * @param _value The value to compare with zero.
+             * @param _relation The relation between the given value and zero.
+             * @return true,  if the given value satisfies the given relation to zero;
+             *          false, otherwise.
+             */
+            static bool evaluate( const Rational& _value, Relation _rel );
+            
+            /**
+             * Inverts the given relation symbol.
+             * @param _rel The relation symbol to invert.
+             * @return The resulting inverted relation symbol.
+             */
             static Relation invertRelation( const Relation _rel );
-            static signed compare( const Constraint*, const Constraint* );
+            
+            /**
+             * Compares _constraintA with _constraintB.
+             * @return  2, if it is easy to decide that _constraintA and _constraintB have the same solutions. _constraintA = _constraintB
+             *           1, if it is easy to decide that _constraintB includes all solutions of _constraintA;   _constraintA -> _constraintB
+             *          -1, if it is easy to decide that _constraintA includes all solutions of _constraintB;   _constraintB -> _constraintA
+             *          -2, if it is easy to decide that _constraintA has no solution common with _constraintB; not(_constraintA and _constraintB)
+             *          -3, if it is easy to decide that _constraintA and _constraintB can be intersected;      _constraintA and _constraintB = _constraintC
+             *          -4, if it is easy to decide that _constraintA is the inverse of _constraintB;           _constraintA xor _constraintB
+             *           0, otherwise.
+             */
+            static signed compare( const Constraint* _constraintA, const Constraint* _constraintB );
     };
-
-    typedef std::vector<const Constraint*>                                vec_const_pConstraint;
-    typedef std::vector<std::set<const Constraint*> >                     vec_set_const_pConstraint;
-    typedef std::map<const Constraint* const , vec_set_const_pConstraint> constraintOriginsMap;
-    struct constraintPointerComp
-    {
-        bool operator ()( const Constraint* const pConstraintA, const Constraint* const pConstraintB ) const
-        {
-            return (*pConstraintA) < (*pConstraintB);
-        }
-    };
-
-    struct constraintIdComp
-    {
-        bool operator() (const Constraint* const pConstraintA, const Constraint* const pConstraintB ) const
-        {
-            return pConstraintA->id() < pConstraintB->id();
-        }
-    };
-
-    typedef std::set< const Constraint*, constraintPointerComp > ConstraintSet;
 }    // namespace smtrat
+
+#define CONSTRAINT_HASH( _lhs, _rel ) (std::hash<smtrat::Polynomial>()( _lhs ) << 3) ^ _rel
 
 namespace std
 {
@@ -250,9 +406,9 @@ namespace std
     class hash<smtrat::Constraint>
     {
     public:
-        size_t operator()( const smtrat::Constraint& constraint ) const 
+        size_t operator()( const smtrat::Constraint& _constraint ) const 
         {
-            return (hash<smtrat::Polynomial>()( constraint.lhs() ) << 3) ^ constraint.relation();
+            return CONSTRAINT_HASH( _constraint.lhs(), _constraint.relation() );
         }
     };
 } // namespace std

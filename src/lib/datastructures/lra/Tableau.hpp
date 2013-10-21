@@ -396,8 +396,8 @@ namespace smtrat
 
                 EntryID newTableauEntry( const T& );
                 void removeEntry( EntryID );
-                Variable<T>* newNonbasicVariable( const GiNaC::ex* );
-                Variable<T>* newBasicVariable( const GiNaC::ex*, const std::vector<Variable<T>*>&, std::vector<T>& );
+                Variable<T>* newNonbasicVariable( const smtrat::Polynomial* );
+                Variable<T>* newBasicVariable( const smtrat::Polynomial*, const std::vector<Variable<T>*>&, std::vector<T>& );
                 std::pair<EntryID, bool> nextPivotingElement();
                 std::pair<EntryID, bool> isSuitable( EntryID, Value<T>& ) const;
                 bool betterEntry( EntryID, EntryID ) const;
@@ -565,9 +565,9 @@ namespace smtrat
          * @return
          */
         template<class T>
-        Variable<T>* Tableau<T>::newNonbasicVariable( const GiNaC::ex* _ex )
+        Variable<T>* Tableau<T>::newNonbasicVariable( const smtrat::Polynomial* _poly )
         {
-            Variable<T>* var = new Variable<T>( mWidth++, false, _ex, mDefaultBoundPosition );
+            Variable<T>* var = new Variable<T>( mWidth++, false, _poly, mDefaultBoundPosition );
             mColumns.push_back( TableauHead() );
             mColumns[mWidth-1].mStartEntry = LAST_ENTRY_ID;
             mColumns[mWidth-1].mSize = 0;
@@ -577,16 +577,16 @@ namespace smtrat
 
         /**
          *
-         * @param _ex
+         * @param _poly
          * @param _nonbasicVariables
          * @param _coefficients
          * @return
          */
         template<class T>
-        Variable<T>* Tableau<T>::newBasicVariable( const GiNaC::ex* _ex, const std::vector< Variable<T>* >& _nonbasicVariables, std::vector< T >& _coefficients )
+        Variable<T>* Tableau<T>::newBasicVariable( const smtrat::Polynomial* _poly, const std::vector< Variable<T>* >& _nonbasicVariables, std::vector< T >& _coefficients )
         {
             assert( _coefficients.size() == _coefficients.size() );
-            Variable<T>* var = new Variable<T>( mHeight++, true, _ex, mDefaultBoundPosition );
+            Variable<T>* var = new Variable<T>( mHeight++, true, _poly, mDefaultBoundPosition );
             mRows.push_back( TableauHead() );
             EntryID currentStartEntryOfRow = LAST_ENTRY_ID;
             class std::vector< Variable<T>* >::const_iterator basicVar = _nonbasicVariables.begin();
@@ -1714,9 +1714,9 @@ namespace smtrat
                     #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                     if( newlimit->mainPart() < (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
                     {
-                        GiNaC::ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
-                        smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
-                        const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*ubound)->pAsConstraint()->variables() );
+                        smtrat::Polynomial lhs = (*ubound)->variable().expression() - newlimit->mainPart();
+                        smtrat::Constraint::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Constraint::LESS : smtrat::Constraint::LEQ;
+                        const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
                         learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                     }
                     else
@@ -1794,9 +1794,9 @@ namespace smtrat
                     #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                     if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
                     {
-                        GiNaC::ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
-                        smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
-                        const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*lbound)->pAsConstraint()->variables() );
+                        smtrat::Polynomial lhs = (*lbound)->variable().expression() - newlimit->mainPart();
+                        smtrat::Constraint::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Constraint::GREATER : smtrat::Constraint::GEQ;
+                        const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
                         learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                     }
                     else
@@ -1951,9 +1951,9 @@ namespace smtrat
                     #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                     if( newlimit->mainPart() < (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
                     {
-                        GiNaC::ex lhs = (*ubound)->variable().expression() - newlimit->mainPart();
-                        smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_LESS : smtrat::CR_LEQ;
-                        const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*ubound)->pAsConstraint()->variables() );
+                        smtrat::Polynomial lhs = (*ubound)->variable().expression() - newlimit->mainPart();
+                        smtrat::Constraint::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Constraint::LESS : smtrat::Constraint::LEQ;
+                        const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
                         learnedBound.newBound = bvar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                     }
                     else
@@ -2031,9 +2031,9 @@ namespace smtrat
                     #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                     if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
                     {
-                        GiNaC::ex lhs = (*lbound)->variable().expression() - newlimit->mainPart();
-                        smtrat::Constraint_Relation rel = newlimit->deltaPart() != 0 ? smtrat::CR_GREATER : smtrat::CR_GEQ;
-                        const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel, (*lbound)->pAsConstraint()->variables() );
+                        smtrat::Polynomial lhs = (*lbound)->variable().expression() - newlimit->mainPart();
+                        smtrat::Constraint::Relation rel = newlimit->deltaPart() != 0 ? smtrat::Constraint::GREATER : smtrat::Constraint::GEQ;
+                        const smtrat::Constraint* constraint = smtrat::Formula::newConstraint( lhs, rel );
                         learnedBound.newBound = bvar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
                     }
                     else
@@ -2091,15 +2091,14 @@ namespace smtrat
         template<class T>
         bool Tableau<T>::rowCorrect( unsigned _rowNumber ) const
         {
-            GiNaC::ex sumOfNonbasics = *mRows[_rowNumber].mName->pExpression();
+            smtrat::Polynomial sumOfNonbasics = *mRows[_rowNumber].mName->pExpression();
             Iterator rowEntry = Iterator( mRows[_rowNumber].mStartEntry, mpEntries );
             while( !rowEntry.rowEnd() )
             {
-                sumOfNonbasics -= (*mColumns[(*rowEntry).columnNumber()].mName->pExpression()) * (*rowEntry).content().toGinacNumeric();
+                sumOfNonbasics -= (*mColumns[(*rowEntry).columnNumber()].mName->pExpression()) * (*rowEntry).content().content();
                 rowEntry.right();
             }
-            sumOfNonbasics -= (*mColumns[(*rowEntry).columnNumber()].mName->pExpression()) * (*rowEntry).content().toGinacNumeric();
-            sumOfNonbasics = sumOfNonbasics.expand();
+            sumOfNonbasics -= (*mColumns[(*rowEntry).columnNumber()].mName->pExpression()) * (*rowEntry).content().content();
             if( sumOfNonbasics != 0 ) return false;
             return true;
         }
@@ -2125,7 +2124,7 @@ namespace smtrat
                 {
                     _variables.push_back( (*row_iterator).columnNumber() );
                     _coefficients.push_back( (*row_iterator).content() );
-                    _lcmOfCoeffDenoms = T( GiNaC::lcm( _lcmOfCoeffDenoms.toGinacNumeric(), (*row_iterator).content().toGinacNumeric().denom() ) );
+                    _lcmOfCoeffDenoms = T( carl::lcm( _lcmOfCoeffDenoms.content(), (*row_iterator).content().content().denom() ) );
                     if( !row_iterator.rowEnd() )
                     {
                         row_iterator.right();
@@ -2254,7 +2253,7 @@ namespace smtrat
             Iterator column_iterator = Iterator(mColumns.at(column_index).mStartEntry, mpEntries);   
             while(true)
             {
-                (*mpEntries)[column_iterator.entryID()].rContent() = (-1)*(((*mpEntries)[column_iterator.entryID()].rContent()).toGinacNumeric());
+                (*mpEntries)[column_iterator.entryID()].rContent() = (-1)*(((*mpEntries)[column_iterator.entryID()].rContent()).content());
                 if(!column_iterator.columnBegin())
                 {
                     column_iterator.up();            
@@ -2291,7 +2290,7 @@ namespace smtrat
             EntryID ID1_to_be_Fixed,ID2_to_be_Fixed;            
             if((*columnA_iterator).rowNumber() == (*columnB_iterator).rowNumber())
             {
-                T content = T(((*columnA_iterator).content().toGinacNumeric())+((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric())));  
+                T content = T(((*columnA_iterator).content().content())+((multiple.content())*((*columnB_iterator).content().content())));  
                 if(content == 0)
                 {
                     EntryID to_delete = columnA_iterator.entryID();
@@ -2312,7 +2311,7 @@ namespace smtrat
                    * A new entry has to be created under the position of columnA_iterator
                    * and sideways to column_B_iterator.
                    */   
-                  EntryID entryID = newTableauEntry(T(((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric()))));
+                  EntryID entryID = newTableauEntry(T(((multiple.content())*((*columnB_iterator).content().content()))));
                   TableauEntry<T>& entry = (*mpEntries)[entryID];
                   TableauEntry<T>& entry_down = (*mpEntries)[(*columnA_iterator).down()];   
                   EntryID down = (*columnA_iterator).down();
@@ -2393,7 +2392,7 @@ namespace smtrat
                    * A new entry has to be created above the position of columnA_iterator
                    * and sideways to column_B_iterator.
                    */                   
-                  EntryID entryID = newTableauEntry(T(((multiple.toGinacNumeric())*((*columnB_iterator).content().toGinacNumeric()))));
+                  EntryID entryID = newTableauEntry(T(((multiple.content())*((*columnB_iterator).content().content()))));
                   TableauEntry<T>& entry = (*mpEntries)[entryID];
                   entry.setColumnNumber((*columnA_iterator).columnNumber());
                   entry.setRowNumber((*columnB_iterator).rowNumber());
@@ -2483,7 +2482,7 @@ namespace smtrat
             Iterator row_iterator = Iterator(mRows.at(row_index).mStartEntry, mpEntries);
             while(true)
             { 
-                T content = T(((*row_iterator).content().toGinacNumeric())*(multiple.toGinacNumeric()));
+                T content = T(((*row_iterator).content().content())*(multiple.content()));
                 (*row_iterator).rContent() = content;
                 if(!row_iterator.rowEnd())
                 {
@@ -2676,8 +2675,8 @@ namespace smtrat
                     cout << "floor_value = " << floor_value << endl;
                     cout << "added_content = " << added_content << endl;
                     cout << "elim_content = " << elim_content << endl;
-                    cout << "T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()) = " << T((-1)*floor_value.toGinacNumeric()*added_content.toGinacNumeric()) << endl;
-                    addColumns(elim_pos,added_pos,T((-1)*floor_value.toGinacNumeric()));
+                    cout << "T((-1)*floor_value.content()*added_content.content()) = " << T((-1)*floor_value.content()*added_content.content()) << endl;
+                    addColumns(elim_pos,added_pos,T((-1)*floor_value.content()));
                     #ifdef LRA_DEBUG_HNF
                     cout << "Add " << (added_pos+1) << ". column to " << (elim_pos+1) << ". column:" << endl;
                     print();
@@ -2860,14 +2859,14 @@ namespace smtrat
                     row_iterator.right();
                 }                
             }
-            if(!((result.mainPart()).toGinacNumeric().is_integer()))
+            if(!((result.mainPart()).content().is_integer()))
             {
                // Calculate the lcm of all entries in the row with index row_index in the DC_Tableau
                Iterator row_iterator = Iterator(DC_Tableau.mRows.at(dc_positions.at(row_index)).mStartEntry,DC_Tableau.mpEntries);
                T lcm_row = T(1);
                while(true)
                {
-                   lcm  = T(GiNaC::lcm( lcm.toGinacNumeric(),(*row_iterator).content().toGinacNumeric()));
+                   lcm  = T(carl::lcm( lcm.content(),(*row_iterator).content().content()));
                    if(!row_iterator.rowEnd())
                    {
                        row_iterator.right();
@@ -2886,8 +2885,8 @@ namespace smtrat
                    const Variable<T>& non_basic_var = *mColumns[diagonals.at(i)].mName;
                    if(product != 0)
                    {
-                       cut += (non_basic_var.expression())*(((product.toGinacNumeric())*((result.mainPart()).toGinacNumeric()).denom())/lcm_row.toGinacNumeric());
-                       coefficients.push_back(product.toGinacNumeric()/lcm_row.toGinacNumeric());
+                       cut += (non_basic_var.expression())*(((product.content())*((result.mainPart()).content()).denom())/lcm_row.content());
+                       coefficients.push_back(product.content()/lcm_row.content());
                        non_basics_proof.push_back(true);
                    }
                    else
