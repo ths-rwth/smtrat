@@ -117,7 +117,7 @@ namespace smtrat
         cout << "add " << **_subformula << "(" << *_subformula << ")" << endl;
         #endif
         Module::assertSubformula( _subformula );
-        if( (*_subformula)->getType() == REALCONSTRAINT )
+        if( (*_subformula)->getType() == CONSTRAINT )
         {
             if( !mInitialized ) initialize();
 
@@ -207,7 +207,7 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "remove " << **_subformula << "(" << *_subformula << ")" << endl;
         #endif
-        if( (*_subformula)->getType() == REALCONSTRAINT )
+        if( (*_subformula)->getType() == CONSTRAINT )
         {
             // Remove the mapping of the constraint to the sub-formula in the received formula
             const Constraint* constraint = (*_subformula)->pConstraint();

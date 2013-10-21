@@ -352,7 +352,9 @@ namespace smtrat
             
             /**
              * Gives the string representation of this constraint.
-             * @param _unequalSwitch A switch to indicate which kind of unequal should be used (0: "!=", 1: "<>", 2: "/=")
+             * @param _unequalSwitch A switch to indicate which kind of unequal should be used.
+             *         For p != 0 with infix:  0: "p != 0", 1: "p <> 0", 2: "p /= 0"
+             *                    with prefix: 0: "(!= p 0)", 1: (or (< p 0) (> p 0)), 2: (not (= p 0))
              * @param _infix An infix string which is printed right before the constraint.
              * @param _friendlyVarNames A flag that indicates whether to print the variables with their internal representation (false)
              *                           or with their dedicated names.

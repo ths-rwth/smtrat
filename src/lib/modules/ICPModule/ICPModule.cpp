@@ -218,7 +218,7 @@ namespace smtrat
         constr->print();
         cout << endl;
         #endif
-        assert( (*_formula)->getType() == REALCONSTRAINT );
+        assert( (*_formula)->getType() == CONSTRAINT );
         if ( (*_formula)->constraint().variables().size() > 1 || (mNonlinearConstraints.find((*_formula)->pConstraint()) != mNonlinearConstraints.end()) )
         {
             addSubformulaToPassedFormula( new Formula( constr ), *_formula );
@@ -288,7 +288,7 @@ namespace smtrat
         {
             // considered constraint is activated but has no slackvariable -> it is a boundary constraint
             Formula* tmpFormula = new Formula(**_formula);
-            assert(tmpFormula->getType() == REALCONSTRAINT);
+            assert(tmpFormula->getType() == CONSTRAINT);
             mValidationFormula->addSubformula(tmpFormula);
             // update ReceivedFormulaMapping
 //            mReceivedFormulaMapping.insert(std::make_pair(tmpFormula, *_formula));
@@ -444,7 +444,7 @@ namespace smtrat
             // assert in mLRA
             assert(replacementPtr != NULL);
             Formula* tmpFormula = new Formula(replacementPtr);
-            assert(tmpFormula->getType() == REALCONSTRAINT);
+            assert(tmpFormula->getType() == CONSTRAINT);
             mValidationFormula->addSubformula(tmpFormula);
             mValidationFormula->getPropositions();
 
@@ -3128,7 +3128,7 @@ namespace smtrat
     
     Formula* ICPModule::transformDeductions( Formula* _deduction )
     {
-        if( _deduction->getType() == REALCONSTRAINT )
+        if( _deduction->getType() == CONSTRAINT )
         {
             ex lhs = _deduction->constraint().lhs();
             GiNaC::symtab variables = _deduction->constraint().variables();

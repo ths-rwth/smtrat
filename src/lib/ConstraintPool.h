@@ -52,9 +52,9 @@ namespace smtrat
             unsigned mAuxiliaryIntVarCounter;
             // A counter for the auxiliary integer valued variables.
             unsigned mArithmeticVarCounter;
-            // The constraint (0=0) representing any valid constraint.
+            // The constraint (0=0) representing a valid constraint.
             const Constraint* mConsistentConstraint;
-            // The constraint (0>0) representing any inconsistent constraint.
+            // The constraint (0>0) representing an inconsistent constraint.
             const Constraint* mInconsistentConstraint;
             // Mutex to avoid multiple access to the map of arithmetic variables
             mutable std::mutex mMutexArithmeticVariables;

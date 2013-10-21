@@ -193,7 +193,7 @@ namespace smtrat
      */
     bool CADModule::assertSubformula( Formula::const_iterator _subformula )
     {
-        assert( (*_subformula)->getType() == REALCONSTRAINT );
+        assert( (*_subformula)->getType() == CONSTRAINT );
         Module::assertSubformula( _subformula );
         #ifdef SMTRAT_CAD_VARIABLEBOUNDS
         if( mVariableBounds.addBound( (*_subformula)->pConstraint(), *_subformula ) )
@@ -377,7 +377,7 @@ namespace smtrat
 
     void CADModule::removeSubformula( Formula::const_iterator _subformula )
     {
-        if( !(*_subformula)->getType() == REALCONSTRAINT )
+        if( !(*_subformula)->getType() == CONSTRAINT )
         { // not our concern
             Module::removeSubformula( _subformula );
             return;

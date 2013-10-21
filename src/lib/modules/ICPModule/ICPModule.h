@@ -81,8 +81,8 @@ namespace smtrat
             {
                 bool operator ()(const Formula* _lhs, const Formula* _rhs ) const
                 {
-                    assert(_lhs->getType() == REALCONSTRAINT);
-                    assert(_rhs->getType() == REALCONSTRAINT);
+                    assert(_lhs->getType() == CONSTRAINT);
+                    assert(_rhs->getType() == CONSTRAINT);
                     return _lhs->constraint().id() < _rhs->constraint().id();
                 }
             };
@@ -342,7 +342,7 @@ namespace smtrat
             
             void replaceConstraints( Formula*& _formula ) const
             {
-                if( _formula->getType() == REALCONSTRAINT )
+                if( _formula->getType() == CONSTRAINT )
                 {
                     auto iter = mReplacements.find( _formula->pConstraint() );
                     assert( iter != mReplacements.end() );
@@ -353,7 +353,7 @@ namespace smtrat
                 {
                     for( auto subformula = _formula->begin(); subformula != _formula->end(); ++subformula )
                     {
-                        if( (*subformula)->getType() == REALCONSTRAINT )
+                        if( (*subformula)->getType() == CONSTRAINT )
                         {
                             (*subformula)->print();
                             auto iter = mReplacements.find( (*subformula)->pConstraint() );

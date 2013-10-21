@@ -58,8 +58,8 @@ namespace smtrat
             {
                 bool operator() (const Formula* const lhs, const Formula* const rhs) const
                 {
-                    assert(lhs->getType() == REALCONSTRAINT);
-                    assert(rhs->getType() == REALCONSTRAINT);
+                    assert(lhs->getType() == CONSTRAINT);
+                    assert(rhs->getType() == CONSTRAINT);
                     return (lhs->constraint().variables().size() < rhs->constraint().variables().size() || (lhs->constraint().variables().size() == rhs->constraint().variables().size() && lhs->constraint() < rhs->constraint()) );
                 }
             };
@@ -196,7 +196,7 @@ namespace smtrat
 
             void addOrigin( const Formula* _origin )
             {
-                assert(_origin->getType() == REALCONSTRAINT);
+                assert(_origin->getType() == CONSTRAINT);
                 mOrigin.insert(_origin);
             }
 

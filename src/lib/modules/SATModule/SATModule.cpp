@@ -366,7 +366,7 @@ namespace smtrat
                 {
                     switch( (*subformula)->getType() )
                     {
-                        case REALCONSTRAINT:
+                        case CONSTRAINT:
                         {
                             clauseLits.push( getLiteral( **subformula, _type == NORMAL_CLAUSE ? _formula : NULL ) );
                             break;
@@ -376,7 +376,7 @@ namespace smtrat
                             const Formula& subsubformula = *(*subformula)->back();
                             switch( subsubformula.getType() )
                             {
-                                case REALCONSTRAINT:
+                                case CONSTRAINT:
                                 {
                                     Lit literal = getLiteral( subsubformula, _type == NORMAL_CLAUSE ? _formula : NULL, false );
                                     clauseLits.push( mkLit( var( literal ), !sign( literal ) ) );
@@ -426,7 +426,7 @@ namespace smtrat
                 }
                 return addClause( clauseLits, _type ) ? (_type == NORMAL_CLAUSE ? clauses.last() : learnts.last() ) : CRef_Undef;
             }
-            case REALCONSTRAINT:
+            case CONSTRAINT:
             {
                 vec<Lit> learned_clause;
                 learned_clause.push( getLiteral( *_formula, _type == NORMAL_CLAUSE ? _formula : NULL ) );
@@ -437,7 +437,7 @@ namespace smtrat
                 const Formula& subformula = *_formula->back();
                 switch( subformula.getType() )
                 {
-                    case REALCONSTRAINT:
+                    case CONSTRAINT:
                     {
                         Lit literal = getLiteral( subformula, _type == NORMAL_CLAUSE ? _formula : NULL, false );
                         vec<Lit> learned_clause;
@@ -516,7 +516,7 @@ namespace smtrat
                     return mkLit( var, false );
                 }
             }
-            case REALCONSTRAINT:
+            case CONSTRAINT:
             {
                 Lit lit = getLiteral( _formula.pConstraint(), _origin, fabs(_formula.activity()), (_formula.activity()<0) );
                 return lit;

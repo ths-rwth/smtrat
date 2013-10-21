@@ -60,7 +60,7 @@ namespace smtrat
     {
         Module::assertSubformula( _subformula );
         addReceivedSubformulaToPassedFormula(_subformula);
-        assert((*_subformula)->getType() == REALCONSTRAINT);
+        assert((*_subformula)->getType() == CONSTRAINT);
         ++(mActualTCall.nrConstraints);
         assert(mActualTCall.passedConstraints.getBit((*_subformula)->pConstraint()->id()) == false);
         mActualTCall.passedConstraints.setBit((*_subformula)->pConstraint()->id(), true);
