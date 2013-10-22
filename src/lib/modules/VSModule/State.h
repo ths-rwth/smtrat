@@ -29,7 +29,6 @@
 
 #include <map>
 #include <limits.h>
-#include <ginacra/ginacra.h>
 #include "Substitution.h"
 #include "../../misc/VS_Tools.hpp"
 #include "config.h"
@@ -493,7 +492,7 @@ namespace vs
         const ConditionList getCurrentSubresultCombination() const;
         bool refreshConditions();
         void initConditionFlags();
-        bool initIndex( const GiNaC::symtab&, bool );
+        bool initIndex( const smtrat::Variables&, bool );
         void addCondition( const smtrat::Constraint*, const ConditionSet&, const unsigned, const bool );
         bool checkConditions();
         int deleteOrigins( std::set<const Condition*>& );
@@ -507,8 +506,7 @@ namespace vs
         void passConflictToFather( bool, bool = false );
         bool hasLocalConflict();
         bool checkTestCandidatesForBounds();
-        std::vector< GiNaCRA::DoubleInterval > solutionSpace( ConditionSet& );
-        static GiNaC::numeric cauchyBound( const GiNaC::ex& );
+        std::vector< carl::DoubleInterval > solutionSpace( ConditionSet& );
         bool hasRootsInVariableBounds( const Condition*, bool );
 
         // Printing methods.

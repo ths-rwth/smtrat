@@ -23,11 +23,11 @@
 /**
  * @file Formula.h
  *
- * @author Ulrich Loup
  * @author Florian Corzilius
+ * @author Ulrich Loup
  * @author Sebastian Junges
  * @since 2012-02-09
- * @version 2013-04-01
+ * @version 2013-10-21
  */
 
 #ifndef SMTRAT_FORMULA_H

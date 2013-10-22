@@ -30,7 +30,6 @@
 //#define VS_DEBUG_SUBSTITUTION
 
 using namespace std;
-using namespace GiNaC;
 
 namespace vs
 {

@@ -18,13 +18,11 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * Class to create a square root expression object.
  * @author Florian Corzilius
  * @since 2011-05-26
- * @version 2013-10-07
+ * @version 2013-10-22
  */
 
 #ifndef SMTRAT_VS_SQRTEX_H
@@ -39,81 +37,180 @@ namespace vs
     class SqrtEx
     {
         private:
-            // Members:
+            // The constant part c of this square root expression (c + f * sqrt(r))/d.
             smtrat::Polynomial mConstantPart;
+            // The factor f of this square root expression (c + f * sqrt(r))/d.
             smtrat::Polynomial mFactor;
+            // The denominator d of this square root expression (c + f * sqrt(r))/d.
             smtrat::Polynomial mDenominator;
+            // The radicand r of this square root expression (c + f * sqrt(r))/d.
             smtrat::Polynomial mRadicand;
 
         public:
-            // Constructors:
+            /**
+             * Default Constructor. ( constructs (0 + 0 * sqrt( 0 )) / 1 )
+             */
             SqrtEx();
-            SqrtEx( const smtrat::Polynomial& );
-            SqrtEx( const smtrat::Polynomial&, const smtrat::Polynomial&, const smtrat::Polynomial&, const smtrat::Polynomial& );
-            SqrtEx( const SqrtEx& );
+            
+            /**
+             * Constructs a square root expression from a polynomial p leading to (p + 0 * sqrt( 0 )) / 1
+             * @param _poly The polynomial to construct a square root expression for.
+             */
+            SqrtEx( const smtrat::Polynomial& _poly );
+            
+            /**
+             * Constructs a square root expression from given constant part, factor, denominator and radicand.
+             * @param _constantPart The constant part of the square root expression to construct.
+             * @param _factor The factor of the square root expression to construct.
+             * @param _denominator The denominator of the square root expression to construct.
+             * @param _radicand The radicand of the square root expression to construct.
+             */
+            SqrtEx( const smtrat::Polynomial& _constantPart , const smtrat::Polynomial& _factor, const smtrat::Polynomial& _denominator, const smtrat::Polynomial& _radicand );
+            
+            /**
+             * Copy constructor.
+             * @param _sqrtEx The square root expression to copy.
+             */
+            SqrtEx( const SqrtEx& _sqrtEx );
 
-            // Destructor:
+            /**
+             * Destructor:
+             */
             ~SqrtEx();
 
-            // Methods:
+            /**
+             * @return A constant reference to the constant part of this square root expression.
+             */
             const smtrat::Polynomial& constantPart() const
             {
                 return mConstantPart;
             }
-
-            smtrat::Polynomial& rConstantPart()
-            {
-                return mConstantPart;
-            }
-
+            
+            /**
+             * @return A constant reference to the factor of this square root expression.
+             */
             const smtrat::Polynomial& factor() const
             {
                 return mFactor;
             }
 
-            smtrat::Polynomial& rFactor()
-            {
-                return mFactor;
-            }
-
-            const smtrat::Polynomial& radicand() const
-            {
-                return mRadicand;
-            }
-
-            smtrat::Polynomial& rRadicand()
-            {
-                return mRadicand;
-            }
-
+            /**
+             * @return A constant reference to the denominator of this square root expression.
+             */
             const smtrat::Polynomial& denominator() const
             {
                 return mDenominator;
             }
 
-            smtrat::Polynomial& rDenominator()
+            /**
+             * @return A constant reference to the radicand of this square root expression.
+             */
+            const smtrat::Polynomial& radicand() const
             {
-                return mDenominator;
+                return mRadicand;
             }
 
+            /**
+             * @return true, if the square root expression has a non trivial radicand;
+             *          false, otherwise.
+             */
             bool hasSqrt() const
             {
                 return mFactor != smtrat::Polynomial( smtrat::Rational( 0 ) );
             }
 
-            // Operators.
-            bool operator ==( const SqrtEx& ) const;
-            SqrtEx& operator = ( const SqrtEx& );
-            SqrtEx& operator = ( const smtrat::Polynomial& );
-            friend SqrtEx operator +( const SqrtEx&, const SqrtEx& );
-            friend SqrtEx operator -( const SqrtEx&, const SqrtEx& );
-            friend SqrtEx operator *( const SqrtEx&, const SqrtEx& );
-            friend SqrtEx operator /( const SqrtEx&, const SqrtEx& );
-            std::string toString( bool = false, bool = true ) const;
-            friend std::ostream& operator <<( std::ostream&, const SqrtEx& );
-            static SqrtEx subBySqrtEx( const smtrat::Polynomial&, const carl::Variable&, const SqrtEx& );
+            /**
+             * @return true, if there is no variable in this square root expression;
+             *          false, otherwise.
+             */
+            bool isConstant() const
+            {
+                return mConstantPart.isConstant() && mDenominator.isConstant() && mFactor.isConstant() && mRadicand.isConstant();
+            }
+
+            
         private:
+            
+            /**
+             * Normalizes this object, that is extracts as much as possible from the radicand into the factor
+             * and cancels the enumerator and denominator afterwards.
+             */
             void normalize();
+            
+        public:
+            
+            /**
+             * @param _sqrtEx Square root expression to compare with.
+             * @return  true, if this square root expression and the given one are equal;
+             *          false, otherwise.
+             */
+            bool operator==( const SqrtEx& _toCompareWith ) const;
+            
+            /**
+             * @param _sqrtEx A square root expression, which gets the new content of this square root expression.
+             * @return A reference to this object.
+             */
+            SqrtEx& operator=( const SqrtEx& _sqrtEx );
+            
+            /**
+             * @param _poly A polynomial, which gets the new content of this square root expression.
+             * @return A reference to this object.
+             */
+            SqrtEx& operator=( const smtrat::Polynomial& _poly );
+            
+            /**
+             * @param _summandA  First summand.
+             * @param _summandB  Second summand.
+             * @return The sum of the given square root expressions.
+             */
+            friend SqrtEx operator+( const SqrtEx& _summandA, const SqrtEx& _summandB );
+            
+            /**
+             * @param _minuend  Minuend.
+             * @param _subtrahend  Subtrahend.
+             * @return The difference of the given square root expressions.
+             */
+            friend SqrtEx operator-( const SqrtEx& _minuend, const SqrtEx& _subtrahend );
+      
+            /**
+             * @param _factorA  First factor.
+             * @param _factorB  Second factor.
+             * @return The product of the given square root expressions.
+             */
+            friend SqrtEx operator*( const SqrtEx& _factorA, const SqrtEx& _factorB );
+            
+            /**
+             * @param _dividend  Dividend.
+             * @param _divisor  Divisor.
+             * @return The result of the first given square root expression divided by the second one
+             *          Note that the second argument is not allowed to contain a square root.
+             */
+            friend SqrtEx operator/( const SqrtEx& _dividend, const SqrtEx& _divisor );
+            
+            /**
+             * Prints the given square root expression on the given stream.
+             * @param _out The stream to print on.
+             * @param _sqrtEx The square root expression to print.
+             * @return The stream after printing the square root expression on it.
+             */
+            friend std::ostream& operator<<( std::ostream& _out, const SqrtEx& _sqrtEx );
+            
+            /**
+             * @param _infix A string which is printed in the beginning of each row.
+             * @param _friendlyNames A flag that indicates whether to print the variables with their internal representation (false)
+             *                        or with their dedicated names.
+             * @return The string representation of this square root expression.
+             */
+            std::string toString( bool _infix = false, bool _friendlyNames = true ) const;
+            
+            /**
+             * Substitutes a variable in an expression by a square root expression, which results in a square root expression.
+             * @param _substituteIn The polynomial to substitute in.
+             * @param _varToSubstitute The variable to substitute.
+             * @param _substituteBy The square root expression by which the variable gets substituted.
+             * @return The resulting square root expression.
+             */
+            static SqrtEx subBySqrtEx( const smtrat::Polynomial& _substituteIn, const carl::Variable& _varToSubstitute, const SqrtEx& _substituteBy );
     };
 }    // end namspace vs
 

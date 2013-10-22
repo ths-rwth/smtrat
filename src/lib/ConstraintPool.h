@@ -24,7 +24,7 @@
  * @author Florian Corzilius
  * @author Sebastian Junges
  * @author Ulrich Loup
- * @version 2013-06-20
+ * @version 2013-10-21
  */
 #include "Constraint.h"
 #include "datastructures/vs/SqrtEx.h"

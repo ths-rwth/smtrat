@@ -27,7 +27,6 @@
  * @version 2013-10-21
  */
 
-
 #ifndef SMTRAT_TS_CONSTRAINT_H
 #define SMTRAT_TS_CONSTRAINT_H
 
@@ -47,7 +46,7 @@ namespace smtrat
      * Class to create a constraint object.
      * @author Florian Corzilius
      * @since 2010-04-26
-     * @version 2011-12-05
+     * @version 2013-10-21
      */
     class Constraint
     {

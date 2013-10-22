@@ -20,11 +20,12 @@
  */
 /**
  * Constraint.cpp
+ * 
  * @author Florian Corzilius
  * @author Sebastian Junges
  * @author Ulrich Loup
  * @since 2010-04-26
- * @version 2013-03-27
+ * @version 2013-10-21
  */
 
 #include "Constraint.h"

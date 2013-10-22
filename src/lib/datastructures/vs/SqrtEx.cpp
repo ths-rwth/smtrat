@@ -68,41 +68,21 @@ namespace vs
         mRadicand( _sqrtEx.radicand() )
     {}
 
-    /**
-     * Destructor:
-     */
     SqrtEx::~SqrtEx()
     {}
 
-    /**
-     * Normalizes this object, that is extracts as much as possible from the radicand into the factor
-     * and cancels the enumerator and denominator afterwards.
-     */
     void SqrtEx::normalize()
     {
         //TODO: implement this method
     }
-    
-    /**
-     * @param _sqrtEx Square root expression to compare with.
-     * @return  true, if this square root expression and the given one are equal;
-     *          false, otherwise.
-     */
-    bool SqrtEx::operator ==( const SqrtEx& _sqrtEx ) const
+
+    bool SqrtEx::operator==( const SqrtEx& _toCompareWith ) const
     {
-        if( mRadicand == _sqrtEx.radicand() )
-            if( mDenominator == _sqrtEx.denominator() )
-                if( mFactor == _sqrtEx.factor() )
-                    if( mConstantPart == _sqrtEx.constantPart() )
-                        return true;
-        return false;
+        return    mRadicand == _toCompareWith.radicand() && mDenominator == _toCompareWith.denominator() 
+               && mFactor == _toCompareWith.factor() && mConstantPart == _toCompareWith.constantPart();
     }
 
-    /**
-     * @param _sqrtEx A square root expression, which gets the new content of this square root expression.
-     * @return A reference to this object.
-     */
-    SqrtEx& SqrtEx::operator = ( const SqrtEx& _sqrtEx )
+    SqrtEx& SqrtEx::operator=( const SqrtEx& _sqrtEx )
     {
         if( this != &_sqrtEx )
         {
@@ -117,11 +97,7 @@ namespace vs
         return *this;
     }
 
-    /**
-     * @param _poly A polynomial, which gets the new content of this square root expression.
-     * @return A reference to this object.
-     */
-    SqrtEx& SqrtEx::operator = ( const smtrat::Polynomial& _poly )
+    SqrtEx& SqrtEx::operator=( const smtrat::Polynomial& _poly )
     {
         mConstantPart = _poly;
         mFactor       = smtrat::ZERO_POLYNOMIAL;
@@ -130,67 +106,46 @@ namespace vs
         return *this;
     }
 
-    /**
-     * @param _sqrtEx1  First summand.
-     * @param _sqrtEx2  Second summand.
-     * @return The sum of the given square root expressions.
-     */
-    SqrtEx operator +( const SqrtEx& _sqrtEx1, const SqrtEx& _sqrtEx2 )
+    SqrtEx operator+( const SqrtEx& _summandA, const SqrtEx& _summandB )
     {
-        assert( !_sqrtEx1.hasSqrt() ||!_sqrtEx2.hasSqrt() || _sqrtEx1.radicand() == _sqrtEx2.radicand() );
-        SqrtEx result = SqrtEx( _sqrtEx2.denominator() * _sqrtEx1.constantPart() + _sqrtEx2.constantPart() * _sqrtEx1.denominator(),
-                         _sqrtEx2.denominator() * _sqrtEx1.factor() + _sqrtEx2.factor() * _sqrtEx1.denominator(),
-                         _sqrtEx1.denominator() * _sqrtEx2.denominator(), _sqrtEx1.radicand() );
+        assert( !_summandA.hasSqrt() ||!_summandB.hasSqrt() || _summandA.radicand() == _summandB.radicand() );
+        SqrtEx result = SqrtEx( _summandB.denominator() * _summandA.constantPart() + _summandB.constantPart() * _summandA.denominator(),
+                         _summandB.denominator() * _summandA.factor() + _summandB.factor() * _summandA.denominator(),
+                         _summandA.denominator() * _summandB.denominator(), _summandA.radicand() );
         return result;
     }
 
-    /**
-     * @param _sqrtEx1  Minuend.
-     * @param _sqrtEx2  Subtrahend.
-     * @return The difference of the given square root expressions.
-     */
-    SqrtEx operator -( const SqrtEx& _sqrtEx1, const SqrtEx& _sqrtEx2 )
+    SqrtEx operator-( const SqrtEx& _minuend, const SqrtEx& _subtrahend )
     {
-        assert( !_sqrtEx1.hasSqrt() || !_sqrtEx2.hasSqrt() || _sqrtEx1.radicand() == _sqrtEx2.radicand() );
-        SqrtEx result = SqrtEx( _sqrtEx2.denominator() * _sqrtEx1.constantPart() - _sqrtEx2.constantPart() * _sqrtEx1.denominator(),
-                         _sqrtEx2.denominator() * _sqrtEx1.factor() - _sqrtEx2.factor() * _sqrtEx1.denominator(),
-                         _sqrtEx1.denominator() * _sqrtEx2.denominator(), _sqrtEx1.radicand() );
+        assert( !_minuend.hasSqrt() || !_subtrahend.hasSqrt() || _minuend.radicand() == _subtrahend.radicand() );
+        SqrtEx result = SqrtEx( _subtrahend.denominator() * _minuend.constantPart() - _subtrahend.constantPart() * _minuend.denominator(),
+                         _subtrahend.denominator() * _minuend.factor() - _subtrahend.factor() * _minuend.denominator(),
+                         _minuend.denominator() * _subtrahend.denominator(), _minuend.radicand() );
         return result;
     }
 
-    /**
-     * @param _sqrtEx1  First factor.
-     * @param _sqrtEx2  Second factor.
-     * @return The product of the given square root expressions.
-     */
-    SqrtEx operator *( const SqrtEx& _sqrtEx1, const SqrtEx& _sqrtEx2 )
+    SqrtEx operator*( const SqrtEx& _factorA, const SqrtEx& _factorB )
     {
-        assert( !_sqrtEx1.hasSqrt() || !_sqrtEx2.hasSqrt() || _sqrtEx1.radicand() == _sqrtEx2.radicand() );
-        SqrtEx result = SqrtEx( _sqrtEx2.constantPart() * _sqrtEx1.constantPart() + _sqrtEx2.factor() * _sqrtEx1.factor() * _sqrtEx1.radicand(),
-                         _sqrtEx2.constantPart() * _sqrtEx1.factor() + _sqrtEx2.factor() * _sqrtEx1.constantPart(),
-                         _sqrtEx1.denominator() * _sqrtEx2.denominator(), _sqrtEx1.radicand() );
+        assert( !_factorA.hasSqrt() || !_factorB.hasSqrt() || _factorA.radicand() == _factorB.radicand() );
+        SqrtEx result = SqrtEx( _factorB.constantPart() * _factorA.constantPart() + _factorB.factor() * _factorA.factor() * _factorA.radicand(),
+                         _factorB.constantPart() * _factorA.factor() + _factorB.factor() * _factorA.constantPart(),
+                         _factorA.denominator() * _factorB.denominator(), _factorA.radicand() );
         return result;
     }
 
-    /**
-     * @param _sqrtEx1  Dividend.
-     * @param _sqrtEx2  Divisor.
-     * @return The result of the first given square root expression divided by the second one
-     *          Note that the second argument is not allowed to contain a square root.
-     */
-    SqrtEx operator /( const SqrtEx& _sqrtEx1, const SqrtEx& _sqrtEx2 )
+    SqrtEx operator/( const SqrtEx& _dividend, const SqrtEx& _divisor )
     {
-        assert( !_sqrtEx2.hasSqrt() );
-        SqrtEx result = SqrtEx( _sqrtEx1.constantPart() * _sqrtEx2.denominator(), _sqrtEx1.factor() * _sqrtEx2.denominator(),
-                         _sqrtEx1.denominator() * _sqrtEx2.factor(), _sqrtEx1.radicand() );
+        assert( !_divisor.hasSqrt() );
+        SqrtEx result = SqrtEx( _dividend.constantPart() * _divisor.denominator(), _dividend.factor() * _divisor.denominator(),
+                         _dividend.denominator() * _divisor.factor(), _dividend.radicand() );
         return result;
     }
     
-    /**
-     * @param _infix A flag indicating whether to represent this square root expression 
-     *         in infix notation (true) or prefix notation (false).
-     * @return 
-     */
+    ostream& operator<<( ostream& _out, const SqrtEx& _substitution )
+    {
+        return (_out << _substitution.toString( true ) );
+    }
+    
     string SqrtEx::toString( bool _infix, bool _friendlyNames ) const
     {
         if( _infix )
@@ -224,26 +179,7 @@ namespace vs
         }
     }
 
-    /**
-     * Prints a square root expression on an output stream.
-     * @param   _ostream    The output stream, on which to write.
-     * @param   _sqrtEx     The square root expression to print.
-     * @return The representation of the square root expression on an output stream.
-     */
-    ostream& operator <<( ostream& _ostream, const SqrtEx& _sqrtEx )
-    {
-        return (_ostream << _sqrtEx.toString( true ) );
-    }
-
-    /**
-     * Substitutes a variable in an expression by a square root expression, which
-     * results in a square root expression.
-     * @param _poly     The polynomial to substitute in.
-     * @param _var      The variable to substitute.
-     * @param _subTerm  The square root expression by which the variable gets substituted.
-     * @return The resulting square root expression.
-     */
-    SqrtEx SqrtEx::subBySqrtEx( const smtrat::Polynomial& _poly, const carl::Variable& _var, const SqrtEx& _subTerm )
+    SqrtEx SqrtEx::subBySqrtEx( const smtrat::Polynomial& _substituteIn, const carl::Variable& _varToSubstitute, const SqrtEx& _substituteBy )
     {
         /*
          * We have to calculate the result of the substitution:
@@ -257,27 +193,27 @@ namespace vs
          *      ----------------------------------------------
          *                           s^n
          */
-//        carl::VariableInformation<true,smtrat::Polynomial> varInfo = _poly.getVarInfo( _var ); //TODO: implement this line
+//        carl::VariableInformation<true,smtrat::Polynomial> varInfo = _poly.getVarInfo( _varToSubstitute ); //TODO: implement this line
         unsigned n = 0; // varInfo.maxDegree(); //TODO: implement this line
         if( n == 0 )
         {
-            SqrtEx result = SqrtEx( _poly );
+            SqrtEx result = SqrtEx( _substituteIn );
             return result;
         }
         // Calculate the s^k:   (0<=k<=n)
         vector<smtrat::Polynomial> sk = vector<smtrat::Polynomial>( n + 1 );
         sk[0] = smtrat::Polynomial( 1 );
         for( unsigned i = 1; i <= n; ++i )
-            sk[i] = sk[i - 1] * _subTerm.denominator();
+            sk[i] = sk[i - 1] * _substituteBy.denominator();
         // Calculate the constant part and factor of the square root of (q+r*sqrt{t})^k:   (1<=k<=n)
         vector<smtrat::Polynomial> qk = vector<smtrat::Polynomial>( n );
         vector<smtrat::Polynomial> rk = vector<smtrat::Polynomial>( n );
-        qk[0] = smtrat::Polynomial( _subTerm.constantPart() );
-        rk[0] = smtrat::Polynomial( _subTerm.factor() );
+        qk[0] = smtrat::Polynomial( _substituteBy.constantPart() );
+        rk[0] = smtrat::Polynomial( _substituteBy.factor() );
         for( unsigned i = 1; i < n; ++i )
         {
-            qk[i] = _subTerm.constantPart() * qk[i - 1] + _subTerm.factor() * rk[i - 1] * _subTerm.radicand();
-            rk[i] = _subTerm.constantPart() * rk[i - 1] + _subTerm.factor() * qk[i - 1];
+            qk[i] = _substituteBy.constantPart() * qk[i - 1] + _substituteBy.factor() * rk[i - 1] * _substituteBy.radicand();
+            rk[i] = _substituteBy.constantPart() * rk[i - 1] + _substituteBy.factor() * qk[i - 1];
         }
         // Calculate the result:
         smtrat::Polynomial resConstantPart = sk[n]; // * varInfo.coeffs( 0 ); //TODO: implement this line
@@ -287,7 +223,7 @@ namespace vs
 //            resConstantPart += varInfo.coeffs( i ) * qk[i - 1] * sk[n - i]; //TODO: implement this line
 //            resFactor       += varInfo.coeffs( i ) * rk[i - 1] * sk[n - i]; //TODO: implement this line
         }
-        SqrtEx result = SqrtEx( resConstantPart, resFactor, sk[n], _subTerm.radicand() );
+        SqrtEx result = SqrtEx( resConstantPart, resFactor, sk[n], _substituteBy.radicand() );
         return result;
     }
 }    // end namspace vs

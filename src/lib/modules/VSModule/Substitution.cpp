@@ -27,22 +27,19 @@
 #include "Substitution.h"
 
 using namespace std;
-using namespace GiNaC;
 
 namespace vs
 {
-    Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const Substitution_Type& _type, const ConditionSet& _oConditions, const smtrat::ConstraintSet& _sideCondition ):
-        mpVariable( new string( _variable ) ),
-        mpVarAsEx( new ex( _varAsEx ) ),
+    Substitution::Substitution( const carl::Variable& _variable, const Type& _type, const ConditionSet& _oConditions, const smtrat::Constraint::PointerSet& _sideCondition ):
+        mVariable( _variable ),
         mpTerm( new SqrtEx() ),
         mType( _type ),
         mpOriginalConditions( new ConditionSet( _oConditions ) ),
         mSideCondition( _sideCondition )
     {}
 
-    Substitution::Substitution( const string& _variable, const GiNaC::ex& _varAsEx, const SqrtEx& _term, const Substitution_Type& _type, const ConditionSet& _oConditions, const smtrat::ConstraintSet& _sideCondition ):
-        mpVariable( new string( _variable ) ),
-        mpVarAsEx( new ex( _varAsEx ) ),
+    Substitution::Substitution( const carl::Variable& _variable, const SqrtEx& _term, const Type& _type, const ConditionSet& _oConditions, const smtrat::Constraint::PointerSet& _sideCondition ):
+        mVariable( _variable ),
         mpTerm( new SqrtEx( _term ) ),
         mType( _type ),
         mpOriginalConditions( new ConditionSet( _oConditions ) ),
@@ -50,8 +47,7 @@ namespace vs
     {}
 
     Substitution::Substitution( const Substitution& _sub ):
-        mpVariable( new string( _sub.variable() ) ),
-        mpVarAsEx( new ex( _sub.varAsEx() ) ),
+        mVariable( _sub.variable() ),
         mpTerm( new SqrtEx( _sub.term() ) ),
         mType( _sub.type() ),
         mpOriginalConditions( new ConditionSet( _sub.originalConditions() ) ),
@@ -60,24 +56,17 @@ namespace vs
 
     Substitution::~Substitution()
     {
-        delete mpVariable					;
-        delete mpVarAsEx                    ;
         delete mpTerm						;
         delete mpOriginalConditions			;
     }
 
-    /**
-     * Valuates the substitution according to a heuristic.
-     *
-     * @return
-     */
     unsigned Substitution::valuate() const
     {
-        if( type()==ST_MINUS_INFINITY )
+        if( type() == MINUS_INFINITY )
             return 9;
-        else if( type()==ST_NORMAL )
+        else if( type() == NORMAL )
         {
-            if( termVariables().empty() )
+            if( term().isConstant() )
                 return 8;
             else
             {
@@ -85,7 +74,7 @@ namespace vs
                     return 4;
                 else
                 {
-                    if( term().denominator().info( info_flags::rational ) )
+                    if( term().denominator().isConstant() )
                         return 6;
                     else
                         return 5;
@@ -94,7 +83,7 @@ namespace vs
         }
         else
         {
-            if( termVariables().empty() )
+            if( term().isConstant() )
                 return 7;
             else
             {
@@ -102,7 +91,7 @@ namespace vs
                     return 1;
                 else
                 {
-                    if( term().denominator().info( info_flags::rational ) )
+                    if( term().denominator().isConstant() )
                         return 3;
                     else
                         return 2;
@@ -111,100 +100,9 @@ namespace vs
         }
     }
 
-    /**
-     * Prints the substitution to an output stream.
-     *
-     * @param _out The output stream, where it should print.
-     */
-    void Substitution::print( bool _withOrigins, bool _withSideConditions, ostream& _out, const string& _init ) const
-    {
-        _out << _init << toString();
-        if( _withOrigins )
-        {
-            _out << " from {";
-            for( auto oCond = originalConditions().begin(); oCond != originalConditions().end(); ++oCond )
-            {
-                if( oCond != originalConditions().begin() )
-                    _out << ", ";
-                (**oCond).constraint().print( _out );
-            }
-            _out << "}";
-        }
-        if( _withSideConditions && !sideCondition().empty() )
-        {
-            _out << "  if  ";
-            for( auto sCons = sideCondition().begin(); sCons != sideCondition().end(); ++sCons )
-            {
-                if( sCons != sideCondition().begin() )
-                    _out << " and ";
-                _out << *sCons;
-            }
-        }
-        _out << endl;
-    }
-
-    /**
-    * Gives the string representation of this substitution.
-    *
-    * @return The string representation of this substitution.
-    */
-    string Substitution::toString( bool _compact ) const
-    {
-        string stringRepresentation = "";
-        switch( type() )
-        {
-            case ST_NORMAL:
-            {
-                stringRepresentation += "[" + variable();
-                stringRepresentation += " -> ";
-                ostringstream tempOStream;
-                if( _compact ) tempOStream << term().asExpression();
-                else tempOStream << term();
-                stringRepresentation += tempOStream.str();
-                stringRepresentation += "]";
-                break;
-            }
-            case ST_PLUS_EPSILON:
-            {
-                stringRepresentation += "[" + variable();
-                stringRepresentation += " -> ";
-                ostringstream tempOStream;
-                if( _compact ) tempOStream << term().asExpression();
-                else tempOStream << term();
-                stringRepresentation += tempOStream.str();
-                stringRepresentation += " + epsilon]";
-                break;
-            }
-            case ST_MINUS_INFINITY:
-            {
-                stringRepresentation += "[" + variable() + " ->  -infinity]";
-                break;
-            }
-            case ST_INVALID:
-            {
-                stringRepresentation += "Invalid";
-                break;
-            }
-            default:
-            {
-                cout << "Unknown substitution type!" << endl;
-                assert( false );
-            }
-        }
-        return stringRepresentation;
-    }
-
-    /**
-    * Checks the equality of a given substitution with this substitution.
-    *
-    * @param _substitution The substitution to compare with.
-    *
-    * @return 	true	,if the given substitution is equal to this substitution;
-    *			false	,otherwise.
-    */
     bool Substitution::operator==( const Substitution& _substitution ) const
     {
-        if( variable().compare( _substitution.variable() ) == 0 )
+        if( variable() == _substitution.variable() )
         {
             if( type() == _substitution.type() )
             {
@@ -225,43 +123,29 @@ namespace vs
             return false;
     }
 
-
-    /**
-    * Compares this substitution with the given substitution.
-    *
-    * @param _substitution The substitution to compare with.
-    *
-    * @return 	true	,if the given substitution is equal to this substitution;
-    *			false	,otherwise.
-    */
     bool Substitution::operator<( const Substitution& _substitution ) const
     {
-        int varCompResult = variable().compare( _substitution.variable() );
-        if( varCompResult<0 )
+        if( variable() < _substitution.variable() )
             return true;
-        else if( varCompResult==0 )
+        else if( variable() == _substitution.variable() )
         {
-            if( type()<_substitution.type() )
+            if( type() < _substitution.type() )
                 return true;
-            else if( type()==_substitution.type() )
+            else if( type() == _substitution.type() )
             {
-                signed constPartCompResult = smtrat::Constraint::exCompare( term().constantPart(), termVariables(), _substitution.term().constantPart(), _substitution.termVariables() );
-                if( constPartCompResult==-1 )
+                if( term().constantPart() < _substitution.term().constantPart() )
                     return true;
-                else if( constPartCompResult==0 )
+                else if( term().constantPart() == _substitution.term().constantPart() )
                 {
-                    signed factorCompResult = smtrat::Constraint::exCompare( term().factor(), termVariables(), _substitution.term().factor(), _substitution.termVariables() );
-                    if( factorCompResult==-1 )
+                    if( term().factor() < _substitution.term().factor() )
                         return true;
-                    else if( factorCompResult==0 )
+                    else if( term().factor() == _substitution.term().factor() )
                     {
-                        signed radicandCompResult = smtrat::Constraint::exCompare( term().radicand(), termVariables(), _substitution.term().radicand(), _substitution.termVariables() );
-                        if( radicandCompResult==-1 )
+                        if( term().radicand() < _substitution.term().radicand() )
                             return true;
-                        else if( radicandCompResult==0 )
+                        else if( term().radicand() == _substitution.term().radicand() )
                         {
-                            signed denominatorCompResult = smtrat::Constraint::exCompare( term().denominator(), termVariables(), _substitution.term().denominator(), _substitution.termVariables() );
-                            if( denominatorCompResult==-1 )
+                            if( term().denominator() < _substitution.term().denominator() )
                                 return true;
                             else if( sideCondition() < _substitution.sideCondition() )
                                 return true;
@@ -284,39 +168,55 @@ namespace vs
             return false;
     }
 
-    /**
-     * Prints a square root expression on an output stream.
-     *
-     * @param   _ostream    The output stream, on which to write.
-     * @param   _sqrtEx     The square root expression to print.
-     *
-     * @return The representation of the square root expression on an output stream.
-     */
-    ostream& operator <<( ostream& _ostream, const Substitution& _substitution )
+    ostream& operator<<( ostream& _ostream, const Substitution& _substitution )
     {
-        _ostream << _substitution.toString( true );
-        return _ostream;
+        return (_ostream << _substitution.toString( true ));
     }
 
-    /**
-     * 
-     * @param _term
-     * @param _variables
-     */
-    void Substitution::getVariables( const ex& _term, symtab& _variables )
+    string Substitution::toString( bool _friendlyNames ) const
     {
-        if( _term.nops() > 1 )
+        string result = "[" + smtrat::Formula::constraintPool().getVariableName( mVariable, _friendlyNames ) + " -> ";
+        switch( type() )
         {
-            for( const_iterator subterm = _term.begin(); subterm != _term.end(); ++subterm )
-                getVariables( *subterm, _variables );
-        }
-        else if( is_exactly_a<symbol>( _term ) )
-        {
-            stringstream out;
-            out << _term;
-            _variables.insert( pair< string, symbol >( out.str(), ex_to<symbol>( _term ) ) );
+            case NORMAL:
+                return result + term().toString( true, _friendlyNames ) + "]";
+            case PLUS_EPSILON:
+                return result + term().toString( true, _friendlyNames ) + " + epsilon]";
+            case MINUS_INFINITY:
+                return result + "-infinity]";
+            case INVALID:
+                return result + "invalid]";
+            default:
+                assert( false );
+                return result + "unknown]";
         }
     }
 
+    void Substitution::print( bool _withOrigins, bool _withSideConditions, ostream& _out, const string& _init ) const
+    {
+        _out << _init << toString();
+        if( _withOrigins )
+        {
+            _out << " from {";
+            for( auto oCond = originalConditions().begin(); oCond != originalConditions().end(); ++oCond )
+            {
+                if( oCond != originalConditions().begin() )
+                    _out << ", ";
+                _out << (**oCond).constraint().toString( 0, true, true );
+            }
+            _out << "}";
+        }
+        if( _withSideConditions && !sideCondition().empty() )
+        {
+            _out << "  if  ";
+            for( auto sCons = sideCondition().begin(); sCons != sideCondition().end(); ++sCons )
+            {
+                if( sCons != sideCondition().begin() )
+                    _out << " and ";
+                _out << (*sCons).toString( 0, true, true );
+            }
+        }
+        _out << endl;
+    }
 } // end namspace vs
 

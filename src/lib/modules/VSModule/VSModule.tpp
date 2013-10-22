@@ -28,9 +28,9 @@
 #include <set>
 
 #include "State.h"
+#include "VSModule.h"
 
 using namespace std;
-using namespace GiNaC;
 using namespace vs;
 
 //#define VS_DEBUG
@@ -77,7 +77,7 @@ namespace smtrat
     bool VSModule<Settings>::assertSubformula( Formula::const_iterator _subformula )
     {
         Module::assertSubformula( _subformula );
-        if( (*_subformula)->getType() == REALCONSTRAINT )
+        if( (*_subformula)->getType() == CONSTRAINT )
         {
             const Constraint* constraint = (*_subformula)->pConstraint();
             const vs::Condition* condition  = new vs::Condition( constraint );
@@ -104,7 +104,7 @@ namespace smtrat
                 {
                     mIDCounter = 0;
                     for( auto var = constraint->variables().begin(); var != constraint->variables().end(); ++var )
-                        mAllVariables.insert( pair<const string, symbol>( var->first, ex_to<symbol>( var->second ) ) );
+                        mAllVariables.insert( *var );
                     if( Settings::incremental_solving )
                     {
                         eraseDTsOfRanking( *mpStateTree );
@@ -140,7 +140,7 @@ namespace smtrat
     template<class Settings>
     void VSModule<Settings>::removeSubformula( Formula::const_iterator _subformula )
     {
-        if( (*_subformula)->getType() == REALCONSTRAINT )
+        if( (*_subformula)->getType() == CONSTRAINT )
         {
             mInconsistentConstraintAdded = false;
             auto formulaConditionPair = mFormulaConditionMap.find( *_subformula );
@@ -595,47 +595,41 @@ namespace smtrat
             {
                 stringstream outA;
                 outA << "m_inf_" << id() << "_" << i;
-                VarNamePair minfVar = Formula::newAuxiliaryRealVariable( outA.str() );
+                carl::Variable minfVar( Formula::newAuxiliaryRealVariable( outA.str() ) );
                 stringstream outB;
                 outB << "eps_" << id() << "_" << i;
-                VarNamePair epsVar = Formula::newAuxiliaryRealVariable( outB.str() );
-                mVariableVector.push_back( pair<VarNamePair,VarNamePair>( minfVar, epsVar ) );
+                carl::Variable epsVar( Formula::newAuxiliaryRealVariable( outB.str() ) );
+                mVariableVector.push_back( pair<carl::Variable,carl::Variable>( minfVar, epsVar ) );
             }
-            exmap vsAssignments = exmap();
             assert( !mRanking.empty() );
             const State* state = mRanking.begin()->second;
             while( !state->isRoot() )
             {
                 const Substitution& sub = state->substitution();
                 Assignment* ass = new Assignment();
-                ex* value = new ex( 0 );
-                if( sub.type() == ST_MINUS_INFINITY )
-                    *value += mVariableVector.at( state->treeDepth()-1 ).first.second;
+                SqrtEx* value = new SqrtEx();
+                if( sub.type() == Substitution::MINUS_INFINITY )
+                    *value += mVariableVector.at( state->treeDepth()-1 ).first;
                 else
                 {
-                    *value += sub.term().asExpression();
-                    if( sub.type() == ST_PLUS_EPSILON )
-                        *value += mVariableVector.at( state->treeDepth()-1 ).second.second;
+                    *value += sub.term();
+                    if( sub.type() == Substitution::PLUS_EPSILON )
+                        *value += mVariableVector.at( state->treeDepth()-1 ).second;
                 }
-                assert( vsAssignments.find( sub.varAsEx() ) == vsAssignments.end() );
-                *value = subs( *value, vsAssignments );
-                *value = value->expand().normal();
-                vsAssignments[sub.varAsEx()] = *value;
                 ass->domain = REAL_DOMAIN;
                 ass->theoryValue = value;
                 extendModel( state->substitution().variable(), ass );
                 state = state->pFather();
             }
-            symtab allVars = Formula::constraintPool().realVariables();
-            for( auto var = allVars.begin(); var != allVars.end(); ++var )
+            if( mRanking.begin()->second->toHighDegree() )
+                Module::getBackendsModel();
+            for( auto var = mAllVariables.begin(); var != mAllVariables.end(); ++var )
             {
                 Assignment* ass = new Assignment();
                 ass->domain = REAL_DOMAIN;
-                ass->theoryValue = new ex( var->second );
-                extendModel( var->first, ass );
+                ass->theoryValue = new SqrtEx( Polynomial( *var ) );
+                extendModel( Formula::constraintPool().getVariableName( *var, true ), ass );
             }
-            if( mRanking.begin()->second->toHighDegree() )
-                Module::getBackendsModel();
         }
     }
 
@@ -654,7 +648,7 @@ namespace smtrat
      *              state.
      */
     template<class Settings>
-    void VSModule<Settings>::eliminate( State* _currentState, const string& _eliminationVar, const vs::Condition* _condition )
+    void VSModule<Settings>::eliminate( State* _currentState, const carl::Variable& _eliminationVar, const vs::Condition* _condition )
     {
         // Get the constraint of this condition.
         const Constraint* constraint = (*_condition).pConstraint();
@@ -671,19 +665,19 @@ namespace smtrat
         if( !Settings::use_variable_bounds || _currentState->hasRootsInVariableBounds( _condition, Settings::sturm_sequence_for_root_check ) )
         {
             #endif
-            Constraint_Relation relation = (*_condition).constraint().relation();
+            Constrain::Relation relation = (*_condition).constraint().relation();
 //            cout << "Find roots of  " << (*_condition).constraint().lhs() << "  instead of  " << (*_condition).constraint().factorization() << endl;
             symtab vars = constraint->variables();
-            if( !Settings::use_strict_inequalities_for_test_candidate_generation && (relation == CR_LESS || relation == CR_GREATER || relation == CR_NEQ) )
+            if( !Settings::use_strict_inequalities_for_test_candidate_generation && (relation == Constraint::LESS || relation == Constraint::GREATER || relation == Constraint::NEQ) )
             {
                 _currentState->rTooHighDegreeConditions().insert( _condition );
                 return;
             }
             vars.erase( _eliminationVar );
             // Determine the substitution type: normal or +epsilon
-            Substitution_Type subType = ST_PLUS_EPSILON;
-            if( relation == CR_EQ || relation == CR_LEQ || relation == CR_GEQ )
-                subType = ST_NORMAL;
+            Substitution::Type subType = Substitution::PLUS_EPSILON;
+            if( relation == Constraint::EQ || relation == Constraint::LEQ || relation == Constraint::GEQ )
+                subType = Substitution::NORMAL;
             vector< ex > factors = vector< ex >();
             if( Settings::elimination_with_factorization && constraint->hasFactorization() )
             {
@@ -1364,7 +1358,7 @@ namespace smtrat
      * @return A symbolic assignment.
      */
     template<class Settings>
-    vector<pair<string, pair<Substitution_Type, ex> > > VSModule<Settings>::getSymbolicAssignment() const
+    vector<pair<string, pair<Substitution_Type, vs::SqrtEx> > > VSModule<Settings>::getSymbolicAssignment() const
     {
         assert( !mConditionsChanged && mInfeasibleSubsets.empty() );
         vector<pair<string, pair<Substitution_Type, ex> > > result    = vector<pair<string, pair<Substitution_Type, ex> > >();

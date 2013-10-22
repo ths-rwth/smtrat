@@ -34,17 +34,16 @@
 
 namespace vs
 {
-    // Methods:
-    bool substitute( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, bool, GiNaC::symtab&, const GiNaCRA::evaldoubleintervalmap& );
-    void substituteNormal( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, bool, GiNaC::symtab&, const GiNaCRA::evaldoubleintervalmap& );
-    void substituteNormalSqrt( const smtrat::Constraint*, const Substitution&, const GiNaC::ex&, DisjunctionOfConstraintConjunctions&, bool );
-    void substituteNormalSqrtEq( const smtrat::Constraint*, const Substitution&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::symtab&, DisjunctionOfConstraintConjunctions&, bool );
-    void substituteNormalSqrtNeq( const smtrat::Constraint*, const Substitution&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::symtab&, DisjunctionOfConstraintConjunctions&, bool );
-    void substituteNormalSqrtLess( const smtrat::Constraint*, const Substitution&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::symtab&, DisjunctionOfConstraintConjunctions&, bool );
-    void substituteNormalSqrtLeq( const smtrat::Constraint*, const Substitution&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::ex&, const GiNaC::symtab&, DisjunctionOfConstraintConjunctions&, bool );
-    bool substitutePlusEps( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, bool, GiNaC::symtab&, const GiNaCRA::evaldoubleintervalmap& );
-    bool substituteEpsGradients( const smtrat::Constraint*, const Substitution&, const smtrat::Constraint_Relation, DisjunctionOfConstraintConjunctions&, bool, GiNaC::symtab&, const GiNaCRA::evaldoubleintervalmap& );
-    void substituteMinusInf( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, GiNaC::symtab&, const GiNaCRA::evaldoubleintervalmap& );
+    bool substitute( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, const smtrat::EvalDoubleIntervalMap& );
+    void substituteNormal( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, bool, const smtrat::EvalDoubleIntervalMap& );
+    void substituteNormalSqrt( const smtrat::Constraint*, const Substitution&, const smtrat::Polynomial&, DisjunctionOfConstraintConjunctions&, bool );
+    void substituteNormalSqrtEq( const smtrat::Constraint*, const Substitution&, const smtrat::Polynomial&, const smtrat::Polynomial&, const smtrat::Polynomial&, DisjunctionOfConstraintConjunctions&, bool );
+    void substituteNormalSqrtNeq( const smtrat::Constraint*, const Substitution&, const smtrat::Polynomial&, const smtrat::Polynomial&, const smtrat::Polynomial&, DisjunctionOfConstraintConjunctions&, bool );
+    void substituteNormalSqrtLess( const smtrat::Constraint*, const Substitution&, const smtrat::Polynomial&, const smtrat::Polynomial&, const smtrat::Polynomial&, const smtrat::Polynomial&, DisjunctionOfConstraintConjunctions&, bool );
+    void substituteNormalSqrtLeq( const smtrat::Constraint*, const Substitution&, const smtrat::Polynomial&, const smtrat::Polynomial&, const smtrat::Polynomial&, const smtrat::Polynomial&, DisjunctionOfConstraintConjunctions&, bool );
+    bool substitutePlusEps( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, bool, const smtrat::EvalDoubleIntervalMap& );
+    bool substituteEpsGradients( const smtrat::Constraint*, const Substitution&, const smtrat::Constraint::Relation, DisjunctionOfConstraintConjunctions&, bool, const smtrat::EvalDoubleIntervalMap& );
+    void substituteMinusInf( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, const smtrat::EvalDoubleIntervalMap& );
     void substituteInfLessGreater( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteTrivialCase( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );
     void substituteNotTrivialCase( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions& );

@@ -37,8 +37,6 @@
 //#define VS_LOG_INFSUBSETS
 
 using namespace std;
-using namespace GiNaC;
-using namespace GiNaCRA;
 
 namespace vs
 {

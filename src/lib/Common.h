@@ -22,7 +22,7 @@
  * Common.h
  * @author Florian Corzilius
  * @since 2013-10-07
- * @version 2013-10-07
+ * @version 2013-10-21
  */
 
 #ifndef COMMON_H
@@ -45,9 +45,10 @@ namespace smtrat
     typedef carl::MultivariatePolynomial<Rational> Polynomial;
     typedef std::vector<Polynomial> Factorization;
     typedef std::map<carl::Variable,Rational> EvalRationalMap;
-//    typedef carl::DoubleInterval::evalintervalmap EvalIntervalMap;
+    typedef carl::ExactInterval<Rational> Interval;
+    typedef carl::evalintervalmap<Rational> EvalIntervalMap;
     typedef carl::DoubleInterval::evaldoubleintervalmap EvalDoubleIntervalMap;
-    typedef carl::VariablesInformation< true, Polynomial > VarInfoMap;
+    typedef carl::VariablesInformation<true, Polynomial> VarInfoMap;
     typedef std::set<carl::Variable> Variables;
     
     enum Variable_Domain { BOOLEAN_DOMAIN = 0, REAL_DOMAIN = 1, INTEGER_DOMAIN = 2 };

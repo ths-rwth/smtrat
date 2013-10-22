@@ -18,8 +18,6 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * @file VSModule.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
@@ -42,7 +40,6 @@
 #include "VSSettings.h"
 #include "../../Module.h"
 #include "../../RuntimeSettings.h"
-#include "VSSettings.h"
 
 namespace smtrat
 {
@@ -55,8 +52,7 @@ namespace smtrat
             typedef std::pair<vs::UnsignedTriple, vs::State*>                       ValStatePair;
             typedef std::map<vs::UnsignedTriple, vs::State*, vs::unsignedTripleCmp> ValuationMap;
             typedef std::map<const Formula* const, const vs::Condition*>            FormulaConditionMap;
-            typedef std::pair< std::string, GiNaC::ex >                             VarNamePair;
-            typedef std::vector<std::pair< VarNamePair, VarNamePair > >             VarNamePairVector;
+            typedef std::vector<std::pair<carl::Variable,carl::Variable>>           VarNamePairVector;
 
             // Members.
             bool                mConditionsChanged;
@@ -66,7 +62,7 @@ namespace smtrat
             unsigned            mStepCounter;
             #endif
             vs::State*          mpStateTree;
-            GiNaC::symtab       mAllVariables;
+            Variables           mAllVariables;
             FormulaConditionMap mFormulaConditionMap;
             ValuationMap        mRanking;
             VarNamePairVector   mVariableVector;
@@ -112,7 +108,7 @@ namespace smtrat
             bool eraseDTofRanking( vs::State& );
             void eraseDTsOfRanking( vs::State& );
             void updateInfeasibleSubset( bool = false );
-            std::vector<std::pair<std::string, std::pair<vs::Substitution_Type, GiNaC::ex> > > getSymbolicAssignment() const;
+            std::vector<std::pair<std::string, std::pair<vs::Substitution::Type, vs::SqrtEx> > > getSymbolicAssignment() const;
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
             bool adaptPassedFormula( const vs::State&, FormulaConditionMap&, bool = false );
             Answer runBackendSolvers( vs::State*, bool = false );
