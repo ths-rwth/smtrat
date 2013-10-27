@@ -22,7 +22,7 @@
  * Class containing auxiliary methods used especially by the virtual substitution method.
  * @author Florian Corzilius
  * @since 2013-05-20
- * @version 2013-05-20
+ * @version 2013-10-23
  */
 
 #include "VS_Tools.hpp"
@@ -31,22 +31,14 @@ using namespace std;
 
 namespace vs
 {
-    /**
-     * Simplifies a disjunction of conjunctions of constraints by deleting consistent
-     * constraint and inconsistent conjunctions of constraints. If a conjunction of
-     * only consistent constraints exists, the simplified disjunction contains one
-     * empty conjunction.
-     *
-     * @param _toSimplify   The disjunction of conjunctions to simplify.
-     */
     void simplify( DisjunctionOfConstraintConjunctions& _toSimplify )
     {
-        bool                                          containsEmptyDisjunction = false;
-        DisjunctionOfConstraintConjunctions::iterator conj                     = _toSimplify.begin();
+        bool containsEmptyDisjunction = false;
+        auto conj = _toSimplify.begin();
         while( conj != _toSimplify.end() )
         {
-            bool                               conjInconsistent = false;
-            ConstraintVector::iterator cons             = (*conj).begin();
+            bool conjInconsistent = false;
+            auto cons = (*conj).begin();
             while( cons != (*conj).end() )
             {
                 if( *cons == smtrat::Formula::constraintPool().inconsistentConstraint() )
@@ -55,14 +47,9 @@ namespace vs
                     break;
                 }
                 else if( *cons == smtrat::Formula::constraintPool().consistentConstraint() )
-                {
-                    // Delete the constraint.
                     cons = (*conj).erase( cons );
-                }
                 else
-                {
                     cons++;
-                }
             }
             bool conjEmpty = (*conj).empty();
             if( conjInconsistent || (containsEmptyDisjunction && conjEmpty) )
@@ -72,34 +59,20 @@ namespace vs
                 conj = _toSimplify.erase( conj );
             }
             else
-            {
                 conj++;
-            }
             if( !containsEmptyDisjunction && conjEmpty )
-            {
                 containsEmptyDisjunction = true;
-            }
         }
     }
-    
-    /**
-     * Simplifies a disjunction of conjunctions of constraints by deleting consistent
-     * constraint and inconsistent conjunctions of constraints. If a conjunction of
-     * only consistent constraints exists, the simplified disjunction contains one
-     * empty conjunction.
-     *
-     * @param _toSimplify   The disjunction of conjunctions to simplify.
-     * @param _conflictingVars
-     * @param _solutionSpace
-     */
+
     void simplify( DisjunctionOfConstraintConjunctions& _toSimplify, smtrat::Variables& _conflictingVars, const smtrat::EvalDoubleIntervalMap& _solutionSpace )
     {
-        bool                                          containsEmptyDisjunction = false;
-        DisjunctionOfConstraintConjunctions::iterator conj                     = _toSimplify.begin();
+        bool containsEmptyDisjunction = false;
+        auto conj = _toSimplify.begin();
         while( conj != _toSimplify.end() )
         {
-            bool                               conjInconsistent = false;
-            ConstraintVector::iterator cons             = (*conj).begin();
+            bool conjInconsistent = false;
+            auto cons = (*conj).begin();
             while( cons != (*conj).end() )
             {
                 if( *cons == smtrat::Formula::constraintPool().inconsistentConstraint() )
@@ -108,10 +81,7 @@ namespace vs
                     break;
                 }
                 else if( *cons == smtrat::Formula::constraintPool().consistentConstraint() )
-                {
-                    // Delete the constraint.
                     cons = (*conj).erase( cons );
-                }
                 else
                 {
                     unsigned conflictingWithSolutionSpace = (*cons)->consistentWith( _solutionSpace );
@@ -122,14 +92,9 @@ namespace vs
                         break;
                     }
                     else if( conflictingWithSolutionSpace == 1 )
-                    {
-                        // Delete the constraint.
                         cons = (*conj).erase( cons );
-                    }
                     else
-                    {
                         ++cons;
-                    }
                 }
             }
             bool conjEmpty = (*conj).empty();
@@ -140,21 +105,13 @@ namespace vs
                 conj = _toSimplify.erase( conj );
             }
             else
-            {
                 ++conj;
-            }
             if( !containsEmptyDisjunction && conjEmpty )
-            {
                 containsEmptyDisjunction = true;
-            }
         }
     }
 
-    /**
-     *
-     * @param _toSimplify
-     */
-    bool splitProducts( DisjunctionOfConstraintConjunctions& _toSimplify, bool _onlyEquations )
+    bool splitProducts( DisjunctionOfConstraintConjunctions& _toSimplify, bool _onlyNeq )
     {
         bool result = true;
         unsigned toSimpSize = _toSimplify.size();
@@ -163,31 +120,22 @@ namespace vs
             if( !_toSimplify.begin()->empty() )
             {
                 DisjunctionOfConstraintConjunctions temp = DisjunctionOfConstraintConjunctions();
-                if( !splitProducts( _toSimplify[pos], temp, _onlyEquations ) )
-                {
+                if( !splitProducts( _toSimplify[pos], temp, _onlyNeq ) )
                     result = false;
-                }
                 _toSimplify.erase( _toSimplify.begin() );
                 _toSimplify.insert( _toSimplify.end(), temp.begin(), temp.end() );
                 --toSimpSize;
             }
             else
-            {
                 ++pos;
-            }
         }
         return result;
     }
 
-    /**
-     *
-     * @param _constraintConjunction
-     * @return
-     */
-    bool splitProducts( const ConstraintVector& _constraintConjunction, DisjunctionOfConstraintConjunctions& _result, bool _onlyNeq )
+    bool splitProducts( const ConstraintVector& _toSimplify, DisjunctionOfConstraintConjunctions& _result, bool _onlyNeq )
     {
         vector<DisjunctionOfConstraintConjunctions> toCombine = vector<DisjunctionOfConstraintConjunctions>();
-        for( auto constraint = _constraintConjunction.begin(); constraint != _constraintConjunction.end(); ++constraint )
+        for( auto constraint = _toSimplify.begin(); constraint != _toSimplify.end(); ++constraint )
         {
             if( (*constraint)->hasFactorization() )
             {
@@ -202,7 +150,7 @@ namespace vs
                             for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                             {
                                 toCombine.back().push_back( ConstraintVector() );
-                                toCombine.back().back().push_back( smtrat::Formula::newConstraint( *factor, smtrat::Constraint::EQ ) );
+                                toCombine.back().back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Constraint::EQ ) );
                             }
                             simplify( toCombine.back() );
                         }
@@ -220,9 +168,7 @@ namespace vs
                         toCombine.back().push_back( ConstraintVector() );
                         const smtrat::Factorization& factorization = (*constraint)->factorization();
                         for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
-                        {
-                            toCombine.back().back().push_back( smtrat::Formula::newConstraint( *factor, smtrat::Constraint::NEQ ) );
-                        }
+                            toCombine.back().back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Constraint::NEQ ) );
                         simplify( toCombine.back() );
                         break;
                     }
@@ -251,18 +197,11 @@ namespace vs
         }
         bool result = true;
         if( !combine( toCombine, _result ) )
-        {
             result = false;
-        }
         simplify( _result );
         return result;
     }
 
-    /**
-     *
-     * @param _constraintConjunction
-     * @return
-     */
     DisjunctionOfConstraintConjunctions splitProducts( const smtrat::Constraint* _constraint, bool _onlyNeq )
     {
         DisjunctionOfConstraintConjunctions result = DisjunctionOfConstraintConjunctions();
@@ -278,7 +217,7 @@ namespace vs
                         for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                         {
                             result.push_back( ConstraintVector() );
-                            result.back().push_back( smtrat::Formula::newConstraint( *factor, smtrat::Constraint::EQ ) );
+                            result.back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Constraint::EQ ) );
                         }
                     }
                     else
@@ -294,9 +233,7 @@ namespace vs
                     result.push_back( ConstraintVector() );
                     const smtrat::Factorization& factorization = _constraint->factorization();
                     for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
-                    {
-                        result.back().push_back( smtrat::Formula::newConstraint( *factor, smtrat::Constraint::NEQ ) );
-                    }
+                        result.back().push_back( smtrat::Formula::newConstraint( factor->first, smtrat::Constraint::NEQ ) );
                     simplify( result );
                     break;
                 }
@@ -324,14 +261,6 @@ namespace vs
         return result;
     }
 
-    /**
-     *
-     * @param _product
-     * @param _positive
-     * @param _zero
-     * @param _variables
-     * @return
-     */
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::Constraint* _constraint )
     {
         DisjunctionOfConstraintConjunctions combinations = DisjunctionOfConstraintConjunctions();
@@ -360,13 +289,11 @@ namespace vs
             const smtrat::Factorization& product = _constraint->factorization();
             for( auto factor = product.begin(); factor != product.end(); ++factor )
             {
-                const smtrat::Constraint* consPos = smtrat::Formula::newConstraint( *factor, relPos );
+                const smtrat::Constraint* consPos = smtrat::Formula::newConstraint( factor->first, relPos );
                 unsigned posConsistent = consPos->isConsistent();
                 if( posConsistent != 0 )
-                {
                     positives.push_back( consPos );
-                }
-                const smtrat::Constraint* consNeg = smtrat::Formula::newConstraint( *factor, relNeg );
+                const smtrat::Constraint* consNeg = smtrat::Formula::newConstraint( factor->first, relNeg );
                 unsigned negConsistent = consNeg->isConsistent();
                 if( negConsistent == 0 )
                 {
@@ -376,7 +303,8 @@ namespace vs
                         combinations.back().push_back( consNeg );
                         return combinations;
                     }
-                    if( posConsistent != 1 ) alwayspositives.push_back( positives.back() );
+                    if( posConsistent != 1 )
+                        alwayspositives.push_back( positives.back() );
                     positives.pop_back();
                 }
                 else
@@ -384,7 +312,8 @@ namespace vs
                     if( posConsistent == 0 )
                     {
                         ++numOfAlwaysNegatives;
-                        if( negConsistent != 1 ) alwaysnegatives.push_back( consNeg );
+                        if( negConsistent != 1 ) 
+                            alwaysnegatives.push_back( consNeg );
                     }
                     else negatives.push_back( consNeg );
                 }
@@ -395,13 +324,17 @@ namespace vs
                 vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> > combSelector = vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >();
                 if( fmod( numOfAlwaysNegatives, 2.0 ) != 0.0 )
                 {
-                    if( positive ) getOddBitStrings( positives.size(), combSelector );
-                    else getEvenBitStrings( positives.size(), combSelector );
+                    if( positive ) 
+                        getOddBitStrings( positives.size(), combSelector );
+                    else 
+                        getEvenBitStrings( positives.size(), combSelector );
                 }
                 else
                 {
-                    if( positive ) getEvenBitStrings( positives.size(), combSelector );
-                    else getOddBitStrings( positives.size(), combSelector );
+                    if( positive ) 
+                        getEvenBitStrings( positives.size(), combSelector );
+                    else 
+                        getOddBitStrings( positives.size(), combSelector );
                 }
                 for( auto comb = combSelector.begin(); comb != combSelector.end(); ++comb )
                 {
@@ -409,8 +342,10 @@ namespace vs
                     combinations.back().insert( combinations.back().end(), alwayspositives.begin(), alwayspositives.end() );
                     for( unsigned pos = 0; pos < positives.size(); ++pos )
                     {
-                        if( (*comb)[pos] ) combinations.back().push_back( negatives[pos] );
-                        else combinations.back().push_back( positives[pos] );
+                        if( (*comb)[pos] ) 
+                            combinations.back().push_back( negatives[pos] );
+                        else 
+                            combinations.back().push_back( positives[pos] );
                     }
                 }
             }
@@ -428,11 +363,6 @@ namespace vs
         return combinations;
     }
 
-    /**
-     *
-     * @param _length
-     * @param _strings
-     */
     void getOddBitStrings( unsigned _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings )
     {
         assert( _length > 0 );
@@ -451,11 +381,6 @@ namespace vs
         }
     }
 
-    /**
-     *
-     * @param _length
-     * @param _strings
-     */
     void getEvenBitStrings( unsigned _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings )
     {
         assert( _length > 0 );
@@ -474,30 +399,20 @@ namespace vs
         }
     }
 
-    /**
-     *
-     * @param _substitutionResults
-     */
     void print( DisjunctionOfConstraintConjunctions& _substitutionResults )
     {
-        DisjunctionOfConstraintConjunctions::const_iterator conj = _substitutionResults.begin();
+        auto conj = _substitutionResults.begin();
         while( conj != _substitutionResults.end() )
         {
             if( conj != _substitutionResults.begin() )
-            {
                 cout << " or (";
-            }
             else
-            {
                 cout << "    (";
-            }
-            ConstraintVector::const_iterator cons = (*conj).begin();
+            auto cons = (*conj).begin();
             while( cons != (*conj).end() )
             {
                 if( cons != (*conj).begin() )
-                {
                     cout << " and ";
-                }
                 (*cons)->toString( true, true );
                 cons++;
             }

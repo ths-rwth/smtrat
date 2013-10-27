@@ -55,71 +55,58 @@ namespace smtrat
         public:
             // Type definitions.
             enum Relation { EQ = 0, NEQ = 1, LESS = 2, GREATER = 3, LEQ = 4, GEQ = 5 };
-            struct pointerEqual
-            {
-                bool operator ()( const Constraint* const _constraintA, const Constraint* const _constraintB ) const
-                {
-                    if( _constraintA->relation() == _constraintB->relation() )
-                    {
-                        return _constraintA->lhs() == _constraintB->lhs();
-                    }
-                    return false;
-                }
-            };
-            struct pointerLess
-            {
-                bool operator ()( const Constraint* const pConstraintA, const Constraint* const pConstraintB ) const
-                {
-                    return (*pConstraintA) < (*pConstraintB);
-                }
-            };
-            struct pointerHash
-            {
-                size_t operator ()( const Constraint* const _constraint ) const
-                {
-                    return _constraint->getHash();
-                }
-            };
             typedef std::vector<const Constraint*>                                   PointerVector;
-            typedef std::set<const Constraint*, pointerLess>                         PointerSet;
-            typedef std::vector<std::set<const Constraint*>>                         PointerSetVector;
-            typedef std::map<const Constraint* const, PointerSetVector>              OriginsMap;
-            typedef std::unordered_set<const Constraint*, pointerHash, pointerEqual> FastSet;
-            template<typename T> 
-            using FastPointerMap = std::unordered_map<const Constraint*, T, pointerHash, pointerEqual>;
-
+            typedef std::vector<PointerSet<Constraint>>                              PointerSetVector;
+            typedef PointerMap<Constraint,PointerSetVector>                          OriginsMap;
 
         private:
-            // A unique id.
+            /// A unique id.
             unsigned             mID;
-            // The hash value.
+            /// The hash value.
             unsigned             mHash;
-            // A flag indicating that the polynomial considered by this constraint cannot be evaluated 
-            // to a positive value by any assignment of its variables to a value of their domains.
-            bool                 mIsNeverPositive;
-            // A flag indicating that the polynomial considered by this constraint cannot be evaluated 
-            // to a negative value by any assignment of its variables to a value of their domains.
-            bool                 mIsNeverNegative;
-            // A flag indicating that the polynomial considered by this constraint cannot be evaluated 
-            // to zero by any assignment of its variables to a value of their domains.
-            bool                 mIsNeverZero;
-            // The relation symbol comparing the polynomial considered by this constraint to zero.
+            /// The relation symbol comparing the polynomial considered by this constraint to zero.
             Relation             mRelation;
-            // The polynomial which is compared by this constraint to zero.
+            /// The polynomial which is compared by this constraint to zero.
             Polynomial           mLhs;
-            // The factorization of the polynomial considered by this constraint.
+            /// The factorization of the polynomial considered by this constraint.
             Factorization        mFactorization;
-            // A container which includes all variables occurring in the polynomial considered by this constraint.
+            /// A container which includes all variables occurring in the polynomial considered by this constraint.
             Variables            mVariables;
-            // A map which stores information about properties of the variables in this constraint.
+            /// A map which stores information about properties of the variables in this constraint.
             mutable VarInfoMap   mVarInfoMap;
+            /// Definiteness of the polynomial in this constraint.
+            mutable carl::Definiteness mLhsDefinitess;
 
-            // Constructors.
+            /**
+             * Default constructor. (0=0)
+             */
             Constraint();
-            Constraint( const Polynomial&, const Relation, unsigned = 0 );
-            Constraint( const Constraint&, bool = false );
+            
+            /**
+             * Constructs the constraint:   _lhs _rel 0
+             * @param _lhs The left-hand side of the constraint to construct being a polynomial.
+             * @param _rel The relation symbol.
+             * @param _id The unique id for this constraint. It should be maintained by a central instance
+             *             as the offered ConstraintPool class, therefore the constructors are private and
+             *             can only be invoked using the constraint pool or more precisely using the 
+             *             method smtrat::Formula::newConstraint( _lhs, _rel )  or
+             *             smtrat::Formula::newBound( x, _rel, b ) if _lhs = x - b and x is a variable
+             *             and b is a rational.
+             */
+            Constraint( const Polynomial& _lhs, const Relation _rel, unsigned _id = 0 );
+            
+            /**
+             * Copies the given constraint.
+             * @param _constraint The constraint to copy.
+             * @param _rehash A flag indicating whether to recalculate the hash value of the constraint to 
+             *                 construct. This might be necessary in case the given constraint has been 
+             *                 simplified but kept its hash value.
+             */
+            Constraint( const Constraint& _constraint, bool _rehash = false );
 
-            // Destructor.
+            /**
+             * Destructor.
+             */
             ~Constraint();
             
         public:
@@ -272,6 +259,22 @@ namespace smtrat
             }
             
             /**
+             * Checks whether the given assignment satisfies this constraint.
+             * @param _assignment The assignment.
+             * @return 1, if the given assignment satisfies this constraint.
+             *          0, if the given assignment contradicts this constraint.
+             *          2, otherwise (possibly not defined for all variables in the constraint,
+             *                       even then it could be possible to obtain the first two results.)
+             */
+            unsigned satisfiedBy( EvalRationalMap& _assignment ) const
+            {
+                Polynomial tmp = mLhs.substitute( _assignment );
+                if( tmp.isConstant() )
+                    return evaluate( tmp.trailingTerm()->coeff(), relation() ) ? 1 : 0;
+                else return 2;
+            }
+            
+            /**
              * Checks, whether the constraint is consistent.
              * It differs between, containing variables, consistent, and inconsistent.
              * @return 0, if the constraint is not consistent.
@@ -291,18 +294,16 @@ namespace smtrat
             unsigned consistentWith( const EvalDoubleIntervalMap& _solutionInterval ) const;
             
             /**
-             * Checks whether the given assignment satisfies this constraint.
-             * @param _assignment The assignment.
-             * @return 1, if the given assignment satisfies this constraint.
-             *         0, if the given assignment contradicts this constraint.
-             *         2, otherwise (possibly not defined for all variables in the constraint,
-             *                       even then it could be possible to obtain the first two results.)
+             * @param _var The variable to check the size of its solution set for.
+             * @return true, if it is easy to decide whether this constraint has a finite solution set
+             *                in the given variable;
+             *          false, otherwise.
              */
-            unsigned satisfiedBy( EvalRationalMap& _assignment ) const;
+            bool hasFinitelyManySolutionsIn( const carl::Variable& _var ) const;
             
             /**
              * Compares this constraint with the given constraint.
-             * @return  true,   if this constraint is LEXOGRAPHICALLY smaller than the given one;
+             * @return true,   if this constraint is LEXOGRAPHICALLY smaller than the given one;
              *          false,  otherwise.
              */
             bool operator<( const Constraint& _constraint ) const;
@@ -330,11 +331,6 @@ namespace smtrat
              * @return The ith coefficient of the given variable, where i is the given degree.
              */
             Polynomial coefficient( const carl::Variable& _var, unsigned _degree ) const;
-            
-            /**
-             * Collects some properties of the constraint. Needs only to be applied once.
-             */
-            void collectProperties();
                
             /**
              * Applies some cheap simplifications to the constraints.

@@ -36,7 +36,6 @@
 #include <string.h>
 #include <string>
 #include <set>
-#include <unordered_map>
 #include "Condition.h"
 #include "modules/ModuleType.h"
 #include "ConstraintPool.h"
@@ -57,27 +56,27 @@ namespace smtrat
 
             // Members.
 
-            // The deduction flag, which indicates, that this formula g is a direct sub-formula of
-            // a conjunction of formulas (and g f_1 .. f_n), and, that (implies (and f_1 .. f_n) g) holds.
+            /// The deduction flag, which indicates, that this formula g is a direct sub-formula of
+            /// a conjunction of formulas (and g f_1 .. f_n), and, that (implies (and f_1 .. f_n) g) holds.
             bool mDeducted;
-            // A flag indicating whether the propositions of this formula are updated.
+            /// A flag indicating whether the propositions of this formula are updated.
             bool mPropositionsUptodate;
-            // The activity for this formula, which means, how much is this formula involved in the solving procedure.
+            /// The activity for this formula, which means, how much is this formula involved in the solving procedure.
             double mActivity;
-            // Some value stating an expected difficulty of solving this formula for satisfiability.
+            /// Some value stating an expected difficulty of solving this formula for satisfiability.
             double mDifficulty;
-            // The type of this formula.
+            /// The type of this formula.
             Type mType;
-            // The content of this formula.
+            /// The content of this formula.
             union
             {
                 std::list<Formula*>* mpSubformulas;
                 const Constraint*    mpConstraint;
                 const std::string*   mpIdentifier;
             };
-            // The formula which contains this formula as sub formula.
+            /// The formula which contains this formula as sub formula.
             Formula* mpFather;
-            // The propositions of this formula.
+            /// The propositions of this formula.
             Condition mPropositions;
 
         public:

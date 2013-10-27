@@ -51,7 +51,7 @@
 #include "SATModule.h"
 #include <iomanip>
 
-#define DEBUG_SATMODULE
+//#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 //#define SATMODULE_WITH_CALL_NUMBER
 //#define WITH_PROGRESS_ESTIMATION
@@ -506,9 +506,7 @@ namespace smtrat
             {
                 BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find( _formula.identifier() );
                 if( booleanVarPair != mBooleanVarMap.end() )
-                {
                     return mkLit( booleanVarPair->second, false );
-                }
                 else
                 {
                     Var var                               = newVar( _formula.activity() );
@@ -540,21 +538,14 @@ namespace smtrat
     {
         ConstraintLiteralMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _constraint );
         if( constraintLiteralPair != mConstraintLiteralMap.end() )
-        {
             return constraintLiteralPair->second;
-        }
         else
         {
-            /*
-             * Add a fresh Boolean variable as an abstraction of the constraint.
-             */
+            // Add a fresh Boolean variable as an abstraction of the constraint.
             Var constraintAbstraction;
-
             #ifdef SMTRAT_DEVOPTION_Statistics
             if( _preferredToTSolver )
-            {
                 mStats->initialTrue();
-            }
             #endif
             const Constraint* constraint = NULL;
             if( !_polarity )
@@ -564,7 +555,6 @@ namespace smtrat
             Lit lit                            = mkLit( constraintAbstraction, !_polarity );
             mConstraintLiteralMap[_constraint] = lit;
             addConstraintToInform(constraint);
-
             return lit;
         }
     }

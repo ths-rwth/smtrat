@@ -281,7 +281,7 @@ namespace smtrat
                 return mFoundAnswer;
             }
             
-            const std::string moduleName( const ModuleType _moduleType ) const
+            static const std::string moduleName( const ModuleType _moduleType )
             {
                 return moduleTypeToString( _moduleType );
             }

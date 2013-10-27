@@ -94,6 +94,16 @@ namespace smtrat
     
     Module::~Module()
     {
+//        cout << "Constraints to inform: " << endl;
+//        for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
+//            cout << "   " << **iter << endl;
+//        cout << "test0" << endl;
+        while( !mConstraintsToInform.empty() )
+        {
+//            cout << "pop " << *mConstraintsToInform.back() << endl;
+            mConstraintsToInform.pop_back();
+        }
+//        cout << "test1" << endl;
         delete mpPassedFormula;
         mFoundAnswer.clear();
         delete mBackendsFoundAnswer;
@@ -146,7 +156,7 @@ namespace smtrat
     bool Module::inform( const Constraint* const _constraint )
     {
         #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName( mModuleType ) << ": " << _constraint->smtlibString() << endl;
+        cout << __func__ << " in " << this << " with name " << moduleName( mModuleType ) << ": " << _constraint->toString() << endl;
         #endif
         addConstraintToInform(_constraint);
         return true;

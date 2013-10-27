@@ -133,12 +133,12 @@ namespace smtrat
                 addSubformula( new Formula( **subFormula ));
         }
         else if( _formula.getType() == BOOL )
-            mpIdentifier = new string( _formula.identifier() );
+            mpIdentifier = _formula.mpIdentifier;
     }
 
     Formula::~Formula()
     {
-        if( mType != CONSTRAINT && mType != TTRUE && mType != FFALSE )
+        if( mType != BOOL && mType != CONSTRAINT && mType != TTRUE && mType != FFALSE )
         {
             while( !mpSubformulas->empty() )
             {
@@ -159,28 +159,22 @@ namespace smtrat
         {
             if( isBooleanCombination() )
                 delete mpSubformulas;
-            mpIdentifier = new string( _formula->identifier() );
+            mpIdentifier = _formula->mpIdentifier;
         }
         else if( _formula->getType() == CONSTRAINT )
         {
             if( isBooleanCombination() )
                 delete mpSubformulas;
-            else if( mType == BOOL )
-                delete mpIdentifier;
             mpConstraint = _formula->pConstraint();
         }
         else if( _formula->getType() == TTRUE || _formula->getType() == FFALSE )
         {
             if( isBooleanCombination() )
                 delete mpSubformulas;
-            else if( mType == BOOL )
-                delete mpIdentifier;
             mpSubformulas = NULL;
         }
         else
         {
-            if( mType == BOOL )
-                delete mpIdentifier;
             if( !isBooleanCombination() )
                 mpSubformulas = new list<Formula*>();
             while( !_formula->empty() )
@@ -445,7 +439,9 @@ namespace smtrat
             activity += s.str();
         }
         if( mType == BOOL )
-            return (_init + *mpIdentifier + activity);
+        {
+            return (_init + (*mpIdentifier) + activity);
+        }
         else if( mType == CONSTRAINT )
             return (_init + mpConstraint->toString( _resolveUnequal, _infix, _friendlyNames ) + activity);
         else if( isAtom() )

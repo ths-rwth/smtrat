@@ -42,14 +42,14 @@ namespace vs
     class Condition
     {
         public:
-            struct condComp
+            struct condPointerLess
             {
                 bool operator ()( const Condition* const pCondA, const Condition* const pCondB ) const
                 {
                     return (*pCondA).constraint() < (*pCondB).constraint();
                 }
             };
-            typedef std::set<const Condition*, condComp> ConditionSet;
+            typedef std::set<const Condition*, condPointerLess> ConditionSet;
 
         private:
 
@@ -120,13 +120,13 @@ namespace vs
                 return *mpOriginalConditions;
             }
 
-            double valuate( const std::string&, unsigned, bool, bool ) const;
+            double valuate( const carl::Variable&, unsigned, bool, bool ) const;
             bool operator ==( const Condition& ) const;
             bool operator <( const Condition& ) const;
             void print( std::ostream& = std::cout ) const;
     };
 
-    typedef std::set<const Condition*, Condition::condComp> ConditionSet;
+    typedef std::set<const Condition*, Condition::condPointerLess> ConditionSet;
 
 }    // end namspace vs
 

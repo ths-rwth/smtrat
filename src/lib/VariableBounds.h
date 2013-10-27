@@ -29,6 +29,7 @@
 #define	VARIABLEBOUNDS_H
 
 #include "Constraint.h"
+#include <iomanip>
 
 namespace smtrat
 {
@@ -45,13 +46,13 @@ namespace smtrat
                 enum Type { STRICT_LOWER_BOUND = 0, WEAK_LOWER_BOUND = 1, EQUAL_BOUND = 2, WEAK_UPPER_BOUND = 3, STRICT_UPPER_BOUND = 4 };
 
             private:
-                // The type of this bound.
+                /// The type of this bound.
                 Type                        mType;
-                // A pointer to bound value, which is plus or minus infinity if the pointer is NULL.
+                /// A pointer to bound value, which is plus or minus infinity if the pointer is NULL.
                 Rational*                   mpLimit;
-                // The variable for which the bound is declared.
+                /// The variable for which the bound is declared.
                 Variable<T>* const          mpVariable;
-                // A set of origins of the bound, e.g., x-3<0 is the origin of the bound <3.
+                /// A set of origins of the bound, e.g., x-3<0 is the origin of the bound <3.
                 std::set< const T* >* const mpOrigins;
                 
             public:
@@ -222,17 +223,17 @@ namespace smtrat
 
             typedef std::set<const Bound<T>*, boundPointerComp> BoundSet;
             private:
-                // A flag that indicates that the stored exact interval of this variable is up to date.
+                /// A flag that indicates that the stored exact interval of this variable is up to date.
                 bool            mUpdatedExactInterval;
-                // A flag that indicates that the stored double interval of this variable is up to date.
+                /// A flag that indicates that the stored double interval of this variable is up to date.
                 bool            mUpdatedDoubleInterval;
-                // The least upper bound of this variable.
+                /// The least upper bound of this variable.
                 const Bound<T>* mpSupremum;
-                // The greatest lower bound of this variable.
+                /// The greatest lower bound of this variable.
                 const Bound<T>* mpInfimum;
-                // The set of all upper bounds of this variable.
+                /// The set of all upper bounds of this variable.
                 BoundSet        mUpperbounds;
-                // The set of all lower bounds of this variable.
+                /// The set of all lower bounds of this variable.
                 BoundSet        mLowerbounds;
 
             public:
@@ -361,21 +362,21 @@ namespace smtrat
         template <class T> class VariableBounds
         {
             public:
-                typedef Constraint::FastPointerMap<const Bound<T>*> ConstraintBoundMap;
-                typedef std::unordered_map<const carl::Variable, Variable<T>*> VariableMap;
+                typedef FastPointerMap<Constraint,const Bound<T>*> ConstraintBoundMap;
+                typedef FastMap<carl::Variable, Variable<T>*>      VariableMap;
             private:
-                // A pointer to one of the conflicting variables (its supremum is smaller than its infimum)
-                // or NULL if there is no conflict.
+                /// A pointer to one of the conflicting variables (its supremum is smaller than its infimum)
+                /// or NULL if there is no conflict.
                 Variable<T>*          mpConflictingVariable;
-                // A mapping from arithmetic variables to the variable objects storing the bounds.
+                /// A mapping from arithmetic variables to the variable objects storing the bounds.
                 VariableMap*          mpVariableMap;
-                // A mapping from constraint pointer to the corresponding bounds.
+                /// A mapping from constraint pointer to the corresponding bounds.
                 ConstraintBoundMap*   mpConstraintBoundMap;
-                // The stored exact interval map representing the currently tightest bounds.
-                // Note, that it is updated on demand.
+                /// The stored exact interval map representing the currently tightest bounds.
+                /// Note, that it is updated on demand.
                 EvalIntervalMap       mEvalIntervalMap;
-                // The stored double interval map representing the currently tightest bounds.
-                // Note, that it is updated on demand.
+                /// The stored double interval map representing the currently tightest bounds.
+                /// Note, that it is updated on demand.
                 EvalDoubleIntervalMap mDoubleIntervalMap;
             public:
                 /*
@@ -406,6 +407,17 @@ namespace smtrat
                  *          0, otherwise.
                  */
                 unsigned removeBound( const Constraint* _constraint, const T* _origin );
+                
+                /**
+                 * Removes all effects the given constraint has on the variable bounds.
+                 * @param _constraint The constraint, which effects shall be undone for the variable bounds.
+                 * @param _origin The origin of the given constraint.
+                 * @param _changedVariable The variable whose interval domain has been changed, if the return value is 2.
+                 * @return 2, if the variables supremum or infimum have been changed;
+                 *          1, if the constraint was a (not the strictest) bound;
+                 *          0, otherwise.
+                 */
+                unsigned removeBound( const Constraint* _constraint, const T* _origin, carl::Variable*& _changedVariable );
                 
                 /**
                  * Creates an evalintervalmap corresponding to the variable bounds.
@@ -832,6 +844,31 @@ namespace smtrat
             return 0;
         }
 
+        template<class T>
+        unsigned VariableBounds<T>::removeBound( const Constraint* _constraint, const T* _origin, carl::Variable*& _changedVariable )
+        {
+            if( _constraint->relation() != Constraint::NEQ && _constraint->variables().size() == 1 )
+            {
+                const carl::Variable& var = *_constraint->variables().begin();
+                if( _constraint->maxDegree( var ) == 1 )
+                {
+                    assert( mpConstraintBoundMap->find( _constraint ) != mpConstraintBoundMap->end() );
+                    const Bound<T>& bound = *(*mpConstraintBoundMap)[_constraint];
+                    if( bound.deactivate( _origin ) )
+                    {
+                        if( bound.pVariable()->updateBounds( bound ) )
+                            mpConflictingVariable = bound.pVariable();
+                        else
+                            mpConflictingVariable = NULL;
+                        _changedVariable = new carl::Variable( var );
+                        return 2;
+                    }
+                    return 1;
+                }
+            }
+            return 0;
+        }
+
         #define CONVERT_BOUND(type, namesp) (type != Bound<T>::WEAK_UPPER_BOUND && type != Bound<T>::WEAK_LOWER_BOUND && type != Bound<T>::EQUAL_BOUND ) ? namesp::STRICT_BOUND : namesp::WEAK_BOUND
 
         template<class T>
@@ -1009,7 +1046,7 @@ namespace smtrat
             std::set< const T* > originsOfBounds = std::set< const T* >();
             for( auto var = _variables.begin(); var != _variables.end(); ++var )
             {
-                auto varVarPair = mpVariableMap->find( var );
+                auto varVarPair = mpVariableMap->find( *var );
                 assert( varVarPair != mpVariableMap->end() );
                 if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
                 if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );

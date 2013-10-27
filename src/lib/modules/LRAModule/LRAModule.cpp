@@ -1316,10 +1316,14 @@ namespace smtrat
      */
     void LRAModule::initialize( const Constraint* const _pConstraint )
     {
+        assert( _pConstraint->isConsistent() == 2 );
         if( _pConstraint->lhs().nrTerms() == 1 || ( _pConstraint->lhs().nrTerms() == 2 && _pConstraint->lhs().hasConstantTerm() ) )
         {
-            carl::Variable var = (*(*_pConstraint->lhs().begin())->monomial())[0].var;
-            Rational primCoeff = (*_pConstraint->lhs().begin())->coeff();
+            auto term = _pConstraint->lhs().begin();
+            for( ; term != _pConstraint->lhs().end(); ++term )
+                if( !(*term)->isConstant() ) break;
+            carl::Variable var = (*(*term)->monomial())[0].var;
+            Rational primCoeff = (*term)->coeff();
             Rational constantPart = (-_pConstraint->constantPart())/primCoeff;
             VarVariableMap::iterator basicIter = mOriginalVars.find( var );
             // constraint not found, add new nonbasic variable
@@ -1350,25 +1354,25 @@ namespace smtrat
             {
                 vector< Variable<Numeric>* > nonbasics = vector< Variable<Numeric>* >();
                 vector< Numeric > numCoeffs = vector< Numeric >();
-                auto term = _pConstraint->lhs().rbegin();
-                if( (*term)->isConstant() )
-                    ++term;
-                for( ; term != _pConstraint->lhs().rend(); ++term )
+                for( auto term = _pConstraint->lhs().begin(); term != _pConstraint->lhs().end(); ++term )
                 {
-                    carl::Variable var = (*(*term)->monomial())[0].var;
-                    VarVariableMap::iterator nonBasicIter = mOriginalVars.find( var );
-                    if( mOriginalVars.end() == nonBasicIter )
+                    if( !(*term)->isConstant() )
                     {
-                        Polynomial* varPoly = new Polynomial( var );
-                        Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( varPoly );
-                        mOriginalVars.insert( pair<carl::Variable, Variable<Numeric>*>( var, nonBasic ) );
-                        nonbasics.push_back( nonBasic );
+                        carl::Variable var = (*(*term)->monomial())[0].var;
+                        VarVariableMap::iterator nonBasicIter = mOriginalVars.find( var );
+                        if( mOriginalVars.end() == nonBasicIter )
+                        {
+                            Polynomial* varPoly = new Polynomial( var );
+                            Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( varPoly );
+                            mOriginalVars.insert( pair<carl::Variable, Variable<Numeric>*>( var, nonBasic ) );
+                            nonbasics.push_back( nonBasic );
+                        }
+                        else
+                        {
+                            nonbasics.push_back( nonBasicIter->second );
+                        }
+                        numCoeffs.push_back( Numeric( (*term)->coeff() ) );
                     }
-                    else
-                    {
-                        nonbasics.push_back( nonBasicIter->second );
-                    }
-                    numCoeffs.push_back( Numeric( (*term)->coeff() ) );
                 }
 
                 Variable<Numeric>* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );

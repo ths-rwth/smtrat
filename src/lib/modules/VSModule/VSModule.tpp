@@ -70,8 +70,8 @@ namespace smtrat
      * Adds a constraint to the so far received constraints.
      *
      * @param _subformula The position of the constraint within the received constraints.
-     * @return False, if a conflict is detected;
-     *         True,  otherwise.
+     * @return false, if a conflict is detected;
+     *          true,  otherwise.
      */
     template<class Settings>
     bool VSModule<Settings>::assertSubformula( Formula::const_iterator _subformula )
@@ -370,7 +370,7 @@ namespace smtrat
                             case State::TEST_CANDIDATE_TO_GENERATE:
                             {
                                 // Set the index, if not already done, to the best variable to eliminate next.
-                                if( currentState->index() == "" ) 
+                                if( currentState->pIndex() == NULL ) 
                                     currentState->initIndex( mAllVariables, Settings::prefer_equation_over_all );
                                 else if( currentState->tryToRefreshIndex() )
                                 {
@@ -435,9 +435,9 @@ namespace smtrat
                                         else
                                         {
                                             // Check whether there are still test candidates in form of children left.
-                                            bool                  currentStateHasChildrenToConsider       = false;
-                                            bool                  currentStateHasChildrenWithToHighDegree = false;
-                                            StateVector::iterator child                                   = currentState->rChildren().begin();
+                                            bool currentStateHasChildrenToConsider = false;
+                                            bool currentStateHasChildrenWithToHighDegree = false;
+                                            auto child = currentState->rChildren().begin();
                                             while( child != currentState->children().end() )
                                             {
                                                 if( !(**child).isInconsistent() )
@@ -550,11 +550,11 @@ namespace smtrat
                                     else
                                     {
                                         #ifdef VS_DEBUG
-                                        cout << "*** Eliminate " << currentState->index() << " in ";
+                                        cout << "*** Eliminate " << currentState->pIndex() << " in ";
                                         currentCondition->constraint().print( cout );
                                         cout << " creates:" << endl;
                                         #endif
-                                        eliminate( currentState, currentState->index(), currentCondition );
+                                        eliminate( currentState, currentState->pIndex(), currentCondition );
                                         #ifdef VS_DEBUG
                                         cout << "*** Eliminate ready." << endl;
                                         #endif
@@ -652,11 +652,7 @@ namespace smtrat
     {
         // Get the constraint of this condition.
         const Constraint* constraint = (*_condition).pConstraint();
-        #ifdef VS_DEBUG
-        cout << "Factorization of constraint is  " << constraint->factorization() << endl;
-        #endif
-        symbol sym;
-        if( !constraint->variable( _eliminationVar, sym ) ) return;
+        assert( _condition->constraint().hasVariable( _eliminationVar ) );
         bool generatedTestCandidateBeingASolution = false;
         unsigned numberOfAddedChildren = 0;
         ConditionSet oConditions = ConditionSet();
@@ -665,74 +661,80 @@ namespace smtrat
         if( !Settings::use_variable_bounds || _currentState->hasRootsInVariableBounds( _condition, Settings::sturm_sequence_for_root_check ) )
         {
             #endif
-            Constrain::Relation relation = (*_condition).constraint().relation();
-//            cout << "Find roots of  " << (*_condition).constraint().lhs() << "  instead of  " << (*_condition).constraint().factorization() << endl;
-            symtab vars = constraint->variables();
-            if( !Settings::use_strict_inequalities_for_test_candidate_generation && (relation == Constraint::LESS || relation == Constraint::GREATER || relation == Constraint::NEQ) )
+            Constraint::Relation relation = (*_condition).constraint().relation();
+            if( !Settings::use_strict_inequalities_for_test_candidate_generation )
             {
-                _currentState->rTooHighDegreeConditions().insert( _condition );
-                return;
+                if( relation == Constraint::LESS || relation == Constraint::GREATER || relation == Constraint::NEQ )
+                {
+                    _currentState->rTooHighDegreeConditions().insert( _condition );
+                    return;
+                }
             }
-            vars.erase( _eliminationVar );
             // Determine the substitution type: normal or +epsilon
             Substitution::Type subType = Substitution::PLUS_EPSILON;
             if( relation == Constraint::EQ || relation == Constraint::LEQ || relation == Constraint::GEQ )
                 subType = Substitution::NORMAL;
-            vector< ex > factors = vector< ex >();
+            vector< Polynomial > factors = vector< Polynomial >();
+            PointerSet<Constraint> sideConditions = PointerSet<Constraint>();
             if( Settings::elimination_with_factorization && constraint->hasFactorization() )
             {
                 for( auto iter = constraint->factorization().begin(); iter != constraint->factorization().end(); ++iter )
                 {
-                    if( iter->has( sym ) )
+                    Variables factorVars;
+                    iter->first.gatherVariables( factorVars );
+                    if( factorVars.find( _eliminationVar ) != factorVars.end() )
+                        factors.push_back( iter->first );
+                    else
                     {
-                        if( is_exactly_a<power>( *iter ) )
-                            factors.push_back( *iter->begin() );
-                        else
-                            factors.push_back( *iter );
+                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( iter->first, Constraint::NEQ );
+                        if( cons != Formula::constraintPool().consistentConstraint() )
+                        {
+                            assert( cons != Formula::constraintPool().inconsistentConstraint() );
+                            sideConditions.insert( cons );
+                        }
                     }
                 }
             }
             else
-            {
                 factors.push_back( constraint->lhs() );
-            }
             for( auto factor = factors.begin(); factor != factors.end(); ++factor )
             {
                 #ifdef VS_DEBUG
                 cout << "Eliminate for " << *factor << endl;
                 #endif
-                vector<ex> coeffs = vector<ex>();
-                signed degree = factor->degree( ex( sym ) );
-                for( signed i = 0; i <= degree; ++i )
-                    coeffs.push_back( ex( factor->coeff( ex( sym ), i ) ) );
+                const map<unsigned, Polynomial>& coeffs = factor->getVarInfo<true>( _eliminationVar ).coeffs();
+                assert( !coeffs.empty() );
                 // Generate test candidates for the chosen variable considering the chosen constraint.
-                switch( coeffs.size() )
+                switch( coeffs.rbegin()->first )
                 {
-                    case 1:
+                    case 0:
                     {
                         assert( false );
                         break;
                     }
                     //degree = 1
-                    case 2:
+                    case 1:
                     {
                         // Create state ({b!=0} + oldConditions, [x -> -c/b]):
-                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( coeffs.at( 1 ), CR_NEQ, vars );
+                        Polynomial constantCoeff;
+                        auto iter = coeffs.find( 0 );
+                        if( iter != coeffs.end() ) constantCoeff = iter->second;
+                        const smtrat::Constraint* cons = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::NEQ );
                         if( cons == Formula::constraintPool().inconsistentConstraint() )
                         {
-                            if( relation == CR_EQ )
-                                generatedTestCandidateBeingASolution = true;
+                            if( relation == Constraint::EQ )
+                                generatedTestCandidateBeingASolution = sideConditions.empty();
                         }
                         else
                         {
-                            ConstraintSet sideCond = ConstraintSet();
+                            PointerSet<Constraint> sideCond = sideConditions;
                             if( cons != Formula::constraintPool().consistentConstraint() )
                                 sideCond.insert( cons );
-                            SqrtEx sqEx = SqrtEx( -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, vars );
-                            Substitution sub = Substitution( _eliminationVar, sym, sqEx, subType, oConditions, sideCond );
+                            SqrtEx sqEx = SqrtEx( -constantCoeff, 0, coeffs.rbegin()->second, 0 );
+                            Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
                             if( _currentState->addChild( sub ) )
                             {
-                                if( relation == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
+                                if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                 {
                                     _currentState->rChildren().back()->setOriginalCondition( _condition );
                                     generatedTestCandidateBeingASolution = true;
@@ -748,27 +750,33 @@ namespace smtrat
                         break;
                     }
                     //degree = 2
-                    case 3:
+                    case 2:
                     {
-                        ex radicand = ex( pow( coeffs.at( 1 ), 2 ) - 4 * coeffs.at( 2 ) * coeffs.at( 0 ) );
+                        Polynomial constantCoeff;
+                        auto iter = coeffs.find( 0 );
+                        if( iter != coeffs.end() ) constantCoeff = iter->second;
+                        Polynomial linearCoeff;
+                        iter = coeffs.find( 1 );
+                        if( iter != coeffs.end() ) linearCoeff = iter->second;
+                        Polynomial radicand = linearCoeff.pow( 2 ) - 4 * coeffs.rbegin()->second * constantCoeff;
                         bool constraintHasZeros = false;
                         // Create state ({a==0, b!=0} + oldConditions, [x -> -c/b]):
-                        const smtrat::Constraint* cons11 = smtrat::Formula::newConstraint( coeffs.at( 2 ), CR_EQ, vars );
+                        const smtrat::Constraint* cons11 = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::EQ );
                         if( cons11 != Formula::constraintPool().inconsistentConstraint() )
                         {
-                            const smtrat::Constraint* cons12 = smtrat::Formula::newConstraint( coeffs.at( 1 ), CR_NEQ, vars );
+                            const smtrat::Constraint* cons12 = smtrat::Formula::newConstraint( linearCoeff, Constraint::NEQ );
                             if( cons12 != Formula::constraintPool().inconsistentConstraint() )
                             {
-                                ConstraintSet sideCond = ConstraintSet();
+                                PointerSet<Constraint> sideCond = sideConditions;
                                 if( cons11 != Formula::constraintPool().consistentConstraint() )
                                     sideCond.insert( cons11 );
                                 if( cons12 != Formula::constraintPool().consistentConstraint() )
                                     sideCond.insert( cons12 );
-                                SqrtEx sqEx = SqrtEx( -coeffs.at( 0 ), 0, coeffs.at( 1 ), 0, vars );
-                                Substitution sub = Substitution( _eliminationVar, sym, sqEx, subType, oConditions, sideCond );
+                                SqrtEx sqEx = SqrtEx( -constantCoeff, 0, linearCoeff, 0 );
+                                Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
                                 if( _currentState->addChild( sub ) )
                                 {
-                                    if( relation == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
+                                    if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                     {
                                         _currentState->rChildren().back()->setOriginalCondition( _condition );
                                         generatedTestCandidateBeingASolution = true;
@@ -784,22 +792,22 @@ namespace smtrat
                             }
                         }
                         // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
-                        const smtrat::Constraint* cons21 = smtrat::Formula::newConstraint( coeffs.at( 2 ), CR_NEQ, vars );
+                        const smtrat::Constraint* cons21 = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::NEQ );
                         if( cons21 != Formula::constraintPool().inconsistentConstraint() )
                         {
-                            const smtrat::Constraint* cons22 = smtrat::Formula::newConstraint( radicand, CR_GEQ, vars );
+                            const smtrat::Constraint* cons22 = smtrat::Formula::newConstraint( radicand, Constraint::GEQ );
                             if( cons22 != Formula::constraintPool().inconsistentConstraint() )
                             {
-                                ConstraintSet sideCond = ConstraintSet();
+                                PointerSet<Constraint> sideCond = sideConditions;
                                 if( cons21 != Formula::constraintPool().consistentConstraint() )
                                     sideCond.insert( cons21 );
                                 if( cons22 != Formula::constraintPool().consistentConstraint() )
                                     sideCond.insert( cons22 );
-                                SqrtEx sqEx = SqrtEx( -coeffs.at( 1 ), 1, 2 * coeffs.at( 2 ), radicand, vars );
-                                Substitution sub = Substitution( _eliminationVar, sym, sqEx, subType, oConditions, sideCond );
+                                SqrtEx sqEx = SqrtEx( -linearCoeff, 1, 2 * coeffs.rbegin()->second, radicand );
+                                Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
                                 if( _currentState->addChild( sub ) )
                                 {
-                                    if( relation == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
+                                    if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                     {
                                         _currentState->rChildren().back()->setOriginalCondition( _condition );
                                         generatedTestCandidateBeingASolution = true;
@@ -815,22 +823,22 @@ namespace smtrat
                             }
                         }
                         // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
-                        const smtrat::Constraint* cons31 = smtrat::Formula::newConstraint( coeffs.at( 2 ), CR_NEQ, vars );
+                        const smtrat::Constraint* cons31 = smtrat::Formula::newConstraint( coeffs.rbegin()->second, Constraint::NEQ );
                         if( cons31 != Formula::constraintPool().inconsistentConstraint() )
                         {
-                            const smtrat::Constraint* cons32 = smtrat::Formula::newConstraint( radicand, CR_GEQ, vars );
+                            const smtrat::Constraint* cons32 = smtrat::Formula::newConstraint( radicand, Constraint::GEQ );
                             if( cons32 != Formula::constraintPool().inconsistentConstraint() )
                             {
-                                ConstraintSet sideCond = ConstraintSet();
+                                PointerSet<Constraint> sideCond = sideConditions;
                                 if( cons31 != Formula::constraintPool().consistentConstraint() )
                                     sideCond.insert( cons31 );
                                 if( cons32 != Formula::constraintPool().consistentConstraint() )
                                     sideCond.insert( cons32 );
-                                SqrtEx sqEx = SqrtEx( -coeffs.at( 1 ), -1, 2 * coeffs.at( 2 ), radicand, vars );
-                                Substitution sub = Substitution( _eliminationVar, sym, sqEx, subType, oConditions, sideCond );
+                                SqrtEx sqEx = SqrtEx( -linearCoeff, -1, 2 * coeffs.rbegin()->second, radicand );
+                                Substitution sub = Substitution( _eliminationVar, sqEx, subType, oConditions, sideCond );
                                 if( _currentState->addChild( sub ) )
                                 {
-                                    if( relation == CR_EQ && !_currentState->children().back()->hasSubstitutionResults() )
+                                    if( relation == Constraint::EQ && !_currentState->children().back()->hasSubstitutionResults() )
                                     {
                                         _currentState->rChildren().back()->setOriginalCondition( _condition );
                                         generatedTestCandidateBeingASolution = true;
@@ -845,8 +853,8 @@ namespace smtrat
                                 constraintHasZeros = true;
                             }
                         }
-                        if( !constraintHasZeros && relation == CR_EQ )
-                            generatedTestCandidateBeingASolution = true;
+                        if( !constraintHasZeros && relation == Constraint::EQ )
+                            generatedTestCandidateBeingASolution = sideConditions.empty();
                         break;
                     }
                     //degree > 2 (> 3)
@@ -863,7 +871,7 @@ namespace smtrat
         if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
         {
             // Create state ( Conditions, [x -> -infinity]):
-            Substitution sub = Substitution( _eliminationVar, sym, ST_MINUS_INFINITY, oConditions );
+            Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, oConditions );
             if( _currentState->addChild( sub ) )
             {
                 // Add its valuation to the current ranking.
@@ -927,7 +935,7 @@ namespace smtrat
         assert( !_currentState->isRoot() );
         const Substitution& currentSubs = _currentState->substitution();
         // The variable to substitute.
-        const string& substitutionVariable = currentSubs.variable();
+        const carl::Variable& substitutionVariable = currentSubs.variable();
         // The conditions of the currently considered state, without the one getting just eliminated.
         ConditionList oldConditions = ConditionList();
         bool anySubstitutionFailed = false;
@@ -939,7 +947,7 @@ namespace smtrat
             _currentState->rFather().printAlone();
             _currentState->printAlone();
         }
-        GiNaCRA::evaldoubleintervalmap solBox = (currentSubs.type() == vs::ST_MINUS_INFINITY ? GiNaCRA::evaldoubleintervalmap() : _currentState->rFather().rVariableBounds().getIntervalMap());
+        EvalDoubleIntervalMap solBox = (currentSubs.type() == Substitution::MINUS_INFINITY ? EvalDoubleIntervalMap() : _currentState->rFather().rVariableBounds().getIntervalMap());
         #else
         GiNaCRA::evaldoubleintervalmap solBox = GiNaCRA::evaldoubleintervalmap();
         #endif
@@ -949,7 +957,7 @@ namespace smtrat
             // The constraint to substitute in.
             const Constraint* currentConstraint = (**cond).pConstraint();
             // Does the condition contain the variable to substitute.
-            symtab::const_iterator var = currentConstraint->variables().find( substitutionVariable );
+            auto var = currentConstraint->variables().find( substitutionVariable );
             if( var == currentConstraint->variables().end() )
             {
                 if( !anySubstitutionFailed )
@@ -961,7 +969,7 @@ namespace smtrat
             else
             {
                 DisjunctionOfConstraintConjunctions subResult = DisjunctionOfConstraintConjunctions();
-                symtab conflVars = symtab();
+                Variables conflVars = Variables();
                 if( !substitute( currentConstraint, currentSubs, subResult, Settings::virtual_substitution_according_paper, conflVars, solBox ) )
                     allSubstitutionsApplied = false;
                 // Create the the conditions according to the just created constraint prototypes.
@@ -1113,7 +1121,9 @@ namespace smtrat
                 recentlyAddedConditions.push_back( *cond );
                 if( _currentState->pOriginalCondition() == NULL )
                 {
-                    bool onlyTestCandidateToConsider = (**cond).constraint().hasFinitelyManySolutionsIn( _currentState->index() );
+                    bool onlyTestCandidateToConsider = false;
+                    if( _currentState->pIndex() != NULL ) // TODO: Maybe only if the degree is not to high
+                        onlyTestCandidateToConsider = (**cond).constraint().hasFinitelyManySolutionsIn( *_currentState->pIndex() );
                     if( onlyTestCandidateToConsider )
                         deleteExistingTestCandidates = true;
                 }
@@ -1146,27 +1156,26 @@ namespace smtrat
                      */
                     for( auto cond = recentlyAddedConditions.begin(); cond != recentlyAddedConditions.end(); ++cond )
                     {
-                        bool hasVariable = (**cond).constraint().hasVariable( _currentState->index() );
-                        if( hasVariable )
+                        if( _currentState->pIndex() != NULL && (**cond).constraint().hasVariable( *_currentState->pIndex() ) )
                         {
-                            bool                  worseConditionFound = false;
-                            StateVector::iterator child               = _currentState->rChildren().begin();
+                            bool worseConditionFound = false;
+                            auto child = _currentState->rChildren().begin();
                             while( !worseConditionFound && child != _currentState->children().end() )
                             {
-                                if( (**child).substitution().type() != ST_MINUS_INFINITY )
+                                if( (**child).substitution().type() != Substitution::MINUS_INFINITY )
                                 {
-                                    ConditionSet::iterator oCond = (**child).rSubstitution().rOriginalConditions().begin();
+                                    auto oCond = (**child).rSubstitution().rOriginalConditions().begin();
                                     while( !worseConditionFound && oCond != (**child).substitution().originalConditions().end() )
                                     {
-                                        if( (**cond).valuate( _currentState->index(), mAllVariables.size(), true, Settings::prefer_equation_over_all ) > (**oCond).valuate( _currentState->index(), mAllVariables.size(), true, Settings::prefer_equation_over_all ) )
+                                        if( (**cond).valuate( _currentState->pIndex(), mAllVariables.size(), true, Settings::prefer_equation_over_all ) > (**oCond).valuate( _currentState->pIndex(), mAllVariables.size(), true, Settings::prefer_equation_over_all ) )
                                         {
                                             newTestCandidatesGenerated = true;
                                             #ifdef VS_DEBUG
-                                            cout << "*** Eliminate " << _currentState->index() << " in ";
+                                            cout << "*** Eliminate " << _currentState->pIndex() << " in ";
                                             (**cond).constraint().print( cout );
                                             cout << " creates:" << endl;
                                             #endif
-                                            eliminate( _currentState, _currentState->index(), *cond );
+                                            eliminate( _currentState, _currentState->pIndex(), *cond );
                                             #ifdef VS_DEBUG
                                             cout << "*** Eliminate ready." << endl;
                                             #endif
@@ -1234,7 +1243,7 @@ namespace smtrat
                 _state->rID() = mIDCounter;
             }
             _state->updateValuation();
-            vs::UnsignedTriple key = vs::UnsignedTriple( _state->valuation(), pair< unsigned, unsigned> ( _state->id(), _state->backendCallValuation() ) );
+            UnsignedTriple key = UnsignedTriple( _state->valuation(), pair< unsigned, unsigned> ( _state->id(), _state->backendCallValuation() ) );
             if( (mRanking.insert( ValStatePair( key, _state ) )).second == false )
             {
                 cout << "Warning: Could not insert. Entry already exists.";
@@ -1267,8 +1276,8 @@ namespace smtrat
     template<class Settings>
     bool VSModule<Settings>::eraseDTofRanking( State& _state )
     {
-        vs::UnsignedTriple key = vs::UnsignedTriple( _state.valuation(), pair< unsigned, unsigned> ( _state.id(), _state.backendCallValuation() ) );
-        ValuationMap::iterator valDTPair = mRanking.find( key );
+        UnsignedTriple key = UnsignedTriple( _state.valuation(), pair< unsigned, unsigned> ( _state.id(), _state.backendCallValuation() ) );
+        auto valDTPair = mRanking.find( key );
         if( valDTPair != mRanking.end() )
         {
             mRanking.erase( valDTPair );
@@ -1349,39 +1358,6 @@ namespace smtrat
         }
         assert( !mInfeasibleSubsets.empty() );
         assert( !mInfeasibleSubsets.back().empty() );
-    }
-
-    /**
-     * Gets a symbolic assignment, if an assignment exists and the consistency check determined
-     * the satisfiability of the given set of constraints.
-     *
-     * @return A symbolic assignment.
-     */
-    template<class Settings>
-    vector<pair<string, pair<Substitution_Type, vs::SqrtEx> > > VSModule<Settings>::getSymbolicAssignment() const
-    {
-        assert( !mConditionsChanged && mInfeasibleSubsets.empty() );
-        vector<pair<string, pair<Substitution_Type, ex> > > result    = vector<pair<string, pair<Substitution_Type, ex> > >();
-        vector<pair<string, pair<Substitution_Type, ex> > > resultTmp = vector<pair<string, pair<Substitution_Type, ex> > >();
-        symtab uncheckedVariables = mAllVariables;
-        const State* currentState = mRanking.begin()->second;
-        while( !currentState->isRoot() )
-        {
-            const Substitution& sub = currentState->substitution();
-            uncheckedVariables.erase( sub.variable() );
-            pair<Substitution_Type, ex>                symValue        = pair<Substitution_Type, ex>( sub.type(), sub.term().asExpression() );
-            pair<string, pair<Substitution_Type, ex> > symVarValuePair = pair<string, pair<Substitution_Type, ex> >( sub.variable(), symValue );
-            resultTmp.push_back( symVarValuePair );
-            currentState = (*currentState).pFather();
-        }
-        for( auto var = uncheckedVariables.begin(); var != uncheckedVariables.end(); ++var )
-        {
-            pair<Substitution_Type, ex>                symValue        = pair<Substitution_Type, ex>( ST_NORMAL, 0 );
-            pair<string, pair<Substitution_Type, ex> > symVarValuePair = pair<string, pair<Substitution_Type, ex> >( var->first, symValue );
-            result.push_back( symVarValuePair );
-        }
-        result.insert( result.end(), resultTmp.begin(), resultTmp.end() );
-        return result;
     }
 
     /**
@@ -1490,7 +1466,7 @@ namespace smtrat
     {
         bool changedPassedFormula = false;
         // Collect the constraints to check.
-        map< const Constraint*, const vs::Condition* const, smtrat::constraintPointerComp > constraintsToCheck = map< const Constraint*, const vs::Condition* const, smtrat::constraintPointerComp >();
+        PointerMap<Constraint,const vs::Condition* const> constraintsToCheck = PointerMap<Constraint,const vs::Condition* const>();
         for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
         {
             if( (*cond)->flag() )
@@ -1498,15 +1474,15 @@ namespace smtrat
                 const Constraint* constraint = (*cond)->pConstraint();
                 switch( constraint->relation() )
                 {
-                    case CR_GEQ:
+                    case Constraint::GEQ:
                     {
-                        const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), CR_GREATER, constraint->variables() );
+                        const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), Constraint::GREATER );
                         constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( strictVersion, *cond ) );
                         break;
                     }
-                    case CR_LEQ:
+                    case Constraint::LEQ:
                     {
-                        const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), CR_LESS, constraint->variables() );
+                        const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), Constraint::LESS );
                         constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( strictVersion, *cond ) );
                         break;
                     }
@@ -1727,7 +1703,7 @@ namespace smtrat
         for( auto cond = mFormulaConditionMap.begin(); cond != mFormulaConditionMap.end(); ++cond )
         {
             _out << _init << "    ";
-            cond->first->print( _out );
+            _out << cond->first->toString( false, 0, "", true, true, true );
             _out << " <-> ";
             cond->second->print( _out );
             _out << endl;

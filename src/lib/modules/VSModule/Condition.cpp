@@ -28,7 +28,6 @@
 #include "Condition.h"
 
 using namespace std;
-using namespace GiNaC;
 
 namespace vs
 {
@@ -63,9 +62,9 @@ namespace vs
      *
      * @return A valuation of the constraint according to an heuristic.
      */
-    double Condition::valuate( const string& _consideredVariable, unsigned _maxNumberOfVars, bool _forElimination, bool _preferEquation ) const
+    double Condition::valuate( const carl::Variable& _consideredVariable, unsigned _maxNumberOfVars, bool _forElimination, bool _preferEquation ) const
     {
-        symtab::const_iterator var = mpConstraint->variables().find( _consideredVariable );
+        auto var = mpConstraint->variables().find( _consideredVariable );
         if( var != mpConstraint->variables().end() )
         {
             smtrat::VarInfo varInfo = constraint().varInfo( var->second );
@@ -78,22 +77,22 @@ namespace vs
             double relationSymbolWeight = 0;
             switch( mpConstraint->relation() )
             {
-                case smtrat::CR_EQ:
+                case smtrat::Constraint::EQ:
                     relationSymbolWeight += 1;
                     break;
-                case smtrat::CR_GEQ:
+                case smtrat::Constraint::GEQ:
                     relationSymbolWeight += 2;
                     break;
-                case smtrat::CR_LEQ:
+                case smtrat::Constraint::LEQ:
                     relationSymbolWeight += 2;
                     break;
-                case smtrat::CR_LESS:
+                case smtrat::Constraint::LESS:
                     relationSymbolWeight += 4;
                     break;
-                case smtrat::CR_GREATER:
+                case smtrat::Constraint::GREATER:
                     relationSymbolWeight += 4;
                     break;
-                case smtrat::CR_NEQ:
+                case smtrat::Constraint::NEQ:
                     relationSymbolWeight += 3;
                     break;
                 default:
@@ -216,7 +215,7 @@ namespace vs
             double weightFactorTmp = maximum;
             double result = 0;
             if( _preferEquation )
-                result = ( (constraint().relation() == smtrat::CR_EQ || degreeWeight <= 2) ? 1 : 2);
+                result = ( (constraint().relation() == smtrat::Constraint::EQ || degreeWeight <= 2) ? 1 : 2);
             else
                 result = ( degreeWeight <= 2 ? 1 : 2);
             result += relationSymbolWeight/weightFactorTmp;
@@ -275,7 +274,7 @@ namespace vs
      */
     void Condition::print( std::ostream& _out ) const
     {
-        constraint().print( _out );
+        _out << constraint().toString( 0, true, true );
         _out << " [" << this << "]";
         _out << "   ";
         if( flag() )

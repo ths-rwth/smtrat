@@ -107,7 +107,7 @@ namespace smtrat
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
         Constraint* constraint = createNormalizedBound( _var, _rel, _bound );
-        pair<Constraint::FastSet::iterator, bool> iterBoolPair = mConstraints.insert( constraint );
+        auto iterBoolPair = mConstraints.insert( constraint );
         if( !iterBoolPair.second )
             delete constraint;
         return *iterBoolPair.first;
@@ -125,7 +125,6 @@ namespace smtrat
             delete constraint;
             return ( constraintConsistent ? mConsistentConstraint : mInconsistentConstraint );
         }
-        constraint->collectProperties();
         const Constraint* result = addConstraintToPool( constraint );
         return result;
     }
@@ -212,13 +211,13 @@ namespace smtrat
         {
             Polynomial lhs = -_lhs.coprimeCoefficients();
             assert( (_lhs.trailingTerm()->coeff() < 0) == (_lhs.coprimeCoefficients().trailingTerm()->coeff() < 0) );
-            return new Constraint( lhs, Constraint::LESS, mIdAllocator );
+            return new Constraint( lhs, Constraint::LESS );
         }
         else if( _rel == Constraint::GEQ )
         {
             Polynomial lhs = -_lhs.coprimeCoefficients();
             assert( (_lhs.trailingTerm()->coeff() < 0) == (_lhs.coprimeCoefficients().trailingTerm()->coeff() < 0) );
-            return new Constraint( lhs, Constraint::LEQ, mIdAllocator );
+            return new Constraint( lhs, Constraint::LEQ );
         }
         else
         {
@@ -228,55 +227,51 @@ namespace smtrat
             {
                 if( lhs.trailingTerm()->coeff() < 0 ) lhs = -lhs;
             }
-            return new Constraint( lhs, _rel, mIdAllocator );
+            return new Constraint( lhs, _rel );
         }
     }
 
     const Constraint* ConstraintPool::addConstraintToPool( Constraint* _constraint )
     {
         unsigned constraintConsistent = _constraint->isConsistent();
-        if( constraintConsistent == 2 )
+        if( constraintConsistent == 2 ) // Constraint contains variables.
         {
-            // Constraint contains variables.
-            pair<Constraint::FastSet::const_iterator, bool> iterBoolPair = mConstraints.insert( _constraint );
-            if( !iterBoolPair.second )
+            auto iterBoolPair = mConstraints.insert( _constraint );
+            if( !iterBoolPair.second ) // Constraint has already been generated.
             {
-                // Constraint has already been generated.
                 delete _constraint;
             }
             else
             {
                 Constraint* constraint = _constraint->simplify();
-                if( constraint != NULL )
+                if( constraint != NULL ) // Constraint could be simplified.
                 {
-                    // Constraint could be simplified.
-                    pair<Constraint::FastSet::const_iterator, bool> iterBoolPairB = mConstraints.insert( constraint );
-                    if( !iterBoolPairB.second )
+                    auto iterBoolPairB = mConstraints.insert( constraint );
+                    if( !iterBoolPairB.second ) // Simplified version already exists
                     {
-                        // Simplified version already exists, then set the id of the generated constraint to the id of the simplified one.
+                        // .. then set the id of the generated constraint to the id of the simplified one.
                         _constraint->mID = (*iterBoolPairB.first)->id();
                         delete constraint;
                     }
-                    else
+                    else // Simplified version has not been generated before.
                     {
-                        // Simplified version has not been generated before.
                         constraint->init();
+                        constraint->mID = mIdAllocator;
                         ++mIdAllocator;
                     }
                     return *iterBoolPairB.first;
                 }
-                else
+                else // Constraint could not be simplified.
                 {
-                    // Constraint could not be simplified.
                     _constraint->init();
+                    _constraint->mID = mIdAllocator;
                     ++mIdAllocator;
                 }
             }
             return *iterBoolPair.first;
         }
-        else
+        else // Constraint contains no variables.
         {
-            // Constraint contains no variables.
             delete _constraint;
             return (constraintConsistent ? mConsistentConstraint : mInconsistentConstraint );
         }
@@ -287,11 +282,8 @@ namespace smtrat
         CONSTRAINT_LOCK_GUARD
         _out << "---------------------------------------------------" << endl;
         _out << "Constraint pool:" << endl;
-        for( Constraint::FastSet::const_iterator constraint = mConstraints.begin();
-                constraint != mConstraints.end(); ++constraint )
-        {
+        for( auto constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
             _out << "    " << **constraint << endl;
-        }
         _out << "---------------------------------------------------" << endl;
     }
 

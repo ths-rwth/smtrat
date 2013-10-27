@@ -168,17 +168,11 @@ namespace smtrat
     {
         mCheckResultActive = false;
         if( _type->compare( "Real" ) == 0 )
-        {
             addTheoryVariable( _loc, *_type, *_name );
-        }
         else if( _type->compare( "Int" ) == 0 )
-        {
             addTheoryVariable( _loc, *_type, *_name );
-        }
         else if( _type->compare( "Bool" ) == 0 )
-        {
             addBooleanVariable( _loc, *_name );
-        }
         else error( _loc, "Only declarations of real-valued and Boolean variables are allowed!");
         delete _name;
         delete _type;
@@ -195,9 +189,7 @@ namespace smtrat
             mLexer->mBooleanVariables.insert( _varName );
         const string* booleanName;
         if( _isBindingVariable )
-        {
             booleanName = Formula::newAuxiliaryBooleanVariable();
-        }
         else
         {
             assert( _varName != "" );
@@ -321,9 +313,7 @@ namespace smtrat
     {
         auto bvar = mBooleanVariables.find( _varName );
         if( bvar != mBooleanVariables.end() )
-        {
             return bvar->second;
-        }
         else
         {
             error( _loc, "Boolean variable " + _varName + " has not been defined!" );
@@ -340,11 +330,7 @@ namespace smtrat
         assert( !_varName.empty() );
         auto bv = mBooleanVariables.find( _varName );
         if( bv != mBooleanVariables.end() )
-        {
-            const string* toDelete = bv->second;
             mBooleanVariables.erase( bv );
-            delete toDelete;
-        }
         mLexer->mBooleanVariables.erase( _varName );
     }
 
@@ -391,7 +377,7 @@ namespace smtrat
             if( replacement == mTheoryBindings.end() )
                 error( _loc, "Theory variable " + (*_varName) + " has not been defined!" );
             delete _varName;
-            return replacement->second;
+            return new Polynomial( *replacement->second );
         }
         delete _varName;
         return new Polynomial( theoryVar->second );
@@ -416,14 +402,12 @@ namespace smtrat
             delete _lhs;
             delete _rhs;
             const Variables& vars = consA->variables();
-            std::vector< Formula* > varBindings = std::vector< Formula* >();
+            vector< Formula* > varBindings = vector< Formula* >();
             for( auto iter = vars.begin(); iter != vars.end(); ++iter )
             {
                 auto bindingVars = mTheoryIteBindings.find( *iter );
                 if( bindingVars != mTheoryIteBindings.end() )
-                {
                     varBindings.push_back( new Formula( bindingVars->second ) );
-                }
                 auto icBind = mInnerConstraintBindings.find( *iter );
                 if( icBind != mInnerConstraintBindings.end() )
                 {
@@ -475,9 +459,7 @@ namespace smtrat
             {
                 auto bindingVars = mTheoryIteBindings.find( *iter );
                 if( bindingVars != mTheoryIteBindings.end() )
-                {
                     varBindings.push_back( new Formula( bindingVars->second ) );
-                }
                 auto icBind = mInnerConstraintBindings.find( *iter );
                 if( icBind != mInnerConstraintBindings.end() )
                 {
@@ -810,25 +792,17 @@ namespace smtrat
         Formula* formulaOrB = new Formula( OR );
         formulaOrB->addSubformula( formulaNotB );
         if( mTwoFormulaMode )
-        {
             formulaOrB->addSubformula( _then->pruneFront() );
-        }
         else
-        {
             formulaOrB->addSubformula( _then );
-        }
         result->addSubformula( formulaOrB );
         // Add: (or auxBool _else)
         Formula* formulaOrC = new Formula( OR );
         formulaOrC->addSubformula( new Formula( auxBool ) );
         if( mTwoFormulaMode )
-        {
             formulaOrC->addSubformula( _else->pruneFront() );
-        }
         else
-        {
             formulaOrC->addSubformula( _else );
-        }
         result->addSubformula( formulaOrC );
         if( mTwoFormulaMode )
         {
@@ -854,9 +828,7 @@ namespace smtrat
             return results;
         }
         else
-        {
             return result;
-        }
     }
 
     /**

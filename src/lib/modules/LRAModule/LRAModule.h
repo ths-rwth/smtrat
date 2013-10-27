@@ -50,10 +50,10 @@ namespace smtrat
                 const smtrat::Formula* origin;
                 smtrat::Formula::iterator position;
             };
-            typedef std::map< carl::Variable, lra::Variable<lra::Numeric>*>                   VarVariableMap;
-            typedef PolynomialFastPointerMap<lra::Variable<lra::Numeric>*>                    ExVariableMap;
-            typedef Constraint::FastPointerMap<std::vector<const lra::Bound<lra::Numeric>*>*> ConstraintBoundsMap;
-            typedef Constraint::FastPointerMap<Context>                                       ConstraintContextMap;
+            typedef std::map< carl::Variable, lra::Variable<lra::Numeric>*>                  VarVariableMap;
+            typedef FastPointerMap<Polynomial,lra::Variable<lra::Numeric>*>                  ExVariableMap;
+            typedef FastPointerMap<Constraint,std::vector<const lra::Bound<lra::Numeric>*>*> ConstraintBoundsMap;
+            typedef FastPointerMap<Constraint,Context>                                       ConstraintContextMap;
 
         private:
 
@@ -63,11 +63,11 @@ namespace smtrat
             bool                       mInitialized;
             bool                       mAssignmentFullfilsNonlinearConstraints;
             lra::Tableau<lra::Numeric> mTableau;
-            Constraint::PointerSet     mLinearConstraints;
-            Constraint::PointerSet     mNonlinearConstraints;
+            PointerSet<Constraint>     mLinearConstraints;
+            PointerSet<Constraint>     mNonlinearConstraints;
             ConstraintContextMap       mActiveResolvedNEQConstraints;
             ConstraintContextMap       mActiveUnresolvedNEQConstraints;
-            Constraint::PointerSet     mResolvedNEQConstraints;
+            PointerSet<Constraint>     mResolvedNEQConstraints;
             VarVariableMap             mOriginalVars;
             ExVariableMap              mSlackVars;
             ConstraintBoundsMap        mConstraintToBound;

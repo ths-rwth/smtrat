@@ -49,10 +49,37 @@ namespace smtrat
         private:
 
             // Type and object definitions.
-            typedef std::pair<vs::UnsignedTriple, vs::State*>                       ValStatePair;
-            typedef std::map<vs::UnsignedTriple, vs::State*, vs::unsignedTripleCmp> ValuationMap;
-            typedef std::map<const Formula* const, const vs::Condition*>            FormulaConditionMap;
-            typedef std::vector<std::pair<carl::Variable,carl::Variable>>           VarNamePairVector;
+            
+            typedef std::pair<unsigned, std::pair<unsigned, unsigned> > UnsignedTriple;
+            
+            struct unsignedTripleCmp
+            {
+                bool operator ()( UnsignedTriple n1, UnsignedTriple n2 ) const
+                {
+                    if( n1.first > n2.first )
+                        return true;
+                    else if( n1.first == n2.first )
+                    {
+                        if( n1.first != 1 )
+                            return n1.second.first > n2.second.first;
+                        else
+                        {
+                            if( n1.second.second < n2.second.second )
+                                return true;
+                            else if( n1.second.second == n2.second.second )
+                                return n1.second.first > n2.second.first;
+                            return false;
+                        }
+                    }
+                    else
+                        return false;
+                }
+            };
+            
+            typedef std::pair<UnsignedTriple, vs::State*>                   ValStatePair;
+            typedef std::map<UnsignedTriple, vs::State*, unsignedTripleCmp> ValuationMap;
+            typedef std::map<const Formula* const, const vs::Condition*>    FormulaConditionMap;
+            typedef std::vector<std::pair<carl::Variable,carl::Variable>>   VarNamePairVector;
 
             // Members.
             bool                mConditionsChanged;
@@ -90,7 +117,7 @@ namespace smtrat
         private:
 
             // Some more type definitions.
-            typedef std::pair<vs::Substitution, vs::StateVector> ChildrenGroup;
+            typedef std::pair<vs::Substitution, std::list< vs::State* >> ChildrenGroup;
             typedef std::vector<ChildrenGroup>                   ChildrenGroups;
 
             // Methods.
@@ -100,7 +127,7 @@ namespace smtrat
                 mIDCounter++;
             }
             
-            void eliminate( vs::State*, const std::string&, const vs::Condition* );
+            void eliminate( vs::State*, const carl::Variable&, const vs::Condition* );
             bool substituteAll( vs::State*, vs::ConditionList& );
             void propagateNewConditions( vs::State* );
             void insertDTinRanking( vs::State* );
@@ -108,7 +135,6 @@ namespace smtrat
             bool eraseDTofRanking( vs::State& );
             void eraseDTsOfRanking( vs::State& );
             void updateInfeasibleSubset( bool = false );
-            std::vector<std::pair<std::string, std::pair<vs::Substitution::Type, vs::SqrtEx> > > getSymbolicAssignment() const;
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
             bool adaptPassedFormula( const vs::State&, FormulaConditionMap&, bool = false );
             Answer runBackendSolvers( vs::State*, bool = false );

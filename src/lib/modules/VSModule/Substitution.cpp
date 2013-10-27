@@ -21,7 +21,7 @@
  * Class to create a substitution object.
  * @author Florian Corzilius
  * @since 2010-05-11
- * @version 2013-06-20
+ * @version 2013-10-23
  */
 
 #include "Substitution.h"
@@ -30,18 +30,20 @@ using namespace std;
 
 namespace vs
 {
-    Substitution::Substitution( const carl::Variable& _variable, const Type& _type, const ConditionSet& _oConditions, const smtrat::Constraint::PointerSet& _sideCondition ):
+    Substitution::Substitution( const carl::Variable& _variable, const Type& _type, const ConditionSet& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition ):
         mVariable( _variable ),
         mpTerm( new SqrtEx() ),
         mType( _type ),
+        mpTermVariables( NULL ),
         mpOriginalConditions( new ConditionSet( _oConditions ) ),
         mSideCondition( _sideCondition )
     {}
 
-    Substitution::Substitution( const carl::Variable& _variable, const SqrtEx& _term, const Type& _type, const ConditionSet& _oConditions, const smtrat::Constraint::PointerSet& _sideCondition ):
+    Substitution::Substitution( const carl::Variable& _variable, const SqrtEx& _term, const Type& _type, const ConditionSet& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition ):
         mVariable( _variable ),
         mpTerm( new SqrtEx( _term ) ),
         mType( _type ),
+        mpTermVariables( NULL ),
         mpOriginalConditions( new ConditionSet( _oConditions ) ),
         mSideCondition( _sideCondition )
     {}
@@ -50,14 +52,17 @@ namespace vs
         mVariable( _sub.variable() ),
         mpTerm( new SqrtEx( _sub.term() ) ),
         mType( _sub.type() ),
+        mpTermVariables( _sub.mpTermVariables == NULL ? NULL : new smtrat::Variables( *_sub.mpTermVariables ) ),
         mpOriginalConditions( new ConditionSet( _sub.originalConditions() ) ),
         mSideCondition( _sub.sideCondition() )
     {}
 
     Substitution::~Substitution()
     {
-        delete mpTerm						;
-        delete mpOriginalConditions			;
+        if( mpTermVariables != NULL )
+            delete mpTermVariables;
+        delete mpTerm;
+        delete mpOriginalConditions;
     }
 
     unsigned Substitution::valuate() const
@@ -123,50 +128,50 @@ namespace vs
             return false;
     }
 
-    bool Substitution::operator<( const Substitution& _substitution ) const
-    {
-        if( variable() < _substitution.variable() )
-            return true;
-        else if( variable() == _substitution.variable() )
-        {
-            if( type() < _substitution.type() )
-                return true;
-            else if( type() == _substitution.type() )
-            {
-                if( term().constantPart() < _substitution.term().constantPart() )
-                    return true;
-                else if( term().constantPart() == _substitution.term().constantPart() )
-                {
-                    if( term().factor() < _substitution.term().factor() )
-                        return true;
-                    else if( term().factor() == _substitution.term().factor() )
-                    {
-                        if( term().radicand() < _substitution.term().radicand() )
-                            return true;
-                        else if( term().radicand() == _substitution.term().radicand() )
-                        {
-                            if( term().denominator() < _substitution.term().denominator() )
-                                return true;
-                            else if( sideCondition() < _substitution.sideCondition() )
-                                return true;
-                            else
-                                return false;
-                        }
-                        else
-                            return false;
-                    }
-                    else
-                        return false;
-                }
-                else
-                    return false;
-            }
-            else
-                return false;
-        }
-        else
-            return false;
-    }
+//    bool Substitution::operator<( const Substitution& _substitution ) const
+//    {
+//        if( variable() < _substitution.variable() )
+//            return true;
+//        else if( variable() == _substitution.variable() )
+//        {
+//            if( type() < _substitution.type() )
+//                return true;
+//            else if( type() == _substitution.type() )
+//            {
+//                if( term().constantPart() < _substitution.term().constantPart() )
+//                    return true;
+//                else if( term().constantPart() == _substitution.term().constantPart() )
+//                {
+//                    if( term().factor() < _substitution.term().factor() )
+//                        return true;
+//                    else if( term().factor() == _substitution.term().factor() )
+//                    {
+//                        if( term().radicand() < _substitution.term().radicand() )
+//                            return true;
+//                        else if( term().radicand() == _substitution.term().radicand() )
+//                        {
+//                            if( term().denominator() < _substitution.term().denominator() )
+//                                return true;
+//                            else if( sideCondition() < _substitution.sideCondition() )
+//                                return true;
+//                            else
+//                                return false;
+//                        }
+//                        else
+//                            return false;
+//                    }
+//                    else
+//                        return false;
+//                }
+//                else
+//                    return false;
+//            }
+//            else
+//                return false;
+//        }
+//        else
+//            return false;
+//    }
 
     ostream& operator<<( ostream& _ostream, const Substitution& _substitution )
     {
@@ -213,7 +218,7 @@ namespace vs
             {
                 if( sCons != sideCondition().begin() )
                     _out << " and ";
-                _out << (*sCons).toString( 0, true, true );
+                _out << (*sCons)->toString( 0, true, true );
             }
         }
         _out << endl;

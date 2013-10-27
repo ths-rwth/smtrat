@@ -37,54 +37,45 @@ using namespace carl;
 
 namespace smtrat
 {
-    const unsigned MAX_DEGREE_FOR_FACTORIZATION = 40;
-    const unsigned MIN_DEGREE_FOR_FACTORIZATION = 2;
-    const unsigned MAX_DIMENSION_FOR_FACTORIZATION = 6;
-    const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 300;
 
     recursive_mutex Constraint::mMutex;
 
     Constraint::Constraint():
         mID( 0 ),
         mHash( ((hash<Polynomial>()( ZERO_POLYNOMIAL ) << 3) ^ EQ) ), 
-        mIsNeverPositive( false ),
-        mIsNeverNegative( false ),
-        mIsNeverZero( false ),
         mRelation( EQ ),
         mLhs( Rational( 0 ) ),
-        mFactorization( 1, mLhs ),
+        mFactorization(),
         mVariables(),
-        mVarInfoMap()
+        mVarInfoMap(),
+        mLhsDefinitess( carl::Definiteness::NON )
     {
-        mFactorization.push_back( mLhs );
+        mFactorization.insert( pair<const Polynomial, unsigned>( mLhs, 1 ) );
     }
 
-    Constraint::Constraint( const Polynomial& _lhs, const Relation _cr, unsigned _id ):
+    Constraint::Constraint( const Polynomial& _lhs, const Relation _rel, unsigned _id ):
         mID( _id ),
-        mHash( ( (std::hash<Polynomial>()( _lhs ) << 3) ^ _cr) ),
-        mIsNeverPositive( false ),
-        mIsNeverNegative( false ),
-        mIsNeverZero( false ),
-        mRelation( _cr ),
+        mHash( ( (std::hash<Polynomial>()( _lhs ) << 3) ^ _rel) ),
+        mRelation( _rel ),
         mLhs( _lhs ),
-        mFactorization( 1, mLhs ),
+        mFactorization(),
         mVariables(),
-        mVarInfoMap()
+        mVarInfoMap(),
+        mLhsDefinitess( carl::Definiteness::NON )
     {
+        mFactorization.insert( pair<const Polynomial, unsigned>( mLhs, 1 ) );
         mLhs.gatherVariables( mVariables );
     }
 
     Constraint::Constraint( const Constraint& _constraint, bool _rehash ):
         mID( _constraint.id() ),
         mHash( _rehash ? ( (std::hash<Polynomial>()( _constraint.lhs() ) << 3) ^ _constraint.relation()) : _constraint.getHash() ),
-        mIsNeverPositive( _constraint.mIsNeverPositive ),
-        mIsNeverNegative( _constraint.mIsNeverNegative ),
-        mIsNeverZero( _constraint.mIsNeverZero ),
         mRelation( _constraint.relation() ),
         mLhs( _constraint.mLhs ),
         mFactorization( _constraint.mFactorization ),
         mVariables( _constraint.variables() ),
-        mVarInfoMap( _constraint.mVarInfoMap )
+        mVarInfoMap( _constraint.mVarInfoMap ),
+        mLhsDefinitess( _constraint.mLhsDefinitess )
     {}
 
     Constraint::~Constraint()
@@ -93,45 +84,43 @@ namespace smtrat
     unsigned Constraint::isConsistent() const
     {
         if( variables().empty() )
-        {
             return evaluate( constantPart(), relation() ) ? 1 : 0;
-        }
         else
         {
             switch( relation() )
             {
                 case EQ:
                 {
-                    if( mIsNeverZero ) return 0;
+                    if( mLhsDefinitess == carl::Definiteness::POSITIVE || mLhsDefinitess == carl::Definiteness::NEGATIVE ) return 0;
                     break;
                 }
                 case NEQ:
                 {
-                    if( mIsNeverZero ) return 1;
+                    if( mLhsDefinitess == carl::Definiteness::POSITIVE || mLhsDefinitess == carl::Definiteness::NEGATIVE ) return 1;
                     break;
                 }
                 case LESS:
                 {
-                    if( mIsNeverZero && mIsNeverPositive ) return 1;
-                    if( mIsNeverNegative ) return 0;
+                    if( mLhsDefinitess == carl::Definiteness::NEGATIVE ) return 1;
+                    if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI ) return 0;
                     break;
                 }
                 case GREATER:
                 {
-                    if( mIsNeverZero && mIsNeverNegative ) return 1;
-                    if( mIsNeverPositive ) return 0;
+                    if( mLhsDefinitess == carl::Definiteness::POSITIVE ) return 1;
+                    if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI ) return 0;
                     break;
                 }
                 case LEQ:
                 {
-                    if( mIsNeverPositive ) return 1;
-                    if( mIsNeverZero && mIsNeverNegative ) return 0;
+                    if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI ) return 1;
+                    if( mLhsDefinitess == carl::Definiteness::POSITIVE ) return 0;
                     break;
                 }
                 case GEQ:
                 {
-                    if( mIsNeverNegative ) return 1;
-                    if( mIsNeverZero && mIsNeverPositive ) return 0;
+                    if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI ) return 1;
+                    if( mLhsDefinitess == carl::Definiteness::NEGATIVE ) return 0;
                     break;
                 }
                 default:
@@ -230,15 +219,18 @@ namespace smtrat
             return 2;
         }
     }
-
-    unsigned Constraint::satisfiedBy( EvalRationalMap& _assignment ) const
+    
+    bool Constraint::hasFinitelyManySolutionsIn( const carl::Variable& _var ) const
     {
-        Polynomial tmp = mLhs.substitute( _assignment );
-        if( tmp.isConstant() )
+        if( variables().find( _var ) == variables().end() )
+            return true;
+        if( relation() == EQ )
         {
-            return evaluate( tmp.trailingTerm()->coeff(), relation() ) ? 1 : 0;
+            if( variables().size() == 1 )
+                return true;
+            //TODO: else, if not too expensive (construct constraints being the side conditions)
         }
-        else return 2;
+        return false;
     }
 
     Polynomial Constraint::coefficient( const carl::Variable& _var, unsigned _degree ) const
@@ -247,33 +239,14 @@ namespace smtrat
         const map<unsigned, Polynomial>& coeffs = mVarInfoMap.getVarInfo( _var )->coeffs();
         auto expCoeffPair = coeffs.find( _degree );
         if( expCoeffPair != coeffs.end() )
-        {
             return expCoeffPair->second;
-        }
         return Polynomial( Rational( 0 ) );
-    }
-
-    bool constraintRelationIsStrict( Constraint::Relation rel )
-    {
-        return (rel == Constraint::NEQ || rel == Constraint::LESS || rel == Constraint::GREATER);
-    }
-    
-    void Constraint::collectProperties()
-    {
-        mIsNeverPositive = true;
-        mIsNeverNegative = true;
-        mIsNeverZero = false;
-        // TODO: run through the polynomial and check whether it (or the polynomial multplied by -1) is a sum of squares.
-//        if( ( mConstantPart.is_negative() && mIsNeverPositive ) || ( mConstantPart.is_positive() && mIsNeverNegative ) )
-//        {
-//            mIsNeverZero = true;
-//        }
     }
 
     Constraint* Constraint::simplify()
     {
         bool anythingChanged = false;
-        if( (mIsNeverNegative && mRelation == LEQ) || (mIsNeverPositive && mRelation == GEQ) )
+        if( (mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI && mRelation == LEQ) || (mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI && mRelation == GEQ) )
         {
             anythingChanged = true;
             mRelation = EQ;
@@ -285,23 +258,19 @@ namespace smtrat
             {
                 case EQ:
                 {
-                    mIsNeverPositive = false;
-                    mIsNeverNegative = false;
                     mLhs = Polynomial( *mVariables.begin() );
                     anythingChanged = true;
                     break;
                 }
                 case NEQ:
                 {
-                    mIsNeverPositive = false;
-                    mIsNeverNegative = false;
                     mLhs = Polynomial( *mVariables.begin() );
                     anythingChanged = true;
                     break;
                 }
                 case LEQ:
                 {
-                    if( mIsNeverPositive )
+                    if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI )
                     {
                         mLhs = Polynomial( Rational( -1 ) ) * Polynomial( *mVariables.begin() ) * Polynomial( *mVariables.begin() );
                         anythingChanged = true;
@@ -315,7 +284,7 @@ namespace smtrat
                 }
                 case GEQ:
                 {
-                    if( mIsNeverNegative )
+                    if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI )
                     {
                         mLhs = Polynomial( *mVariables.begin() ) * Polynomial( *mVariables.begin() );
                         anythingChanged = true;
@@ -329,16 +298,15 @@ namespace smtrat
                 }
                 case LESS:
                 {
-                    if( mIsNeverPositive )
+                    if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI )
                     {
                         mRelation = NEQ;
                         mLhs = Polynomial( *mVariables.begin() );
-                        mIsNeverPositive = false;
                         anythingChanged = true;
                     }
                     else
                     {
-                        if( mIsNeverNegative )
+                        if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI )
                         {
                             mLhs = Polynomial( *mVariables.begin() ) * Polynomial( *mVariables.begin() );
                             anythingChanged = true;
@@ -353,16 +321,15 @@ namespace smtrat
                 }
                 case GREATER:
                 {
-                    if( mIsNeverNegative )
+                    if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI )
                     {
                         mRelation = NEQ;
                         mLhs = Polynomial( *mVariables.begin() );
-                        mIsNeverNegative = false;
                         anythingChanged = true;
                     }
                     else
                     {
-                        if( mIsNeverPositive )
+                        if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI )
                         {
                             mLhs = Polynomial( Rational( -1 ) ) * Polynomial( *mVariables.begin() ) * Polynomial( *mVariables.begin() );
                             anythingChanged = true;
@@ -383,18 +350,20 @@ namespace smtrat
         }
         if( anythingChanged )
         {
+            mLhsDefinitess = mLhs.definiteness();
             Constraint* constraint = new Constraint( *this, true );
             return constraint;
         }
         else
         {
-            return NULL;
+            return nullptr;
         }
     }
 
     void Constraint::init()
     {
 //        mVarInfoMap( mLhs.getVarInfo<false>() ); //TODO: implement this line
+        mLhsDefinitess = mLhs.definiteness();
         #ifdef SMTRAT_STRAT_Factorization
         if( mNumMonomials <= MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION && mVariables.size() <= MAX_DIMENSION_FOR_FACTORIZATION
             && mMaxMonomeDegree <= MAX_DEGREE_FOR_FACTORIZATION && mMaxMonomeDegree >= MIN_DEGREE_FOR_FACTORIZATION )
@@ -407,12 +376,23 @@ namespace smtrat
     bool Constraint::operator<( const Constraint& _constraint ) const
     {
         assert( mID > 0 && _constraint.id() > 0 );
+//        if( mID == 0 || _constraint.id() == 0 )
+//        {
+//            if( relation() < _constraint.relation() )
+//            {
+//                return lhs() < _constraint.lhs();
+//            }
+//            return false;
+//        }
         return mID < _constraint.id();
     }
 
     bool Constraint::operator==( const Constraint& _constraint ) const
     {
-        assert( mID > 0 && _constraint.id() > 0 );
+        if( mID == 0 || _constraint.id() == 0 )
+        {
+            return relation() == _constraint.relation() && lhs() == _constraint.lhs();
+        }
         return mID == _constraint.id();
     }
 
@@ -482,20 +462,39 @@ namespace smtrat
     void Constraint::printProperties( ostream& _out, bool _friendlyVarNames ) const
     {
         _out << "Properties:" << endl;
-        _out << "   Is never positive?       " << (mIsNeverPositive ? "true" : "false") << endl;
-        _out << "   Is never negative?       " << (mIsNeverNegative ? "true" : "false") << endl;
-        _out << "   Cannot be zero?          " << (mIsNeverZero ? "true" : "false") << endl;
+        _out << "   Definitess:              ";
+        switch( mLhsDefinitess )
+        {
+            case Definiteness::NON:
+                _out << "NON" << endl;
+                break;
+            case Definiteness::POSITIVE:
+                _out << "POSITIVE" << endl;
+                break;
+            case Definiteness::POSITIVE_SEMI:
+                _out << "POSITIVE_SEMI" << endl;
+                break;
+            case Definiteness::NEGATIVE:
+                _out << "NEGATIVE" << endl;
+                break;
+            case Definiteness::NEGATIVE_SEMI:
+                _out << "NEGATIVE_SEMI" << endl;
+                break;
+            default:
+                _out << "UNDEFINED" << endl;
+                break;
+        }
         _out << "   The number of monomials: " << mLhs.nrTerms() << endl;
         _out << "   The maximal degree:      " << mLhs.highestDegree() << endl;
         _out << "   The constant part:       " << constantPart() << endl;
-        _out << "   Variables:" << endl;
-        for( auto var = mVariables.begin(); var != mVariables.end(); ++var )
-        {
-            auto varInfo = mVarInfoMap.getVarInfo( *var );
-            _out << "        " << varToString( *var, _friendlyVarNames ) << " has " << varInfo->occurence() << " occurences." << endl;
-            _out << "        " << varToString( *var, _friendlyVarNames ) << " has the maximal degree of " << varInfo->maxDegree() << "." << endl;
-            _out << "        " << varToString( *var, _friendlyVarNames ) << " has the minimal degree of " << varInfo->minDegree() << "." << endl;
-        }
+//        _out << "   Variables:" << endl;
+//        for( auto var = mVariables.begin(); var != mVariables.end(); ++var )
+//        {
+//            auto varInfo = mVarInfoMap.getVarInfo( *var );
+//            _out << "        " << varToString( *var, _friendlyVarNames ) << " has " << varInfo->occurence() << " occurences." << endl;
+//            _out << "        " << varToString( *var, _friendlyVarNames ) << " has the maximal degree of " << varInfo->maxDegree() << "." << endl;
+//            _out << "        " << varToString( *var, _friendlyVarNames ) << " has the minimal degree of " << varInfo->minDegree() << "." << endl;
+//        }
     }
     
     bool Constraint::evaluate( const Rational& _value, Relation _relation )

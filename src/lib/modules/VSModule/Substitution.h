@@ -18,13 +18,11 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * Class to create a substitution object.
  * @author Florian Corzilius
  * @since 2010-05-11
- * @version 2013-06-20
+ * @version 2013-10-23
  */
 
 #ifndef SMTRAT_VS_SUBSTITUTION_H
@@ -46,16 +44,18 @@ namespace vs
         private:
             // Members.
             
-            // The variable to substitute.
+            /// The variable to substitute.
             carl::Variable                 mVariable;
-            // The pointer (if != NULL) to the square root term to substitute the variable for.
+            /// The pointer (if != NULL) to the square root term to substitute the variable for.
             SqrtEx*                        mpTerm;
-            // The type.
+            /// The type.
             Type                           mType;
-            // The conditions from which this substitution has been originated. (e.g. [x -> 2] could have had the origins {x-2<=0, x^2-4=0})
+            /// The variables occurring in the term to substitute for.
+            mutable smtrat::Variables*     mpTermVariables;
+            /// The conditions from which this substitution has been originated. (e.g. [x -> 2] could have had the origins {x-2<=0, x^2-4=0})
             ConditionSet*                  mpOriginalConditions;
-            // The side conditions, which have to hold to make this substitution valid. (e.g. [x -> 1/a] has the side condition {a!=0})
-            smtrat::Constraint::PointerSet mSideCondition;
+            /// The side conditions, which have to hold to make this substitution valid. (e.g. [x -> 1/a] has the side condition {a!=0})
+            smtrat::PointerSet<smtrat::Constraint> mSideCondition;
 
         public:
 
@@ -66,7 +66,7 @@ namespace vs
              * @param _oConditions The original conditions of the substitution to construct.
              * @param _sideCondition The side conditions of the substitution to construct.
              */
-            Substitution( const carl::Variable& _variable, const Type& _type, const ConditionSet& _oConditions, const smtrat::Constraint::PointerSet& _sideCondition = smtrat::Constraint::PointerSet() );
+            Substitution( const carl::Variable& _variable, const Type& _type, const ConditionSet& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition = smtrat::PointerSet<smtrat::Constraint>() );
             
             /**
              * Constructs a substitution with a square root term to map to.
@@ -76,7 +76,7 @@ namespace vs
              * @param _oConditions The original conditions of the substitution to construct.
              * @param _sideCondition The side conditions of the substitution to construct.
              */
-            Substitution( const carl::Variable&, const SqrtEx& _term, const Type& _type, const ConditionSet& _oConditions, const smtrat::Constraint::PointerSet& _sideCondition = smtrat::Constraint::PointerSet() );
+            Substitution( const carl::Variable&, const SqrtEx& _term, const Type& _type, const ConditionSet& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition = smtrat::PointerSet<smtrat::Constraint>() );
             
             /**
              * Copy constructor.
@@ -139,9 +139,22 @@ namespace vs
             /**
              * @return A constant reference to the side condition of this substitution.
              */
-            const smtrat::Constraint::PointerSet& sideCondition() const
+            const smtrat::PointerSet<smtrat::Constraint>& sideCondition() const
             {
                 return mSideCondition;
+            }
+            
+            const smtrat::Variables& termVariables() const
+            {
+                if( mpTermVariables == NULL )
+                {
+                    mpTermVariables = new smtrat::Variables();
+                    mpTerm->constantPart().gatherVariables( *mpTermVariables );
+                    mpTerm->factor().gatherVariables( *mpTermVariables );
+                    mpTerm->denominator().gatherVariables( *mpTermVariables );
+                    mpTerm->radicand().gatherVariables( *mpTermVariables );
+                }
+                return *mpTermVariables;
             }
 
             /**
@@ -161,7 +174,7 @@ namespace vs
              * @return true, if this substitution is less than the given substitution;
              *          false, otherwise.
              */
-            bool operator<( const Substitution& ) const;
+//            bool operator<( const Substitution& ) const;
             
             /**
              * @param _friendlyNames A flag that indicates whether to print the variables with their internal representation (false)
@@ -187,7 +200,43 @@ namespace vs
              */
             void print( bool _withOrigins = false, bool _withSideConditions = false, std::ostream& _out = std::cout, const std::string& _init = "" ) const;
     };
-
 }    // end namspace vs
+
+namespace std
+{
+    template<>
+    class hash<vs::Substitution>
+    {
+    public:
+        size_t operator()( const vs::Substitution& _substitution ) const 
+        {
+            return ((hash<vs::SqrtEx>()(_substitution.term()) << 7) ^ hash<carl::Variable>()( _substitution.variable() ) << 2) ^ _substitution.type();
+        }
+    };
+} // namespace std
+
+namespace vs
+{
+    struct substitutionPointerEqual
+    {
+        bool operator ()( const Substitution* const _substitutionA, const Substitution* const _substitutionB ) const
+        {
+            return (*_substitutionA)==(*_substitutionB);
+        }
+    };
+
+    struct substitutionPointerHash
+    {
+        size_t operator ()( const Substitution* const _substitution ) const
+        {
+            if( _substitution == NULL )
+                return 0;
+            return std::hash<Substitution>()( *_substitution );
+        }
+    };
+    
+    template<typename T> 
+    using SubstitutionFastPointerMap = std::unordered_map<const Polynomial*, T, substitutionPointerHash, substitutionPointerEqual>;
+}
 
 #endif

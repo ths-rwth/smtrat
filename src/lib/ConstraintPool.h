@@ -40,39 +40,39 @@ namespace smtrat
         private:
             // Members:
 
-            // A flag indicating whether the prefix of the internally created external variable names has already been initialized.
+            /// A flag indicating whether the prefix of the internally created external variable names has already been initialized.
             bool mExternalPrefixInitialized;
-            // id allocator
+            /// id allocator
             unsigned mIdAllocator;
-            // A counter for the auxiliary Boolean valued variables.
+            /// A counter for the auxiliary Boolean valued variables.
             unsigned mAuxiliaryBoolVarCounter;
-            // A counter for the auxiliary real valued variables.
+            /// A counter for the auxiliary real valued variables.
             unsigned mAuxiliaryRealVarCounter;
-            // A counter for the auxiliary integer valued variables.
+            /// A counter for the auxiliary integer valued variables.
             unsigned mAuxiliaryIntVarCounter;
-            // A counter for the auxiliary integer valued variables.
+            /// A counter for the auxiliary integer valued variables.
             unsigned mArithmeticVarCounter;
-            // The constraint (0=0) representing a valid constraint.
+            /// The constraint (0=0) representing a valid constraint.
             const Constraint* mConsistentConstraint;
-            // The constraint (0>0) representing an inconsistent constraint.
+            /// The constraint (0>0) representing an inconsistent constraint.
             const Constraint* mInconsistentConstraint;
-            // Mutex to avoid multiple access to the map of arithmetic variables
+            /// Mutex to avoid multiple access to the map of arithmetic variables
             mutable std::mutex mMutexArithmeticVariables;
-            // Mutex to avoid multiple access to the set of Boolean variables
+            /// Mutex to avoid multiple access to the set of Boolean variables
             mutable std::mutex mMutexBooleanVariables;
-            // Mutex to avoid multiple access to the variable domain map
+            /// Mutex to avoid multiple access to the variable domain map
             mutable std::mutex mMutexDomain;
-            // The external prefix for a variable.
+            /// The external prefix for a variable.
             std::string mExternalVarNamePrefix;
-            // The map of external variable names to internal variable names.
+            /// The map of external variable names to internal variable names.
             std::map< std::string, carl::Variable > mExternalNamesToVariables;
-            // The collection of Boolean variables in use.
+            /// The collection of Boolean variables in use.
             std::vector<const std::string*> mBooleanVariables;
-            // The constraint pool.
-            Constraint::FastSet mConstraints;
-            // All external variable names which have been created during parsing.
+            /// The constraint pool.
+            FastPointerSet<Constraint> mConstraints;
+            /// All external variable names which have been created during parsing.
             std::vector< std::string > mParsedVarNames;
-            // The container where all constraints generated with this pool are located.
+            /// The container where all constraints generated with this pool are located.
             carl::VariablePool& mVariablePool;
             
             /**
@@ -123,7 +123,7 @@ namespace smtrat
             /**
              * @return An iterator to the first constraint in this pool.
              */
-            Constraint::FastSet::const_iterator begin() const
+            FastPointerSet<Constraint>::const_iterator begin() const
             {
                 // TODO: Will begin() be valid if we insert elements?
                 CONSTRAINT_LOCK_GUARD
@@ -134,7 +134,7 @@ namespace smtrat
             /**
              * @return An iterator to the end of the container of the constraints in this pool.
              */
-            Constraint::FastSet::const_iterator end() const
+            FastPointerSet<Constraint>::const_iterator end() const
             {
                 // TODO: Will end() be changed if we insert elements?
                 CONSTRAINT_LOCK_GUARD

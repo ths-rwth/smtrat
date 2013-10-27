@@ -37,13 +37,13 @@ namespace vs
     class SqrtEx
     {
         private:
-            // The constant part c of this square root expression (c + f * sqrt(r))/d.
+            /// The constant part c of this square root expression (c + f * sqrt(r))/d.
             smtrat::Polynomial mConstantPart;
-            // The factor f of this square root expression (c + f * sqrt(r))/d.
+            /// The factor f of this square root expression (c + f * sqrt(r))/d.
             smtrat::Polynomial mFactor;
-            // The denominator d of this square root expression (c + f * sqrt(r))/d.
+            /// The denominator d of this square root expression (c + f * sqrt(r))/d.
             smtrat::Polynomial mDenominator;
-            // The radicand r of this square root expression (c + f * sqrt(r))/d.
+            /// The radicand r of this square root expression (c + f * sqrt(r))/d.
             smtrat::Polynomial mRadicand;
 
         public:
@@ -213,5 +213,18 @@ namespace vs
             static SqrtEx subBySqrtEx( const smtrat::Polynomial& _substituteIn, const carl::Variable& _varToSubstitute, const SqrtEx& _substituteBy );
     };
 }    // end namspace vs
+
+namespace std
+{
+    template<>
+    class hash<vs::SqrtEx>
+    {
+    public:
+        size_t operator()( const vs::SqrtEx& _sqrtEx ) const 
+        {
+            return ((hash<smtrat::Polynomial>()(_sqrtEx.radicand()) ^ hash<smtrat::Polynomial>()(_sqrtEx.denominator())) ^ hash<smtrat::Polynomial>()(_sqrtEx.factor())) ^ hash<smtrat::Polynomial>()(_sqrtEx.constantPart());
+        }
+    };
+} // namespace std
 
 #endif
