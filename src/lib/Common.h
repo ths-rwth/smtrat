@@ -134,7 +134,9 @@ namespace smtrat
     
     typedef carl::DoubleInterval::evaldoubleintervalmap EvalDoubleIntervalMap;
     
-    typedef carl::VariablesInformation<true, Polynomial> VarInfoMap;
+    typedef carl::VariableInformation<true, Polynomial> VarInfo;
+    
+    typedef std::map<carl::Variable, VarInfo> VarInfoMap;
     
     typedef std::set<carl::Variable> Variables;
     

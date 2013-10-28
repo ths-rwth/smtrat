@@ -708,7 +708,7 @@ namespace smtrat
         string assumption = "";
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and ";
-        assumption += _formula.toString( false, true );
+        assumption += _formula.toString( false, 1, "", true, false, true );
         assumption += " " + _moduleName;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
@@ -730,7 +730,7 @@ namespace smtrat
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and";
         for( auto formula = _formulas.begin(); formula != _formulas.end(); ++formula )
-            assumption += " " + (*formula)->toString( false, true );
+            assumption += " " + (*formula)->toString( false, 1, "", true, false, true );
         assumption += " " + _moduleName;
         assumption += "))\n";
         assumption += "(get-assertions)\n";
@@ -752,7 +752,7 @@ namespace smtrat
         assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
         assumption += "(assert (and";
         for( auto constraint = _constraints.begin(); constraint != _constraints.end(); ++constraint )
-            assumption += " " + (*constraint)->toString( 0, true );
+            assumption += " " + (*constraint)->toString( 1, false, true );
         assumption += " " + _moduleName;
         assumption += "))\n";
         assumption += "(get-assertions)\n";

@@ -85,6 +85,15 @@ namespace vs
                 else
                 {
                     unsigned conflictingWithSolutionSpace = (*cons)->consistentWith( _solutionSpace );
+                    
+//                    cout << "Is  " << (*cons)->toString( 0, true, false ) << endl;
+//                    (*cons)->printProperties( cout, false );
+//                    cout << endl;
+//                    cout << "consistent with  " << endl;
+//                    for( auto iter = _solutionSpace.begin(); iter != _solutionSpace.end(); ++iter )
+//                        cout << iter->first << " in " << iter->second << endl;
+//                    cout << "   ->  " << conflictingWithSolutionSpace << endl;
+                    
                     if( conflictingWithSolutionSpace == 0 )
                     {
                         _conflictingVars.insert( (*cons)->variables().begin(), (*cons)->variables().end() );

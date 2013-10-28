@@ -185,7 +185,9 @@ namespace smtrat
              */
             unsigned maxDegree( const carl::Variable& _variable ) const
             {
-                return mVarInfoMap.getVarInfo( _variable )->maxDegree();
+                auto varInfo = mVarInfoMap.find( _variable );
+                if( varInfo == mVarInfoMap.end() ) return 0;
+                return varInfo->second.maxDegree();
             }
 
             /**
@@ -194,7 +196,9 @@ namespace smtrat
              */
             unsigned minDegree( const carl::Variable& _variable ) const
             {
-                return mVarInfoMap.getVarInfo( _variable )->minDegree();
+                auto varInfo = mVarInfoMap.find( _variable );
+                if( varInfo == mVarInfoMap.end() ) return 0;
+                return varInfo->second.minDegree();
             }
             
             /**
@@ -204,7 +208,9 @@ namespace smtrat
              */
             unsigned occurences( const carl::Variable& _variable ) const
             {
-                return mVarInfoMap.getVarInfo( _variable )->occurence();
+                auto varInfo = mVarInfoMap.find( _variable );
+                if( varInfo == mVarInfoMap.end() ) return 0;
+                return varInfo->second.occurence();
             }
 
             /**
@@ -268,6 +274,13 @@ namespace smtrat
              */
             unsigned satisfiedBy( EvalRationalMap& _assignment ) const
             {
+//                std::cout << "Is  " << this->toString( 0, true, false ) << std::endl;
+//                this->printProperties( std::cout, false );
+//                std::cout << std::endl;
+//                std::cout << "satisfied by  " << std::endl;
+//                for( auto iter = _assignment.begin(); iter != _assignment.end(); ++iter )
+//                    std::cout << iter->first << " in " << iter->second << std::endl;
+                
                 Polynomial tmp = mLhs.substitute( _assignment );
                 if( tmp.isConstant() )
                     return evaluate( tmp.trailingTerm()->coeff(), relation() ) ? 1 : 0;
@@ -364,6 +377,13 @@ namespace smtrat
              *                           or with their dedicated names.
              */
             void printProperties( std::ostream& _out = std::cout, bool _friendlyVarNames = true ) const;
+            
+            /**
+             * Gives the string to the given relation symbol.
+             * @param _rel The relation symbol.
+             * @return The resulting string.
+             */
+            static std::string relationToString( const Relation _rel );
             
             /**
              * Checks whether the given value satisfies the given relation to zero.

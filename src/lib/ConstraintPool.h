@@ -161,7 +161,8 @@ namespace smtrat
              */
             std::vector<std::string> booleanVariables() const
             {
-                std::vector<std::string> result = std::vector<std::string>(mBooleanVariables.size());
+                std::vector<std::string> result = std::vector<std::string>();
+                result.reserve(mBooleanVariables.size());
                 for( auto bvar = mBooleanVariables.begin(); bvar != mBooleanVariables.end(); ++bvar )
                 {
                     result.push_back( **bvar );

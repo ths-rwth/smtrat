@@ -235,12 +235,17 @@ namespace smtrat
 
     Polynomial Constraint::coefficient( const carl::Variable& _var, unsigned _degree ) const
     {
-        Polynomial result;
-        const map<unsigned, Polynomial>& coeffs = mVarInfoMap.getVarInfo( _var )->coeffs();
-        auto expCoeffPair = coeffs.find( _degree );
-        if( expCoeffPair != coeffs.end() )
-            return expCoeffPair->second;
-        return Polynomial( Rational( 0 ) );
+        auto varInfo = mVarInfoMap.find( _var );
+        if( varInfo == mVarInfoMap.end() )
+        {
+            varInfo = mVarInfoMap.insert( pair<carl::Variable, VarInfo>( _var, mLhs.getVarInfo<true>( _var ) ) ).first;
+        }
+        else if( !varInfo->second.hasCoeff() )
+        {
+            varInfo->second = mLhs.getVarInfo<true>( _var );
+        }
+        auto d = varInfo->second.coeffs().find( _degree );
+        return d != varInfo->second.coeffs().end() ? d->second : ZERO_POLYNOMIAL;
     }
 
     Constraint* Constraint::simplify()
@@ -352,6 +357,14 @@ namespace smtrat
         {
             mLhsDefinitess = mLhs.definiteness();
             Constraint* constraint = new Constraint( *this, true );
+            
+//            cout << "simplified  " << this->toString( 0, true, false ) << endl;
+//            printProperties( cout, false );
+//            cout << endl;
+//            cout << "to  " << constraint->toString( 0, true, false) << endl;
+//            constraint->printProperties( cout, false );
+//            cout << endl;
+            
             return constraint;
         }
         else
@@ -362,7 +375,9 @@ namespace smtrat
 
     void Constraint::init()
     {
-//        mVarInfoMap( mLhs.getVarInfo<false>() ); //TODO: implement this line
+        carl::VariablesInformation<false,Polynomial> varinfos = mLhs.getVarInfo<false>();
+        for( auto varInfo = varinfos.begin(); varInfo != varinfos.end(); ++varInfo )
+            mVarInfoMap.emplace_hint( mVarInfoMap.end(), *varInfo );
         mLhsDefinitess = mLhs.definiteness();
         #ifdef SMTRAT_STRAT_Factorization
         if( mNumMonomials <= MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION && mVariables.size() <= MAX_DIMENSION_FOR_FACTORIZATION
@@ -495,6 +510,27 @@ namespace smtrat
 //            _out << "        " << varToString( *var, _friendlyVarNames ) << " has the maximal degree of " << varInfo->maxDegree() << "." << endl;
 //            _out << "        " << varToString( *var, _friendlyVarNames ) << " has the minimal degree of " << varInfo->minDegree() << "." << endl;
 //        }
+    }
+    
+    std::string Constraint::relationToString( const Relation _rel )
+    {
+        switch( _rel )
+        {
+            case EQ:
+                return "=";
+            case NEQ:
+                return "!=";
+            case LEQ:
+                return "<=";
+            case GEQ:
+                return ">=";
+            case LESS:
+                return "<";
+            case GREATER:
+                return ">";
+            default:
+                return "~";
+        }
     }
     
     bool Constraint::evaluate( const Rational& _value, Relation _relation )

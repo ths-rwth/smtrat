@@ -118,7 +118,9 @@ namespace smtrat
         CONSTRAINT_LOCK_GUARD
         // TODO: Maybe it's better to increment the allocator even if the constraint already exists.
         //       Avoids long waiting for access (mutual exclusion) but increases the allocator to fast.
+//        cout << "create polynomial  " << _lhs << " " << Constraint::relationToString( _rel ) << "0" << endl;
         Constraint* constraint = createNormalizedConstraint( _lhs, _rel );
+//        cout << "   " << *constraint << endl;
         if( constraint->variables().empty() )
         {
             bool constraintConsistent = Constraint::evaluate( constraint->constantPart(), constraint->relation() );
@@ -209,23 +211,23 @@ namespace smtrat
     {
         if( _rel == Constraint::GREATER )
         {
-            Polynomial lhs = -_lhs.coprimeCoefficients();
-            assert( (_lhs.trailingTerm()->coeff() < 0) == (_lhs.coprimeCoefficients().trailingTerm()->coeff() < 0) );
+            Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : -_lhs.coprimeCoefficients();
+            assert( _lhs.isZero() || (_lhs.lterm()->coeff() < 0) == (_lhs.coprimeCoefficients().lterm()->coeff() < 0) );
             return new Constraint( lhs, Constraint::LESS );
         }
         else if( _rel == Constraint::GEQ )
         {
-            Polynomial lhs = -_lhs.coprimeCoefficients();
-            assert( (_lhs.trailingTerm()->coeff() < 0) == (_lhs.coprimeCoefficients().trailingTerm()->coeff() < 0) );
+            Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : -_lhs.coprimeCoefficients();
+            assert( _lhs.nrTerms() == 0 || (_lhs.lterm()->coeff() < 0) == (_lhs.coprimeCoefficients().lterm()->coeff() < 0) );
             return new Constraint( lhs, Constraint::LEQ );
         }
         else
         {
-            assert( (_lhs.trailingTerm()->coeff() < 0) == (_lhs.coprimeCoefficients().trailingTerm()->coeff() < 0) );
-            Polynomial lhs = _lhs.coprimeCoefficients();
+            Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : _lhs.coprimeCoefficients();
+            assert( _lhs.isZero() || (_lhs.lterm()->coeff() < 0) == (_lhs.coprimeCoefficients().lterm()->coeff() < 0) );
             if( _rel == Constraint::EQ || _rel == Constraint::NEQ ) 
             {
-                if( lhs.trailingTerm()->coeff() < 0 ) lhs = -lhs;
+                if( lhs.lterm()->coeff() < ZERO_RATIONAL ) lhs = -lhs;
             }
             return new Constraint( lhs, _rel );
         }
