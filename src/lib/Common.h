@@ -126,11 +126,11 @@ namespace smtrat
     
     typedef carl::MultivariatePolynomial<Rational> Polynomial;
     
-    typedef std::map<carl::Variable,Rational> EvalRationalMap;
+    typedef std::map<carl::Variable, Rational> EvalRationalMap;
     
     typedef carl::ExactInterval<Rational> Interval;
     
-    typedef carl::evalintervalmap<Rational> EvalIntervalMap;
+    typedef std::map<carl::Variable, Interval> EvalIntervalMap;
     
     typedef carl::DoubleInterval::evaldoubleintervalmap EvalDoubleIntervalMap;
     

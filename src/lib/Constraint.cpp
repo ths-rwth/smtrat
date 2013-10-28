@@ -160,52 +160,52 @@ namespace smtrat
                 }
                 case LESS:
                 {
-                    if( solutionSpace.rightType() != DoubleInterval::INFINITY_BOUND )
+                    if( solutionSpace.rightType() != INFINITY_BOUND )
                     {
                         if( solutionSpace.right() < 0 )
                             return 1;
-                        else if( solutionSpace.right() == 0 && solutionSpace.rightType() == DoubleInterval::STRICT_BOUND )
+                        else if( solutionSpace.right() == 0 && solutionSpace.rightType() == STRICT_BOUND )
                             return 1;
                     }
-                    if( solutionSpace.leftType() != DoubleInterval::INFINITY_BOUND && solutionSpace.left() >= 0 )
+                    if( solutionSpace.leftType() != INFINITY_BOUND && solutionSpace.left() >= 0 )
                         return 0;
                     break;
                 }
                 case GREATER:
                 {
-                    if( solutionSpace.leftType() != DoubleInterval::INFINITY_BOUND )
+                    if( solutionSpace.leftType() != INFINITY_BOUND )
                     {
                         if( solutionSpace.left() > 0 )
                             return 1;
-                        else if( solutionSpace.left() == 0 && solutionSpace.leftType() == DoubleInterval::STRICT_BOUND )
+                        else if( solutionSpace.left() == 0 && solutionSpace.leftType() == STRICT_BOUND )
                             return 1;
                     }
-                    if( solutionSpace.rightType() != DoubleInterval::INFINITY_BOUND && solutionSpace.right() <= 0 )
+                    if( solutionSpace.rightType() != INFINITY_BOUND && solutionSpace.right() <= 0 )
                         return 0;
                     break;
                 }
                 case LEQ:
                 {
-                    if( solutionSpace.rightType() != DoubleInterval::INFINITY_BOUND && solutionSpace.right() <= 0)
+                    if( solutionSpace.rightType() != INFINITY_BOUND && solutionSpace.right() <= 0)
                         return 1;
-                    if( solutionSpace.leftType() != DoubleInterval::INFINITY_BOUND )
+                    if( solutionSpace.leftType() != INFINITY_BOUND )
                     {
                         if( solutionSpace.left() > 0 )
                             return 0;
-                        else if( solutionSpace.left() == 0 && solutionSpace.leftType() == DoubleInterval::STRICT_BOUND )
+                        else if( solutionSpace.left() == 0 && solutionSpace.leftType() == STRICT_BOUND )
                             return 0;
                     }
                     break;
                 }
                 case GEQ:
                 {
-                    if( solutionSpace.leftType() != DoubleInterval::INFINITY_BOUND && solutionSpace.left() >= 0 )
+                    if( solutionSpace.leftType() != INFINITY_BOUND && solutionSpace.left() >= 0 )
                         return 1;
-                    if( solutionSpace.rightType() != DoubleInterval::INFINITY_BOUND )
+                    if( solutionSpace.rightType() != INFINITY_BOUND )
                     {
                         if( solutionSpace.right() < 0 )
                             return 0;
-                        else if( solutionSpace.right() == 0 && solutionSpace.rightType() == DoubleInterval::STRICT_BOUND )
+                        else if( solutionSpace.right() == 0 && solutionSpace.rightType() == STRICT_BOUND )
                             return 0;
                     }
                     break;
