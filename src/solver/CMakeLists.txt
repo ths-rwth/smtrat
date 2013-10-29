@@ -60,7 +60,7 @@ add_dependencies( smtratSolver
 )
 target_link_libraries( smtratSolver
 						lib_${PROJECT_NAME} # smtrat library
-                        carl # arithmetic library
+                        lib_carl # arithmetic library
 						${libraries} # libraries definied in top-level CMakeLists.txt
 )
 set_target_properties( smtratSolver PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )

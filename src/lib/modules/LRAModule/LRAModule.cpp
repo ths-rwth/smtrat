@@ -120,9 +120,8 @@ namespace smtrat
         if( (*_subformula)->getType() == CONSTRAINT )
         {
             if( !mInitialized ) initialize();
-
             const Constraint* constraint  = (*_subformula)->pConstraint();
-            int               consistency = constraint->isConsistent();
+            int consistency = constraint->isConsistent();
             if( consistency == 2 )
             {
                 mAssignmentFullfilsNonlinearConstraints = false;
@@ -148,9 +147,8 @@ namespace smtrat
                                 mActiveUnresolvedNEQConstraints.erase( pos );
                             }
                         }
-
                         assert( mInfeasibleSubsets.empty() || !mInfeasibleSubsets.begin()->empty() );
-                        return mInfeasibleSubsets.empty() || !mNonlinearConstraints.empty();
+                        return mInfeasibleSubsets.empty() || !mNonlinearConstraints.empty(); // TODO: If there is an infeasible subset we should always return false, shouldn't we?
                     }
                     else
                     {
@@ -898,39 +896,29 @@ namespace smtrat
      *
      * @param _bound The bound to activate.
      * @param _formulas The constraints which form this bound.
-     * @return False, if a conflict occurs;
-     *         True, otherwise.
+     * @return false, if a conflict occurs;
+     *          true, otherwise.
      */
     bool LRAModule::activateBound( const Bound<Numeric>* _bound, set<const Formula*>& _formulas )
     {
         bool result = true;
         _bound->pOrigins()->push_back( _formulas );
         if( _bound->pInfo()->position != mpPassedFormula->end() )
-        {
             addOrigin( *_bound->pInfo()->position, _formulas );
-        }
         const Variable<Numeric>& var = _bound->variable();
         if( (_bound->isUpperBound() && var.pSupremum()->isInfinite()) )
         {
             if( var.isBasic() )
-            {
                 mTableau.incrementBasicActivity( var );
-            }
             else
-            {
                 mTableau.incrementNonbasicActivity( var );
-            }
         }
         if( (_bound->isLowerBound() && var.pInfimum()->isInfinite()) )
         {
             if( var.isBasic() )
-            {
                 mTableau.incrementBasicActivity( var );
-            }
             else
-            {
                 mTableau.incrementNonbasicActivity( var );
-            }
         }
         if( _bound->isUpperBound() )
         {
@@ -945,12 +933,9 @@ namespace smtrat
             if( *var.pSupremum() > *_bound )
             {
                 if( !var.pSupremum()->isInfinite() )
-                {
                     mBoundCandidatesToPass.push_back( var.pSupremum() );
-                }
                 mBoundCandidatesToPass.push_back( _bound );
                 _bound->pVariable()->setSupremum( _bound );
-
                 if( result && !var.isBasic() && (*var.pSupremum() < var.assignment()) )
                 {
                     mTableau.updateBasicAssignments( var.position(), Value<Numeric>( (*var.pSupremum()).limit() - var.assignment() ) );
@@ -971,12 +956,9 @@ namespace smtrat
             if( *var.pInfimum() < *_bound )
             {
                 if( !var.pInfimum()->isInfinite() )
-                {
                     mBoundCandidatesToPass.push_back( var.pInfimum() );
-                }
                 mBoundCandidatesToPass.push_back( _bound );
                 _bound->pVariable()->setInfimum( _bound );
-
                 if( result && !var.isBasic() && (*var.pInfimum() > var.assignment()) )
                 {
                     mTableau.updateBasicAssignments( var.position(), Value<Numeric>( (*var.pInfimum()).limit() - var.assignment() ) );
@@ -1324,6 +1306,7 @@ namespace smtrat
                 if( !(*term)->isConstant() ) break;
             carl::Variable var = (*(*term)->monomial())[0].var;
             Rational primCoeff = (*term)->coeff();
+            bool negative = (primCoeff < ZERO_RATIONAL);
             Rational constantPart = (-_pConstraint->constantPart())/primCoeff;
             VarVariableMap::iterator basicIter = mOriginalVars.find( var );
             // constraint not found, add new nonbasic variable
@@ -1332,18 +1315,18 @@ namespace smtrat
                 Polynomial* varPoly = new Polynomial( var );
                 Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( varPoly );
                 mOriginalVars.insert( pair<carl::Variable, Variable<Numeric>*>( var, nonBasic ) );
-                setBound( *nonBasic, (primCoeff < ZERO_RATIONAL), constantPart, _pConstraint );
+                setBound( *nonBasic, negative, constantPart, _pConstraint );
             }
             else
             {
                 Variable<Numeric>* nonBasic = basicIter->second;
-                setBound( *nonBasic, (primCoeff < ZERO_RATIONAL), constantPart, _pConstraint );
+                setBound( *nonBasic, negative, constantPart, _pConstraint );
             }
         }
         else
         {
             Rational constantPart( _pConstraint->constantPart() );
-            bool negative = ((*_pConstraint->lhs().begin())->coeff() < ZERO_RATIONAL);
+            bool negative = (_pConstraint->lhs().lterm()->coeff() < ZERO_RATIONAL);
             Polynomial* linearPart;
             if( negative )
                 linearPart = new Polynomial( -_pConstraint->lhs() + constantPart );
@@ -1354,37 +1337,40 @@ namespace smtrat
             {
                 vector< Variable<Numeric>* > nonbasics = vector< Variable<Numeric>* >();
                 vector< Numeric > numCoeffs = vector< Numeric >();
-                for( auto term = _pConstraint->lhs().begin(); term != _pConstraint->lhs().end(); ++term )
+                for( auto term = linearPart->begin(); term != linearPart->end(); ++term )
                 {
-                    if( !(*term)->isConstant() )
+                    if( (*term)->isConstant() )
                     {
-                        carl::Variable var = (*(*term)->monomial())[0].var;
-                        VarVariableMap::iterator nonBasicIter = mOriginalVars.find( var );
-                        if( mOriginalVars.end() == nonBasicIter )
-                        {
-                            Polynomial* varPoly = new Polynomial( var );
-                            Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( varPoly );
-                            mOriginalVars.insert( pair<carl::Variable, Variable<Numeric>*>( var, nonBasic ) );
-                            nonbasics.push_back( nonBasic );
-                        }
-                        else
-                        {
-                            nonbasics.push_back( nonBasicIter->second );
-                        }
-                        numCoeffs.push_back( Numeric( (*term)->coeff() ) );
+                        cout << *_pConstraint << endl;
+                        cout << *linearPart << endl;
                     }
+                    assert( !(*term)->isConstant() );
+                    carl::Variable var = (*(*term)->monomial())[0].var;
+                    VarVariableMap::iterator nonBasicIter = mOriginalVars.find( var );
+                    if( mOriginalVars.end() == nonBasicIter )
+                    {
+                        Polynomial* varPoly = new Polynomial( var );
+                        Variable<Numeric>* nonBasic = mTableau.newNonbasicVariable( varPoly );
+                        mOriginalVars.insert( pair<carl::Variable, Variable<Numeric>*>( var, nonBasic ) );
+                        nonbasics.push_back( nonBasic );
+                    }
+                    else
+                    {
+                        nonbasics.push_back( nonBasicIter->second );
+                    }
+                    numCoeffs.push_back( Numeric( (*term)->coeff() ) );
                 }
 
                 Variable<Numeric>* slackVar = mTableau.newBasicVariable( linearPart, nonbasics, numCoeffs );
 
                 mSlackVars.insert( pair<const Polynomial*, Variable<Numeric>*>( linearPart, slackVar ) );
-                setBound( *slackVar, negative, -constantPart, _pConstraint );
+                setBound( *slackVar, negative, (negative ? constantPart : -constantPart), _pConstraint );
             }
             else
             {
                 delete linearPart;
                 Variable<Numeric>* slackVar = slackIter->second;
-                setBound( *slackVar, negative, -constantPart, _pConstraint );
+                setBound( *slackVar, negative, (negative ? constantPart : -constantPart), _pConstraint );
             }
         }
     }

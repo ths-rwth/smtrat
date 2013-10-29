@@ -18,8 +18,6 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /**
  * @file Parser.yy
  *
@@ -29,14 +27,6 @@
  * @version 2013-05-05
  */
 
-/* TODOS: some setter and getter of the smtlib language miss.
- *        resolve the shift/reduce
- *        use unordered_maps where possible (watch out for the stored iterators)
- *        remove useless code in the driver
- *        shorten code in the Parser.yy by out-sourcing in the driver
- *        rename the class Driver
- *        there is some kind of minus and plus where I didn't expect it to be (TM/p6-zenonumeric_s9.smt2)
- */
 %{ /* C/C++ Declarations */
 
 #include <stdio.h>

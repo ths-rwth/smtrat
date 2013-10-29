@@ -433,7 +433,7 @@ namespace smtrat
             else
             {
                 resultA = new Formula( consA );
-                resultB = new Formula( consA );
+                resultB = new Formula( consB );
             }
             if( mPolarity )
             {
@@ -507,13 +507,9 @@ namespace smtrat
             return result;
         }
         else if( mPolarity )
-        {
             return new Formula( smtrat::TTRUE );
-        }
         else
-        {
             return new Formula( smtrat::FFALSE );
-        }
     }
     
     /**
@@ -538,13 +534,9 @@ namespace smtrat
             return result;
         }
         else if( mPolarity )
-        {
             return new Formula( smtrat::FFALSE );
-        }
         else
-        {
             return new Formula( smtrat::TTRUE );
-        }
     }
     
     /**
