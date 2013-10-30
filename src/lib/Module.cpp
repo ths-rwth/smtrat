@@ -639,6 +639,20 @@ namespace smtrat
         #endif
         return result;
     }
+         
+    /**
+     * Adds a statistic, which is formed by its name and its value to the collection of statistics in the manager.
+     * For a better identification of the statistic the name of the module and its id are attached to the name.
+     * @param _name The name of the statistic.
+     * @param _value The value of the statistic.
+     */
+    void Module::addStatistic( const std::string& _name, double _value ) const
+    {
+        stringstream s;
+        s << moduleName( type() ) << "_" << id() << "_" << _name;
+        assert( mpManager->mStatistics.find(s.str()) == mpManager->mStatistics.end() );
+        mpManager->mStatistics[s.str()] = _value;
+    }
 
     /**
      * Sets the solver state to the given answer value. This method also fires the flag 
@@ -668,6 +682,14 @@ namespace smtrat
         mConstraintsToInform.push_back(constraint);
         if(mFirstConstraintToInform == mConstraintsToInform.end())
             mFirstConstraintToInform = --mConstraintsToInform.end();
+    }
+    
+    /**
+     * Overwrite this method in a module where statistics shall be collected.
+     */
+    void Module::collectStatistics() const
+    {
+        
     }
 
     /**

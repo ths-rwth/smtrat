@@ -664,41 +664,41 @@ namespace smtrat
      *
      * @return The bounds of the variables as intervals.
      */
-//    evalintervalmap LRAModule::getVariableBounds() const
-//    {
-//        evalintervalmap result = evalintervalmap();
-//        for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
-//        {
-//            const Variable<Numeric>& var = *iter->second;
-//            Interval::BoundType lowerBoundType;
-//            numeric lowerBoundValue;
-//            Interval::BoundType upperBoundType;
-//            numeric upperBoundValue;
-//            if( var.infimum().isInfinite() )
-//            {
-//                lowerBoundType = Interval::INFINITY_BOUND;
-//                lowerBoundValue = 0;
-//            }
-//            else
-//            {
-//                lowerBoundType = var.infimum().isWeak() ? Interval::WEAK_BOUND : Interval::STRICT_BOUND;
-//                lowerBoundValue = var.infimum().limit().mainPart().toGinacNumeric();
-//            }
-//            if( var.supremum().isInfinite() )
-//            {
-//                upperBoundType = Interval::INFINITY_BOUND;
-//                upperBoundValue = 0;
-//            }
-//            else
-//            {
-//                upperBoundType = var.supremum().isWeak() ? Interval::WEAK_BOUND : Interval::STRICT_BOUND;
-//                upperBoundValue = var.supremum().limit().mainPart().toGinacNumeric();
-//            }
-//            Interval interval = Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
-//            result.insert( pair< symbol, Interval >( ex_to< symbol >( *iter->first ), interval ) );
-//        }
-//        return result;
-//    }
+    EvalIntervalMap LRAModule::getVariableBounds() const
+    {
+        EvalIntervalMap result = EvalIntervalMap();
+        for( auto iter = mOriginalVars.begin(); iter != mOriginalVars.end(); ++iter )
+        {
+            const Variable<Numeric>& var = *iter->second;
+            carl::BoundType lowerBoundType;
+            Rational lowerBoundValue;
+            carl::BoundType upperBoundType;
+            Rational upperBoundValue;
+            if( var.infimum().isInfinite() )
+            {
+                lowerBoundType = carl::BoundType::INFTY;
+                lowerBoundValue = 0;
+            }
+            else
+            {
+                lowerBoundType = var.infimum().isWeak() ? carl::BoundType::WEAK : carl::BoundType::STRICT;
+                lowerBoundValue = var.infimum().limit().mainPart().content();
+            }
+            if( var.supremum().isInfinite() )
+            {
+                upperBoundType = carl::BoundType::INFTY;
+                upperBoundValue = 0;
+            }
+            else
+            {
+                upperBoundType = var.supremum().isWeak() ? carl::BoundType::WEAK : carl::BoundType::STRICT;
+                upperBoundValue = var.supremum().limit().mainPart().content();
+            }
+            Interval interval = Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
+            result.insert( pair< carl::Variable, Interval >( iter->first, interval ) );
+        }
+        return result;
+    }
 
     #ifdef LRA_REFINEMENT
     /**
@@ -1391,6 +1391,12 @@ namespace smtrat
             mTableau.setBlandsRuleStart( mTableau.columns().size() );
             #endif
         }
+    }
+    
+    void LRAModule::collectStatistics() const
+    {
+        cout << __func__ << endl;
+        addStatistic( "pivots", mTableau.numberOfPivotingSteps() );
     }
     
     #ifdef LRA_GOMORY_CUTS

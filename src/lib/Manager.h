@@ -73,6 +73,8 @@ namespace smtrat
             StrategyGraph mStrategyGraph;
             /// channel to write debug output
             std::ostream mDebugOutputChannel;
+            ///
+            std::map<std::string,double> mStatistics;
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             /// contains all threads to assign jobs to
             ThreadPool* mpThreadPool;
@@ -237,9 +239,10 @@ namespace smtrat
                 return *mpPassedFormula;
             }
             
-            void printAssignment( std::ostream& ) const;
-            void printAssertions( std::ostream& ) const;
-            void printInfeasibleSubset( std::ostream& ) const;
+            void printAssignment( std::ostream& = std::cout ) const;
+            void printAssertions( std::ostream& = std::cout ) const;
+            void printInfeasibleSubset( std::ostream& = std::cout ) const;
+            void printStatistics( std::ostream& = std::cout ) const;
             
             // Internally used interfaces
             void addModuleType( const ModuleType _moduleType, ModuleFactory* _factory )

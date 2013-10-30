@@ -22,8 +22,9 @@
 /** 
  * @file   RuntimeSettingsManager.cpp
  * @author Sebastian Junges
- *
- * @version 10/01/2013
+ * @author Florian Corzilius
+ * @since   2013-01-10
+ * @version 2013-10-30
  */
 
 #include <stdio.h>
@@ -38,13 +39,14 @@
 #include "../lib/config.h"
 #include "../lib/CompileInfo.h"
 
-namespace smtrat {
-
-RuntimeSettingsManager::RuntimeSettingsManager() 
-: mDoPrintTimings(false), mPrintModel(false)
+namespace smtrat
 {
-    
-}
+
+RuntimeSettingsManager::RuntimeSettingsManager() : 
+    mDoPrintTimings( false ), 
+    mPrintModel( false ),
+    mPrintStatistics( false )
+{}
 
 /**
  * Add a settings object with a unique name
@@ -98,46 +100,50 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
     for(int argi = 1; argi < argc; ++argi) 
     {
         // Check if a option is passed.
-        if( strlen(argv[argi]) > 2 && argv[argi][0] == '-' && argv[argi][1] == '-') 
+        if( strlen(argv[argi]) > 1 && argv[argi][0] == '-') 
         {
-            std::string optionName(argv[argi] + 2);
+            std::string optionName(argv[argi] + 1);
             // check for global options.
-            if(optionName == "help") 
+            if(optionName == "-help") 
             {
                 printHelp();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
-            else if(optionName == "warranty") 
+            else if(optionName == "-warranty") 
             {
                 printWarranty();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
-            else if(optionName == "toc") 
+            else if(optionName == "-toc") 
             {
                 printToC();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
-            else if(optionName == "list-modules")
+            else if(optionName == "-list-modules")
             {
                 printModulesInfo();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
             #ifdef SMTRAT_DEVOPTION_MeasureTime
-            else if(optionName == "print-timings")
+            else if(optionName == "-print-timings")
             {
                 mDoPrintTimings = true;
             }
-            else if(optionName == "info")
+            else if(optionName == "-info")
             {
                 printInfo();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
             #endif
-            // no more global options, so we expect module options
-            else if(optionName == "print-model")
+            else if(optionName == "-model" || optionName == "m")
             {
                 mPrintModel = true;
             }
+            else if(optionName == "-statistics" || optionName == "s")
+            {
+                mPrintStatistics = true;
+            }
+            // no more global options, so we expect module options
             else 
             {
                 size_t semicolonPosition(optionName.find(':'));
@@ -192,7 +198,8 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << "\t --warranty \t\t prints the warranty." << std::endl;
     std::cout << "\t --toc  \t\t\t prints the terms of condition" << std::endl;
     std::cout << "\t --info \t\t\t prints information about the binary" << std::endl;
-    std::cout << "\t --print-model \t\t\t a model is printed if the example is found to be satisfiable" << std::endl;
+    std::cout << "\t --model (-m) \t\t\t prints a model is printed if the example is found to be satisfiable" << std::endl;
+    std::cout << "\t --statistics (-s) \t\t\t prints any statistics collected in the solving process" << std::endl;
     std::cout << std::endl;
     std::cout << "Developer options:" <<std::endl;
     std::cout << "\t --list-modules \t prints all compiled modules" << std::endl;
@@ -261,16 +268,6 @@ void RuntimeSettingsManager::printInfo() const
     std::cout << "Build type:" << smtrat::CompileInfo::BuildType << std::endl;   
     std::cout << "Code is based on commit " << smtrat::CompileInfo::GitRevisionSHA1 << ". " << std::endl;
     std::cout << "Build on a " << smtrat::CompileInfo::SystemName << " (" << CompileInfo::SystemVersion << ") machine." << std::endl;
-}
-
-bool RuntimeSettingsManager::doPrintTimings() const 
-{
-    return mDoPrintTimings;
-}
-
-bool RuntimeSettingsManager::printModel() const 
-{
-    return mPrintModel;
 }
 
 }

@@ -97,8 +97,9 @@ namespace smtrat
             Answer isConsistent();
             void updateModel();
             EvalRationalMap getRationalModel() const;
-//            EvalIntervalMap getVariableBounds() const;
+            EvalIntervalMap getVariableBounds() const;
             void initialize();
+            void collectStatistics() const;
 
             void printLinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
             void printNonlinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;

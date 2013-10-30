@@ -53,7 +53,8 @@ namespace smtrat
         mBackendsOfModules(),
         mpPrimaryBackend( mGeneratedModules.back() ),
         mStrategyGraph(),
-        mDebugOutputChannel( cout.rdbuf() )
+        mDebugOutputChannel( cout.rdbuf() ),
+        mStatistics()
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         ,
         mpThreadPool( NULL ),
@@ -195,6 +196,24 @@ namespace smtrat
                     _out << **subFormula << endl;
                 }
             }
+        }
+        _out << ")" << endl;
+    }
+
+    /**
+     * Prints all statistics generated during the solving process of the existing modules.
+     * @param _out The stream to print on.
+     */
+    void Manager::printStatistics( ostream& _out ) const
+    {
+        for( auto module = mGeneratedModules.begin(); module != mGeneratedModules.end(); ++module )
+            (*module)->collectStatistics();
+        _out << "(";
+        for( auto stat = mStatistics.begin(); stat != mStatistics.end(); ++stat )
+        {
+            if( stat != mStatistics.begin() )
+                _out << endl;
+            _out << ":" << stat->first << " " << stat->second;
         }
         _out << ")" << endl;
     }

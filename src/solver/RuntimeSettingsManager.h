@@ -18,13 +18,12 @@
  * along with SMT-RAT.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-
 /** 
  * @file   RuntimeSettingsManager.h
  * @author Sebastian Junges
- *
- * @version 10/01/2013
+ * @author Florian Corzilius
+ * @since   2013-01-10
+ * @version 2013-10-30
  */
 
 #pragma once
@@ -34,9 +33,8 @@
 #include <list>
 #include "../lib/RuntimeSettings.h"
 
-namespace smtrat {
-   
-    
+namespace smtrat
+{    
     /**
      * Structure which holds all the different runtime-settings.
      */
@@ -45,6 +43,7 @@ namespace smtrat {
         std::map<std::string, RuntimeSettings*> mSettingObjects;
         bool mDoPrintTimings;
         bool mPrintModel;
+        bool mPrintStatistics;
     public:
         RuntimeSettingsManager();
         
@@ -53,8 +52,20 @@ namespace smtrat {
         RuntimeSettings* getSettingsObject(const std::string& name) const;
         std::string parseCommandline(int argc, char** argv);
         
-        bool doPrintTimings() const;
-        bool printModel() const;
+        bool doPrintTimings() const
+        {
+            return mDoPrintTimings;
+        }
+        
+        bool printModel() const
+        {
+            return mPrintModel;
+        }
+        
+        bool printStatistics() const
+        {
+            return mPrintStatistics;
+        }
         
     protected:
         void printHelp() const;

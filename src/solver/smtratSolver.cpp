@@ -111,9 +111,9 @@ int main( int argc, char* argv[] )
     parseInput( pathToInputFile, parser, parserSettings );
     
     // Construct solver.
-    CMakeStrategySolver* nratSolver = new CMakeStrategySolver();
-    nratSolver->rDebugOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
-    std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules( nratSolver );
+    CMakeStrategySolver* solver = new CMakeStrategySolver();
+    solver->rDebugOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
+    std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules( solver );
     
     // Introduce the settingsObjects from the modules to the manager.
     settingsManager.addSettingsObject( settingsObjects );
@@ -130,24 +130,24 @@ int main( int argc, char* argv[] )
             case smtrat::PUSHBT:
             {
                 for( int i = 0; i<currentInstructionValue.num; ++i )
-                    nratSolver->push();
+                    solver->push();
                 break;
             }
             case smtrat::POPBT:
             {
                 for( int i = 0; i<currentInstructionValue.num; ++i )
-                    if( !nratSolver->pop() )
+                    if( !solver->pop() )
                         parser.error( "Cannot pop an empty stack of backtrack points!", true );
                 break;
             }
             case smtrat::ASSERT:
             {
-                nratSolver->add( currentInstructionValue.formula );
+                solver->add( currentInstructionValue.formula );
                 break;
             }
             case smtrat::CHECK:
             {
-                lastAnswer = nratSolver->check();
+                lastAnswer = solver->check();
                 switch( lastAnswer )
                 {
                     case smtrat::True:
@@ -196,18 +196,18 @@ int main( int argc, char* argv[] )
             {
                 if( lastAnswer == smtrat::True )
                 {
-                    nratSolver->printAssignment( parser.rRegularOutputChannel() );
+                    solver->printAssignment( parser.rRegularOutputChannel() );
                 }
                 break;
             }
             case smtrat::GET_ASSERTS:
             {
-                nratSolver->printAssertions( parser.rRegularOutputChannel() );
+                solver->printAssertions( parser.rRegularOutputChannel() );
                 break;
             }
             case smtrat::GET_UNSAT_CORE:
             {
-                nratSolver->printInfeasibleSubset( parser.rRegularOutputChannel() );
+                solver->printInfeasibleSubset( parser.rRegularOutputChannel() );
                 break;
             }
             default:
@@ -222,15 +222,21 @@ int main( int argc, char* argv[] )
     if( settingsManager.printModel() && lastAnswer == smtrat::True )
     {
         std::cout << std::endl;
-        nratSolver->printAssignment( std::cout );
+        solver->printAssignment( std::cout );
     }
 
     if( settingsManager.doPrintTimings() )
     {
-        printTimings( nratSolver );
+        printTimings( solver );
     }
+    
+    if( settingsManager.printStatistics() )
+    {
+        solver->printStatistics();
+    }
+    
     // Delete the solver and the formula.
-    delete nratSolver;
+    delete solver;
     delete parserSettings;
     // Export statistics.
     #ifdef SMTRAT_DEVOPTION_Statistics
