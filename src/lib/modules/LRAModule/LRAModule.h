@@ -37,6 +37,7 @@
 #include "../../datastructures/lra/Variable.hpp"
 #include "../../datastructures/lra/Bound.hpp"
 #include "../../datastructures/lra/Tableau.hpp"
+#include "LRAModuleStatistics.h"
 #include <stdio.h>
 
 namespace smtrat
@@ -73,6 +74,10 @@ namespace smtrat
             ConstraintBoundsMap        mConstraintToBound;
             carl::Variable             mDelta;
             std::vector<const lra::Bound<lra::Numeric>* >  mBoundCandidatesToPass;
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            ///
+            LRAModuleStatistics* mpStatistics;
+            #endif
 
         public:
 
@@ -99,7 +104,6 @@ namespace smtrat
             EvalRationalMap getRationalModel() const;
             EvalIntervalMap getVariableBounds() const;
             void initialize();
-            void collectStatistics() const;
 
             void printLinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;
             void printNonlinearConstraints ( std::ostream& = std::cout, const std::string = "" ) const;

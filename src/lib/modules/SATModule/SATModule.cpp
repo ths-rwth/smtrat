@@ -152,10 +152,12 @@ namespace smtrat
         mBooleanVarMap(),
         mFormulaClauseMap(),
         mMaxSatAssigns()
-        #ifdef SMTRAT_DEVOPTION_Statistics
-        , mStats(new SATstatistics())
-        #endif
     {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        stringstream s;
+        s << moduleName( type() ) << "_" << id();
+        mpStatistics = new SATModuleStatistics( s.str() );
+        #endif
     }
 
     /**
@@ -545,7 +547,7 @@ namespace smtrat
             Var constraintAbstraction;
             #ifdef SMTRAT_DEVOPTION_Statistics
             if( _preferredToTSolver )
-                mStats->initialTrue();
+                mpStatistics->initialTrue();
             #endif
             const Constraint* constraint = NULL;
             if( !_polarity )
@@ -653,7 +655,7 @@ namespace smtrat
         _clause.copyTo( add_tmp );
 
         #ifdef SMTRAT_DEVOPTION_Statistics
-        if( _type != NORMAL_CLAUSE ) mStats->lemmaLearned();
+        if( _type != NORMAL_CLAUSE ) mpStatistics->lemmaLearned();
         #endif
         // Check if clause is satisfied and remove false/duplicate literals:
         sort( add_tmp );
@@ -1456,6 +1458,9 @@ SetWatches:
                 {
                     // New variable decision:
                     decisions++;
+                    #ifdef SMTRAT_DEVOPTION_Statistics
+                    mpStatistics->decide();
+                    #endif
                     next = pickBranchLit();
 
                     if( next == lit_Undef )
@@ -1808,6 +1813,9 @@ SetWatches:
                 {
                     assert( value( first ) == l_Undef );
                     uncheckedEnqueue( first, cr );
+                    #ifdef SMTRAT_DEVOPTION_Statistics
+                    mpStatistics->propagate();
+                    #endif
                 }
 
 NextClause:
@@ -2486,9 +2494,8 @@ NextClause:
     void SATModule::collectStats()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mStats->nrTotalVariables = nVars();
-        mStats->nrUnassignedVariables = nFreeVars();
-        mStats->nrClauses = nClauses();
+        mpStatistics->rNrTotalVariables() = nVars();
+        mpStatistics->rNrClauses() = nClauses();
         #endif
     }
 }    // namespace smtrat

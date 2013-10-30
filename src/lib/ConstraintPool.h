@@ -50,8 +50,6 @@ namespace smtrat
             unsigned mAuxiliaryRealVarCounter;
             /// A counter for the auxiliary integer valued variables.
             unsigned mAuxiliaryIntVarCounter;
-            /// A counter for the auxiliary integer valued variables.
-            unsigned mArithmeticVarCounter;
             /// The constraint (0=0) representing a valid constraint.
             const Constraint* mConsistentConstraint;
             /// The constraint (0>0) representing an inconsistent constraint.
@@ -288,6 +286,39 @@ namespace smtrat
                         ++nonlinear;
                 }
                 return nonlinear;
+            }
+            
+            /**
+             * @return The number of Boolean variables which have been generated.
+             */
+            unsigned numberOfBooleanVariables() const
+            {
+                return mBooleanVariables.size();
+            }
+            
+            
+            /**
+             * @return The number of real variables which have been generated.
+             */
+            unsigned numberOfRealVariables() const
+            {
+                unsigned result = 0;
+                for( auto var = mExternalNamesToVariables.begin(); var != mExternalNamesToVariables.end(); ++var )
+                    if( var->second.getType() == carl::VT_REAL )
+                        ++result;
+                return result;
+            }
+            
+            /**
+             * @return The number of integer variables which have been generated.
+             */
+            unsigned numberOfIntVariables() const
+            {
+                unsigned result = 0;
+                for( auto var = mExternalNamesToVariables.begin(); var != mExternalNamesToVariables.end(); ++var )
+                    if( var->second.getType() == carl::VT_INT )
+                        ++result;
+                return result;
             }
                
             /**

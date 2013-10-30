@@ -60,7 +60,13 @@ namespace smtrat
         mConstraintToBound(),
         mDelta( Formula::newAuxiliaryRealVariable( "delta_" + to_string( id() ) ) ),
         mBoundCandidatesToPass()
-    {}
+    {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        stringstream s;
+        s << moduleName( type() ) << "_" << id();
+        mpStatistics = new LRAModuleStatistics( s.str() );
+        #endif
+    }
 
     LRAModule::~LRAModule()
     {
@@ -121,6 +127,9 @@ namespace smtrat
         {
             if( !mInitialized ) initialize();
             const Constraint* constraint  = (*_subformula)->pConstraint();
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mpStatistics->add( *constraint );
+            #endif
             int consistency = constraint->isConsistent();
             if( consistency == 2 )
             {
@@ -148,6 +157,10 @@ namespace smtrat
                             }
                         }
                         assert( mInfeasibleSubsets.empty() || !mInfeasibleSubsets.begin()->empty() );
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        if( !mInfeasibleSubsets.empty() && mNonlinearConstraints.empty() )
+                            mpStatistics->addConflict( mInfeasibleSubsets );
+                        #endif
                         return mInfeasibleSubsets.empty() || !mNonlinearConstraints.empty(); // TODO: If there is an infeasible subset we should always return false, shouldn't we?
                     }
                     else
@@ -185,6 +198,9 @@ namespace smtrat
                 infSubSet.insert( *_subformula );
                 mInfeasibleSubsets.push_back( infSubSet );
                 foundAnswer( False );
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->addConflict( mInfeasibleSubsets );
+                #endif
                 return false;
             }
             else
@@ -209,6 +225,9 @@ namespace smtrat
         {
             // Remove the mapping of the constraint to the sub-formula in the received formula
             const Constraint* constraint = (*_subformula)->pConstraint();
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mpStatistics->remove( *constraint );
+            #endif
             if( constraint->isConsistent() == 2 )
             {
                 if( constraint->lhs().isLinear() )
@@ -272,13 +291,9 @@ namespace smtrat
                                 }
                             }
                             if( bound != bounds->begin() )
-                            {
                                 bound = bounds->erase( bound );
-                            }
                             else
-                            {
                                 ++bound;
-                            }
                         }
                     }
                     else
@@ -307,35 +322,32 @@ namespace smtrat
 
     /**
      * Checks the consistency of the so far received constraints.
-     *
-     * @return True,    if the so far received constraints are consistent;
-     *         False,   if the so far received constraints are inconsistent;
-     *         Unknown, if this module cannot determine whether the so far received constraints are consistent or not.
+     * @return True, if the so far received constraints are consistent;
+     *          False, if the so far received constraints are inconsistent;
+     *          Unknown, if this module cannot determine whether the so far received constraints are consistent or not.
      */
     Answer LRAModule::isConsistent()
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "check for consistency" << endl;
         #endif
+        Answer result = Unknown;
         if( !mpReceivedFormula->isConstraintConjunction() )
         {
-            return foundAnswer( Unknown );
+            goto Return; // return Unknown;
         }
         if( !mInfeasibleSubsets.empty() )
         {
-            return foundAnswer( False );
+            result = False;
+            goto Return;
         }
         for( ; ; )
         {
-            CONSTRAINT_LOCK
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
             if( anAnswerFound() )
             {
-                #ifdef LRA_REFINEMENT
-                learnRefinements();
-                #endif
-                CONSTRAINT_UNLOCK
-                return foundAnswer( Unknown );
+                result = Unknown;
+                goto Return;
             }
             #ifdef DEBUG_LRA_MODULE
             cout << endl;
@@ -370,33 +382,22 @@ namespace smtrat
                         // If there are no unresolved notequal-constraints, return True.
                         if( mActiveUnresolvedNEQConstraints.empty() )
                         {
-                            #ifdef LRA_REFINEMENT
-                            learnRefinements();
-                            #endif
-
                             #ifdef LRA_GOMORY_CUTS 
                             if( gomory_cut() )
-                            {
-                                return foundAnswer( Unknown );
-                            }
+                                goto Return; // return Unknown;
                             #endif 
 
                             #ifdef LRA_CUTS_FROM_PROOFS
                             if( cuts_from_proofs() )
-                            {
-                                return foundAnswer( Unknown );
-                            }
+                                goto Return; // return Unknown;
                             #endif
                             
                             #ifdef LRA_BRANCH_AND_BOUND
                             if( branch_and_bound() )
-                            {
-                                return foundAnswer( Unknown );
-                            }
+                                goto Return; // return Unknown;
                             #endif
-                            CONSTRAINT_UNLOCK
-                            assert( assignmentCorrect() );
-                            return foundAnswer( True );
+                            result = True;
+                            goto Return;
                         }
                         // Otherwise, resolve the notequal-constraints (create the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
                         else
@@ -409,11 +410,7 @@ namespace smtrat
                                     mResolvedNEQConstraints.insert( iter->first );
                                 }
                             }
-                            #ifdef LRA_REFINEMENT
-                            learnRefinements();
-                            #endif
-                            CONSTRAINT_UNLOCK
-                            return foundAnswer( Unknown );
+                            goto Return; // return Unknown;
                         }
                     }
                     // Otherwise, check the consistency of the formula consisting of the nonlinear constraints and the tightest bounds with the backends.
@@ -428,24 +425,20 @@ namespace smtrat
                             }
                         }
                         adaptPassedFormula();
-                        CONSTRAINT_UNLOCK
                         Answer a = runBackends();
                         if( a == False )
-                        {
                             getInfeasibleSubsets();
-                        }
-                        #ifdef LRA_REFINEMENT
-                        CONSTRAINT_LOCK
-                        learnRefinements();
-                        CONSTRAINT_UNLOCK
-                        #endif
-                        return foundAnswer( a );
+                        result = a;
+                        goto Return;
                     }
                 }
                 else
                 {
                     // Pivot at the found pivoting entry.
                     mTableau.pivot( pivotingElement.first );
+                    #ifdef SMTRAT_DEVOPTION_Statistics
+                    mpStatistics->pivotStep();
+                    #endif
                     #ifdef LRA_REFINEMENT
                     // Learn all bounds which have been deduced during the pivoting process.
                     while( !mTableau.rNewLearnedBounds().empty() )
@@ -489,11 +482,8 @@ namespace smtrat
                     // Maybe a easy conflict occurred with the learned bounds.
                     if( !mInfeasibleSubsets.empty() )
                     {
-                        #ifdef LRA_REFINEMENT
-                        learnRefinements();
-                        #endif
-                        CONSTRAINT_UNLOCK
-                        return foundAnswer( False );
+                        result = False;
+                        goto Return;
                     }
                 }
             }
@@ -524,24 +514,29 @@ namespace smtrat
                     mInfeasibleSubsets.push_back( infSubSet );
                 }
                 #endif
-                #ifdef LRA_REFINEMENT
-                learnRefinements();
-                #endif
-                // Return False.
-                #ifdef DEBUG_LRA_MODULE
-                cout << "False" << endl;
-                #endif
-                CONSTRAINT_UNLOCK
-                return foundAnswer( False );
+                result = False;
+                goto Return;
             }
-            CONSTRAINT_UNLOCK
         }
         assert( false );
+Return:
         #ifdef LRA_REFINEMENT
         learnRefinements();
         #endif
-        assert( assignmentCorrect() );
-        return foundAnswer( True );
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        mpStatistics->check( *mpReceivedFormula );
+        if( result == False )
+            mpStatistics->addConflict( mInfeasibleSubsets );
+        mpStatistics->setNumberOfTableauxEntries( mTableau.size() );
+        mpStatistics->setTableauSize( mTableau.rows().size()*mTableau.columns().size() );
+        mpStatistics->setNumberOfRestarts( mTableau.numberOfRestarts() );
+        #endif
+        #ifdef DEBUG_LRA_MODULE
+        cout << answerToString( result ) << endl;
+        #endif
+        assert( result != True || assignmentCorrect() );
+        CONSTRAINT_UNLOCK
+        return foundAnswer( result );
     }
 
     /**
@@ -736,6 +731,10 @@ namespace smtrat
                             deduction->addSubformula( (*originIterA)->pConstraint() );
                             addDeduction( deduction );
                             ++originIterA;
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            mpStatistics->addRefinement();
+                            mpStatistics->addDeduction();
+                            #endif
                         }
                     }
                 }
@@ -775,6 +774,10 @@ namespace smtrat
                             deduction->addSubformula( (*originIterA)->pConstraint() );
                             addDeduction( deduction );
                             ++originIterA;
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            mpStatistics->addRefinement();
+                            mpStatistics->addDeduction();
+                            #endif
                         }
                     }
                 }
@@ -996,6 +999,9 @@ namespace smtrat
                 deduction->back()->addSubformula( _constraint );
                 deduction->addSubformula( result.second.first->pAsConstraint() );
                 addDeduction( deduction );
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->addDeduction();
+                #endif
             }
             if( result.second.first != NULL && !result.second.first->isInfinite() )
             {
@@ -1004,6 +1010,9 @@ namespace smtrat
                 deduction->back()->addSubformula( _constraint );
                 deduction->addSubformula( result.second.first->pAsConstraint() );
                 addDeduction( deduction );
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->addDeduction();
+                #endif
             }
             if( result.second.second != NULL && !result.second.second->isInfinite() )
             {
@@ -1012,6 +1021,9 @@ namespace smtrat
                 deduction->back()->addSubformula( _constraint );
                 deduction->addSubformula( result.second.second->pAsConstraint() );
                 addDeduction( deduction );
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->addDeduction();
+                #endif
             }
             if( result.second.second != NULL && !result.second.second->isInfinite() )
             {
@@ -1020,6 +1032,9 @@ namespace smtrat
                 deduction->back()->addSubformula( _constraint );
                 deduction->addSubformula( result.second.second->pAsConstraint() );
                 addDeduction( deduction );
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->addDeduction();
+                #endif
             }
             #endif
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
@@ -1042,6 +1057,9 @@ namespace smtrat
                 deduction->back()->addSubformula( result.second.first->pAsConstraint() );
                 deduction->addSubformula( _constraint );
                 addDeduction( deduction );
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->addDeduction();
+                #endif
             }
             if( result.second.second != NULL && !result.second.second->isInfinite() )
             {
@@ -1050,6 +1068,9 @@ namespace smtrat
                 deduction->back()->addSubformula( _constraint );
                 deduction->addSubformula( result.second.second->pAsConstraint() );
                 addDeduction( deduction );
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->addDeduction();
+                #endif
             }
             #endif
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
@@ -1072,6 +1093,9 @@ namespace smtrat
                 deduction->back()->addSubformula( result.second.first->pAsConstraint() );
                 deduction->addSubformula( _constraint );
                 addDeduction( deduction );
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->addDeduction();
+                #endif
             }
             if( result.second.second != NULL && !result.second.second->isInfinite() )
             {
@@ -1080,6 +1104,9 @@ namespace smtrat
                 deduction->back()->addSubformula( _constraint );
                 deduction->addSubformula( result.second.second->pAsConstraint() );
                 addDeduction( deduction );
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->addDeduction();
+                #endif
             }
             #endif
             #ifdef LRA_SIMPLE_CONFLICT_SEARCH
@@ -1123,6 +1150,9 @@ namespace smtrat
                     deduction->back()->addSubformula( result.second.first->pAsConstraint() );
                     deduction->addSubformula( _constraint );
                     addDeduction( deduction );
+                    #ifdef SMTRAT_DEVOPTION_Statistics
+                    mpStatistics->addDeduction();
+                    #endif
                 }
                 if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != Constraint::NEQ )
                 {
@@ -1131,6 +1161,9 @@ namespace smtrat
                     deduction->back()->addSubformula( _constraint );
                     deduction->addSubformula( result.second.second->pAsConstraint() );
                     addDeduction( deduction );
+                    #ifdef SMTRAT_DEVOPTION_Statistics
+                    mpStatistics->addDeduction();
+                    #endif
                 }
                 #endif
                 #ifdef LRA_SIMPLE_CONFLICT_SEARCH
@@ -1170,6 +1203,9 @@ namespace smtrat
                     deduction->back()->addSubformula( result.second.first->pAsConstraint() );
                     deduction->addSubformula( _constraint );
                     addDeduction( deduction );
+                    #ifdef SMTRAT_DEVOPTION_Statistics
+                    mpStatistics->addDeduction();
+                    #endif
                 }
                 if( result.second.second != NULL && !result.second.second->isInfinite() && _constraint->relation() != Constraint::NEQ )
                 {
@@ -1178,6 +1214,9 @@ namespace smtrat
                     deduction->back()->addSubformula( _constraint );
                     deduction->addSubformula( result.second.second->pAsConstraint() );
                     addDeduction( deduction );
+                    #ifdef SMTRAT_DEVOPTION_Statistics
+                    mpStatistics->addDeduction();
+                    #endif
                 }
                 #endif
                 #ifdef LRA_SIMPLE_CONFLICT_SEARCH
@@ -1214,6 +1253,9 @@ namespace smtrat
                             deductionB->addSubformula( new Formula( NOT ) );
                             deductionB->back()->addSubformula( (*lbound)->neqRepresentation() );
                             addDeduction( deductionB );
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            mpStatistics->addDeduction();
+                            #endif
                         }
                     }
                     else if( _bound.neqRepresentation() != NULL )
@@ -1226,6 +1268,9 @@ namespace smtrat
                             deductionB->addSubformula( new Formula( NOT ) );
                             deductionB->back()->addSubformula( (*lbound)->pAsConstraint() );
                             addDeduction( deductionB );
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            mpStatistics->addDeduction();
+                            #endif
                         }
                     }
                     else
@@ -1236,6 +1281,9 @@ namespace smtrat
                         deduction->addSubformula( new Formula( NOT ) );
                         deduction->back()->addSubformula( (*lbound)->pAsConstraint() );
                         addDeduction( deduction );
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpStatistics->addDeduction();
+                        #endif
                     }
                 }
                 else
@@ -1261,6 +1309,9 @@ namespace smtrat
                             deductionB->addSubformula( new Formula( NOT ) );
                             deductionB->back()->addSubformula( (*ubound)->neqRepresentation() );
                             addDeduction( deductionB );
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            mpStatistics->addDeduction();
+                            #endif
                         }
                     }
                     else if( _bound.neqRepresentation() != NULL )
@@ -1273,6 +1324,9 @@ namespace smtrat
                             deductionB->addSubformula( new Formula( NOT ) );
                             deductionB->back()->addSubformula( (*ubound)->pAsConstraint() );
                             addDeduction( deductionB );
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            mpStatistics->addDeduction();
+                            #endif
                         }
                     }
                     else
@@ -1283,6 +1337,9 @@ namespace smtrat
                         deduction->addSubformula( new Formula( NOT ) );
                         deduction->back()->addSubformula( (*ubound)->pAsConstraint() );
                         addDeduction( deduction );
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpStatistics->addDeduction();
+                        #endif
                     }
                 }
                 else
@@ -1391,12 +1448,6 @@ namespace smtrat
             mTableau.setBlandsRuleStart( mTableau.columns().size() );
             #endif
         }
-    }
-    
-    void LRAModule::collectStatistics() const
-    {
-        cout << __func__ << endl;
-        addStatistic( "pivots", mTableau.numberOfPivotingSteps() );
     }
     
     #ifdef LRA_GOMORY_CUTS

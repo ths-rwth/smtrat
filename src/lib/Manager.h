@@ -35,13 +35,13 @@
 
 #include <vector>
 
-#include "Answer.h"
 #include "ModuleFactory.h"
 #include "StrategyGraph.h"
 #include "modules/ModuleType.h"
 #include "Module.h"
 #include "config.h"
 #include "modules/StandardModuleFactory.h"
+#include "GeneralStatistics.h"
 
 namespace smtrat
 {
@@ -73,8 +73,10 @@ namespace smtrat
             StrategyGraph mStrategyGraph;
             /// channel to write debug output
             std::ostream mDebugOutputChannel;
+            #ifdef SMTRAT_DEVOPTION_Statistics
             ///
-            std::map<std::string,double> mStatistics;
+            GeneralStatistics* mpStatistics;
+            #endif
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             /// contains all threads to assign jobs to
             ThreadPool* mpThreadPool;
@@ -126,13 +128,9 @@ namespace smtrat
                 {
                     --btp;
                     if( *btp == mpPassedFormula->end() )
-                    {
                         *btp = pos;
-                    }
                     else
-                    {
                         break;
-                    }
                 }
                 return mpPrimaryBackend->assertSubformula( pos );
             }
@@ -197,9 +195,7 @@ namespace smtrat
                 if( mBacktrackPoints.empty() ) return false;
                 auto subFormula = mBacktrackPoints.back();
                 while( subFormula != mpPassedFormula->end() )
-                {
                     subFormula = remove( subFormula );
-                }
                 mBacktrackPoints.pop_back();
                 return true;
             }
@@ -242,7 +238,6 @@ namespace smtrat
             void printAssignment( std::ostream& = std::cout ) const;
             void printAssertions( std::ostream& = std::cout ) const;
             void printInfeasibleSubset( std::ostream& = std::cout ) const;
-            void printStatistics( std::ostream& = std::cout ) const;
             
             // Internally used interfaces
             void addModuleType( const ModuleType _moduleType, ModuleFactory* _factory )

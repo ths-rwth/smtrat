@@ -39,7 +39,6 @@ namespace smtrat
         mAuxiliaryBoolVarCounter( 0 ),
         mAuxiliaryRealVarCounter( 0 ),
         mAuxiliaryIntVarCounter( 0 ),
-        mArithmeticVarCounter( 0 ),
         mConsistentConstraint( new Constraint( Polynomial( Rational( 0 ) ), Constraint::EQ, 1 ) ),
         mInconsistentConstraint( new Constraint( Polynomial( Rational( 0 ) ), Constraint::LESS, 2 ) ),
         mExternalVarNamePrefix( "_" ),
@@ -94,7 +93,6 @@ namespace smtrat
             delete toDelete;
         }
         mAuxiliaryBoolVarCounter = 0;
-        mArithmeticVarCounter = 0;
         mConstraints.insert( mConsistentConstraint );
         mConstraints.insert( mInconsistentConstraint );
         mExternalNamesToVariables.clear();

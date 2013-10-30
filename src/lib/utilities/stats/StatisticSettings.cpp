@@ -26,13 +26,13 @@
  *
  */
 #include "StatisticSettings.h"
-#include <iostream>
 
 namespace smtrat {
 StatisticSettings::StatisticSettings() : 
     mExportXml(false),
     mXmlPath("stats.xml"),
-    mPrintStats(false)
+    mPrintStats(false),
+    mOutputChannel(std::cout.rdbuf())
 {
     
 }

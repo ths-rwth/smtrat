@@ -25,8 +25,7 @@
  * @version 2013-10-21
  */
 
-#ifndef COMMON_H
-#define	COMMON_H
+#pragma once
 
 #include <vector>
 #include <set>
@@ -42,6 +41,9 @@ namespace smtrat
     // Enumerations.
     
     enum Variable_Domain { BOOLEAN_DOMAIN = 0, REAL_DOMAIN = 1, INTEGER_DOMAIN = 2 };
+    
+    ///An enum with the possible answer a Module can give
+    enum Answer { True, False, Unknown };
     
     // Structures.
     
@@ -188,8 +190,10 @@ namespace smtrat
     
     static const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 300;
     
+    // Makros.
+    
+    #define ANSWER_TO_STRING(_ans) (_ans == True ? "True" : (_ans == False ? "False" : (_ans == Unknown ? "Unknown" : "Undefined")))
+    
 }    // namespace smtrat
 
-
-#endif	/* COMMON_H */
 

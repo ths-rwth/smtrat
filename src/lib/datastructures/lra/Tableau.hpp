@@ -371,6 +371,11 @@ namespace smtrat
                 {
                     return mPivotingSteps;
                 }
+                
+                unsigned numberOfRestarts() const
+                {
+                    return mRestarts;
+                }
 
                 #ifdef LRA_REFINEMENT
                 std::map<Variable<T>*, LearnedBound>& rLearnedLowerBounds()

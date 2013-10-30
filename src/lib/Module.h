@@ -44,7 +44,7 @@
 #include <chrono>
 #include <atomic>
 
-#include "Answer.h"
+#include "Common.h"
 #include "Formula.h"
 #include "ValidationSettings.h"
 #include "ThreadPool.h"
@@ -163,7 +163,6 @@ namespace smtrat
             virtual Answer isConsistent();
             virtual void removeSubformula( Formula::const_iterator );
             virtual void updateModel();
-            virtual void collectStatistics() const;
 
             // Methods to read and write on the members.
             inline Answer solverState() const
@@ -386,7 +385,6 @@ namespace smtrat
                 _origins = origins->second;
             }
             
-            void addStatistic( const std::string& _name, double _value ) const;
             Answer foundAnswer( Answer );
             void addConstraintToInform( const Constraint* const _constraint );
             void addReceivedSubformulaToPassedFormula( Formula::const_iterator );

@@ -105,6 +105,8 @@ int main( int argc, char* argv[] )
 
     // Parse command line.
     pathToInputFile = settingsManager.parseCommandline( argc, argv );
+    
+    smtrat::CollectStatistics::settings->setPrintStats( settingsManager.printStatistics() );
 
     // Parse input.
     smtrat::Driver parser;
@@ -114,6 +116,8 @@ int main( int argc, char* argv[] )
     CMakeStrategySolver* solver = new CMakeStrategySolver();
     solver->rDebugOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
     std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules( solver );
+    
+    smtrat::CollectStatistics::settings->rOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
     
     // Introduce the settingsObjects from the modules to the manager.
     settingsManager.addSettingsObject( settingsObjects );
@@ -230,18 +234,20 @@ int main( int argc, char* argv[] )
         printTimings( solver );
     }
     
-    if( settingsManager.printStatistics() )
-    {
-        solver->printStatistics();
-    }
+    #ifdef SMTRAT_DEVOPTION_Statistics
+    smtrat::CollectStatistics::collect();
+    smtrat::CollectStatistics::print( true );
+    #endif
     
     // Delete the solver and the formula.
     delete solver;
     delete parserSettings;
-    // Export statistics.
+    
     #ifdef SMTRAT_DEVOPTION_Statistics
-    smtrat::CollectStatistics::produceOutput();
+    // Export statistics.
+    smtrat::CollectStatistics::exportXML();
     #endif
+    
 
     return returnValue;
 }

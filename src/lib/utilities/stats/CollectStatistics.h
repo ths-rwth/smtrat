@@ -49,14 +49,16 @@ namespace smtrat {
         virtual ~CollectStatistics( ) {};
         
         static StatisticSettings* settings;
-        static void produceOutput();
         static void registerStats(Statistics* _stats);
+        static void collect();
+        static void exportXML();
+        static void print(bool smtlib = false);
     protected:
-        static void print(std::ostream& os = std::cout);
         static void exportKeyValue(std::string path);
-        static void exportXML(const std::string& filename = "stats.xml");
     private:
         static std::vector<Statistics*> stats;
+        static unsigned maxNameLength;
+        static unsigned maxKeyLength;
     };
 }
 #endif

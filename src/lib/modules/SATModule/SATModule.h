@@ -64,7 +64,7 @@
 #include "../../RuntimeSettings.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include "SATStatistics.h"
+#include "SATModuleStatistics.h"
 #endif
 
 namespace smtrat
@@ -258,7 +258,7 @@ namespace smtrat
             ClauseVector          mMaxSatAssigns;
 
             #ifdef SMTRAT_DEVOPTION_Statistics
-            SATstatistics* mStats;
+            SATModuleStatistics* mpStatistics;
             #endif
 
         public:

@@ -27,6 +27,7 @@
  */
 #pragma once
 
+#include <iostream>
 #include "../../RuntimeSettings.h"
 
 namespace smtrat {
@@ -36,6 +37,7 @@ protected:
     bool        mExportXml;
     std::string mXmlPath;
     bool        mPrintStats;
+    std::ostream mOutputChannel;
 public:
     StatisticSettings();
     
@@ -46,7 +48,15 @@ public:
     bool printStats() const;
     const std::string& xmlPath() const;
     
-
+    void setPrintStats( bool _printStats )
+    {
+        mPrintStats = _printStats;
+    }
+    
+    std::ostream& rOutputChannel()
+    {
+        return mOutputChannel;
+    }
 
 };
 }

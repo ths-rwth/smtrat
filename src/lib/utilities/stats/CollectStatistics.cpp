@@ -40,44 +40,47 @@ namespace smtrat {
 StatisticSettings* CollectStatistics::settings = new StatisticSettings();
 
 CollectStatistics::CollectStatistics( )
-{
-   
-}
+{}
 
 void CollectStatistics::registerStats(Statistics* _stats) {
     stats.push_back(_stats);
 }
 
-void CollectStatistics::produceOutput() 
-{
+void CollectStatistics::collect() {
     for(auto it = stats.begin(); it != stats.end(); ++it) {
         (*it)->collect();
+        if( (*it)->maxKeyLength() > maxKeyLength )
+            maxKeyLength = (*it)->maxKeyLength();
+        if( (*it)->name().size() > maxNameLength )
+            maxNameLength = (*it)->name().size();
     }
-    if(settings->exportXml()) 
-    {
-        exportXML(settings->xmlPath());
-    }
+}
+
+void CollectStatistics::print(bool smtlib) {
     if(settings->printStats())
     {
-        print();
+        if(smtlib)
+        {
+            for(auto it = stats.begin(); it != stats.end(); ++it)
+                (*it)->print(settings->rOutputChannel(), true, true, maxNameLength, maxKeyLength );
+        }
+        else
+        {
+            settings->rOutputChannel() << "**********************************************" << std::endl;
+            settings->rOutputChannel() << "*                 Statistics                 *" << std::endl;
+            settings->rOutputChannel() << "**********************************************" << std::endl;
+            for(auto it = stats.begin(); it != stats.end(); ++it) {
+                (*it)->print();
+
+            settings->rOutputChannel() << "* * * * * * * * * * * * * * * * * * * * * * * " << std::endl;
+            }
+
+            settings->rOutputChannel() << "**********************************************" << std::endl;
+        }
     }
 }
 
-
-void CollectStatistics::print(std::ostream& os) {
-    std::cout << "**********************************************" << std::endl;
-    std::cout << "*                 Statistics                 *" << std::endl;
-    std::cout << "**********************************************" << std::endl;
-    for(auto it = stats.begin(); it != stats.end(); ++it) {
-        (*it)->print();
-        
-    std::cout << "* * * * * * * * * * * * * * * * * * * * * * * " << std::endl;
-    }
-    
-    std::cout << "**********************************************" << std::endl;
-}
-
-void CollectStatistics::exportXML(const std::string& pathToFile) {
+void CollectStatistics::exportXML() {
     std::stringstream stream;
     stream << "<runtimestats>\n";
     for(auto it = stats.begin(); it != stats.end(); ++it) {
@@ -86,13 +89,14 @@ void CollectStatistics::exportXML(const std::string& pathToFile) {
     stream << "</runtimestats>";
     
     std::ofstream file;
-    file.open(pathToFile, std::ios::out | std::ios::app );
+    file.open(settings->xmlPath(), std::ios::out | std::ios::app );
     file << stream.str() << std::endl;
     file.close();
 }
 
-
 std::vector<Statistics*> CollectStatistics::stats = std::vector<Statistics*>();
+unsigned CollectStatistics::maxNameLength = 0;
+unsigned CollectStatistics::maxKeyLength = 0;
 
 
 }
