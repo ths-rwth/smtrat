@@ -216,7 +216,7 @@ namespace smtrat
         else if( _rel == Constraint::GEQ )
         {
             Polynomial lhs = _lhs.isZero() ? ZERO_POLYNOMIAL : -_lhs.coprimeCoefficients();
-            assert( _lhs.nrTerms() == 0 || (_lhs.lterm()->coeff() < 0) == (_lhs.coprimeCoefficients().lterm()->coeff() < 0) );
+            assert( _lhs.isZero() || (_lhs.lterm()->coeff() < 0) == (_lhs.coprimeCoefficients().lterm()->coeff() < 0) );
             return new Constraint( lhs, Constraint::LEQ );
         }
         else
@@ -225,7 +225,7 @@ namespace smtrat
             assert( _lhs.isZero() || (_lhs.lterm()->coeff() < 0) == (_lhs.coprimeCoefficients().lterm()->coeff() < 0) );
             if( _rel == Constraint::EQ || _rel == Constraint::NEQ ) 
             {
-                if( lhs.lterm()->coeff() < ZERO_RATIONAL ) lhs = -lhs;
+                if( !_lhs.isZero() && lhs.lterm()->coeff() < ZERO_RATIONAL ) lhs = -lhs;
             }
             return new Constraint( lhs, _rel );
         }

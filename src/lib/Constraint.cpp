@@ -236,11 +236,8 @@ namespace smtrat
     Polynomial Constraint::coefficient( const carl::Variable& _var, unsigned _degree ) const
     {
         auto varInfo = mVarInfoMap.find( _var );
-        if( varInfo == mVarInfoMap.end() )
-        {
-            varInfo = mVarInfoMap.insert( pair<carl::Variable, VarInfo>( _var, mLhs.getVarInfo<true>( _var ) ) ).first;
-        }
-        else if( !varInfo->second.hasCoeff() )
+        assert( varInfo != mVarInfoMap.end() );
+        if( !varInfo->second.hasCoeff() )
         {
             varInfo->second = mLhs.getVarInfo<true>( _var );
         }

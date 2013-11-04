@@ -49,7 +49,7 @@ namespace vs
                     return (*pCondA).constraint() < (*pCondB).constraint();
                 }
             };
-            typedef std::set<const Condition*, condPointerLess> ConditionSet;
+            typedef std::set<const Condition*, condPointerLess> Set;
 
         private:
 
@@ -58,12 +58,12 @@ namespace vs
             mutable bool              mRecentlyAdded;
             mutable unsigned          mValuation;
             const smtrat::Constraint* mpConstraint;
-            ConditionSet*             mpOriginalConditions;
+            Set*                      mpOriginalConditions;
 
         public:
 
             // Constructors:
-            Condition( const smtrat::Constraint*, unsigned = 0, bool = false, const ConditionSet& = ConditionSet(), bool = false );
+            Condition( const smtrat::Constraint*, unsigned = 0, bool = false, const Set& = Set(), bool = false );
             Condition( const Condition& );
 
             // Destructor:
@@ -110,12 +110,12 @@ namespace vs
                 return mpConstraint;
             }
 
-            ConditionSet* const pOriginalConditions() const
+            Set* const pOriginalConditions() const
             {
                 return mpOriginalConditions;
             }
 
-            const ConditionSet& originalConditions() const
+            const Set& originalConditions() const
             {
                 return *mpOriginalConditions;
             }
@@ -125,8 +125,6 @@ namespace vs
             bool operator <( const Condition& ) const;
             void print( std::ostream& = std::cout ) const;
     };
-
-    typedef std::set<const Condition*, Condition::condPointerLess> ConditionSet;
 
 }    // end namspace vs
 

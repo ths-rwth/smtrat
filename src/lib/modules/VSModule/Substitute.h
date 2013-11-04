@@ -42,7 +42,7 @@ namespace vs
      *                 Note, that this hinders a combinatorial blow up.
      *          true, otherwise.
      */
-    bool substitute( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, smtrat::Variables&, const smtrat::EvalDoubleIntervalMap& );
+    bool substitute( const smtrat::Constraint*, const Substitution&, DisjunctionOfConstraintConjunctions&, bool _accordingPaper, smtrat::Variables&, const smtrat::EvalDoubleIntervalMap& );
     
     /**
      * Applies a substitution of a variable to a term, which is not minus infinity nor a to an square root expression plus an infinitesimal.
@@ -57,20 +57,6 @@ namespace vs
      * @param _solutionSpace The solution space in form of double intervals of the variables occurring in the given constraint.
      */
     void substituteNormal( const smtrat::Constraint* _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result, bool _accordingPaper, smtrat::Variables& _conflictingVariables, const smtrat::EvalDoubleIntervalMap& _solutionSpace );
-    
-    /**
-     * Applies a substitution of a variable to a term, which is not minus infinity nor a to an square root expression plus an infinitesimal.
-     * @param _cons   The constraint to substitute in.
-     * @param _subs   The substitution to apply.
-     * @param _result The vector, in which to store the results of this substitution. It is semantically a disjunction of conjunctions of constraints.
-     * @param _accordingPaper A flag that indicates whether to apply the virtual substitution rules according to the paper "Quantifier elimination
-     *                        for real algebra - the quadratic case and beyond." by Volker Weispfenning (true) or in an adapted way which omits a higher
-     *                        degree in the result by splitting the result in more cases (false).
-     * @param _conflictingVariables If a conflict with the given solution space occurs, the variables being part of this conflict are stored in this
-     *                               container.
-     * @param _solutionSpace The solution space in form of double intervals of the variables occurring in the given constraint.
-     */
-    void substituteNormalSqrt( const smtrat::Constraint*, const Substitution&, const smtrat::Polynomial&, smtrat::Variables&, DisjunctionOfConstraintConjunctions&, bool );
     
     /**
      * Sub-method of substituteNormalSqrt, where applying the substitution led to a term

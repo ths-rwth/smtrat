@@ -53,7 +53,7 @@ namespace vs
             /// The variables occurring in the term to substitute for.
             mutable smtrat::Variables*     mpTermVariables;
             /// The conditions from which this substitution has been originated. (e.g. [x -> 2] could have had the origins {x-2<=0, x^2-4=0})
-            ConditionSet*                  mpOriginalConditions;
+            Condition::Set*                  mpOriginalConditions;
             /// The side conditions, which have to hold to make this substitution valid. (e.g. [x -> 1/a] has the side condition {a!=0})
             smtrat::PointerSet<smtrat::Constraint> mSideCondition;
 
@@ -66,7 +66,7 @@ namespace vs
              * @param _oConditions The original conditions of the substitution to construct.
              * @param _sideCondition The side conditions of the substitution to construct.
              */
-            Substitution( const carl::Variable& _variable, const Type& _type, const ConditionSet& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition = smtrat::PointerSet<smtrat::Constraint>() );
+            Substitution( const carl::Variable& _variable, const Type& _type, const Condition::Set& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition = smtrat::PointerSet<smtrat::Constraint>() );
             
             /**
              * Constructs a substitution with a square root term to map to.
@@ -76,7 +76,7 @@ namespace vs
              * @param _oConditions The original conditions of the substitution to construct.
              * @param _sideCondition The side conditions of the substitution to construct.
              */
-            Substitution( const carl::Variable&, const SqrtEx& _term, const Type& _type, const ConditionSet& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition = smtrat::PointerSet<smtrat::Constraint>() );
+            Substitution( const carl::Variable&, const SqrtEx& _term, const Type& _type, const Condition::Set& _oConditions, const smtrat::PointerSet<smtrat::Constraint>& _sideCondition = smtrat::PointerSet<smtrat::Constraint>() );
             
             /**
              * Copy constructor.
@@ -123,7 +123,7 @@ namespace vs
             /**
              * @return A reference to the original conditions of this substitution.
              */
-            ConditionSet& rOriginalConditions()
+            Condition::Set& rOriginalConditions()
             {
                 return *mpOriginalConditions;
             }
@@ -131,7 +131,7 @@ namespace vs
             /**
              * @return A constant reference to the original conditions of this substitution.
              */
-            const ConditionSet& originalConditions() const
+            const Condition::Set& originalConditions() const
             {
                 return *mpOriginalConditions;
             }

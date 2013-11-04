@@ -31,12 +31,12 @@ using namespace std;
 
 namespace vs
 {
-    Condition::Condition( const smtrat::Constraint* _cons, unsigned _val, bool _flag, const ConditionSet& _oConds, bool _rAdded ):
+    Condition::Condition( const smtrat::Constraint* _cons, unsigned _val, bool _flag, const Set& _oConds, bool _rAdded ):
         mFlag( _flag ),
         mRecentlyAdded( _rAdded ),
         mValuation( _val ),
         mpConstraint( _cons ),
-        mpOriginalConditions( new ConditionSet( _oConds ) )
+        mpOriginalConditions( new Set( _oConds ) )
     {}
 
     Condition::Condition( const Condition& _cond ):
@@ -44,7 +44,7 @@ namespace vs
         mRecentlyAdded( false ),
         mValuation( _cond.valuation() ),
         mpConstraint( _cond.pConstraint() ),
-        mpOriginalConditions( new ConditionSet( _cond.originalConditions() ) )
+        mpOriginalConditions( new Set( _cond.originalConditions() ) )
     {}
 
     Condition::~Condition()
@@ -64,175 +64,119 @@ namespace vs
      */
     double Condition::valuate( const carl::Variable& _consideredVariable, unsigned _maxNumberOfVars, bool _forElimination, bool _preferEquation ) const
     {
-        auto var = mpConstraint->variables().find( _consideredVariable );
-        if( var != mpConstraint->variables().end() )
-        {
-            smtrat::VarInfo varInfo = constraint().varInfo( var->second );
-            double maximum = 0;
-            if( _maxNumberOfVars < 4 )
-                maximum = 16;
-            else
-                maximum = _maxNumberOfVars * _maxNumberOfVars;
-            // Check the relation symbol.
-            double relationSymbolWeight = 0;
-            switch( mpConstraint->relation() )
-            {
-                case smtrat::Constraint::EQ:
-                    relationSymbolWeight += 1;
-                    break;
-                case smtrat::Constraint::GEQ:
-                    relationSymbolWeight += 2;
-                    break;
-                case smtrat::Constraint::LEQ:
-                    relationSymbolWeight += 2;
-                    break;
-                case smtrat::Constraint::LESS:
-                    relationSymbolWeight += 4;
-                    break;
-                case smtrat::Constraint::GREATER:
-                    relationSymbolWeight += 4;
-                    break;
-                case smtrat::Constraint::NEQ:
-                    relationSymbolWeight += 3;
-                    break;
-                default:
-                    return 0;
-            }
-            //Check the degree of the variable.
-            double degreeWeight = varInfo.maxDegree;
-            if( maximum <= degreeWeight )
-                degreeWeight = maximum - 1;
-            //Check the leading coefficient of the  given variable.
-            unsigned lCoeffWeight = 0;
-            if( degreeWeight <= 1 )
-            {
-                if( mpConstraint->coefficient( var->second, degreeWeight ).info( info_flags::rational ) )
-                    lCoeffWeight = 1;
-                else
-                    lCoeffWeight = 3;
-            }
-            else if( degreeWeight == 2 )
-            {
-                bool hasRationalLeadingCoefficient = mpConstraint->coefficient( var->second, degreeWeight ).info( info_flags::rational );
-                if( hasRationalLeadingCoefficient && mpConstraint->coefficient( var->second, degreeWeight - 1 ).info( info_flags::rational ) )
-                    lCoeffWeight = 1;
-                else if( hasRationalLeadingCoefficient )
-                    lCoeffWeight = 2;
-                else
-                    lCoeffWeight = 3;
-            }
-            // Check the number of variables.
-            double numberOfVariableWeight = mpConstraint->variables().size();
-            // Check how in how many monomials the variable occurs.
-            double numberOfVariableOccurencesWeight = varInfo.occurences;
-            if( maximum <= numberOfVariableOccurencesWeight )
-                numberOfVariableOccurencesWeight = maximum - 1;
-            // If variable occurs only in one monomial, give a bonus if all other monomials are positive.
-            double otherMonomialsPositiveWeight = 1;
-            if( numberOfVariableOccurencesWeight == 1 && ((mpConstraint->constantPart() == 0 && mpConstraint->numMonomials() > 1) || mpConstraint->numMonomials() > 2 ) )
-            {
-                const ex lhs = mpConstraint->lhs();
-                assert( is_exactly_a<add>( lhs ) );
-                bool allOtherMonomialsPos = true;
-                bool allOtherMonomialsNeg = true;
-                for( GiNaC::const_iterator summand = lhs.begin(); summand != lhs.end(); ++summand )
-                {
-                    const ex summandEx = *summand;
-                    if( is_exactly_a<mul>( summandEx ) )
-                    {
-                        bool monomialPos = true;
-                        bool monomialNeg = true;
-                        bool monomialContainsVariable = false;
-                        for( auto factor = summandEx.begin(); factor != summandEx.end(); ++factor )
-                        {
-                            const ex factorEx = *factor;
-                            if( is_exactly_a<symbol>( factorEx ) )
-                            {
-                                if( factorEx == var->second )
-                                    monomialContainsVariable = true;
-                                monomialPos = false;
-                                monomialNeg = false;
-                            }
-                            else if( is_exactly_a<numeric>( factorEx ) )
-                            {
-                                if( factorEx.info( info_flags::negative ) )
-                                    monomialNeg = false;
-                                else
-                                    monomialPos = false;
-                            }
-                            else if( is_exactly_a<power>( factorEx ) )
-                            {
-                                assert( factorEx.nops() == 2 );
-                                ex exponent = *(++(factorEx.begin()));
-                                assert( !exponent.info( info_flags::negative ) );
-                                unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
-                                if( fmod( exp, 2.0 ) != 0.0 )
-                                {
-                                    monomialPos = false;
-                                    monomialNeg = false;
-                                }
-                                ex subterm = *factorEx.begin();
-                                assert( is_exactly_a<symbol>( subterm ) );
-                            }
-                            else
-                                assert( false );
-                        }
-                        if( !monomialContainsVariable )
-                        {
-                            allOtherMonomialsPos = monomialPos;
-                            allOtherMonomialsNeg = monomialNeg;
-                        }
-                    }
-                    else if( is_exactly_a<symbol>( summandEx ) )
-                    {
-                        allOtherMonomialsPos = false;
-                        allOtherMonomialsNeg = false;
-                    }
-                    else if( is_exactly_a<numeric>( summandEx ) )
-                    {
-                        if( summandEx.info( info_flags::negative ) )
-                            allOtherMonomialsNeg = false;
-                        else
-                            allOtherMonomialsPos = false;
-                    }
-                    else if( is_exactly_a<power>( summandEx ) )
-                    {
-                        assert( summandEx.nops() == 2 );
-                        ex exponent = *(++(summandEx.begin()));
-                        assert( !exponent.info( info_flags::negative ) );
-                        unsigned exp = static_cast<unsigned>( exponent.integer_content().to_int() );
-                        allOtherMonomialsPos = false;
-                        if( fmod( exp, 2.0 ) != 0.0 )
-                            allOtherMonomialsNeg = false;
-                        ex subterm = *summandEx.begin();
-                        assert( is_exactly_a<symbol>( subterm ) );
-                    }
-                    else
-                        assert( false );
-                }
-                if( allOtherMonomialsPos || allOtherMonomialsNeg ) otherMonomialsPositiveWeight = 2;
-            }
-            double weightFactorTmp = maximum;
-            double result = 0;
-            if( _preferEquation )
-                result = ( (constraint().relation() == smtrat::Constraint::EQ || degreeWeight <= 2) ? 1 : 2);
-            else
-                result = ( degreeWeight <= 2 ? 1 : 2);
-            result += relationSymbolWeight/weightFactorTmp;
-            weightFactorTmp *= maximum;
-            result += lCoeffWeight/weightFactorTmp;
-            weightFactorTmp *= maximum;
-            result += degreeWeight/weightFactorTmp;
-            weightFactorTmp *= maximum;
-            result += numberOfVariableWeight/weightFactorTmp;
-            weightFactorTmp *= maximum;
-            result += numberOfVariableOccurencesWeight/weightFactorTmp;
-            weightFactorTmp *= maximum;
-            result += otherMonomialsPositiveWeight/weightFactorTmp;
-            return result;
-        }
-        else
+        if( !constraint().hasVariable( _consideredVariable ) )
             return 0;
+        const smtrat::VarInfo& varInfo = constraint().varInfo( _consideredVariable );
+        double maximum = 0;
+        if( _maxNumberOfVars < 4 )
+            maximum = 16;
+        else
+            maximum = _maxNumberOfVars * _maxNumberOfVars;
+        // Check the relation symbol.
+        double relationSymbolWeight = 0;
+        switch( mpConstraint->relation() )
+        {
+            case smtrat::Constraint::EQ:
+                relationSymbolWeight += 1;
+                break;
+            case smtrat::Constraint::GEQ:
+                relationSymbolWeight += 2;
+                break;
+            case smtrat::Constraint::LEQ:
+                relationSymbolWeight += 2;
+                break;
+            case smtrat::Constraint::LESS:
+                relationSymbolWeight += 4;
+                break;
+            case smtrat::Constraint::GREATER:
+                relationSymbolWeight += 4;
+                break;
+            case smtrat::Constraint::NEQ:
+                relationSymbolWeight += 3;
+                break;
+            default:
+                return 0;
+        }
+        //Check the degree of the variable.
+        double degreeWeight = varInfo.maxDegree();
+        if( maximum <= degreeWeight )
+            degreeWeight = maximum - 1;
+        //Check the leading coefficient of the  given variable.
+        unsigned lCoeffWeight = 0;
+        if( degreeWeight <= 1 )
+        {
+            if( mpConstraint->coefficient( _consideredVariable, degreeWeight ).isConstant() )
+                lCoeffWeight = 1;
+            else
+                lCoeffWeight = 3;
+        }
+        else if( degreeWeight == 2 )
+        {
+            bool hasRationalLeadingCoefficient = mpConstraint->coefficient( _consideredVariable, degreeWeight ).isConstant();
+            if( hasRationalLeadingCoefficient && mpConstraint->coefficient( _consideredVariable, degreeWeight - 1 ).isConstant() )
+                lCoeffWeight = 1;
+            else if( hasRationalLeadingCoefficient )
+                lCoeffWeight = 2;
+            else
+                lCoeffWeight = 3;
+        }
+        // Check the number of variables.
+        double numberOfVariableWeight = mpConstraint->variables().size();
+        // Check how in how many monomials the variable occurs.
+        double numberOfVariableOccurencesWeight = varInfo.occurence();
+        if( maximum <= numberOfVariableOccurencesWeight )
+            numberOfVariableOccurencesWeight = maximum - 1;
+        // If variable occurs only in one monomial, give a bonus if all other monomials are positive.
+        double otherMonomialsPositiveWeight = 1;
+        if( numberOfVariableOccurencesWeight == 1 && ((mpConstraint->constantPart() == 0 && mpConstraint->lhs().nrTerms() > 1) || mpConstraint->lhs().nrTerms() > 2 ) )
+        {
+            bool allOtherMonomialsPos = true;
+            bool allOtherMonomialsNeg = true;
+            for( auto term = mpConstraint->lhs().begin(); term != mpConstraint->lhs().end(); ++term )
+            {
+                carl::Definiteness defin = (*term)->definiteness();
+                if( defin == carl::Definiteness::NON )
+                {
+                    allOtherMonomialsPos = false;
+                    allOtherMonomialsNeg = false;
+                    break;
+                }
+                else if( defin > carl::Definiteness::NON )
+                {
+                    if( !allOtherMonomialsNeg )
+                        allOtherMonomialsNeg = false;
+                    if( !allOtherMonomialsPos )
+                        break;
+                }
+                else
+                {
+                    if( !allOtherMonomialsPos )
+                        allOtherMonomialsPos = false;
+                    if( !allOtherMonomialsNeg )
+                        break;
+                }
+            }
+            if( allOtherMonomialsPos || allOtherMonomialsNeg ) otherMonomialsPositiveWeight = 2;
+        }
+        double weightFactorTmp = maximum;
+        double result = 0;
+        if( _preferEquation )
+            result = ( (constraint().relation() == smtrat::Constraint::EQ || degreeWeight <= 2) ? 1 : 2);
+        else
+            result = ( degreeWeight <= 2 ? 1 : 2);
+        result += relationSymbolWeight/weightFactorTmp;
+        weightFactorTmp *= maximum;
+        result += lCoeffWeight/weightFactorTmp;
+        weightFactorTmp *= maximum;
+        result += degreeWeight/weightFactorTmp;
+        weightFactorTmp *= maximum;
+        result += numberOfVariableWeight/weightFactorTmp;
+        weightFactorTmp *= maximum;
+        result += numberOfVariableOccurencesWeight/weightFactorTmp;
+        weightFactorTmp *= maximum;
+        result += otherMonomialsPositiveWeight/weightFactorTmp;
+        return result;
+            
     }
 
     /**
@@ -290,7 +234,7 @@ namespace vs
             _out << "no original condition}";
         else
         {
-            ConditionSet::const_iterator oCond = originalConditions().begin();
+            Set::const_iterator oCond = originalConditions().begin();
             _out << " [" << *oCond << "]";
             oCond++;
             while( oCond != originalConditions().end() )

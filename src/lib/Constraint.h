@@ -212,6 +212,22 @@ namespace smtrat
                 if( varInfo == mVarInfoMap.end() ) return 0;
                 return varInfo->second.occurence();
             }
+            
+            /**
+             * @param _variable The variable to find variable information for.
+             * @return The whole variable information object.
+             * Note, that if the given variable is not in this constraints, this method fails.
+             * Furthermore, the variable information returned do provide coefficients only, if
+             * the given flag _withCoefficients is set to true.
+             */
+            const VarInfo& varInfo( const carl::Variable& _variable, bool _withCoefficients = false ) const
+            {
+                auto varInfo = mVarInfoMap.find( _variable );
+                assert( varInfo != mVarInfoMap.end() );
+                if( _withCoefficients && !varInfo->second.hasCoeff() )
+                    varInfo->second = mLhs.getVarInfo<true>( _variable );
+                return varInfo->second;
+            }
 
             /**
              * @param _rel The relation to check whether it is strict.

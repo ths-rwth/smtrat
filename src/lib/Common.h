@@ -96,32 +96,6 @@ namespace smtrat
         }
     };
     
-    template <class T> 
-    struct setOfPointerComp
-    {
-        bool operator() ( const std::set< T > set1, const std::set< T > set2 )
-        {
-            class std::set< T >::const_iterator elem1 = set1.begin();
-            class std::set< T >::const_iterator elem2 = set2.begin();
-            while( elem1!=set1.end() && elem2!=set2.end() )
-            {
-                if( set1.key_comp()( *elem2, *elem1 ) )
-                    return false;
-                else if( set1.key_comp()( *elem1, *elem2 ) )
-                    return true;
-                else
-                {
-                    elem1++;
-                    elem2++;
-                }
-            }
-            if( elem2!=set2.end() )
-                return true;
-            else
-                return false;
-        }
-    };
-    
     // Further type definitions.
 
     typedef cln::cl_RA Rational;
