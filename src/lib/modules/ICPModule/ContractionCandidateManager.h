@@ -30,6 +30,7 @@
 #define	CONTRACTIONCANDIDATEMANAGER_H
 
 #include "ContractionCandidate.h"
+#include "../../Common.h"
 
 namespace smtrat
 {   

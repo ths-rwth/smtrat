@@ -33,59 +33,59 @@
 
 namespace smtrat
 {
-    class DerivativeTable{
-        public:
-            /**
-             * Typedefs:
-             */
-            typedef std::map<std::pair<GiNaC::ex,GiNaC::symbol>, GiNaC::ex > Table;
-    
-        private:
-            /**
-             * Members:
-             */
-            Table mTable;
-             
-        public:
-            /**
-             * Constructors:
-             */
-            DerivativeTable(){
-                mTable = Table();
-            }
-            
-            /**
-            * Destructor:
-            */
-            ~DerivativeTable(){};
-            
-            /**
-             * Functions:
-             */
-            void addEntry(const std::pair<GiNaC::ex,GiNaC::symbol>& _key, const GiNaC::ex& _value){
-                mTable[_key] = _value;
-            }
-            
-            GiNaC::ex getEntry(const std::pair<GiNaC::ex,GiNaC::symbol>& _key){
-                return mTable[_key];
-            }
-            
-            bool contains(const GiNaC::ex& _constraint){
-                bool contains = false;
-                Table::iterator it;
-                for(it = mTable.begin(); it != mTable.end();it++){
-                    if (it->first.first == _constraint.lhs()){
-                        contains = true;
-                    }
-                }
-                return contains;
-            }
-            
-        private:
-            /**
-             * Methods:
-             */
-    };
+//    class DerivativeTable{
+//        public:
+//            /**
+//             * Typedefs:
+//             */
+//            typedef std::map<std::pair<GiNaC::ex,GiNaC::symbol>, GiNaC::ex > Table;
+//    
+//        private:
+//            /**
+//             * Members:
+//             */
+//            Table mTable;
+//             
+//        public:
+//            /**
+//             * Constructors:
+//             */
+//            DerivativeTable(){
+//                mTable = Table();
+//            }
+//            
+//            /**
+//            * Destructor:
+//            */
+//            ~DerivativeTable(){};
+//            
+//            /**
+//             * Functions:
+//             */
+//            void addEntry(const std::pair<GiNaC::ex,GiNaC::symbol>& _key, const GiNaC::ex& _value){
+//                mTable[_key] = _value;
+//            }
+//            
+//            GiNaC::ex getEntry(const std::pair<GiNaC::ex,GiNaC::symbol>& _key){
+//                return mTable[_key];
+//            }
+//            
+//            bool contains(const GiNaC::ex& _constraint){
+//                bool contains = false;
+//                Table::iterator it;
+//                for(it = mTable.begin(); it != mTable.end();it++){
+//                    if (it->first.first == _constraint.lhs()){
+//                        contains = true;
+//                    }
+//                }
+//                return contains;
+//            }
+//            
+//        private:
+//            /**
+//             * Methods:
+//             */
+//    };
 }
 
 #endif	/* DERIVATIVETABLE_H */

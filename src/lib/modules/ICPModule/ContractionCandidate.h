@@ -32,19 +32,16 @@
 
 //#define CCPRINTORIGINS
 
-#include <ginac/ginac.h>
-#include <ginacra/ginacra.h>
 #include "../../Formula.h"
 #include "ContractionCandidateManager.h"
 
 namespace smtrat
 {
     namespace icp{
-    using GiNaC::ex;
-    using GiNaC::symbol;
     
     class ContractionCandidateManager;
     
+    template<typename NumberType>
     class ContractionCandidate
     {
         friend ContractionCandidateManager;
@@ -70,16 +67,17 @@ namespace smtrat
              * Members:
              */
 //            const Constraint* mConstraint;
-            const ex          mRhs;
+            const Polynomial          mRhs;
             const Constraint* mConstraint;
             
-            symbol      mLhs;
-            symbol      mDerivationVar;
-            ex          mDerivative;
+            carl::Variable      mLhs;
+            carl::Variable      mDerivationVar;
+            Polynomial          mDerivative;
             std::set<const Formula*,originComp> mOrigin;
             unsigned    mId;
             bool        mIsLinear;
             bool        mActive;
+            bool        mDerived;
 
 
             // RWA
@@ -110,7 +108,7 @@ namespace smtrat
                 mOrigin.insert(_original.origin().begin(), _original.origin().end());
             }
 
-            ContractionCandidate( symbol _lhs, const ex _rhs, const Constraint* _constraint, symbol _derivationVar, const Formula* _origin, unsigned _id ):
+            ContractionCandidate( symbol _lhs, const Polynomial _rhs, const Constraint* _constraint, carl::Variable _derivationVar, const Formula* _origin, unsigned _id ):
             mRhs(_rhs),
             mConstraint(_constraint),
             mLhs(_lhs),
@@ -131,7 +129,7 @@ namespace smtrat
              * @param _constraint
              * @param _derivationVar
              */
-            ContractionCandidate( symbol _lhs, const ex _rhs, const Constraint* _constraint, symbol _derivationVar, unsigned _id ):
+            ContractionCandidate( carl::Variable _lhs, const Polynomial _rhs, const Constraint* _constraint, carl::Variable _derivationVar, unsigned _id ):
             mRhs(_rhs),
             mConstraint(_constraint),
             mLhs(_lhs),
@@ -159,7 +157,7 @@ namespace smtrat
              * Functions:
              */
 
-            const ex rhs() const
+            const Polynomial rhs() const
             {
                 return mRhs;
             }
@@ -169,17 +167,17 @@ namespace smtrat
                 return mConstraint;
             }
 
-            const symbol& derivationVar() const
+            const carl::Variable& derivationVar() const
             {
                 return mDerivationVar;
             }
 
-            const ex& derivative() const
+            const Polynomial& derivative() const
             {
                 return mDerivative;
             }
 
-            const symbol& lhs() const
+            const carl::Variable& lhs() const
             {
                 return mLhs;
             }
@@ -258,12 +256,12 @@ namespace smtrat
                 return mId;
             }
 
-            void setDerivationVar( symbol _var )
+            void setDerivationVar( carl::Variable _var )
             {
                 mDerivationVar = _var;
             }
 
-            void setLhs( symbol _lhs )
+            void setLhs( carl::Variable _lhs )
             {
                 mLhs = _lhs;
             }
@@ -275,7 +273,7 @@ namespace smtrat
 
             void calcDerivative() throw ()
             {
-                if( mDerivative == ex() )
+                if( mDerivative == Polynomial )
                     mDerivative = mRhs.diff( mDerivationVar );
             }
 

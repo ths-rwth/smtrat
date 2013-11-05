@@ -44,7 +44,7 @@
 #include "HistoryNode.h"
 #include "IcpVariable.h"
 #include "../LRAModule/LRAModule.h"
-#include <ginacra/DoubleInterval.h>
+#include "../../Common.h"
 #include "../../VariableBounds.h"
 #include "IcpVariable.h"
 #include "utils.h"
@@ -114,9 +114,10 @@ namespace smtrat
             std::map<const lra::Variable<lra::Numeric>*, ContractionCandidates>                 mLinearConstraints; // all linear candidates
             std::map<const Constraint*, ContractionCandidates, constraintPointerComp>           mNonlinearConstraints; // all nonlinear candidates
             
-            GiNaCRA::ICP                                                                        mIcp; // ICP algorithm for contraction
+//            GiNaCRA::ICP                                                                        mIcp; // ICP algorithm for contraction
+            
             std::map<string, icp::IcpVariable*>                                                 mVariables; // list of occurring variables
-            GiNaCRA::evaldoubleintervalmap                                                      mIntervals; // actual intervals relevant for contraction
+            EvalDoubleIntervalMap                                                               mIntervals; // actual intervals relevant for contraction
             std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
             
             std::map<const Constraint*, const Constraint*, constraintIdComp>                    mReplacements; // linearized constraint -> original constraint
