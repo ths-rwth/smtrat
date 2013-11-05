@@ -152,7 +152,7 @@ namespace vs
             // The term then looks like:   (q+r*sqrt(b^2-4ac))/s
             else
             {
-                Polynomial s = smtrat::ONE_POLYNOMIAL;
+                smtrat::Polynomial s = smtrat::ONE_POLYNOMIAL;
                 if( fmod( _cons->maxDegree( _subs.variable() ), 2.0 ) != 0.0 )
                     s = sub.denominator();
                 switch( _cons->relation() )
@@ -468,7 +468,7 @@ namespace vs
         assert( _cons->hasVariable( _subs.variable() ) );
         bool result = true;
         // Create a substitution formed by the given one without an addition of epsilon.
-        Substitution substitution = Substitution( _subs.variable(), _subs.variable(), _subs.term(), Substitution::NORMAL, _subs.originalConditions() );
+        Substitution substitution = Substitution( _subs.variable(), _subs.term(), Substitution::NORMAL, _subs.originalConditions() );
         // Call the method substituteNormal with the constraint f(x)~0 and the substitution [x -> t],  where the parameter relation is ~.
         const smtrat::Constraint* firstCaseInequality = smtrat::Formula::newConstraint( _cons->lhs(), _relation );
         substituteNormal( firstCaseInequality, substitution, _result, _accordingPaper, _conflictingVariables, _solutionSpace );

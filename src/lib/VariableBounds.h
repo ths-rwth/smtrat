@@ -263,7 +263,7 @@ namespace smtrat
                  * @param _limit
                  * @return The added bound.
                  */
-                const Bound<T>* addBound( const Constraint* _constraint, const carl::Variable& _var, const T* _origin, const Rational& _limit = 0 );
+                const Bound<T>* addBound( const Constraint* _constraint, const carl::Variable& _var, const T* _origin );
                 
                 /**
                  * Updates the infimum and supremum of this variable.
@@ -657,10 +657,10 @@ namespace smtrat
         }
 
         template<class T>
-        const Bound<T>* Variable<T>::addBound( const Constraint* _constraint, const carl::Variable& _var, const T* _origin, const Rational& _limit )
+        const Bound<T>* Variable<T>::addBound( const Constraint* _constraint, const carl::Variable& _var, const T* _origin )
         {
             assert( _constraint->variables().size() == 1 && _constraint->maxDegree( _var ) == 1 );
-            const Rational& coeff = (*_constraint->lhs().begin())->coeff();
+            const Rational& coeff = _constraint->lhs().lterm()->coeff();
             Constraint::Relation rel = _constraint->relation();
             Rational* limit = new Rational( -_constraint->constantPart()/coeff );
             std::pair< class Variable<T>::BoundSet::iterator, bool> result;
@@ -869,7 +869,7 @@ namespace smtrat
             return 0;
         }
 
-        #define CONVERT_BOUND(type, namesp) (type != Bound<T>::WEAK_UPPER_BOUND && type != Bound<T>::WEAK_LOWER_BOUND && type != Bound<T>::EQUAL_BOUND ) ? namesp::STRICT_BOUND : namesp::WEAK_BOUND
+        #define CONVERT_BOUND(type, namesp) (type != Bound<T>::WEAK_UPPER_BOUND && type != Bound<T>::WEAK_LOWER_BOUND && type != Bound<T>::EQUAL_BOUND ) ? namesp::STRICT : namesp::WEAK
 
         template<class T>
         const smtrat::EvalIntervalMap& VariableBounds<T>::getEvalIntervalMap()
@@ -880,28 +880,28 @@ namespace smtrat
                 Variable<T>& var = *varVarPair->second;
                 if( var.updatedExactInterval() )
                 {
-                    Interval::BoundType lowerBoundType;
+                    carl::BoundType lowerBoundType;
                     Rational lowerBoundValue;
-                    Interval::BoundType upperBoundType;
+                    carl::BoundType upperBoundType;
                     Rational upperBoundValue;
                     if( var.infimum().isInfinite() )
                     {
-                        lowerBoundType = Interval::INFINITY_BOUND;
+                        lowerBoundType = carl::BoundType::INFTY;
                         lowerBoundValue = 0;
                     }
                     else
                     {
-                        lowerBoundType = CONVERT_BOUND( var.infimum().type(), Interval );
+                        lowerBoundType = CONVERT_BOUND( var.infimum().type(), carl::BoundType );
                         lowerBoundValue = var.infimum().limit();
                     }
                     if( var.supremum().isInfinite() )
                     {
-                        upperBoundType = Interval::INFINITY_BOUND;
+                        upperBoundType = carl::BoundType::INFTY;
                         upperBoundValue = 0;
                     }
                     else
                     {
-                        upperBoundType = CONVERT_BOUND( var.supremum().type(), Interval );
+                        upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
                         upperBoundValue = var.supremum().limit();
                     }
                     mEvalIntervalMap[varVarPair->first] = Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
@@ -920,28 +920,28 @@ namespace smtrat
             Variable<T>& var = *varVarPair->second;
             if( var.updatedExactInterval() )
             {
-                Interval::BoundType lowerBoundType;
+                carl::BoundType lowerBoundType;
                 Rational lowerBoundValue;
-                Interval::BoundType upperBoundType;
+                carl::BoundType upperBoundType;
                 Rational upperBoundValue;
                 if( var.infimum().isInfinite() )
                 {
-                    lowerBoundType = Interval::INFINITY_BOUND;
+                    lowerBoundType = carl::BoundType::INFTY;
                     lowerBoundValue = 0;
                 }
                 else
                 {
-                    lowerBoundType = CONVERT_BOUND( var.infimum().type(), Interval );
+                    lowerBoundType = CONVERT_BOUND( var.infimum().type(), carl::BoundType );
                     lowerBoundValue = var.infimum().limit();
                 }
                 if( var.supremum().isInfinite() )
                 {
-                    upperBoundType = Interval::INFINITY_BOUND;
+                    upperBoundType = carl::BoundType::INFTY;
                     upperBoundValue = 0;
                 }
                 else
                 {
-                    upperBoundType = CONVERT_BOUND( var.supremum().type(), Interval );
+                    upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
                     upperBoundValue = var.supremum().limit();
                 }
                 mEvalIntervalMap[_var] = Interval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
@@ -959,28 +959,28 @@ namespace smtrat
                 Variable<T>& var = *varVarPair->second;
                 if( var.updatedDoubleInterval() )
                 {
-                    carl::DoubleInterval::BoundType lowerBoundType;
+                    carl::BoundType lowerBoundType;
                     Rational lowerBoundValue;
-                    carl::DoubleInterval::BoundType upperBoundType;
+                    carl::BoundType upperBoundType;
                     Rational upperBoundValue;
                     if( var.infimum().isInfinite() )
                     {
-                        lowerBoundType = carl::DoubleInterval::INFINITY_BOUND;
+                        lowerBoundType = carl::BoundType::INFTY;
                         lowerBoundValue = 0;
                     }
                     else
                     {
-                        lowerBoundType = CONVERT_BOUND( var.infimum().type(), carl::DoubleInterval );
+                        lowerBoundType = CONVERT_BOUND( var.infimum().type(), carl::BoundType );
                         lowerBoundValue = var.infimum().limit();
                     }
                     if( var.supremum().isInfinite() )
                     {
-                        upperBoundType = carl::DoubleInterval::INFINITY_BOUND;
+                        upperBoundType = carl::BoundType::INFTY;
                         upperBoundValue = 0;
                     }
                     else
                     {
-                        upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::DoubleInterval );
+                        upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
                         upperBoundValue = var.supremum().limit();
                     }
                     mDoubleIntervalMap[varVarPair->first] = carl::DoubleInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
@@ -999,28 +999,28 @@ namespace smtrat
             Variable<T>& var = *varVarPair->second;
             if( var.updatedDoubleInterval() )
             {
-                carl::DoubleInterval::BoundType lowerBoundType;
+                carl::BoundType lowerBoundType;
                 Rational lowerBoundValue;
-                carl::DoubleInterval::BoundType upperBoundType;
+                carl::BoundType upperBoundType;
                 Rational upperBoundValue;
                 if( var.infimum().isInfinite() )
                 {
-                    lowerBoundType = carl::DoubleInterval::INFINITY_BOUND;
+                    lowerBoundType = carl::BoundType::INFTY;
                     lowerBoundValue = 0;
                 }
                 else
                 {
-                    lowerBoundType = CONVERT_BOUND( var.infimum().type(), carl::DoubleInterval );
+                    lowerBoundType = CONVERT_BOUND( var.infimum().type(), carl::BoundType );
                     lowerBoundValue = var.infimum().limit();
                 }
                 if( var.supremum().isInfinite() )
                 {
-                    upperBoundType = carl::DoubleInterval::INFINITY_BOUND;
+                    upperBoundType = carl::BoundType::INFTY;
                     upperBoundValue = 0;
                 }
                 else
                 {
-                    upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::DoubleInterval );
+                    upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
                     upperBoundValue = var.supremum().limit();
                 }
                 mDoubleIntervalMap[_var] = carl::DoubleInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );

@@ -39,9 +39,10 @@
 
 namespace vs
 {
+    
     // Type and object definitions.
-    typedef std::set< ConditionSet, smtrat::setOfPointerComp<Condition>> ConditionSetSet;
-    typedef std::set< ConditionSetSet, smtrat::setOfPointerComp<ConditionSet> > ConditionSetSetSet;
+    typedef std::set< Condition::Set > ConditionSetSet;
+    typedef std::set< ConditionSetSet > ConditionSetSetSet;
     typedef std::list< const Condition* > ConditionList;
     typedef std::vector< ConditionList >  DisjunctionOfConditionConjunctions;
 
@@ -109,7 +110,7 @@ namespace vs
         Type                  mType;
         /// The variable which is going to be eliminated from this state's considered conditions. That means, 
         /// this variable won't occur in the children of this state.
-        carl::Variable*		  mpIndex;
+        carl::Variable		  mIndex;
         /// If the test candidate considered by this state stems from a condition for which it is enough to
         /// consider it only for test candidate generation for finding the satisfiability of the conditions
         /// it occurs in, this member stores that condition. It is necessary, as it must be part of the origins
@@ -224,12 +225,13 @@ namespace vs
         }
 
         /**
-         * @return Either a pointer to the variable which is going to be eliminated from this state's 
-         *          considered conditions or NULL, if no variable to be eliminated has been determined.
+         * @return A constant reference to the variable which is going to be eliminated from this state's 
+         *          considered conditions. Note, if there is no variable decided to be eliminated, this
+         *          method will fail.
          */
-        const carl::Variable* const pIndex() const
+        const carl::Variable& index() const
         {
-            return mpIndex;
+            return mIndex;
         }
 
         /**
@@ -813,7 +815,7 @@ namespace vs
          * @param _recentlyAdded Is the condition a recently added one.
          * @sideeffect The state can obtain a new condition.
          */
-        void addCondition( const smtrat::Constraint* _constraint, const ConditionSet& _originalConditions, unsigned _valutation, bool _recentlyAdded );
+        void addCondition( const smtrat::Constraint* _constraint, const Condition::Set& _originalConditions, unsigned _valutation, bool _recentlyAdded );
             
         /**
          * Checks whether no condition in this state points to a deleted condition.
@@ -913,7 +915,7 @@ namespace vs
          *                         responsible for this conflict are stored in here.
          * @return The disjoint intervals representing the solution space.
          */
-        std::vector< carl::DoubleInterval > solutionSpace( ConditionSet& _conflictReason );
+        std::vector< carl::DoubleInterval > solutionSpace( Condition::Set& _conflictReason );
         
         /**
          * Checks whether there are no zeros for the left-hand side of the constraint of the given condition.
@@ -982,7 +984,7 @@ namespace vs
          * @param _currentTreeDepth The tree depth of the state from which this method is invoked.
          * @return The greatest level, where a condition of the covering set has been created.
          */
-        static unsigned coveringSet( const ConditionSetSetSet& _conflictSets, ConditionSet& _minCovSet, unsigned _currentTreeDepth );
+        static unsigned coveringSet( const ConditionSetSetSet& _conflictSets, Condition::Set& _minCovSet, unsigned _currentTreeDepth );
     };
 } // end namspace vs
 #endif
