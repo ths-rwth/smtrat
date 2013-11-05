@@ -100,52 +100,59 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
     for(int argi = 1; argi < argc; ++argi) 
     {
         // Check if a option is passed.
-        if( strlen(argv[argi]) > 1 && argv[argi][0] == '-') 
+        bool foundOption = strlen(argv[argi]) > 2 && argv[argi][0] == '-' && argv[argi][1] == '-';
+        bool foundOptionShortcut = strlen(argv[argi]) == 2 && argv[argi][0] == '-';
+        if( foundOption || foundOptionShortcut )
         {
-            std::string optionName(argv[argi] + 1);
+            std::string optionName( argv[argi] + ( foundOptionShortcut ? 1 : 2 ) );
             // check for global options.
-            if(optionName == "-help") 
+            if(optionName == "help") 
             {
                 printHelp();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
-            else if(optionName == "-warranty") 
+            else if(optionName == "warranty") 
             {
                 printWarranty();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
-            else if(optionName == "-toc") 
+            else if(optionName == "toc") 
             {
                 printToC();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
-            else if(optionName == "-list-modules")
+            else if(optionName == "list-modules")
             {
                 printModulesInfo();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
             #ifdef SMTRAT_DEVOPTION_MeasureTime
-            else if(optionName == "-print-timings")
+            else if(optionName == "print-timings")
             {
                 mDoPrintTimings = true;
             }
-            else if(optionName == "-info")
+            else if(optionName == "info")
             {
                 printInfo();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
             #endif
-            else if(optionName == "-model" || optionName == "m")
+            else if(optionName == "model" || optionName == "m")
             {
                 mPrintModel = true;
             }
-            else if(optionName == "-statistics" || optionName == "s")
+            else if(optionName == "statistics" || optionName == "s")
             {
                 mPrintStatistics = true;
             }
             // no more global options, so we expect module options
-            else 
+            else
             {
+                if( foundOptionShortcut )
+                {
+                    std::cerr << "Unknown option short cut: " << argv[argi] << std::endl;
+                    exit(SMTRAT_EXIT_UNEXPECTED_INPUT);
+                }
                 size_t semicolonPosition(optionName.find(':'));
                 // Check if a semicolon was found
                 if(semicolonPosition == optionName.npos) 
@@ -156,7 +163,7 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
                 // Split into  name and keyvalue string.
                 std::string settingsObjectName = optionName.substr(0,semicolonPosition);
                 std::string keyValueString = optionName.substr(semicolonPosition+1);
-                
+
                 // Check safely and without exception-usage whether such a module exists.
                 if(mSettingObjects.count(settingsObjectName) == 0) 
                 {

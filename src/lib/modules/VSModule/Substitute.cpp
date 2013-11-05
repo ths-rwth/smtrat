@@ -78,9 +78,9 @@ namespace vs
         #ifdef SMTRAT_STRAT_Factorization
         if( !splitProducts( _result, true ) ) 
             result = false;
-        #endif
         #ifdef VS_DEBUG_SUBSTITUTION
         print( _result );
+        #endif
         #endif
         return result;
     }

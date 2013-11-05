@@ -195,61 +195,59 @@ namespace vs
          *      ----------------------------------------------
          *                           s^n
          */
-//        cout << "Substitute  " << _varToSubstitute << "  for  " << _substituteBy << "  in  " << _substituteIn << endl;
+//cout << "Substitute  " << _varToSubstitute << "  for  " << _substituteBy << "  in  " << _substituteIn << endl;
         smtrat::VarInfo varInfo = _substituteIn.getVarInfo<true>( _varToSubstitute );
         const map<unsigned, smtrat::Polynomial>& coeffs = varInfo.coeffs();
         // Calculate the s^k:   (0<=k<=n)
-        auto coeff = varInfo.coeffs().begin();
-//        cout << "first coefficient in  " << _substituteIn << "  is  " << coeff->second << endl;
-        unsigned lastDegree = 0;
+        auto coeff = coeffs.begin();
+//cout << "first coefficient in  " << _substituteIn << "  is  " << coeff->second << endl;
+        unsigned lastDegree = varInfo.maxDegree();
         vector<smtrat::Polynomial> sk;
-        sk.push_back( _substituteBy.denominator().pow( coeff->first ) );
-        ++coeff;
-        for( ; coeff != coeffs.end(); ++coeff ) // Note that we iterate over all i with a_i != 0
+        sk.push_back( smtrat::ONE_POLYNOMIAL );
+        for( unsigned i = 1; i <= lastDegree; ++i )
         {
             // s^i = s^l * s^{i-l}
-            sk.push_back( sk.back() * _substituteBy.denominator().pow( coeff->first - lastDegree ) );
-//            cout << (coeff->first+1) << ". coefficient in  " << _substituteIn << "  is  " << coeff->second << endl;
-            lastDegree = coeff->first;
-//            cout << "s^" << lastDegree << " = " << sk.back() << endl;
+            sk.push_back( sk.back() * _substituteBy.denominator() );
+//cout << "s^" << i << " = " << sk.back() << endl;
         }
         // Calculate the constant part and factor of the square root of (q+r*sqrt{t})^k 
         vector<smtrat::Polynomial> qk;
         qk.push_back( _substituteBy.constantPart() );
-//        cout << "constant part of (q+r*sqrt{t})^1 = " << qk.back() << endl;
+//cout << "constant part of (q+r*sqrt{t})^1 = " << qk.back() << endl;
         vector<smtrat::Polynomial> rk;
         rk.push_back( _substituteBy.factor() );
-//        cout << "factor of (q+r*sqrt{t})^1 = " << rk.back() << endl;
+//cout << "factor of (q+r*sqrt{t})^1 = " << rk.back() << endl;
         // Let (q+r*sqrt{t})^l be (q'+r'*sqrt{t}) 
         // then (q+r*sqrt{t})^l+1  =  (q'+r'*sqrt{t}) * (q+r*sqrt{t})  =  ( q'*q+r'*r't  +  (q'*r+r'*q) * sqrt{t} )
         for( unsigned i = 1; i < lastDegree; ++i )
         {
             // q'*q+r'*r't
             qk.push_back( qk.back() * _substituteBy.constantPart() + rk.back() * _substituteBy.factor() * _substituteBy.radicand() );
-//            cout << "constant part of (q+r*sqrt{t})^" << (i+1) << " = " << qk.back() << endl;
+//cout << "constant part of (q+r*sqrt{t})^" << (i+1) << " = " << qk.back() << endl;
             // q'*r+r'*q
             rk.push_back( rk.back() * _substituteBy.constantPart()  + qk.back() * _substituteBy.factor() );
-//            cout << "factor of (q+r*sqrt{t})^" << (i+1) << " = " << rk.back() << endl;
+//cout << "factor of (q+r*sqrt{t})^" << (i+1) << " = " << rk.back() << endl;
         }
         // Calculate the result:
         smtrat::Polynomial resFactor = smtrat::ZERO_POLYNOMIAL;
-        coeff = coeffs.begin();
-        auto s = sk.rbegin();
-        smtrat::Polynomial resConstantPart = (coeff->first == 0 ? (*(s++)) * (coeff++)->second : smtrat::ZERO_POLYNOMIAL);
-//        cout << "resConstantPart = " << resConstantPart << endl;
+        smtrat::Polynomial resConstantPart = smtrat::ZERO_POLYNOMIAL;
+        if( coeff->first == 0 )
+        {
+            resConstantPart += sk.back() * coeff->second;
+            ++coeff;
+        }
+//cout << "resConstantPart = " << resConstantPart << endl;
         for( ; coeff != coeffs.end(); ++coeff )
         {
-            assert( s != sk.rend() );
-//            cout << "resConstantPart += " << coeff->second << " * " << qk.at( coeff->first - 1 ) << " * " << (*s) << endl;
-            resConstantPart += coeff->second * qk.at( coeff->first - 1 ) * (*s);
-//            cout << "                = " << resConstantPart << endl;
-//            cout << "resFactor += " << coeff->second << " * " << rk.at( coeff->first - 1 ) << " * " << (*s) << endl;
-            resFactor       += coeff->second * rk.at( coeff->first - 1 ) * (*s);
-//            cout << "                = " << resFactor << endl;
-            ++s;
+//cout << "resConstantPart += " << coeff->second << " * " << qk.at( coeff->first - 1 ) << " * " << sk.at( lastDegree - coeff->first ) << endl;
+            resConstantPart += coeff->second * qk.at( coeff->first - 1 ) * sk.at( lastDegree - coeff->first );
+//cout << "                = " << resConstantPart << endl;
+//cout << "resFactor += " << coeff->second << " * " << rk.at( coeff->first - 1 ) << " * " << sk.at( lastDegree - coeff->first ) << endl;
+            resFactor       += coeff->second * rk.at( coeff->first - 1 ) * sk.at( lastDegree - coeff->first );
+//cout << "                = " << resFactor << endl;
         }
         SqrtEx result = SqrtEx( resConstantPart, resFactor, sk.back(), _substituteBy.radicand() );
-//        cout << "result = " << result << endl;
+//cout << "result = " << result << endl;
         return result;
     }
 }    // end namspace vs

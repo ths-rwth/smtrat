@@ -499,7 +499,9 @@ namespace vs
                 {
                     const Condition* condA = *iterA;
                     const Condition* condB = *iterB;
+//                    cout << "compare(  " << condA->constraint() << " , " << condB->constraint() << " )" << endl;
                     signed strongProp = smtrat::Constraint::compare( condA->pConstraint(), condB->pConstraint() );
+//                    cout << "  =  " << strongProp << endl;
                     // If the two conditions have the same solution space.
                     if( strongProp == 2 )
                     {
@@ -741,6 +743,7 @@ namespace vs
                 newCondSetSetSet.insert( newCondSetSet );
             }
             iter->second = newCondSetSetSet;
+//            printConflictSets();
         }
         else
         {
@@ -1108,7 +1111,7 @@ namespace vs
         }
         else
         {
-            if( index() == bestVar->first )
+            if( index() != bestVar->first )
             {
                 setIndex( (*bestVar).first );
                 return true;
@@ -1265,7 +1268,7 @@ namespace vs
                                     originsToRemove.insert( *condB );
                                     (*condB)->rRecentlyAdded() = true;
                                     if( index() != carl::Variable::NO_VARIABLE )
-                                        (*condB)->rFlag() = (*condB)->constraint().hasVariable( index() );
+                                        (*condB)->rFlag() = !(*condB)->constraint().hasVariable( index() );
                                 }
                             }
                             delete changedVar;
@@ -1348,7 +1351,7 @@ namespace vs
                                 originsToRemove.insert( *condB );
                                 (*condB)->rRecentlyAdded() = true;
                                 if( index() != carl::Variable::NO_VARIABLE )
-                                    (*condB)->rFlag() = (*condB)->constraint().hasVariable( index() );
+                                    (*condB)->rFlag() = !(*condB)->constraint().hasVariable( index() );
                             }
                         }
                         delete changedVar;
@@ -2032,9 +2035,7 @@ namespace vs
             cout << "Cauchy bound of  " << cons.lhs() << "  is  " << cb << "." << endl;
             #endif
             carl::DoubleInterval cbInterval = carl::DoubleInterval( -cb, carl::BoundType::STRICT, cb, carl::BoundType::STRICT );
-//            cout << "intersect " << varDomain << " with " << cbInterval;
             varDomain = varDomain.intersect( cbInterval );
-//            cout << "results in " << varDomain << endl;
             #ifdef VS_DEBUG_ROOTS_CHECK
             cout << varDomain << endl;
             #endif
@@ -2050,9 +2051,6 @@ namespace vs
                 indexDomain->second.setLeftType( carl::BoundType::WEAK );
         }
         carl::DoubleInterval solutionSpace = carl::IntervalEvaluation::evaluate( cons.lhs(), intervals );
-//        cout << "evaluate  " << cons.lhs() << "  with " << std::endl;
-//        for( auto i = intervals.begin(); i != intervals.end(); ++i )
-//            cout << i->first << " in " << i->second << endl;
         // TODO: if the condition is an equation and the degree in the index less than 3, 
         // then it is maybe better to consider the according test candidates
         #ifdef VS_DEBUG_ROOTS_CHECK
@@ -2215,6 +2213,10 @@ namespace vs
             _out << _initiation << "                   takeSubResultCombAgain: yes" << endl;
         else
             _out << _initiation << "                   takeSubResultCombAgain: no" << endl;
+        if( tryToRefreshIndex() )
+            _out << _initiation << "                        tryToRefreshIndex: yes" << endl;
+        else
+            _out << _initiation << "                        tryToRefreshIndex: no" << endl;
         if( toHighDegree() )
             _out << _initiation << "                             toHighDegree: yes" << endl;
         else

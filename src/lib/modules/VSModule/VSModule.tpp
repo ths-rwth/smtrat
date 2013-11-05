@@ -948,9 +948,10 @@ namespace smtrat
             _currentState->rFather().printAlone();
             _currentState->printAlone();
         }
-        EvalDoubleIntervalMap solBox = (currentSubs.type() == Substitution::MINUS_INFINITY ? EvalDoubleIntervalMap() : _currentState->rFather().rVariableBounds().getIntervalMap());
+//        EvalDoubleIntervalMap solBox = (currentSubs.type() == Substitution::MINUS_INFINITY ? EvalDoubleIntervalMap() : _currentState->rFather().rVariableBounds().getIntervalMap());
+        EvalDoubleIntervalMap solBox = _currentState->rFather().rVariableBounds().getIntervalMap();
         #else
-        GiNaCRA::evaldoubleintervalmap solBox = GiNaCRA::evaldoubleintervalmap();
+        EvalDoubleIntervalMap solBox = EvalDoubleIntervalMap();
         #endif
         // Apply the substitution to the given conditions.
         for( auto cond = _conditions.begin(); cond != _conditions.end(); ++cond )

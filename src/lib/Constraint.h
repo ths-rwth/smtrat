@@ -288,20 +288,7 @@ namespace smtrat
              *          2, otherwise (possibly not defined for all variables in the constraint,
              *                       even then it could be possible to obtain the first two results.)
              */
-            unsigned satisfiedBy( EvalRationalMap& _assignment ) const
-            {
-//                std::cout << "Is  " << this->toString( 0, true, false ) << std::endl;
-//                this->printProperties( std::cout, false );
-//                std::cout << std::endl;
-//                std::cout << "satisfied by  " << std::endl;
-//                for( auto iter = _assignment.begin(); iter != _assignment.end(); ++iter )
-//                    std::cout << iter->first << " in " << iter->second << std::endl;
-                
-                Polynomial tmp = mLhs.substitute( _assignment );
-                if( tmp.isConstant() )
-                    return evaluate( tmp.trailingTerm()->coeff(), relation() ) ? 1 : 0;
-                else return 2;
-            }
+            unsigned satisfiedBy( EvalRationalMap& _assignment ) const;
             
             /**
              * Checks, whether the constraint is consistent.

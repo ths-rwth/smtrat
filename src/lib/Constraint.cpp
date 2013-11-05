@@ -80,6 +80,21 @@ namespace smtrat
 
     Constraint::~Constraint()
     {}
+    
+    unsigned Constraint::satisfiedBy( EvalRationalMap& _assignment ) const
+    {
+//        std::cout << "Is  " << this->toString( 0, true, true ) << std::endl;
+//        this->printProperties( std::cout, true );
+//        std::cout << std::endl;
+//        std::cout << "satisfied by  " << std::endl;
+//        for( auto iter = _assignment.begin(); iter != _assignment.end(); ++iter )
+//            std::cout << iter->first << " in " << iter->second << std::endl;
+
+        Polynomial tmp = mLhs.substitute( _assignment );
+        if( tmp.isConstant() )
+            return evaluate( (tmp.isZero() ? ZERO_RATIONAL : tmp.trailingTerm()->coeff()), relation() ) ? 1 : 0;
+        else return 2;
+    }
 
     unsigned Constraint::isConsistent() const
     {
@@ -617,81 +632,111 @@ namespace smtrat
          *                   a_i = g * b_i for all 1<=i<=k 
          *              or   b_i = g * a_i for all 1<=i<=k 
          */
-        auto termA = _constraintA->lhs().begin();
-        auto termB = _constraintB->lhs().begin();
-        assert( !(*termA)->isZero() );
-        Rational g;
-        Rational termAcoeffAbs = cln::abs( (*termA)->coeff() );
-        Rational termBcoeffAbs = cln::abs( (*termB)->coeff() );
-        bool termACoeffGreater = termAcoeffAbs > termBcoeffAbs; 
-        bool termBCoeffGreater = termAcoeffAbs < termBcoeffAbs;
-        if( termACoeffGreater ) g = (*termA)->coeff()/(*termB)->coeff();
-        else if( termBCoeffGreater ) g = (*termB)->coeff()/(*termA)->coeff();
-        else if( (*termA)->coeff() == (*termB)->coeff() ) g = Rational( 1 );
-        else
-        {
-            g = Rational( -1 );
-            termBCoeffGreater = true;
-        }
+        auto termA = _constraintA->lhs().rbegin();
+        auto termB = _constraintB->lhs().rbegin();
+        Rational g = 1;
         Rational c = 0;
         Rational d = 0;
-        ++termA;
-        ++termB;
-        while( termA != _constraintA->lhs().end() && termB != _constraintB->lhs().end() )
+        bool termACoeffGreater = false;
+        bool termBCoeffGreater = false;
+        // The first two terms are not constant.
+        if( termA != _constraintA->lhs().rend() && !(*termA)->isConstant() && termB != _constraintB->lhs().rend() && !(*termB)->isConstant() )
         {
-            if( (*termA)->isConstant() || (*termB)->isConstant() )
+            if( *(*termA)->monomial() != *(*termB)->monomial() ) return 0;
+            // Find an appropriate g.
+            Rational termAcoeffAbs = cln::abs( (*termA)->coeff() ); // TODO: use some method of carl instead of cln::abs
+            Rational termBcoeffAbs = cln::abs( (*termB)->coeff() );
+            termACoeffGreater = termAcoeffAbs > termBcoeffAbs; 
+            termBCoeffGreater = termAcoeffAbs < termBcoeffAbs;
+            if( termACoeffGreater ) 
+                g = (*termA)->coeff()/(*termB)->coeff();
+            else if( termBCoeffGreater ) 
+                g = (*termB)->coeff()/(*termA)->coeff();
+            else if( (*termA)->coeff() == (*termB)->coeff() ) 
+                g = Rational( 1 );
+            else
             {
-                if( (*termA)->isConstant() )
-                {
-                    c = (termBCoeffGreater ? (*termA)->coeff() * g : (*termA)->coeff());
-                    ++termA;
-                }
-                if( (*termB)->isConstant() )
-                {
-                    d = (termACoeffGreater ? (*termB)->coeff() * g : (*termB)->coeff());
-                    ++termB;
-                }
-                assert( termA == _constraintA->lhs().end() && termB == _constraintB->lhs().end() );
+                g = Rational( -1 );
+                termBCoeffGreater = true;
             }
-            else if( *(*termA)->monomial() != *(*termB)->monomial() ) return 0;
-            else if( termACoeffGreater )
-            {
-                if( (*termA)->coeff() != g * (*termB)->coeff() ) return 0;
-            }
-            else if( termBCoeffGreater )
-            {
-                if( g * (*termA)->coeff() != (*termB)->coeff() ) return 0;
-            }
-            else if( (*termA)->coeff() != g * (*termB)->coeff() ) return 0;
+//        cout << "test2" << endl;
+            // Check whether the left-hand sides of the two constraints without their constant part
+            // are equal when one of the left-hand sides is multiplied by g.
             ++termA;
             ++termB;
+            while( termA != _constraintA->lhs().rend() && !(*termA)->isConstant() && termB != _constraintB->lhs().rend() && !(*termB)->isConstant() )
+            {
+//                cout << (**termA) << " and " << (**termB) << endl;
+                if( *(*termA)->monomial() != *(*termB)->monomial() ) return 0;
+                else if( termACoeffGreater )
+                {
+                    if( (*termA)->coeff() != g * (*termB)->coeff() ) return 0;
+                }
+                else if( termBCoeffGreater )
+                {
+                    if( g * (*termA)->coeff() != (*termB)->coeff() ) return 0;
+                }
+                else if( (*termA)->coeff() != (*termB)->coeff() ) return 0;
+                ++termA;
+                ++termB;
+            }
         }
+//        cout << "g = " << g << endl;
+        if( termA != _constraintA->lhs().rend() )
+        {
+            if( (*termA)->isConstant() )
+            {
+                c = (termBCoeffGreater ? (*termA)->coeff() * g : (*termA)->coeff());
+//                cout << "c = " << c << endl;
+            }
+            else
+                return 0;
+        }
+        if( termB != _constraintB->lhs().rend() )
+        {
+            if( (*termB)->isConstant() )
+            {
+                d = (termACoeffGreater ? (*termB)->coeff() * g : (*termB)->coeff());
+//                cout << "d = " << d << endl;
+            }
+            else
+                return 0;
+        }
+//        cout << "test" << endl;
+//        cout << "termACoeffGreater: " << termACoeffGreater << endl;
+//        cout << "termBCoeffGreater: " << termBCoeffGreater << endl;
+        // Apply the multiplication by a negative g to the according relation symbol, which
+        // has to be turned around then.
         Relation relA = _constraintA->relation();
         Relation relB = _constraintB->relation();
         if( g < 0 )
         {
-            switch( (termACoeffGreater ? relA : relB ) )
+//        cout << "test3" << endl;
+            switch( (termACoeffGreater ? relB : relA ) )
             {
                 case LEQ:
-                    if( termACoeffGreater ) relA = GEQ; 
-                    else relB = GEQ;
+                    if( termACoeffGreater ) relB = GEQ; 
+                    else relA = GEQ;
                     break;
                 case GEQ:
-                    if( termACoeffGreater ) relA = LEQ; 
-                    else relB = LEQ;
+                    if( termACoeffGreater ) relB = LEQ; 
+                    else relA = LEQ;
                     break;
                 case LESS:
-                    if( termACoeffGreater ) relA = GREATER;
-                    else relB = GREATER;
+                    if( termACoeffGreater ) relB = GREATER;
+                    else relA = GREATER;
                     break;
                 case GREATER:
-                    if( termACoeffGreater )  relA = LESS;
-                    else relB = LESS;
+                    if( termACoeffGreater )  relB = LESS;
+                    else relA = LESS;
                     break;
                 default:
                     break;
             }
         }
+//        cout << "relA: " << Constraint::relationToString( relA ) << endl;
+//        cout << "relB: " << Constraint::relationToString( relB ) << endl;
+        // Compare the adapted constant parts.
         switch( relB )
         {
             case EQ:
@@ -813,7 +858,7 @@ namespace smtrat
                         if( c < d ) return B_IMPLIES_A;
                         else return A_IMPLIES_B;
                     case GREATER: // p+c>0  and  p+d<=0
-                        if( c > d ) return NOT__A_AND_B;
+                        if( c < d ) return NOT__A_AND_B;
                         else if( c == d ) return A_XOR_B;
                         else return 0;
                     case LEQ: // p+c<=0  and  p+d<=0
