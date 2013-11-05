@@ -9,10 +9,7 @@
 #define UTILS_H
 
 #include "../../Constraint.h"
-#include <ginac/ginac.h>
-#include <ginacra/ginacra.h>
 #include "../../Formula.h"
-#include "ginacra/ICP.h"
 #include "../LRAModule/LRAModule.h"
 
 namespace smtrat
