@@ -1078,7 +1078,7 @@ namespace vs
                     if( *var->second.begin() < *bestVar->second.begin() )
                         bestVar = var;
                 }
-                else if( var->second.size() == 1 )
+                else if( !(*bestVar->second.begin() < Condition::INFINITLY_MANY_SOLUTIONS_WEIGHT) && var->second.size() == 1 ) 
                     bestVar = var;
                 else
                 {
@@ -1104,7 +1104,7 @@ namespace vs
                 bestVar = var;
             ++var;
         }
-        if( index() == carl::Variable::NO_VARIABLE ) // TODO: is this still right?
+        if( index() == carl::Variable::NO_VARIABLE )
         {
             setIndex( bestVar->first );
             return true;

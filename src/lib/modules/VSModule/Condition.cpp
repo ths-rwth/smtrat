@@ -53,6 +53,8 @@ namespace vs
         delete mpOriginalConditions;
     }
 
+    const double Condition::INFINITLY_MANY_SOLUTIONS_WEIGHT = 2;
+    
     /**
      * Valuates the constraint according to a variable (it possibly not contains).
      *
@@ -127,43 +129,62 @@ namespace vs
         if( maximum <= numberOfVariableOccurencesWeight )
             numberOfVariableOccurencesWeight = maximum - 1;
         // If variable occurs only in one monomial, give a bonus if all other monomials are positive.
-        double otherMonomialsPositiveWeight = 1;
-        if( numberOfVariableOccurencesWeight == 1 && ((mpConstraint->constantPart() == 0 && mpConstraint->lhs().nrTerms() > 1) || mpConstraint->lhs().nrTerms() > 2 ) )
+        double otherMonomialsPositiveWeight = 2;
+        double finitlyManySolutionsWeight = INFINITLY_MANY_SOLUTIONS_WEIGHT;
+        if( numberOfVariableOccurencesWeight == 1 && ( mpConstraint->lhs().nrTerms() == 1 || (mpConstraint->constantPart() != smtrat::ZERO_RATIONAL && mpConstraint->lhs().nrTerms() > 1) ) )
         {
             bool allOtherMonomialsPos = true;
             bool allOtherMonomialsNeg = true;
             for( auto term = mpConstraint->lhs().begin(); term != mpConstraint->lhs().end(); ++term )
             {
-                carl::Definiteness defin = (*term)->definiteness();
-                if( defin == carl::Definiteness::NON )
+                if( (*term)->has( _consideredVariable ) )
                 {
-                    allOtherMonomialsPos = false;
-                    allOtherMonomialsNeg = false;
-                    break;
-                }
-                else if( defin > carl::Definiteness::NON )
-                {
-                    if( !allOtherMonomialsNeg )
+                    if( (*term)->getNrVariables() > 1 )
+                    {
+                        allOtherMonomialsPos = false;
                         allOtherMonomialsNeg = false;
-                    if( !allOtherMonomialsPos )
                         break;
+                    }
                 }
                 else
                 {
-                    if( !allOtherMonomialsPos )
+                    carl::Definiteness defin = (*term)->definiteness();
+                    if( defin == carl::Definiteness::NON )
+                    {
                         allOtherMonomialsPos = false;
-                    if( !allOtherMonomialsNeg )
+                        allOtherMonomialsNeg = false;
                         break;
+                    }
+                    else if( defin > carl::Definiteness::NON )
+                    {
+                        if( !allOtherMonomialsNeg )
+                            allOtherMonomialsNeg = false;
+                        if( !allOtherMonomialsPos )
+                            break;
+                    }
+                    else
+                    {
+                        if( !allOtherMonomialsPos )
+                            allOtherMonomialsPos = false;
+                        if( !allOtherMonomialsNeg )
+                            break;
+                    }
                 }
             }
-            if( allOtherMonomialsPos || allOtherMonomialsNeg ) otherMonomialsPositiveWeight = 2;
+            if( allOtherMonomialsPos || allOtherMonomialsNeg )
+            {
+                otherMonomialsPositiveWeight = 1;
+                if( constraint().relation() == smtrat::Constraint::EQ )
+                    finitlyManySolutionsWeight = 1;
+            }
         }
         double weightFactorTmp = maximum;
-        double result = 0;
+        double result = finitlyManySolutionsWeight;
         if( _preferEquation )
-            result = ( (constraint().relation() == smtrat::Constraint::EQ || degreeWeight <= 2) ? 1 : 2);
+            result += ((constraint().relation() == smtrat::Constraint::EQ || degreeWeight <= 2) ? 1 : 2)/weightFactorTmp;
         else
-            result = ( degreeWeight <= 2 ? 1 : 2);
+            result += (degreeWeight <= 2 ? 1 : 2)/weightFactorTmp;
+        weightFactorTmp *= maximum;
         result += relationSymbolWeight/weightFactorTmp;
         weightFactorTmp *= maximum;
         result += lCoeffWeight/weightFactorTmp;

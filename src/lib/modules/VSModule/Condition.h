@@ -50,15 +50,19 @@ namespace vs
                 }
             };
             typedef std::set<const Condition*, condPointerLess> Set;
+            
+            // Members:
+            
+            static const double INFINITLY_MANY_SOLUTIONS_WEIGHT;
 
         private:
 
-            // Members:
             mutable bool              mFlag;
             mutable bool              mRecentlyAdded;
             mutable unsigned          mValuation;
             const smtrat::Constraint* mpConstraint;
             Set*                      mpOriginalConditions;
+            
 
         public:
 

@@ -225,7 +225,7 @@ namespace vs
             qk.push_back( qk.back() * _substituteBy.constantPart() + rk.back() * _substituteBy.factor() * _substituteBy.radicand() );
 //cout << "constant part of (q+r*sqrt{t})^" << (i+1) << " = " << qk.back() << endl;
             // q'*r+r'*q
-            rk.push_back( rk.back() * _substituteBy.constantPart()  + qk.back() * _substituteBy.factor() );
+            rk.push_back( rk.back() * _substituteBy.constantPart()  + qk.at( i - 1 ) * _substituteBy.factor() );
 //cout << "factor of (q+r*sqrt{t})^" << (i+1) << " = " << rk.back() << endl;
         }
         // Calculate the result:

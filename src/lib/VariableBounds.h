@@ -362,7 +362,7 @@ namespace smtrat
         template <class T> class VariableBounds
         {
             public:
-                typedef FastPointerMap<Constraint,const Bound<T>*> ConstraintBoundMap;
+                typedef PointerMap<Constraint,const Bound<T>*> ConstraintBoundMap;
                 typedef FastMap<carl::Variable, Variable<T>*>      VariableMap;
             private:
                 /// A pointer to one of the conflicting variables (its supremum is smaller than its infimum)

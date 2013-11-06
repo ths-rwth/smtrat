@@ -42,20 +42,18 @@ namespace smtrat
 
     Constraint::Constraint():
         mID( 0 ),
-        mHash( ((hash<Polynomial>()( ZERO_POLYNOMIAL ) << 3) ^ EQ) ), 
+        mHash( CONSTRAINT_HASH( ZERO_POLYNOMIAL, EQ ) ), 
         mRelation( EQ ),
         mLhs( Rational( 0 ) ),
         mFactorization(),
         mVariables(),
         mVarInfoMap(),
         mLhsDefinitess( carl::Definiteness::NON )
-    {
-        mFactorization.insert( pair<const Polynomial, unsigned>( mLhs, 1 ) );
-    }
+    {}
 
     Constraint::Constraint( const Polynomial& _lhs, const Relation _rel, unsigned _id ):
         mID( _id ),
-        mHash( ( (std::hash<Polynomial>()( _lhs ) << 3) ^ _rel) ),
+        mHash( CONSTRAINT_HASH( _lhs, _rel ) ),
         mRelation( _rel ),
         mLhs( _lhs ),
         mFactorization(),
@@ -63,13 +61,12 @@ namespace smtrat
         mVarInfoMap(),
         mLhsDefinitess( carl::Definiteness::NON )
     {
-        mFactorization.insert( pair<const Polynomial, unsigned>( mLhs, 1 ) );
         mLhs.gatherVariables( mVariables );
     }
 
     Constraint::Constraint( const Constraint& _constraint, bool _rehash ):
         mID( _constraint.id() ),
-        mHash( _rehash ? ( (std::hash<Polynomial>()( _constraint.lhs() ) << 3) ^ _constraint.relation()) : _constraint.getHash() ),
+        mHash( _rehash ? CONSTRAINT_HASH( _constraint.lhs(), _constraint.relation() ) : _constraint.getHash() ),
         mRelation( _constraint.relation() ),
         mLhs( _constraint.mLhs ),
         mFactorization( _constraint.mFactorization ),
@@ -260,143 +257,75 @@ namespace smtrat
         return d != varInfo->second.coeffs().end() ? d->second : ZERO_POLYNOMIAL;
     }
 
-    Constraint* Constraint::simplify()
+    Constraint* Constraint::simplify() const
     {
-        bool anythingChanged = false;
-        if( (mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI && mRelation == LEQ) || (mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI && mRelation == GEQ) )
+        Relation rel = mRelation;
+        if( (mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI && rel == LEQ) || (mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI && rel == GEQ) )
+            rel = EQ;
+        // Left-hand side is a non-linear univariate monomial
+        if( mVariables.size() == 1 && !mLhs.isLinear() && mLhs.nrTerms() == 1 )
         {
-            anythingChanged = true;
-            mRelation = EQ;
-        }
-        // Left-hand side is a non-linear monomial
-        if( !mLhs.isLinear() && mLhs.nrTerms() == 1 )
-        {
-            switch( mRelation )
+            switch( rel )
             {
                 case EQ:
-                {
-                    mLhs = Polynomial( *mVariables.begin() );
-                    anythingChanged = true;
-                    break;
-                }
+                    return new Constraint( Polynomial( *mVariables.begin() ), rel );
                 case NEQ:
-                {
-                    mLhs = Polynomial( *mVariables.begin() );
-                    anythingChanged = true;
-                    break;
-                }
+                    return new Constraint( Polynomial( *mVariables.begin() ), rel );
                 case LEQ:
-                {
                     if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI )
-                    {
-                        mLhs = Polynomial( Rational( -1 ) ) * Polynomial( *mVariables.begin() ) * Polynomial( *mVariables.begin() );
-                        anythingChanged = true;
-                    }
+                        return new Constraint( MINUS_ONE_POLYNOMIAL * Polynomial( *mVariables.begin() ) * Polynomial( *mVariables.begin() ), rel );
                     else
-                    {
-                        mLhs = (mLhs.trailingTerm()->coeff() > 0 ? Polynomial( Rational( 1 ) ) : Polynomial( Rational( -1 ) ) ) * Polynomial( *mVariables.begin() );
-                        anythingChanged = true;
-                    }
-                    break;
-                }
+                        return new Constraint( (mLhs.trailingTerm()->coeff() > 0 ? ONE_POLYNOMIAL : MINUS_ONE_POLYNOMIAL ) * Polynomial( *mVariables.begin() ), rel );
                 case GEQ:
-                {
                     if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI )
-                    {
-                        mLhs = Polynomial( *mVariables.begin() ) * Polynomial( *mVariables.begin() );
-                        anythingChanged = true;
-                    }
+                        return new Constraint( Polynomial( *mVariables.begin() ) * Polynomial( *mVariables.begin() ), rel );
                     else
-                    {
-                        mLhs = (mLhs.trailingTerm()->coeff() > 0 ? Polynomial( Rational( 1 ) ) : Polynomial( Rational( -1 ) ) ) * Polynomial( *mVariables.begin() );
-                        anythingChanged = true;
-                    }
-                    break;
-                }
+                        return new Constraint( (mLhs.trailingTerm()->coeff() > 0 ? ONE_POLYNOMIAL : MINUS_ONE_POLYNOMIAL ) * Polynomial( *mVariables.begin() ), rel );
                 case LESS:
-                {
                     if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI )
-                    {
-                        mRelation = NEQ;
-                        mLhs = Polynomial( *mVariables.begin() );
-                        anythingChanged = true;
-                    }
+                        return new Constraint( Polynomial( *mVariables.begin() ), NEQ );
                     else
                     {
                         if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI )
-                        {
-                            mLhs = Polynomial( *mVariables.begin() ) * Polynomial( *mVariables.begin() );
-                            anythingChanged = true;
-                        }
+                            return new Constraint( Polynomial( *mVariables.begin() ) * Polynomial( *mVariables.begin() ), rel );
                         else
-                        {
-                            mLhs = (mLhs.trailingTerm()->coeff() > 0 ? Polynomial( Rational( 1 ) ) : Polynomial( Rational( -1 ) ) ) * Polynomial( *mVariables.begin() );
-                            anythingChanged = true;
-                        }
+                            return new Constraint( (mLhs.trailingTerm()->coeff() > 0 ? ONE_POLYNOMIAL : MINUS_ONE_POLYNOMIAL ) * Polynomial( *mVariables.begin() ), rel );
                     }
-                    break;
-                }
                 case GREATER:
-                {
                     if( mLhsDefinitess == carl::Definiteness::POSITIVE_SEMI )
-                    {
-                        mRelation = NEQ;
-                        mLhs = Polynomial( *mVariables.begin() );
-                        anythingChanged = true;
-                    }
+                        return new Constraint( Polynomial( *mVariables.begin() ), NEQ );
                     else
                     {
                         if( mLhsDefinitess == carl::Definiteness::NEGATIVE_SEMI )
-                        {
-                            mLhs = Polynomial( Rational( -1 ) ) * Polynomial( *mVariables.begin() ) * Polynomial( *mVariables.begin() );
-                            anythingChanged = true;
-                        }
+                            return new Constraint( MINUS_ONE_POLYNOMIAL * Polynomial( *mVariables.begin() ) * Polynomial( *mVariables.begin() ), rel ); 
                         else
-                        {
-                            mLhs = (mLhs.trailingTerm()->coeff() > 0 ? Polynomial( Rational( 1 ) ) : Polynomial( Rational( -1 ) ) ) * Polynomial( *mVariables.begin() );
-                            anythingChanged = true;
-                        }
+                            return new Constraint( (mLhs.trailingTerm()->coeff() > 0 ? ONE_POLYNOMIAL : MINUS_ONE_POLYNOMIAL ) * Polynomial( *mVariables.begin() ), rel ); 
                     }
-                    break;
-                }
                 default:
-                {
                     assert( false );
-                }
             }
         }
-        if( anythingChanged )
-        {
-            mLhsDefinitess = mLhs.definiteness();
-            Constraint* constraint = new Constraint( *this, true );
-            
-//            cout << "simplified  " << this->toString( 0, true, false ) << endl;
-//            printProperties( cout, false );
-//            cout << endl;
-//            cout << "to  " << constraint->toString( 0, true, false) << endl;
-//            constraint->printProperties( cout, false );
-//            cout << endl;
-            
-            return constraint;
-        }
-        else
-        {
-            return nullptr;
-        }
+        return nullptr;
     }
 
-    void Constraint::init()
+    void Constraint::init() const
     {
         carl::VariablesInformation<false,Polynomial> varinfos = mLhs.getVarInfo<false>();
         for( auto varInfo = varinfos.begin(); varInfo != varinfos.end(); ++varInfo )
             mVarInfoMap.emplace_hint( mVarInfoMap.end(), *varInfo );
         mLhsDefinitess = mLhs.definiteness();
+    }
+    
+    void Constraint::initFactorization() const 
+    {
         #ifdef SMTRAT_STRAT_Factorization
         if( mNumMonomials <= MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION && mVariables.size() <= MAX_DIMENSION_FOR_FACTORIZATION
             && mMaxMonomeDegree <= MAX_DEGREE_FOR_FACTORIZATION && mMaxMonomeDegree >= MIN_DEGREE_FOR_FACTORIZATION )
         {
             mFactorization = factor( mLhs );
         }
+        #else
+        mFactorization.insert( pair<Polynomial, unsigned>( mLhs, 1 ) );
         #endif
     }
 
@@ -514,14 +443,13 @@ namespace smtrat
         _out << "   The number of monomials: " << mLhs.nrTerms() << endl;
         _out << "   The maximal degree:      " << mLhs.highestDegree() << endl;
         _out << "   The constant part:       " << constantPart() << endl;
-//        _out << "   Variables:" << endl;
-//        for( auto var = mVariables.begin(); var != mVariables.end(); ++var )
-//        {
-//            auto varInfo = mVarInfoMap.getVarInfo( *var );
-//            _out << "        " << varToString( *var, _friendlyVarNames ) << " has " << varInfo->occurence() << " occurences." << endl;
-//            _out << "        " << varToString( *var, _friendlyVarNames ) << " has the maximal degree of " << varInfo->maxDegree() << "." << endl;
-//            _out << "        " << varToString( *var, _friendlyVarNames ) << " has the minimal degree of " << varInfo->minDegree() << "." << endl;
-//        }
+        _out << "   Variables:" << endl;
+        for( auto vi = mVarInfoMap.begin(); vi != mVarInfoMap.end(); ++vi )
+        {
+            _out << "        " << vi->first << " has " << vi->second.occurence() << " occurences." << endl;
+            _out << "        " << vi->first << " has the maximal degree of " << vi->second.maxDegree() << "." << endl;
+            _out << "        " << vi->first << " has the minimal degree of " << vi->second.minDegree() << "." << endl;
+        }
     }
     
     std::string Constraint::relationToString( const Relation _rel )

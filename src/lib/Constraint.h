@@ -69,7 +69,7 @@ namespace smtrat
             /// The polynomial which is compared by this constraint to zero.
             Polynomial           mLhs;
             /// The factorization of the polynomial considered by this constraint.
-            Factorization        mFactorization;
+            mutable Factorization mFactorization;
             /// A container which includes all variables occurring in the polynomial considered by this constraint.
             Variables            mVariables;
             /// A map which stores information about properties of the variables in this constraint.
@@ -157,6 +157,8 @@ namespace smtrat
              */
             bool hasFactorization() const
             {
+                if( mFactorization.empty() )
+                    initFactorization();
                 return (mFactorization.size() > 1);
             }
 
@@ -165,6 +167,8 @@ namespace smtrat
              */
             const Factorization& factorization() const
             {
+                if( mFactorization.empty() )
+                    initFactorization();
                 return mFactorization;
             }
 
@@ -354,12 +358,18 @@ namespace smtrat
              * @return The simplified constraints, if simplifications could be applied;
              *         The constraint itself, otherwise.
              */
-            Constraint* simplify();
+            Constraint* simplify() const;
             
             /**
-             * Initializes the stored factorization and the left-hand side with no multiple roots, if it is univariate.
+             * Initializes some basic information of the constraint, such as the definiteness of the left-hand 
+             * side and specific information to each variable.
              */
-            void init();
+            void init() const;
+            
+            /**
+             * Initializes the stored factorization.
+             */
+            void initFactorization() const;
             
             /**
              * Gives the string representation of this constraint.
@@ -418,7 +428,7 @@ namespace smtrat
     };
 }    // namespace smtrat
 
-#define CONSTRAINT_HASH( _lhs, _rel ) (std::hash<smtrat::Polynomial>()( _lhs ) << 3) ^ _rel
+#define CONSTRAINT_HASH( _lhs, _rel ) ((std::hash<smtrat::Polynomial>()( _lhs ) << 3) ^ _rel)
 
 namespace std
 {
@@ -428,7 +438,7 @@ namespace std
     public:
         size_t operator()( const smtrat::Constraint& _constraint ) const 
         {
-            return CONSTRAINT_HASH( _constraint.lhs(), _constraint.relation() );
+            return _constraint.getHash();
         }
     };
 } // namespace std

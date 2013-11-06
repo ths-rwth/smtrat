@@ -39,8 +39,8 @@ namespace smtrat
         mAuxiliaryBoolVarCounter( 0 ),
         mAuxiliaryRealVarCounter( 0 ),
         mAuxiliaryIntVarCounter( 0 ),
-        mConsistentConstraint( new Constraint( Polynomial( Rational( 0 ) ), Constraint::EQ, 1 ) ),
-        mInconsistentConstraint( new Constraint( Polynomial( Rational( 0 ) ), Constraint::LESS, 2 ) ),
+        mConsistentConstraint( new Constraint( ZERO_POLYNOMIAL, Constraint::EQ, 1 ) ),
+        mInconsistentConstraint( new Constraint( ZERO_POLYNOMIAL, Constraint::LESS, 2 ) ),
         mExternalVarNamePrefix( "_" ),
         mExternalNamesToVariables(),
         mBooleanVariables(),
@@ -233,26 +233,25 @@ namespace smtrat
 
     const Constraint* ConstraintPool::addConstraintToPool( Constraint* _constraint )
     {
+        _constraint->init();
         unsigned constraintConsistent = _constraint->isConsistent();
+//        cout << *_constraint << " is consistent: " << constraintConsistent << endl;
         if( constraintConsistent == 2 ) // Constraint contains variables.
         {
             auto iterBoolPair = mConstraints.insert( _constraint );
             if( !iterBoolPair.second ) // Constraint has already been generated.
-            {
                 delete _constraint;
-            }
             else
             {
                 Constraint* constraint = _constraint->simplify();
                 if( constraint != NULL ) // Constraint could be simplified.
                 {
+//                    cout << *_constraint << " can be simplified to " << *constraint << endl;
+                    mConstraints.erase( iterBoolPair.first );
+                    delete _constraint;
                     auto iterBoolPairB = mConstraints.insert( constraint );
                     if( !iterBoolPairB.second ) // Simplified version already exists
-                    {
-                        // .. then set the id of the generated constraint to the id of the simplified one.
-                        _constraint->mID = (*iterBoolPairB.first)->id();
                         delete constraint;
-                    }
                     else // Simplified version has not been generated before.
                     {
                         constraint->init();
@@ -263,7 +262,6 @@ namespace smtrat
                 }
                 else // Constraint could not be simplified.
                 {
-                    _constraint->init();
                     _constraint->mID = mIdAllocator;
                     ++mIdAllocator;
                 }
@@ -283,7 +281,7 @@ namespace smtrat
         _out << "---------------------------------------------------" << endl;
         _out << "Constraint pool:" << endl;
         for( auto constraint = mConstraints.begin(); constraint != mConstraints.end(); ++constraint )
-            _out << "    " << **constraint << endl;
+            _out << "    " << **constraint << "  [id=" << (*constraint)->id() << ", hash=" << (*constraint)->getHash() << "]" << endl;
         _out << "---------------------------------------------------" << endl;
     }
 
