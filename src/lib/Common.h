@@ -164,7 +164,7 @@ namespace smtrat
     
     static const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 300;
     
-    // Makros.
+    // Macros.
     
     #define ANSWER_TO_STRING(_ans) (_ans == True ? "True" : (_ans == False ? "False" : (_ans == Unknown ? "Unknown" : "Undefined")))
     

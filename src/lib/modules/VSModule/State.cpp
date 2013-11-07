@@ -35,7 +35,7 @@
 //#define VS_DEBUG_LOCAL_CONFLICT_SEARCH
 //#define VS_DEBUG_ROOTS_CHECK
 
-//#define VS_LOG_INFSUBSETS
+#define VS_LOG_INFSUBSETS
 
 using namespace std;
 
@@ -527,136 +527,69 @@ namespace vs
                     {
                         const smtrat::Constraint& constraintA = condA->constraint();
                         const smtrat::Constraint& constraintB = condB->constraint();
+                        const smtrat::Constraint* nConstraint = NULL;
+                        unsigned nValuation = 0;
+                        bool nFlag = false;
                         if( (constraintA.relation() == smtrat::Constraint::GEQ && constraintB.relation() == smtrat::Constraint::GEQ)
                                 || (constraintA.relation() == smtrat::Constraint::GEQ && constraintB.relation() == smtrat::Constraint::LEQ)
                                 || (constraintA.relation() == smtrat::Constraint::LEQ && constraintB.relation() == smtrat::Constraint::GEQ)
                                 || (constraintA.relation() == smtrat::Constraint::LEQ && constraintB.relation() == smtrat::Constraint::LEQ) )
                         {
-                            const smtrat::Constraint* nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Constraint::EQ );
-                            if( _stateConditions )
-                            {
-                                Condition::Set oConds = condB->originalConditions();
-                                oConds.insert( condA->originalConditions().begin(), condA->originalConditions().end() );
-                                addCondition( nConstraint, oConds, condB->valuation(), true );
-                            }
-                            else
-                            {
-                                const Condition* cond = new Condition( nConstraint, condB->valuation(), condB->flag(), condB->originalConditions(), true );
-                                cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
-                                _conditionVectorToSimplify.push_back( cond );
-                            }
-                            redundantConditionSet.insert( condA );
-                            redundantConditionSet.insert( condB );
-                            if( nConstraint->isConsistent() == 0 )
-                            {
-                                Condition::Set condSet = Condition::Set();
-                                condSet.insert( condA );
-                                condSet.insert( condB );
-                                _conflictSet.insert( condSet );
-                            }
+                            nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Constraint::EQ );
+                            nValuation = condB->valuation();
+                            nFlag = condB->flag();
                         }
                         else if( (constraintA.relation() == smtrat::Constraint::NEQ && constraintB.relation() == smtrat::Constraint::GEQ) )
                         {
-                            const smtrat::Constraint* nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Constraint::GREATER );
-                            if( _stateConditions )
-                            {
-                                Condition::Set oConds = condB->originalConditions();
-                                oConds.insert( condA->originalConditions().begin(), condA->originalConditions().end() );
-                                addCondition( nConstraint, oConds, condB->valuation(), true );
-                            }
-                            else
-                            {
-                                const Condition* cond = new Condition( nConstraint, condB->valuation(), condB->flag(), condB->originalConditions(), true );
-                                cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
-                                _conditionVectorToSimplify.push_back( cond );
-                            }
-                            redundantConditionSet.insert( condA );
-                            redundantConditionSet.insert( condB );
-                            if( nConstraint->isConsistent() == 0 )
-                            {
-                                Condition::Set condSet = Condition::Set();
-                                condSet.insert( condA );
-                                condSet.insert( condB );
-                                _conflictSet.insert( condSet );
-                            }
+                            nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Constraint::GREATER );
+                            nValuation = condB->valuation();
+                            nFlag = condB->flag();
                         }
                         else if( (constraintA.relation() == smtrat::Constraint::GEQ && constraintB.relation() == smtrat::Constraint::NEQ) )
                         {
-                            const smtrat::Constraint* nConstraint = smtrat::Formula::newConstraint( constraintA.lhs(), smtrat::Constraint::GREATER );
-                            if( _stateConditions )
-                            {
-                                Condition::Set oConds = condB->originalConditions();
-                                oConds.insert( condA->originalConditions().begin(), condA->originalConditions().end() );
-                                addCondition( nConstraint, oConds, condA->valuation(), true );
-                            }
-                            else
-                            {
-                                const Condition* cond = new Condition( nConstraint, condA->valuation(), condA->flag(), condA->originalConditions(), true );
-                                cond->pOriginalConditions()->insert( condB->originalConditions().begin(), condB->originalConditions().end() );
-                                _conditionVectorToSimplify.push_back( cond );
-                            }
-                            redundantConditionSet.insert( condA );
-                            redundantConditionSet.insert( condB );
-                            if( nConstraint->isConsistent() == 0 )
-                            {
-                                Condition::Set condSet = Condition::Set();
-                                condSet.insert( condA );
-                                condSet.insert( condB );
-                                _conflictSet.insert( condSet );
-                            }
+                            nConstraint = smtrat::Formula::newConstraint( constraintA.lhs(), smtrat::Constraint::GREATER );
+                            nValuation = condA->valuation();
+                            nFlag = condA->flag();
                         }
                         else if( (constraintA.relation() == smtrat::Constraint::NEQ && constraintB.relation() == smtrat::Constraint::LEQ) )
                         {
-                            const smtrat::Constraint* nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Constraint::LESS );
+                            nConstraint = smtrat::Formula::newConstraint( constraintB.lhs(), smtrat::Constraint::LESS );
+                            nValuation = condB->valuation();
+                            nFlag = condB->flag();
+                        }
+                        else if( (constraintA.relation() == smtrat::Constraint::LEQ && constraintB.relation() == smtrat::Constraint::NEQ) )
+                        {
+                            nConstraint = smtrat::Formula::newConstraint( constraintA.lhs(), smtrat::Constraint::LESS );
+                            nValuation = condA->valuation();
+                            nFlag = condA->flag();
+                        }
+                        else
+                            assert( false );
+                        unsigned nConstraintConsistency = nConstraint->isConsistent();
+                        if( nConstraintConsistency == 2 )
+                        {
                             if( _stateConditions )
                             {
                                 Condition::Set oConds = condB->originalConditions();
                                 oConds.insert( condA->originalConditions().begin(), condA->originalConditions().end() );
-                                addCondition( nConstraint, oConds, condB->valuation(), true );
+                                addCondition( nConstraint, oConds, nValuation, true );
                             }
                             else
                             {
-                                const Condition* cond = new Condition( nConstraint, condB->valuation(), condB->flag(), condB->originalConditions(), true );
+                                const Condition* cond = new Condition( nConstraint, nValuation, nFlag, condB->originalConditions(), true );
                                 cond->pOriginalConditions()->insert( condA->originalConditions().begin(), condA->originalConditions().end() );
                                 _conditionVectorToSimplify.push_back( cond );
                             }
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
-                            if( nConstraint->isConsistent() == 0 )
-                            {
-                                Condition::Set condSet = Condition::Set();
-                                condSet.insert( condA );
-                                condSet.insert( condB );
-                                _conflictSet.insert( condSet );
-                            }
                         }
-                        else if( (constraintA.relation() == smtrat::Constraint::LEQ && constraintB.relation() == smtrat::Constraint::NEQ) )
+                        else if( nConstraint->isConsistent() == 0 )
                         {
-                            const smtrat::Constraint* nConstraint = smtrat::Formula::newConstraint( constraintA.lhs(), smtrat::Constraint::LESS );
-                            if( _stateConditions )
-                            {
-                                Condition::Set oConds = condB->originalConditions();
-                                oConds.insert( condA->originalConditions().begin(), condA->originalConditions().end() );
-                                addCondition( nConstraint, oConds, condA->valuation(), true );
-                            }
-                            else
-                            {
-                                const Condition* cond = new Condition( nConstraint, condA->valuation(), condA->flag(), condA->originalConditions(), true );
-                                cond->pOriginalConditions()->insert( condB->originalConditions().begin(), condB->originalConditions().end() );
-                                _conditionVectorToSimplify.push_back( cond );
-                            }
-                            redundantConditionSet.insert( condA );
-                            redundantConditionSet.insert( condB );
-                            if( nConstraint->isConsistent() == 0 )
-                            {
-                                Condition::Set condSet = Condition::Set();
-                                condSet.insert( condA );
-                                condSet.insert( condB );
-                                _conflictSet.insert( condSet );
-                            }
+                            Condition::Set condSet = Condition::Set();
+                            condSet.insert( condA );
+                            condSet.insert( condB );
+                            _conflictSet.insert( condSet );
                         }
-                        else
-                            assert( false );
                     }
                     // If cond1's solution space is a superset of the solution space of cond2.
                     else if( strongProp == -1 )
@@ -673,7 +606,6 @@ namespace vs
                 }
                 ++iterA;
             }
-
             // Delete the conflicting conditions from redundant conditions.
             auto condSet = _conflictSet.begin();
             while( condSet != _conflictSet.end() )
@@ -1124,6 +1056,10 @@ namespace vs
     {
         // Check if the constraint is variable-free and consistent. If so, discard it.
         unsigned constraintConsistency = _constraint->isConsistent();
+        if( constraintConsistency == 0 )
+        {
+            cout << *_constraint << endl;
+        }
         assert( constraintConsistency != 0 );
         if( constraintConsistency != 1 )
         {
@@ -1663,7 +1599,7 @@ namespace vs
 
     void State::updateValuation()
     {
-        if( toHighDegree() )
+        if( tooHighDegree() )
         {
             mValuation = 1;
             updateBackendCallValuation();
@@ -2011,7 +1947,9 @@ namespace vs
             }
             if( result.empty() )
             {
-                set< const Condition* > conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().termVariables() );
+                smtrat::Variables conflictVars = substitution().termVariables();
+                conflictVars.insert( substitution().variable() );
+                set< const Condition* > conflictBounds = father().variableBounds().getOriginsOfBounds( conflictVars );
                 _conflictReason.insert( conflictBounds.begin(), conflictBounds.end() );
                 _conflictReason.insert( substitution().originalConditions().begin(), substitution().originalConditions().end() );
             }
@@ -2217,7 +2155,7 @@ namespace vs
             _out << _initiation << "                        tryToRefreshIndex: yes" << endl;
         else
             _out << _initiation << "                        tryToRefreshIndex: no" << endl;
-        if( toHighDegree() )
+        if( tooHighDegree() )
             _out << _initiation << "                             toHighDegree: yes" << endl;
         else
             _out << _initiation << "                             toHighDegree: no" << endl;

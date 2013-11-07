@@ -341,6 +341,20 @@ namespace smtrat
             result = False;
             goto Return;
         }
+        // If there are unresolved notequal-constraints, resolve the notequal-constraints 
+        // (create the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
+        if( !mActiveUnresolvedNEQConstraints.empty() )
+        {
+            for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
+            {
+                if( mResolvedNEQConstraints.find( iter->first ) == mResolvedNEQConstraints.end() )
+                {
+                    splitUnequalConstraint( iter->first );
+                    mResolvedNEQConstraints.insert( iter->first );
+                }
+            }
+            goto Return; // return Unknown;
+        }
         for( ; ; )
         {
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
@@ -356,17 +370,14 @@ namespace smtrat
             mTableau.print( cout, 15, "    " );
             cout << endl;
             #endif
-
             // Find a pivoting element in the tableau.
             class pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
-
             #ifdef DEBUG_LRA_MODULE
             cout << "    Next pivoting element: ";
             mTableau.printEntry( pivotingElement.first, cout );
             cout << (pivotingElement.second ? "(True)" : "(False)");
             cout << " [" << pivotingElement.first << "]" << endl;
             #endif
-
             // If there is no conflict.
             if( pivotingElement.second )
             {
@@ -376,54 +387,28 @@ namespace smtrat
                     #ifdef DEBUG_LRA_MODULE
                     cout << "True" << endl;
                     #endif
+                    assert( mActiveUnresolvedNEQConstraints.empty() );
                     // If the current assignment also fulfills the nonlinear constraints.
                     if( checkAssignmentForNonlinearConstraint() )
                     {
-                        // If there are no unresolved notequal-constraints, return True.
-                        if( mActiveUnresolvedNEQConstraints.empty() )
-                        {
-                            #ifdef LRA_GOMORY_CUTS 
-                            if( gomory_cut() )
-                                goto Return; // return Unknown;
-                            #endif 
-
-                            #ifdef LRA_CUTS_FROM_PROOFS
-                            if( cuts_from_proofs() )
-                                goto Return; // return Unknown;
-                            #endif
-                            
-                            #ifdef LRA_BRANCH_AND_BOUND
-                            if( branch_and_bound() )
-                                goto Return; // return Unknown;
-                            #endif
-                            result = True;
-                            goto Return;
-                        }
-                        // Otherwise, resolve the notequal-constraints (create the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
-                        else
-                        {
-                            for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
-                            {
-                                if( mResolvedNEQConstraints.find( iter->first ) == mResolvedNEQConstraints.end() )
-                                {
-                                    splitUnequalConstraint( iter->first );
-                                    mResolvedNEQConstraints.insert( iter->first );
-                                }
-                            }
+                        #ifdef LRA_GOMORY_CUTS 
+                        if( gomory_cut() )
                             goto Return; // return Unknown;
-                        }
+                        #endif 
+                        #ifdef LRA_CUTS_FROM_PROOFS
+                        if( cuts_from_proofs() )
+                            goto Return; // return Unknown;
+                        #endif
+                        #ifdef LRA_BRANCH_AND_BOUND
+                        if( branch_and_bound() )
+                            goto Return; // return Unknown;
+                        #endif
+                        result = True;
+                        goto Return;
                     }
                     // Otherwise, check the consistency of the formula consisting of the nonlinear constraints and the tightest bounds with the backends.
                     else
                     {
-                        for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
-                        {
-                            if( mResolvedNEQConstraints.find( iter->first ) == mResolvedNEQConstraints.end() )
-                            {
-                                splitUnequalConstraint( iter->first );
-                                mResolvedNEQConstraints.insert( iter->first );
-                            }
-                        }
                         adaptPassedFormula();
                         Answer a = runBackends();
                         if( a == False )

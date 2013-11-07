@@ -33,7 +33,7 @@
 
 //#define VS_STATISTICS
 //#define VS_PRINT_ANSWERS
-//#define VS_LOG_INTERMEDIATE_STEPS
+#define VS_LOG_INTERMEDIATE_STEPS
 
 #include "Substitute.h"
 #include "State.h"
@@ -130,10 +130,11 @@ namespace smtrat
             void eliminate( vs::State*, const carl::Variable&, const vs::Condition* );
             bool substituteAll( vs::State*, vs::ConditionList& );
             void propagateNewConditions( vs::State* );
-            void insertDTinRanking( vs::State* );
-            void insertDTsinRanking( vs::State* );
-            bool eraseDTofRanking( vs::State& );
-            void eraseDTsOfRanking( vs::State& );
+            void addStateToRanking( vs::State* );
+            void addStatesToRanking( vs::State* );
+            void insertTooHighDegreeStatesInRanking( vs::State* );
+            bool removeStateFromRanking( vs::State& );
+            void removeStatesFromRanking( vs::State& );
             void updateInfeasibleSubset( bool = false );
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
             bool adaptPassedFormula( const vs::State&, FormulaConditionMap&, bool = false );
