@@ -174,7 +174,7 @@ namespace vs
          * @return A constant reference to the flag indicating whether a condition with too high degree for 
          *          the virtual substitution method must be considered.
          */
-        const bool& toHighDegree() const
+        const bool& tooHighDegree() const
         {
             return mToHighDegree;
         }

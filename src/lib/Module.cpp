@@ -572,7 +572,7 @@ namespace smtrat
             #endif
         }
         #ifdef MODULE_VERBOSE
-        cout << "Result:   " << answerToString( result ) << endl;
+        cout << "Result:   " << ANSWER_TO_STRING( result ) << endl;
         #endif
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         startCheckTimer();
