@@ -33,7 +33,6 @@
 #include "ICPModule.h"
 #include "assert.h"
 
-using namespace GiNaC;
 using namespace std;
 
 //#define ICPMODULE_DEBUG
@@ -51,7 +50,6 @@ namespace smtrat
         mActiveLinearConstraints(),
         mLinearConstraints(),
         mNonlinearConstraints(),
-        mIcp(),
         mVariables(),
         mIntervals(),
         mIcpRelevantCandidates(),
@@ -114,14 +112,17 @@ namespace smtrat
 
         if( _constraint->variables().size() > 0 )
         {
-            const ex constr = _constraint->lhs();
+            const Polynomial constr = _constraint->lhs();
             bool linear = false;
             // add original variables to substitution mapping
             for( auto variablesIt = _constraint->variables().begin(); variablesIt != _constraint->variables().end(); ++variablesIt )
-                mSubstitutions[(*variablesIt).second] = (*variablesIt).second;
+            {
+                Polynomial singleVar = Polynomial(*variablesIt);
+                mSubstitutions[singleVar] = singleVar;
+            }
 
             // actual preprocessing
-            icp::ExToConstraintMap temporaryMonomes;
+            FastMap<Polynomial, const Constraint*> temporaryMonomes;
             linear = icp::isLinear( _constraint, constr, temporaryMonomes );
             Formula linearFormula;
             bool informLRA = true;
@@ -130,10 +131,7 @@ namespace smtrat
                 linearFormula = Formula( _constraint );
             else
             {
-                std::vector<symbol>* variables = new std::vector<symbol>;
-                GiNaC::symtab newVariables;
-                
-                ex lhs;
+                Polynomial lhs;
                 if(!temporaryMonomes.empty())
                     lhs = createContractionCandidates(temporaryMonomes);
                 else
@@ -154,15 +152,8 @@ namespace smtrat
                 
                 if( informLRA )
                 {
-                    GiNaCRA::ICP::searchVariables(lhs, variables);
-                    for( auto variableIt = variables->begin(); variableIt != variables->end(); ++variableIt)
-                    {
-                        newVariables.insert(std::make_pair((*variableIt).get_name(), *variableIt));
-                    }
-
-                    linearFormula = Formula( Formula::newConstraint(lhs,_constraint->relation(), newVariables) );
+                    linearFormula = Formula( Formula::newConstraint(lhs,_constraint->relation()) );
                 }
-                delete variables;
             }
             if( informLRA )
             {
@@ -173,7 +164,7 @@ namespace smtrat
                 #ifdef ICPMODULE_DEBUG
                 cout << "[mLRA] inform: " << linearFormula.constraint() << endl;
                 #endif
-                assert( linearFormula.constraint().isLinear() );
+                assert( linearFormula.constraint().lhs().isLinear() );
             }
         }
         return (_constraint->isConsistent() != 0);
@@ -269,13 +260,13 @@ namespace smtrat
                     #endif
                     #endif
                     // try to insert new icpVariable - if already existing, only a candidate is added, else a new icpVariable is created.
-                    bool original = !( (*candidateIt)->lhs() == ex_to<symbol>((*varIt).second) );
+                    bool original = !( (*candidateIt)->lhs() == *varIt);
                     icp::IcpVariable* icpVar = NULL;
                     if( original )
-                        icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), original , *candidateIt, icp::getOriginalLraVar((*varIt).second,mLRA));
+                        icpVar = new icp::IcpVariable(*varIt, original , *candidateIt, icp::getOriginalLraVar(Polynomial(*varIt),mLRA));
                     else
-                        icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), original , *candidateIt);
-                    std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*varIt).second).get_name(), icpVar));
+                        icpVar = new icp::IcpVariable(*varIt, original , *candidateIt);
+                    std::pair<std::map<carl::Variable, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(*varIt, icpVar));
                     if (!added.second)
                     {
                         (*added.first).second->addCandidate(*candidateIt);
@@ -284,7 +275,7 @@ namespace smtrat
                 }
             }
         }
-        if ( (*_formula)->constraint().variables().size() == 1 && (*_formula)->constraint().varInfo((*(*_formula)->constraint().variables().begin()).second).maxDegree == 1 )
+        if ( (*_formula)->constraint().variables().size() == 1 && (*_formula)->constraint().varInfo((*(*_formula)->constraint().variables().begin())).maxDegree() == 1 )
         {
             // considered constraint is activated but has no slackvariable -> it is a boundary constraint
             Formula* tmpFormula = new Formula(**_formula);
@@ -293,11 +284,11 @@ namespace smtrat
             // update ReceivedFormulaMapping
 //            mReceivedFormulaMapping.insert(std::make_pair(tmpFormula, *_formula));
             // try to insert new icpVariable -> is original!
-            symbol tmpVar = ex_to<symbol>( (*(*_formula)->pConstraint()->variables().begin()).second );
+            carl::Variable tmpVar = (*(*_formula)->pConstraint()->variables().begin());
             const lra::Variable<lra::Numeric>* slackvariable = mLRA.getSlackVariable(tmpFormula->pConstraint());
             assert( slackvariable != NULL );
             icp::IcpVariable* icpVar = new icp::IcpVariable(tmpVar, true, slackvariable );
-            std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(tmpVar.get_name(), icpVar));
+            std::pair<std::map<carl::Variable, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(tmpVar, icpVar));
             if (!added.second)
                 delete icpVar;
                 
@@ -360,18 +351,17 @@ namespace smtrat
             else
             {
                 // if not existent:
-                std::pair<string,ex> newReal = std::pair<string,ex>();
-                newReal = Formula::newAuxiliaryRealVariable();
-                GiNaC::symtab variables = replacementPtr->variables();
+                carl::Variable newReal = Formula::newAuxiliaryRealVariable();
+                Variables variables = replacementPtr->variables();
                 variables.insert(newReal);
 
-                const ex rhs = slackvariable->expression()-newReal.second;
-                const Constraint* tmpConstr = Formula::newConstraint(rhs, Constraint_Relation::CR_EQ, variables );
+                const Polynomial rhs = slackvariable->expression()-newReal;
+                const Constraint* tmpConstr = Formula::newConstraint(rhs, Constraint::Relation::EQ);
                
                 // Create candidates for every possible variable:
                 for (auto variableIt = variables.begin(); variableIt != variables.end(); ++variableIt )
                 {
-                    icp::ContractionCandidate* newCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), rhs, tmpConstr,  ex_to<symbol>((*variableIt).second), *_formula);
+                    icp::ContractionCandidate* newCandidate = mCandidateManager->getInstance()->createCandidate(newReal, rhs, tmpConstr, *variableIt, *_formula);
 
                     // ensure that the created candidate is set as linear
                     newCandidate->setLinear();
@@ -387,26 +377,25 @@ namespace smtrat
                     mActiveLinearConstraints[newCandidate] = 1;
 
                     // set interval to unbounded if not existing - we need an interval for the icpVariable
-                    if ( mIntervals.find(ex_to<symbol>(newReal.second)) == mIntervals.end() )
+                    if ( mIntervals.find(newReal) == mIntervals.end() )
                     {
-                        mIntervals.insert(std::make_pair(ex_to<symbol>(newReal.second), GiNaCRA::DoubleInterval::unboundedInterval()));
-                        mHistoryRoot->addInterval(ex_to<symbol>(newReal.second), GiNaCRA::DoubleInterval::unboundedInterval());
+                        mIntervals.insert(std::make_pair(newReal, carl::DoubleInterval::unboundedInterval()));
+                        mHistoryRoot->addInterval(newReal, carl::DoubleInterval::unboundedInterval());
                     }
                    
                     // try to add icpVariable - if already existing, only add the created candidate, else create new icpVariable
-                    const std::string name = (*variableIt).first;
-                    bool original = name != newReal.first;
+                    bool original = (*variableIt != newReal);
                     icp::IcpVariable* icpVar = NULL;
                     if( original )
-                        icpVar = new icp::IcpVariable(ex_to<symbol>((*variableIt).second), original, newCandidate, icp::getOriginalLraVar((*variableIt).second,mLRA) );
+                        icpVar = new icp::IcpVariable(*variableIt, original, newCandidate, icp::getOriginalLraVar(Polynomial(*variableIt),mLRA) );
                     else
-                        icpVar = new icp::IcpVariable(ex_to<symbol>((*variableIt).second), original, newCandidate, slackvariable );
-                    std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*variableIt).second).get_name(), icpVar));
+                        icpVar = new icp::IcpVariable(*variableIt, original, newCandidate, slackvariable );
+                    std::pair<std::map<carl::Variable, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(*variableIt, icpVar));
                     if(!added.second)
                     {
                         (*added.first).second->addCandidate(newCandidate);
                         if ((*added.first).second->isOriginal())
-                                (*added.first).second->setLraVar(icp::getOriginalLraVar((*variableIt).second,mLRA));
+                                (*added.first).second->setLraVar(icp::getOriginalLraVar(Polynomial(*variableIt),mLRA));
                             else
                                 (*added.first).second->setLraVar(slackvariable);
                         delete icpVar;
@@ -415,25 +404,25 @@ namespace smtrat
                     // update affectedCandidates
                     for ( auto varIt = variables.begin(); varIt != variables.end(); ++varIt )
                     {
-                        original = (*_formula)->pConstraint()->hasVariable((*varIt).first);
+                        original = (*_formula)->pConstraint()->hasVariable(*varIt);
                         icp::IcpVariable* icpVar = NULL;
                         if( original )
-                            icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), original, newCandidate, icp::getOriginalLraVar((*varIt).second,mLRA) );
+                            icpVar = new icp::IcpVariable(*varIt, original, newCandidate, icp::getOriginalLraVar(Polynomial(*varIt),mLRA) );
                         else
-                            icpVar = new icp::IcpVariable(ex_to<symbol>((*varIt).second), original, newCandidate, slackvariable );      
-                        std::pair<std::map<string, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(ex_to<symbol>((*varIt).second).get_name(), icpVar));
+                            icpVar = new icp::IcpVariable(*varIt, original, newCandidate, slackvariable );      
+                        std::pair<std::map<carl::Variable, icp::IcpVariable*>::iterator,bool> added = mVariables.insert(std::make_pair(*varIt, icpVar));
                         if(!added.second)
                         {
                             (*added.first).second->addCandidate(newCandidate);
                             if ((*added.first).second->isOriginal())
-                                (*added.first).second->setLraVar(icp::getOriginalLraVar((*varIt).second,mLRA));
+                                (*added.first).second->setLraVar(icp::getOriginalLraVar(Polynomial(*varIt),mLRA));
                             else
                                 (*added.first).second->setLraVar(slackvariable);
                             delete icpVar;
                         }
                         #ifdef ICPMODULE_DEBUG
                         #ifndef ICPMODULE_REDUCED_DEBUG
-                        cout << "[ICP] Added to affected canndidates: " << ex_to<symbol>((*varIt).second) << " -> ";
+                        cout << "[ICP] Added to affected canndidates: " << *varIt << " -> ";
                         newCandidate->print();
                         #endif
                         #endif
@@ -530,9 +519,9 @@ namespace smtrat
                                         icp::HistoryNode* firstNode = (*nodes.begin())->parent();
                                         if ( *firstNode == *mHistoryRoot )
                                         {
-                                            GiNaCRA::evaldoubleintervalmap rootmap;
+                                            EvalDoubleIntervalMap rootmap;
                                             for ( auto intervalIt = mHistoryRoot->intervals().begin(); intervalIt != mHistoryRoot->intervals().end(); ++intervalIt )
-                                                rootmap[(*intervalIt).first] = GiNaCRA::DoubleInterval((*intervalIt).second);
+                                                rootmap[(*intervalIt).first] = carl::DoubleInterval((*intervalIt).second);
                                             
                                             firstNode = mHistoryRoot->addRight(new icp::HistoryNode(rootmap, 2));
                                         }
@@ -580,8 +569,7 @@ namespace smtrat
                     // clean up affected candidates
                     for ( auto variableIt = (*candidateIt)->constraint()->variables().begin(); variableIt != (*candidateIt)->constraint()->variables().end(); ++variableIt )
                     {
-                        string variable = ex_to<symbol>((*variableIt).second).get_name();
-                        std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.find(variable);
+                        std::map<carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(*variableIt);
                         assert(icpVar != mVariables.end());
                         for ( auto varCandidateIt = (*icpVar).second->candidates().begin(); varCandidateIt != (*icpVar).second->candidates().end(); )
                         {
@@ -607,8 +595,7 @@ namespace smtrat
                                 // clean up affected candidates before deletion
                                 for( auto variablesIt = constr->variables().begin(); variablesIt != constr->variables().end(); ++variablesIt )
                                 {
-                                    string variable = ex_to<symbol>((*variablesIt).second).get_name();
-                                    std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.find(variable);
+                                    std::map<carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(*variablesIt);
                                     (*icpVar).second->deleteCandidate((*activeLinearIt).first);
                                 }
                                 // clean up icpRelevantCandidates
@@ -731,8 +718,8 @@ namespace smtrat
         mIsBackendCalled = false;
         double relativeContraction = 1;
         bool   splitOccurred = false;
-        std::pair<bool,symbol> didSplit;
-        didSplit.first = false;
+        std::pair<bool,carl::Variable> didSplit = std::make_pair(false, carl::Variable(0));
+//        didSplit.first = false;
         vec_set_const_pFormula violatedConstraints = vec_set_const_pFormula();
         double targetDiameter = 1;
         double contractionThreshold = 0.01;
@@ -790,7 +777,7 @@ namespace smtrat
         else if ( !mActiveNonlinearConstraints.empty() ) // lraAnswer == True
         {
             // get intervals for initial variables
-            GiNaCRA::evalintervalmap tmp = mLRA.getVariableBounds();
+            EvalIntervalMap tmp = mLRA.getVariableBounds();
             #ifdef ICPMODULE_DEBUG
             cout << "Newly obtained Intervals: " << endl;
             #endif
@@ -800,11 +787,11 @@ namespace smtrat
                 cout << (*intervalIt).first << ": ";
                 (*intervalIt).second.dbgprint();
                 #endif
-                if (mVariables.find((*intervalIt).first.get_name()) != mVariables.end())
+                if (mVariables.find((*intervalIt).first) != mVariables.end())
                 {
-                    mHistoryRoot->addInterval((*intervalIt).first, GiNaCRA::DoubleInterval((*intervalIt).second));
-                    mIntervals[(*intervalIt).first] = GiNaCRA::DoubleInterval((*intervalIt).second);
-                    mVariables.at((*intervalIt).first.get_name())->setUpdated();
+                    mHistoryRoot->addInterval((*intervalIt).first, carl::DoubleInterval((*intervalIt).second));
+                    mIntervals[(*intervalIt).first] = carl::DoubleInterval((*intervalIt).second);
+                    mVariables.at((*intervalIt).first)->setUpdated();
                 }
             }
             
@@ -816,10 +803,10 @@ namespace smtrat
                 if ( linIt != mLinearConstraints.end() )
                 {
                     // dirty hack: expect lhs to be set and take first item of set of CCs --> Todo: Check if it is really set in the constructors of the CCs during inform and assert
-                    GiNaCRA::Interval tmp = (*slackIt).second->getVariableBounds();
+                    Interval tmp = (*slackIt).second->getVariableBounds();
                     // keep root updated about the initial box.
-                    mHistoryRoot->rIntervals()[(*(*linIt).second.begin())->lhs()] = GiNaCRA::DoubleInterval(tmp);
-                    mIntervals[(*(*linIt).second.begin())->lhs()] = GiNaCRA::DoubleInterval(tmp);
+                    mHistoryRoot->rIntervals()[(*(*linIt).second.begin())->lhs()] = carl::DoubleInterval(tmp);
+                    mIntervals[(*(*linIt).second.begin())->lhs()] = carl::DoubleInterval(tmp);
                     #ifdef ICPMODULE_DEBUG
                     #ifndef ICPMODULE_REDUCED_DEBUG
                     cout << "Added interval (slackvariables): " << (*(*linIt).second.begin())->lhs() << " ";
@@ -863,11 +850,12 @@ namespace smtrat
                     mBoxStorage.pop();
                 
                 icp::set_icpVariable icpVariables;
-                GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
+                Variables originalRealVariables;
+                mpReceivedFormula->realValuedVars(originalRealVariables);
                 for( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
                 {
-                    assert(mVariables.count((*variablesIt).first) > 0);
-                    icpVariables.insert( (*(mVariables.find((*variablesIt).first))).second );
+                    assert(mVariables.count(*variablesIt) > 0);
+                    icpVariables.insert( (*(mVariables.find(*variablesIt))).second );
                 }
                 std::set<const Formula*> box = variableReasonHull(icpVariables);
                 mBoxStorage.push(box);
@@ -950,7 +938,7 @@ namespace smtrat
                     
                     if ( relativeContraction > 0 )
                     {
-                        std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.find(candidate->derivationVar().get_name());
+                        std::map<carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(candidate->derivationVar());
                         assert(icpVar != mVariables.end());
                         (*icpVar).second->setUpdated();
                         mLastCandidate = candidate;
@@ -975,7 +963,7 @@ namespace smtrat
                          * of which the interval has significantly changed are
                          * contained in mIcpRelevantCandidates.
                          */
-                        std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.find(candidate->derivationVar().get_name());
+                        std::map<carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(candidate->derivationVar());
                         assert(icpVar != mVariables.end());
                         for ( auto candidateIt = (*icpVar).second->candidates().begin(); candidateIt != (*icpVar).second->candidates().end(); ++candidateIt )
                         {
@@ -994,12 +982,13 @@ namespace smtrat
                     }
                     
                     bool originalAllFinished = true;
-                    GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
+                    Variables originalRealVariables;
+                    mpReceivedFormula->realValuedVars(originalRealVariables);
                     for ( auto varIt = originalRealVariables.begin(); varIt != originalRealVariables.end(); ++varIt )
                     {
-                        if ( mIntervals.find(ex_to<symbol>((*varIt).second)) != mIntervals.end() )
+                        if ( mIntervals.find(*varIt) != mIntervals.end() )
                         {
-                            if ( mIntervals.at(ex_to<symbol>((*varIt).second)).diameter() > targetDiameter )
+                            if ( mIntervals.at(*varIt).diameter() > targetDiameter )
                             {
                                 originalAllFinished = false;
                                 break;
@@ -1178,7 +1167,7 @@ namespace smtrat
                                     for( set<const Formula*>::const_iterator subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                                     {
                                         isBound = false;
-                                        std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.begin();
+                                        std::map<carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.begin();
                                         for ( ; icpVar != mVariables.end(); ++icpVar )
                                         {
                                             if( (*icpVar).second->isOriginal() && (*icpVar).second->isExternalBoundsSet() )
@@ -1188,8 +1177,8 @@ namespace smtrat
                                                 {
                                                     isBound = true;
                                                     isBoundInfeasible = true;
-                                                    assert(mVariables.find( (*(*subformula)->constraint().variables().begin()).first ) != mVariables.end() );
-                                                    mHistoryActual->addInfeasibleVariable(mVariables.at((*(*subformula)->constraint().variables().begin()).first));
+                                                    assert(mVariables.find( *(*subformula)->constraint().variables().begin() ) != mVariables.end() );
+                                                    mHistoryActual->addInfeasibleVariable( mVariables.at( *(*subformula)->constraint().variables().begin() ) );
                                                     break;
                                                 }
                                             }
@@ -1217,7 +1206,7 @@ namespace smtrat
                                 {
                                     if( icp::isBound((*infSetIt)->pConstraint()) )
                                     {
-                                        assert( mVariables.find( (*(*infSetIt)->constraint().variables().begin()).first ) != mVariables.end() );
+                                        assert( mVariables.find( *(*infSetIt)->constraint().variables().begin() ) != mVariables.end() );
 //                                        mHistoryActual->addInfeasibleVariable( mVariables.at((*(*infSetIt)->constraint().variables().begin()).first) );
 //                                        cout << "Added infeasible Variable." << endl;
                                     }
@@ -1330,11 +1319,11 @@ namespace smtrat
                 #endif
                 if( mLastCandidate != NULL) // if there has been a candidate, the stateInfeasible set has to be created, otherwise it has been generated during checkBoxAgainstLinear...
                 {
-                    assert(mVariables.find(mLastCandidate->derivationVar().get_name()) != mVariables.end());
-                    mHistoryActual->addInfeasibleVariable(mVariables.at(mLastCandidate->derivationVar().get_name()));
-                    if (mHistoryActual->rReasons().find(mLastCandidate->derivationVar().get_name()) != mHistoryActual->rReasons().end())
+                    assert(mVariables.find(mLastCandidate->derivationVar()) != mVariables.end());
+                    mHistoryActual->addInfeasibleVariable( mVariables.at(mLastCandidate->derivationVar()) );
+                    if (mHistoryActual->rReasons().find(mLastCandidate->derivationVar()) != mHistoryActual->rReasons().end())
                     {
-                        for( auto constraintIt = mHistoryActual->rReasons().at(mLastCandidate->derivationVar().get_name()).begin(); constraintIt != mHistoryActual->rReasons().at(mLastCandidate->derivationVar().get_name()).end(); ++constraintIt )
+                        for( auto constraintIt = mHistoryActual->rReasons().at(mLastCandidate->derivationVar()).begin(); constraintIt != mHistoryActual->rReasons().at(mLastCandidate->derivationVar()).end(); ++constraintIt )
                             mHistoryActual->addInfeasibleConstraint(*constraintIt);
                     }
                 }
@@ -1370,13 +1359,13 @@ namespace smtrat
     }
     
     
-    ex ICPModule::createContractionCandidates(icp::ExToConstraintMap& _tempMonomes)
+    Polynomial ICPModule::createContractionCandidates(FastMap<Polynomial, const Constraint*>& _tempMonomes)
     {
-        ex linearizedConstraint = ex();
+        Polynomial linearizedConstraint = Polynomial();
         if( !_tempMonomes.empty() )
         {
             const Constraint* constraint = (*_tempMonomes.begin()).second;
-            GiNaC::exmap substitutions;
+//            Variables substitutions;
             
 //            cout << "Constraint: " << *constraint << endl;
 
@@ -1387,44 +1376,36 @@ namespace smtrat
                 {
                     assert( (*expressionIt).second == constraint );
                     // cCreate mLinearzations entry
-                    std::pair<string,ex> newReal = std::pair<string,ex>(Formula::newAuxiliaryRealVariable());
-                    mLinearizations[(*expressionIt).first] = ex_to<symbol>(newReal.second);
-                    mSubstitutions[newReal.second]=(*expressionIt).first;
-                    substitutions.insert(std::make_pair((*expressionIt).first, newReal.second));
+                    carl::Variable newReal = Formula::newAuxiliaryRealVariable();
+                    mLinearizations[(*expressionIt).first] = newReal;
+                    mSubstitutions[Polynomial(newReal)]=(*expressionIt).first;
+//                    substitutions.insert(std::make_pair((*expressionIt).first, newReal));
                     #ifdef ICPMODULE_DEBUG
                     cout << "New replacement: " << (*expressionIt).first << " -> " << mLinearizations.at((*expressionIt).first) << endl;
                     #endif
-                    std::vector<symbol>* variables = new std::vector<symbol>;
-                    mIcp.searchVariables((*expressionIt).first, variables);
-
-                    GiNaC::symtab constraintVariables;
-                    for( auto variableIt = variables->begin(); variableIt != variables->end(); ++variableIt )
-                        constraintVariables.insert(std::make_pair(ex_to<symbol>(*variableIt).get_name(), *variableIt));
-
-                    constraintVariables[ex_to<symbol>(newReal.second).get_name()] = newReal.second;
-                    for( uint varIndex = 0; varIndex < variables->size(); varIndex++ )
+                    std::set<carl::Variable> variables;
+                    (*expressionIt).first.gatherVariables(variables);
+                   
+                    for( auto varIndex = variables.begin(); varIndex != variables.end(); ++varIndex )
                     {
-                        const ex rhs = (*expressionIt).first-newReal.second;
-                        const Constraint* tmp = Formula::newConstraint( rhs, Constraint_Relation::CR_EQ, constraintVariables);
-                        icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), rhs, tmp, variables->at(varIndex) );
+                        const Polynomial rhs = (*expressionIt).first-newReal;
+                        const Constraint* tmp = Formula::newConstraint( rhs, Constraint::Relation::EQ);
+                        icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(newReal, rhs, tmp, *varIndex );
                         mNonlinearConstraints[(*expressionIt).second].insert( mNonlinearConstraints[(*expressionIt).second].end(), tmpCandidate );
 
-                        mIntervals.insert(std::make_pair(variables->at(varIndex), GiNaCRA::DoubleInterval::unboundedInterval()));
+                        mIntervals.insert(std::make_pair(*varIndex, carl::DoubleInterval::unboundedInterval()));
                         tmpCandidate->activate();
                         tmpCandidate->setNonlinear();
                     }
                     // add one candidate for the replacement variable
-                    GiNaC::symtab varTmp = (*expressionIt).second->variables();
-                    varTmp[ex_to<symbol>(newReal.second).get_name()] = newReal.second;
-                    ex rhs = (*expressionIt).first-newReal.second;
-                    const Constraint* tmp = Formula::newConstraint( (*expressionIt).first-newReal.second, Constraint_Relation::CR_EQ, varTmp);
-                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(ex_to<symbol>(newReal.second), rhs, tmp, ex_to<symbol>(newReal.second) );
+                    Polynomial rhs = (*expressionIt).first-newReal;
+                    const Constraint* tmp = Formula::newConstraint( (*expressionIt).first-newReal, Constraint::Relation::EQ);
+                    icp::ContractionCandidate* tmpCandidate = mCandidateManager->getInstance()->createCandidate(newReal, rhs, tmp, newReal );
                     mNonlinearConstraints[(*expressionIt).second].insert( mNonlinearConstraints[(*expressionIt).second].end(), tmpCandidate );
 
-                    mIntervals.insert(std::make_pair(ex_to<symbol>(newReal.second), GiNaCRA::DoubleInterval::unboundedInterval()));
+                    mIntervals.insert(std::make_pair(newReal, carl::DoubleInterval::unboundedInterval()));
                     tmpCandidate->activate();
                     tmpCandidate->setNonlinear();
-                    delete variables;
                 }
                 else // already existing replacement/substitution/linearization
                 {
@@ -1460,7 +1441,7 @@ namespace smtrat
 
                         if(mLinearizations.find(*summand) != mLinearizations.end() )
                         {
-                            ex monomialReplacement = (*mLinearizations.find(*summand)).second * coefficient;
+                            Polynomial monomialReplacement = (*mLinearizations.find(*summand)).second * coefficient;
                             linearizedConstraint += monomialReplacement;
                         }
                         else
@@ -1512,7 +1493,7 @@ namespace smtrat
 //        double maxDiameter = 0;
 //        bool                     minSet = false;
 //        bool                     maxSet = false;
-//        vector<symbol>           variables = vector<symbol>();
+//        vector<carl::Variable>           variables = vector<carl::Variable>();
 //
 //        // calculate Jacobian for initial box
 //        for( constrIt = mNonlinearConstraints.begin(); constrIt != mNonlinearConstraints.end(); constrIt++ )
@@ -1527,7 +1508,7 @@ namespace smtrat
 //                (*varIt)->calcDerivative();
 //
 //                variables.clear();
-//                const ex term = (*varIt)->derivative();
+//                const Polynomial term = (*varIt)->derivative();
 //                mIcp.searchVariables( term, &variables );
 //
 //                if( !minSet )
@@ -1656,12 +1637,12 @@ namespace smtrat
     }
     
     
-    void ICPModule::updateRelevantCandidates(symbol _var, double _relativeContraction )
+    void ICPModule::updateRelevantCandidates(carl::Variable _var, double _relativeContraction )
     {
         // update all candidates which contract in the dimension in which the split has happened
         std::set<icp::ContractionCandidate*> updatedCandidates;
         // iterate over all affected constraints
-        std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.find(_var.get_name());
+        std::map<carl::Variable, icp::IcpVariable*>::iterator icpVar = mVariables.find(_var);
         assert(icpVar != mVariables.end());
         for ( auto candidatesIt = (*icpVar).second->candidates().begin(); candidatesIt != (*icpVar).second->candidates().end(); ++candidatesIt)
         {
@@ -1706,20 +1687,20 @@ namespace smtrat
 
     bool ICPModule::contraction( icp::ContractionCandidate* _selection, double& _relativeContraction )
     {
-        GiNaCRA::DoubleInterval resultA = GiNaCRA::DoubleInterval();
-        GiNaCRA::DoubleInterval resultB = GiNaCRA::DoubleInterval();
+        carl::DoubleInterval resultA = carl::DoubleInterval();
+        carl::DoubleInterval resultB = carl::DoubleInterval();
         bool                   splitOccurred = false;
 
         // check if derivative is already calculated
         if(_selection->derivative() == 0)
             _selection->calcDerivative();
 
-        const ex               constr     = _selection->rhs();
-        const ex               derivative = _selection->derivative();
-        const symbol           variable   = _selection->derivationVar();
+        const Polynomial               constr     = _selection->rhs();
+        const Polynomial               derivative = _selection->derivative();
+        const carl::Variable           variable   = _selection->derivationVar();
         assert(mIntervals.find(variable) != mIntervals.end());
         double                 originalDiameter = mIntervals.at(variable).diameter();
-        bool originalUnbounded = ( mIntervals.at(variable).leftType() == GiNaCRA::DoubleInterval::INFINITY_BOUND || mIntervals.at(variable).rightType() == GiNaCRA::DoubleInterval::INFINITY_BOUND );
+        bool originalUnbounded = ( mIntervals.at(variable).leftType() == carl::BoundType::INFTY || mIntervals.at(variable).rightType() == carl::BoundType::INFTY );
         
         splitOccurred    = mIcp.contract<GiNaCRA::SimpleNewton>( mIntervals, constr, derivative, variable, resultA, resultB );
         if( splitOccurred )
@@ -1747,7 +1728,7 @@ namespace smtrat
             for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
             {
                 if ( (*intervalIt).first == variable )
-                    tmpRight.insert(std::pair<const symbol,GiNaCRA::DoubleInterval>(variable, originalInterval.intersect(resultA) ));
+                    tmpRight.insert(std::pair<const carl::Variable,GiNaCRA::DoubleInterval>(variable, originalInterval.intersect(resultA) ));
                 else
                     tmpRight.insert((*intervalIt));
             }
@@ -1779,7 +1760,7 @@ namespace smtrat
             for ( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
             {
                 if ( (*intervalIt).first == variable )
-                    tmpLeft.insert(std::pair<const symbol,GiNaCRA::DoubleInterval>(variable, originalInterval.intersect(resultB) ));
+                    tmpLeft.insert(std::pair<const carl::Variable,GiNaCRA::DoubleInterval>(variable, originalInterval.intersect(resultB) ));
                 else
                     tmpLeft.insert((*intervalIt));
             }
@@ -1857,9 +1838,9 @@ namespace smtrat
         if(_selection->derivative() == 0)
             _selection->calcDerivative();
 
-        const ex               constr     = _selection->rhs();
-        const ex               derivative = _selection->derivative();
-        const symbol           variable   = _selection->derivationVar();
+        const Polynomial               constr     = _selection->rhs();
+        const Polynomial               derivative = _selection->derivative();
+        const carl::Variable           variable   = _selection->derivationVar();
         assert(_intervals.find(variable) != _intervals.end());
         double                 originalDiameter = _intervals.at(variable).diameter();
         bool originalUnbounded = ( _intervals.at(variable).leftType() == GiNaCRA::DoubleInterval::INFINITY_BOUND || _intervals.at(variable).rightType() == GiNaCRA::DoubleInterval::INFINITY_BOUND );
@@ -1874,7 +1855,7 @@ namespace smtrat
             for ( auto intervalIt = _intervals.begin(); intervalIt != _intervals.end(); ++intervalIt )
             {
                 if ( (*intervalIt).first == variable )
-                    tmpRight.insert(std::pair<const symbol,GiNaCRA::DoubleInterval>(variable, originalInterval.intersect(resultA) ));
+                    tmpRight.insert(std::pair<const carl::Variable,GiNaCRA::DoubleInterval>(variable, originalInterval.intersect(resultA) ));
                 else
                     tmpRight.insert((*intervalIt));
             }
@@ -1884,7 +1865,7 @@ namespace smtrat
             for ( auto intervalIt = _intervals.begin(); intervalIt != _intervals.end(); ++intervalIt )
             {
                 if ( (*intervalIt).first == variable )
-                    tmpLeft.insert(std::pair<const symbol,GiNaCRA::DoubleInterval>(variable, originalInterval.intersect(resultB) ));
+                    tmpLeft.insert(std::pair<const carl::Variable,GiNaCRA::DoubleInterval>(variable, originalInterval.intersect(resultB) ));
                 else
                     tmpLeft.insert((*intervalIt));
             }
@@ -1907,7 +1888,7 @@ namespace smtrat
     }
     
     
-    const double ICPModule::calculateSplittingImpact ( const GiNaC::symbol& _var, icp::ContractionCandidate& _candidate ) const
+    const double ICPModule::calculateSplittingImpact ( const GiNaC::carl::Variable& _var, icp::ContractionCandidate& _candidate ) const
     {
         double impact = 0;
         assert(mIntervals.count(_var) > 0);
@@ -1966,12 +1947,12 @@ namespace smtrat
     }
     
     
-    std::pair<bool,symbol> ICPModule::checkAndPerformSplit( const double& _targetDiameter )
+    std::pair<bool,carl::Variable> ICPModule::checkAndPerformSplit( const double& _targetDiameter )
     {
-        std::pair<bool,symbol> result;
+        std::pair<bool,carl::Variable> result;
         result.first = false;
         bool found = false;
-        symbol variable = (*mIntervals.begin()).first; // Initialized to some dummy value
+        carl::Variable variable = (*mIntervals.begin()).first; // Initialized to some dummy value
         double maximalImpact = 0;   
         // first check all intevals from nonlinear contractionCandidats -> backwards to begin at the most important candidate
         for ( auto candidateIt = mActiveNonlinearConstraints.rbegin(); candidateIt != mActiveNonlinearConstraints.rend(); ++candidateIt )
@@ -2113,7 +2094,7 @@ namespace smtrat
 
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             numeric bound  = GiNaC::rationalize( mIntervals.at(variable).midpoint() );
-            GiNaC::ex BoundEx = variable - bound;
+            GiNaC::Polynomial BoundEx = variable - bound;
             GiNaC::symtab variables;
             variables.insert(make_pair(variable.get_name(), variable));
             const Constraint* left = Formula::newConstraint(BoundEx, CR_LESS, variables);
@@ -2202,11 +2183,11 @@ namespace smtrat
     }
     
 
-    void ICPModule::addFormulaFromInterval(const GiNaCRA::DoubleInterval* _interval, const symbol& _variable)
+    void ICPModule::addFormulaFromInterval(const GiNaCRA::DoubleInterval* _interval, const carl::Variable& _variable)
     {
         GiNaC::symtab variables = GiNaC::symtab();
         variables[_variable.get_name()] = _variable;
-        ex constraint = _variable - GiNaC::numeric(cln::rationalize(_interval->left()));
+        Polynomial constraint = _variable - GiNaC::numeric(cln::rationalize(_interval->left()));
         #ifdef ICPMODULE_DEBUG
         #ifndef ICPMODULE_REDUCED_DEBUG
         cout << "LeftBound Constraint: " << constraint << endl;
@@ -2262,14 +2243,14 @@ namespace smtrat
         {
             if ( (*variableIt).second->checkLinear() == false )
             {
-                symbol variable = (*variableIt).second->var();
+                carl::Variable variable = (*variableIt).second->var();
                 assert(mIntervals.find(variable) != mIntervals.end());
                 GiNaCRA::DoubleInterval interval = mIntervals.at(variable);
                 GiNaC::symtab variables = GiNaC::symtab();
                 variables[variable.get_name()] = variable;
 
                 GiNaCRA::DoubleInterval center = GiNaCRA::DoubleInterval(interval.midpoint());
-                ex constraint = variable - GiNaC::numeric(cln::rationalize(center.midpoint()));
+                Polynomial constraint = variable - GiNaC::numeric(cln::rationalize(center.midpoint()));
                 Formula centerTmpFormula = smtrat::Formula( smtrat::Formula::newConstraint( constraint, Constraint_Relation::CR_EQ, variables ) );
                 Formula* validationTmpFormula = new smtrat::Formula( centerTmpFormula.pConstraint() );
                 mLRA.inform(validationTmpFormula->pConstraint());
@@ -2313,7 +2294,7 @@ namespace smtrat
             // For every active linear constraint:
             for ( auto linearIt = mActiveLinearConstraints.begin(); linearIt != mActiveLinearConstraints.end(); ++linearIt)
             {
-                ex constraint = (*linearIt).first->rhs();
+                Polynomial constraint = (*linearIt).first->rhs();
                 GiNaC::numeric res = 0;
                 bool isLeftInfty = false;
                 bool isRightInfty = false;
@@ -2325,7 +2306,7 @@ namespace smtrat
                     if (is_exactly_a<mul>(*constrIt))
                     {
                         // summand has a coefficient != 1
-                        ex mul = *constrIt;
+                        Polynomial mul = *constrIt;
                         GiNaC::numeric tmpres = 1;
                         GiNaC::numeric lBound = 1;
                         GiNaC::numeric uBound = 1;
@@ -2361,7 +2342,7 @@ namespace smtrat
                                     tmpres *= ex_to<numeric>(*mulIt);
                                 }
                             }
-                            else if (is_exactly_a<symbol>(*mulIt))
+                            else if (is_exactly_a<carl::Variable>(*mulIt))
                             {
                                 // variable - nonlinear or linear?
                                 std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.find(ex_to<symbol>(*mulIt).get_name());
@@ -2492,7 +2473,7 @@ namespace smtrat
                 {
                     for ( auto infSetIt = (*vecIt).begin(); infSetIt != (*vecIt).end(); ++infSetIt )
                     {
-                        ex newConstraint = (*infSetIt)->constraint().lhs();
+                        Polynomial newConstraint = (*infSetIt)->constraint().lhs();
 
                         // if the failed constraint is not a centerConstraint - Ignore centerConstraints
                         if ( mCenterConstraints.find((*infSetIt)->pConstraint()) == mCenterConstraints.end() )
@@ -2734,7 +2715,7 @@ namespace smtrat
             // if spliting constraint or the constraint resulting from a contraction
             // of the splitting constraint is included in the infeasible subset
             // skip the right box and continue.
-            const symbol variable = _basis->variable();
+            const carl::Variable variable = _basis->variable();
             assert( mIntervals.find(variable) != mIntervals.end() );
             if ( _basis->stateInfeasibleConstraintsContainSplit() )
             {
@@ -2884,7 +2865,7 @@ namespace smtrat
 
         for ( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
         {            
-            const symbol tmpSymbol = ex_to<symbol>((*variablesIt).second);
+            const carl::Variable tmpSymbol = ex_to<symbol>((*variablesIt).second);
             std::map<string, icp::IcpVariable*>::iterator icpVar = mVariables.find(tmpSymbol.get_name());
             assert(icpVar != mVariables.end());
             if ( icpVar != mVariables.end() )
@@ -2894,11 +2875,11 @@ namespace smtrat
                     // generate both bounds, left first
                     assert( mIntervals.find(tmpSymbol) != mIntervals.end() );
                     numeric bound = GiNaC::rationalize( mIntervals.at(tmpSymbol).left() );
-                    GiNaC::ex leftEx = tmpSymbol - bound;
+                    Polynomial leftEx = tmpSymbol - bound;
                     GiNaC::symtab variables;
-                    variables.insert(std::pair<string, ex>((*variablesIt).first, tmpSymbol));
+                    variables.insert(std::pair<string, Polynomial>((*variablesIt).first, tmpSymbol));
 
-//                    ex test = ex( tmpSymbol - (*variablesIt).second ).expand();
+//                    Polynomial test = Polynomial( tmpSymbol - (*variablesIt).second ).expand();
 //                    cout << "Test: " << test << endl;
                     
                     const Constraint* leftTmp;
@@ -2937,7 +2918,7 @@ namespace smtrat
 
                     // right:
                     bound = GiNaC::rationalize(mIntervals.at(tmpSymbol).right());
-                    GiNaC::ex rightEx = tmpSymbol - bound;
+                    Polynomial rightEx = tmpSymbol - bound;
 
                     const Constraint* rightTmp;
                     switch (mIntervals.at(tmpSymbol).rightType())
@@ -3072,7 +3053,7 @@ namespace smtrat
         GiNaC::symtab originalRealVariables = mpReceivedFormula->realValuedVars();
         for ( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
         {
-            const symbol tmpSymbol = ex_to<symbol>((*variablesIt).second);
+            const carl::Variable tmpSymbol = ex_to<symbol>((*variablesIt).second);
             if ( _map.find(tmpSymbol) != _map.end() )
             {
                 std::map<string, icp::IcpVariable*>::iterator pos = mVariables.find(tmpSymbol.get_name());
@@ -3130,7 +3111,7 @@ namespace smtrat
     {
         if( _deduction->getType() == CONSTRAINT )
         {
-            ex lhs = _deduction->constraint().lhs();
+            Polynomial lhs = _deduction->constraint().lhs();
             GiNaC::symtab variables = _deduction->constraint().variables();
             GiNaC::symtab newVariables;
             // create symtab for variables for the new constraint
@@ -3139,7 +3120,7 @@ namespace smtrat
                 assert(mSubstitutions.find((*symbolIt).second) != mSubstitutions.end());
                 if ( mSubstitutions[(*symbolIt).second] != (*symbolIt).second )
                 {
-                    std::vector<symbol>* tmpVariables = new std::vector<symbol>;
+                    std::vector<carl::Variable>* tmpVariables = new std::vector<carl::Variable>;
                     mIcp.searchVariables(mSubstitutions[(*symbolIt).second], tmpVariables);
 
                     while (!tmpVariables->empty())

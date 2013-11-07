@@ -26,9 +26,7 @@
  *
  * Created on October 16, 2012, 1:07 PM
  */
-
-#ifndef ICPMODULE_H
-#define ICPMODULE_H
+#pragma once
 
 //#define ICP_BOXLOG
 #define BOXMANAGEMENT
@@ -73,7 +71,7 @@ namespace smtrat
             {
                 bool operator ()( const lra::Variable<lra::Numeric>* lhs, const lra::Variable<lra::Numeric>* rhs ) const
                 {
-                    return (lhs->expression() < rhs->expression());
+                    return (lhs->expression().hash() < rhs->expression().hash());
                 }
             };
             
@@ -99,8 +97,8 @@ namespace smtrat
                 double                     weight;
             };
 
-            typedef set<icp::ContractionCandidate*, icp::contractionCandidateComp>                      ContractionCandidates;
-            typedef std::map<ex*, weights, ex_is_less>                             WeightMap;
+            typedef std::set<icp::ContractionCandidate*, icp::contractionCandidateComp>                      ContractionCandidates;
+            typedef FastPointerMap<Polynomial*, weights>                             WeightMap;
             
 
         private:
@@ -112,17 +110,15 @@ namespace smtrat
             std::map<icp::ContractionCandidate*, unsigned, icp::contractionCandidateComp>       mActiveNonlinearConstraints; // nonlinear candidates considered
             std::map<icp::ContractionCandidate*, unsigned, icp::contractionCandidateComp>       mActiveLinearConstraints; // linear candidates considered
             std::map<const lra::Variable<lra::Numeric>*, ContractionCandidates>                 mLinearConstraints; // all linear candidates
-            std::map<const Constraint*, ContractionCandidates, constraintPointerComp>           mNonlinearConstraints; // all nonlinear candidates
+            std::map<const Constraint*, ContractionCandidates>                                  mNonlinearConstraints; // all nonlinear candidates
             
-//            GiNaCRA::ICP                                                                        mIcp; // ICP algorithm for contraction
-            
-            std::map<string, icp::IcpVariable*>                                                 mVariables; // list of occurring variables
+            std::map<carl::Variable, icp::IcpVariable*>                                            mVariables; // list of occurring variables
             EvalDoubleIntervalMap                                                               mIntervals; // actual intervals relevant for contraction
             std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
             
-            std::map<const Constraint*, const Constraint*, constraintIdComp>                    mReplacements; // linearized constraint -> original constraint
-            std::map<const ex, symbol, icp::ExComp>                                             mLinearizations; // monome -> variable
-            GiNaC::exmap                                                                        mSubstitutions; // variable -> monome/variable
+            std::map<const Constraint*, const Constraint*>                    mReplacements; // linearized constraint -> original constraint
+            FastMap<Polynomial, carl::Variable>                              mLinearizations; // monome -> variable
+            FastMap<Polynomial, const Polynomial>                           mSubstitutions; // variable -> monome/variable
             
             icp::HistoryNode*                                                                   mHistoryRoot; // Root-Node of the state-tree
             icp::HistoryNode*                                                                   mHistoryActual; // Actual node of the state-tree
@@ -133,7 +129,7 @@ namespace smtrat
             RuntimeSettings*                                                                    mLraRuntimeSettings;
             LRAModule                                                                           mLRA; // internal LRA module
             
-            std::set<const Constraint*, constraintPointerComp>                                  mCenterConstraints; // keeps actual centerConstaints for deletion
+            std::set<const Constraint*>                                  mCenterConstraints; // keeps actual centerConstaints for deletion
             std::set<Formula*>                                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
             #ifdef RAISESPLITTOSATSOLVER
@@ -182,7 +178,7 @@ namespace smtrat
             /**
              * Creates ContractionCandidates from all items in mTemporaryMonomes and empties mTemporaryMonomes.
              */
-            ex createContractionCandidates(icp::ExToConstraintMap& _tempMonomes );
+            Polynomial createContractionCandidates(FastMap<Polynomial, const Constraint*>& _tempMonomes );
             
             /**
              * Initiates weights for contractions
@@ -217,7 +213,7 @@ namespace smtrat
              * Update all affected candidates and reinsert them into icpRelevantCandidates
              * @param _var
              */
-            void updateRelevantCandidates(symbol _var, double _relativeContraction );
+            void updateRelevantCandidates(carl::Variable _var, double _relativeContraction );
             
             /**
              * Method to determine the next combination of variable and constraint to be contracted
@@ -240,14 +236,14 @@ namespace smtrat
              * @param _relativeContraction
              * @param _intervals
              */
-            void tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, GiNaCRA::evaldoubleintervalmap _intervals );
+            void tryContraction( icp::ContractionCandidate* _selection, double& _relativeContraction, EvalDoubleIntervalMap _intervals );
             
             /**
              * Selects the next splitting direction according to different heuristics.
              * @param _targetDiameter
              * @return 
              */
-            const double calculateSplittingImpact ( const GiNaC::symbol& _var, icp::ContractionCandidate& _candidate ) const;
+            const double calculateSplittingImpact ( const carl::Variable& _var, icp::ContractionCandidate& _candidate ) const;
             
             /**
              * Checks if there is a need for a split and manages the splitting and branching in the
@@ -255,7 +251,7 @@ namespace smtrat
              * @param _targetDiameter
              * @return if a split has happened and in which dimension.
              */
-            std::pair<bool,symbol> checkAndPerformSplit( const double& _targetDiameter );
+            std::pair<bool,carl::Variable> checkAndPerformSplit( const double& _targetDiameter );
             
             /**
              * Creates constraints from the given interval and adds them to the
@@ -263,7 +259,7 @@ namespace smtrat
              * @param _interval given interval
              * @param _variable variable corresponding to the given interval
              */
-            void addFormulaFromInterval( const GiNaCRA::DoubleInterval* _interval, const symbol& _variable );
+            void addFormulaFromInterval( const carl::DoubleInterval* _interval, const carl::Variable& _variable );
 
             /**
              * Validates the actual intervals against the linear feasible region returned
@@ -328,7 +324,7 @@ namespace smtrat
              * @param _map
              * @return 
              */
-            std::set<const Formula*> constraintReasonHull( ConstraintSet& _reasons );
+            std::set<const Formula*> constraintReasonHull( std::set<const Constraint*>& _reasons );
             
             /**
              * generates and sets the infeasible subset
@@ -339,7 +335,7 @@ namespace smtrat
              * creates constraints for the actual bounds of the original variables.
              * @return 
              */
-            std::vector<Formula*> createConstraintsFromBounds( const GiNaCRA::evaldoubleintervalmap& _map );
+            std::vector<Formula*> createConstraintsFromBounds( const EvalDoubleIntervalMap& _map );
             
             void replaceConstraints( Formula*& _formula ) const
             {
@@ -356,7 +352,6 @@ namespace smtrat
                     {
                         if( (*subformula)->getType() == CONSTRAINT )
                         {
-                            (*subformula)->print();
                             auto iter = mReplacements.find( (*subformula)->pConstraint() );
                             assert( iter != mReplacements.end() );
                             Formula* constraintFormula = new Formula( iter->second ); 
@@ -412,5 +407,3 @@ namespace smtrat
             void printIntervals();
     };
 }    // namespace smtrat
-
-#endif   /* ICPMODULE_H */

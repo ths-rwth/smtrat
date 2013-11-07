@@ -41,7 +41,6 @@ namespace smtrat
     
     class ContractionCandidateManager;
     
-    template<typename NumberType>
     class ContractionCandidate
     {
         friend ContractionCandidateManager;
@@ -102,13 +101,14 @@ namespace smtrat
             mId(_original.id()),
             mIsLinear(_original.isLinear()),
             mActive(_original.isActive()),
+            mDerived(_original.isDerived()),
             mRWA(_original.RWA()),
             mLastPayoff(_original.lastPayoff())
             {
                 mOrigin.insert(_original.origin().begin(), _original.origin().end());
             }
 
-            ContractionCandidate( symbol _lhs, const Polynomial _rhs, const Constraint* _constraint, carl::Variable _derivationVar, const Formula* _origin, unsigned _id ):
+            ContractionCandidate( carl::Variable _lhs, const Polynomial _rhs, const Constraint* _constraint, carl::Variable _derivationVar, const Formula* _origin, unsigned _id ):
             mRhs(_rhs),
             mConstraint(_constraint),
             mLhs(_lhs),
@@ -118,6 +118,7 @@ namespace smtrat
             mId(_id),
             mIsLinear(true),
             mActive(false),
+            mDerived(false),
             mRWA(1),
             mLastPayoff(0)
             {
@@ -139,6 +140,7 @@ namespace smtrat
             mId(_id),
             mIsLinear(false),
             mActive(false),
+            mDerived(false),
             mRWA(1),
             mLastPayoff(0)
             {
@@ -148,10 +150,7 @@ namespace smtrat
             * Destructor:
             */
             ~ContractionCandidate()
-            {
-                if ( !isLinear() )
-                    delete mConstraint;
-            }
+            {}
 
             /**
              * Functions:
@@ -273,8 +272,11 @@ namespace smtrat
 
             void calcDerivative() throw ()
             {
-                if( mDerivative == Polynomial )
-                    mDerivative = mRhs.diff( mDerivationVar );
+                if( !mDerived )
+                {
+                    mDerivative = mRhs.derivative(mDerivationVar);
+                    mDerived = true;
+                }
             }
 
             void activate()
@@ -291,6 +293,11 @@ namespace smtrat
             {
                 return mActive;
             }
+            
+            const bool isDerived() const
+            {
+                return mDerived;
+            }
 
             void resetWeights()
             {
@@ -298,7 +305,7 @@ namespace smtrat
                 mRWA = 0;
             }
 
-            void print( ostream& _out = std::cout ) const
+            void print( std::ostream& _out = std::cout ) const
             {
                 _out << mId << ": \t" << mRhs << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
 //                _out << mId << ": \t" << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
@@ -314,7 +321,7 @@ namespace smtrat
                     }
                 }
 #else
-                cout << ", #Origins: " << mOrigin.size() << endl;
+                _out << ", #Origins: " << mOrigin.size() << std::endl;
 #endif
             }
 
