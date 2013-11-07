@@ -106,7 +106,9 @@ int main( int argc, char* argv[] )
     // Parse command line.
     pathToInputFile = settingsManager.parseCommandline( argc, argv );
     
+    #ifdef SMTRAT_DEVOPTION_Statistics
     smtrat::CollectStatistics::settings->setPrintStats( settingsManager.printStatistics() );
+    #endif
 
     // Parse input.
     smtrat::Driver parser;
@@ -117,7 +119,9 @@ int main( int argc, char* argv[] )
     solver->rDebugOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
     std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules( solver );
     
+    #ifdef SMTRAT_DEVOPTION_Statistics
     smtrat::CollectStatistics::settings->rOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
+    #endif
     
     // Introduce the settingsObjects from the modules to the manager.
     settingsManager.addSettingsObject( settingsObjects );
@@ -242,7 +246,7 @@ int main( int argc, char* argv[] )
     // Delete the solver and the formula.
     delete solver;
     delete parserSettings;
-    
+        
     #ifdef SMTRAT_DEVOPTION_Statistics
     // Export statistics.
     smtrat::CollectStatistics::exportXML();
