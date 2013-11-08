@@ -40,18 +40,23 @@ namespace smtrat
         return mInstance;
     }
     
-    ContractionCandidate* ContractionCandidateManager::createCandidate ( symbol _lhs, const ex _rhs, const Constraint* _constraint, symbol _derivationVar, const Formula* _origin )
+    ContractionCandidate* ContractionCandidateManager::createCandidate (carl::Variable _lhs, 
+                                                                        const Polynomial _rhs,
+                                                                        const Constraint* _constraint,
+                                                                        carl::Variable _derivationVar,
+                                                                        Contractor<carl::SimpleNewton>& _contractor,
+                                                                        const Formula* _origin )
     {        
         ContractionCandidate* tmp;
         
         // Todo: Is it better to make the replacement here instead of outside?
         if ( _origin == NULL )
         {
-            tmp = new ContractionCandidate(_lhs, _rhs, _constraint, _derivationVar, mCurrentId);
+            tmp = new ContractionCandidate(_lhs, _rhs, _constraint, _derivationVar, _contractor, mCurrentId);
         }
         else
         {
-            tmp = new ContractionCandidate(_lhs, _rhs, _constraint, _derivationVar, _origin, mCurrentId);    
+            tmp = new ContractionCandidate(_lhs, _rhs, _constraint, _derivationVar, _contractor, _origin, mCurrentId);    
         }
         
         std::pair<std::map<unsigned, ContractionCandidate*>::iterator, bool> insertionResult = mCandidates.insert(std::make_pair(mCurrentId,tmp));
@@ -115,7 +120,7 @@ namespace smtrat
             {
                 for ( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
                 {
-                    if ( (*candidateIt).second->lhs() == ex_to<symbol>((*symbolIt).second) )
+                    if ( (*candidateIt).second->lhs() == (*symbolIt) )
                     {
                         mInstance->closure((*candidateIt).second, _candidates);
                     }

@@ -35,6 +35,7 @@
 #include "carl/core/MultivariatePolynomial.h"
 #include "carl/interval/DoubleInterval.h"
 #include "carl/interval/IntervalEvaluation.h"
+#include "carl/interval/Contraction.h"
 
 namespace smtrat
 {
@@ -141,6 +142,9 @@ namespace smtrat
     using FastPointerMapB = std::unordered_map<const T1*, T2, pointerHashWithNull<T1>, pointerEqualWithNull<T1>>;
     
     typedef FastMap<Polynomial,unsigned> Factorization;
+    
+    template<template<typename> class Operator>
+    using Contractor = carl::Contraction<Operator, Polynomial>;
     
     // Constants.
     

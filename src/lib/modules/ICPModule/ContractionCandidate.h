@@ -33,7 +33,8 @@
 //#define CCPRINTORIGINS
 
 #include "../../Formula.h"
-#include "ContractionCandidateManager.h"
+//#include "ContractionCandidateManager.h"
+#include "../../Common.h"
 
 namespace smtrat
 {
@@ -67,11 +68,12 @@ namespace smtrat
              */
 //            const Constraint* mConstraint;
             const Polynomial          mRhs;
-            const Constraint* mConstraint;
+            const Constraint*         mConstraint;
+            Contractor<carl::SimpleNewton>&  mContractor;
             
-            carl::Variable      mLhs;
-            carl::Variable      mDerivationVar;
-            Polynomial          mDerivative;
+            carl::Variable            mLhs;
+            carl::Variable            mDerivationVar;
+            Polynomial                mDerivative;
             std::set<const Formula*,originComp> mOrigin;
             unsigned    mId;
             bool        mIsLinear;
@@ -94,6 +96,7 @@ namespace smtrat
             ContractionCandidate( const ContractionCandidate& _original ):
             mRhs(_original.rhs()),
             mConstraint(_original.constraint()),
+            mContractor(_original.contractor()),
             mLhs(_original.lhs()),
             mDerivationVar(_original.derivationVar()),
             mDerivative(_original.derivative()),
@@ -108,9 +111,10 @@ namespace smtrat
                 mOrigin.insert(_original.origin().begin(), _original.origin().end());
             }
 
-            ContractionCandidate( carl::Variable _lhs, const Polynomial _rhs, const Constraint* _constraint, carl::Variable _derivationVar, const Formula* _origin, unsigned _id ):
+            ContractionCandidate( carl::Variable _lhs, const Polynomial _rhs, const Constraint* _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, const Formula* _origin, unsigned _id ):
             mRhs(_rhs),
             mConstraint(_constraint),
+            mContractor(_contractor),
             mLhs(_lhs),
             mDerivationVar(_derivationVar),
             mDerivative(),
@@ -130,9 +134,10 @@ namespace smtrat
              * @param _constraint
              * @param _derivationVar
              */
-            ContractionCandidate( carl::Variable _lhs, const Polynomial _rhs, const Constraint* _constraint, carl::Variable _derivationVar, unsigned _id ):
+            ContractionCandidate( carl::Variable _lhs, const Polynomial _rhs, const Constraint* _constraint, carl::Variable _derivationVar, Contractor<carl::SimpleNewton>& _contractor, unsigned _id ):
             mRhs(_rhs),
             mConstraint(_constraint),
+            mContractor(_contractor),
             mLhs(_lhs),
             mDerivationVar(_derivationVar),
             mDerivative(),
@@ -164,6 +169,16 @@ namespace smtrat
             const Constraint* constraint() const
             {
                 return mConstraint;
+            }
+            
+            Contractor<carl::SimpleNewton>& contractor() const
+            {
+                return mContractor;
+            }
+            
+            bool contract(EvalDoubleIntervalMap& _intervals, carl::DoubleInterval& _resA, carl::DoubleInterval& _resB)
+            {
+                return mContractor(_intervals, mDerivationVar, _resA, _resB);
             }
 
             const carl::Variable& derivationVar() const

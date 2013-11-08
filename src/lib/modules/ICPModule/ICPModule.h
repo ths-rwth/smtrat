@@ -53,6 +53,9 @@ namespace smtrat
     class ICPModule:
         public Module
     {
+        template<template<typename> class Operator>
+        using Contractor = carl::Contraction<Operator, Polynomial>;
+        
         public:
 
             /**
@@ -112,13 +115,14 @@ namespace smtrat
             std::map<const lra::Variable<lra::Numeric>*, ContractionCandidates>                 mLinearConstraints; // all linear candidates
             std::map<const Constraint*, ContractionCandidates>                                  mNonlinearConstraints; // all nonlinear candidates
             
-            std::map<carl::Variable, icp::IcpVariable*>                                            mVariables; // list of occurring variables
+            std::map<carl::Variable, icp::IcpVariable*>                                         mVariables; // list of occurring variables
             EvalDoubleIntervalMap                                                               mIntervals; // actual intervals relevant for contraction
             std::set<std::pair<double, unsigned>, comp>                                         mIcpRelevantCandidates; // candidates considered for contraction 
             
-            std::map<const Constraint*, const Constraint*>                    mReplacements; // linearized constraint -> original constraint
-            FastMap<Polynomial, carl::Variable>                              mLinearizations; // monome -> variable
-            FastMap<Polynomial, const Polynomial>                           mSubstitutions; // variable -> monome/variable
+            std::map<const Constraint*, const Constraint*>                                      mReplacements; // linearized constraint -> original constraint
+            FastMap<Polynomial, carl::Variable>                                                 mLinearizations; // monome -> variable
+            FastMap<Polynomial, const Polynomial>                                               mSubstitutions; // variable -> monome/variable
+            FastMap<Polynomial, Contractor<carl::SimpleNewton> >                                mContractors;
             
             icp::HistoryNode*                                                                   mHistoryRoot; // Root-Node of the state-tree
             icp::HistoryNode*                                                                   mHistoryActual; // Actual node of the state-tree
@@ -133,7 +137,7 @@ namespace smtrat
             std::set<Formula*>                                                                  mCreatedDeductions; // keeps pointers to the created deductions for deletion
             icp::ContractionCandidate*                                                          mLastCandidate; // the last applied candidate
             #ifdef RAISESPLITTOSATSOLVER
-            std::queue<std::set<const Formula*> >                                            mBoxStorage; // keeps the box before contraction
+            std::queue<std::set<const Formula*> >                                               mBoxStorage; // keeps the box before contraction
             #endif
             bool                                                                                mIsIcpInitialized; // initialized ICPModule?
             unsigned                                                                            mCurrentId; // keeps the currentId of the state nodes

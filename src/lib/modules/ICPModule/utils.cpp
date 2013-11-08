@@ -187,7 +187,7 @@ namespace smtrat
             }
         }
 
-        bool isBoundIn( const ex _var, const Constraint* _constraint )
+        bool isBoundIn( const carl::Variable _var, const Constraint* _constraint )
         {
             if( is_exactly_a<symbol>( _var ) )
                 return (isBound( _constraint ) && _constraint->hasVariable( ex_to<symbol>( _var ).get_name() ));
