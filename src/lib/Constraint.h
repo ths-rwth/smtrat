@@ -433,7 +433,7 @@ namespace smtrat
 namespace std
 {
     template<>
-    class hash<smtrat::Constraint>
+    struct hash<smtrat::Constraint>
     {
     public:
         size_t operator()( const smtrat::Constraint& _constraint ) const 

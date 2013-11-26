@@ -215,7 +215,7 @@ namespace smtrat
                 #ifdef LRA_REFINEMENT
                 std::map<Variable<T>*, LearnedBound> mLearnedLowerBounds;
                 std::map<Variable<T>*, LearnedBound> mLearnedUpperBounds;
-                std::vector<class std::map<Variable<T>*, LearnedBound>::iterator> mNewLearnedBounds;
+                std::vector<typename std::map<Variable<T>*, LearnedBound>::iterator> mNewLearnedBounds;
                 #endif
 
                 class Iterator
@@ -388,7 +388,7 @@ namespace smtrat
                     return mLearnedUpperBounds;
                 }
                 
-                std::vector<class std::map<Variable<T>*, LearnedBound>::iterator>& rNewLearnedBounds()
+                std::vector<typename std::map<Variable<T>*, LearnedBound>::iterator>& rNewLearnedBounds()
                 {
                     return mNewLearnedBounds;
                 }
@@ -594,8 +594,8 @@ namespace smtrat
             Variable<T>* var = new Variable<T>( mHeight++, true, _poly, mDefaultBoundPosition );
             mRows.push_back( TableauHead() );
             EntryID currentStartEntryOfRow = LAST_ENTRY_ID;
-            class std::vector< Variable<T>* >::const_iterator basicVar = _nonbasicVariables.begin();
-            class std::vector< T >::iterator coeff = _coefficients.begin();
+            typename std::vector< Variable<T>* >::const_iterator basicVar = _nonbasicVariables.begin();
+            typename std::vector< T >::iterator coeff = _coefficients.begin();
             while( basicVar != _nonbasicVariables.end() )
             {
                 EntryID entryID = newTableauEntry( *coeff );
@@ -1681,7 +1681,7 @@ namespace smtrat
                  * Found an upper refinement.
                  */
                 Value<T>* newlimit = new Value<T>();
-                class std::vector< const Bound<T>* >::iterator bound = uPremise->begin();
+                typename std::vector< const Bound<T>* >::iterator bound = uPremise->begin();
                 Iterator rowEntry = Iterator( _row.mStartEntry, mpEntries );
                 while( true )
                 {
@@ -1694,7 +1694,7 @@ namespace smtrat
                  * Learn that the strongest weaker upper bound should be activated.
                  */
                 Variable<T>& bvar = *_row.mName;
-                const class Bound<T>::BoundSet& upperBounds = bvar.upperbounds();
+                const typename Bound<T>::BoundSet& upperBounds = bvar.upperbounds();
                 auto ubound = upperBounds.begin();
                 while( ubound != upperBounds.end() )
                 {
@@ -1732,7 +1732,7 @@ namespace smtrat
                     delete newlimit;
                     learnedBound.newBound = NULL;
                     #endif
-                    std::pair<class std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedUpperBounds.insert( std::pair<Variable<T>*, LearnedBound>( _row.mName, learnedBound ) );
+                    std::pair<typename std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedUpperBounds.insert( std::pair<Variable<T>*, LearnedBound>( _row.mName, learnedBound ) );
                     if( !insertionResult.second )
                     {
                         if( *learnedBound.nextWeakerBound < *insertionResult.first->second.nextWeakerBound )
@@ -1761,7 +1761,7 @@ namespace smtrat
                  * Found an lower refinement.
                  */
                 Value<T>* newlimit = new Value<T>();
-                class std::vector< const Bound<T>* >::iterator bound = lPremise->begin();
+                typename std::vector< const Bound<T>* >::iterator bound = lPremise->begin();
                 Iterator rowEntry = Iterator( _row.mStartEntry, mpEntries );
                 while( true )
                 {
@@ -1774,7 +1774,7 @@ namespace smtrat
                  * Learn that the strongest weaker lower bound should be activated.
                  */
                 Variable<T>& bvar = *_row.mName;
-                const class Bound<T>::BoundSet& lowerBounds = bvar.lowerbounds();
+                const typename Bound<T>::BoundSet& lowerBounds = bvar.lowerbounds();
                 auto lbound = lowerBounds.rbegin();
                 while( lbound != lowerBounds.rend() )
                 {
@@ -1812,7 +1812,7 @@ namespace smtrat
                     delete newlimit;
                     learnedBound.newBound = NULL;
                     #endif
-                    std::pair<class std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedLowerBounds.insert( std::pair<Variable<T>*, LearnedBound>( _row.mName, learnedBound ) );
+                    std::pair<typename std::map<Variable<T>*, LearnedBound>::iterator, bool> insertionResult = mLearnedLowerBounds.insert( std::pair<Variable<T>*, LearnedBound>( _row.mName, learnedBound ) );
                     if( !insertionResult.second )
                     {
                         if( *learnedBound.nextWeakerBound > *insertionResult.first->second.nextWeakerBound )
@@ -3180,7 +3180,7 @@ namespace smtrat
             char     frameSign     = '-';
             _out << _init << std::setw( _maxEntryLength * (mWidth + 1) ) << std::setfill( frameSign ) << "" << std::endl;
             _out << _init << std::setw( _maxEntryLength ) << std::setfill( ' ' ) << "#";
-            for( class std::vector<TableauHead>::const_iterator column = mColumns.begin(); column != mColumns.end(); ++column )
+            for( typename std::vector<TableauHead>::const_iterator column = mColumns.begin(); column != mColumns.end(); ++column )
             {
                 std::stringstream out;
                 out << *column->mName->pExpression();
@@ -3189,7 +3189,7 @@ namespace smtrat
             _out << std::endl;
             _out << _init << std::setw( _maxEntryLength * (mWidth + 1) ) << std::setfill( '#' ) << "" << std::endl;
             _out << std::setfill( ' ' );
-            for( class std::vector<TableauHead>::const_iterator row = mRows.begin(); row != mRows.end(); ++row )
+            for( typename std::vector<TableauHead>::const_iterator row = mRows.begin(); row != mRows.end(); ++row )
             {
                 _out << _init;
                 std::stringstream out;

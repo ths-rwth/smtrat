@@ -205,7 +205,7 @@ namespace vs
 namespace std
 {
     template<>
-    class hash<vs::Substitution>
+    struct hash<vs::Substitution>
     {
     public:
         size_t operator()( const vs::Substitution& _substitution ) const 

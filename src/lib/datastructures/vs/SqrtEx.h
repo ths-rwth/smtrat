@@ -217,7 +217,7 @@ namespace vs
 namespace std
 {
     template<>
-    class hash<vs::SqrtEx>
+    struct hash<vs::SqrtEx>
     {
     public:
         size_t operator()( const vs::SqrtEx& _sqrtEx ) const 

@@ -53,8 +53,8 @@ namespace vs
     {
         // Initialize the current combination. If there is nothing to combine or an empty vector to combine with, return the empty vector.
         if( _toCombine.empty() ) return true;
-        std::vector< class std::vector< std::vector< combineType* > >::const_iterator > combination 
-            = std::vector< class std::vector< std::vector< combineType* > >::const_iterator >();
+        std::vector<typename std::vector< std::vector< combineType* > >::const_iterator > combination 
+            = std::vector<typename std::vector< std::vector< combineType* > >::const_iterator >();
         unsigned estimatedResultSize = 1;
         for( auto iter = _toCombine.begin(); iter != _toCombine.end(); ++iter )
         {

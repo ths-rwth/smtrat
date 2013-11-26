@@ -371,7 +371,7 @@ namespace smtrat
             cout << endl;
             #endif
             // Find a pivoting element in the tableau.
-            class pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
+            struct pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
             #ifdef DEBUG_LRA_MODULE
             cout << "    Next pivoting element: ";
             mTableau.printEntry( pivotingElement.first, cout );
@@ -686,7 +686,7 @@ Return:
      */
     void LRAModule::learnRefinements()
     {
-        map<Variable<Numeric>*, class Tableau<Numeric>::LearnedBound>& llBs = mTableau.rLearnedLowerBounds();
+        map<Variable<Numeric>*, typename Tableau<Numeric>::LearnedBound>& llBs = mTableau.rLearnedLowerBounds();
         while( !llBs.empty() )
         {
             auto originsIterA = llBs.begin()->second.nextWeakerBound->origins().begin();
@@ -729,7 +729,7 @@ Return:
             llBs.erase( llBs.begin() );
             delete toDelete;
         }
-        map<Variable<Numeric>*, class Tableau<Numeric>::LearnedBound>& luBs = mTableau.rLearnedUpperBounds();
+        map<Variable<Numeric>*, typename Tableau<Numeric>::LearnedBound>& luBs = mTableau.rLearnedUpperBounds();
         while( !luBs.empty() )
         {
             auto originsIterA = luBs.begin()->second.nextWeakerBound->origins().begin();

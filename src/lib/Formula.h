@@ -853,7 +853,7 @@ namespace smtrat
              * @param _variableIds Maps variable names to names, which shall be used instead in the result.
              * @return The string, which represents all variables occurring in this formula in a row, separated by the given separator.
              */
-            std::string variableListToString( std::string _separator = ",", const std::unordered_map<std::string, std::string>& _variableIds = std::unordered_map<std::string, std::string>() ) const;
+            std::string variableListToString( std::string _separator = ",", const std::unordered_map<std::string, std::string>& _variableIds = (std::unordered_map<std::string, std::string>())) const;
             
             /**
              * @param _type The formula type to get the string representation for.

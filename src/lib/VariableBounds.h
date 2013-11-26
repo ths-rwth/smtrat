@@ -663,7 +663,7 @@ namespace smtrat
             const Rational& coeff = _constraint->lhs().lterm()->coeff();
             Constraint::Relation rel = _constraint->relation();
             Rational* limit = new Rational( -_constraint->constantPart()/coeff );
-            std::pair< class Variable<T>::BoundSet::iterator, bool> result;
+            std::pair< typename Variable<T>::BoundSet::iterator, bool> result;
             if( rel == Constraint::EQ )
             {
                 Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::EQUAL_BOUND );
@@ -715,7 +715,7 @@ namespace smtrat
             if( _changedBound.isUpperBound() )
             {
                 // Update the supremum.
-                class Variable<T>::BoundSet::iterator newBound = mUpperbounds.begin();
+                typename Variable<T>::BoundSet::iterator newBound = mUpperbounds.begin();
                 while( newBound != mUpperbounds.end() )
                 {
                     if( (*newBound)->isActive() )
@@ -729,7 +729,7 @@ namespace smtrat
             if( _changedBound.isLowerBound() )
             {
                 // Update the infimum.
-                class Variable<T>::BoundSet::reverse_iterator newBound = mLowerbounds.rbegin();
+                typename Variable<T>::BoundSet::reverse_iterator newBound = mLowerbounds.rbegin();
                 while( newBound != mLowerbounds.rend() )
                 {
                     if( (*newBound)->isActive() )
@@ -773,7 +773,7 @@ namespace smtrat
                 const carl::Variable& var = *_constraint->variables().begin();
                 if( _constraint->maxDegree( var ) == 1 )
                 {
-                    class VariableBounds<T>::ConstraintBoundMap::iterator cbPair = mpConstraintBoundMap->find( _constraint );
+                    typename VariableBounds<T>::ConstraintBoundMap::iterator cbPair = mpConstraintBoundMap->find( _constraint );
                     if( cbPair != mpConstraintBoundMap->end() )
                     {
                         const Bound<T>& bound = *cbPair->second;
@@ -787,7 +787,7 @@ namespace smtrat
                     {
                         Variable<T>* variable;
                         const Bound<T>* bound;
-                        class VariableBounds<T>::VariableMap::iterator evPair = mpVariableMap->find( var );
+                        typename VariableBounds<T>::VariableMap::iterator evPair = mpVariableMap->find( var );
                         if( evPair != mpVariableMap->end() )
                         {
                             variable = evPair->second;
@@ -994,7 +994,7 @@ namespace smtrat
         const carl::DoubleInterval& VariableBounds<T>::getDoubleInterval( const carl::Variable& _var )
         {
             assert( mpConflictingVariable == NULL );
-            class VariableMap::iterator varVarPair = mpVariableMap->find( _var );
+            typename VariableMap::iterator varVarPair = mpVariableMap->find( _var );
             assert( varVarPair != mpVariableMap->end() );
             Variable<T>& var = *varVarPair->second;
             if( var.updatedDoubleInterval() )

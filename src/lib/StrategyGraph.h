@@ -40,7 +40,7 @@ namespace smtrat
 {
     typedef bool (*ConditionEvaluation)( Condition );
 
-    static bool isCondition( Condition _condition )
+    static inline bool isCondition( Condition _condition )
     {
         return PROP_TRUE <= _condition;
     }
