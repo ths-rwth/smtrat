@@ -160,19 +160,19 @@ command:
 	|	OB GET_PROOF CB                         { dv.getProof(); }
 	|	OB GET_UNSAT_CORE CB                    { dv.getUnsatCore(); }
 	|	OB GET_ASSERTIONS CB                    { dv.getAssertions(); }
-	|	OB DECLARE_CONST SYM SYM CB             { dv.addVariable( yyloc, $3, $4 ); }
-	| 	OB DECLARE_FUN SYM OB CB SYM CB         { dv.addVariable( yyloc, $3, $6 ); }
-	| 	OB DECLARE_FUN SYM OB symlist CB SYM CB { error( yyloc, "Declaration of function with arguments is not allowed in supported logics!" );
+	|	OB DECLARE_CONST SYM SYM CB             { dv.addVariable( @3, $3, $4 ); }
+	| 	OB DECLARE_FUN SYM OB CB SYM CB         { dv.addVariable( @3, $3, $6 ); }
+	| 	OB DECLARE_FUN SYM OB symlist CB SYM CB { error( @3, "Declaration of function with arguments is not allowed in supported logics!" );
                                                   delete $3; delete $7; dv.free( $5 ); }
-    |   OB DECLARE_SORT SYM NUM CB              { error( yyloc, "Declaration of types are not allowed in supported logics!" );
+        |   OB DECLARE_SORT SYM NUM CB              { error( @3, "Declaration of types are not allowed in supported logics!" );
                                                   delete $3; delete $4; }
-	| 	OB DEFINE_FUN SYM OB CB SYM CB          { error( yyloc, "Definition of functions are not allowed in supported logics!" );
+	| 	OB DEFINE_FUN SYM OB CB SYM CB          { error( @3, "Definition of functions are not allowed in supported logics!" );
                                                   delete $3; delete $6; }
-	| 	OB DEFINE_FUN SYM OB symlist CB SYM CB  { error( yyloc, "Definition of functions are not allowed in supported logics!" );
+	| 	OB DEFINE_FUN SYM OB symlist CB SYM CB  { error( @3, "Definition of functions are not allowed in supported logics!" );
                                                   delete $3; delete $7; dv.free( $5 ); }
-	| 	OB DEFINE_SORT SYM OB CB SYM CB         { error( yyloc, "Definition of types are not allowed in supported logics!" );
+	| 	OB DEFINE_SORT SYM OB CB SYM CB         { error( @3, "Definition of types are not allowed in supported logics!" );
                                                   delete $3; delete $6; }
-	| 	OB DEFINE_SORT SYM OB symlist CB SYM CB { error( yyloc, "Definition of types are not allowed in supported logics!" );
+	| 	OB DEFINE_SORT SYM OB symlist CB SYM CB { error( @3, "Definition of types are not allowed in supported logics!" );
                                                   delete $3; delete $7; dv.free( $5 ); }
 	|	OB EXIT CB
 
@@ -196,12 +196,12 @@ value:
     |   FALSE { $$ = new string( "false" ); }
 
 form:
-        BOOLEAN_VAR                   { $$ = dv.mkBoolean( yyloc, $1 ); }
+        BOOLEAN_VAR                   { $$ = dv.mkBoolean( @1, $1 ); }
     |   TRUE                          { $$ = dv.mkTrue(); }
     |   FALSE                         { $$ = dv.mkFalse(); }
     |   equation                      { $$ = $1; }
     |   OB relation poly poly CB      { $$ = dv.mkConstraint( $3, $4, $2 ); }
-    |   OB AS SYM SYM CB              { error( yyloc, "\"as\" is not allowed in supported logics!" ); }
+    |   OB AS SYM SYM CB              { error( @0, "\"as\" is not allowed in supported logics!" ); }
 	|	OB negation form CB           { $$ = $3; dv.changePolarity(); }
 	|	OB impliesOp form             { dv.changePolarity(); } 
                           form CB     { $$ = dv.mkFormula( $2, $3, $5 ); }
@@ -256,15 +256,15 @@ bindlist:
 	|	bind bindlist { $$ = $2; if( $1 != NULL ) { $$->push_back( $1 ); } }
 
 bind:
-        OB SYM poly CB { $$ = dv.addTheoryBinding( yyloc, $2, $3 ); }
-	|	OB SYM form CB { $$ = dv.booleanBinding( yyloc, $2, $3 ); }
+        OB SYM poly CB { $$ = dv.addTheoryBinding( @2, $2, $3 ); }
+	|	OB SYM form CB { $$ = dv.booleanBinding( @2, $2, $3 ); }
 
 poly:
-        THEORY_VAR                 { $$ = dv.mkPolynomial( yyloc, $1 ); }
+        THEORY_VAR                 { $$ = dv.mkPolynomial( @1, $1 ); }
     |   DEC                        { $$ = new smtrat::Polynomial( dv.getRational( $1 ) ); }
     | 	NUM                        { $$ = new smtrat::Polynomial( smtrat::Rational( $1->c_str() ) ); delete $1; }
     |  	polyOp                     { $$ = $1; }
-    |   OB iteOp cond poly poly CB { $$ = new smtrat::Polynomial( dv.mkIteInExpr( yyloc, $3, $4, $5 ) ); }
+    |   OB iteOp cond poly poly CB { $$ = new smtrat::Polynomial( dv.mkIteInExpr( @3, $3, $4, $5 ) ); }
     
 iteOp:
 		ITE { dv.setPolarity( true ); dv.setTwoFormulaMode( true ); }
