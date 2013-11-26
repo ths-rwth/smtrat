@@ -95,7 +95,6 @@ set( libraries pthread )
 # TODO: add support for version number
 find_package( GiNaC REQUIRED )
 find_package( GiNaCRA REQUIRED )
-include_directories ( ~/Master/ginacra/build/include/ginacra )
 set( libraries ${libraries} ${GINACRA_LIBRARY} ${GINAC_LIBRARY} )
 
 #notice that GiNacra might use log4cplus, but we cannot currently support that as Ginacra does not export this knowledge.
