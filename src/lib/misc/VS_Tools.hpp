@@ -37,7 +37,7 @@ const unsigned MAX_NUM_OF_COMBINATION_RESULT = 1000;
 namespace vs
 {
     // Type and object definitions:
-    template <class elementType> struct pointedSetComp
+    template <typename elementType> struct pointedSetComp
     {
         bool operator() ( const std::set< elementType >* const set1,
                           const std::set< elementType >* const set2 )
@@ -45,14 +45,14 @@ namespace vs
             return (*set1)<(*set2);
         }
     };
-    template <class elementType> struct pointedSetOfPointedSetComp
+    template <typename elementType> struct pointedSetOfPointedSetComp
     {
         bool operator() ( const std::set< std::set< elementType >*, pointedSetComp< elementType > >* const set1,
                           const std::set< std::set< elementType >*, pointedSetComp< elementType > >* const set2 )
         {
-            class std::set< std::set< elementType >*	  ,
+            typename std::set< std::set< elementType >*	  ,
                             pointedSetComp< elementType > >::const_iterator elem1 = (*set1).begin();
-            class std::set< std::set< elementType >*	  ,
+            typename std::set< std::set< elementType >*	  ,
                             pointedSetComp< elementType > >::const_iterator elem2 = (*set2).begin();
             while( elem1!=(*set1).end() && elem2!=(*set2).end() )
             {
@@ -92,7 +92,7 @@ namespace vs
      * @param _toCombine 	The vectors to combine.
      * @param _combination 	The resulting combination.
      */
-    template <class combineType> bool combine
+    template <typename combineType> bool combine
     (
         const std::vector< std::vector< std::vector< combineType* > > >& _toCombine  ,
         std::vector< std::vector< combineType* > >&					     _combination
@@ -100,8 +100,8 @@ namespace vs
     {
         // Initialize the current combination. If there is nothing to combine or an empty vector to combine with, return the empty vector.
         if( _toCombine.empty() ) return true;
-        std::vector< class std::vector< std::vector< combineType* > >::const_iterator > combination 
-            = std::vector< class std::vector< std::vector< combineType* > >::const_iterator >();
+        std::vector< typename std::vector< std::vector< combineType* > >::const_iterator > combination 
+            = std::vector< typename std::vector< std::vector< combineType* > >::const_iterator >();
         unsigned estimatedResultSize = 1;
         for( auto iter = _toCombine.begin(); iter != _toCombine.end(); ++iter )
         {

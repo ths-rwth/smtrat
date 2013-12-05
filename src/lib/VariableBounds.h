@@ -37,12 +37,12 @@ namespace smtrat
 {
     namespace vb
     {
-        template <class T> class Variable;
+        template <typename T> class Variable;
 
         /**
          * Class for the bound of a variable.
          */
-        template <class T> class Bound
+        template <typename T> class Bound
         {
             public:
                 enum Type { STRICT_LOWER_BOUND = 0, WEAK_LOWER_BOUND = 1, EQUAL_BOUND = 2, WEAK_UPPER_BOUND = 3, STRICT_UPPER_BOUND = 4 };
@@ -67,7 +67,7 @@ namespace smtrat
                 ~Bound();
 
                 bool operator <( const Bound<T>& ) const;
-                template <class T1> friend std::ostream& operator <<( std::ostream&, const Bound<T1>& );
+                template <typename T1> friend std::ostream& operator <<( std::ostream&, const Bound<T1>& );
                 void print( std::ostream&, bool = false ) const;
 
                 const GiNaC::numeric& limit() const
@@ -137,7 +137,7 @@ namespace smtrat
         /**
          * Class for a variable.
          */
-        template <class T> class Variable
+        template <typename T> class Variable
         {
             struct boundPointerComp
             {
@@ -238,7 +238,7 @@ namespace smtrat
         /**
          * Class to manage the bounds of a variable.
          */
-        template <class T> class VariableBounds
+        template <typename T> class VariableBounds
         {
 
                 typedef std::map< const Constraint*, const Bound<T>*, constraintPointerComp > ConstraintBoundMap;
@@ -307,7 +307,7 @@ namespace smtrat
          * @param _variable The variable to which this bound belongs.
          * @param _type The type of the bound (either it is an equal bound or it is weak resp. strict and upper resp. lower)
          */
-        template<class T>
+        template<typename T>
         Bound<T>::Bound( GiNaC::numeric* const _limit, Variable<T>* const _variable, Type _type ):
             mType( _type ),
             mpLimit( _limit ),
@@ -320,7 +320,7 @@ namespace smtrat
         /**
          * Destructor for a bound.
          */
-        template<class T>
+        template<typename T>
         Bound<T>::~Bound()
         {
             mpOrigins->clear();
@@ -339,7 +339,7 @@ namespace smtrat
          *                      A equals B, where A and B are rationals, but A is an equal bound but B is not;
          *         False,   otherwise.
          */
-        template<class T>
+        template<typename T>
         bool Bound<T>::operator <( const Bound<T>& _bound ) const
         {
             if( isUpperBound() && _bound.isUpperBound() )
@@ -418,7 +418,7 @@ namespace smtrat
          * @param _bound The bound to print.
          * @return The output stream after printing the bound on it.
          */
-        template<class T>
+        template<typename T>
         std::ostream& operator <<( std::ostream& _ostream, const Bound<T>& _bound )
         {
             if( _bound.isInfinite() )
@@ -444,7 +444,7 @@ namespace smtrat
          * @param _out
          * @param _withRelation
          */
-        template<class T>
+        template<typename T>
         void Bound<T>::print( std::ostream& _out, bool _withRelation ) const
         {
             if( _withRelation )
@@ -476,7 +476,7 @@ namespace smtrat
         /**
          * Constructor of a variable.
          */
-        template<class T>
+        template<typename T>
         Variable<T>::Variable():
             mUpdatedA( true ),
             mUpdatedB( true ),
@@ -492,7 +492,7 @@ namespace smtrat
         /**
          * Destructor of a variable.
          */
-        template<class T>
+        template<typename T>
         Variable<T>::~Variable()
         {
             while( !mLowerbounds.empty() )
@@ -513,7 +513,7 @@ namespace smtrat
          * 
          * @return 
          */
-        template<class T>
+        template<typename T>
         bool Variable<T>::conflicting() const
         {
             if( mpSupremum->isInfinite() || mpInfimum->isInfinite() )
@@ -542,14 +542,14 @@ namespace smtrat
          * @param _var Hence, the variable x.
          * @return The added bound.
          */
-        template<class T>
+        template<typename T>
         const Bound<T>* Variable<T>::addBound( const Constraint* _constraint, const GiNaC::ex& _var, const T* _origin, const GiNaC::numeric& _limit )
         {
             assert( _constraint->variables().size() == 1 && _constraint->maxDegree( _var ) == 1 );
             GiNaC::numeric coeff = GiNaC::ex_to<GiNaC::numeric>( _constraint->coefficient( _var, 1 ) );
             Constraint_Relation rel = _constraint->relation();
             GiNaC::numeric* limit = new GiNaC::numeric( -_constraint->constantPart()/coeff );
-            std::pair< class Variable<T>::BoundSet::iterator, bool> result;
+            std::pair< typename Variable<T>::BoundSet::iterator, bool> result;
             if( rel == CR_EQ )
             {
                 Bound<T>* newBound = new Bound<T>( limit, this, Bound<T>::EQUAL_BOUND );
@@ -614,7 +614,7 @@ namespace smtrat
          * @return True,  if there is a conflict;
          *         False, otherwise.
          */
-        template<class T>
+        template<typename T>
         bool Variable<T>::updateBounds( const Bound<T>& _changedBound )
         {
             mUpdatedA = true;
@@ -622,7 +622,7 @@ namespace smtrat
             if( _changedBound.isUpperBound() )
             {
                 // Update the supremum.
-                class Variable<T>::BoundSet::iterator newBound = mUpperbounds.begin();
+                typename Variable<T>::BoundSet::iterator newBound = mUpperbounds.begin();
                 while( newBound != mUpperbounds.end() )
                 {
                     if( (*newBound)->isActive() )
@@ -636,7 +636,7 @@ namespace smtrat
             if( _changedBound.isLowerBound() )
             {
                 // Update the infimum.
-                class Variable<T>::BoundSet::reverse_iterator newBound = mLowerbounds.rbegin();
+                typename Variable<T>::BoundSet::reverse_iterator newBound = mLowerbounds.rbegin();
                 while( newBound != mLowerbounds.rend() )
                 {
                     if( (*newBound)->isActive() )
@@ -653,7 +653,7 @@ namespace smtrat
         /**
          * Constructor for the variable bounds.
          */
-        template<class T>
+        template<typename T>
         VariableBounds<T>::VariableBounds():
             mBoundsChanged( false ),
             mpConflictingVariable( NULL ),
@@ -666,7 +666,7 @@ namespace smtrat
         /**
          * Destructor for the variable bounds.
          */
-        template<class T>
+        template<typename T>
         VariableBounds<T>::~VariableBounds()
         {
             mpConstraintBoundMap->clear();
@@ -687,7 +687,7 @@ namespace smtrat
          * @return True, if the variable bounds have been changed;
          *         False, otherwise.
          */
-        template<class T>
+        template<typename T>
         bool VariableBounds<T>::addBound( const Constraint* _constraint, const T* _origin )
         {
             if( _constraint->relation() != CR_NEQ && _constraint->variables().size() == 1 )
@@ -695,7 +695,7 @@ namespace smtrat
                 const GiNaC::ex& var = _constraint->variables().begin()->second;
                 if( _constraint->maxDegree( var ) == 1 )
                 {
-                    class VariableBounds<T>::ConstraintBoundMap::iterator cbPair = mpConstraintBoundMap->find( _constraint );
+                    typename VariableBounds<T>::ConstraintBoundMap::iterator cbPair = mpConstraintBoundMap->find( _constraint );
                     if( cbPair != mpConstraintBoundMap->end() )
                     {
                         const Bound<T>& bound = *cbPair->second;
@@ -711,7 +711,7 @@ namespace smtrat
                     {
                         Variable<T>* variable;
                         const Bound<T>* bound;
-                        class VariableBounds<T>::ExVariableMap::iterator evPair = mpExVariableMap->find( var );
+                        typename VariableBounds<T>::ExVariableMap::iterator evPair = mpExVariableMap->find( var );
                         if( evPair != mpExVariableMap->end() )
                         {
                             variable = evPair->second;
@@ -758,7 +758,7 @@ namespace smtrat
          *         1         , if the constraint was a (not the strictest) bound;
          *         0         , otherwise.
          */
-        template<class T>
+        template<typename T>
         const GiNaC::ex VariableBounds<T>::removeBound( const Constraint* _constraint, const T* _origin )
         {
             if( _constraint->relation() != CR_NEQ && _constraint->variables().size() == 1 )
@@ -793,7 +793,7 @@ namespace smtrat
          *
          * @return The variable bounds as an evalintervalmap.
          */
-        template<class T>
+        template<typename T>
         const GiNaCRA::evalintervalmap& VariableBounds<T>::getEvalIntervalMap()
         {
             assert( mpConflictingVariable == NULL );
@@ -839,11 +839,11 @@ namespace smtrat
          * @param The variable to compute the variable bounds as interval for.
          * @return The variable bounds as an interval.
          */
-        template<class T>
+        template<typename T>
         const GiNaCRA::Interval& VariableBounds<T>::getInterval( const GiNaC::ex& _var )
         {
             assert( mpConflictingVariable == NULL );
-            class ExVariableMap::iterator exVarPair = mpExVariableMap->find( _var );
+            typename ExVariableMap::iterator exVarPair = mpExVariableMap->find( _var );
             assert( exVarPair != mpExVariableMap->end() );
             Variable<T>& var = *exVarPair->second;
             if( var.updatedA() )
@@ -883,7 +883,7 @@ namespace smtrat
          *
          * @return The variable bounds as an interval map.
          */
-        template<class T>
+        template<typename T>
         const GiNaCRA::evaldoubleintervalmap& VariableBounds<T>::getIntervalMap()
         {
             assert( mpConflictingVariable == NULL );
@@ -929,11 +929,11 @@ namespace smtrat
          * @param The variable to compute the variable bounds as double interval for.
          * @return The variable bounds as an interval.
          */
-        template<class T>
+        template<typename T>
         const GiNaCRA::DoubleInterval& VariableBounds<T>::getDoubleInterval( const GiNaC::ex& _var )
         {
             assert( mpConflictingVariable == NULL );
-            class ExVariableMap::iterator exVarPair = mpExVariableMap->find( _var );
+            typename ExVariableMap::iterator exVarPair = mpExVariableMap->find( _var );
             assert( exVarPair != mpExVariableMap->end() );
             Variable<T>& var = *exVarPair->second;
             if( var.updatedB() )
@@ -974,11 +974,11 @@ namespace smtrat
          * @param _variables The variables to take into account.
          * @return A set of origins corresponding to the supremums and infimums of the given variables.
          */
-        template<class T>
+        template<typename T>
         std::set< const T* > VariableBounds<T>::getOriginsOfBounds( const GiNaC::symbol& _var ) const
         {
             std::set< const T* > originsOfBounds = std::set< const T* >();
-            class ExVariableMap::iterator exVarPair = mpExVariableMap->find( _var );
+            typename ExVariableMap::iterator exVarPair = mpExVariableMap->find( _var );
             assert( exVarPair != mpExVariableMap->end() );
             if( !exVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *exVarPair->second->infimum().origins().begin() );
             if( !exVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *exVarPair->second->supremum().origins().begin() );
@@ -991,13 +991,13 @@ namespace smtrat
          * @param _variables The variables to take into account.
          * @return A set of origins corresponding to the supremums and infimums of the given variables.
          */
-        template<class T>
+        template<typename T>
         std::set< const T* > VariableBounds<T>::getOriginsOfBounds( const GiNaC::symtab& _variables ) const
         {
             std::set< const T* > originsOfBounds = std::set< const T* >();
             for( auto var = _variables.begin(); var != _variables.end(); ++var )
             {
-                class ExVariableMap::iterator exVarPair = mpExVariableMap->find( var->second );
+                typename ExVariableMap::iterator exVarPair = mpExVariableMap->find( var->second );
                 assert( exVarPair != mpExVariableMap->end() );
                 if( !exVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *exVarPair->second->infimum().origins().begin() );
                 if( !exVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *exVarPair->second->supremum().origins().begin() );
@@ -1010,7 +1010,7 @@ namespace smtrat
          *
          * @return A set of origins corresponding to the supremums and infimums of all variables.
          */
-        template<class T>
+        template<typename T>
         std::set< const T* > VariableBounds<T>::getOriginsOfBounds() const
         {
             std::set< const T* > originsOfBounds = std::set< const T* >();
@@ -1028,7 +1028,7 @@ namespace smtrat
          *
          * @param _out The output stream to print on.
          */
-        template<class T>
+        template<typename T>
         void VariableBounds<T>::print( std::ostream& _out, const std::string _init, bool _printAllBounds ) const
         {
             for( auto exVarPair = mpExVariableMap->begin(); exVarPair != mpExVariableMap->end(); ++exVarPair )

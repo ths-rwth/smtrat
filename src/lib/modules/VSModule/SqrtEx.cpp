@@ -78,7 +78,7 @@ namespace vs
         mpRadicand( new ex( _factor == 0 ? 0 : _radicand ) ),
         mVariables()
     {
-        assert( _denominator != 0 );
+        assert( !_denominator.is_zero() );
         assert( !_radicand.info( info_flags::rational ) || _radicand.info( info_flags::nonnegative ) );
         if( hasSqrt() )
         {

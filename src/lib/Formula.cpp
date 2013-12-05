@@ -1680,7 +1680,7 @@ namespace smtrat
                 if( withVariables )
                 { // add the variables
                     result += "( ex( {";
-                    result += variableListToString( "," );
+                    result += variableListToString( ",", std::unordered_map<string, string>() );
                     result += "}, (";
                     // Make pseudo Booleans.
                     for( std::set< std::string, strCmp >::const_iterator j = mBooleanVars.begin(); j != mBooleanVars.end(); ++j )

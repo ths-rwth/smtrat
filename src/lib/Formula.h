@@ -599,7 +599,7 @@ namespace smtrat
             static bool resolveNegation( Formula&, bool = true );
             static std::string FormulaTypeToString( Type type);
 
-            std::string variableListToString(std::string seperator = ",", const std::unordered_map<string, string>& variableIds = std::unordered_map<string, string>()) const;
+            std::string variableListToString(std::string seperator, const std::unordered_map<string, string>& variableIds) const;
             std::string toRedlogFormat(bool withVariables = true) const;
             std::string toQepcadFormat(bool withVariables, const std::unordered_map<string, string>& variableIds) const;
 

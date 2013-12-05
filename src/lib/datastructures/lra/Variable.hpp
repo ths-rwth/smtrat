@@ -37,7 +37,7 @@ namespace smtrat
 {
     namespace lra
     {
-        template<class T>
+        template<typename T>
         class Variable
         {
             private:
@@ -47,8 +47,8 @@ namespace smtrat
                  */
                 bool                     mBasic;
                 unsigned                 mPosition;
-                class Bound<T>::BoundSet mUpperbounds;
-                class Bound<T>::BoundSet mLowerbounds;
+                typename Bound<T>::BoundSet mUpperbounds;
+                typename Bound<T>::BoundSet mLowerbounds;
                 const Bound<T>*          mpSupremum;
                 const Bound<T>*          mpInfimum;
                 const GiNaC::ex*         mExpression;
@@ -149,22 +149,22 @@ namespace smtrat
                     return mUpperbounds.size();
                 }
 
-                const class Bound<T>::BoundSet& upperbounds() const
+                const typename Bound<T>::BoundSet& upperbounds() const
                 {
                     return mUpperbounds;
                 }
 
-                const class Bound<T>::BoundSet& lowerbounds() const
+                const typename Bound<T>::BoundSet& lowerbounds() const
                 {
                     return mLowerbounds;
                 }
 
-                class Bound<T>::BoundSet& rUpperbounds()
+                typename Bound<T>::BoundSet& rUpperbounds()
                 {
                     return mUpperbounds;
                 }
 
-                class Bound<T>::BoundSet& rLowerbounds()
+                typename Bound<T>::BoundSet& rLowerbounds()
                 {
                     return mLowerbounds;
                 }
@@ -195,7 +195,7 @@ namespace smtrat
                 void printAllBounds( std::ostream& = std::cout, const std::string = "" ) const;
         };
 
-        template<class T>
+        template<typename T>
         Variable<T>::Variable( unsigned _position, bool _basic, const GiNaC::ex* _expression, smtrat::Formula::iterator _defaultBoundPosition ):
             mBasic( _basic ),
             mPosition( _position ),
@@ -208,7 +208,7 @@ namespace smtrat
             mpInfimum  = addLowerBound( NULL, _defaultBoundPosition ).first;
         }
 
-        template<class T>
+        template<typename T>
         Variable<T>::~Variable()
         {
             while( !mLowerbounds.empty() )
@@ -230,16 +230,16 @@ namespace smtrat
          * @param _val
          * @return
          */
-        template<class T>
+        template<typename T>
         std::pair<const Bound<T>*, std::pair<const Bound<T>*, const Bound<T>*> > Variable<T>::addUpperBound( Value<T>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
         {
-            class Bound<T>::Info* boundInfo = new class Bound<T>::Info();
+            typename Bound<T>::Info* boundInfo = new typename Bound<T>::Info();
             boundInfo->updated = 0;
             boundInfo->position = _position;
             boundInfo->neqRepresentation = NULL;
             boundInfo->exists = false;
             const Bound<T>* newBound = new Bound<T>( _val, this, Bound<T>::UPPER, _constraint, boundInfo, _deduced );
-            std::pair<class Bound<T>::BoundSet::iterator, bool> result = mUpperbounds.insert( newBound );
+            std::pair<typename Bound<T>::BoundSet::iterator, bool> result = mUpperbounds.insert( newBound );
             if( !result.second )
             {
                 delete newBound;
@@ -281,15 +281,15 @@ namespace smtrat
          * @param _val
          * @return
          */
-        template<class T>
+        template<typename T>
         std::pair<const Bound<T>*,std::pair<const Bound<T>*, const Bound<T>*> > Variable<T>::addLowerBound( Value<T>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint, bool _deduced )
         {
-            class Bound<T>::Info* boundInfo = new class Bound<T>::Info();
+            typename Bound<T>::Info* boundInfo = new typename Bound<T>::Info();
             boundInfo->updated = 0;
             boundInfo->position = _position;
             boundInfo->neqRepresentation = NULL;
             const Bound<T>* newBound = new Bound<T>( _val, this, Bound<T>::LOWER, _constraint, boundInfo, _deduced );
-            std::pair<class Bound<T>::BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
+            std::pair<typename Bound<T>::BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
             if( !result.second )
             {
                 delete newBound;
@@ -328,16 +328,16 @@ namespace smtrat
          * @param _val
          * @return
          */
-        template<class T>
+        template<typename T>
         std::pair<const Bound<T>*,std::pair<const Bound<T>*, const Bound<T>*> > Variable<T>::addEqualBound( Value<T>* const _val, smtrat::Formula::iterator _position, const smtrat::Constraint* _constraint )
         {
-            class Bound<T>::Info* boundInfo = new class Bound<T>::Info();
+            typename Bound<T>::Info* boundInfo = new typename Bound<T>::Info();
             boundInfo->updated = 0;
             boundInfo->position = _position;
             boundInfo->neqRepresentation = NULL;
             boundInfo->exists = false;
             const Bound<T>* newBound = new Bound<T>( _val, this, Bound<T>::EQUAL, _constraint, boundInfo );
-            std::pair<class Bound<T>::BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
+            std::pair<typename Bound<T>::BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
             if( !result.second )
             {
                 delete newBound;
@@ -355,7 +355,7 @@ namespace smtrat
                         break;
                     }
                 }
-                std::pair<class Bound<T>::BoundSet::iterator, bool> result = mUpperbounds.insert( newBound );
+                std::pair<typename Bound<T>::BoundSet::iterator, bool> result = mUpperbounds.insert( newBound );
                 ++result.first;
                 const Bound<T>* nextWeakerUpperBound = NULL;
                 while( result.first != mUpperbounds.end() )
@@ -375,7 +375,7 @@ namespace smtrat
          *
          * @param bound
          */
-        template<class T>
+        template<typename T>
         void Variable<T>::deactivateBound( const Bound<T>* bound, smtrat::Formula::iterator _position )
         {
             assert( !bound->isInfinite() );
@@ -388,7 +388,7 @@ namespace smtrat
                 if( mpSupremum == bound )
                 {
                     //find the supremum
-                    class Bound<T>::BoundSet::iterator newBound = mUpperbounds.begin();
+                    typename Bound<T>::BoundSet::iterator newBound = mUpperbounds.begin();
                     while( newBound != --mUpperbounds.end() )
                     {
                         if( (*newBound)->isActive() )
@@ -409,7 +409,7 @@ namespace smtrat
                 if( mpInfimum == bound )
                 {
                     //find the infimum
-                    class Bound<T>::BoundSet::reverse_iterator newBound = mLowerbounds.rbegin();
+                    typename Bound<T>::BoundSet::reverse_iterator newBound = mLowerbounds.rbegin();
                     while( newBound != --mLowerbounds.rend() )
                     {
                         if( (*newBound)->isActive() )
@@ -429,7 +429,7 @@ namespace smtrat
          *
          * @return
          */
-        template<class T>
+        template<typename T>
         GiNaCRA::Interval Variable<T>::getVariableBounds() const
         {
             GiNaCRA::Interval::BoundType lowerBoundType;
@@ -464,7 +464,7 @@ namespace smtrat
          *
          * @return
          */
-        template<class T>
+        template<typename T>
         std::set< const smtrat::Formula* > Variable<T>::getDefiningOrigins() const
         {
             std::set< const smtrat::Formula* > result = std::set< const smtrat::Formula* >();
@@ -483,7 +483,7 @@ namespace smtrat
          *
          * @param _out
          */
-        template<class T>
+        template<typename T>
         void Variable<T>::print( std::ostream& _out ) const
         {
             std::stringstream out;
@@ -498,18 +498,18 @@ namespace smtrat
             _out << std::setw( 1 ) << "]";
         }
 
-        template<class T>
+        template<typename T>
         void Variable<T>::printAllBounds( std::ostream& _out, const std::string _init ) const
         {
             _out << _init << " Upper bounds: " << std::endl;
-            for( class Bound<T>::BoundSet::const_iterator bIter = mUpperbounds.begin(); bIter != mUpperbounds.end(); ++bIter )
+            for( typename Bound<T>::BoundSet::const_iterator bIter = mUpperbounds.begin(); bIter != mUpperbounds.end(); ++bIter )
             {
                 _out << _init << "     ";
                 (*bIter)->print( true, _out, true );
                 _out << " [" << (*bIter)->pInfo()->updated << "]" << std::endl;
             }
             _out << _init << " Lower bounds: " << std::endl;
-            for( class Bound<T>::BoundSet::const_reverse_iterator bIter = mLowerbounds.rbegin(); bIter != mLowerbounds.rend(); ++bIter )
+            for( typename Bound<T>::BoundSet::const_reverse_iterator bIter = mLowerbounds.rbegin(); bIter != mLowerbounds.rend(); ++bIter )
             {
                 _out << _init << "     ";
                 (*bIter)->print( true, _out, true );

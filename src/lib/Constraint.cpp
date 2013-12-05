@@ -870,7 +870,6 @@ namespace smtrat
     void Constraint::setBoundProperties( const symbol& _var, const numeric& _constantPart )
     {
         assert( variables().size() == 1 );
-        assert( variables().begin()->second == _var );
         assert( lhs()-_var-_constantPart == 0 || lhs()+_var-_constantPart == 0 );
         mIsNeverPositive = false;
         mIsNeverNegative = false;

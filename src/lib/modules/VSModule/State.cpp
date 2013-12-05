@@ -327,10 +327,10 @@ namespace vs
             {
                 for( auto subResComb = subResultCombination().begin(); subResComb != subResultCombination().end(); ++subResComb )
                 {
-                    if( subResComb->first < 0 || subResComb->first >= substitutionResults().size() )
+                    if( subResComb->first >= substitutionResults().size() )
                         return true;
                     else
-                        if( subResComb->second < 0 || subResComb->second >= mpSubstitutionResults->at( subResComb->first ).size()
+                        if( subResComb->second >= mpSubstitutionResults->at( subResComb->first ).size()
                             || mpSubstitutionResults->at( subResComb->first ).size() == 0 )
                         {
                             return true;
@@ -2546,7 +2546,7 @@ namespace vs
         if( !isRoot() )
         {
             _out << _initiation + "   " << "Substitution: ";
-            substitution().print( _out );
+            substitution().print( false, false, _out );
         }
         printSubstitutionResults( _initiation + "   ", _out );
         _out << _initiation << endl;

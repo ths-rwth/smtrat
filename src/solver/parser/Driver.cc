@@ -976,7 +976,7 @@ namespace smtrat
      */
     numeric* Driver::getNumeric( const string& _numString ) const
     {
-        unsigned pos = _numString.find('.');
+        size_t pos = _numString.find('.');
         if( pos != string::npos )
         {
             unsigned numDecDigits = _numString.size()-pos-1;

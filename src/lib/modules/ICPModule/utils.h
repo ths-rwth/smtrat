@@ -21,7 +21,7 @@ namespace smtrat
     {
         struct ExComp
         {           
-            bool operator() (const ex _lhs, const ex _rhs)
+            bool operator() (const ex& _lhs, const ex& _rhs) const
             {
                 GiNaC::symtab lhsVariables;
                 GiNaC::symtab rhsVariables;
@@ -36,11 +36,11 @@ namespace smtrat
                 for( auto symbolIt = rhsVar->begin(); symbolIt != rhsVar->end(); ++symbolIt)
                     rhsVariables.insert( std::make_pair((*symbolIt).get_name(), *symbolIt) );
 
-                bool result = (*this)(_lhs, lhsVariables, _rhs, rhsVariables);
+                bool result = this->operator()(_lhs, lhsVariables, _rhs, rhsVariables);
                 return result;
             }
 
-            bool operator() (const ex _lhs, const GiNaC::symtab _lhsVariables, const ex _rhs, const GiNaC::symtab _rhsVariables )
+            bool operator() (const ex& _lhs, const GiNaC::symtab& _lhsVariables, const ex& _rhs, const GiNaC::symtab& _rhsVariables ) const
             {
                 if( (*_lhsVariables.begin()).first < (*_rhsVariables.begin()).first )
                     return true;

@@ -28,7 +28,6 @@
  */
 
 #include <map>
-#include <bits/stl_set.h>
 
 #include "ICPModule.h"
 #include "assert.h"
@@ -148,7 +147,7 @@ namespace smtrat
                         }
                     }
                     informLRA = false;
-                    assert(lhs != 0);
+                    assert(!lhs.is_zero());
                 }
                 
                 assert(temporaryMonomes.empty());
@@ -2038,7 +2037,7 @@ namespace smtrat
     {
         double impact = 0;
         assert(mIntervals.count(_var) > 0);
-        assert(_var == _candidate.derivationVar());
+        //assert(_var == _candidate.derivationVar()); // must be uncommented in order to be compilable with clang++
         double originalDiameter = mIntervals.at(_var).diameter();
         switch(mSplittingStrategy)
         {
