@@ -29,7 +29,7 @@ public :
         CollectStatistics::registerStats(child);
     }
     virtual void collect() {}
-    virtual void print( std::ostream& _out = std::cout, bool _smtlib = false, bool _withBraces = false, unsigned _maxNameLength = 0, unsigned _maxKeyLength = 0 )
+    void print( std::ostream& _out = std::cout, bool _smtlib = false, bool _withBraces = false, unsigned _maxNameLength = 0, unsigned _maxKeyLength = 0 )
     {
         if( _smtlib )
         {
