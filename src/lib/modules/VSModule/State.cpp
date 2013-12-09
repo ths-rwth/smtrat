@@ -944,10 +944,10 @@ namespace vs
                 addCondition( (**newCond).pConstraint(), (**newCond).originalConditions(), (**newCond).valuation(), true );
             while( !newCombination.empty() )
             {
-                const Condition*& rpCond = newCombination.back();
+                // const Condition*& rpCond = newCombination.back();
                 newCombination.pop_back();
-                delete rpCond;
-                rpCond = NULL;
+                // delete rpCond; // TODO: this has to be done maybe in some situations or somewhere else
+                // rpCond = NULL;
             }
         }
         mType = TEST_CANDIDATE_TO_GENERATE;
