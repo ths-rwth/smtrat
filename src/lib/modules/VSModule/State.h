@@ -32,8 +32,8 @@
 #include "Substitution.h"
 #include "../../misc/VS_Tools.hpp"
 #include "config.h"
-#ifdef SMTRAT_VS_VARIABLEBOUNDS
 #include "../../VariableBounds.h"
+#ifdef SMTRAT_VS_VARIABLEBOUNDS
 #define SMTRAT_VS_VARIABLEBOUNDS_B
 #endif
 
@@ -54,7 +54,7 @@ namespace vs
         
         typedef smtrat::FastPointerMapB<Substitution,ConditionSetSetSet> ConflictSets;
         typedef std::vector< std::pair< ConditionList, bool > > 		 SubstitutionResult;
-        typedef std::vector< SubstitutionResult > 						 SubstitutionResults;
+        typedef std::vector< SubstitutionResult > 						 SubstitutionResults;   
         typedef std::vector< std::pair< unsigned, unsigned > >           SubResultCombination;
         typedef smtrat::vb::VariableBounds< Condition >                  VariableBoundsCond;
     private:
@@ -433,7 +433,7 @@ namespace vs
         /**
          * @return A pointer to the substitution of this state, which is NULL, if this state is the root.
          */
-        const Substitution* const pSubstitution() const
+        const Substitution* pSubstitution() const
         {
             return mpSubstitution;
         }
@@ -593,9 +593,9 @@ namespace vs
          * Sets the pointer of the original condition of this state to the given pointer to a condition.
          * @param _pOCondition The pointer to set the original condition to.
          */
-        void setOriginalCondition( const Condition* const _pOCondition )
+        void setOriginalCondition( const Condition* _pOCondition )
         {
-            mpOriginalCondition=_pOCondition;
+            mpOriginalCondition = _pOCondition;
         }
 
         /**
@@ -736,7 +736,7 @@ namespace vs
          *                      (NULL in the case a detected conflict without substitution)
          * @param _condSetSet The conflicts to add.
          */
-        void addConflictSet( const Substitution* const _substitution, ConditionSetSet& _condSetSet );
+        void addConflictSet( const Substitution* _substitution, ConditionSetSet& _condSetSet );
         
         /**
          * Adds all conflicts to all sets of the conflict set of the given substitution.
@@ -744,7 +744,7 @@ namespace vs
          *                      (NULL in the case a detected conflict without substitution)
          * @param _condSetSet The conflicts to add.
          */
-        void addConflicts( const Substitution* const _substitution, ConditionSetSet& _condSetSet );
+        void addConflicts( const Substitution* _substitution, ConditionSetSet& _condSetSet );
         
         /**
          * Clears the conflict sets.

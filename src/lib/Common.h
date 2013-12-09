@@ -51,7 +51,7 @@ namespace smtrat
     template<typename T> 
     struct pointerEqual
     {
-        bool operator()( const T* const _argA, const T* const _argB ) const
+        bool operator()( const T* _argA, const T* _argB ) const
         {
             return (*_argA)==(*_argB);
         }
@@ -60,7 +60,7 @@ namespace smtrat
     template<typename T> 
     struct pointerEqualWithNull
     {
-        bool operator()( const T* const _argA, const T* const _argB ) const
+        bool operator()( const T* _argA, const T* _argB ) const
         {
             if( _argA == NULL || _argB == NULL )
                 return _argA == _argB;
@@ -71,7 +71,7 @@ namespace smtrat
     template<typename T> 
     struct pointerLess
     {
-        bool operator()( const T* const _argA, const T* const _argB ) const
+        bool operator()( const T* _argA, const T* _argB ) const
         {
             return (*_argA)<(*_argB);
         }
@@ -80,7 +80,7 @@ namespace smtrat
     template<typename T> 
     struct pointerHash
     {
-        size_t operator()( const T* const _arg ) const
+        size_t operator()( const T* _arg ) const
         {
             return std::hash<T>()( *_arg );
         }
@@ -89,7 +89,7 @@ namespace smtrat
     template<typename T> 
     struct pointerHashWithNull
     {
-        size_t operator()( const T* const _arg ) const
+        size_t operator()( const T* _arg ) const
         {
             if( _arg == NULL )
                 return 0;

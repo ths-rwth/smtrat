@@ -1484,7 +1484,7 @@ namespace smtrat
     {
         bool changedPassedFormula = false;
         // Collect the constraints to check.
-        PointerMap<Constraint,const vs::Condition* const> constraintsToCheck = PointerMap<Constraint,const vs::Condition* const>();
+        PointerMap<Constraint,const vs::Condition*> constraintsToCheck = PointerMap<Constraint,const vs::Condition*>();
         for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
         {
             if( (*cond)->flag() )
@@ -1495,23 +1495,23 @@ namespace smtrat
                     case Constraint::GEQ:
                     {
                         const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), Constraint::GREATER );
-                        constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( strictVersion, *cond ) );
+                        constraintsToCheck.insert( pair< const Constraint*, const vs::Condition*>( strictVersion, *cond ) );
                         break;
                     }
                     case Constraint::LEQ:
                     {
                         const Constraint* strictVersion = Formula::newConstraint( constraint->lhs(), Constraint::LESS );
-                        constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( strictVersion, *cond ) );
+                        constraintsToCheck.insert( pair< const Constraint*, const vs::Condition*>( strictVersion, *cond ) );
                         break;
                     }
                     default:
                     {
-                        constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( constraint, *cond ) );
+                        constraintsToCheck.insert( pair< const Constraint*, const vs::Condition*>( constraint, *cond ) );
                     }
                 }
             }
             else
-                constraintsToCheck.insert( pair< const Constraint*, const vs::Condition* const >( (*cond)->pConstraint(), *cond ) );
+                constraintsToCheck.insert( pair< const Constraint*, const vs::Condition*>( (*cond)->pConstraint(), *cond ) );
         }
         if( constraintsToCheck.empty() ) return false;
         /*

@@ -35,7 +35,7 @@
 //#define VS_DEBUG_LOCAL_CONFLICT_SEARCH
 //#define VS_DEBUG_ROOTS_CHECK
 
-#define VS_LOG_INFSUBSETS
+//#define VS_LOG_INFSUBSETS
 
 using namespace std;
 
@@ -646,7 +646,7 @@ namespace vs
         initConditionFlags();
     }
 
-    void State::addConflictSet( const Substitution* const _substitution, ConditionSetSet& _condSetSet )
+    void State::addConflictSet( const Substitution* _substitution, ConditionSetSet& _condSetSet )
     {
         auto iter = mpConflictSets->find( _substitution );
         if( iter != mpConflictSets->end() )
@@ -655,13 +655,13 @@ namespace vs
         {
             ConditionSetSetSet condSetSetSet = ConditionSetSetSet();
             condSetSetSet.insert( _condSetSet );
-            mpConflictSets->insert( pair<const Substitution* const , ConditionSetSetSet>( _substitution, condSetSetSet ) );
+            mpConflictSets->insert( pair<const Substitution*, ConditionSetSetSet>( _substitution, condSetSetSet ) );
         }
         if( _substitution == NULL )
             rInconsistent() = true;
     }
 
-    void State::addConflicts( const Substitution* const _substitution, ConditionSetSet& _condSetSet )
+    void State::addConflicts( const Substitution* _substitution, ConditionSetSet& _condSetSet )
     {
         auto iter = mpConflictSets->find( _substitution );
         if( iter != mpConflictSets->end() )
@@ -681,7 +681,7 @@ namespace vs
         {
             ConditionSetSetSet condSetSetSet = ConditionSetSetSet();
             condSetSetSet.insert( _condSetSet );
-            mpConflictSets->insert( pair<const Substitution* const , ConditionSetSetSet>( _substitution, condSetSetSet ) );
+            mpConflictSets->insert( pair<const Substitution*, ConditionSetSetSet>( _substitution, condSetSetSet ) );
         }
     }
 

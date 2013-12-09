@@ -219,7 +219,7 @@ namespace vs
 {
     struct substitutionPointerEqual
     {
-        bool operator ()( const Substitution* const _substitutionA, const Substitution* const _substitutionB ) const
+        bool operator ()( const Substitution* _substitutionA, const Substitution* _substitutionB ) const
         {
             return (*_substitutionA)==(*_substitutionB);
         }
@@ -227,7 +227,7 @@ namespace vs
 
     struct substitutionPointerHash
     {
-        size_t operator ()( const Substitution* const _substitution ) const
+        size_t operator ()( const Substitution* _substitution ) const
         {
             if( _substitution == NULL )
                 return 0;

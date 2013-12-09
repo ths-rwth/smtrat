@@ -151,6 +151,11 @@ namespace smtrat
             return evaluate( constantPart(), relation() ) ? 1 : 0;
         else
         {
+            auto comp = []( const Variable& a, const pair<Variable, DoubleInterval>& b) { return a == b.first; };
+            if( !std::equal( variables().begin(), variables().end(), _solutionInterval.begin(), comp ) )
+            {
+                return 2;
+            }
             DoubleInterval solutionSpace = carl::IntervalEvaluation::evaluate( mLhs, _solutionInterval );
             if( solutionSpace.empty() )
                 return 2;

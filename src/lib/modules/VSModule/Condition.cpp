@@ -255,13 +255,11 @@ namespace vs
             _out << "no original condition}";
         else
         {
-            Set::const_iterator oCond = originalConditions().begin();
-            _out << " [" << *oCond << "]";
-            oCond++;
-            while( oCond != originalConditions().end() )
+            for( auto oCond = originalConditions().begin(); oCond != originalConditions().end(); ++oCond )
             {
-                _out << ", [" << *oCond << "]";
-                oCond++;
+                if( oCond != originalConditions().begin() )
+                    _out << ", ";
+                _out << "[" << *oCond << "]";
             }
             _out << " }";
         }

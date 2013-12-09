@@ -35,12 +35,12 @@ namespace smtrat
 {
     namespace vb
     {
-        template <class T> class Variable;
+        template <typename T> class Variable;
 
         /**
          * Class for the bound of a variable.
          */
-        template <class T> class Bound
+        template <typename T> class Bound
         {
             public:
                 enum Type { STRICT_LOWER_BOUND = 0, WEAK_LOWER_BOUND = 1, EQUAL_BOUND = 2, WEAK_UPPER_BOUND = 3, STRICT_UPPER_BOUND = 4 };
@@ -87,7 +87,7 @@ namespace smtrat
                  * @param _bound The bound to print.
                  * @return The output stream after printing the bound on it.
                  */
-                template <class T1> friend std::ostream& operator<<( std::ostream& _out, const Bound<T1>& _bound );
+                template <typename T1> friend std::ostream& operator<<( std::ostream& _out, const Bound<T1>& _bound );
                 
                 /**
                  * Prints this bound on the given stream.
@@ -211,7 +211,7 @@ namespace smtrat
         /**
          * Class for a variable.
          */
-        template <class T> class Variable
+        template <typename T> class Variable
         {
             struct boundPointerComp
             {
@@ -359,7 +359,7 @@ namespace smtrat
         /**
          * Class to manage the bounds of a variable.
          */
-        template <class T> class VariableBounds
+        template <typename T> class VariableBounds
         {
             public:
                 typedef PointerMap<Constraint,const Bound<T>*> ConstraintBoundMap;
@@ -494,7 +494,7 @@ namespace smtrat
                 }
         };
         
-        template<class T>
+        template<typename T>
         Bound<T>::Bound( Rational* const _limit, Variable<T>* const _variable, Type _type ):
             mType( _type ),
             mpLimit( _limit ),
@@ -505,14 +505,14 @@ namespace smtrat
                 mpOrigins->insert( NULL );
         }
 
-        template<class T>
+        template<typename T>
         Bound<T>::~Bound()
         {
             delete mpOrigins;
             delete mpLimit;
         }
 
-        template<class T>
+        template<typename T>
         bool Bound<T>::operator<( const Bound<T>& _bound ) const
         {
             if( isUpperBound() && _bound.isUpperBound() )
@@ -564,7 +564,7 @@ namespace smtrat
             }
         }
         
-        template<class T>
+        template<typename T>
         std::ostream& operator<<( std::ostream& _out, const Bound<T>& _bound )
         {
             if( _bound.isInfinite() )
@@ -579,7 +579,7 @@ namespace smtrat
             return _out;
         }
 
-        template<class T>
+        template<typename T>
         void Bound<T>::print( std::ostream& _out, bool _withRelation ) const
         {
             if( _withRelation )
@@ -610,7 +610,7 @@ namespace smtrat
             _out << *this;
         }
 
-        template<class T>
+        template<typename T>
         Variable<T>::Variable():
             mUpdatedExactInterval( true ),
             mUpdatedDoubleInterval( true ),
@@ -623,7 +623,7 @@ namespace smtrat
             mpInfimum = *mLowerbounds.begin();
         }
 
-        template<class T>
+        template<typename T>
         Variable<T>::~Variable()
         {
             while( !mLowerbounds.empty() )
@@ -641,7 +641,7 @@ namespace smtrat
             }
         }
         
-        template<class T>
+        template<typename T>
         bool Variable<T>::conflicting() const
         {
             if( mpSupremum->isInfinite() || mpInfimum->isInfinite() )
@@ -656,7 +656,7 @@ namespace smtrat
             }
         }
 
-        template<class T>
+        template<typename T>
         const Bound<T>* Variable<T>::addBound( const Constraint* _constraint, const carl::Variable& _var, const T* _origin )
         {
             assert( _constraint->variables().size() == 1 && _constraint->maxDegree( _var ) == 1 );
@@ -707,7 +707,7 @@ namespace smtrat
             return *result.first;
         }
 
-        template<class T>
+        template<typename T>
         bool Variable<T>::updateBounds( const Bound<T>& _changedBound )
         {
             mUpdatedExactInterval = true;
@@ -743,7 +743,7 @@ namespace smtrat
             return conflicting();
         }
 
-        template<class T>
+        template<typename T>
         VariableBounds<T>::VariableBounds():
             mpConflictingVariable( NULL ),
             mpVariableMap( new VariableMap() ),
@@ -752,7 +752,7 @@ namespace smtrat
             mDoubleIntervalMap()
         {}
 
-        template<class T>
+        template<typename T>
         VariableBounds<T>::~VariableBounds()
         {
             delete mpConstraintBoundMap;
@@ -765,7 +765,7 @@ namespace smtrat
             delete mpVariableMap;
         }
 
-        template<class T>
+        template<typename T>
         bool VariableBounds<T>::addBound( const Constraint* _constraint, const T* _origin )
         {
             if( _constraint->relation() != Constraint::NEQ && _constraint->variables().size() == 1 )
@@ -820,7 +820,7 @@ namespace smtrat
             return false;
         }
 
-        template<class T>
+        template<typename T>
         unsigned VariableBounds<T>::removeBound( const Constraint* _constraint, const T* _origin )
         {
             if( _constraint->relation() != Constraint::NEQ && _constraint->variables().size() == 1 )
@@ -844,7 +844,7 @@ namespace smtrat
             return 0;
         }
 
-        template<class T>
+        template<typename T>
         unsigned VariableBounds<T>::removeBound( const Constraint* _constraint, const T* _origin, carl::Variable*& _changedVariable )
         {
             if( _constraint->relation() != Constraint::NEQ && _constraint->variables().size() == 1 )
@@ -871,7 +871,7 @@ namespace smtrat
 
         #define CONVERT_BOUND(type, namesp) (type != Bound<T>::WEAK_UPPER_BOUND && type != Bound<T>::WEAK_LOWER_BOUND && type != Bound<T>::EQUAL_BOUND ) ? namesp::STRICT : namesp::WEAK
 
-        template<class T>
+        template<typename T>
         const smtrat::EvalIntervalMap& VariableBounds<T>::getEvalIntervalMap()
         {
             assert( mpConflictingVariable == NULL );
@@ -911,11 +911,11 @@ namespace smtrat
             return mEvalIntervalMap;
         }
 
-        template<class T>
+        template<typename T>
         const Interval& VariableBounds<T>::getInterval( const carl::Variable& _var )
         {
             assert( mpConflictingVariable == NULL );
-            class VariableMap::iterator varVarPair = mpVariableMap->find( _var );
+            typename VariableMap::iterator varVarPair = mpVariableMap->find( _var );
             assert( varVarPair != mpVariableMap->end() );
             Variable<T>& var = *varVarPair->second;
             if( var.updatedExactInterval() )
@@ -950,7 +950,7 @@ namespace smtrat
             return mEvalIntervalMap[_var];
         }
 
-        template<class T>
+        template<typename T>
         const smtrat::EvalDoubleIntervalMap& VariableBounds<T>::getIntervalMap()
         {
             assert( mpConflictingVariable == NULL );
@@ -990,7 +990,7 @@ namespace smtrat
             return mDoubleIntervalMap;
         }
 
-        template<class T>
+        template<typename T>
         const carl::DoubleInterval& VariableBounds<T>::getDoubleInterval( const carl::Variable& _var )
         {
             assert( mpConflictingVariable == NULL );
@@ -1029,7 +1029,7 @@ namespace smtrat
             return mDoubleIntervalMap[_var];
         }
 
-        template<class T>
+        template<typename T>
         std::set< const T* > VariableBounds<T>::getOriginsOfBounds( const carl::Variable& _var ) const
         {
             std::set< const T* > originsOfBounds = std::set< const T* >();
@@ -1040,7 +1040,7 @@ namespace smtrat
             return originsOfBounds;
         }
 
-        template<class T>
+        template<typename T>
         std::set< const T* > VariableBounds<T>::getOriginsOfBounds( const Variables& _variables ) const
         {
             std::set< const T* > originsOfBounds = std::set< const T* >();
@@ -1054,7 +1054,7 @@ namespace smtrat
             return originsOfBounds;
         }
 
-        template<class T>
+        template<typename T>
         std::set< const T* > VariableBounds<T>::getOriginsOfBounds() const
         {
             std::set< const T* > originsOfBounds = std::set< const T* >();
@@ -1067,7 +1067,7 @@ namespace smtrat
             return originsOfBounds;
         }
 
-        template<class T>
+        template<typename T>
         void VariableBounds<T>::print( std::ostream& _out, const std::string _init, bool _printAllBounds ) const
         {
             for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )

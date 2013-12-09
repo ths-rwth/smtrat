@@ -106,6 +106,23 @@ set(lib_${PROJECT_NAME}_SRCS
 	${lib_utilities_src}
 )
 
+# compiler flags
+# # # # # # # # #
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	message("using clang")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	message("using gcc")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x ")	
+else()
+	message("possibly unsupported compiler")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x ")	
+endif()
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
+if(DEVELOPER)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wconversion ")
+endif()
+
 # set linking flags
 # # # # # # # # # #
 

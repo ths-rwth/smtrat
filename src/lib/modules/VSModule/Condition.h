@@ -44,7 +44,7 @@ namespace vs
         public:
             struct condPointerLess
             {
-                bool operator ()( const Condition* const pCondA, const Condition* const pCondB ) const
+                bool operator ()( const Condition* pCondA, const Condition* pCondB ) const
                 {
                     return (*pCondA).constraint() < (*pCondB).constraint();
                 }
@@ -114,7 +114,7 @@ namespace vs
                 return mpConstraint;
             }
 
-            Set* const pOriginalConditions() const
+            Set* pOriginalConditions() const
             {
                 return mpOriginalConditions;
             }
