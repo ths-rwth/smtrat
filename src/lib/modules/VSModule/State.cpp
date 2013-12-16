@@ -973,9 +973,16 @@ namespace vs
         mTryToRefreshIndex = false;
         if( conditions().empty() )
             return false;
-        map<carl::Variable, multiset<double> > varVals = map<carl::Variable, multiset<double> >();
+        map<carl::Variable, multiset<double> > realVarVals = map<carl::Variable, multiset<double> >();
+        map<carl::Variable, multiset<double> > intVarVals = map<carl::Variable, multiset<double> >();
         for( auto var = _allVariables.begin(); var != _allVariables.end(); ++var )
-            varVals.insert( pair<carl::Variable, multiset<double> >( *var, multiset<double>() ) );
+        {
+            if( var->getType() == carl::VariableType::VT_INT )
+                intVarVals.insert( pair<carl::Variable, multiset<double> >( *var, multiset<double>() ) );
+            else
+                realVarVals.insert( pair<carl::Variable, multiset<double> >( *var, multiset<double>() ) );
+        }
+        map<carl::Variable, multiset<double> >& varVals = realVarVals.empty() ? intVarVals : realVarVals;
         // Find for each variable the highest valuation of all conditions' constraints.
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
@@ -997,13 +1004,13 @@ namespace vs
         }
         #endif
         // Find the variable which has in a constraint the best valuation. If more than one have the highest valuation, 
-        // then choose the one having the higher valuation according to the method argument "_allVariables".
+        // then choose the one having the higher valuation according to the order in _allVariables.
         auto bestVar = varVals.begin();
         auto var     = varVals.begin();
         ++var;
         while( var != varVals.end() )
         {
-            if( !var->second.empty() &&!bestVar->second.empty() )
+            if( !var->second.empty() && !bestVar->second.empty() )
             {
                 if( var->second.size() == 1 && bestVar->second.size() == 1 )
                 {

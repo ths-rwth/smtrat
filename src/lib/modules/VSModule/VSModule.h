@@ -127,6 +127,20 @@ namespace smtrat
                 mIDCounter++;
             }
             
+            inline Answer consistencyTrue()
+            {
+                #ifdef VS_LOG_INTERMEDIATE_STEPS
+                checkAnswer();
+                #endif
+                #ifdef VS_PRINT_ANSWERS
+                printAnswer();
+                #endif
+                if( Settings::integer_variables )
+                    return solutionInDomain();
+                else
+                    return foundAnswer( True );
+            }
+            
             void eliminate( vs::State*, const carl::Variable&, const vs::Condition* );
             bool substituteAll( vs::State*, vs::ConditionList& );
             void propagateNewConditions( vs::State* );
@@ -136,6 +150,8 @@ namespace smtrat
             bool removeStateFromRanking( vs::State& );
             void removeStatesFromRanking( vs::State& );
             void updateInfeasibleSubset( bool = false );
+            EvalRationalMap getIntervalAssignment( const vs::State* _state ) const;
+            Answer solutionInDomain();
             static void allMinimumCoveringSets( const vs::ConditionSetSetSet&, vs::ConditionSetSet& );
             bool adaptPassedFormula( const vs::State&, FormulaConditionMap&, bool = false );
             Answer runBackendSolvers( vs::State*, bool = false );

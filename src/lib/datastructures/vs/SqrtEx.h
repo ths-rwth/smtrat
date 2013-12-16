@@ -140,6 +140,15 @@ namespace vs
         public:
             
             /**
+             * @return true, if the this square root expression corresponds to an integer value;
+             *         false, otherwise.
+             */
+            bool isInteger() const
+            {
+                return radicand().isZero() && denominator() == smtrat::ONE_POLYNOMIAL && constantPart().isConstant() && carl::isInteger( constantPart().lcoeff() );
+            }
+            
+            /**
              * @param _sqrtEx Square root expression to compare with.
              * @return  true, if this square root expression and the given one are equal;
              *          false, otherwise.

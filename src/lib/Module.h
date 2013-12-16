@@ -397,7 +397,7 @@ namespace smtrat
             Formula::iterator removeSubformulaFromPassedFormula( Formula::iterator );
             vec_set_const_pFormula getInfeasibleSubsets( const Module& ) const;
             vec_set_const_pFormula merge( const vec_set_const_pFormula&, const vec_set_const_pFormula& ) const;
-            const vec_set_const_pFormula& getBackendsInfeasibleSubsets() const;
+            void branchAt( const carl::Variable& _var, const Rational& _value, bool _leftCaseWeak = true );
         public:
             // Printing methods.
             void print( std::ostream& = std::cout, const std::string = "***" ) const;

@@ -88,6 +88,7 @@ namespace smtrat
 //            std::cout << iter->first << " in " << iter->second << std::endl;
 
         Polynomial tmp = mLhs.substitute( _assignment );
+        cout << __func__ << ": " << tmp << endl;
         if( tmp.isConstant() )
             return evaluate( (tmp.isZero() ? ZERO_RATIONAL : tmp.trailingTerm()->coeff()), relation() ) ? 1 : 0;
         else return 2;

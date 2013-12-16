@@ -639,6 +639,18 @@ namespace smtrat
             }
 
             /**
+             * @return true, if this formula is a conjunction of integer constraints;
+             *         false, otherwise.
+             */
+            bool isIntegerConstraintConjunction() const
+            {
+                if( PROP_IS_PURE_CONJUNCTION <= proposition() )
+                    return (!(PROP_CONTAINS_REAL_VALUED_VARS <= proposition()) && !(PROP_CONTAINS_BOOLEAN <= proposition()));
+                else
+                    return false;
+            }
+
+            /**
              * @param _formula The pointer to the formula for which to check whether it points to a sub-formula
              *                  of this formula.
              * @return true, the given pointer to a formula points to a sub-formula of this formula;

@@ -29,6 +29,8 @@ namespace smtrat
         static const bool infeasible_subset_generation                          = true;
         static const bool virtual_substitution_according_paper                  = false;
         static const bool prefer_equation_over_all                              = false;
+        static const bool integer_variables                                     = false;
+        static const bool real_variables                                        = true;
     };
     
     struct VSSettings2 : VSSettings1
@@ -45,6 +47,22 @@ namespace smtrat
     {
         static const bool check_conflict_for_side_conditions                    = true;
         static const bool prefer_equation_over_all                              = true;
+    };
+    
+    struct VSSettings2346 : VSSettings234
+    {
+        static const bool check_conflict_for_side_conditions                    = true;
+        static const bool prefer_equation_over_all                              = true;
+        static const bool integer_variables                                     = true;
+        static const bool real_variables                                        = false;
+    };
+    
+    struct VSSettings2347 : VSSettings234
+    {
+        static const bool check_conflict_for_side_conditions                    = true;
+        static const bool prefer_equation_over_all                              = true;
+        static const bool integer_variables                                     = true;
+        static const bool real_variables                                        = true;
     };
     
     struct VSSettings2345 : VSSettings234

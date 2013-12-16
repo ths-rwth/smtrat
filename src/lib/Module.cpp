@@ -325,6 +325,60 @@ namespace smtrat
         }
         return result;
     }
+    
+    /**
+     * Adds a deductions which provoke a branching for the given variable at the given value,
+     * if this module returns Unknown and there exists a preceding SATModule. Note that the 
+     * given value is rounded down and up, if the given variable is integer-valued.
+     * @param _var The variable to branch for.
+     * @param _value The value to branch at.
+     * @param _leftCaseWeak true, if the given variable should be less or equal than the given value
+     *                            or greater than the given value;
+     *                      false, if the given variable should be less than the given value or
+     *                             or greater or equal than the given value.
+     */
+    void Module::branchAt( const carl::Variable& _var, const Rational& _value, bool _leftCaseWeak )
+    {   
+        const Constraint* constraintA = NULL;
+        const Constraint* constraintB = NULL;
+        if( _var.getType() == carl::VariableType::VT_INT )
+        {
+            Rational bound = cln::floor1( _value );
+            Polynomial leqLhs = Polynomial( _var ) - bound;
+            constraintA = Formula::newConstraint( leqLhs, Constraint::LEQ );
+            ++bound;
+            Polynomial geqLhs = Polynomial( _var ) - bound;
+            constraintB = Formula::newConstraint( geqLhs, Constraint::GEQ );
+        }
+        else
+        {   
+            Polynomial constraintLhs = Polynomial( _var ) - _value;
+            if( _leftCaseWeak )
+            {
+                constraintA = Formula::newConstraint( constraintLhs, Constraint::LEQ );
+                constraintB = Formula::newConstraint( constraintLhs, Constraint::GREATER );
+            }
+            else
+            {
+                constraintA = Formula::newConstraint( constraintLhs, Constraint::LESS );
+                constraintB = Formula::newConstraint( constraintLhs, Constraint::GEQ );   
+            }
+        }
+        // (x<=I-1 or x>=I)
+        Formula* deductionA = new Formula( OR );
+        deductionA->addSubformula( constraintA );
+        deductionA->addSubformula( constraintB );
+        addDeduction( deductionA );
+        // (not(x<=I-1) or not(x>=I))
+        Formula* deductionB = new Formula( OR );
+        Formula* notLeqConstraint = new Formula( NOT );
+        notLeqConstraint->addSubformula( constraintA );
+        Formula* notGeqConstraint = new Formula( NOT );
+        notGeqConstraint->addSubformula( constraintB );
+        deductionB->addSubformula( notLeqConstraint );
+        deductionB->addSubformula( notGeqConstraint );
+        addDeduction( deductionB );
+    }
 
     /**
      * Copies the infeasible subsets of the passed formula

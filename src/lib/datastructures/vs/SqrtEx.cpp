@@ -52,12 +52,12 @@ namespace vs
 
     SqrtEx::SqrtEx( const smtrat::Polynomial& _constantPart, const smtrat::Polynomial& _factor, const smtrat::Polynomial& _denominator, const smtrat::Polynomial& _radicand ):
         mConstantPart( _constantPart ),
-        mFactor( _radicand == smtrat::ZERO_POLYNOMIAL ? smtrat::ZERO_POLYNOMIAL : _factor ),
-        mDenominator( ((mFactor == smtrat::ZERO_POLYNOMIAL) && (_constantPart == smtrat::ZERO_POLYNOMIAL)) ? smtrat::ONE_POLYNOMIAL : _denominator ),
-        mRadicand( ( _factor == smtrat::ZERO_POLYNOMIAL ) ? smtrat::ZERO_POLYNOMIAL : _radicand )
+        mFactor( _radicand.isZero() ? _radicand : _factor ),
+        mDenominator( (mFactor.isZero() && _constantPart.isZero()) ? smtrat::ONE_POLYNOMIAL : _denominator ),
+        mRadicand( _factor.isZero() ? _factor : _radicand )
     {
-        assert( _denominator != smtrat::ZERO_POLYNOMIAL );
-        assert( !_radicand.isConstant() || _radicand == smtrat::ZERO_POLYNOMIAL || smtrat::ZERO_RATIONAL <= _radicand.trailingTerm()->coeff() );
+        assert( !_denominator.isZero() );
+        assert( !_radicand.isConstant() || _radicand.isZero() || smtrat::ZERO_RATIONAL <= _radicand.trailingTerm()->coeff() );
         normalize();
     }
 
@@ -73,7 +73,67 @@ namespace vs
 
     void SqrtEx::normalize()
     {
-        //TODO: implement this method
+//        cout << endl << __func__ << ": " << *this << endl;
+        if( radicand().isConstant() && !radicand().isZero() ) 
+        {
+            smtrat::Rational absOfLCoeff = abs( radicand().lcoeff() );
+            smtrat::Rational* sqrtResult = new smtrat::Rational();
+            if( cln::sqrtp( absOfLCoeff, sqrtResult ) )
+            {
+                mConstantPart += mFactor * (*sqrtResult);
+                mFactor = smtrat::ZERO_POLYNOMIAL;
+                mRadicand = smtrat::ZERO_POLYNOMIAL;
+            }
+            delete sqrtResult;
+        }
+        else if( !radicand().isZero() )
+        {
+            mFactor *= (smtrat::Rational)1/radicand().coprimeFactor();
+            mRadicand *= radicand().coprimeFactor();
+        }
+        smtrat::Rational numGcd = smtrat::ZERO_RATIONAL;
+        smtrat::Rational denomLcm = smtrat::ONE_RATIONAL;
+        if( factor().isZero() )
+        {
+            if( !constantPart().isZero() )
+            {
+                smtrat::Rational cpOfConstantPart = constantPart().coprimeFactor();
+                numGcd = carl::getNum( cpOfConstantPart );
+                denomLcm = carl::getDenom( cpOfConstantPart );
+            }
+            else
+            {
+//                cout << "        to " << *this << endl;
+                return; // Sqrt expression corresponds to 0.
+            }
+        }
+        else
+        {
+            smtrat::Rational cpOfFactorPart = factor().coprimeFactor();
+            if( constantPart().isZero() )
+            {
+                numGcd = carl::getNum( cpOfFactorPart );
+                denomLcm = carl::getDenom( cpOfFactorPart );
+            }
+            else
+            {
+                smtrat::Rational cpOfConstantPart = constantPart().coprimeFactor();
+                numGcd = carl::gcd( carl::getNum( cpOfConstantPart ), carl::getNum( cpOfFactorPart ) );
+                denomLcm = carl::lcm( carl::getDenom( cpOfConstantPart ), carl::getDenom( cpOfFactorPart ) );
+            }
+        }
+        assert( numGcd != smtrat::ZERO_RATIONAL );
+        smtrat::Rational cpFactor = numGcd/denomLcm; 
+        mConstantPart *= cpFactor;
+        mFactor *= cpFactor;
+        smtrat::Rational cpOfDenominator = denominator().coprimeFactor();
+        mDenominator *= cpOfDenominator;
+        smtrat::Rational sqrtExFactor = (denomLcm*carl::getNum( cpOfDenominator ))/(numGcd*carl::getDenom( cpOfDenominator ));
+        mConstantPart *= carl::getNum( sqrtExFactor );
+        mFactor *= carl::getNum( sqrtExFactor );
+        mDenominator *= carl::getDenom( sqrtExFactor );
+//        cout << "       to  " << *this << endl;
+        //TODO: implement this method further
     }
 
     bool SqrtEx::operator==( const SqrtEx& _toCompareWith ) const
@@ -195,12 +255,10 @@ namespace vs
          *      ----------------------------------------------
          *                           s^n
          */
-//cout << "Substitute  " << _varToSubstitute << "  for  " << _substituteBy << "  in  " << _substituteIn << endl;
         smtrat::VarInfo varInfo = _substituteIn.getVarInfo<true>( _varToSubstitute );
         const map<unsigned, smtrat::Polynomial>& coeffs = varInfo.coeffs();
         // Calculate the s^k:   (0<=k<=n)
         auto coeff = coeffs.begin();
-//cout << "first coefficient in  " << _substituteIn << "  is  " << coeff->second << endl;
         unsigned lastDegree = varInfo.maxDegree();
         vector<smtrat::Polynomial> sk;
         sk.push_back( smtrat::ONE_POLYNOMIAL );
@@ -208,25 +266,20 @@ namespace vs
         {
             // s^i = s^l * s^{i-l}
             sk.push_back( sk.back() * _substituteBy.denominator() );
-//cout << "s^" << i << " = " << sk.back() << endl;
         }
         // Calculate the constant part and factor of the square root of (q+r*sqrt{t})^k 
         vector<smtrat::Polynomial> qk;
         qk.push_back( _substituteBy.constantPart() );
-//cout << "constant part of (q+r*sqrt{t})^1 = " << qk.back() << endl;
         vector<smtrat::Polynomial> rk;
         rk.push_back( _substituteBy.factor() );
-//cout << "factor of (q+r*sqrt{t})^1 = " << rk.back() << endl;
         // Let (q+r*sqrt{t})^l be (q'+r'*sqrt{t}) 
         // then (q+r*sqrt{t})^l+1  =  (q'+r'*sqrt{t}) * (q+r*sqrt{t})  =  ( q'*q+r'*r't  +  (q'*r+r'*q) * sqrt{t} )
         for( unsigned i = 1; i < lastDegree; ++i )
         {
             // q'*q+r'*r't
             qk.push_back( qk.back() * _substituteBy.constantPart() + rk.back() * _substituteBy.factor() * _substituteBy.radicand() );
-//cout << "constant part of (q+r*sqrt{t})^" << (i+1) << " = " << qk.back() << endl;
             // q'*r+r'*q
             rk.push_back( rk.back() * _substituteBy.constantPart()  + qk.at( i - 1 ) * _substituteBy.factor() );
-//cout << "factor of (q+r*sqrt{t})^" << (i+1) << " = " << rk.back() << endl;
         }
         // Calculate the result:
         smtrat::Polynomial resFactor = smtrat::ZERO_POLYNOMIAL;
@@ -236,70 +289,13 @@ namespace vs
             resConstantPart += sk.back() * coeff->second;
             ++coeff;
         }
-//cout << "resConstantPart = " << resConstantPart << endl;
         for( ; coeff != coeffs.end(); ++coeff )
         {
-//cout << "resConstantPart += " << coeff->second << " * " << qk.at( coeff->first - 1 ) << " * " << sk.at( lastDegree - coeff->first ) << endl;
             resConstantPart += coeff->second * qk.at( coeff->first - 1 ) * sk.at( lastDegree - coeff->first );
-//cout << "                = " << resConstantPart << endl;
-//cout << "resFactor += " << coeff->second << " * " << rk.at( coeff->first - 1 ) << " * " << sk.at( lastDegree - coeff->first ) << endl;
             resFactor       += coeff->second * rk.at( coeff->first - 1 ) * sk.at( lastDegree - coeff->first );
-//cout << "                = " << resFactor << endl;
         }
         SqrtEx result = SqrtEx( resConstantPart, resFactor, sk.back(), _substituteBy.radicand() );
-//cout << "result = " << result << endl;
         return result;
     }
 }    // end namspace vs
-    
-//    
-//    SqrtEx SqrtEx::subBySqrtEx( const smtrat::Polynomial& _substituteIn, const carl::Variable& _varToSubstitute, const SqrtEx& _substituteBy )
-//    {
-//        /*
-//         * We have to calculate the result of the substitution:
-//         *
-//         *                           q+r*sqrt{t}
-//         *        (a_n*x^n+...+a_0)[------------ / x]
-//         *                               s
-//         * being:
-//         *
-//         *      sum_{k=0}^n (a_k * (q+r*sqrt{t})^k * s^{n-k})
-//         *      ----------------------------------------------
-//         *                           s^n
-//         */
-//        carl::VariableInformation<true,smtrat::Polynomial> varInfo = _poly.getVarInfo( _varToSubstitute ); //TODO: implement this line
-//        smtrat::VarInfo varInfo = _poly.getVarInfo<true>( _varToSubstitute );
-//        const map<unsigned, Polynomial>& coeffs = varInfo.coeffs();
-//        unsigned n = 0; // varInfo.maxDegree(); //TODO: implement this line
-//        if( n == 0 )
-//        {
-//            SqrtEx result = SqrtEx( _substituteIn );
-//            return result;
-//        }
-//        // Calculate the s^k:   (0<=k<=n)
-//        vector<smtrat::Polynomial> sk = vector<smtrat::Polynomial>( n + 1 );
-//        sk[0] = smtrat::Polynomial( 1 );
-//        for( unsigned i = 1; i <= n; ++i )
-//            sk[i] = sk[i - 1] * _substituteBy.denominator();
-//        // Calculate the constant part and factor of the square root of (q+r*sqrt{t})^k:   (1<=k<=n)
-//        vector<smtrat::Polynomial> qk = vector<smtrat::Polynomial>( n );
-//        vector<smtrat::Polynomial> rk = vector<smtrat::Polynomial>( n );
-//        qk[0] = smtrat::Polynomial( _substituteBy.constantPart() );
-//        rk[0] = smtrat::Polynomial( _substituteBy.factor() );
-//        for( unsigned i = 1; i < n; ++i )
-//        {
-//            qk[i] = _substituteBy.constantPart() * qk[i - 1] + _substituteBy.factor() * rk[i - 1] * _substituteBy.radicand();
-//            rk[i] = _substituteBy.constantPart() * rk[i - 1] + _substituteBy.factor() * qk[i - 1];
-//        }
-//        // Calculate the result:
-//        smtrat::Polynomial resConstantPart = sk[n]; // * varInfo.coeffs( 0 ); //TODO: implement this line
-//        smtrat::Polynomial resFactor       = smtrat::ZERO_POLYNOMIAL;
-//        for( unsigned i = 1; i <= n; ++i )
-//        {
-////            resConstantPart += varInfo.coeffs( i ) * qk[i - 1] * sk[n - i]; //TODO: implement this line
-////            resFactor       += varInfo.coeffs( i ) * rk[i - 1] * sk[n - i]; //TODO: implement this line
-//        }
-//        SqrtEx result = SqrtEx( resConstantPart, resFactor, sk[n], _substituteBy.radicand() );
-//        return result;
-//    }
 

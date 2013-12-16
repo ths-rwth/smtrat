@@ -245,6 +245,14 @@ namespace smtrat
         {
             return Numeric( cln::denominator( this->content() ) );
         }
+        
+        /**
+         * @return The next smaller integer to this Numeric.
+         */
+        Numeric Numeric::floor() const
+        {
+            return Numeric( cln::floor1( this->content() ) );
+        }
 
         /**
          * Checks whether this Numeric corresponds to a positive rational number.
@@ -257,9 +265,8 @@ namespace smtrat
         }
 
         /**
-         * Checks whether this Numeric corresponds to a positive rational number.
-         * @return True, if this Numeric corresponds to a positive rational number;
-         *          False, otherwise.
+         * @return true, if this Numeric corresponds to a positive rational number;
+         *         false, otherwise.
          */
         bool Numeric::isNegative() const
         {
@@ -267,13 +274,21 @@ namespace smtrat
         }
 
         /**
-         * Checks whether this Numeric corresponds to zero.
-         * @return True, if this Numeric corresponds to zero;
-         *          False, otherwise.
+         * @return true, if this Numeric corresponds to zero;
+         *         false, otherwise.
          */
         bool Numeric::isZero() const
         {
             return ( this->content() == 0 );
+        }
+
+        /**
+         * @return true, if this Numeric is integer;
+         *         false, otherwise.
+         */
+        bool Numeric::isInteger() const
+        {
+            return ( this->denom() == 1 );
         }
 
         /**
@@ -284,6 +299,50 @@ namespace smtrat
         Numeric abs( const Numeric& _value )
         {
             return Numeric( cln::abs( _value.content() ) );
+        }
+        
+        /**
+         * Calculates the result of the first argument modulo the second argument.
+         * Note, that this method can only be applied to integers.
+         * @param _valueA An integer.
+         * @param _valueB An integer != 0.
+         * @return The first argument modulo the second argument.
+         */
+        Numeric mod( const Numeric& _valueA, const Numeric& _valueB )
+        {
+            assert( _valueA.isInteger() && _valueB.isInteger() );
+            assert( !_valueB.isZero() );
+            return Numeric( cln::mod( cln::numerator( _valueA.content() ), cln::numerator( _valueB.content() ) ) );
+        }
+        
+        /**
+         * Calculates the least common multiple of the two arguments.
+         * Note, that this method can only be applied to integers.
+         * @param _valueA An integer.
+         * @param _valueB An integer.
+         * @return The least common multiple of the two arguments.
+         */
+        Numeric lcm( const Numeric& _valueA, const Numeric& _valueB )
+        {
+            assert( _valueA.isInteger() && _valueB.isInteger() );
+            if( _valueA.isZero() || _valueB.isZero() )
+                return Numeric( 0 );
+            return Numeric( cln::lcm( cln::numerator( _valueA.content() ), cln::numerator( _valueB.content() ) ) );
+        }
+        
+        /**
+         * Calculates the greatest common divisor of the two arguments.
+         * Note, that this method can only be applied to integers.
+         * @param _valueA An integer.
+         * @param _valueB An integer.
+         * @return The least common divisor of the two arguments.
+         */
+        Numeric gcd( const Numeric& _valueA, const Numeric& _valueB )
+        {
+            assert( _valueA.isInteger() && _valueB.isInteger() );
+            if( _valueA.isZero() || _valueB.isZero() )
+                return Numeric( 0 );
+            return Numeric( cln::gcd( cln::numerator( _valueA.content() ), cln::numerator( _valueB.content() ) ) );
         }
 
         /**

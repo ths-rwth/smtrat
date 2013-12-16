@@ -196,7 +196,12 @@ namespace smtrat
             }
             addStateToRanking( mpStateTree );
         }
-        if( !mpReceivedFormula->isRealConstraintConjunction() )
+        assert( Settings::real_variables || Settings::integer_variables );
+        if( Settings::real_variables && !Settings::integer_variables && !mpReceivedFormula->isRealConstraintConjunction() )
+            return foundAnswer( Unknown );
+        if( !Settings::real_variables && Settings::integer_variables && !mpReceivedFormula->isIntegerConstraintConjunction() )
+            return foundAnswer( Unknown );
+        if( Settings::real_variables && Settings::integer_variables && !mpReceivedFormula->isConstraintConjunction() )
             return foundAnswer( Unknown );
         assert( mpReceivedFormula->size() == mFormulaConditionMap.size() );
         if( !mConditionsChanged )
@@ -204,15 +209,7 @@ namespace smtrat
             if( mInfeasibleSubsets.empty() )
             {
                 if( solverState() == True )
-                {
-                    #ifdef VS_LOG_INTERMEDIATE_STEPS
-                    checkAnswer();
-                    #endif
-                    #ifdef VS_PRINT_ANSWERS
-                    printAnswer();
-                    #endif
-                    return foundAnswer( True );
-                }
+                    return consistencyTrue();
                 else
                     return foundAnswer( Unknown );
             }
@@ -221,15 +218,7 @@ namespace smtrat
         }
         mConditionsChanged = false;
         if( mpReceivedFormula->empty() )
-        {
-            #ifdef VS_LOG_INTERMEDIATE_STEPS
-            checkAnswer();
-            #endif
-            #ifdef VS_PRINT_ANSWERS
-            printAnswer();
-            #endif
-            return foundAnswer( True );
-        }
+            return consistencyTrue();
         if( mInconsistentConstraintAdded )
         {
             assert( !mInfeasibleSubsets.empty() );
@@ -418,20 +407,8 @@ namespace smtrat
                                                 unfinishedAncestor->printAlone();
                                                 #endif
                                             }
-                                            else
-                                            {
-                                                // Solution.
-                                                #ifdef VS_DEBUG
-                                                printAll();
-                                                #endif
-                                                #ifdef VS_LOG_INTERMEDIATE_STEPS
-                                                checkAnswer();
-                                                #endif
-                                                #ifdef VS_PRINT_ANSWERS
-                                                printAnswer();
-                                                #endif
-                                                return foundAnswer( True );
-                                            }
+                                            else // Solution.
+                                                return consistencyTrue();
                                         }
                                         // It is a state, where all conditions have been used for test candidate generation.
                                         else
@@ -503,20 +480,8 @@ namespace smtrat
                                                         else
                                                             addStatesToRanking( unfinishedAncestor );
                                                     }
-                                                    else
-                                                    {
-                                                        // Solution.
-                                                        #ifdef VS_DEBUG
-                                                        printAll();
-                                                        #endif
-                                                        #ifdef VS_LOG_INTERMEDIATE_STEPS
-                                                        checkAnswer();
-                                                        #endif
-                                                        #ifdef VS_PRINT_ANSWERS
-                                                        printAnswer();
-                                                        #endif
-                                                        return foundAnswer( True );
-                                                    }
+                                                    else // Solution.
+                                                        return consistencyTrue();
                                                     break;
                                                 }
                                                 case False:
@@ -1376,6 +1341,135 @@ namespace smtrat
         }
         assert( !mInfeasibleSubsets.empty() );
         assert( !mInfeasibleSubsets.back().empty() );
+    }
+    
+    template<class Settings>
+    EvalRationalMap VSModule<Settings>::getIntervalAssignment( const State* _state ) const
+    {
+        // Find all assignments of the variables occurring in the conditions
+        // of the state's father except of the variable being the index currentState.
+        Variables vars;
+        _state->father().variables( vars );
+        vars.erase( _state->index() );
+        EvalRationalMap varSolutions;
+        const State* successorState = mRanking.begin()->second;
+        while( successorState != _state )
+        {
+            assert( !successorState->isRoot() );
+            assert( successorState->index().getType() == carl::VariableType::VT_INT );
+            assert( successorState->substitution().type() == Substitution::NORMAL );
+            assert( successorState->substitution().term().isInteger() );
+            varSolutions[successorState->index()] = successorState->substitution().term().constantPart().lcoeff();
+            vars.erase( successorState->index() );
+            successorState = successorState->pFather();
+        }
+        // Special case, where the elimination of a variable led to a solution
+        // although, it hasn't been the last variable to eliminate.
+        while( !vars.empty() )
+        {
+            varSolutions[*vars.begin()] = ZERO_RATIONAL;
+            vars.erase( vars.begin() );
+        }
+        return varSolutions;
+    }
+    
+    template<class Settings>
+    Answer VSModule<Settings>::solutionInDomain()
+    {   
+        if( !mRanking.empty() )
+        {
+            const State* currentState = mRanking.begin()->second;
+            while( !currentState->isRoot() )
+            {
+                if( currentState->index().getType() == carl::VariableType::VT_INT )
+                {
+                    if( currentState->substitution().type() == Substitution::MINUS_INFINITY )
+                    {
+                        // We establish a set of univariate polynomials being the left-hand sides of
+                        // currentState's father's conditions with all their variables (except of 
+                        // currentState's index) substituted by the found (integer!) assignments. Then 
+                        // we know that the weakest lower Cauchy bound of these univariate polynomials
+                        // under-approximates all of their roots.
+                        EvalRationalMap varSolutions = getIntervalAssignment( currentState );
+                        Rational weakestCauchyBound;
+                        for( auto cond = currentState->father().conditions().begin(); cond != currentState->father().conditions().end(); ++cond )
+                        {
+                            Rational condsLowerCB;
+                            if( varSolutions.empty() )
+                                condsLowerCB = (*cond)->constraint().lhs().toUnivariatePolynomial().cauchyBound();
+                            else
+                                condsLowerCB = (*cond)->constraint().lhs().substitute( varSolutions ).toUnivariatePolynomial().cauchyBound();
+                            if( condsLowerCB > weakestCauchyBound )
+                            {
+                                weakestCauchyBound = condsLowerCB;
+                            }
+                        }
+                        // We split at the next greater integer I than the calculated weakest lower Cauchy bound.
+                        // By this we force in one case (A) that currentState's test candidate (-infinity) gets
+                        // invalid and a new (integer) test candidate at I is generated. In the other case (B) the 
+                        // assignment of the other variables in currentState's father cannot hold and must be adapted. 
+                        // Note that in the case that there are no other variables in currentState's father, only (A)
+                        // can be applied.
+                        branchAt( currentState->index(), weakestCauchyBound );
+                        return foundAnswer( Unknown );
+                    }
+                    else
+                    {
+                        // Insert the (integer!) assignments of the other variables.
+                        EvalRationalMap varSolutions = getIntervalAssignment( currentState );
+                        const SqrtEx& subTerm = currentState->substitution().term();
+                        Polynomial radicandEvaluated = subTerm.radicand().substitute( varSolutions );
+                        assert( radicandEvaluated.isConstant() );
+                        Rational radicandValue = radicandEvaluated.lcoeff();
+                        assert( radicandValue >= 0 );
+                        Polynomial factorEvaluated = subTerm.factor().substitute( varSolutions );
+                        assert( factorEvaluated.isConstant() );
+                        Rational factorValue = factorEvaluated.lcoeff();
+                        Polynomial constantPartEvaluated = subTerm.constantPart().substitute( varSolutions );
+                        assert( constantPartEvaluated.isConstant() );
+                        Rational constantPartValue = constantPartEvaluated.lcoeff();
+                        Polynomial denomEvaluated = subTerm.denominator().substitute( varSolutions );
+                        assert( denomEvaluated.isConstant() );
+                        Rational denomValue = denomEvaluated.lcoeff();
+                        // Check whether the resulting assignment is integer.
+                        bool assIsInteger = true;
+                        Rational* sqrtExValue = new Rational( 0 );
+                        if( !cln::sqrtp( radicandValue, sqrtExValue ) )
+                        {
+                            assIsInteger = false;
+                            assert( factorValue != 0 );
+                            double dbSqrt = sqrt( cln::double_approx( radicandValue ) );
+                            *sqrtExValue = Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) ) ;
+                            if( factorValue > 0 && (*sqrtExValue)*(*sqrtExValue) > radicandValue )
+                            {
+                                // Force rounding down.
+                                dbSqrt = std::nextafter( dbSqrt, -INFINITY );
+                                *sqrtExValue = Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
+                                assert( !((*sqrtExValue)*(*sqrtExValue) > radicandValue) );
+                            }
+                            else if( factorValue < 0 && (*sqrtExValue)*(*sqrtExValue) < radicandValue )
+                            {
+                                // Force rounding up.
+                                dbSqrt = std::nextafter( dbSqrt, INFINITY );
+                                *sqrtExValue = Rational( cln::rationalize( cln::cl_R( dbSqrt ) ) );
+                                assert( !((*sqrtExValue)*(*sqrtExValue) > radicandValue) );
+                            }
+                        }
+                        *sqrtExValue = (constantPartValue + factorValue * (*sqrtExValue)) / denomValue;
+                        assIsInteger &= carl::isInteger( *sqrtExValue );
+                        if( currentState->substitution().type() == Substitution::PLUS_EPSILON || !assIsInteger )
+                        {
+                            branchAt( currentState->index(), *sqrtExValue );
+                            delete sqrtExValue;
+                            return foundAnswer( Unknown );
+                        }
+                        delete sqrtExValue;
+                    }
+                }
+                currentState = currentState->pFather();
+            }
+        }
+        return foundAnswer( True );
     }
 
     /**
